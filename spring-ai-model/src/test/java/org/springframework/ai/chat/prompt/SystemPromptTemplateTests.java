@@ -16,7 +16,11 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.template.NoOpTemplateRenderer;

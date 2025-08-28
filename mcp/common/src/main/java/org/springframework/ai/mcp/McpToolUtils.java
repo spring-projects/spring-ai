@@ -30,7 +30,6 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.McpTransportContext;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Role;
@@ -190,10 +189,6 @@ public final class McpToolUtils {
 
 		return new McpStatelessServerFeatures.SyncToolSpecification(sharedSpec.tool(),
 				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
-	}
-
-	private record SharedSyncToolSpecification(McpSchema.Tool tool,
-			BiFunction<Object, CallToolRequest, McpSchema.CallToolResult> sharedHandler) {
 	}
 
 	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
@@ -412,4 +407,7 @@ public final class McpToolUtils {
 			"base64", "b64", "imageData" }) @Nullable String data) {
 	}
 
+	private record SharedSyncToolSpecification(McpSchema.Tool tool,
+											BiFunction<Object, CallToolRequest, McpSchema.CallToolResult> sharedHandler) {
+	}
 }

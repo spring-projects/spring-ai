@@ -25,15 +25,14 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
 import org.junit.jupiter.params.provider.ValueSource;
+
 import org.springframework.core.io.PathResource;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.springframework.ai.google.genai.MimeTypeDetector.GEMINI_MIME_TYPES;
 
 /**
  * @author YunKui Lu
@@ -41,7 +40,9 @@ import static org.springframework.ai.google.genai.MimeTypeDetector.GEMINI_MIME_T
 class MimeTypeDetectorTests {
 
 	private static Stream<Arguments> provideMimeTypes() {
-		return GEMINI_MIME_TYPES.entrySet().stream().map(entry -> Arguments.of(entry.getKey(), entry.getValue()));
+		return org.springframework.ai.google.genai.MimeTypeDetector.GEMINI_MIME_TYPES.entrySet()
+			.stream()
+			.map(entry -> Arguments.of(entry.getKey(), entry.getValue()));
 	}
 
 	@ParameterizedTest
@@ -110,7 +111,8 @@ class MimeTypeDetectorTests {
 			.isInstanceOf(IllegalArgumentException.class);
 
 		// Lowercase should work if it's a supported extension
-		if (GEMINI_MIME_TYPES.containsKey(uppercaseExt.toLowerCase())) {
+		if (org.springframework.ai.google.genai.MimeTypeDetector.GEMINI_MIME_TYPES
+			.containsKey(uppercaseExt.toLowerCase())) {
 			assertThatCode(() -> MimeTypeDetector.getMimeType(lowerFileName)).doesNotThrowAnyException();
 		}
 	}

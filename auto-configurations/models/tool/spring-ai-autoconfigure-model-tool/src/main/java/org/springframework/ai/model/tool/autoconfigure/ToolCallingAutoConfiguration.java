@@ -16,9 +16,10 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
-import io.micrometer.observation.ObservationRegistry;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -115,25 +115,6 @@ public class VertexAiGeminiRetryTests {
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("test prompt")));
 	}
 
-	private static class TestRetryListener implements RetryListener {
-
-		int onErrorRetryCount = 0;
-
-		int onSuccessRetryCount = 0;
-
-		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
-		}
-
-		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
-		}
-
-	}
-
 	@Test
 	public void vertexAiGeminiChatSuccessOnFirstAttempt() throws Exception {
 		// Create a mocked successful response
@@ -174,6 +155,25 @@ public class VertexAiGeminiRetryTests {
 		assertThat(result).isNotNull();
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(1);
+	}
+
+	private static class TestRetryListener implements RetryListener {
+
+		int onErrorRetryCount = 0;
+
+		int onSuccessRetryCount = 0;
+
+		@Override
+		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
+			this.onSuccessRetryCount = context.getRetryCount();
+		}
+
+		@Override
+		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
+				Throwable throwable) {
+			this.onErrorRetryCount = context.getRetryCount();
+		}
+
 	}
 
 }

@@ -16,11 +16,11 @@
 
 package org.springframework.ai.mcp;
 
-import io.modelcontextprotocol.spec.McpSchema;
 import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;

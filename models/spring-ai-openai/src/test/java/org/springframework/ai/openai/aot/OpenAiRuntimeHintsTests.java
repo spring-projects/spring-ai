@@ -19,16 +19,16 @@ package org.springframework.ai.openai.aot;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
-import org.springframework.aot.hint.MemberCategory;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
@@ -41,18 +41,18 @@ class OpenAiRuntimeHintsTests {
 
 	@BeforeEach
 	void setUp() {
-		runtimeHints = new RuntimeHints();
-		openAiRuntimeHints = new OpenAiRuntimeHints();
+		this.runtimeHints = new RuntimeHints();
+		this.openAiRuntimeHints = new OpenAiRuntimeHints();
 	}
 
 	@Test
 	void registerHints() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.openai");
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 			assertThat(registeredTypes.contains(jsonAnnotatedClass)).isTrue();
@@ -74,10 +74,10 @@ class OpenAiRuntimeHintsTests {
 	@Test
 	void registerHintsWithNullClassLoader() {
 		// Test that registering hints with null ClassLoader works correctly
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		assertThat(registeredTypes.size()).isGreaterThan(0);
 	}
@@ -86,22 +86,22 @@ class OpenAiRuntimeHintsTests {
 	void registerHintsWithCustomClassLoader() {
 		// Test that registering hints with a custom ClassLoader works correctly
 		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
-		openAiRuntimeHints.registerHints(runtimeHints, customClassLoader);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, customClassLoader);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		assertThat(registeredTypes.size()).isGreaterThan(0);
 	}
 
 	@Test
 	void allMemberCategoriesAreRegistered() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage("org.springframework.ai.openai");
 
 		// Verify that all MemberCategory values are registered for each type
-		runtimeHints.reflection().typeHints().forEach(typeHint -> {
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> {
 			if (jsonAnnotatedClasses.contains(typeHint.getType())) {
 				Set<MemberCategory> expectedCategories = Set.of(MemberCategory.values());
 				Set<MemberCategory> actualCategories = typeHint.getMemberCategories();
@@ -112,10 +112,10 @@ class OpenAiRuntimeHintsTests {
 
 	@Test
 	void verifySpecificOpenAiApiClasses() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		// Verify specific OpenAI API classes are registered
 		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.class))).isTrue();
@@ -137,11 +137,11 @@ class OpenAiRuntimeHintsTests {
 	@Test
 	void multipleRegistrationCallsAreIdempotent() {
 		// Register hints multiple times and verify no duplicates
-		openAiRuntimeHints.registerHints(runtimeHints, null);
-		int firstRegistrationCount = (int) runtimeHints.reflection().typeHints().count();
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
+		int firstRegistrationCount = (int) this.runtimeHints.reflection().typeHints().count();
 
-		openAiRuntimeHints.registerHints(runtimeHints, null);
-		int secondRegistrationCount = (int) runtimeHints.reflection().typeHints().count();
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
+		int secondRegistrationCount = (int) this.runtimeHints.reflection().typeHints().count();
 
 		assertThat(firstRegistrationCount).isEqualTo(secondRegistrationCount);
 	}
@@ -154,10 +154,10 @@ class OpenAiRuntimeHintsTests {
 
 	@Test
 	void verifyAllRegisteredTypesHaveReflectionHints() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		// Ensure every registered type has proper reflection hints
-		runtimeHints.reflection().typeHints().forEach(typeHint -> {
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> {
 			assertThat(typeHint.getType()).isNotNull();
 			assertThat(typeHint.getMemberCategories().size()).isGreaterThan(0);
 		});
@@ -165,10 +165,10 @@ class OpenAiRuntimeHintsTests {
 
 	@Test
 	void verifyEnumTypesAreRegistered() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		// Verify enum types are properly registered
 		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.ChatCompletionFinishReason.class))).isTrue();
@@ -179,10 +179,10 @@ class OpenAiRuntimeHintsTests {
 
 	@Test
 	void verifyNestedClassesAreRegistered() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		// Verify nested classes are properly registered
 		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.FunctionTool.class))).isTrue();
@@ -229,10 +229,10 @@ class OpenAiRuntimeHintsTests {
 
 	@Test
 	void verifySpecificApiClassDetails() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		// Verify critical OpenAI API classes are registered
 		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.class))).isTrue();
@@ -256,8 +256,8 @@ class OpenAiRuntimeHintsTests {
 
 		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
 
-		openAiRuntimeHints.registerHints(hintsWithNull, null);
-		openAiRuntimeHints.registerHints(hintsWithClassLoader, customClassLoader);
+		this.openAiRuntimeHints.registerHints(hintsWithNull, null);
+		this.openAiRuntimeHints.registerHints(hintsWithClassLoader, customClassLoader);
 
 		// Both should register the same types regardless of ClassLoader
 		Set<TypeReference> typesWithNull = new HashSet<>();
@@ -271,10 +271,10 @@ class OpenAiRuntimeHintsTests {
 
 	@Test
 	void verifyAllApiModulesAreIncluded() {
-		openAiRuntimeHints.registerHints(runtimeHints, null);
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		// Verify all main OpenAI API modules are represented
 		boolean hasMainApi = registeredTypes.stream().anyMatch(typeRef -> typeRef.getName().contains("OpenAiApi"));

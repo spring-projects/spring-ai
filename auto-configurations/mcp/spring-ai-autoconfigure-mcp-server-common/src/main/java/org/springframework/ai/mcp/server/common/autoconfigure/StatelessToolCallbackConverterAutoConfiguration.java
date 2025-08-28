@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
@@ -34,8 +36,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
-import io.modelcontextprotocol.server.McpStatelessServerFeatures;
-
 /**
  * @author Christian Tzolov
  */
@@ -45,26 +45,6 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class,
 		StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition.class })
 public class StatelessToolCallbackConverterAutoConfiguration {
-
-	public static class ToolCallbackConverterCondition extends AllNestedConditions {
-
-		public ToolCallbackConverterCondition() {
-			super(ConfigurationPhase.PARSE_CONFIGURATION);
-		}
-
-		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-				matchIfMissing = true)
-		static class McpServerEnabledCondition {
-
-		}
-
-		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "tool-callback-converter",
-				havingValue = "true", matchIfMissing = true)
-		static class ToolCallbackConvertCondition {
-
-		}
-
-	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
@@ -144,6 +124,26 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 
 		tools.addAll(providerToolCallbacks);
 		return tools;
+	}
+
+	public static class ToolCallbackConverterCondition extends AllNestedConditions {
+
+		public ToolCallbackConverterCondition() {
+			super(ConfigurationPhase.PARSE_CONFIGURATION);
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+				matchIfMissing = true)
+		static class McpServerEnabledCondition {
+
+		}
+
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "tool-callback-converter",
+				havingValue = "true", matchIfMissing = true)
+		static class ToolCallbackConvertCondition {
+
+		}
+
 	}
 
 }

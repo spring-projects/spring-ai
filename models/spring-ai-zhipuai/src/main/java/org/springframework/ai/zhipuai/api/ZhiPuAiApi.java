@@ -839,7 +839,7 @@ public class ZhiPuAiApi {
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MediaContent(// @formatter:off
 				@JsonProperty("type") String type,
-			    @JsonProperty("text") String text,
+				@JsonProperty("text") String text,
 				@JsonProperty("image_url") ImageUrl imageUrl) { // @formatter:on
 
 			/**
@@ -870,7 +870,7 @@ public class ZhiPuAiApi {
 			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record ImageUrl(// @formatter:off
 					@JsonProperty("url") String url,
-				    @JsonProperty("detail") String detail) { // @formatter:on
+					@JsonProperty("detail") String detail) { // @formatter:on
 
 				public ImageUrl(String url) {
 					this(url, null);
@@ -891,7 +891,7 @@ public class ZhiPuAiApi {
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(// @formatter:off
 				@JsonProperty("id") String id,
-			    @JsonProperty("type") String type,
+				@JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function) { // @formatter:on
 		}
 

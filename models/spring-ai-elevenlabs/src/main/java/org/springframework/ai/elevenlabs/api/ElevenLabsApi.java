@@ -45,7 +45,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  *
  * @author Alexandros Pappas
  */
-public class ElevenLabsApi {
+public final class ElevenLabsApi {
 
 	public static final String DEFAULT_BASE_URL = "https://api.elevenlabs.io";
 
@@ -311,10 +311,11 @@ public class ElevenLabsApi {
 			}
 
 			public SpeechRequest build() {
-				Assert.hasText(text, "text must not be empty");
-				return new SpeechRequest(text, modelId, languageCode, voiceSettings, pronunciationDictionaryLocators,
-						seed, previousText, nextText, previousRequestIds, nextRequestIds, applyTextNormalization,
-						applyLanguageTextNormalization);
+				Assert.hasText(this.text, "text must not be empty");
+				return new SpeechRequest(this.text, this.modelId, this.languageCode, this.voiceSettings,
+						this.pronunciationDictionaryLocators, this.seed, this.previousText, this.nextText,
+						this.previousRequestIds, this.nextRequestIds, this.applyTextNormalization,
+						this.applyLanguageTextNormalization);
 			}
 
 		}

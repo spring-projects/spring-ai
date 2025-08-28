@@ -245,9 +245,9 @@ class SimpleVectorStoreWithFilterTests {
 			.metadata(Map.of("category", "category1"))
 			.build();
 
-		vectorStore.add(List.of(doc));
+		this.vectorStore.add(List.of(doc));
 
-		List<Document> results = vectorStore.similaritySearch(
+		List<Document> results = this.vectorStore.similaritySearch(
 				SearchRequest.builder().query("sample").filterExpression("category == 'category1'").build());
 
 		assertThat(results).hasSize(1);
@@ -258,9 +258,9 @@ class SimpleVectorStoreWithFilterTests {
 	void shouldFilterByNumericEquality() {
 		Document doc = Document.builder().id("1").text("item description").metadata(Map.of("value", 1)).build();
 
-		vectorStore.add(List.of(doc));
+		this.vectorStore.add(List.of(doc));
 
-		List<Document> results = vectorStore
+		List<Document> results = this.vectorStore
 			.similaritySearch(SearchRequest.builder().query("item").filterExpression("value == 1").build());
 
 		assertThat(results).hasSize(1);
@@ -272,9 +272,9 @@ class SimpleVectorStoreWithFilterTests {
 		Document doc1 = Document.builder().id("1").text("entry").metadata(Map.of("status", "active")).build();
 		Document doc2 = Document.builder().id("2").text("entry").metadata(Map.of("status", "inactive")).build();
 
-		vectorStore.add(List.of(doc1, doc2));
+		this.vectorStore.add(List.of(doc1, doc2));
 
-		List<Document> results = vectorStore.similaritySearch(
+		List<Document> results = this.vectorStore.similaritySearch(
 				SearchRequest.builder().query("entry").filterExpression("status in ['active', 'pending']").build());
 
 		assertThat(results).hasSize(1);
@@ -288,9 +288,9 @@ class SimpleVectorStoreWithFilterTests {
 				Document.builder().id("2").text("entity").metadata(Map.of("value", 2)).build(),
 				Document.builder().id("3").text("entity").metadata(Map.of("value", 3)).build());
 
-		vectorStore.add(docs);
+		this.vectorStore.add(docs);
 
-		List<Document> results = vectorStore.similaritySearch(
+		List<Document> results = this.vectorStore.similaritySearch(
 				SearchRequest.builder().query("entity").filterExpression("value >= 1 && value <= 1").build());
 
 		assertThat(results).hasSize(1);
@@ -301,9 +301,9 @@ class SimpleVectorStoreWithFilterTests {
 	void shouldReturnEmptyResultsWhenNoDocumentsMatchFilter() {
 		Document doc = Document.builder().id("1").text("test").metadata(Map.of("type", "document")).build();
 
-		vectorStore.add(List.of(doc));
+		this.vectorStore.add(List.of(doc));
 
-		List<Document> results = vectorStore
+		List<Document> results = this.vectorStore
 			.similaritySearch(SearchRequest.builder().query("test").filterExpression("type == 'image'").build());
 
 		assertThat(results).isEmpty();
@@ -315,9 +315,9 @@ class SimpleVectorStoreWithFilterTests {
 				Document.builder().id("1").text("instance").metadata(Map.of("enabled", true)).build(),
 				Document.builder().id("2").text("instance").metadata(Map.of("enabled", false)).build());
 
-		vectorStore.add(docs);
+		this.vectorStore.add(docs);
 
-		List<Document> results = vectorStore
+		List<Document> results = this.vectorStore
 			.similaritySearch(SearchRequest.builder().query("instance").filterExpression("enabled == true").build());
 
 		assertThat(results).hasSize(1);
@@ -330,9 +330,9 @@ class SimpleVectorStoreWithFilterTests {
 				Document.builder().id("1").text("item").metadata(Map.of("classification", "typeA")).build(),
 				Document.builder().id("2").text("item").metadata(Map.of("classification", "typeB")).build());
 
-		vectorStore.add(docs);
+		this.vectorStore.add(docs);
 
-		List<Document> results = vectorStore.similaritySearch(
+		List<Document> results = this.vectorStore.similaritySearch(
 				SearchRequest.builder().query("item").filterExpression("classification != 'typeB'").build());
 
 		assertThat(results).hasSize(1);

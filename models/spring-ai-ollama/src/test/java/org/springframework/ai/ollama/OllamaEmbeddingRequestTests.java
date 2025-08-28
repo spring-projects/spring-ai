@@ -21,8 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -41,7 +41,7 @@ public class OllamaEmbeddingRequestTests {
 
 	@BeforeEach
 	public void setUp() {
-		embeddingModel = OllamaEmbeddingModel.builder()
+		this.embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(OllamaOptions.builder().model("DEFAULT_MODEL").mainGPU(11).useMMap(true).numGPU(1).build())
 			.build();

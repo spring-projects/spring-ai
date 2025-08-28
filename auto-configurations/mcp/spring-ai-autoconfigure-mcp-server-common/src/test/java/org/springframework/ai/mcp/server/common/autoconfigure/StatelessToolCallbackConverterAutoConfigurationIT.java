@@ -16,13 +16,15 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
 import java.util.List;
 
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
 import org.springframework.ai.mcp.SyncMcpToolCallback;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
@@ -32,10 +34,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncToolSpecification;
-import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.spec.McpSchema;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for {@link StatelessToolCallbackConverterAutoConfiguration} and

@@ -19,9 +19,9 @@ package org.springframework.ai.chat.model;
 import java.util.Arrays;
 import java.util.Optional;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.StreamingModel;

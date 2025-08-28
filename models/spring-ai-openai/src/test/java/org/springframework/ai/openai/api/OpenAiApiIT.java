@@ -218,4 +218,22 @@ public class OpenAiApiIT {
 		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
 	}
 
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "DEFAULT", "PRIORITY" })
+	void chatCompletionEntityWithServiceTier(OpenAiApi.ServiceTier serviceTier) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
+				"What is the answer to the ultimate question of life, the universe, and everything?", Role.USER);
+
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
+				OpenAiApi.ChatModel.GPT_4_O.value, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, serviceTier.getValue(), null, false, null, 1.0, null, null, null, null, null, null,
+				null, null);
+
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().serviceTier()).containsIgnoringCase(serviceTier.getValue());
+	}
+
 }
