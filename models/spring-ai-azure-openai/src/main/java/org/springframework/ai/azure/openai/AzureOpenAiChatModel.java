@@ -351,7 +351,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 							MergeUtils::mergeChatCompletions);
 					return List.of(reduce);
 				})
-				.flatMap(mono -> mono);
+				.flatMapSequential(mono -> mono);
 
 			final Flux<ChatResponse> chatResponseFlux = accessibleChatCompletionsFlux.map(chatCompletion -> {
 				if (previousChatResponse == null) {
@@ -377,7 +377,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 				return chatResponse1;
 			});
 
-			return chatResponseFlux.flatMap(chatResponse -> {
+			return chatResponseFlux.flatMapSequential(chatResponse -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
