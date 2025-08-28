@@ -78,8 +78,6 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static final ToolExecutionExceptionProcessor DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR
 			= DefaultToolExecutionExceptionProcessor.builder().build();
 
-	private static final TaskExecutor DEFAULT_TASK_EXECUTOR = buildDefaultTaskExecutor();
-
 	// @formatter:on
 
 	private final ObservationRegistry observationRegistry;
@@ -101,7 +99,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		this.observationRegistry = observationRegistry;
 		this.toolCallbackResolver = toolCallbackResolver;
 		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
-		this.taskExecutor = taskExecutor != null ? taskExecutor : buildDefaultTaskExecutor();
+		this.taskExecutor = taskExecutor != null ? taskExecutor : this.buildDefaultTaskExecutor();
 	}
 
 	@Override
@@ -190,7 +188,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					? toolCallingChatOptions.getToolCallbacks() : List.of();
 
 		final Queue<Boolean> toolsReturnDirect = new ConcurrentLinkedDeque<>();
-		List<ToolResponseMessage.ToolResponse> toolResponses = assistantMessage.getToolCalls()
+		List<CompletableFuture<ToolResponseMessage.ToolResponse>> futuresToolResponses = assistantMessage.getToolCalls()
 			.stream()
 			.map(toolCall -> CompletableFuture.supplyAsync(() -> {
 				logger.debug("Executing tool call: {}", toolCall.name());
@@ -233,8 +231,12 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				return new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
 						toolCallResult != null ? toolCallResult : "");
 			}, this.taskExecutor))
-			.map(CompletableFuture::join)
 			.toList();
+
+		final List<ToolResponseMessage.ToolResponse> toolResponses = CompletableFuture
+			.allOf(futuresToolResponses.toArray(new CompletableFuture[0]))
+			.thenApply(result -> futuresToolResponses.stream().map(CompletableFuture::join).toList())
+			.join();
 
 		return new InternalToolExecutionResult(new ToolResponseMessage(toolResponses, Map.of()),
 				toolsReturnDirect.stream().allMatch(Boolean::booleanValue));
@@ -252,9 +254,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		this.observationConvention = observationConvention;
 	}
 
-	private static TaskExecutor buildDefaultTaskExecutor() {
+	private TaskExecutor buildDefaultTaskExecutor() {
 		ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
-		taskExecutor.setThreadNamePrefix("ai-toll-calling-");
+		taskExecutor.setThreadNamePrefix("ai-tool-calling-");
 		taskExecutor.setCorePoolSize(4);
 		taskExecutor.setMaxPoolSize(16);
 		taskExecutor.setTaskDecorator(new ContextPropagatingTaskDecorator());
@@ -277,7 +279,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		private ToolExecutionExceptionProcessor toolExecutionExceptionProcessor = DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR;
 
-		private TaskExecutor taskExecutor = DEFAULT_TASK_EXECUTOR;
+		private TaskExecutor taskExecutor;
 
 		private Builder() {
 		}
