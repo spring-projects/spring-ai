@@ -125,10 +125,19 @@ public class ToolCallingAutoConfiguration {
 
 	private static Class<? extends RuntimeException> getClassOrNull(String className) {
 		try {
-			return (Class<? extends RuntimeException>) ClassUtils.forName(className, null);
+			Class<?> clazz = ClassUtils.forName(className, null);
+			if (RuntimeException.class.isAssignableFrom(clazz)) {
+				return (Class<? extends RuntimeException>) clazz;
+			}
+			else {
+				logger.debug("Class {} is not a subclass of RuntimeException", className);
+			}
 		}
 		catch (ClassNotFoundException e) {
-			logger.debug("Cannot load class", e);
+			logger.debug("Cannot load class: {}", className);
+		}
+		catch (Exception e) {
+			logger.debug("Error loading class: {}", className, e);
 		}
 		return null;
 	}
