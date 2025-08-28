@@ -227,7 +227,7 @@ public class ClientHandlers {
         this.chatModel = chatModel;
     }
 
-    @McpLogging(clientId = "server1")
+    @McpLogging(clients = "server1")
     public void handleLogging(LoggingMessageNotification notification) {
         switch (notification.level()) {
             case ERROR:
@@ -244,7 +244,7 @@ public class ClientHandlers {
         }
     }
 
-    @McpSampling(clientId = "server1")
+    @McpSampling(clients = "server1")
     public CreateMessageResult handleSampling(CreateMessageRequest request) {
         // Use Spring AI ChatModel for sampling
         List<Message> messages = request.messages().stream()
@@ -266,7 +266,7 @@ public class ClientHandlers {
             .build();
     }
 
-    @McpElicitation(clientId = "server1")
+    @McpElicitation(clients = "server1")
     public ElicitResult handleElicitation(ElicitRequest request) {
         // In a real application, this would show a UI dialog
         Map<String, Object> userData = new HashMap<>();
@@ -288,7 +288,7 @@ public class ClientHandlers {
         return new ElicitResult(ElicitResult.Action.ACCEPT, userData);
     }
 
-    @McpProgress(clientId = "server1")
+    @McpProgress(clients = "server1")
     public void handleProgress(ProgressNotification notification) {
         progressTracker.update(
             notification.progressToken(),
@@ -301,7 +301,7 @@ public class ClientHandlers {
         broadcastProgress(notification);
     }
 
-    @McpToolListChanged(clientId = "server1")
+    @McpToolListChanged(clients = "server1")
     public void handleServer1ToolsChanged(List<McpSchema.Tool> tools) {
         logger.info("Server1 tools updated: {} tools available", tools.size());
         
@@ -312,7 +312,7 @@ public class ClientHandlers {
         eventBus.publish(new ToolsUpdatedEvent("server1", tools));
     }
 
-    @McpResourceListChanged(clientId = "server1")
+    @McpResourceListChanged(clients = "server1")
     public void handleServer1ResourcesChanged(List<McpSchema.Resource> resources) {
         logger.info("Server1 resources updated: {} resources available", resources.size());
         
@@ -415,7 +415,7 @@ public class AsyncDataProcessor {
 @Component
 public class AsyncClientHandlers {
 
-    @McpSampling(clientId = "async-server")
+    @McpSampling(clients = "async-server")
     public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
         return Mono.fromCallable(() -> {
             // Prepare request for LLM
@@ -431,7 +431,7 @@ public class AsyncClientHandlers {
         .timeout(Duration.ofSeconds(30));
     }
 
-    @McpProgress(clientId = "async-server")
+    @McpProgress(clients = "async-server")
     public Mono<Void> handleAsyncProgress(ProgressNotification notification) {
         return Mono.fromRunnable(() -> {
             // Update progress tracking
@@ -441,7 +441,7 @@ public class AsyncClientHandlers {
         .subscribeOn(Schedulers.parallel());
     }
 
-    @McpElicitation(clientId = "async-server")
+    @McpElicitation(clients = "async-server")
     public Mono<ElicitResult> handleAsyncElicitation(ElicitRequest request) {
         return showUserDialogAsync(request)
             .map(userData -> {
@@ -618,19 +618,19 @@ public class McpClientHandlers {
     @Autowired
     Map<String, ChatClient> chatClients;
 
-    @McpProgress(clientId = "server1")
+    @McpProgress(clients = "server1")
     public void progressHandler(ProgressNotification progressNotification) {
         logger.info("MCP PROGRESS: [{}] progress: {} total: {} message: {}",
                 progressNotification.progressToken(), progressNotification.progress(),
                 progressNotification.total(), progressNotification.message());
     }
 
-    @McpLogging(clientId = "server1")
+    @McpLogging(clients = "server1")
     public void loggingHandler(LoggingMessageNotification loggingMessage) {
         logger.info("MCP LOGGING: [{}] {}", loggingMessage.level(), loggingMessage.data());
     }
 
-    @McpSampling(clientId = "server1")
+    @McpSampling(clients = "server1")
     public CreateMessageResult samplingHandler(CreateMessageRequest llmRequest) {
         logger.info("MCP SAMPLING: {}", llmRequest);
 
@@ -840,69 +840,6 @@ public class WeatherTools {
         int forecastDays = days != null ? days : 3;
         
         return weatherService.getForecast(city, forecastDays);
-    }
-}
-----
-
-== Testing MCP Annotations
-
-Example test cases for MCP annotated components:
-
-[source,java]
-----
-@SpringBootTest
-@AutoConfigureMockMvc
-class McpAnnotationTest {
-
-    @Autowired
-    private List<McpSyncClient> mcpClients;
-    
-    @MockBean
-    private WeatherService weatherService;
-
-    @Test
-    void testToolAnnotation() {
-        // Given
-        when(weatherService.getCurrentWeather("London", "metric"))
-            .thenReturn(new WeatherInfo("London", 20.0, "Cloudy"));
-        
-        // When
-        McpSyncClient client = mcpClients.get(0);
-        CallToolResult result = client.callTool(
-            new CallToolRequest("get-weather", 
-                Map.of("city", "London", "units", "metric")));
-        
-        // Then
-        assertThat(result.isError()).isFalse();
-        assertThat(result.content()).isNotEmpty();
-    }
-
-    @Test
-    void testResourceAnnotation() {
-        // When
-        McpSyncClient client = mcpClients.get(0);
-        ReadResourceResult result = client.readResource(
-            new ReadResourceRequest("document://test-doc"));
-        
-        // Then
-        assertThat(result.contents()).isNotEmpty();
-        assertThat(result.contents().get(0).uri()).isEqualTo("document://test-doc");
-    }
-
-    @Test
-    void testClientHandlers() {
-        // Given
-        LoggingMessageNotification notification = LoggingMessageNotification.builder()
-            .level(LoggingLevel.INFO)
-            .logger("test")
-            .data("Test message")
-            .build();
-        
-        // When
-        // Handlers are automatically invoked by the MCP client
-        
-        // Then
-        // Verify handler was called (check logs, database, etc.)
     }
 }
 ----

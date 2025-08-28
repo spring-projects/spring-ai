@@ -435,11 +435,11 @@ public class McpClientHandlers {
 }
 ----
 
-The annotations support both synchronous and asynchronous implementations, and can be configured for specific clients using the `clientId` parameter:
+The annotations support both synchronous and asynchronous implementations, and can be configured for specific clients using the `clients` parameter:
 
 [source,java]
 ----
-@McpLogging(clientId = "server1")
+@McpLogging(clients = "server1")
 public void handleServer1Logs(LoggingMessageNotification notification) {
     // Handle logs from specific server
     logToFile("server1.log", notification);

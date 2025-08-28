@@ -4,7 +4,7 @@ The MCP Client Annotations provide a declarative way to implement MCP client han
 These annotations simplify the handling of server notifications and client-side operations.
 
 [IMPORTANT]
-**All MCP client annotations MUST include a `clientId` parameter** to associate the handler with a specific MCP client connection. The `clientId` must match the connection name configured in your application properties.
+**All MCP client annotations MUST include a `clients` parameter** to associate the handler with a specific MCP client connection. The `clients` must match the connection name configured in your application properties.
 
 == Client Annotations
 
@@ -19,7 +19,7 @@ The `@McpLogging` annotation handles logging message notifications from MCP serv
 @Component
 public class LoggingHandler {
 
-    @McpLogging(clientId = "my-mcp-server")
+    @McpLogging(clients = "my-mcp-server")
     public void handleLoggingMessage(LoggingMessageNotification notification) {
         System.out.println("Received log: " + notification.level() + 
                           " - " + notification.data());
@@ -31,7 +31,7 @@ public class LoggingHandler {
 
 [source,java]
 ----
-@McpLogging(clientId = "my-mcp-server")
+@McpLogging(clients = "my-mcp-server")
 public void handleLoggingWithParams(LoggingLevel level, String logger, String data) {
     System.out.println(String.format("[%s] %s: %s", level, logger, data));
 }
@@ -41,13 +41,13 @@ public void handleLoggingWithParams(LoggingLevel level, String logger, String da
 
 [source,java]
 ----
-@McpLogging(clientId = "server1")
+@McpLogging(clients = "server1")
 public void handleServer1Logs(LoggingMessageNotification notification) {
     // Handle logs from specific server
     logToFile("server1.log", notification);
 }
 
-@McpLogging(clientId = "server2")
+@McpLogging(clients = "server2")
 public void handleServer2Logs(LoggingMessageNotification notification) {
     // Handle logs from another server
     logToDatabase("server2", notification);
@@ -65,7 +65,7 @@ The `@McpSampling` annotation handles sampling requests from MCP servers for LLM
 @Component
 public class SamplingHandler {
 
-    @McpSampling(clientId = "llm-server")
+    @McpSampling(clients = "llm-server")
     public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
         // Process the request and generate a response
         String response = generateLLMResponse(request);
@@ -86,7 +86,7 @@ public class SamplingHandler {
 @Component
 public class AsyncSamplingHandler {
 
-    @McpSampling(clientId = "llm-server")
+    @McpSampling(clients = "llm-server")
     public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
         return Mono.fromCallable(() -> {
             String response = generateLLMResponse(request);
@@ -105,7 +105,7 @@ public class AsyncSamplingHandler {
 
 [source,java]
 ----
-@McpSampling(clientId = "specialized-server")
+@McpSampling(clients = "specialized-server")
 public CreateMessageResult handleSpecializedSampling(CreateMessageRequest request) {
     // Use specialized model for this server
     String response = generateSpecializedResponse(request);
@@ -129,7 +129,7 @@ The `@McpElicitation` annotation handles elicitation requests to gather addition
 @Component
 public class ElicitationHandler {
 
-    @McpElicitation(clientId = "interactive-server")
+    @McpElicitation(clients = "interactive-server")
     public ElicitResult handleElicitationRequest(ElicitRequest request) {
         // Present the request to the user and gather input
         Map<String, Object> userData = presentFormToUser(request.requestedSchema());
@@ -147,7 +147,7 @@ public class ElicitationHandler {
 
 [source,java]
 ----
-@McpElicitation(clientId = "interactive-server")
+@McpElicitation(clients = "interactive-server")
 public ElicitResult handleInteractiveElicitation(ElicitRequest request) {
     Map<String, Object> schema = request.requestedSchema();
     Map<String, Object> userData = new HashMap<>();
@@ -177,7 +177,7 @@ public ElicitResult handleInteractiveElicitation(ElicitRequest request) {
 
 [source,java]
 ----
-@McpElicitation(clientId = "interactive-server")
+@McpElicitation(clients = "interactive-server")
 public Mono<ElicitResult> handleAsyncElicitation(ElicitRequest request) {
     return Mono.fromCallable(() -> {
         // Async user interaction
@@ -199,7 +199,7 @@ The `@McpProgress` annotation handles progress notifications for long-running op
 @Component
 public class ProgressHandler {
 
-    @McpProgress(clientId = "my-mcp-server")
+    @McpProgress(clients = "my-mcp-server")
     public void handleProgressNotification(ProgressNotification notification) {
         double percentage = notification.progress() * 100;
         System.out.println(String.format("Progress: %.2f%% - %s", 
@@ -212,7 +212,7 @@ public class ProgressHandler {
 
 [source,java]
 ----
-@McpProgress(clientId = "my-mcp-server")
+@McpProgress(clients = "my-mcp-server")
 public void handleProgressWithDetails(
         String progressToken, 
         double progress, 
@@ -236,7 +236,7 @@ public void handleProgressWithDetails(
 
 [source,java]
 ----
-@McpProgress(clientId = "long-running-server")
+@McpProgress(clients = "long-running-server")
 public void handleLongRunningProgress(ProgressNotification notification) {
     // Track progress for specific server
     progressTracker.update("long-running-server", notification);
@@ -259,7 +259,7 @@ The `@McpToolListChanged` annotation handles notifications when the server's too
 @Component
 public class ToolListChangedHandler {
 
-    @McpToolListChanged(clientId = "tool-server")
+    @McpToolListChanged(clients = "tool-server")
     public void handleToolListChanged(List<McpSchema.Tool> updatedTools) {
         System.out.println("Tool list updated: " + updatedTools.size() + " tools available");
         
@@ -278,7 +278,7 @@ public class ToolListChangedHandler {
 
 [source,java]
 ----
-@McpToolListChanged(clientId = "tool-server")
+@McpToolListChanged(clients = "tool-server")
 public Mono<Void> handleAsyncToolListChanged(List<McpSchema.Tool> updatedTools) {
     return Mono.fromRunnable(() -> {
         // Process tool list update asynchronously
@@ -294,7 +294,7 @@ public Mono<Void> handleAsyncToolListChanged(List<McpSchema.Tool> updatedTools) 
 
 [source,java]
 ----
-@McpToolListChanged(clientId = "dynamic-server")
+@McpToolListChanged(clients = "dynamic-server")
 public void handleDynamicServerToolUpdate(List<McpSchema.Tool> updatedTools) {
     // Handle tools from a specific server that frequently changes its tools
     dynamicToolManager.updateServerTools("dynamic-server", updatedTools);
@@ -315,7 +315,7 @@ The `@McpResourceListChanged` annotation handles notifications when the server's
 @Component
 public class ResourceListChangedHandler {
 
-    @McpResourceListChanged(clientId = "resource-server")
+    @McpResourceListChanged(clients = "resource-server")
     public void handleResourceListChanged(List<McpSchema.Resource> updatedResources) {
         System.out.println("Resources updated: " + updatedResources.size());
         
@@ -332,7 +332,7 @@ public class ResourceListChangedHandler {
 
 [source,java]
 ----
-@McpResourceListChanged(clientId = "resource-server")
+@McpResourceListChanged(clients = "resource-server")
 public void analyzeResourceChanges(List<McpSchema.Resource> updatedResources) {
     // Analyze what changed
     Set<String> newUris = updatedResources.stream()
@@ -363,7 +363,7 @@ The `@McpPromptListChanged` annotation handles notifications when the server's p
 @Component
 public class PromptListChangedHandler {
 
-    @McpPromptListChanged(clientId = "prompt-server")
+    @McpPromptListChanged(clients = "prompt-server")
     public void handlePromptListChanged(List<McpSchema.Prompt> updatedPrompts) {
         System.out.println("Prompts updated: " + updatedPrompts.size());
         
@@ -382,7 +382,7 @@ public class PromptListChangedHandler {
 
 [source,java]
 ----
-@McpPromptListChanged(clientId = "prompt-server")
+@McpPromptListChanged(clients = "prompt-server")
 public Mono<Void> handleAsyncPromptUpdate(List<McpSchema.Prompt> updatedPrompts) {
     return Flux.fromIterable(updatedPrompts)
         .flatMap(prompt -> validatePrompt(prompt))
@@ -409,18 +409,18 @@ public class McpClientApplication {
 
 @Component
 public class MyClientHandlers {
-    
-    @McpLogging(clientId = "my-server")
+
+    @McpLogging(clients = "my-server")
     public void handleLogs(LoggingMessageNotification notification) {
         // Handle logs
     }
-    
-    @McpSampling(clientId = "my-server")
+
+    @McpSampling(clients = "my-server")
     public CreateMessageResult handleSampling(CreateMessageRequest request) {
         // Handle sampling
     }
-    
-    @McpProgress(clientId = "my-server")
+
+    @McpProgress(clients = "my-server")
     public void handleProgress(ProgressNotification notification) {
         // Handle progress
     }
@@ -448,23 +448,23 @@ spring:
         type: SYNC  # or ASYNC
         annotation-scanner:
           enabled: true
-        # Configure client connections - the connection names become clientId values
+        # Configure client connections - the connection names become clients values
         sse:
           connections:
-            my-server:  # This becomes the clientId
+            my-server:  # This becomes the clients
               url: http://localhost:8080
-            tool-server:  # Another clientId
+            tool-server:  # Another clients
               url: http://localhost:8081
         stdio:
           connections:
-            local-server:  # This becomes the clientId
+            local-server:  # This becomes the clients
               command: /path/to/mcp-server
               args:
                 - --mode=production
 ----
 
 [IMPORTANT]
-The `clientId` parameter in annotations must match the connection names defined in your configuration. In the example above, valid `clientId` values would be: `"my-server"`, `"tool-server"`, and `"local-server"`.
+The `clients` parameter in annotations must match the connection names defined in your configuration. In the example above, valid `clients` values would be: `"my-server"`, `"tool-server"`, and `"local-server"`.
 
 == Usage with MCP Client
 
@@ -475,11 +475,11 @@ The annotated handlers are automatically integrated with the MCP client:
 @Autowired
 private List<McpSyncClient> mcpClients;
 
-// The clients will automatically use your annotated handlers based on clientId
+// The clients will automatically use your annotated handlers based on clients
 // No manual registration needed - handlers are matched to clients by name
 ----
 
-For each MCP client connection, handlers with matching `clientId` will be automatically registered and invoked when the corresponding events occur.
+For each MCP client connection, handlers with matching `clients` will be automatically registered and invoked when the corresponding events occur.
 
 == Additional Resources
 
