@@ -26,7 +26,7 @@ import java.util.Set;
 
 /**
  * Container for Beans that have method with MCP annotations
- * 
+ *
  * @author Christian Tzolov
  */
 public abstract class AbstractMcpAnnotatedBeans {
@@ -36,22 +36,23 @@ public abstract class AbstractMcpAnnotatedBeans {
 	private final Map<Class<? extends Annotation>, List<Object>> beansByAnnotation = new HashMap<>();
 
 	public void addMcpAnnotatedBean(Object bean, Set<Class<? extends Annotation>> annotations) {
-		beansWithCustomAnnotations.add(bean);
+		this.beansWithCustomAnnotations.add(bean);
 
-		annotations.forEach(
-				annotationType -> beansByAnnotation.computeIfAbsent(annotationType, k -> new ArrayList<>()).add(bean));
+		annotations
+			.forEach(annotationType -> this.beansByAnnotation.computeIfAbsent(annotationType, k -> new ArrayList<>())
+				.add(bean));
 	}
 
 	public List<Object> getAllAnnotatedBeans() {
-		return new ArrayList<>(beansWithCustomAnnotations);
+		return new ArrayList<>(this.beansWithCustomAnnotations);
 	}
 
 	public List<Object> getBeansByAnnotation(Class<? extends Annotation> annotationType) {
-		return beansByAnnotation.getOrDefault(annotationType, Collections.emptyList());
+		return this.beansByAnnotation.getOrDefault(annotationType, Collections.emptyList());
 	}
 
 	public int getCount() {
-		return beansWithCustomAnnotations.size();
+		return this.beansWithCustomAnnotations.size();
 	}
 
 }

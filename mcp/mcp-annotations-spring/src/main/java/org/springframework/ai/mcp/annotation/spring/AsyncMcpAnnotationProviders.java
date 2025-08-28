@@ -1,23 +1,29 @@
 /*
-* Copyright 2025 - 2025 the original author or authors.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* https://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2025-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.mcp.annotation.spring;
 
 import java.lang.reflect.Method;
 import java.util.List;
 
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
@@ -41,221 +47,12 @@ import org.springaicommunity.mcp.provider.sampling.AsyncMcpSamplingProvider;
 import org.springaicommunity.mcp.provider.tool.AsyncMcpToolProvider;
 import org.springaicommunity.mcp.provider.tool.AsyncStatelessMcpToolProvider;
 
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
-import io.modelcontextprotocol.server.McpStatelessServerFeatures;
-
 /**
  * @author Christian Tzolov
  */
-public class AsyncMcpAnnotationProviders {
+public final class AsyncMcpAnnotationProviders {
 
-	// LOGGING (CLIENT)
-	private static class SpringAiAsyncMcpLoggingProvider extends AsyncMcpLoggingProvider {
-
-		public SpringAiAsyncMcpLoggingProvider(List<Object> loggingObjects) {
-			super(loggingObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// SAMPLING (CLIENT)
-	private static class SpringAiAsyncMcpSamplingProvider extends AsyncMcpSamplingProvider {
-
-		public SpringAiAsyncMcpSamplingProvider(List<Object> samplingObjects) {
-			super(samplingObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// ELICITATION (CLIENT)
-	private static class SpringAiAsyncMcpElicitationProvider extends AsyncMcpElicitationProvider {
-
-		public SpringAiAsyncMcpElicitationProvider(List<Object> elicitationObjects) {
-			super(elicitationObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// PROGRESS (CLIENT)
-	private static class SpringAiAsyncMcpProgressProvider extends AsyncMcpProgressProvider {
-
-		public SpringAiAsyncMcpProgressProvider(List<Object> progressObjects) {
-			super(progressObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// TOOL
-	private static class SpringAiAsyncMcpToolProvider extends AsyncMcpToolProvider {
-
-		public SpringAiAsyncMcpToolProvider(List<Object> toolObjects) {
-			super(toolObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	private static class SpringAiAsyncStatelessMcpToolProvider extends AsyncStatelessMcpToolProvider {
-
-		public SpringAiAsyncStatelessMcpToolProvider(List<Object> toolObjects) {
-			super(toolObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// COMPLETE
-	private static class SpringAiAsyncMcpCompleteProvider extends AsyncMcpCompleteProvider {
-
-		public SpringAiAsyncMcpCompleteProvider(List<Object> completeObjects) {
-			super(completeObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	};
-
-	private static class SpringAiAsyncStatelessMcpCompleteProvider extends AsyncStatelessMcpCompleteProvider {
-
-		public SpringAiAsyncStatelessMcpCompleteProvider(List<Object> completeObjects) {
-			super(completeObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	};
-
-	// PROMPT
-	private static class SpringAiAsyncPromptProvider extends AsyncMcpPromptProvider {
-
-		public SpringAiAsyncPromptProvider(List<Object> promptObjects) {
-			super(promptObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	private static class SpringAiAsyncStatelessPromptProvider extends AsyncStatelessMcpPromptProvider {
-
-		public SpringAiAsyncStatelessPromptProvider(List<Object> promptObjects) {
-			super(promptObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// RESOURCE
-	private static class SpringAiAsyncResourceProvider extends AsyncMcpResourceProvider {
-
-		public SpringAiAsyncResourceProvider(List<Object> resourceObjects) {
-			super(resourceObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	private static class SpringAiAsyncStatelessResourceProvider extends AsyncStatelessMcpResourceProvider {
-
-		public SpringAiAsyncStatelessResourceProvider(List<Object> resourceObjects) {
-			super(resourceObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// TOOL LIST CHANGED
-	private static class SpringAiAsyncMcpToolListChangedProvider extends AsyncMcpToolListChangedProvider {
-
-		public SpringAiAsyncMcpToolListChangedProvider(List<Object> toolListChangedObjects) {
-			super(toolListChangedObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// RESOURCE LIST CHANGED
-	private static class SpringAiAsyncMcpResourceListChangedProvider extends AsyncMcpResourceListChangedProvider {
-
-		public SpringAiAsyncMcpResourceListChangedProvider(List<Object> resourceListChangedObjects) {
-			super(resourceListChangedObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
-	}
-
-	// PROMPT LIST CHANGED
-	private static class SpringAiAsyncMcpPromptListChangedProvider extends AsyncMcpPromptListChangedProvider {
-
-		public SpringAiAsyncMcpPromptListChangedProvider(List<Object> promptListChangedObjects) {
-			super(promptListChangedObjects);
-		}
-
-		@Override
-		protected Method[] doGetClassMethods(Object bean) {
-			return AnnotationProviderUtil.beanMethods(bean);
-		}
-
+	private AsyncMcpAnnotationProviders() {
 	}
 
 	//
@@ -340,6 +137,212 @@ public class AsyncMcpAnnotationProviders {
 			List<Object> promptListChangedObjects) {
 		return new SpringAiAsyncMcpPromptListChangedProvider(promptListChangedObjects)
 			.getPromptListChangedSpecifications();
+	}
+
+	// LOGGING (CLIENT)
+	private final static class SpringAiAsyncMcpLoggingProvider extends AsyncMcpLoggingProvider {
+
+		private SpringAiAsyncMcpLoggingProvider(List<Object> loggingObjects) {
+			super(loggingObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// SAMPLING (CLIENT)
+	private final static class SpringAiAsyncMcpSamplingProvider extends AsyncMcpSamplingProvider {
+
+		private SpringAiAsyncMcpSamplingProvider(List<Object> samplingObjects) {
+			super(samplingObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// ELICITATION (CLIENT)
+	private final static class SpringAiAsyncMcpElicitationProvider extends AsyncMcpElicitationProvider {
+
+		private SpringAiAsyncMcpElicitationProvider(List<Object> elicitationObjects) {
+			super(elicitationObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// PROGRESS (CLIENT)
+	private final static class SpringAiAsyncMcpProgressProvider extends AsyncMcpProgressProvider {
+
+		private SpringAiAsyncMcpProgressProvider(List<Object> progressObjects) {
+			super(progressObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// TOOL
+	private final static class SpringAiAsyncMcpToolProvider extends AsyncMcpToolProvider {
+
+		private SpringAiAsyncMcpToolProvider(List<Object> toolObjects) {
+			super(toolObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiAsyncStatelessMcpToolProvider extends AsyncStatelessMcpToolProvider {
+
+		private SpringAiAsyncStatelessMcpToolProvider(List<Object> toolObjects) {
+			super(toolObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// COMPLETE
+	private final static class SpringAiAsyncMcpCompleteProvider extends AsyncMcpCompleteProvider {
+
+		private SpringAiAsyncMcpCompleteProvider(List<Object> completeObjects) {
+			super(completeObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	};
+
+	private final static class SpringAiAsyncStatelessMcpCompleteProvider extends AsyncStatelessMcpCompleteProvider {
+
+		private SpringAiAsyncStatelessMcpCompleteProvider(List<Object> completeObjects) {
+			super(completeObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	};
+
+	// PROMPT
+	private final static class SpringAiAsyncPromptProvider extends AsyncMcpPromptProvider {
+
+		private SpringAiAsyncPromptProvider(List<Object> promptObjects) {
+			super(promptObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiAsyncStatelessPromptProvider extends AsyncStatelessMcpPromptProvider {
+
+		private SpringAiAsyncStatelessPromptProvider(List<Object> promptObjects) {
+			super(promptObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// RESOURCE
+	private final static class SpringAiAsyncResourceProvider extends AsyncMcpResourceProvider {
+
+		private SpringAiAsyncResourceProvider(List<Object> resourceObjects) {
+			super(resourceObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiAsyncStatelessResourceProvider extends AsyncStatelessMcpResourceProvider {
+
+		private SpringAiAsyncStatelessResourceProvider(List<Object> resourceObjects) {
+			super(resourceObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// TOOL LIST CHANGED
+	private final static class SpringAiAsyncMcpToolListChangedProvider extends AsyncMcpToolListChangedProvider {
+
+		private SpringAiAsyncMcpToolListChangedProvider(List<Object> toolListChangedObjects) {
+			super(toolListChangedObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// RESOURCE LIST CHANGED
+	private final static class SpringAiAsyncMcpResourceListChangedProvider extends AsyncMcpResourceListChangedProvider {
+
+		private SpringAiAsyncMcpResourceListChangedProvider(List<Object> resourceListChangedObjects) {
+			super(resourceListChangedObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// PROMPT LIST CHANGED
+	private final static class SpringAiAsyncMcpPromptListChangedProvider extends AsyncMcpPromptListChangedProvider {
+
+		private SpringAiAsyncMcpPromptListChangedProvider(List<Object> promptListChangedObjects) {
+			super(promptListChangedObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
 	}
 
 }

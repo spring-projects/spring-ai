@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.modelcontextprotocol.client.McpClient.SyncSpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,8 +33,6 @@ import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification
 import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
-
-import io.modelcontextprotocol.client.McpClient.SyncSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -63,20 +62,20 @@ class McpSyncAnnotationCustomizerTests {
 
 	@BeforeEach
 	void setUp() {
-		samplingSpecs = new ArrayList<>();
-		loggingSpecs = new ArrayList<>();
-		elicitationSpecs = new ArrayList<>();
-		progressSpecs = new ArrayList<>();
-		toolListChangedSpecs = new ArrayList<>();
-		resourceListChangedSpecs = new ArrayList<>();
-		promptListChangedSpecs = new ArrayList<>();
+		this.samplingSpecs = new ArrayList<>();
+		this.loggingSpecs = new ArrayList<>();
+		this.elicitationSpecs = new ArrayList<>();
+		this.progressSpecs = new ArrayList<>();
+		this.toolListChangedSpecs = new ArrayList<>();
+		this.resourceListChangedSpecs = new ArrayList<>();
+		this.promptListChangedSpecs = new ArrayList<>();
 	}
 
 	@Test
 	void constructorShouldInitializeAllFields() {
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		assertThat(customizer).isNotNull();
 	}
@@ -91,28 +90,28 @@ class McpSyncAnnotationCustomizerTests {
 
 	@Test
 	void customizeShouldNotRegisterAnythingWhenAllListsAreEmpty() {
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
-		customizer.customize("test-client", syncSpec);
+		customizer.customize("test-client", this.syncSpec);
 
-		verifyNoInteractions(syncSpec);
+		verifyNoInteractions(this.syncSpec);
 	}
 
 	@Test
 	void customizeShouldNotRegisterElicitationSpecForNonMatchingClient() {
 		SyncElicitationSpecification elicitationSpec = mock(SyncElicitationSpecification.class);
-		when(elicitationSpec.clientId()).thenReturn("other-client");
-		elicitationSpecs.add(elicitationSpec);
+		when(elicitationSpec.clients()).thenReturn(new String[] { "other-client" });
+		this.elicitationSpecs.add(elicitationSpec);
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
-		customizer.customize("test-client", syncSpec);
+		customizer.customize("test-client", this.syncSpec);
 
-		verifyNoInteractions(syncSpec);
+		verifyNoInteractions(this.syncSpec);
 	}
 
 	@Test
@@ -120,19 +119,19 @@ class McpSyncAnnotationCustomizerTests {
 		SyncElicitationSpecification elicitationSpec1 = mock(SyncElicitationSpecification.class);
 		SyncElicitationSpecification elicitationSpec2 = mock(SyncElicitationSpecification.class);
 
-		when(elicitationSpec1.clientId()).thenReturn("test-client");
+		when(elicitationSpec1.clients()).thenReturn(new String[] { "test-client" });
 		when(elicitationSpec1.elicitationHandler()).thenReturn(request -> null);
-		when(elicitationSpec2.clientId()).thenReturn("test-client");
+		when(elicitationSpec2.clients()).thenReturn(new String[] { "test-client" });
 		// No need to stub elicitationSpec2.elicitationHandler() as exception is thrown
 		// before it's accessed
 
-		elicitationSpecs.addAll(Arrays.asList(elicitationSpec1, elicitationSpec2));
+		this.elicitationSpecs.addAll(Arrays.asList(elicitationSpec1, elicitationSpec2));
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
-		assertThatThrownBy(() -> customizer.customize("test-client", syncSpec))
+		assertThatThrownBy(() -> customizer.customize("test-client", this.syncSpec))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Client 'test-client' already has an elicitationSpec registered");
 	}
@@ -142,19 +141,19 @@ class McpSyncAnnotationCustomizerTests {
 		SyncSamplingSpecification samplingSpec1 = mock(SyncSamplingSpecification.class);
 		SyncSamplingSpecification samplingSpec2 = mock(SyncSamplingSpecification.class);
 
-		when(samplingSpec1.clientId()).thenReturn("test-client");
+		when(samplingSpec1.clients()).thenReturn(new String[] { "test-client" });
 		when(samplingSpec1.samplingHandler()).thenReturn(request -> null);
-		when(samplingSpec2.clientId()).thenReturn("test-client");
+		when(samplingSpec2.clients()).thenReturn(new String[] { "test-client" });
 		// No need to stub samplingSpec2.samplingHandler() as exception is thrown before
 		// it's accessed
 
-		samplingSpecs.addAll(Arrays.asList(samplingSpec1, samplingSpec2));
+		this.samplingSpecs.addAll(Arrays.asList(samplingSpec1, samplingSpec2));
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
-		assertThatThrownBy(() -> customizer.customize("test-client", syncSpec))
+		assertThatThrownBy(() -> customizer.customize("test-client", this.syncSpec))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Client 'test-client' already has a samplingSpec registered");
 	}
@@ -166,22 +165,22 @@ class McpSyncAnnotationCustomizerTests {
 		SyncProgressSpecification progressSpec = mock(SyncProgressSpecification.class);
 		SyncElicitationSpecification elicitationSpec = mock(SyncElicitationSpecification.class);
 
-		when(loggingSpec.clientId()).thenReturn("other-client");
-		when(progressSpec.clientId()).thenReturn("another-client");
-		when(elicitationSpec.clientId()).thenReturn("different-client");
+		when(loggingSpec.clients()).thenReturn(new String[] { "other-client" });
+		when(progressSpec.clients()).thenReturn(new String[] { "another-client" });
+		when(elicitationSpec.clients()).thenReturn(new String[] { "different-client" });
 
-		loggingSpecs.add(loggingSpec);
-		progressSpecs.add(progressSpec);
-		elicitationSpecs.add(elicitationSpec);
+		this.loggingSpecs.add(loggingSpec);
+		this.progressSpecs.add(progressSpec);
+		this.elicitationSpecs.add(elicitationSpec);
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
-		customizer.customize("target-client", syncSpec);
+		customizer.customize("target-client", this.syncSpec);
 
 		// None of the specifications should be registered since client IDs don't match
-		verifyNoInteractions(syncSpec);
+		verifyNoInteractions(this.syncSpec);
 	}
 
 	@Test
@@ -189,16 +188,16 @@ class McpSyncAnnotationCustomizerTests {
 		SyncElicitationSpecification elicitationSpec1 = mock(SyncElicitationSpecification.class);
 		SyncElicitationSpecification elicitationSpec2 = mock(SyncElicitationSpecification.class);
 
-		when(elicitationSpec1.clientId()).thenReturn("client1");
+		when(elicitationSpec1.clients()).thenReturn(new String[] { "client1" });
 		when(elicitationSpec1.elicitationHandler()).thenReturn(request -> null);
-		when(elicitationSpec2.clientId()).thenReturn("client2");
+		when(elicitationSpec2.clients()).thenReturn(new String[] { "client2" });
 		when(elicitationSpec2.elicitationHandler()).thenReturn(request -> null);
 
-		elicitationSpecs.addAll(Arrays.asList(elicitationSpec1, elicitationSpec2));
+		this.elicitationSpecs.addAll(Arrays.asList(elicitationSpec1, elicitationSpec2));
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// Should not throw exception since they are for different clients
 		SyncSpec syncSpec1 = mock(SyncSpec.class);
@@ -216,16 +215,16 @@ class McpSyncAnnotationCustomizerTests {
 		SyncSamplingSpecification samplingSpec1 = mock(SyncSamplingSpecification.class);
 		SyncSamplingSpecification samplingSpec2 = mock(SyncSamplingSpecification.class);
 
-		when(samplingSpec1.clientId()).thenReturn("client1");
+		when(samplingSpec1.clients()).thenReturn(new String[] { "client1" });
 		when(samplingSpec1.samplingHandler()).thenReturn(request -> null);
-		when(samplingSpec2.clientId()).thenReturn("client2");
+		when(samplingSpec2.clients()).thenReturn(new String[] { "client2" });
 		when(samplingSpec2.samplingHandler()).thenReturn(request -> null);
 
-		samplingSpecs.addAll(Arrays.asList(samplingSpec1, samplingSpec2));
+		this.samplingSpecs.addAll(Arrays.asList(samplingSpec1, samplingSpec2));
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// Should not throw exception since they are for different clients
 		SyncSpec syncSpec1 = mock(SyncSpec.class);
@@ -241,16 +240,16 @@ class McpSyncAnnotationCustomizerTests {
 	@Test
 	void customizeShouldPreventMultipleElicitationCallsForSameClient() {
 		SyncElicitationSpecification elicitationSpec = mock(SyncElicitationSpecification.class);
-		when(elicitationSpec.clientId()).thenReturn("test-client");
+		when(elicitationSpec.clients()).thenReturn(new String[] { "test-client" });
 		when(elicitationSpec.elicitationHandler()).thenReturn(request -> null);
-		elicitationSpecs.add(elicitationSpec);
+		this.elicitationSpecs.add(elicitationSpec);
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// First call should succeed
-		customizer.customize("test-client", syncSpec);
+		customizer.customize("test-client", this.syncSpec);
 
 		// Second call should throw exception
 		SyncSpec syncSpec2 = mock(SyncSpec.class);
@@ -262,16 +261,16 @@ class McpSyncAnnotationCustomizerTests {
 	@Test
 	void customizeShouldPreventMultipleSamplingCallsForSameClient() {
 		SyncSamplingSpecification samplingSpec = mock(SyncSamplingSpecification.class);
-		when(samplingSpec.clientId()).thenReturn("test-client");
+		when(samplingSpec.clients()).thenReturn(new String[] { "test-client" });
 		when(samplingSpec.samplingHandler()).thenReturn(request -> null);
-		samplingSpecs.add(samplingSpec);
+		this.samplingSpecs.add(samplingSpec);
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// First call should succeed
-		customizer.customize("test-client", syncSpec);
+		customizer.customize("test-client", this.syncSpec);
 
 		// Second call should throw exception
 		SyncSpec syncSpec2 = mock(SyncSpec.class);
@@ -283,16 +282,16 @@ class McpSyncAnnotationCustomizerTests {
 	@Test
 	void customizeShouldPerformCaseInsensitiveClientIdMatching() {
 		SyncElicitationSpecification elicitationSpec = mock(SyncElicitationSpecification.class);
-		when(elicitationSpec.clientId()).thenReturn("TEST-CLIENT");
+		when(elicitationSpec.clients()).thenReturn(new String[] { "TEST-CLIENT" });
 		when(elicitationSpec.elicitationHandler()).thenReturn(request -> null);
-		elicitationSpecs.add(elicitationSpec);
+		this.elicitationSpecs.add(elicitationSpec);
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// Should register elicitation spec when client ID matches case-insensitively
-		customizer.customize("test-client", syncSpec);
+		customizer.customize("test-client", this.syncSpec);
 
 		// Verify that a subsequent call for the same client (case-insensitive) throws
 		// exception
@@ -305,17 +304,18 @@ class McpSyncAnnotationCustomizerTests {
 	@Test
 	void customizeShouldHandleEmptyClientName() {
 		SyncLoggingSpecification loggingSpec = mock(SyncLoggingSpecification.class);
-		when(loggingSpec.clientId()).thenReturn("");
+		when(loggingSpec.clients()).thenReturn(new String[] { "" });
 		when(loggingSpec.loggingHandler()).thenReturn(message -> {
 		});
-		loggingSpecs.add(loggingSpec);
+		this.loggingSpecs.add(loggingSpec);
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// Should not throw exception when customizing for empty client name
-		customizer.customize("", syncSpec);
+		customizer.customize("", this.syncSpec);
+
 	}
 
 	@Test
@@ -323,21 +323,22 @@ class McpSyncAnnotationCustomizerTests {
 		SyncLoggingSpecification loggingSpec1 = mock(SyncLoggingSpecification.class);
 		SyncLoggingSpecification loggingSpec2 = mock(SyncLoggingSpecification.class);
 
-		when(loggingSpec1.clientId()).thenReturn("test-client");
+		when(loggingSpec1.clients()).thenReturn(new String[] { "test-client" });
 		when(loggingSpec1.loggingHandler()).thenReturn(message -> {
 		});
-		when(loggingSpec2.clientId()).thenReturn("test-client");
+		when(loggingSpec2.clients()).thenReturn(new String[] { "test-client" });
 		when(loggingSpec2.loggingHandler()).thenReturn(message -> {
 		});
 
-		loggingSpecs.addAll(Arrays.asList(loggingSpec1, loggingSpec2));
+		this.loggingSpecs.addAll(Arrays.asList(loggingSpec1, loggingSpec2));
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// Should not throw exception for multiple logging specs for same client
-		customizer.customize("test-client", syncSpec);
+		customizer.customize("test-client", this.syncSpec);
+
 	}
 
 	@Test
@@ -345,21 +346,21 @@ class McpSyncAnnotationCustomizerTests {
 		SyncProgressSpecification progressSpec1 = mock(SyncProgressSpecification.class);
 		SyncProgressSpecification progressSpec2 = mock(SyncProgressSpecification.class);
 
-		when(progressSpec1.clientId()).thenReturn("test-client");
+		when(progressSpec1.clients()).thenReturn(new String[] { "test-client" });
 		when(progressSpec1.progressHandler()).thenReturn(notification -> {
 		});
-		when(progressSpec2.clientId()).thenReturn("test-client");
+		when(progressSpec2.clients()).thenReturn(new String[] { "test-client" });
 		when(progressSpec2.progressHandler()).thenReturn(notification -> {
 		});
 
-		progressSpecs.addAll(Arrays.asList(progressSpec1, progressSpec2));
+		this.progressSpecs.addAll(Arrays.asList(progressSpec1, progressSpec2));
 
-		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs,
-				elicitationSpecs, progressSpecs, toolListChangedSpecs, resourceListChangedSpecs,
-				promptListChangedSpecs);
+		McpSyncAnnotationCustomizer customizer = new McpSyncAnnotationCustomizer(this.samplingSpecs, this.loggingSpecs,
+				this.elicitationSpecs, this.progressSpecs, this.toolListChangedSpecs, this.resourceListChangedSpecs,
+				this.promptListChangedSpecs);
 
 		// Should not throw exception for multiple progress specs for same client
-		customizer.customize("test-client", syncSpec);
+		customizer.customize("test-client", this.syncSpec);
 	}
 
 }

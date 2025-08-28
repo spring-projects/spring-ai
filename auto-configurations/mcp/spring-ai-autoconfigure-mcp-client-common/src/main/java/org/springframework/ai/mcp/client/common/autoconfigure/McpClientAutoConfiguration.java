@@ -23,7 +23,6 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
-
 import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
@@ -38,6 +37,7 @@ import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
 import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
 import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
+
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpAsyncAnnotationCustomizer;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpSyncAnnotationCustomizer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpAsyncClientConfigurer;
@@ -111,8 +111,6 @@ import org.springframework.util.CollectionUtils;
  * @see McpSyncClientCustomizer
  * @see McpAsyncClientCustomizer
  * @see StdioTransportAutoConfiguration
- * @see SseHttpClientTransportAutoConfiguration
- * @see SseWebFluxTransportAutoConfiguration
  */
 @AutoConfiguration(afterName = {
 		"org.springframework.ai.mcp.client.common.autoconfigure.StdioTransportAutoConfiguration",

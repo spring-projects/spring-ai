@@ -30,6 +30,7 @@ import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
 import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
 import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
+
 import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.ClientAnnotationScannerAutoConfiguration.ClientMcpAnnotatedBeans;

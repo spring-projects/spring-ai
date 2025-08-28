@@ -29,7 +29,7 @@ public class ClientAnnotationScannerProperties {
 	private boolean enabled = true;
 
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {

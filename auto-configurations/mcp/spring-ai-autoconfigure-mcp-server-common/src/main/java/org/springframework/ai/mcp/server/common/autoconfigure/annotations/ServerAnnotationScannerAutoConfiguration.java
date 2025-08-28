@@ -23,8 +23,9 @@ import org.springaicommunity.mcp.annotation.McpComplete;
 import org.springaicommunity.mcp.annotation.McpPrompt;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpTool;
-import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
+
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
+import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -43,19 +44,6 @@ public class ServerAnnotationScannerAutoConfiguration {
 	private static final Set<Class<? extends Annotation>> SERVER_MCP_ANNOTATIONS = Set.of(McpTool.class,
 			McpResource.class, McpPrompt.class, McpComplete.class);
 
-	public static class ServerMcpAnnotatedBeans extends AbstractMcpAnnotatedBeans {
-
-	}
-
-	public static class ServerAnnotatedMethodBeanPostProcessor extends AbstractAnnotatedMethodBeanPostProcessor {
-
-		public ServerAnnotatedMethodBeanPostProcessor(ServerMcpAnnotatedBeans serverMcpAnnotatedBeans,
-				Set<Class<? extends Annotation>> targetAnnotations) {
-			super(serverMcpAnnotatedBeans, targetAnnotations);
-		}
-
-	}
-
 	@Bean
 	@ConditionalOnMissingBean
 	public ServerMcpAnnotatedBeans serverAnnotatedBeanRegistry() {
@@ -67,6 +55,19 @@ public class ServerAnnotationScannerAutoConfiguration {
 	public ServerAnnotatedMethodBeanPostProcessor serverAnnotatedMethodBeanPostProcessor(
 			ServerMcpAnnotatedBeans serverMcpAnnotatedBeans, ServerAnnotationScannerProperties properties) {
 		return new ServerAnnotatedMethodBeanPostProcessor(serverMcpAnnotatedBeans, SERVER_MCP_ANNOTATIONS);
+	}
+
+	public static class ServerMcpAnnotatedBeans extends AbstractMcpAnnotatedBeans {
+
+	}
+
+	public static class ServerAnnotatedMethodBeanPostProcessor extends AbstractAnnotatedMethodBeanPostProcessor {
+
+		public ServerAnnotatedMethodBeanPostProcessor(ServerMcpAnnotatedBeans serverMcpAnnotatedBeans,
+				Set<Class<? extends Annotation>> targetAnnotations) {
+			super(serverMcpAnnotatedBeans, targetAnnotations);
+		}
+
 	}
 
 }

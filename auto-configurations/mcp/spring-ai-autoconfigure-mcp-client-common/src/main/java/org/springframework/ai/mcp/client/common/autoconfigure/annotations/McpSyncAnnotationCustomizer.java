@@ -19,7 +19,9 @@ package org.springframework.ai.mcp.client.common.autoconfigure.annotations;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
+import io.modelcontextprotocol.client.McpClient.SyncSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
@@ -29,10 +31,9 @@ import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification
 import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
+
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
 import org.springframework.util.CollectionUtils;
-
-import io.modelcontextprotocol.client.McpClient.SyncSpec;
 
 /**
  * @author Christian Tzolov
@@ -80,86 +81,98 @@ public class McpSyncAnnotationCustomizer implements McpSyncClientCustomizer {
 	@Override
 	public void customize(String name, SyncSpec clientSpec) {
 
-		if (!CollectionUtils.isEmpty(syncElicitationSpecifications)) {
+		if (!CollectionUtils.isEmpty(this.syncElicitationSpecifications)) {
 			this.syncElicitationSpecifications.forEach(elicitationSpec -> {
-				if (elicitationSpec.clientId().equalsIgnoreCase(name)) {
+				Stream.of(elicitationSpec.clients()).forEach(clientId -> {
+					if (clientId.equalsIgnoreCase(name)) {
+						// Check if client already has an elicitation spec
+						if (this.clientElicitationSpecs.containsKey(name)) {
+							throw new IllegalArgumentException("Client '" + name
+									+ "' already has an elicitationSpec registered. Only one elicitationSpec is allowed per client.");
+						}
 
-					// Check if client already has an elicitation spec
-					if (clientElicitationSpecs.containsKey(name)) {
-						throw new IllegalArgumentException("Client '" + name
-								+ "' already has an elicitationSpec registered. Only one elicitationSpec is allowed per client.");
+						this.clientElicitationSpecs.put(name, Boolean.TRUE);
+						clientSpec.elicitation(elicitationSpec.elicitationHandler());
+
+						logger.info("Registered elicitationSpec for client '{}'.", name);
 					}
-
-					clientElicitationSpecs.put(name, Boolean.TRUE);
-					clientSpec.elicitation(elicitationSpec.elicitationHandler());
-
-					logger.info("Registered elicitationSpec for client '{}'.", name);
-
-				}
+				});
 			});
 		}
 
-		if (!CollectionUtils.isEmpty(syncSamplingSpecifications)) {
+		if (!CollectionUtils.isEmpty(this.syncSamplingSpecifications)) {
 			this.syncSamplingSpecifications.forEach(samplingSpec -> {
-				if (samplingSpec.clientId().equalsIgnoreCase(name)) {
+				Stream.of(samplingSpec.clients()).forEach(clientId -> {
+					if (clientId.equalsIgnoreCase(name)) {
 
-					// Check if client already has a sampling spec
-					if (clientSamplingSpecs.containsKey(name)) {
-						throw new IllegalArgumentException("Client '" + name
-								+ "' already has a samplingSpec registered. Only one samplingSpec is allowed per client.");
+						// Check if client already has a sampling spec
+						if (this.clientSamplingSpecs.containsKey(name)) {
+							throw new IllegalArgumentException("Client '" + name
+									+ "' already has a samplingSpec registered. Only one samplingSpec is allowed per client.");
+						}
+						this.clientSamplingSpecs.put(name, Boolean.TRUE);
+
+						clientSpec.sampling(samplingSpec.samplingHandler());
+
+						logger.info("Registered samplingSpec for client '{}'.", name);
 					}
-					clientSamplingSpecs.put(name, Boolean.TRUE);
-
-					clientSpec.sampling(samplingSpec.samplingHandler());
-
-					logger.info("Registered samplingSpec for client '{}'.", name);
-				}
+				});
 			});
 		}
 
-		if (!CollectionUtils.isEmpty(syncLoggingSpecifications)) {
+		if (!CollectionUtils.isEmpty(this.syncLoggingSpecifications)) {
 			this.syncLoggingSpecifications.forEach(loggingSpec -> {
-				if (loggingSpec.clientId().equalsIgnoreCase(name)) {
-					clientSpec.loggingConsumer(loggingSpec.loggingHandler());
-					logger.info("Registered loggingSpec for client '{}'.", name);
-				}
+				Stream.of(loggingSpec.clients()).forEach(clientId -> {
+					if (clientId.equalsIgnoreCase(name)) {
+						clientSpec.loggingConsumer(loggingSpec.loggingHandler());
+						logger.info("Registered loggingSpec for client '{}'.", name);
+					}
+				});
 			});
 		}
 
-		if (!CollectionUtils.isEmpty(syncProgressSpecifications)) {
+		if (!CollectionUtils.isEmpty(this.syncProgressSpecifications)) {
 			this.syncProgressSpecifications.forEach(progressSpec -> {
-				if (progressSpec.clientId().equalsIgnoreCase(name)) {
-					clientSpec.progressConsumer(progressSpec.progressHandler());
-					logger.info("Registered progressSpec for client '{}'.", name);
-				}
+				Stream.of(progressSpec.clients()).forEach(clientId -> {
+					if (clientId.equalsIgnoreCase(name)) {
+						clientSpec.progressConsumer(progressSpec.progressHandler());
+						logger.info("Registered progressSpec for client '{}'.", name);
+					}
+				});
 			});
 		}
 
-		if (!CollectionUtils.isEmpty(syncToolListChangedSpecifications)) {
+		if (!CollectionUtils.isEmpty(this.syncToolListChangedSpecifications)) {
 			this.syncToolListChangedSpecifications.forEach(toolListChangedSpec -> {
-				if (toolListChangedSpec.clientId().equalsIgnoreCase(name)) {
-					clientSpec.toolsChangeConsumer(toolListChangedSpec.toolListChangeHandler());
-					logger.info("Registered toolListChangedSpec for client '{}'.", name);
-				}
+				Stream.of(toolListChangedSpec.clients()).forEach(clientId -> {
+					if (clientId.equalsIgnoreCase(name)) {
+						clientSpec.toolsChangeConsumer(toolListChangedSpec.toolListChangeHandler());
+						logger.info("Registered toolListChangedSpec for client '{}'.", name);
+					}
+				});
 			});
-		}
 
-		if (!CollectionUtils.isEmpty(syncResourceListChangedSpecifications)) {
-			this.syncResourceListChangedSpecifications.forEach(resourceListChangedSpec -> {
-				if (resourceListChangedSpec.clientId().equalsIgnoreCase(name)) {
-					clientSpec.resourcesChangeConsumer(resourceListChangedSpec.resourceListChangeHandler());
-					logger.info("Registered resourceListChangedSpec for client '{}'.", name);
-				}
-			});
-		}
+			if (!CollectionUtils.isEmpty(this.syncResourceListChangedSpecifications)) {
+				this.syncResourceListChangedSpecifications.forEach(resourceListChangedSpec -> {
+					Stream.of(resourceListChangedSpec.clients()).forEach(clientId -> {
+						if (clientId.equalsIgnoreCase(name)) {
+							clientSpec.resourcesChangeConsumer(resourceListChangedSpec.resourceListChangeHandler());
+							logger.info("Registered resourceListChangedSpec for client '{}'.", name);
+						}
+					});
+				});
+			}
 
-		if (!CollectionUtils.isEmpty(syncPromptListChangedSpecifications)) {
-			this.syncPromptListChangedSpecifications.forEach(promptListChangedSpec -> {
-				if (promptListChangedSpec.clientId().equalsIgnoreCase(name)) {
-					clientSpec.promptsChangeConsumer(promptListChangedSpec.promptListChangeHandler());
-					logger.info("Registered promptListChangedSpec for client '{}'.", name);
-				}
-			});
+			if (!CollectionUtils.isEmpty(this.syncPromptListChangedSpecifications)) {
+				this.syncPromptListChangedSpecifications.forEach(promptListChangedSpec -> {
+					Stream.of(promptListChangedSpec.clients()).forEach(clientId -> {
+						if (clientId.equalsIgnoreCase(name)) {
+							clientSpec.promptsChangeConsumer(promptListChangedSpec.promptListChangeHandler());
+							logger.info("Registered promptListChangedSpec for client '{}'.", name);
+						}
+					});
+				});
+			}
 		}
 	}
 

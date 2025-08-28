@@ -54,7 +54,7 @@ public abstract class AbstractAnnotatedMethodBeanPostProcessor implements BeanPo
 
 		// Scan all methods in the bean class
 		ReflectionUtils.doWithMethods(beanClass, method -> {
-			targetAnnotations.forEach(annotationType -> {
+			this.targetAnnotations.forEach(annotationType -> {
 				if (AnnotationUtils.findAnnotation(method, annotationType) != null) {
 					foundAnnotations.add(annotationType);
 				}
@@ -63,7 +63,7 @@ public abstract class AbstractAnnotatedMethodBeanPostProcessor implements BeanPo
 
 		// Register the bean if it has any of our target annotations
 		if (!foundAnnotations.isEmpty()) {
-			registry.addMcpAnnotatedBean(bean, foundAnnotations);
+			this.registry.addMcpAnnotatedBean(bean, foundAnnotations);
 		}
 
 		return bean;
