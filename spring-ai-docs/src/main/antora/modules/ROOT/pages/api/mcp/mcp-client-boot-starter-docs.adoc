@@ -401,13 +401,13 @@ Example usage:
 @Component
 public class McpClientHandlers {
 
-    @McpLogging
+    @McpLogging(clients = "server1")
     public void handleLoggingMessage(LoggingMessageNotification notification) {
         System.out.println("Received log: " + notification.level() + 
                           " - " + notification.data());
     }
 
-    @McpSampling
+    @McpSampling(clients = "server1")
     public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
         // Process the request and generate a response
         String response = generateLLMResponse(request);
@@ -419,14 +419,14 @@ public class McpClientHandlers {
             .build();
     }
 
-    @McpProgress
+    @McpProgress(clients = "server1")
     public void handleProgressNotification(ProgressNotification notification) {
         double percentage = notification.progress() * 100;
         System.out.println(String.format("Progress: %.2f%% - %s", 
             percentage, notification.message()));
     }
 
-    @McpToolListChanged
+    @McpToolListChanged(clients = "server1")
     public void handleToolListChanged(List<McpSchema.Tool> updatedTools) {
         System.out.println("Tool list updated: " + updatedTools.size() + " tools available");
         // Update local tool registry
@@ -445,7 +445,7 @@ public void handleServer1Logs(LoggingMessageNotification notification) {
     logToFile("server1.log", notification);
 }
 
-@McpSampling
+@McpSampling(clients = "server1")
 public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
     return Mono.fromCallable(() -> {
         String response = generateLLMResponse(request);
