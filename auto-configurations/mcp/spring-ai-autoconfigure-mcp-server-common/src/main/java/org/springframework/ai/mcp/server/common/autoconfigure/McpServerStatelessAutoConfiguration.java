@@ -234,8 +234,7 @@ public class McpServerStatelessAutoConfiguration {
 
 		}
 
-		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "STATELESS",
-				matchIfMissing = false)
+		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "STATELESS")
 		static class StatelessEnabledCondition {
 
 		}
