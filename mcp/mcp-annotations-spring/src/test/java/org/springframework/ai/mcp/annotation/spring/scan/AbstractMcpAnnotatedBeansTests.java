@@ -16,14 +16,14 @@
 
 package org.springframework.ai.mcp.annotation.spring.scan;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,7 +39,7 @@ class AbstractMcpAnnotatedBeansTests {
 
 	@BeforeEach
 	void setUp() {
-		annotatedBeans = new AbstractMcpAnnotatedBeans() {
+		this.annotatedBeans = new AbstractMcpAnnotatedBeans() {
 		};
 	}
 
@@ -50,12 +50,12 @@ class AbstractMcpAnnotatedBeansTests {
 		annotations.add(Deprecated.class);
 		annotations.add(Override.class);
 
-		annotatedBeans.addMcpAnnotatedBean(bean, annotations);
+		this.annotatedBeans.addMcpAnnotatedBean(bean, annotations);
 
-		assertEquals(1, annotatedBeans.getCount());
-		assertTrue(annotatedBeans.getAllAnnotatedBeans().contains(bean));
-		assertTrue(annotatedBeans.getBeansByAnnotation(Deprecated.class).contains(bean));
-		assertTrue(annotatedBeans.getBeansByAnnotation(Override.class).contains(bean));
+		assertEquals(1, this.annotatedBeans.getCount());
+		assertTrue(this.annotatedBeans.getAllAnnotatedBeans().contains(bean));
+		assertTrue(this.annotatedBeans.getBeansByAnnotation(Deprecated.class).contains(bean));
+		assertTrue(this.annotatedBeans.getBeansByAnnotation(Override.class).contains(bean));
 	}
 
 	@Test
@@ -63,16 +63,16 @@ class AbstractMcpAnnotatedBeansTests {
 		Object bean1 = new Object();
 		Object bean2 = new Object();
 
-		annotatedBeans.addMcpAnnotatedBean(bean1, Collections.singleton(Deprecated.class));
-		annotatedBeans.addMcpAnnotatedBean(bean2, Collections.singleton(Override.class));
+		this.annotatedBeans.addMcpAnnotatedBean(bean1, Collections.singleton(Deprecated.class));
+		this.annotatedBeans.addMcpAnnotatedBean(bean2, Collections.singleton(Override.class));
 
-		List<Object> allBeans = annotatedBeans.getAllAnnotatedBeans();
+		List<Object> allBeans = this.annotatedBeans.getAllAnnotatedBeans();
 		assertEquals(2, allBeans.size());
 		assertTrue(allBeans.contains(bean1));
 		assertTrue(allBeans.contains(bean2));
 
 		allBeans.clear();
-		assertEquals(2, annotatedBeans.getCount());
+		assertEquals(2, this.annotatedBeans.getCount());
 	}
 
 	@Test
@@ -80,31 +80,31 @@ class AbstractMcpAnnotatedBeansTests {
 		Object bean1 = new Object();
 		Object bean2 = new Object();
 
-		annotatedBeans.addMcpAnnotatedBean(bean1, Collections.singleton(Deprecated.class));
-		annotatedBeans.addMcpAnnotatedBean(bean2, Set.of(Deprecated.class, Override.class));
+		this.annotatedBeans.addMcpAnnotatedBean(bean1, Collections.singleton(Deprecated.class));
+		this.annotatedBeans.addMcpAnnotatedBean(bean2, Set.of(Deprecated.class, Override.class));
 
-		List<Object> deprecatedBeans = annotatedBeans.getBeansByAnnotation(Deprecated.class);
+		List<Object> deprecatedBeans = this.annotatedBeans.getBeansByAnnotation(Deprecated.class);
 		assertEquals(2, deprecatedBeans.size());
 		assertTrue(deprecatedBeans.contains(bean1));
 		assertTrue(deprecatedBeans.contains(bean2));
 
-		List<Object> overrideBeans = annotatedBeans.getBeansByAnnotation(Override.class);
+		List<Object> overrideBeans = this.annotatedBeans.getBeansByAnnotation(Override.class);
 		assertEquals(1, overrideBeans.size());
 		assertTrue(overrideBeans.contains(bean2));
 
-		List<Object> emptyList = annotatedBeans.getBeansByAnnotation(SuppressWarnings.class);
+		List<Object> emptyList = this.annotatedBeans.getBeansByAnnotation(SuppressWarnings.class);
 		assertTrue(emptyList.isEmpty());
 	}
 
 	@Test
 	void testGetCount() {
-		assertEquals(0, annotatedBeans.getCount());
+		assertEquals(0, this.annotatedBeans.getCount());
 
-		annotatedBeans.addMcpAnnotatedBean(new Object(), Collections.singleton(Deprecated.class));
-		assertEquals(1, annotatedBeans.getCount());
+		this.annotatedBeans.addMcpAnnotatedBean(new Object(), Collections.singleton(Deprecated.class));
+		assertEquals(1, this.annotatedBeans.getCount());
 
-		annotatedBeans.addMcpAnnotatedBean(new Object(), Collections.singleton(Override.class));
-		assertEquals(2, annotatedBeans.getCount());
+		this.annotatedBeans.addMcpAnnotatedBean(new Object(), Collections.singleton(Override.class));
+		assertEquals(2, this.annotatedBeans.getCount());
 	}
 
 }

@@ -16,22 +16,33 @@
 
 package org.springframework.ai.mcp.annotation.spring.scan;
 
+import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.aop.framework.ProxyFactory;
 
-import java.lang.annotation.*;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import org.springframework.aop.framework.ProxyFactory;
 
 /**
  * Unit Tests for {@link AbstractAnnotatedMethodBeanPostProcessor}.
@@ -50,17 +61,17 @@ class AbstractAnnotatedMethodBeanPostProcessorTests {
 
 	@BeforeEach
 	void setUp() {
-		targetAnnotations = new HashSet<>();
-		targetAnnotations.add(TestAnnotation.class);
+		this.targetAnnotations = new HashSet<>();
+		this.targetAnnotations.add(TestAnnotation.class);
 
-		processor = new AbstractAnnotatedMethodBeanPostProcessor(registry, targetAnnotations) {
+		this.processor = new AbstractAnnotatedMethodBeanPostProcessor(this.registry, this.targetAnnotations) {
 		};
 	}
 
 	@Test
 	void testConstructorWithNullRegistry() {
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-			new AbstractAnnotatedMethodBeanPostProcessor(null, targetAnnotations) {
+			new AbstractAnnotatedMethodBeanPostProcessor(null, this.targetAnnotations) {
 			};
 		});
 		assertEquals("AnnotatedBeanRegistry must not be null", exception.getMessage());
@@ -69,7 +80,7 @@ class AbstractAnnotatedMethodBeanPostProcessorTests {
 	@Test
 	void testConstructorWithEmptyTargetAnnotations() {
 		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-			new AbstractAnnotatedMethodBeanPostProcessor(registry, Collections.emptySet()) {
+			new AbstractAnnotatedMethodBeanPostProcessor(this.registry, Collections.emptySet()) {
 			};
 		});
 		assertEquals("Target annotations must not be empty", exception.getMessage());
@@ -79,30 +90,30 @@ class AbstractAnnotatedMethodBeanPostProcessorTests {
 	void testPostProcessAfterInitializationWithoutAnnotations() {
 		NoAnnotationBean bean = new NoAnnotationBean();
 
-		Object result = processor.postProcessAfterInitialization(bean, "testBean");
+		Object result = this.processor.postProcessAfterInitialization(bean, "testBean");
 
 		assertSame(bean, result);
-		verify(registry, never()).addMcpAnnotatedBean(any(), any());
+		verify(this.registry, never()).addMcpAnnotatedBean(any(), any());
 	}
 
 	@Test
 	void testPostProcessAfterInitializationWithAnnotations() {
 		AnnotatedBean bean = new AnnotatedBean();
 
-		Object result = processor.postProcessAfterInitialization(bean, "testBean");
+		Object result = this.processor.postProcessAfterInitialization(bean, "testBean");
 
 		assertSame(bean, result);
-		verify(registry, times(1)).addMcpAnnotatedBean(any(), any());
+		verify(this.registry, times(1)).addMcpAnnotatedBean(any(), any());
 	}
 
 	@Test
 	void testPostProcessAfterInitializationWithMultipleMethods() {
 		MultipleAnnotationBean bean = new MultipleAnnotationBean();
 
-		Object result = processor.postProcessAfterInitialization(bean, "testBean");
+		Object result = this.processor.postProcessAfterInitialization(bean, "testBean");
 
 		assertSame(bean, result);
-		verify(registry, times(1)).addMcpAnnotatedBean(any(), any());
+		verify(this.registry, times(1)).addMcpAnnotatedBean(any(), any());
 	}
 
 	@Test
@@ -112,20 +123,20 @@ class AbstractAnnotatedMethodBeanPostProcessorTests {
 		proxyFactory.setProxyTargetClass(true);
 		Object proxy = proxyFactory.getProxy();
 
-		Object result = processor.postProcessAfterInitialization(proxy, "testBean");
+		Object result = this.processor.postProcessAfterInitialization(proxy, "testBean");
 
 		assertSame(proxy, result);
-		verify(registry, times(1)).addMcpAnnotatedBean(any(), any());
+		verify(this.registry, times(1)).addMcpAnnotatedBean(any(), any());
 	}
 
 	@Test
 	void testCorrectAnnotationsAreCaptured() {
 		AnnotatedBean bean = new AnnotatedBean();
 
-		processor.postProcessAfterInitialization(bean, "testBean");
+		this.processor.postProcessAfterInitialization(bean, "testBean");
 
 		ArgumentCaptor<Set<Class<? extends Annotation>>> annotationsCaptor = ArgumentCaptor.forClass(Set.class);
-		verify(registry).addMcpAnnotatedBean(same(bean), annotationsCaptor.capture());
+		verify(this.registry).addMcpAnnotatedBean(same(bean), annotationsCaptor.capture());
 
 		Set<Class<? extends java.lang.annotation.Annotation>> capturedAnnotations = annotationsCaptor.getValue();
 		assertEquals(1, capturedAnnotations.size());
