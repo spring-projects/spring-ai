@@ -24,12 +24,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.aop.framework.ProxyFactory;
+import org.springframework.aop.support.AopUtils;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-
-import org.springframework.aop.framework.ProxyFactory;
-import org.springframework.aop.support.AopUtils;
 
 /**
  * Unit Tests for {@link AnnotationProviderUtil}.
