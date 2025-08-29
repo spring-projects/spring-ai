@@ -31,6 +31,7 @@ import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecificatio
 import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

@@ -33,6 +33,7 @@ import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification
 import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
