@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -320,7 +320,8 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		EMBED("mistral-embed");
+		EMBED("mistral-embed"),
+		CODESTRAL_EMBED("codestral-embed");
 		 // @formatter:on
 
 		private final String value;
