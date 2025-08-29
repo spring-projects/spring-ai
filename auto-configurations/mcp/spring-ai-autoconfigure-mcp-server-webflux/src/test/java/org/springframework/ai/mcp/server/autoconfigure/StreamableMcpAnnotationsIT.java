@@ -72,13 +72,13 @@ import reactor.netty.http.server.HttpServer;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.ClientAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.ClientSpecificationFactoryAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.annotations.ServerAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.annotations.ServerSpecificationFactoryAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -101,12 +101,14 @@ public class StreamableMcpAnnotationsIT {
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
 				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class,
-				ServerAnnotationScannerAutoConfiguration.class, ServerSpecificationFactoryAutoConfiguration.class));
+				McpServerAnnotationScannerAutoConfiguration.class,
+				McpServerSpecificationFactoryAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
 				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class,
-				ClientAnnotationScannerAutoConfiguration.class, ClientSpecificationFactoryAutoConfiguration.class));
+				McpClientAnnotationScannerAutoConfiguration.class,
+				McpClientSpecificationFactoryAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {

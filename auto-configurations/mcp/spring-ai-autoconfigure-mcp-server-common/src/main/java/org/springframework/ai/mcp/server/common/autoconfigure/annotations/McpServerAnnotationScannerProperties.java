@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mcp.client.common.autoconfigure.annotations;
+package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * @author Christian Tzolov
  */
-@ConfigurationProperties(prefix = ClientAnnotationScannerProperties.CONFIG_PREFIX)
-public class ClientAnnotationScannerProperties {
+@ConfigurationProperties(prefix = McpServerAnnotationScannerProperties.CONFIG_PREFIX)
+public class McpServerAnnotationScannerProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.mcp.client.annotation-scanner";
+	public static final String CONFIG_PREFIX = "spring.ai.mcp.server.annotation-scanner";
 
 	private boolean enabled = true;
 
