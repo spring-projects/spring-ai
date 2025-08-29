@@ -27,9 +27,10 @@ import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.annotations.ServerAnnotationScannerAutoConfiguration.ServerMcpAnnotatedBeans;
+import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration.ServerMcpAnnotatedBeans;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -38,11 +39,12 @@ import org.springframework.context.annotation.Configuration;
 /**
  * @author Christian Tzolov
  */
-@AutoConfiguration(after = ServerAnnotationScannerAutoConfiguration.class)
-@ConditionalOnProperty(prefix = ServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
+@AutoConfiguration(after = McpServerAnnotationScannerAutoConfiguration.class)
+@ConditionalOnClass(McpTool.class)
+@ConditionalOnProperty(prefix = McpServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
+		havingValue = "true", matchIfMissing = true)
 @Conditional(McpServerAutoConfiguration.NonStatlessServerCondition.class)
-public class ServerSpecificationFactoryAutoConfiguration {
+public class McpServerSpecificationFactoryAutoConfiguration {
 
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",

@@ -27,6 +27,7 @@ import org.springaicommunity.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,10 +37,11 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnProperty(prefix = ServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
-@EnableConfigurationProperties(ServerAnnotationScannerProperties.class)
-public class ServerAnnotationScannerAutoConfiguration {
+@ConditionalOnClass(McpTool.class)
+@ConditionalOnProperty(prefix = McpServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
+		havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(McpServerAnnotationScannerProperties.class)
+public class McpServerAnnotationScannerAutoConfiguration {
 
 	private static final Set<Class<? extends Annotation>> SERVER_MCP_ANNOTATIONS = Set.of(McpTool.class,
 			McpResource.class, McpPrompt.class, McpComplete.class);
@@ -53,7 +55,7 @@ public class ServerAnnotationScannerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ServerAnnotatedMethodBeanPostProcessor serverAnnotatedMethodBeanPostProcessor(
-			ServerMcpAnnotatedBeans serverMcpAnnotatedBeans, ServerAnnotationScannerProperties properties) {
+			ServerMcpAnnotatedBeans serverMcpAnnotatedBeans, McpServerAnnotationScannerProperties properties) {
 		return new ServerAnnotatedMethodBeanPostProcessor(serverMcpAnnotatedBeans, SERVER_MCP_ANNOTATIONS);
 	}
 
