@@ -191,6 +191,181 @@ ChatResponse response = chatModel.call(
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
+== Prompt Caching
+
+Anthropic's prompt caching feature allows you to cache frequently used prompts to reduce costs and improve response times for repeated interactions.
+When you cache a prompt, subsequent identical requests can reuse the cached content, significantly reducing the number of input tokens processed.
+
+[NOTE]
+====
+*Supported Models*
+
+Prompt caching is currently supported on Claude Opus 4, Claude Sonnet 4, Claude Sonnet 3.7, Claude Sonnet 3.5, Claude Haiku 3.5, Claude Haiku 3, and Claude Opus 3.
+====
+
+=== Cache Types
+
+Spring AI supports Anthropic's cache types through the `AnthropicCacheType` enum:
+
+* `EPHEMERAL`: Temporary caching suitable for short-term reuse within a session
+
+=== Enabling Prompt Caching
+
+To enable prompt caching, use the `cacheControl()` method in `AnthropicChatOptions`:
+
+==== Basic Usage
+
+[source,java]
+----
+// Enable caching with ephemeral type
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(new UserMessage("Large content to be cached...")),
+        AnthropicChatOptions.builder()
+            .model("claude-3-5-sonnet-latest")
+            .cacheControl(AnthropicCacheType.EPHEMERAL.cacheControl())
+            .build()
+    )
+);
+----
+
+==== Using ChatClient Fluent API
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("Analyze this large document: " + document)
+    .options(AnthropicChatOptions.builder()
+        .model("claude-3-5-sonnet-latest")
+        .cacheControl(AnthropicCacheType.EPHEMERAL.cacheControl())
+        .build())
+    .call()
+    .content();
+----
+
+=== Usage Example
+
+Here's a complete example demonstrating prompt caching with cost tracking:
+
+[source,java]
+----
+// Create content that will be reused multiple times
+String largeContent = "Large document content that meets minimum token requirements...";
+
+// First request - creates cache
+ChatResponse firstResponse = chatModel.call(
+    new Prompt(
+        List.of(new UserMessage(largeContent)),
+        AnthropicChatOptions.builder()
+            .model("claude-3-haiku-20240307")
+            .cacheControl(AnthropicCacheType.EPHEMERAL.cacheControl())
+            .maxTokens(100)
+            .build()
+    )
+);
+
+// Access cache-related token usage
+AnthropicApi.Usage firstUsage = (AnthropicApi.Usage) firstResponse.getMetadata()
+    .getUsage().getNativeUsage();
+
+System.out.println("Cache creation tokens: " + firstUsage.cacheCreationInputTokens());
+System.out.println("Cache read tokens: " + firstUsage.cacheReadInputTokens());
+
+// Second request with identical content - reads from cache
+ChatResponse secondResponse = chatModel.call(
+    new Prompt(
+        List.of(new UserMessage(largeContent)),
+        AnthropicChatOptions.builder()
+            .model("claude-3-haiku-20240307")
+            .cacheControl(AnthropicCacheType.EPHEMERAL.cacheControl())
+            .maxTokens(100)
+            .build()
+    )
+);
+
+AnthropicApi.Usage secondUsage = (AnthropicApi.Usage) secondResponse.getMetadata()
+    .getUsage().getNativeUsage();
+
+System.out.println("Cache creation tokens: " + secondUsage.cacheCreationInputTokens());
+System.out.println("Cache read tokens: " + secondUsage.cacheReadInputTokens());
+----
+
+=== Token Usage Tracking
+
+The `Usage` record provides detailed information about cache-related token consumption.
+To access Anthropic-specific cache metrics, use the `getNativeUsage()` method:
+
+[source,java]
+----
+AnthropicApi.Usage usage = (AnthropicApi.Usage) response.getMetadata()
+    .getUsage().getNativeUsage();
+----
+
+Cache-specific metrics include:
+
+* `cacheCreationInputTokens()`: Returns the number of tokens used when creating a cache entry
+* `cacheReadInputTokens()`: Returns the number of tokens read from an existing cache entry
+
+When you first send a cached prompt:
+- `cacheCreationInputTokens()` will be greater than 0
+- `cacheReadInputTokens()` will be 0
+
+When you send the same cached prompt again:
+- `cacheCreationInputTokens()` will be 0
+- `cacheReadInputTokens()` will be greater than 0
+
+=== Best Practices
+
+1. **Cache Long Prompts**: Focus on caching prompts that meet the minimum token requirements (1024+ tokens for most models, 2048+ for Haiku models).
+
+2. **Reuse Identical Content**: Caching works best with exact matches of prompt content.
+Even small changes will require a new cache entry.
+
+3. **Monitor Token Usage**: Use the enhanced usage statistics to track cache effectiveness and optimize your caching strategy.
+
+4. **Place Static Content First**: Position cached content (system instructions, context, examples) at the beginning of your prompt for optimal performance.
+
+5. **5-Minute Cache Lifetime**: Ephemeral caches expire after 5 minutes of inactivity.
+Each time cached content is accessed, the 5-minute timer resets.
+
+=== Low-level API Usage
+
+When using the low-level `AnthropicApi` directly, you can specify cache control through the `ContentBlock` constructor:
+
+[source,java]
+----
+// Create content block with cache control
+ContentBlock cachedContent = new ContentBlock(
+    "<the entire Encyclopedia Britannica>",
+    AnthropicCacheType.EPHEMERAL.cacheControl()
+);
+
+AnthropicMessage message = new AnthropicMessage(
+    List.of(cachedContent),
+    Role.USER
+);
+
+ChatCompletionRequest request = new ChatCompletionRequest(
+    AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue(),
+    List.of(message),
+    null, 100, 0.8, false
+);
+
+ResponseEntity<ChatCompletionResponse> response = anthropicApi.chatCompletionEntity(request);
+
+// Access cache-related token usage
+Usage usage = response.getBody().usage();
+System.out.println("Cache creation tokens: " + usage.cacheCreationInputTokens());
+System.out.println("Cache read tokens: " + usage.cacheReadInputTokens());
+----
+
+=== Implementation Details
+
+Cache control is configured through `AnthropicChatOptions` rather than individual messages.
+This preserves compatibility when switching between different AI providers.
+The cache control gets applied during request creation in `AnthropicChatModel`.
+
 == Thinking
 
 Anthropic Claude models support a "thinking" feature that allows the model to show its reasoning process before providing a final answer. This feature enables more transparent and detailed problem-solving, particularly for complex questions that require step-by-step reasoning.

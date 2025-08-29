@@ -483,12 +483,25 @@ public class AnthropicChatModel implements ChatModel {
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
+		// Get cache control from options
+		AnthropicChatOptions requestOptions = (AnthropicChatOptions) prompt.getOptions();
+		AnthropicApi.ChatCompletionRequest.CacheControl cacheControl = (requestOptions != null)
+				? requestOptions.getCacheControl() : null;
+
 		List<AnthropicMessage> userMessages = prompt.getInstructions()
 			.stream()
 			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
 			.map(message -> {
 				if (message.getMessageType() == MessageType.USER) {
-					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getText())));
+					List<ContentBlock> contents = new ArrayList<>();
+
+					// Apply cache control if enabled for user messages
+					if (cacheControl != null) {
+						contents.add(new ContentBlock(message.getText(), cacheControl));
+					}
+					else {
+						contents.add(new ContentBlock(message.getText()));
+					}
 					if (message instanceof UserMessage userMessage) {
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
@@ -538,7 +551,6 @@ public class AnthropicChatModel implements ChatModel {
 		ChatCompletionRequest request = new ChatCompletionRequest(this.defaultOptions.getModel(), userMessages,
 				systemPrompt, this.defaultOptions.getMaxTokens(), this.defaultOptions.getTemperature(), stream);
 
-		AnthropicChatOptions requestOptions = (AnthropicChatOptions) prompt.getOptions();
 		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
 
 		// Add the tool definitions to the request's tools parameter.

@@ -44,6 +44,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author Soby Chacko
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -58,6 +59,20 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("top_p") Double topP;
 	private @JsonProperty("top_k") Integer topK;
 	private @JsonProperty("thinking") ChatCompletionRequest.ThinkingConfig thinking;
+
+	/**
+	 * Cache control for user messages. When set, enables caching for user messages.
+	 * Uses the existing CacheControl record from AnthropicApi.ChatCompletionRequest.
+	 */
+	private @JsonProperty("cache_control") ChatCompletionRequest.CacheControl cacheControl;
+
+	public ChatCompletionRequest.CacheControl getCacheControl() {
+		return this.cacheControl;
+	}
+
+	public void setCacheControl(ChatCompletionRequest.CacheControl cacheControl) {
+		this.cacheControl = cacheControl;
+	}
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
@@ -111,6 +126,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
+			.cacheControl(fromOptions.getCacheControl())
 			.build();
 	}
 
@@ -282,14 +298,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.httpHeaders, that.httpHeaders);
+				&& Objects.equals(this.httpHeaders, that.httpHeaders)
+				&& Objects.equals(this.cacheControl, that.cacheControl);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext, this.httpHeaders);
+				this.toolContext, this.httpHeaders, this.cacheControl);
 	}
 
 	public static class Builder {
@@ -386,6 +403,14 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder httpHeaders(Map<String, String> httpHeaders) {
 			this.options.setHttpHeaders(httpHeaders);
+			return this;
+		}
+
+		/**
+		 * Set cache control for user messages
+		 */
+		public Builder cacheControl(ChatCompletionRequest.CacheControl cacheControl) {
+			this.options.cacheControl = cacheControl;
 			return this;
 		}
 
