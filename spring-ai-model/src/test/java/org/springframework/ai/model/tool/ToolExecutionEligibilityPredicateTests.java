@@ -76,19 +76,6 @@ class ToolExecutionEligibilityPredicateTests {
 		assertThat(result).isTrue();
 	}
 
-	/**
-	 * Test implementation of {@link ToolExecutionEligibilityPredicate} that always
-	 * returns true.
-	 */
-	private static class TestToolExecutionEligibilityPredicate implements ToolExecutionEligibilityPredicate {
-
-		@Override
-		public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
-			return true;
-		}
-
-	}
-
 	@Test
 	void whenChatResponseHasEmptyGenerations() {
 		ToolExecutionEligibilityPredicate predicate = new TestToolExecutionEligibilityPredicate();
@@ -113,6 +100,19 @@ class ToolExecutionEligibilityPredicateTests {
 		ChatOptions optionsWithoutModel = ChatOptions.builder().build();
 		result = predicate.isToolExecutionRequired(optionsWithoutModel, chatResponse);
 		assertThat(result).isFalse();
+	}
+
+	/**
+	 * Test implementation of {@link ToolExecutionEligibilityPredicate} that always
+	 * returns true.
+	 */
+	private static class TestToolExecutionEligibilityPredicate implements ToolExecutionEligibilityPredicate {
+
+		@Override
+		public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
+			return true;
+		}
+
 	}
 
 	private static class ModelCheckingPredicate implements ToolExecutionEligibilityPredicate {
