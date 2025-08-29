@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.zhipuai.ZhiPuAiAssistantMessage;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.ai.zhipuai.ZhiPuAiTestConfiguration;
 import org.springframework.ai.zhipuai.api.MockWeatherService;
@@ -60,6 +61,7 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
+import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -312,7 +314,29 @@ class ZhiPuAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "glm-4v" })
+	@ValueSource(strings = { "glm-4.1v-thinking-flash" })
+	void reasonerMultiModalityEmbeddedImageThinkingModel(String modelName) throws IOException {
+		var imageData = new ClassPathResource("/test.png");
+
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
+
+		var response = this.chatModel
+			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
+
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
+
+		logger.info(((ZhiPuAiAssistantMessage) response.getResult().getOutput()).getReasoningContent());
+		assertThat(((ZhiPuAiAssistantMessage) response.getResult().getOutput()).getReasoningContent())
+			.containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "glm-4v", "glm-4.1v-thinking-flash" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = UserMessage.builder()
@@ -331,8 +355,9 @@ class ZhiPuAiChatModelIT {
 				"fruit stand");
 	}
 
-	@Test
-	void streamingMultiModalityImageUrl() throws IOException {
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "glm-4.1v-thinking-flash" })
+	void reasonerMultiModalityImageUrl(String modelName) throws IOException {
 
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
@@ -342,8 +367,32 @@ class ZhiPuAiChatModelIT {
 				.build()))
 			.build();
 
-		Flux<ChatResponse> response = this.streamingChatModel.stream(new Prompt(List.of(userMessage),
-				ZhiPuAiChatOptions.builder().model(ZhiPuAiApi.ChatModel.GLM_4V.getValue()).build()));
+		ChatResponse response = this.chatModel
+			.call(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
+
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
+
+		logger.info(((ZhiPuAiAssistantMessage) response.getResult().getOutput()).getReasoningContent());
+		assertThat(((ZhiPuAiAssistantMessage) response.getResult().getOutput()).getReasoningContent())
+			.containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "glm-4v" })
+	void streamingMultiModalityImageUrl(String modelName) throws IOException {
+
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = this.streamingChatModel
+			.stream(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
 
 		String content = Objects.requireNonNull(response.collectList().block())
 			.stream()
@@ -352,6 +401,45 @@ class ZhiPuAiChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
+		logger.info("Response: {}", content);
+		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "glm-4.1v-thinking-flash" })
+	void reasonerStreamingMultiModalityImageUrl(String modelName) throws IOException {
+
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = this.streamingChatModel
+			.stream(new Prompt(List.of(userMessage), ZhiPuAiChatOptions.builder().model(modelName).build()));
+
+		List<ZhiPuAiAssistantMessage> streamingMessages = Objects.requireNonNull(response.collectList().block())
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(m -> (ZhiPuAiAssistantMessage) m.getOutput())
+			.toList();
+
+		String reasoningContent = streamingMessages.stream()
+			.map(ZhiPuAiAssistantMessage::getReasoningContent)
+			.filter(StringUtils::hasText)
+			.collect(Collectors.joining());
+
+		String content = streamingMessages.stream()
+			.map(AssistantMessage::getText)
+			.filter(StringUtils::hasText)
+			.collect(Collectors.joining());
+
+		logger.info("CoT: {}", reasoningContent);
+		assertThat(reasoningContent).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+
 		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
