@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.resource.SyncResourceListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.tool.SyncToolListChangedSpecification;
@@ -34,7 +33,6 @@ import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification
 import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;

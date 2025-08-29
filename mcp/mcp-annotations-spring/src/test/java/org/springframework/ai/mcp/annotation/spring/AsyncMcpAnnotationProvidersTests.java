@@ -24,7 +24,6 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
@@ -32,7 +31,6 @@ import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecificatio
 import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
