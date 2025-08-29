@@ -27,6 +27,7 @@ import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,10 +37,11 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@ConditionalOnProperty(prefix = ClientAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-		matchIfMissing = true)
-@EnableConfigurationProperties(ClientAnnotationScannerProperties.class)
-public class ClientAnnotationScannerAutoConfiguration {
+@ConditionalOnClass(McpLogging.class)
+@ConditionalOnProperty(prefix = McpClientAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
+		havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(McpClientAnnotationScannerProperties.class)
+public class McpClientAnnotationScannerAutoConfiguration {
 
 	private static final Set<Class<? extends Annotation>> CLIENT_MCP_ANNOTATIONS = Set.of(McpLogging.class,
 			McpSampling.class, McpElicitation.class, McpProgress.class);
@@ -53,7 +55,7 @@ public class ClientAnnotationScannerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ClientAnnotatedMethodBeanPostProcessor clientAnnotatedMethodBeanPostProcessor(
-			ClientMcpAnnotatedBeans clientMcpAnnotatedBeans, ClientAnnotationScannerProperties properties) {
+			ClientMcpAnnotatedBeans clientMcpAnnotatedBeans, McpClientAnnotationScannerProperties properties) {
 		return new ClientAnnotatedMethodBeanPostProcessor(clientMcpAnnotatedBeans, CLIENT_MCP_ANNOTATIONS);
 	}
 
