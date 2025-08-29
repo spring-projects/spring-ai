@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.tool;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -84,6 +85,41 @@ class ToolExecutionEligibilityPredicateTests {
 		@Override
 		public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
 			return true;
+		}
+
+	}
+
+	@Test
+	void whenChatResponseHasEmptyGenerations() {
+		ToolExecutionEligibilityPredicate predicate = new TestToolExecutionEligibilityPredicate();
+		ChatOptions promptOptions = ChatOptions.builder().build();
+		ChatResponse emptyResponse = new ChatResponse(Collections.emptyList());
+
+		boolean result = predicate.isToolExecutionRequired(promptOptions, emptyResponse);
+		assertThat(result).isTrue();
+	}
+
+	@Test
+	void whenChatOptionsHasModel() {
+		ModelCheckingPredicate predicate = new ModelCheckingPredicate();
+
+		ChatOptions optionsWithModel = ChatOptions.builder().model("gpt-4").build();
+
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("test"))));
+
+		boolean result = predicate.isToolExecutionRequired(optionsWithModel, chatResponse);
+		assertThat(result).isTrue();
+
+		ChatOptions optionsWithoutModel = ChatOptions.builder().build();
+		result = predicate.isToolExecutionRequired(optionsWithoutModel, chatResponse);
+		assertThat(result).isFalse();
+	}
+
+	private static class ModelCheckingPredicate implements ToolExecutionEligibilityPredicate {
+
+		@Override
+		public boolean test(ChatOptions promptOptions, ChatResponse chatResponse) {
+			return promptOptions.getModel() != null && !promptOptions.getModel().isEmpty();
 		}
 
 	}
