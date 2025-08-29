@@ -17,6 +17,7 @@
 package org.springframework.ai.model.tool;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -188,6 +189,36 @@ class DefaultToolExecutionResultTests {
 
 		assertThat(result1).isEqualTo(result2);
 		assertThat(result1.hashCode()).isEqualTo(result2.hashCode());
+	}
+
+	@Test
+	void whenConversationHistoryIsImmutableList() {
+		List<Message> conversationHistory = List.of(new org.springframework.ai.chat.messages.UserMessage("Hello"),
+				new org.springframework.ai.chat.messages.UserMessage("Hi!"));
+
+		var result = DefaultToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.returnDirect(false)
+			.build();
+
+		assertThat(result.conversationHistory()).hasSize(2);
+		assertThat(result.conversationHistory()).isEqualTo(conversationHistory);
+	}
+
+	@Test
+	void whenReturnDirectIsChangedMultipleTimes() {
+		var conversationHistory = new ArrayList<Message>();
+		conversationHistory.add(new org.springframework.ai.chat.messages.UserMessage("Test"));
+
+		var builder = DefaultToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.returnDirect(true)
+			.returnDirect(false)
+			.returnDirect(true);
+
+		var result = builder.build();
+
+		assertThat(result.returnDirect()).isTrue();
 	}
 
 }
