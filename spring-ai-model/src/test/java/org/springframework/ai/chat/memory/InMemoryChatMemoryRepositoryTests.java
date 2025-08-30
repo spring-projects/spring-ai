@@ -152,5 +152,62 @@ public class InMemoryChatMemoryRepositoryTests {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("messages cannot contain null elements");
 	}
+	// refresh test code
+	@Test
+	void refreshAddsMessagesToNewConversation() {
+		String conversationId = UUID.randomUUID().toString();
+		List<Message> messagesToAdd = List.of(new UserMessage("Hello"));
+		this.chatMemoryRepository.refresh(conversationId, List.of(), messagesToAdd);
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(messagesToAdd);
+	}
+
+	@Test
+	void refreshAddsMessagesToExistingConversation() {
+		String conversationId = UUID.randomUUID().toString();
+		Message initialMessage = new UserMessage("Initial");
+		this.chatMemoryRepository.saveAll(conversationId, List.of(initialMessage));
+
+		Message newMessage = new AssistantMessage("New");
+		this.chatMemoryRepository.refresh(conversationId, List.of(), List.of(newMessage));
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).containsExactly(initialMessage, newMessage);
+	}
+
+	@Test
+	void refreshDeletesMessagesFromExistingConversation() {
+		String conversationId = UUID.randomUUID().toString();
+		Message messageToKeep = new UserMessage("Keep");
+		Message messageToDelete = new AssistantMessage("Delete");
+		this.chatMemoryRepository.saveAll(conversationId, List.of(messageToKeep, messageToDelete));
+
+		this.chatMemoryRepository.refresh(conversationId, List.of(messageToDelete), List.of());
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).containsExactly(messageToKeep);
+	}
+
+	@Test
+	void refreshAddsAndDeletesMessages() {
+		String conversationId = UUID.randomUUID().toString();
+		Message messageToKeep = new UserMessage("Keep");
+		Message messageToDelete = new AssistantMessage("Delete");
+		this.chatMemoryRepository.saveAll(conversationId, List.of(messageToKeep, messageToDelete));
+
+		Message messageToAdd = new UserMessage("Add");
+		this.chatMemoryRepository.refresh(conversationId, List.of(messageToDelete), List.of(messageToAdd));
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).containsExactlyInAnyOrder(messageToKeep, messageToAdd);
+	}
+
+	@Test
+	void refreshWithEmptyChangesDoesNothing() {
+		String conversationId = UUID.randomUUID().toString();
+		List<Message> initialMessages = List.of(new UserMessage("Hello"));
+		this.chatMemoryRepository.saveAll(conversationId, initialMessages);
+
+		this.chatMemoryRepository.refresh(conversationId, List.of(), List.of());
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(initialMessages);
+	}
 
 }
