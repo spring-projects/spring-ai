@@ -50,3 +50,4 @@ CLAUDE.md
 qodana.yaml
 __pycache__/
 *.pyc
+tmp
