@@ -46,8 +46,8 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
 public class VertexAiGeminiChatModelToolCallingIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiChatModelToolCallingIT.class);
@@ -227,8 +227,8 @@ public class VertexAiGeminiChatModelToolCallingIT {
 
 		@Bean
 		public VertexAI vertexAiApi() {
-			String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
-			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 			return new VertexAI.Builder().setLocation(location)
 				.setProjectId(projectId)
 				.setTransport(Transport.REST)

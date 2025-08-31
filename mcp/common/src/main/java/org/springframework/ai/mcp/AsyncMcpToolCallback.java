@@ -24,9 +24,11 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 
 /**
  * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
@@ -41,7 +43,9 @@ import org.springframework.ai.tool.definition.ToolDefinition;
  * <li>Manages JSON serialization/deserialization of tool inputs and outputs</li>
  * </ul>
  * <p>
- * Example usage: <pre>{@code
+ * Example usage:
+ *
+ * <pre>{@code
  * McpAsyncClient mcpClient = // obtain MCP client
  * Tool mcpTool = // obtain MCP tool definition
  * ToolCallback callback = new AsyncMcpToolCallback(mcpClient, mcpTool);
@@ -109,12 +113,16 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
 		// Note that we use the original tool name here, not the adapted one from
 		// getToolDefinition
-		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).map(response -> {
+		return this.asyncMcpClient.callTool(new CallToolRequest(this.tool.name(), arguments)).onErrorMap(exception -> {
+			// If the tool throws an error during execution
+			throw new ToolExecutionException(this.getToolDefinition(), exception);
+		}).map(response -> {
 			if (response.isError() != null && response.isError()) {
-				throw new IllegalStateException("Error calling tool: " + response.content());
+				throw new ToolExecutionException(this.getToolDefinition(),
+						new IllegalStateException("Error calling tool: " + response.content()));
 			}
 			return ModelOptionsUtils.toJsonString(response.content());
-		}).block();
+		}).contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext())).block();
 	}
 
 	@Override

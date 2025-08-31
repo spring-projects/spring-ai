@@ -73,28 +73,29 @@ class JdbcChatMemoryRepositoryPostgresqlAutoConfigurationIT {
 
 	@Test
 	void useAutoConfiguredJdbcChatMemoryRepository() {
-		this.contextRunner.run(context -> {
-			var chatMemoryRepository = context.getBean(JdbcChatMemoryRepository.class);
-			var conversationId = UUID.randomUUID().toString();
-			var userMessage = new UserMessage("Message from the user");
+		this.contextRunner.withPropertyValues("spring.ai.chat.memory.repository.jdbc.initialize-schema=always")
+			.run(context -> {
+				var chatMemoryRepository = context.getBean(JdbcChatMemoryRepository.class);
+				var conversationId = UUID.randomUUID().toString();
+				var userMessage = new UserMessage("Message from the user");
 
-			chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
+				chatMemoryRepository.saveAll(conversationId, List.of(userMessage));
 
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(1);
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(List.of(userMessage));
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(1);
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(List.of(userMessage));
 
-			chatMemoryRepository.deleteByConversationId(conversationId);
+				chatMemoryRepository.deleteByConversationId(conversationId);
 
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
 
-			var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
-					new AssistantMessage("Message from the assistant 1"));
+				var multipleMessages = List.<Message>of(new UserMessage("Message from the user 1"),
+						new AssistantMessage("Message from the assistant 1"));
 
-			chatMemoryRepository.saveAll(conversationId, multipleMessages);
+				chatMemoryRepository.saveAll(conversationId, multipleMessages);
 
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(multipleMessages.size());
-			assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(multipleMessages);
-		});
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).hasSize(multipleMessages.size());
+				assertThat(chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(multipleMessages);
+			});
 	}
 
 	@Test

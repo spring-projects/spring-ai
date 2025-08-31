@@ -41,26 +41,8 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-For Amazon OpenSearch Service, use these dependencies instead:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
-</dependency>
-----
-
-or for Gradle:
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
-}
-----
+TIP: For both self-hosted and Amazon OpenSearch Service, use the same dependency.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
@@ -105,6 +87,7 @@ spring:
         similarity-function: cosinesimil
         read-timeout: <time to wait for response>
         connect-timeout: <time to wait until connection established>
+        path-prefix: <custom path prefix>
         ssl-bundle: <name of SSL bundle>
         aws:  # Only for Amazon OpenSearch Service
           host: <aws opensearch host>
@@ -128,6 +111,7 @@ Properties starting with `spring.ai.vectorstore.opensearch.*` are used to config
 |`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use | `cosinesimil`
 |`spring.ai.vectorstore.opensearch.read-timeout`| Time to wait for response from the opposite endpoint. 0 - infinity. | -
 |`spring.ai.vectorstore.opensearch.connect-timeout`| Time to wait until connection established. 0 - infinity. | -
+|`spring.ai.vectorstore.opensearch.path-prefix`| Path prefix for OpenSearch API endpoints. Useful when OpenSearch is behind a reverse proxy with a non-root path. | -
 |`spring.ai.vectorstore.opensearch.ssl-bundle`| Name of the SSL Bundle to use in case of SSL connection | -
 |`spring.ai.vectorstore.opensearch.aws.host`| Hostname of the OpenSearch instance | -
 |`spring.ai.vectorstore.opensearch.aws.service-name`| AWS service name | -
@@ -147,6 +131,11 @@ You can control whether the AWS-specific OpenSearch auto-configuration is enable
 This fallback logic ensures that users have explicit control over the type of OpenSearch integration, preventing accidental activation of AWS-specific logic when not desired.
 ====
 
+[NOTE]
+====
+The `path-prefix` property allows you to specify a custom path prefix when OpenSearch is running behind a reverse proxy that uses a non-root path.
+For example, if your OpenSearch instance is accessible at `https://example.com/opensearch/` instead of `https://example.com/`, you would set `path-prefix: /opensearch`.
+====
 
 The following similarity functions are available:
 

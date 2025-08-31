@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai-parent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-autoconfigure-model-ollama</artifactId>
@@ -34,6 +34,13 @@
 		</dependency>
 
 		<!-- Spring AI auto configurations -->
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-retry</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-tool</artifactId>

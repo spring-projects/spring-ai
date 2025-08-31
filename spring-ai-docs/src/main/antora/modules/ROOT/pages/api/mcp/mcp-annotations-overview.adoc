@@ -1,0 +1,150 @@
+= MCP Annotations
+
+The Spring AI MCP Annotations module provides annotation-based method handling for link:https://github.com/modelcontextprotocol/spec[Model Context Protocol (MCP)] servers and clients in Java. 
+It simplifies the creation and registration of MCP server methods and client handlers through a clean, declarative approach using Java annotations.
+
+
+The MCP Annotations enables developers to easily create and register methods for handling MCP operations using simple annotations. 
+It provides a clean, declarative approach to implementing MCP server and client functionality, reducing boilerplate code and improving maintainability.
+
+This library builds on top of the link:https://github.com/modelcontextprotocol/sdk-java[MCP Java SDK] to provide a higher-level, annotation-based programming model for implementing MCP servers and clients.
+
+== Architecture
+
+The MCP Annotations module consists of:
+
+=== Server Annotations
+
+For MCP Servers, the following annotations are provided:
+
+* `@McpTool` - Implements MCP tools with automatic JSON schema generation
+* `@McpResource` - Provides access to resources via URI templates
+* `@McpPrompt` - Generates prompt messages
+* `@McpComplete` - Provides auto-completion functionality
+
+=== Client Annotations
+
+For MCP Clients, the following annotations are provided:
+
+* `@McpLogging` - Handles logging message notifications
+* `@McpSampling` - Handles sampling requests
+* `@McpElicitation` - Handles elicitation requests for gathering additional information
+* `@McpProgress` - Handles progress notifications during long-running operations
+* `@McpToolListChanged` - Handles tool list change notifications
+* `@McpResourceListChanged` - Handles resource list change notifications
+* `@McpPromptListChanged` - Handles prompt list change notifications
+
+
+=== Special Parameters and Annotations
+
+* `McpSyncServerExchange` - Special parameter type for stateful synchronous operations that provides access to server exchange functionality including logging notifications, progress updates, and other server-side operations. This parameter is automatically injected and excluded from JSON schema generation
+* `McpAsyncServerExchange` - Special parameter type for stateful asynchronous operations that provides access to server exchange functionality with reactive support. This parameter is automatically injected and excluded from JSON schema generation
+* `McpTransportContext` - Special parameter type for stateless operations that provides lightweight access to transport-level context without full server exchange functionality. This parameter is automatically injected and excluded from JSON schema generation
+* `@McpProgressToken` - Marks a method parameter to receive the progress token from the request. This parameter is automatically injected and excluded from the generated JSON schema
+* `McpMeta` - Special parameter type that provides access to metadata from MCP requests, notifications, and results. This parameter is automatically injected and excluded from parameter count limits and JSON schema generation
+
+== Getting Started
+
+=== Dependencies
+
+Add the MCP annotations dependency to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mcp-annotations</artifactId>
+</dependency>
+----
+
+The MCP annotations are automatically included when you use any of the MCP Boot Starters:
+
+* `spring-ai-starter-mcp-client`
+* `spring-ai-starter-mcp-client-webflux`
+* `spring-ai-starter-mcp-server`
+* `spring-ai-starter-mcp-server-webflux`
+* `spring-ai-starter-mcp-server-webmvc`
+
+=== Configuration
+
+The annotation scanning is enabled by default when using the MCP Boot Starters. You can configure the scanning behavior using the following properties:
+
+==== Client Annotation Scanner
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        annotation-scanner:
+          enabled: true  # Enable/disable annotation scanning
+----
+
+==== Server Annotation Scanner
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      server:
+        annotation-scanner:
+          enabled: true  # Enable/disable annotation scanning
+----
+
+== Quick Example
+
+Here's a simple example of using MCP annotations to create a calculator tool:
+
+[source,java]
+----
+@Component
+public class CalculatorTools {
+
+    @McpTool(name = "add", description = "Add two numbers together")
+    public int add(
+            @McpToolParam(description = "First number", required = true) int a,
+            @McpToolParam(description = "Second number", required = true) int b) {
+        return a + b;
+    }
+
+    @McpTool(name = "multiply", description = "Multiply two numbers")
+    public double multiply(
+            @McpToolParam(description = "First number", required = true) double x,
+            @McpToolParam(description = "Second number", required = true) double y) {
+        return x * y;
+    }
+}
+----
+
+And a simple client handler for logging:
+
+[source,java]
+----
+@Component
+public class LoggingHandler {
+
+    @McpLogging(clients = "my-server")
+    public void handleLoggingMessage(LoggingMessageNotification notification) {
+        System.out.println("Received log: " + notification.level() + 
+                          " - " + notification.data());
+    }
+}
+----
+
+With Spring Boot auto-configuration, these annotated beans are automatically detected and registered with the MCP server or client.
+
+== Documentation
+
+* xref:api/mcp/mcp-annotations-client.adoc[Client Annotations] - Detailed guide for client-side annotations
+* xref:api/mcp/mcp-annotations-server.adoc[Server Annotations] - Detailed guide for server-side annotations
+* xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters] - Guide for special parameter types
+* xref:api/mcp/mcp-annotations-examples.adoc[Examples] - Comprehensive examples and use cases
+
+== Additional Resources
+
+* xref:api/mcp/mcp-overview.adoc[MCP Overview]
+* xref:api/mcp/mcp-client-boot-starter-docs.adoc[MCP Client Boot Starter]
+* xref:api/mcp/mcp-server-boot-starter-docs.adoc[MCP Server Boot Starter]
+* link:https://modelcontextprotocol.github.io/specification/[Model Context Protocol Specification]

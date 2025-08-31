@@ -128,7 +128,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 	 */
 	private Set<String> validate(ST st, Map<String, Object> templateVariables) {
 		Set<String> templateTokens = getInputVariables(st);
-		Set<String> modelKeys = templateVariables != null ? templateVariables.keySet() : new HashSet<>();
+		Set<String> modelKeys = templateVariables.keySet();
 		Set<String> missingVariables = new HashSet<>(templateTokens);
 		missingVariables.removeAll(modelKeys);
 

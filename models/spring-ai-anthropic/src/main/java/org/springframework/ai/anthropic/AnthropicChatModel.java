@@ -68,6 +68,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -260,26 +261,42 @@ public class AnthropicChatModel implements ChatModel {
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse) && chatResponse.hasFinishReasons(Set.of("tool_use"))) {
-					// FIXME: bounded elastic needs to be used since tool calling
-					//  is currently only synchronous
-					return Flux.defer(() -> {
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(chatResponse)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build());
-						}
-						else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse);
-						}
-					}).subscribeOn(Schedulers.boundedElastic());
-				}
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 
-				return Mono.just(chatResponse);
+					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
+						// FIXME: bounded elastic needs to be used since tool calling
+						//  is currently only synchronous
+						return Flux.deferContextual(ctx -> {
+							// TODO: factor out the tool execution logic with setting context into a utility.
+							ToolExecutionResult toolExecutionResult;
+							try {
+								ToolCallReactiveContextHolder.setContext(ctx);
+								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+							}
+							finally {
+								ToolCallReactiveContextHolder.clearContext();
+							}
+							if (toolExecutionResult.returnDirect()) {
+								// Return tool execution result directly to the client.
+								return Flux.just(ChatResponse.builder().from(chatResponse)
+									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+									.build());
+							}
+							else {
+								// Send the tool execution result back to the model.
+								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+										chatResponse);
+							}
+						}).subscribeOn(Schedulers.boundedElastic());
+					}
+					else {
+						return Mono.empty();
+					}
+				}
+				else {
+					// If internal tool execution is not required, just return the chat response.
+					return Mono.just(chatResponse);
+				}
 			})
 			.doOnError(observation::error)
 			.doFinally(s -> observation.stop())

@@ -280,17 +280,20 @@ public class MistralAiApi {
 
 		// @formatter:off
 		// Premier Models
+		MAGISTRAL_MEDIUM("magistral-medium-latest"),
+		MISTRAL_MEDIUM("mistral-medium-latest"),
 		CODESTRAL("codestral-latest"),
 		LARGE("mistral-large-latest"),
 		PIXTRAL_LARGE("pixtral-large-latest"),
 		MINISTRAL_3B_LATEST("ministral-3b-latest"),
 		MINISTRAL_8B_LATEST("ministral-8b-latest"),
 		// Free Models
+		MAGISTRAL_SMALL("magistral-small-latest"),
+		DEVSTRAL_SMALL("devstral-small-latest"),
 		SMALL("mistral-small-latest"),
 		PIXTRAL("pixtral-12b-2409"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
-		OPEN_CODESTRAL_MAMBA("open-codestral-mamba");
+		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
 		private final String value;
@@ -750,12 +753,16 @@ public class MistralAiApi {
 		/**
 		 * An object specifying the format that the model must output.
 		 *
-		 * @param type Must be one of 'text' or 'json_object'.
-		 * @param jsonSchema A specific JSON schema to match, if 'type' is 'json_object'.
+		 * @param type Must be one of 'text', 'json_object' or 'json_schema'.
+		 * @param jsonSchema A specific JSON schema to match, if 'type' is 'json_schema'.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(@JsonProperty("type") String type,
 				@JsonProperty("json_schema") Map<String, Object> jsonSchema) {
+
+			public ResponseFormat(String type) {
+				this(type, null);
+			}
 		}
 
 	}

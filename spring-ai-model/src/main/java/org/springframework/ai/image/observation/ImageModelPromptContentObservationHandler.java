@@ -44,7 +44,7 @@ public class ImageModelPromptContentObservationHandler implements ObservationHan
 				.getInstructions()
 				.forEach(message -> promptMessagesJoiner.add("\"" + message.getText() + "\""));
 
-			logger.debug("Image Model Prompt Content:\n{}", promptMessagesJoiner);
+			logger.info("Image Model Prompt Content:\n{}", promptMessagesJoiner);
 		}
 	}
 

@@ -141,29 +141,34 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
-		if (chatClientResponse.chatResponse() != null) {
+		// Handle streaming case where we have a single result
+		if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
+				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
+			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
+		}
+		else if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
 				.getResults()
 				.stream()
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		// Handle streaming case where we have a single result
-		else if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
-				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
-			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
-		}
 
 		if (!assistantMessages.isEmpty()) {
 			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
 					assistantMessages);
-			logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-					this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
-					assistantMessages);
-			List<Message> memoryMessages = this.chatMemory
-				.get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
-			logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-					this.getConversationId(chatClientResponse.context(), this.defaultConversationId), memoryMessages);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(
+						"[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
+						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+						assistantMessages);
+				List<Message> memoryMessages = this.chatMemory
+					.get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
+				logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
+						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+						memoryMessages);
+			}
 		}
 		return chatClientResponse;
 	}

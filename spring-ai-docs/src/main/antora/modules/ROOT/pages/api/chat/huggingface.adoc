@@ -10,15 +10,49 @@ TIP: For a complete and up-to-date list of supported models and architectures, s
 
 You will need to create an Inference Endpoint on Hugging Face and create an API token to access the endpoint.
 Further details can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
-The Spring AI project defines a configuration property named `spring.ai.huggingface.chat.api-key` that you should set to the value of the API token obtained from Hugging Face.
-There is also a configuration property named `spring.ai.huggingface.chat.url` that you should set to the inference endpoint URL obtained when provisioning your model in Hugging Face.
-You can find this on the Inference Endpoint's UI link:https://ui.endpoints.huggingface.co/[here].
-Exporting environment variables is one way to set these configuration properties:
 
-[source,shell]
+The Spring AI project defines two configuration properties:
+
+1. `spring.ai.huggingface.chat.api-key`: Set this to the value of the API token obtained from Hugging Face.
+2. `spring.ai.huggingface.chat.url`: Set this to the inference endpoint URL obtained when provisioning your model in Hugging Face.
+
+You can find your inference endpoint URL on the Inference Endpoint's UI link:https://ui.endpoints.huggingface.co/[here].
+
+You can set these configuration properties in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_HUGGINGFACE_CHAT_API_KEY=<INSERT KEY HERE>
-export SPRING_AI_HUGGINGFACE_CHAT_URL=<INSERT INFERENCE ENDPOINT URL HERE>
+spring.ai.huggingface.chat.api-key=<your-huggingface-api-key>
+spring.ai.huggingface.chat.url=<your-inference-endpoint-url>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference custom environment variables:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    huggingface:
+      chat:
+        api-key: ${HUGGINGFACE_API_KEY}
+        url: ${HUGGINGFACE_ENDPOINT_URL}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export HUGGINGFACE_API_KEY=<your-huggingface-api-key>
+export HUGGINGFACE_ENDPOINT_URL=<your-inference-endpoint-url>
+----
+
+You can also set these configurations programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key and endpoint URL from secure sources or environment variables
+String apiKey = System.getenv("HUGGINGFACE_API_KEY");
+String endpointUrl = System.getenv("HUGGINGFACE_ENDPOINT_URL");
 ----
 
 === Add Repositories and BOM
@@ -79,7 +113,7 @@ The prefix `spring.ai.huggingface` is the property prefix that lets you configur
 | spring.ai.huggingface.chat.api-key    | API Key to authenticate with the Inference Endpoint.  |  -
 | spring.ai.huggingface.chat.url        | URL of the Inference Endpoint to connect to           |  -
 | spring.ai.huggingface.chat.enabled (Removed and no longer valid)   | Enable Hugging Face chat model.                       | true
-| spring.ai.model.chat (Removed and no longer valid)   | Enable Hugging Face chat model.                       | huggingface
+| spring.ai.model.chat                  | Enable Hugging Face chat model.                       | huggingface
 |====
 
 == Sample Controller (Auto-configuration)
@@ -152,5 +186,5 @@ HuggingfaceChatModel chatModel = new HuggingfaceChatModel(apiKey, url);
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
-System.out.println(response.getGeneration().getResult().getOutput().getContent());
+System.out.println(response.getResult().getOutput().getText());
 ----

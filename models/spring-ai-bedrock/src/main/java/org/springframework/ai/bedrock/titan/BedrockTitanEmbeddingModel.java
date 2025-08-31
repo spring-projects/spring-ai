@@ -28,12 +28,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingResponse;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.util.Assert;
 
 /**
@@ -89,6 +91,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 		List<Embedding> embeddings = new ArrayList<>();
 		var indexCounter = new AtomicInteger(0);
+		int tokenUsage = 0;
 
 		for (String inputContent : request.getInstructions()) {
 			var apiRequest = createTitanEmbeddingRequest(inputContent, request.getOptions());
@@ -111,6 +114,10 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				embeddings.add(new Embedding(response.embedding(), indexCounter.getAndIncrement()));
+
+				if (response.inputTextTokenCount() != null) {
+					tokenUsage += response.inputTextTokenCount();
+				}
 			}
 			catch (Exception ex) {
 				logger.error("Titan API embedding failed for input at index {}: {}", indexCounter.get(),
@@ -120,7 +127,10 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 			}
 		}
 
-		return new EmbeddingResponse(embeddings);
+		EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata("",
+				getDefaultUsage(tokenUsage));
+
+		return new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 	}
 
 	private TitanEmbeddingRequest createTitanEmbeddingRequest(String inputContent, EmbeddingOptions requestOptions) {
@@ -153,6 +163,10 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 			return "[image content omitted, length=" + input.length() + "]";
 		}
 		return input.length() > 100 ? input.substring(0, 100) + "..." : input;
+	}
+
+	private DefaultUsage getDefaultUsage(int tokens) {
+		return new DefaultUsage(tokens, 0);
 	}
 
 	public enum InputType {

@@ -33,13 +33,13 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 == Available Cloud Bindings
 
-The following are the components for which the cloud binding support is currently available in the  `spring-ai-spring-clou-bindings` module:
+The following are the components for which the cloud binding support is currently available in the  `spring-ai-spring-cloud-bindings` module:
 
 [cols="|,|"]
 |====
 | Service Type	 | Binding Type | Source Properties | Target Properties
 | `Chroma Vector Store`
-| `chroma` | `uri`, `username`, `passwor` | `spring.ai.vectorstore.chroma.client.host`, `spring.ai.vectorstore.chroma.client.port`, `spring.ai.vectorstore.chroma.client.username`, `spring.ai.vectorstore.chroma.client.host.password`
+| `chroma` | `uri`, `username`, `password` | `spring.ai.vectorstore.chroma.client.host`, `spring.ai.vectorstore.chroma.client.port`, `spring.ai.vectorstore.chroma.client.username`, `spring.ai.vectorstore.chroma.client.host.password`
 
 | `Mistral AI`
 | `mistralai` | `api-key`, `uri` | `spring.ai.mistralai.api-key`, `spring.ai.mistralai.base-url`
@@ -54,5 +54,5 @@ The following are the components for which the cloud binding support is currentl
 | `weaviate` | `uri`, `api-key` | `spring.ai.vectorstore.weaviate.scheme`, `spring.ai.vectorstore.weaviate.host`, `spring.ai.vectorstore.weaviate.api-key`
 
 | `Tanzu GenAI`
-| `genai` | `uri`, `api-key`, `model-capabilities` (`chat` and `embedding`), `model-name` | `spring.ai.openai.chat.base-url`, , spring.ai.openai.chat.api-key`, `spring.ai.openai.chat.options.model`, `spring.ai.openai.embedding.base-url`, , spring.ai.openai.embedding.api-key`, `spring.ai.openai.embedding.options.model`
+| `genai` | `uri`, `api-key`, `model-capabilities` (`chat` and `embedding`), `model-name` | `spring.ai.openai.chat.base-url`, `spring.ai.openai.chat.api-key`, `spring.ai.openai.chat.options.model`, `spring.ai.openai.embedding.base-url`, `spring.ai.openai.embedding.api-key`, `spring.ai.openai.embedding.options.model`
 |====

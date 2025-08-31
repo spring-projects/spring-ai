@@ -18,9 +18,9 @@ package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -34,12 +34,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT.TestConfig.class,
 		properties = { "spring.datasource.url=jdbc:hsqldb:mem:chat_memory_auto_configuration_test;DB_CLOSE_DELAY=-1",
 				"spring.datasource.username=sa", "spring.datasource.password=",
@@ -66,7 +66,7 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 	/**
 	 * can't get the automatic loading of the schema with boot to work.
 	 */
-	@Before
+	@BeforeEach
 	public void setUp() {
 		// Explicitly initialize the schema
 		try {

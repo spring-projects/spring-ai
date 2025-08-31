@@ -100,9 +100,25 @@ public final class JsonParser {
 	}
 
 	/**
-	 * Converts a Java object to a JSON string.
+	 * Checks if a string is a valid JSON string.
+	 */
+	private static boolean isValidJson(String input) {
+		try {
+			OBJECT_MAPPER.readTree(input);
+			return true;
+		}
+		catch (JsonProcessingException e) {
+			return false;
+		}
+	}
+
+	/**
+	 * Converts a Java object to a JSON string if it's not already a valid JSON string.
 	 */
 	public static String toJson(@Nullable Object object) {
+		if (object instanceof String str && isValidJson(str)) {
+			return str;
+		}
 		try {
 			return OBJECT_MAPPER.writeValueAsString(object);
 		}
@@ -152,8 +168,22 @@ public final class JsonParser {
 			return Enum.valueOf((Class<Enum>) javaType, value.toString());
 		}
 
-		String json = JsonParser.toJson(value);
-		return JsonParser.fromJson(json, javaType);
+		Object result = null;
+		if (value instanceof String jsonString) {
+			try {
+				result = JsonParser.fromJson(jsonString, javaType);
+			}
+			catch (Exception e) {
+				// ignore
+			}
+		}
+
+		if (result == null) {
+			String json = JsonParser.toJson(value);
+			result = JsonParser.fromJson(json, javaType);
+		}
+
+		return result;
 	}
 
 }

@@ -47,14 +47,13 @@ public final class ToolCallingObservationContext extends Observation.Context {
 	private String toolCallResult;
 
 	private ToolCallingObservationContext(ToolDefinition toolDefinition, ToolMetadata toolMetadata,
-			String toolCallArguments, @Nullable String toolCallResult) {
+			@Nullable String toolCallArguments, @Nullable String toolCallResult) {
 		Assert.notNull(toolDefinition, "toolDefinition cannot be null");
 		Assert.notNull(toolMetadata, "toolMetadata cannot be null");
-		Assert.hasText(toolCallArguments, "toolCallArguments cannot be null or empty");
 
 		this.toolDefinition = toolDefinition;
 		this.toolMetadata = toolMetadata;
-		this.toolCallArguments = toolCallArguments;
+		this.toolCallArguments = toolCallArguments != null ? toolCallArguments : "{}";
 		this.toolCallResult = toolCallResult;
 	}
 

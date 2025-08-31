@@ -27,7 +27,6 @@ import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -38,7 +37,7 @@ import org.springframework.util.Assert;
  * This interface allows for adding, deleting, and searching documents based on their
  * similarity to a given query.
  */
-public interface VectorStore extends DocumentWriter {
+public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 
 	default String getName() {
 		return this.getClass().getSimpleName();
@@ -82,28 +81,6 @@ public interface VectorStore extends DocumentWriter {
 		Filter.Expression textExpression = searchRequest.getFilterExpression();
 		Assert.notNull(textExpression, "Filter expression must not be null");
 		this.delete(textExpression);
-	}
-
-	/**
-	 * Retrieves documents by query embedding similarity and metadata filters to retrieve
-	 * exactly the number of nearest-neighbor results that match the request criteria.
-	 * @param request Search request for set search parameters, such as the query text,
-	 * topK, similarity threshold and metadata filter expressions.
-	 * @return Returns documents th match the query request conditions.
-	 */
-	@Nullable
-	List<Document> similaritySearch(SearchRequest request);
-
-	/**
-	 * Retrieves documents by query embedding similarity using the default
-	 * {@link SearchRequest}'s' search criteria.
-	 * @param query Text to use for embedding similarity comparison.
-	 * @return Returns a list of documents that have embeddings similar to the query text
-	 * embedding.
-	 */
-	@Nullable
-	default List<Document> similaritySearch(String query) {
-		return this.similaritySearch(SearchRequest.builder().query(query).build());
 	}
 
 	/**

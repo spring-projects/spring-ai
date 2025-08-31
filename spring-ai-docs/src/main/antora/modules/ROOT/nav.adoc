@@ -14,7 +14,7 @@
 *** xref:api/chatmodel.adoc[Chat Models]
 **** xref:api/chat/comparison.adoc[Chat Models Comparison]
 **** xref:api/chat/bedrock-converse.adoc[Amazon Bedrock Converse]
-**** xref:api/chat/anthropic-chat.adoc[Anthropic 3]
+**** xref:api/chat/anthropic-chat.adoc[Anthropic]
 **** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/deepseek-chat.adoc[DeepSeek]
 **** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
@@ -51,6 +51,7 @@
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
 **** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
+
 *** xref:api/imageclient.adoc[Image Models]
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
 **** xref:api/image/openai-image.adoc[OpenAI]
@@ -64,6 +65,7 @@
 ***** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 **** xref:api/audio/speech.adoc[]
 ***** xref:api/audio/speech/openai-speech.adoc[OpenAI]
+***** xref:api/audio/speech/elevenlabs-speech.adoc[ElevenLabs]
 
 *** xref:api/moderation[Moderation Models]
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]
@@ -73,12 +75,19 @@
 ** xref:api/chat-memory.adoc[Chat Memory]
 
 ** xref:api/tools.adoc[Tool Calling]
-*** xref:api/tools-migration.adoc[Migrating to ToolCallback API]
 
 ** xref:api/mcp/mcp-overview.adoc[Model Context Protocol (MCP)]
 *** xref:api/mcp/mcp-client-boot-starter-docs.adoc[MCP Client Boot Starters]
 *** xref:api/mcp/mcp-server-boot-starter-docs.adoc[MCP Server Boot Starters]
-*** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
+**** xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[STDIO and SSE MCP Servers]
+**** xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc[Streamable-HTTP MCP Servers]
+**** xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc[Stateless MCP Servers]
+// *** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
+*** xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations]
+**** xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]
+**** xref:api/mcp/mcp-annotations-server.adoc[Server Annotations]
+**** xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters]
+**** xref:api/mcp/mcp-annotations-examples.adoc[MCP Annotations Examples]
 
 ** xref:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation (RAG)]
 *** xref:api/etl-pipeline.adoc[]
@@ -117,8 +126,10 @@
 * Guides
 ** https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
+** xref:api/effective-agents.adoc[Building Effective Agents]
 ** xref:api/cloud-bindings.adoc[Deploying to the Cloud]
 
 // * xref:contribution-guidelines.adoc[Contribution Guidelines]
 
 * xref:upgrade-notes.adoc[]
+** xref:api/tools-migration.adoc[Migrating FunctionCallback to ToolCallback API]

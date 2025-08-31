@@ -35,6 +35,7 @@ import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
@@ -55,7 +56,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionToolBeanIT.class);
 
-	private static final String MODEL_NAME = "qwen2.5:3b";
+	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
