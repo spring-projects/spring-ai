@@ -1,10 +1,10 @@
-[VertexAI Gemini Chat](https://docs.spring.io/spring-ai/reference/api/chat/vertexai-gemini-chat.html)
+[Google GenAI Chat](https://docs.spring.io/spring-ai/reference/api/chat/google-genai-chat.html)
 
-### Starter - WIP
+### Starter
 ```xml
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-model-spring-ai-google-genai</artifactId>
+    <artifactId>spring-ai-starter-model-google-genai</artifactId>
 </dependency>
 ```
 
