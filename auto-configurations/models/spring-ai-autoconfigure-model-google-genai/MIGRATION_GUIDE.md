@@ -4,6 +4,30 @@
 
 This guide helps you migrate from the old Vertex AI-based autoconfiguration to the new Google GenAI SDK-based autoconfiguration.
 
+## Starter Dependencies
+
+Spring AI provides separate starters for Google GenAI functionality:
+
+### Chat Functionality
+```xml
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+### Embedding Functionality
+```xml
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai-embedding</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+**Note**: If you need both chat and embedding capabilities, include both starters in your project. The starters are designed to be used independently or together based on your requirements.
+
 ## Key Changes
 
 ### 1. Property Namespace Changes
