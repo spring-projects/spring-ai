@@ -16,7 +16,6 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +55,6 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMap
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
