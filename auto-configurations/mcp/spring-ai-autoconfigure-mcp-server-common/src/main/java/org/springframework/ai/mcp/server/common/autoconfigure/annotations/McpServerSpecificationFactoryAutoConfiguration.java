@@ -43,7 +43,7 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnClass(McpTool.class)
 @ConditionalOnProperty(prefix = McpServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true", matchIfMissing = true)
-@Conditional(McpServerAutoConfiguration.NonStatlessServerCondition.class)
+@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
 public class McpServerSpecificationFactoryAutoConfiguration {
 
 	@Configuration(proxyBeanMethods = false)
