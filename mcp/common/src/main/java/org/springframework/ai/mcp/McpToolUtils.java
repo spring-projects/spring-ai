@@ -331,7 +331,7 @@ public final class McpToolUtils {
 
 		return new McpStatelessServerFeatures.AsyncToolSpecification(statelessSyncToolSpecification.tool(),
 				(context, request) -> Mono
-					.fromCallable(() -> statelessSyncToolSpecification.callHandler().apply(context.copy(), request))
+					.fromCallable(() -> statelessSyncToolSpecification.callHandler().apply(context, request))
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 

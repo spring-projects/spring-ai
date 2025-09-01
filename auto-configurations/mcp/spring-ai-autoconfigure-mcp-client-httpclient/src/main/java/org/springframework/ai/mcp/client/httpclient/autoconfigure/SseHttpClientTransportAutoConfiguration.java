@@ -23,9 +23,9 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.AsyncHttpRequestCustomizer;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.client.transport.SyncHttpRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
@@ -87,17 +87,17 @@ public class SseHttpClientTransportAutoConfiguration {
 	 * @param sseProperties the SSE client properties containing server configurations
 	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
 	 * available
-	 * @param syncHttpRequestCustomizer provider for {@link SyncHttpRequestCustomizer} if
-	 * available
-	 * @param asyncHttpRequestCustomizer provider fo {@link AsyncHttpRequestCustomizer} if
-	 * available
+	 * @param syncHttpRequestCustomizer provider for
+	 * {@link McpSyncHttpClientRequestCustomizer} if available
+	 * @param asyncHttpRequestCustomizer provider fo
+	 * {@link McpAsyncHttpClientRequestCustomizer} if available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> sseHttpClientTransports(McpSseClientProperties sseProperties,
 			ObjectProvider<ObjectMapper> objectMapperProvider,
-			ObjectProvider<SyncHttpRequestCustomizer> syncHttpRequestCustomizer,
-			ObjectProvider<AsyncHttpRequestCustomizer> asyncHttpRequestCustomizer) {
+			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
@@ -117,9 +117,9 @@ public class SseHttpClientTransportAutoConfiguration {
 			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);
 			if (asyncHttpRequestCustomizer.getIfUnique() != null && syncHttpRequestCustomizer.getIfUnique() != null) {
 				logger.warn("Found beans of type %s and %s. Using %s.".formatted(
-						AsyncHttpRequestCustomizer.class.getSimpleName(),
-						SyncHttpRequestCustomizer.class.getSimpleName(),
-						SyncHttpRequestCustomizer.class.getSimpleName()));
+						McpAsyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName()));
 			}
 
 			HttpClientSseClientTransport transport = transportBuilder.build();
