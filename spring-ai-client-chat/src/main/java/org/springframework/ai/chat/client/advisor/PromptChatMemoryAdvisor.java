@@ -19,10 +19,13 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -142,17 +145,11 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
 		// Handle streaming case where we have a single result
-		if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
-				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
-			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
-		}
-		else if (chatClientResponse.chatResponse() != null) {
-			assistantMessages = chatClientResponse.chatResponse()
-				.getResults()
-				.stream()
-				.map(g -> (Message) g.getOutput())
-				.toList();
-		}
+		Optional.of(chatClientResponse)
+				.map(ChatClientResponse::chatResponse)
+				.map(ChatResponse::getResult)
+				.map(Generation::getOutput)
+				.ifPresent(assistantMessages::add);
 
 		if (!assistantMessages.isEmpty()) {
 			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
