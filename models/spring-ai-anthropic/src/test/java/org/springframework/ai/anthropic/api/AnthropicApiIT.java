@@ -358,8 +358,9 @@ public class AnthropicApiIT {
 
 		assertThatThrownBy(() -> response.collectList().block()).isInstanceOf(RuntimeException.class)
 			.hasMessageStartingWith("Response exception, Status: [")
-			.hasMessageContaining(
-					"{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"invalid x-api-key\"}");
+			.hasMessageContaining("\"type\":\"error\"")
+			.hasMessageContaining("\"type\":\"authentication_error\"")
+			.hasMessageContaining("\"message\":\"invalid x-api-key\"");
 	}
 
 }
