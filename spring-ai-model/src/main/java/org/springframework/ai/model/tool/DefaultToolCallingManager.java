@@ -217,7 +217,12 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.observe(() -> {
 					String toolResult;
 					try {
-						toolResult = toolCallback.call(toolInputArguments, toolContext);
+						if (toolContext != null) {
+							toolResult = toolCallback.call(toolInputArguments, toolContext);
+						}
+						else {
+							toolResult = toolCallback.call(toolInputArguments);
+						}
 					}
 					catch (ToolExecutionException ex) {
 						toolResult = this.toolExecutionExceptionProcessor.process(ex);
