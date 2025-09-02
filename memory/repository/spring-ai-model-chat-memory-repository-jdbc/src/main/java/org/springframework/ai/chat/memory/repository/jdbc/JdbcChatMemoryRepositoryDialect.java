@@ -16,13 +16,10 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import org.springframework.jdbc.support.JdbcUtils;
-import org.springframework.jdbc.support.MetaDataAccessException;
-
-import java.sql.Connection;
+import javax.sql.DataSource;
 import java.sql.DatabaseMetaData;
 
-import javax.sql.DataSource;
+import org.springframework.jdbc.support.JdbcUtils;
 
 /**
  * Abstraction for database-specific SQL for chat memory repository.
