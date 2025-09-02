@@ -16,8 +16,8 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import javax.sql.DataSource;
 import java.sql.DatabaseMetaData;
+import javax.sql.DataSource;
 
 import org.springframework.jdbc.support.JdbcUtils;
 
