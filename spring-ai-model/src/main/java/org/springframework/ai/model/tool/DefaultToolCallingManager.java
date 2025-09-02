@@ -34,6 +34,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.consent.ConsentAwareToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
@@ -217,7 +218,12 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.observe(() -> {
 					String toolResult;
 					try {
-						toolResult = toolCallback.call(toolInputArguments, toolContext);
+						if (toolCallback instanceof ConsentAwareToolCallback consentAwareCallback) {
+							toolResult = consentAwareCallback.call(toolInputArguments, toolContext);
+						}
+						else {
+							toolResult = toolCallback.call(toolInputArguments, toolContext);
+						}
 					}
 					catch (ToolExecutionException ex) {
 						toolResult = this.toolExecutionExceptionProcessor.process(ex);
