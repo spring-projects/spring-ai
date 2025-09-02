@@ -16,7 +16,11 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
+import org.springframework.jdbc.support.JdbcUtils;
+import org.springframework.jdbc.support.MetaDataAccessException;
+
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 
 import javax.sql.DataSource;
 
@@ -51,32 +55,24 @@ public interface JdbcChatMemoryRepositoryDialect {
 	 */
 
 	/**
-	 * Detects the dialect from the DataSource or JDBC URL.
+	 * Detects the dialect from the DataSource.
 	 */
 	static JdbcChatMemoryRepositoryDialect from(DataSource dataSource) {
-		// Simple detection (could be improved)
-		try (Connection connection = dataSource.getConnection()) {
-			String url = connection.getMetaData().getURL().toLowerCase();
-			if (url.contains("postgresql")) {
-				return new PostgresChatMemoryRepositoryDialect();
-			}
-			if (url.contains("mysql")) {
-				return new MysqlChatMemoryRepositoryDialect();
-			}
-			if (url.contains("mariadb")) {
-				return new MysqlChatMemoryRepositoryDialect();
-			}
-			if (url.contains("sqlserver")) {
-				return new SqlServerChatMemoryRepositoryDialect();
-			}
-			if (url.contains("hsqldb")) {
-				return new HsqldbChatMemoryRepositoryDialect();
-			}
-			// Add more as needed
+		String productName;
+		try {
+			productName = JdbcUtils.extractDatabaseMetaData(dataSource, DatabaseMetaData::getDatabaseProductName);
 		}
-		catch (Exception ignored) {
+		catch (Exception e) {
+			throw new RuntimeException("Failed to obtain JDBC product name or establish JDBC connection", e);
 		}
-		return new PostgresChatMemoryRepositoryDialect(); // default
+		return switch (productName) {
+			case "PostgreSQL" -> new PostgresChatMemoryRepositoryDialect();
+			case "MySQL", "MariaDB" -> new MysqlChatMemoryRepositoryDialect();
+			case "Microsoft SQL Server" -> new SqlServerChatMemoryRepositoryDialect();
+			case "HSQL Database Engine" -> new HsqldbChatMemoryRepositoryDialect();
+			default -> // Add more as needed
+				new PostgresChatMemoryRepositoryDialect();
+		};
 	}
 
 }
