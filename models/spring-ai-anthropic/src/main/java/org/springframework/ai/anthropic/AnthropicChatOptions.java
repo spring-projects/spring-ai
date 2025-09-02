@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -61,17 +62,32 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("thinking") ChatCompletionRequest.ThinkingConfig thinking;
 
 	/**
-	 * Cache control for user messages. When set, enables caching for user messages.
-	 * Uses the existing CacheControl record from AnthropicApi.ChatCompletionRequest.
+	 * The caching strategy to use. Defines which parts of the prompt should be cached.
 	 */
-	private @JsonProperty("cache_control") ChatCompletionRequest.CacheControl cacheControl;
+	@JsonIgnore
+	private AnthropicCacheStrategy cacheStrategy = AnthropicCacheStrategy.NONE;
 
-	public ChatCompletionRequest.CacheControl getCacheControl() {
-		return this.cacheControl;
+	/**
+	 * Cache time-to-live. Either "5m" (5 minutes, default) or "1h" (1 hour).
+	 * The 1-hour cache requires a beta header.
+	 */
+	@JsonIgnore
+	private String cacheTtl = "5m";
+
+	public AnthropicCacheStrategy getCacheStrategy() {
+		return this.cacheStrategy;
 	}
 
-	public void setCacheControl(ChatCompletionRequest.CacheControl cacheControl) {
-		this.cacheControl = cacheControl;
+	public void setCacheStrategy(AnthropicCacheStrategy cacheStrategy) {
+		this.cacheStrategy = cacheStrategy;
+	}
+
+	public String getCacheTtl() {
+		return this.cacheTtl;
+	}
+
+	public void setCacheTtl(String cacheTtl) {
+		this.cacheTtl = cacheTtl;
 	}
 
 	/**
@@ -126,7 +142,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
-			.cacheControl(fromOptions.getCacheControl())
+			.cacheStrategy(fromOptions.getCacheStrategy())
+			.cacheTtl(fromOptions.getCacheTtl())
 			.build();
 	}
 
@@ -299,14 +316,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
-				&& Objects.equals(this.cacheControl, that.cacheControl);
+				&& Objects.equals(this.cacheStrategy, that.cacheStrategy)
+				&& Objects.equals(this.cacheTtl, that.cacheTtl);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext, this.httpHeaders, this.cacheControl);
+				this.toolContext, this.httpHeaders, this.cacheStrategy, this.cacheTtl);
 	}
 
 	public static class Builder {
@@ -407,10 +425,18 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		}
 
 		/**
-		 * Set cache control for user messages
+		 * Set the caching strategy to use.
 		 */
-		public Builder cacheControl(ChatCompletionRequest.CacheControl cacheControl) {
-			this.options.cacheControl = cacheControl;
+		public Builder cacheStrategy(AnthropicCacheStrategy cacheStrategy) {
+			this.options.cacheStrategy = cacheStrategy;
+			return this;
+		}
+
+		/**
+		 * Set the cache time-to-live. Either "5m" (5 minutes, default) or "1h" (1 hour).
+		 */
+		public Builder cacheTtl(String cacheTtl) {
+			this.options.cacheTtl = cacheTtl;
 			return this;
 		}
 

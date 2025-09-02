@@ -89,6 +89,8 @@ public final class AnthropicApi {
 
 	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
 
+	public static final String BETA_EXTENDED_CACHE_TTL = "extended-cache-ttl-2025-04-11";
+
 	private static final String HEADER_X_API_KEY = "x-api-key";
 
 	private static final String HEADER_ANTHROPIC_VERSION = "anthropic-version";
@@ -474,8 +476,10 @@ public final class AnthropicApi {
 	 * <a href="https://docs.anthropic.com/claude/docs/models-overview">models</a> for
 	 * additional details and options.
 	 * @param messages Input messages.
-	 * @param system System prompt. A system prompt is a way of providing context and
-	 * instructions to Claude, such as specifying a particular goal or role. See our
+	 * @param system System prompt. Can be a String (for compatibility) or a
+	 * List&lt;ContentBlock&gt; (for caching support). A system prompt is a way of
+	 * providing context and instructions to Claude, such as specifying a particular goal
+	 * or role. See our
 	 * <a href="https://docs.anthropic.com/claude/docs/system-prompts">guide</a> to system
 	 * prompts.
 	 * @param maxTokens The maximum number of tokens to generate before stopping. Note
@@ -516,7 +520,7 @@ public final class AnthropicApi {
 	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("messages") List<AnthropicMessage> messages,
-		@JsonProperty("system") String system,
+		@JsonProperty("system") Object system,
 		@JsonProperty("max_tokens") Integer maxTokens,
 		@JsonProperty("metadata") Metadata metadata,
 		@JsonProperty("stop_sequences") List<String> stopSequences,
@@ -528,12 +532,12 @@ public final class AnthropicApi {
 		@JsonProperty("thinking") ThinkingConfig thinking) {
 		// @formatter:on
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null);
 		}
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				List<String> stopSequences, Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null);
 		}
@@ -564,7 +568,11 @@ public final class AnthropicApi {
 		 * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record CacheControl(String type) {
+		public record CacheControl(@JsonProperty("type") String type, @JsonProperty("ttl") String ttl) {
+
+			public CacheControl(String type) {
+				this(type, "5m");
+			}
 		}
 
 		/**
@@ -587,7 +595,7 @@ public final class AnthropicApi {
 
 		private List<AnthropicMessage> messages;
 
-		private String system;
+		private Object system;
 
 		private Integer maxTokens;
 
@@ -640,7 +648,7 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder system(String system) {
+		public ChatCompletionRequestBuilder system(Object system) {
 			this.system = system;
 			return this;
 		}
@@ -988,14 +996,24 @@ public final class AnthropicApi {
 	 * @param name The name of the tool.
 	 * @param description A description of the tool.
 	 * @param inputSchema The input schema of the tool.
+	 * @param cacheControl Optional cache control for this tool.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(
 	// @formatter:off
 		@JsonProperty("name") String name,
 		@JsonProperty("description") String description,
-		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
+		@JsonProperty("input_schema") Map<String, Object> inputSchema,
+		@JsonProperty("cache_control") CacheControl cacheControl) {
 		// @formatter:on
+
+		/**
+		 * Constructor for backward compatibility without cache control.
+		 */
+		public Tool(String name, String description, Map<String, Object> inputSchema) {
+			this(name, description, inputSchema, null);
+		}
+
 	}
 
 	// CB START EVENT
