@@ -1008,7 +1008,6 @@ public class DefaultChatClient implements ChatClient {
 
 			return DefaultAroundAdvisorChain.builder(this.observationRegistry)
 				.pushAll(this.advisors)
-				.templateRenderer(this.templateRenderer)
 				.build();
 		}
 

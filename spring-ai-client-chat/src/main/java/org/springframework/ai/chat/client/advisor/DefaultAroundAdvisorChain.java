@@ -68,9 +68,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	private final ObservationRegistry observationRegistry;
 
-	private final TemplateRenderer templateRenderer;
-
-	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, @Nullable TemplateRenderer templateRenderer,
+	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry,
 			Deque<CallAdvisor> callAdvisors, Deque<StreamAdvisor> streamAdvisors) {
 
 		Assert.notNull(observationRegistry, "the observationRegistry must be non-null");
@@ -78,7 +76,6 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		Assert.notNull(streamAdvisors, "the streamAdvisors must be non-null");
 
 		this.observationRegistry = observationRegistry;
-		this.templateRenderer = templateRenderer != null ? templateRenderer : DEFAULT_TEMPLATE_RENDERER;
 		this.callAdvisors = callAdvisors;
 		this.streamAdvisors = streamAdvisors;
 		this.originalCallAdvisors = List.copyOf(callAdvisors);
@@ -164,17 +161,10 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 		private final Deque<StreamAdvisor> streamAdvisors;
 
-		private TemplateRenderer templateRenderer;
-
 		public Builder(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			this.callAdvisors = new ConcurrentLinkedDeque<>();
 			this.streamAdvisors = new ConcurrentLinkedDeque<>();
-		}
-
-		public Builder templateRenderer(TemplateRenderer templateRenderer) {
-			this.templateRenderer = templateRenderer;
-			return this;
 		}
 
 		public Builder push(Advisor advisor) {
@@ -225,7 +215,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		}
 
 		public DefaultAroundAdvisorChain build() {
-			return new DefaultAroundAdvisorChain(this.observationRegistry, this.templateRenderer, this.callAdvisors,
+			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAdvisors,
 					this.streamAdvisors);
 		}
 
