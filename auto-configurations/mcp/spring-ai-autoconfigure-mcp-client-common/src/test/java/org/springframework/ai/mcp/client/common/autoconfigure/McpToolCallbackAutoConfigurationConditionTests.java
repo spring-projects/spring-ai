@@ -26,10 +26,10 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
-import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.McpClientMetadata;
 import org.springframework.ai.mcp.McpMetadata;
 import org.springframework.ai.mcp.McpServerMetadata;
+import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

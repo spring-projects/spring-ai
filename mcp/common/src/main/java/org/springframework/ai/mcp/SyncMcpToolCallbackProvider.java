@@ -133,7 +133,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 				.stream()
 				.filter(tool -> this.toolFilter.test(new McpMetadata(
 						new McpClientMetadata(mcpClient.getClientCapabilities(), mcpClient.getClientInfo()),
-						new McpServerMetadata(mcpClient.initialize())), tool))
+						new McpServerMetadata(mcpClient.getCurrentInitializationResult())), tool))
 				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
 			.toArray(ToolCallback[]::new);
 		validateToolCallbacks(array);

@@ -147,7 +147,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 					.stream()
 					.filter(tool -> this.toolFilter.test(new McpMetadata(
 							new McpClientMetadata(mcpClient.getClientCapabilities(), mcpClient.getClientInfo()),
-							new McpServerMetadata(mcpClient.initialize().block())), tool))
+							new McpServerMetadata(mcpClient.getCurrentInitializationResult())), tool))
 					.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
 					.toArray(ToolCallback[]::new))
 				.block();
