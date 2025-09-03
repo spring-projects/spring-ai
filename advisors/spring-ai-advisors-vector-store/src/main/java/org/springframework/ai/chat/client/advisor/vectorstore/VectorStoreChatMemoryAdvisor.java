@@ -98,7 +98,7 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 			VectorStore vectorStore) {
 		Assert.notNull(systemPromptTemplate, "systemPromptTemplate cannot be null");
 		Assert.isTrue(defaultTopK > 0, "topK must be greater than 0");
-		Assert.isTrue(defaultSimilarityThreshold >= 0, "similarityThreshold must be equal to or greater than 0");
+		Assert.isTrue(defaultSimilarityThreshold >= 0 && defaultSimilarityThreshold <= 1, "similarityThreshold must be in [0,1] range");
 		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
 		Assert.notNull(scheduler, "scheduler cannot be null");
 		Assert.notNull(vectorStore, "vectorStore cannot be null");
