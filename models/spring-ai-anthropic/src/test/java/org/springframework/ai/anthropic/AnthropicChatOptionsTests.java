@@ -22,9 +22,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
-import org.springframework.ai.anthropic.api.AnthropicCacheType;
+import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -475,39 +474,40 @@ class AnthropicChatOptionsTests {
 	}
 
 	@Test
-	void testCacheControlBuilder() {
-		CacheControl cacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
-
+	void testCacheStrategyBuilder() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model("test-model")
-			.cacheControl(cacheControl)
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
 			.build();
 
-		assertThat(options.getCacheControl()).isEqualTo(cacheControl);
-		assertThat(options.getCacheControl().type()).isEqualTo("ephemeral");
+		assertThat(options.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_AND_TOOLS);
 	}
 
 	@Test
-	void testCacheControlDefaultValue() {
+	void testCacheStrategyDefaultValue() {
 		AnthropicChatOptions options = new AnthropicChatOptions();
-		assertThat(options.getCacheControl()).isNull();
+		assertThat(options.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(options.getCacheTtl()).isEqualTo("5m");
 	}
 
 	@Test
-	void testCacheControlEqualsAndHashCode() {
-		CacheControl cacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
-
+	void testCacheStrategyEqualsAndHashCode() {
 		AnthropicChatOptions options1 = AnthropicChatOptions.builder()
 			.model("test-model")
-			.cacheControl(cacheControl)
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheTtl("1h")
 			.build();
 
 		AnthropicChatOptions options2 = AnthropicChatOptions.builder()
 			.model("test-model")
-			.cacheControl(AnthropicCacheType.EPHEMERAL.cacheControl())
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheTtl("1h")
 			.build();
 
-		AnthropicChatOptions options3 = AnthropicChatOptions.builder().model("test-model").build();
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheStrategy(AnthropicCacheStrategy.NONE)
+			.build();
 
 		assertThat(options1).isEqualTo(options2);
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
@@ -517,32 +517,30 @@ class AnthropicChatOptionsTests {
 	}
 
 	@Test
-	void testCacheControlCopy() {
-		CacheControl originalCacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
-
+	void testCacheStrategyCopy() {
 		AnthropicChatOptions original = AnthropicChatOptions.builder()
 			.model("test-model")
-			.cacheControl(originalCacheControl)
+			.cacheStrategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.cacheTtl("1h")
 			.build();
 
 		AnthropicChatOptions copied = original.copy();
 
 		assertThat(copied).isNotSameAs(original).isEqualTo(original);
-		assertThat(copied.getCacheControl()).isEqualTo(original.getCacheControl());
-		assertThat(copied.getCacheControl()).isEqualTo(originalCacheControl);
+		assertThat(copied.getCacheStrategy()).isEqualTo(original.getCacheStrategy());
+		assertThat(copied.getCacheTtl()).isEqualTo(original.getCacheTtl());
 	}
 
 	@Test
-	void testCacheControlWithNullValue() {
-		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test-model").cacheControl(null).build();
+	void testCacheStrategyWithDefaultValues() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test-model").build();
 
-		assertThat(options.getCacheControl()).isNull();
+		assertThat(options.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(options.getCacheTtl()).isEqualTo("5m");
 	}
 
 	@Test
-	void testBuilderWithAllFieldsIncludingCacheControl() {
-		CacheControl cacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
-
+	void testBuilderWithAllFieldsIncludingCacheStrategy() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model("test-model")
 			.maxTokens(100)
@@ -551,32 +549,36 @@ class AnthropicChatOptionsTests {
 			.topP(0.8)
 			.topK(50)
 			.metadata(new Metadata("userId_123"))
-			.cacheControl(cacheControl)
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.cacheTtl("1h")
 			.build();
 
 		assertThat(options)
 			.extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata",
-					"cacheControl")
+					"cacheStrategy", "cacheTtl")
 			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"),
-					cacheControl);
+					AnthropicCacheStrategy.SYSTEM_ONLY, "1h");
 	}
 
 	@Test
-	void testCacheControlMutationDoesNotAffectOriginal() {
-		CacheControl originalCacheControl = AnthropicCacheType.EPHEMERAL.cacheControl();
-
+	void testCacheStrategyMutationDoesNotAffectOriginal() {
 		AnthropicChatOptions original = AnthropicChatOptions.builder()
 			.model("original-model")
-			.cacheControl(originalCacheControl)
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheTtl("1h")
 			.build();
 
 		AnthropicChatOptions copy = original.copy();
-		copy.setCacheControl(null);
+		copy.setCacheStrategy(AnthropicCacheStrategy.NONE);
+		copy.setCacheTtl("5m");
 
 		// Original should remain unchanged
-		assertThat(original.getCacheControl()).isEqualTo(originalCacheControl);
-		// Copy should have null cache control
-		assertThat(copy.getCacheControl()).isNull();
+		assertThat(original.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_AND_TOOLS);
+		assertThat(original.getCacheTtl()).isEqualTo("1h");
+
+		// Copy should have modified values
+		assertThat(copy.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(copy.getCacheTtl()).isEqualTo("5m");
 	}
 
 }

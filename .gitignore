@@ -51,3 +51,7 @@ qodana.yaml
 __pycache__/
 *.pyc
 tmp
+
+
+plans
+
