@@ -654,7 +654,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier,
+				this.extraBody);
 	}
 
 	@Override
@@ -689,7 +690,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
 				&& Objects.equals(this.verbosity, other.verbosity)
-				&& Objects.equals(this.serviceTier, other.serviceTier);
+				&& Objects.equals(this.serviceTier, other.serviceTier)
+				&& Objects.equals(this.extraBody, other.extraBody);
 	}
 
 	@Override
