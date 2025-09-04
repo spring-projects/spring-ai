@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -43,6 +45,7 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -50,6 +53,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Geng Rong
  * @author Soby Chacko
+ * @author YuJie Wan
  * @since 1.0.0
  */
 public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -150,12 +154,9 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
-		if (request.getInstructions().size() != 1) {
-			logger.warn(
-					"ZhiPu Embedding does not support batch embedding. Will make multiple API calls to embed(Document)");
-		}
 
 		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+		var zhipuEmbeddingRequest = zhipuEmbeddingRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
@@ -166,45 +167,36 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				List<float[]> embeddingList = new ArrayList<>();
+				var embeddingResponse = this.retryTemplate
+						.execute(ctx -> this.zhiPuAiApi.embeddings(zhipuEmbeddingRequest));
 
-				var totalUsage = new ZhiPuAiApi.Usage(0, 0, 0);
-
-				for (String inputContent : request.getInstructions()) {
-					var apiRequest = createEmbeddingRequest(inputContent, embeddingRequest.getOptions());
-
-					ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding> response = this.retryTemplate
-						.execute(ctx -> this.zhiPuAiApi.embeddings(apiRequest).getBody());
-					if (response == null || response.data() == null || response.data().isEmpty()) {
-						logger.warn("No embeddings returned for input: {}", inputContent);
-						embeddingList.add(new float[0]);
-					}
-					else {
-						int completionTokens = totalUsage.completionTokens() + response.usage().completionTokens();
-						int promptTokens = totalUsage.promptTokens() + response.usage().promptTokens();
-						int totalTokens = totalUsage.totalTokens() + response.usage().totalTokens();
-						totalUsage = new ZhiPuAiApi.Usage(completionTokens, promptTokens, totalTokens);
-						embeddingList.add(response.data().get(0).embedding());
-					}
+				if (embeddingResponse == null
+						|| embeddingResponse.getBody() == null
+						|| CollectionUtils.isEmpty(embeddingResponse.getBody().data())) {
+					logger.warn("No embeddings returned for request: {}", request);
+					return new EmbeddingResponse(List.of());
 				}
 
-				String model = (request.getOptions() != null && request.getOptions().getModel() != null)
-						? request.getOptions().getModel() : "unknown";
+				ZhiPuAiApi.Usage usage = embeddingResponse.getBody().usage();
+				Usage usageResponse = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 
-				var metadata = new EmbeddingResponseMetadata(model, getDefaultUsage(totalUsage));
+				var metadata = new EmbeddingResponseMetadata(embeddingResponse.getBody().model(), usageResponse);
 
-				var indexCounter = new AtomicInteger(0);
+				List<Embedding> embeddings = embeddingResponse.getBody().data()
+						.stream()
+						.map(e -> new Embedding(e.embedding(), e.index()))
+						.toList();
 
-				List<Embedding> embeddings = embeddingList.stream()
-					.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
-					.toList();
-
-				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, metadata);
-
-				observationContext.setResponse(embeddingResponse);
-
-				return embeddingResponse;
+				EmbeddingResponse response = new EmbeddingResponse(embeddings, metadata);
+				observationContext.setResponse(response);
+				return response;
 			});
+	}
+
+	private ZhiPuAiApi.EmbeddingRequest<List<String>> zhipuEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		return new ZhiPuAiApi.EmbeddingRequest<>(embeddingRequest.getInstructions(),
+				embeddingRequest.getOptions().getModel(),
+				embeddingRequest.getOptions().getDimensions());
 	}
 
 	private DefaultUsage getDefaultUsage(ZhiPuAiApi.Usage usage) {
@@ -229,10 +221,6 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
-	}
-
-	private ZhiPuAiApi.EmbeddingRequest<String> createEmbeddingRequest(String text, EmbeddingOptions requestOptions) {
-		return new ZhiPuAiApi.EmbeddingRequest<>(text, requestOptions.getModel(), requestOptions.getDimensions());
 	}
 
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
