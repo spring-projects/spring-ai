@@ -99,7 +99,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	public String getOriginalToolName() {
 		return this.tool.name();
 	}
-	
+
 	/**
 	 * Executes the tool with the provided input asynchronously.
 	 * <p>
