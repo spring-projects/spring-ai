@@ -4,18 +4,28 @@
 Stateless MCP servers are designed for simplified deployments where session state is not maintained between requests. 
 These servers are ideal for microservices architectures and cloud-native deployments.
 
+TIP: Set the `spring.ai.mcp.server.protocol=STATELESS` property
+
 TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_streamable_http_transport_properties[Streamable-HTTP clients] to connect to the stateless servers.
 
 NOTE: The stateless servers don't support message requests to the MCP client (e.g., elicitation, sampling, ping).
 
 === Stateless WebMVC Server
 
+Use the `spring-ai-starter-mcp-server-webmvc` dependency:
+
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-mcp-server-stateless-webmvc</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
 </dependency>
+----
+
+and set the `spring.ai.mcp.server.protocol` property to `STATELESS`.
+
+----
+spring.ai.mcp.server.protocol=STATELESS
 ----
 
 - Stateless operation with Spring MVC transport
@@ -25,13 +35,17 @@ NOTE: The stateless servers don't support message requests to the MCP client (e.
 
 === Stateless WebFlux Server
 
+Use the `spring-ai-starter-mcp-server-webflux` dependency:
+
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-mcp-server-stateless-webflux</artifactId>
+    <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
 </dependency>
 ----
+
+and set the `spring.ai.mcp.server.protocol` property to `STATELESS`.
 
 - Reactive stateless operation with WebFlux transport
 - No session state management
@@ -48,6 +62,7 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |===
 |Property |Description |Default
 |`enabled` |Enable/disable the stateless MCP server |`true`
+|`protocol` |MCP server protocol | Must be set to `STATELESS` to enable the stateless server
 |`tool-callback-converter` |Enable/disable the conversion of Spring AI ToolCallbacks into MCP Tool specs |`true`
 |`name` |Server name for identification |`mcp-server`
 |`version` |Server version |`1.0.0`
@@ -59,6 +74,22 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`capabilities.completion` |Enable/disable completion capabilities |`true`
 |`tool-response-mime-type` |Response MIME type per tool name |`-`
 |`request-timeout` |Request timeout duration |`20 seconds`
+|===
+
+=== MCP Annotations Properties
+
+MCP Server Annotations provide a declarative way to implement MCP server handlers using Java annotations.
+
+The server mcp-annotations properties are prefixed with `spring.ai.mcp.server.annotation-scanner`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP server annotations auto-scanning
+|`true`
+
 |===
 
 === Stateless Connection Properties
@@ -207,6 +238,7 @@ spring:
   ai:
     mcp:
       server:
+        protocol: STATELESS
         name: stateless-mcp-server
         version: 1.0.0
         type: ASYNC

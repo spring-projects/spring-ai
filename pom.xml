@@ -119,14 +119,9 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
 
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-properties</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-sse</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-streamable-webflux</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-streamable-webmvc</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-webflux</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-stateless-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
@@ -223,14 +218,10 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
 		
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-streamable-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-streamable-webmvc</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-stateless-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-stateless-webmvc</module>
-
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
+		<module>mcp/mcp-annotations-spring</module>
 	</modules>
 
 	<organization>
@@ -339,7 +330,8 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.12.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>0.11.3</mcp.sdk.version>
+		<mcp-annotations.version>0.3.0-SNAPSHOT</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -365,7 +357,7 @@
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 
-		<disable.checks>true</disable.checks>
+		<disable.checks>false</disable.checks>
 
 	</properties>
 

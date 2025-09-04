@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -30,6 +31,7 @@ import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -152,16 +154,6 @@ public final class McpToolUtils {
 	 * Converts a Spring AI ToolCallback to an MCP SyncToolSpecification. This enables
 	 * Spring AI functions to be exposed as MCP tools that can be discovered and invoked
 	 * by language models.
-	 *
-	 * <p>
-	 * The conversion process:
-	 * <ul>
-	 * <li>Creates an MCP Tool with the function's name and input schema</li>
-	 * <li>Wraps the function's execution in a SyncToolSpecification that handles the MCP
-	 * protocol</li>
-	 * <li>Provides error handling and result formatting according to MCP
-	 * specifications</li>
-	 * </ul>
 	 * @param toolCallback the Spring AI function callback to convert
 	 * @param mimeType the MIME type of the output content
 	 * @return an MCP SyncToolSpecification that wraps the function callback
@@ -170,28 +162,37 @@ public final class McpToolUtils {
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
 
-		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
-				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+		SharedSyncToolSpecification sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
 
-		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
-			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
-						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
-				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					return new McpSchema.CallToolResult(List
-						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
-							false);
-				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
-			}
-			catch (Exception e) {
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
-			}
-		});
+		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(),
+				(exchange, map) -> sharedSpec.sharedHandler()
+					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map)),
+				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
 	}
 
+	/**
+	 * Converts a Spring AI ToolCallback to an MCP StatelessSyncToolSpecification. This
+	 * enables Spring AI functions to be exposed as MCP tools that can be discovered and
+	 * invoked by language models.
+	 *
+	 * You can use the ToolCallback builder to create a new instance of ToolCallback using
+	 * either java.util.function.Function or Method reference.
+	 * @param toolCallback the Spring AI function callback to convert
+	 * @param mimeType the MIME type of the output content
+	 * @return an MCP StatelessSyncToolSpecification that wraps the function callback
+	 * @throws RuntimeException if there's an error during the function execution
+	 */
 	public static McpStatelessServerFeatures.SyncToolSpecification toStatelessSyncToolSpecification(
 			ToolCallback toolCallback, MimeType mimeType) {
+
+		var sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
+
+		return new McpStatelessServerFeatures.SyncToolSpecification(sharedSpec.tool(),
+				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
+	}
+
+	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
+			MimeType mimeType) {
 
 		var tool = McpSchema.Tool.builder()
 			.name(toolCallback.getToolDefinition().name())
@@ -199,10 +200,10 @@ public final class McpToolUtils {
 			.inputSchema(toolCallback.getToolDefinition().inputSchema())
 			.build();
 
-		return new McpStatelessServerFeatures.SyncToolSpecification(tool, (mcpTransportContext, request) -> {
+		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
-						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, mcpTransportContext)));
+				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
+						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					return new McpSchema.CallToolResult(List
 						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
@@ -329,8 +330,8 @@ public final class McpToolUtils {
 				toolCallback, mimeType);
 
 		return new McpStatelessServerFeatures.AsyncToolSpecification(statelessSyncToolSpecification.tool(),
-				(context, map) -> Mono
-					.fromCallable(() -> statelessSyncToolSpecification.callHandler().apply(context, map))
+				(context, request) -> Mono
+					.fromCallable(() -> statelessSyncToolSpecification.callHandler().apply(context.copy(), request))
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -406,4 +407,7 @@ public final class McpToolUtils {
 			"base64", "b64", "imageData" }) @Nullable String data) {
 	}
 
+	private record SharedSyncToolSpecification(McpSchema.Tool tool,
+											BiFunction<Object, CallToolRequest, McpSchema.CallToolResult> sharedHandler) {
+	}
 }

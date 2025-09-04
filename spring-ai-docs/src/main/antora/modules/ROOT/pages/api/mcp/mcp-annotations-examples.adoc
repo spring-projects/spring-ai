@@ -1,0 +1,853 @@
+= MCP Annotations Examples
+
+This page provides comprehensive examples of using MCP annotations in Spring AI applications.
+
+== Complete Application Examples
+
+=== Simple Calculator Server
+
+A complete example of an MCP server providing calculator tools:
+
+[source,java]
+----
+@SpringBootApplication
+public class CalculatorServerApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(CalculatorServerApplication.class, args);
+    }
+}
+
+@Component
+public class CalculatorTools {
+
+    @McpTool(name = "add", description = "Add two numbers")
+    public double add(
+            @McpToolParam(description = "First number", required = true) double a,
+            @McpToolParam(description = "Second number", required = true) double b) {
+        return a + b;
+    }
+
+    @McpTool(name = "subtract", description = "Subtract two numbers")
+    public double subtract(
+            @McpToolParam(description = "First number", required = true) double a,
+            @McpToolParam(description = "Second number", required = true) double b) {
+        return a - b;
+    }
+
+    @McpTool(name = "multiply", description = "Multiply two numbers")
+    public double multiply(
+            @McpToolParam(description = "First number", required = true) double a,
+            @McpToolParam(description = "Second number", required = true) double b) {
+        return a * b;
+    }
+
+    @McpTool(name = "divide", description = "Divide two numbers")
+    public double divide(
+            @McpToolParam(description = "Dividend", required = true) double dividend,
+            @McpToolParam(description = "Divisor", required = true) double divisor) {
+        if (divisor == 0) {
+            throw new IllegalArgumentException("Division by zero");
+        }
+        return dividend / divisor;
+    }
+
+    @McpTool(name = "calculate-expression", 
+             description = "Calculate a complex mathematical expression")
+    public CallToolResult calculateExpression(
+            CallToolRequest request,
+            McpSyncServerExchange exchange) {
+        
+        Map<String, Object> args = request.arguments();
+        String expression = (String) args.get("expression");
+        
+        exchange.loggingNotification(LoggingMessageNotification.builder()
+            .level(LoggingLevel.INFO)
+            .data("Calculating: " + expression)
+            .build());
+        
+        try {
+            double result = evaluateExpression(expression);
+            return CallToolResult.builder()
+                .addTextContent("Result: " + result)
+                .build();
+        } catch (Exception e) {
+            return CallToolResult.builder()
+                .isError(true)
+                .addTextContent("Error: " + e.getMessage())
+                .build();
+        }
+    }
+}
+----
+
+Configuration:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      server:
+        name: calculator-server
+        version: 1.0.0
+        type: SYNC
+        protocol: SSE  # or STDIO, STREAMABLE
+        capabilities:
+          tools: true
+          logging: true
+----
+
+=== Document Processing Server
+
+An example of a document processing server with resources and prompts:
+
+[source,java]
+----
+@Component
+public class DocumentServer {
+
+    private final Map<String, Document> documents = new ConcurrentHashMap<>();
+
+    @McpResource(
+        uri = "document://{id}", 
+        name = "Document", 
+        description = "Access stored documents")
+    public ReadResourceResult getDocument(String id, McpMeta meta) {
+        Document doc = documents.get(id);
+        
+        if (doc == null) {
+            return new ReadResourceResult(List.of(
+                new TextResourceContents("document://" + id, 
+                    "text/plain", "Document not found")
+            ));
+        }
+        
+        // Check access permissions from metadata
+        String accessLevel = (String) meta.get("accessLevel");
+        if ("restricted".equals(doc.getClassification()) && 
+            !"admin".equals(accessLevel)) {
+            return new ReadResourceResult(List.of(
+                new TextResourceContents("document://" + id, 
+                    "text/plain", "Access denied")
+            ));
+        }
+        
+        return new ReadResourceResult(List.of(
+            new TextResourceContents("document://" + id, 
+                doc.getMimeType(), doc.getContent())
+        ));
+    }
+
+    @McpTool(name = "analyze-document", 
+             description = "Analyze document content")
+    public String analyzeDocument(
+            @McpProgressToken String progressToken,
+            @McpToolParam(description = "Document ID", required = true) String docId,
+            @McpToolParam(description = "Analysis type", required = false) String type,
+            McpSyncServerExchange exchange) {
+        
+        Document doc = documents.get(docId);
+        if (doc == null) {
+            return "Document not found";
+        }
+        
+        if (progressToken != null) {
+            exchange.progressNotification(new ProgressNotification(
+                progressToken, 0.0, 1.0, "Starting analysis"));
+        }
+        
+        // Perform analysis
+        String analysisType = type != null ? type : "summary";
+        String result = performAnalysis(doc, analysisType);
+        
+        if (progressToken != null) {
+            exchange.progressNotification(new ProgressNotification(
+                progressToken, 1.0, 1.0, "Analysis complete"));
+        }
+        
+        return result;
+    }
+
+    @McpPrompt(
+        name = "document-summary", 
+        description = "Generate document summary prompt")
+    public GetPromptResult documentSummaryPrompt(
+            @McpArg(name = "docId", required = true) String docId,
+            @McpArg(name = "length", required = false) String length) {
+        
+        Document doc = documents.get(docId);
+        if (doc == null) {
+            return new GetPromptResult("Error",
+                List.of(new PromptMessage(Role.SYSTEM, 
+                    new TextContent("Document not found"))));
+        }
+        
+        String promptText = String.format(
+            "Please summarize the following document in %s:\n\n%s",
+            length != null ? length : "a few paragraphs",
+            doc.getContent()
+        );
+        
+        return new GetPromptResult("Document Summary",
+            List.of(new PromptMessage(Role.USER, new TextContent(promptText))));
+    }
+
+    @McpComplete(prompt = "document-summary")
+    public List<String> completeDocumentId(String prefix) {
+        return documents.keySet().stream()
+            .filter(id -> id.startsWith(prefix))
+            .sorted()
+            .limit(10)
+            .toList();
+    }
+}
+----
+
+=== MCP Client with Handlers
+
+A complete MCP client application with various handlers:
+
+[source,java]
+----
+@SpringBootApplication
+public class McpClientApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(McpClientApplication.class, args);
+    }
+}
+
+@Component
+public class ClientHandlers {
+
+    private final Logger logger = LoggerFactory.getLogger(ClientHandlers.class);
+    private final ProgressTracker progressTracker = new ProgressTracker();
+    private final ChatModel chatModel;
+
+    public ClientHandlers(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @McpLogging(clients = "server1")
+    public void handleLogging(LoggingMessageNotification notification) {
+        switch (notification.level()) {
+            case ERROR:
+                logger.error("[MCP] {} - {}", notification.logger(), notification.data());
+                break;
+            case WARNING:
+                logger.warn("[MCP] {} - {}", notification.logger(), notification.data());
+                break;
+            case INFO:
+                logger.info("[MCP] {} - {}", notification.logger(), notification.data());
+                break;
+            default:
+                logger.debug("[MCP] {} - {}", notification.logger(), notification.data());
+        }
+    }
+
+    @McpSampling(clients = "server1")
+    public CreateMessageResult handleSampling(CreateMessageRequest request) {
+        // Use Spring AI ChatModel for sampling
+        List<Message> messages = request.messages().stream()
+            .map(msg -> {
+                if (msg.role() == Role.USER) {
+                    return new UserMessage(((TextContent) msg.content()).text());
+                } else {
+                    return new AssistantMessage(((TextContent) msg.content()).text());
+                }
+            })
+            .toList();
+        
+        ChatResponse response = chatModel.call(new Prompt(messages));
+        
+        return CreateMessageResult.builder()
+            .role(Role.ASSISTANT)
+            .content(new TextContent(response.getResult().getOutput().getContent()))
+            .model(request.modelPreferences().hints().get(0).name())
+            .build();
+    }
+
+    @McpElicitation(clients = "server1")
+    public ElicitResult handleElicitation(ElicitRequest request) {
+        // In a real application, this would show a UI dialog
+        Map<String, Object> userData = new HashMap<>();
+        
+        logger.info("Elicitation requested: {}", request.message());
+        
+        // Simulate user input based on schema
+        Map<String, Object> schema = request.requestedSchema();
+        if (schema != null && schema.containsKey("properties")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+            
+            properties.forEach((key, value) -> {
+                // In real app, prompt user for each field
+                userData.put(key, getDefaultValueForProperty(key, value));
+            });
+        }
+        
+        return new ElicitResult(ElicitResult.Action.ACCEPT, userData);
+    }
+
+    @McpProgress(clients = "server1")
+    public void handleProgress(ProgressNotification notification) {
+        progressTracker.update(
+            notification.progressToken(),
+            notification.progress(),
+            notification.total(),
+            notification.message()
+        );
+        
+        // Update UI or send websocket notification
+        broadcastProgress(notification);
+    }
+
+    @McpToolListChanged(clients = "server1")
+    public void handleServer1ToolsChanged(List<McpSchema.Tool> tools) {
+        logger.info("Server1 tools updated: {} tools available", tools.size());
+        
+        // Update tool registry
+        toolRegistry.updateServerTools("server1", tools);
+        
+        // Notify UI to refresh tool list
+        eventBus.publish(new ToolsUpdatedEvent("server1", tools));
+    }
+
+    @McpResourceListChanged(clients = "server1")
+    public void handleServer1ResourcesChanged(List<McpSchema.Resource> resources) {
+        logger.info("Server1 resources updated: {} resources available", resources.size());
+        
+        // Clear resource cache for this server
+        resourceCache.clearServer("server1");
+        
+        // Register new resources
+        resources.forEach(resource -> 
+            resourceCache.register("server1", resource));
+    }
+}
+----
+
+Configuration:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        type: SYNC
+        initialized: true
+        request-timeout: 30s
+        annotation-scanner:
+          enabled: true
+        sse:
+          connections:
+            server1:
+              url: http://localhost:8080
+        stdio:
+          connections:
+            local-tool:
+              command: /usr/local/bin/mcp-tool
+              args:
+                - --mode=production
+----
+
+== Async Examples
+
+=== Async Tool Server
+
+[source,java]
+----
+@Component
+public class AsyncDataProcessor {
+
+    @McpTool(name = "fetch-data", description = "Fetch data from external source")
+    public Mono<DataResult> fetchData(
+            @McpToolParam(description = "Data source URL", required = true) String url,
+            @McpToolParam(description = "Timeout in seconds", required = false) Integer timeout) {
+        
+        Duration timeoutDuration = Duration.ofSeconds(timeout != null ? timeout : 30);
+        
+        return WebClient.create()
+            .get()
+            .uri(url)
+            .retrieve()
+            .bodyToMono(String.class)
+            .map(data -> new DataResult(url, data, System.currentTimeMillis()))
+            .timeout(timeoutDuration)
+            .onErrorReturn(new DataResult(url, "Error fetching data", 0L));
+    }
+
+    @McpTool(name = "process-stream", description = "Process data stream")
+    public Flux<String> processStream(
+            @McpToolParam(description = "Item count", required = true) int count,
+            @McpProgressToken String progressToken,
+            McpAsyncServerExchange exchange) {
+        
+        return Flux.range(1, count)
+            .delayElements(Duration.ofMillis(100))
+            .doOnNext(i -> {
+                if (progressToken != null) {
+                    double progress = (double) i / count;
+                    exchange.progressNotification(new ProgressNotification(
+                        progressToken, progress, 1.0, 
+                        "Processing item " + i));
+                }
+            })
+            .map(i -> "Processed item " + i);
+    }
+
+    @McpResource(uri = "async-data://{id}", name = "Async Data")
+    public Mono<ReadResourceResult> getAsyncData(String id) {
+        return Mono.fromCallable(() -> loadDataAsync(id))
+            .subscribeOn(Schedulers.boundedElastic())
+            .map(data -> new ReadResourceResult(List.of(
+                new TextResourceContents("async-data://" + id, 
+                    "application/json", data)
+            )));
+    }
+}
+----
+
+=== Async Client Handlers
+
+[source,java]
+----
+@Component
+public class AsyncClientHandlers {
+
+    @McpSampling(clients = "async-server")
+    public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
+        return Mono.fromCallable(() -> {
+            // Prepare request for LLM
+            String prompt = extractPrompt(request);
+            return prompt;
+        })
+        .flatMap(prompt -> callLLMAsync(prompt))
+        .map(response -> CreateMessageResult.builder()
+            .role(Role.ASSISTANT)
+            .content(new TextContent(response))
+            .model("gpt-4")
+            .build())
+        .timeout(Duration.ofSeconds(30));
+    }
+
+    @McpProgress(clients = "async-server")
+    public Mono<Void> handleAsyncProgress(ProgressNotification notification) {
+        return Mono.fromRunnable(() -> {
+            // Update progress tracking
+            updateProgressAsync(notification);
+        })
+        .then(broadcastProgressAsync(notification))
+        .subscribeOn(Schedulers.parallel());
+    }
+
+    @McpElicitation(clients = "async-server")
+    public Mono<ElicitResult> handleAsyncElicitation(ElicitRequest request) {
+        return showUserDialogAsync(request)
+            .map(userData -> {
+                if (userData != null && !userData.isEmpty()) {
+                    return new ElicitResult(ElicitResult.Action.ACCEPT, userData);
+                } else {
+                    return new ElicitResult(ElicitResult.Action.DECLINE, null);
+                }
+            })
+            .timeout(Duration.ofMinutes(5))
+            .onErrorReturn(new ElicitResult(ElicitResult.Action.CANCEL, null));
+    }
+}
+----
+
+== Stateless Server Examples
+
+[source,java]
+----
+@Component
+public class StatelessTools {
+
+    // Simple stateless tool
+    @McpTool(name = "format-text", description = "Format text")
+    public String formatText(
+            @McpToolParam(description = "Text to format", required = true) String text,
+            @McpToolParam(description = "Format type", required = true) String format) {
+        
+        return switch (format.toLowerCase()) {
+            case "uppercase" -> text.toUpperCase();
+            case "lowercase" -> text.toLowerCase();
+            case "title" -> toTitleCase(text);
+            case "reverse" -> new StringBuilder(text).reverse().toString();
+            default -> text;
+        };
+    }
+
+    // Stateless with transport context
+    @McpTool(name = "validate-json", description = "Validate JSON")
+    public CallToolResult validateJson(
+            McpTransportContext context,
+            @McpToolParam(description = "JSON string", required = true) String json) {
+        
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.readTree(json);
+            
+            return CallToolResult.builder()
+                .addTextContent("Valid JSON")
+                .structuredContent(Map.of("valid", true))
+                .build();
+        } catch (Exception e) {
+            return CallToolResult.builder()
+                .addTextContent("Invalid JSON: " + e.getMessage())
+                .structuredContent(Map.of("valid", false, "error", e.getMessage()))
+                .build();
+        }
+    }
+
+    @McpResource(uri = "static://{path}", name = "Static Resource")
+    public String getStaticResource(String path) {
+        // Simple stateless resource
+        return loadStaticContent(path);
+    }
+
+    @McpPrompt(name = "template", description = "Template prompt")
+    public GetPromptResult templatePrompt(
+            @McpArg(name = "template", required = true) String templateName,
+            @McpArg(name = "variables", required = false) String variables) {
+        
+        String template = loadTemplate(templateName);
+        if (variables != null) {
+            template = substituteVariables(template, variables);
+        }
+        
+        return new GetPromptResult("Template: " + templateName,
+            List.of(new PromptMessage(Role.USER, new TextContent(template))));
+    }
+}
+----
+
+== MCP Sampling with Multiple LLM Providers
+
+This example demonstrates how to use MCP Sampling to generate creative content from multiple LLM providers, showcasing the annotation-based approach for both server and client implementations.
+
+=== Sampling Server Implementation
+
+The server provides a weather tool that uses MCP Sampling to generate poems from different LLM providers:
+
+[source,java]
+----
+@Service
+public class WeatherService {
+
+    private final RestClient restClient = RestClient.create();
+
+    public record WeatherResponse(Current current) {
+        public record Current(LocalDateTime time, int interval, double temperature_2m) {
+        }
+    }
+
+    @McpTool(description = "Get the temperature (in celsius) for a specific location")
+    public String getTemperature2(McpSyncServerExchange exchange,
+            @McpToolParam(description = "The location latitude") double latitude,
+            @McpToolParam(description = "The location longitude") double longitude) {
+
+        // Fetch weather data
+        WeatherResponse weatherResponse = restClient
+                .get()
+                .uri("https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m",
+                        latitude, longitude)
+                .retrieve()
+                .body(WeatherResponse.class);
+
+        StringBuilder openAiWeatherPoem = new StringBuilder();
+        StringBuilder anthropicWeatherPoem = new StringBuilder();
+
+        // Send logging notification
+        exchange.loggingNotification(LoggingMessageNotification.builder()
+                .level(LoggingLevel.INFO)
+                .data("Start sampling")
+                .build());
+
+        // Check if client supports sampling
+        if (exchange.getClientCapabilities().sampling() != null) {
+            var messageRequestBuilder = McpSchema.CreateMessageRequest.builder()
+                    .systemPrompt("You are a poet!")
+                    .messages(List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
+                            new McpSchema.TextContent(
+                                    "Please write a poem about this weather forecast (temperature is in Celsius). Use markdown format :\n "
+                                            + ModelOptionsUtils.toJsonStringPrettyPrinter(weatherResponse)))));
+
+            // Request poem from OpenAI
+            var openAiLlmMessageRequest = messageRequestBuilder
+                    .modelPreferences(ModelPreferences.builder().addHint("openai").build())
+                    .build();
+            CreateMessageResult openAiLlmResponse = exchange.createMessage(openAiLlmMessageRequest);
+            openAiWeatherPoem.append(((McpSchema.TextContent) openAiLlmResponse.content()).text());
+
+            // Request poem from Anthropic
+            var anthropicLlmMessageRequest = messageRequestBuilder
+                    .modelPreferences(ModelPreferences.builder().addHint("anthropic").build())
+                    .build();
+            CreateMessageResult anthropicAiLlmResponse = exchange.createMessage(anthropicLlmMessageRequest);
+            anthropicWeatherPoem.append(((McpSchema.TextContent) anthropicAiLlmResponse.content()).text());
+        }
+
+        exchange.loggingNotification(LoggingMessageNotification.builder()
+                .level(LoggingLevel.INFO)
+                .data("Finish Sampling")
+                .build());
+
+        // Combine results
+        String responseWithPoems = "OpenAI poem about the weather: " + openAiWeatherPoem.toString() + "\n\n" +
+                "Anthropic poem about the weather: " + anthropicWeatherPoem.toString() + "\n"
+                + ModelOptionsUtils.toJsonStringPrettyPrinter(weatherResponse);
+
+        return responseWithPoems;
+    }
+}
+----
+
+=== Sampling Client Implementation
+
+The client handles sampling requests by routing them to appropriate LLM providers based on model hints:
+
+[source,java]
+----
+@Service
+public class McpClientHandlers {
+
+    private static final Logger logger = LoggerFactory.getLogger(McpClientHandlers.class);
+
+    @Autowired
+    Map<String, ChatClient> chatClients;
+
+    @McpProgress(clients = "server1")
+    public void progressHandler(ProgressNotification progressNotification) {
+        logger.info("MCP PROGRESS: [{}] progress: {} total: {} message: {}",
+                progressNotification.progressToken(), progressNotification.progress(),
+                progressNotification.total(), progressNotification.message());
+    }
+
+    @McpLogging(clients = "server1")
+    public void loggingHandler(LoggingMessageNotification loggingMessage) {
+        logger.info("MCP LOGGING: [{}] {}", loggingMessage.level(), loggingMessage.data());
+    }
+
+    @McpSampling(clients = "server1")
+    public CreateMessageResult samplingHandler(CreateMessageRequest llmRequest) {
+        logger.info("MCP SAMPLING: {}", llmRequest);
+
+        // Extract user prompt and model hint
+        var userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
+        String modelHint = llmRequest.modelPreferences().hints().get(0).name();
+
+        // Find appropriate ChatClient based on model hint
+        ChatClient hintedChatClient = chatClients.entrySet().stream()
+                .filter(e -> e.getKey().contains(modelHint))
+                .findFirst()
+                .orElseThrow()
+                .getValue();
+
+        // Generate response using the selected model
+        String response = hintedChatClient.prompt()
+                .system(llmRequest.systemPrompt())
+                .user(userPrompt)
+                .call()
+                .content();
+
+        return CreateMessageResult.builder()
+                .content(new McpSchema.TextContent(response))
+                .build();
+    }
+}
+----
+
+=== Client Application Setup
+
+The client application configures multiple ChatClient instances for different LLM providers:
+
+[source,java]
+----
+@SpringBootApplication
+public class McpClientApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(McpClientApplication.class, args).close();
+    }
+
+    @Bean
+    public CommandLineRunner predefinedQuestions(OpenAiChatModel openAiChatModel,
+            List<McpSyncClient> mcpClients) {
+
+        return args -> {
+            var mcpToolProvider = new SyncMcpToolCallbackProvider(mcpClients);
+
+            ChatClient chatClient = ChatClient.builder(openAiChatModel)
+                    .defaultToolCallbacks(mcpToolProvider)
+                    .build();
+
+            String userQuestion = """
+                    What is the weather in Amsterdam right now?
+                    Please incorporate all creative responses from all LLM providers.
+                    After the other providers add a poem that synthesizes the poems from all the other providers.
+                    """;
+
+            System.out.println("> USER: " + userQuestion);
+            System.out.println("> ASSISTANT: " + chatClient.prompt(userQuestion).call().content());
+        };
+    }
+
+    @Bean
+    public Map<String, ChatClient> chatClients(List<ChatModel> chatModels) {
+        return chatModels.stream()
+                .collect(Collectors.toMap(
+                    model -> model.getClass().getSimpleName().toLowerCase(),
+                    model -> ChatClient.builder(model).build()));
+    }
+}
+----
+
+=== Configuration
+
+==== Server Configuration
+
+[source,yaml]
+----
+# Server application.properties
+spring.ai.mcp.server.name=mcp-sampling-server-annotations
+spring.ai.mcp.server.version=0.0.1
+spring.ai.mcp.server.protocol=STREAMABLE
+spring.main.banner-mode=off
+----
+
+==== Client Configuration
+
+[source,yaml]
+----
+# Client application.properties
+spring.application.name=mcp
+spring.main.web-application-type=none
+
+# Disable default chat client auto-configuration for multiple models
+spring.ai.chat.client.enabled=false
+
+# API keys
+spring.ai.openai.api-key=${OPENAI_API_KEY}
+spring.ai.anthropic.api-key=${ANTHROPIC_API_KEY}
+
+# MCP client connection using stateless-http transport
+spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080
+
+# Disable tool callback to prevent cyclic dependencies
+spring.ai.mcp.client.toolcallback.enabled=false
+----
+
+=== Key Features Demonstrated
+
+1. **Multi-Model Sampling**: Server requests content from multiple LLM providers using model hints
+2. **Annotation-Based Handlers**: Client uses `@McpSampling`, `@McpLogging`, and `@McpProgress` annotations
+3. **Stateless HTTP Transport**: Uses the streamable protocol for communication
+4. **Creative Content Generation**: Generates poems about weather data from different models
+5. **Unified Response Handling**: Combines responses from multiple providers into a single result
+
+=== Sample Output
+
+When running the client, you'll see output like:
+
+```
+> USER: What is the weather in Amsterdam right now?
+Please incorporate all creative responses from all LLM providers.
+After the other providers add a poem that synthesizes the poems from all the other providers.
+
+> ASSISTANT: 
+OpenAI poem about the weather:
+**Amsterdam's Winter Whisper**
+*Temperature: 4.2°C*
+
+In Amsterdam's embrace, where canals reflect the sky,
+A gentle chill of 4.2 degrees drifts by...
+
+Anthropic poem about the weather:
+**Canal-Side Contemplation**
+*Current conditions: 4.2°C*
+
+Along the waterways where bicycles rest,
+The winter air puts Amsterdam to test...
+
+Weather Data:
+{
+  "current": {
+    "time": "2025-01-23T11:00",
+    "interval": 900,
+    "temperature_2m": 4.2
+  }
+}
+```
+
+== Integration with Spring AI
+
+Example showing MCP tools integrated with Spring AI's function calling:
+
+[source,java]
+----
+@RestController
+@RequestMapping("/chat")
+public class ChatController {
+
+    private final ChatModel chatModel;
+    private final SyncMcpToolCallbackProvider toolCallbackProvider;
+
+    public ChatController(ChatModel chatModel, 
+                          SyncMcpToolCallbackProvider toolCallbackProvider) {
+        this.chatModel = chatModel;
+        this.toolCallbackProvider = toolCallbackProvider;
+    }
+
+    @PostMapping
+    public ChatResponse chat(@RequestBody ChatRequest request) {
+        // Get MCP tools as Spring AI function callbacks
+        ToolCallback[] mcpTools = toolCallbackProvider.getToolCallbacks();
+        
+        // Create prompt with MCP tools
+        Prompt prompt = new Prompt(
+            request.getMessage(),
+            ChatOptionsBuilder.builder()
+                .withTools(mcpTools)
+                .build()
+        );
+        
+        // Call chat model with MCP tools available
+        return chatModel.call(prompt);
+    }
+}
+
+@Component
+public class WeatherTools {
+
+    @McpTool(name = "get-weather", description = "Get current weather")
+    public WeatherInfo getWeather(
+            @McpToolParam(description = "City name", required = true) String city,
+            @McpToolParam(description = "Units (metric/imperial)", required = false) String units) {
+        
+        String unit = units != null ? units : "metric";
+        
+        // Call weather API
+        return weatherService.getCurrentWeather(city, unit);
+    }
+
+    @McpTool(name = "get-forecast", description = "Get weather forecast")
+    public ForecastInfo getForecast(
+            @McpToolParam(description = "City name", required = true) String city,
+            @McpToolParam(description = "Days (1-7)", required = false) Integer days) {
+        
+        int forecastDays = days != null ? days : 3;
+        
+        return weatherService.getForecast(city, forecastDays);
+    }
+}
+----
+
+== Additional Resources
+
+* xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations Overview]
+* xref:api/mcp/mcp-annotations-server.adoc[Server Annotations Reference]
+* xref:api/mcp/mcp-annotations-client.adoc[Client Annotations Reference]
+* xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters Reference]
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol[Spring AI MCP Examples on GitHub]

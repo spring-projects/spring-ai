@@ -74,4 +74,50 @@ class ToolCallingObservationContextTests {
 			.build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("toolMetadata cannot be null");
 	}
 
+	@Test
+	void whenToolArgumentsIsEmptyStringThenReturnEmptyString() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallArguments("")
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("");
+	}
+
+	@Test
+	void whenToolCallResultIsNullThenReturnNull() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallResult(null)
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallResult()).isNull();
+	}
+
+	@Test
+	void whenToolCallResultIsEmptyStringThenReturnEmptyString() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallResult("")
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallResult()).isEqualTo("");
+	}
+
+	@Test
+	void whenToolDefinitionIsSetThenGetReturnsIt() {
+		var toolDef = ToolDefinition.builder()
+			.name("testTool")
+			.description("Test description")
+			.inputSchema("{\"type\": \"object\"}")
+			.build();
+
+		var observationContext = ToolCallingObservationContext.builder().toolDefinition(toolDef).build();
+
+		assertThat(observationContext.getToolDefinition()).isEqualTo(toolDef);
+		assertThat(observationContext.getToolDefinition().name()).isEqualTo("testTool");
+		assertThat(observationContext.getToolDefinition().description()).isEqualTo("Test description");
+		assertThat(observationContext.getToolDefinition().inputSchema()).isEqualTo("{\"type\": \"object\"}");
+	}
+
 }

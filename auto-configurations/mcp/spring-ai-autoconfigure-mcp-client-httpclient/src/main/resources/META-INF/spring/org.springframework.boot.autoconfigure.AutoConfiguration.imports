@@ -13,8 +13,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.mcp.client.common.autoconfigure.StdioTransportAutoConfiguration
-org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration
-org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration
 org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration
 org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration

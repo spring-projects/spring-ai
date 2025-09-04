@@ -109,7 +109,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		}
 
 		public DefaultToolExecutionExceptionProcessor build() {
-			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, exceptions);
+			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, this.exceptions);
 		}
 
 	}

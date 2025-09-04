@@ -16,15 +16,16 @@
 
 package org.springframework.ai.embedding.observation;
 
+import java.util.Optional;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.util.StringUtils;
-
-import java.util.Optional;
 
 /**
  * Default conventions to populate observations for embedding model operations.
