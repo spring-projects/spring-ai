@@ -622,7 +622,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
 		else {
-			return candidate.content().get().parts().orElse(List.of()).stream().map(part -> {
+			return candidate.content().flatMap(Content::parts).orElse(List.of()).stream().map(part -> {
 				// Multimodality Response Support
 				List<Media> media = part.inlineData()
 					.filter(blob -> blob.data().isPresent() && blob.mimeType().isPresent())
