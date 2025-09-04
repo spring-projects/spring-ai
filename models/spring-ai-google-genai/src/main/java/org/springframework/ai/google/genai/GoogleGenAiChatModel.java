@@ -91,6 +91,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.util.MimeType;
 
 /**
  * Google GenAI Chat Model implementation that provides access to Google's Gemini language
@@ -626,7 +627,19 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.parts()
 				.orElse(List.of())
 				.stream()
-				.map(part -> new AssistantMessage(part.text().orElse(""), messageMetadata))
+				.map(part -> {
+					// Multimodality Response Support
+					List<Media> media = part.inlineData()
+							.filter(blob -> blob.data().isPresent() && blob.mimeType().isPresent())
+							.map(blob -> Media
+									.builder()
+									.mimeType(MimeType.valueOf(blob.mimeType().get()))
+									.data(blob.data().get())
+									.build())
+							.map(List::of)
+							.orElse(List.of());
+					return new AssistantMessage(part.text().orElse(""), messageMetadata, List.of(), media);
+				})
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
 		}
@@ -723,6 +736,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (!CollectionUtils.isEmpty(systemContents)) {
 			Assert.isTrue(systemContents.size() <= 1, "Only one system message is allowed in the prompt");
 			configBuilder.systemInstruction(systemContents.get(0));
+		}
+
+		if (!CollectionUtils.isEmpty(requestOptions.getResponseModalities())) {
+			configBuilder.responseModalities(requestOptions.getResponseModalities());
 		}
 
 		GenerateContentConfig config = configBuilder.build();
@@ -850,7 +867,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		private GoogleGenAiChatOptions defaultOptions = GoogleGenAiChatOptions.builder()
 			.temperature(0.7)
 			.topP(1.0)
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+			.model(ChatModel.GEMINI_2_0_FLASH)
 			.build();
 
 		private ToolCallingManager toolCallingManager;
