@@ -41,11 +41,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CosmosDBChatMemoryRepositoryAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withConfiguration(AutoConfigurations.of(CosmosDBChatMemoryRepositoryAutoConfiguration.class))
-			.withPropertyValues(
-					"spring.ai.chat.memory.repository.cosmosdb.endpoint=" + System.getenv("AZURE_COSMOSDB_ENDPOINT"))
-			.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.database-name=test-database")
-			.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.container-name=autoconfig-test-container");
+		.withConfiguration(AutoConfigurations.of(CosmosDBChatMemoryRepositoryAutoConfiguration.class))
+		.withPropertyValues(
+				"spring.ai.chat.memory.repository.cosmosdb.endpoint=" + System.getenv("AZURE_COSMOSDB_ENDPOINT"))
+		.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.database-name=test-database")
+		.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.container-name=autoconfig-test-container");
 
 	@Test
 	void addAndGet() {
@@ -71,7 +71,7 @@ class CosmosDBChatMemoryRepositoryAutoConfigurationIT {
 			assertThat(memory.findByConversationId(conversationId).get(0).getMessageType()).isEqualTo(MessageType.USER);
 			assertThat(memory.findByConversationId(conversationId).get(0).getText()).isEqualTo("test question");
 			assertThat(memory.findByConversationId(conversationId).get(1).getMessageType())
-					.isEqualTo(MessageType.ASSISTANT);
+				.isEqualTo(MessageType.ASSISTANT);
 			assertThat(memory.findByConversationId(conversationId).get(1).getText()).isEqualTo("test answer");
 		});
 	}
@@ -79,20 +79,19 @@ class CosmosDBChatMemoryRepositoryAutoConfigurationIT {
 	@Test
 	void propertiesConfiguration() {
 		this.contextRunner
-				.withPropertyValues(
-						"spring.ai.chat.memory.repository.cosmosdb.endpoint="
-								+ System.getenv("AZURE_COSMOSDB_ENDPOINT"))
-				.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.database-name=test-database")
-				.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.container-name=custom-testcontainer")
-				.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.partition-key-path=/customPartitionKey")
-				.run(context -> {
-					CosmosDBChatMemoryRepositoryProperties properties = context
-							.getBean(CosmosDBChatMemoryRepositoryProperties.class);
-					assertThat(properties.getEndpoint()).isEqualTo(System.getenv("AZURE_COSMOSDB_ENDPOINT"));
-					assertThat(properties.getDatabaseName()).isEqualTo("test-database");
-					assertThat(properties.getContainerName()).isEqualTo("custom-testcontainer");
-					assertThat(properties.getPartitionKeyPath()).isEqualTo("/customPartitionKey");
-				});
+			.withPropertyValues(
+					"spring.ai.chat.memory.repository.cosmosdb.endpoint=" + System.getenv("AZURE_COSMOSDB_ENDPOINT"))
+			.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.database-name=test-database")
+			.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.container-name=custom-testcontainer")
+			.withPropertyValues("spring.ai.chat.memory.repository.cosmosdb.partition-key-path=/customPartitionKey")
+			.run(context -> {
+				CosmosDBChatMemoryRepositoryProperties properties = context
+					.getBean(CosmosDBChatMemoryRepositoryProperties.class);
+				assertThat(properties.getEndpoint()).isEqualTo(System.getenv("AZURE_COSMOSDB_ENDPOINT"));
+				assertThat(properties.getDatabaseName()).isEqualTo("test-database");
+				assertThat(properties.getContainerName()).isEqualTo("custom-testcontainer");
+				assertThat(properties.getPartitionKeyPath()).isEqualTo("/customPartitionKey");
+			});
 	}
 
 	@Test
