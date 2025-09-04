@@ -114,6 +114,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("thinkingBudget") Integer thinkingBudget;
 
 	/**
+	 * Optional. Response Modalities.
+	 * @see com.google.genai.types.Modality.Known
+	 */
+	private @JsonProperty("responseModalities") List<String> responseModalities = new ArrayList<>();
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -174,6 +180,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setToolContext(fromOptions.getToolContext());
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
 		options.setLabels(fromOptions.getLabels());
+		options.setResponseModalities(fromOptions.getResponseModalities());
 		return options;
 	}
 
@@ -355,6 +362,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	public List<String> getResponseModalities() {
+		return responseModalities;
+	}
+
+	public void setResponseModalities(List<String> responseModalities) {
+		Assert.notNull(responseModalities, "responseModalities cannot be null");
+		this.responseModalities = responseModalities;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -376,7 +392,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
+				&& Objects.equals(this.responseModalities, that.responseModalities);
 	}
 
 	@Override
@@ -384,7 +401,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
 				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
-				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels);
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels,
+				this.responseModalities);
 	}
 
 	@Override
@@ -396,7 +414,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
 				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
-				+ '}';
+				+ ", responseModalities=" + this.responseModalities + '}';
 	}
 
 	@Override
@@ -527,6 +545,18 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		public Builder labels(Map<String, String> labels) {
 			Assert.notNull(labels, "labels must not be null");
 			this.options.labels = labels;
+			return this;
+		}
+
+		public Builder responseModalities(List<String> responseModalities) {
+			Assert.notNull(responseModalities, "responseModalities must not be null");
+			this.options.responseModalities = responseModalities;
+			return this;
+		}
+
+		public Builder responseModalitie(String responseModalitie) {
+			Assert.hasText(responseModalitie, "responseModalitie must not be empty");
+			this.options.responseModalities.add(responseModalitie);
 			return this;
 		}
 
