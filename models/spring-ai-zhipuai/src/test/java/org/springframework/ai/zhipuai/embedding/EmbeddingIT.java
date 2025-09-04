@@ -85,9 +85,8 @@ class EmbeddingIT {
 	void batchEmbedding() {
 		assertThat(this.embeddingModel).isNotNull();
 
-		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(
-				List.of("Hello world", "How are you?", "How is the weather today?")
-		);
+		EmbeddingResponse embeddingResponse = this.embeddingModel
+			.embedForResponse(List.of("Hello world", "How are you?", "How is the weather today?"));
 
 		assertThat(embeddingResponse.getResults()).hasSize(3);
 

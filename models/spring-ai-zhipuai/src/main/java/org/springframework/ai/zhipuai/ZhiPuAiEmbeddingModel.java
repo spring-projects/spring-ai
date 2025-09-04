@@ -168,10 +168,9 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 					this.observationRegistry)
 			.observe(() -> {
 				var embeddingResponse = this.retryTemplate
-						.execute(ctx -> this.zhiPuAiApi.embeddings(zhipuEmbeddingRequest));
+					.execute(ctx -> this.zhiPuAiApi.embeddings(zhipuEmbeddingRequest));
 
-				if (embeddingResponse == null
-						|| embeddingResponse.getBody() == null
+				if (embeddingResponse == null || embeddingResponse.getBody() == null
 						|| CollectionUtils.isEmpty(embeddingResponse.getBody().data())) {
 					logger.warn("No embeddings returned for request: {}", request);
 					return new EmbeddingResponse(List.of());
@@ -182,10 +181,11 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 				var metadata = new EmbeddingResponseMetadata(embeddingResponse.getBody().model(), usageResponse);
 
-				List<Embedding> embeddings = embeddingResponse.getBody().data()
-						.stream()
-						.map(e -> new Embedding(e.embedding(), e.index()))
-						.toList();
+				List<Embedding> embeddings = embeddingResponse.getBody()
+					.data()
+					.stream()
+					.map(e -> new Embedding(e.embedding(), e.index()))
+					.toList();
 
 				EmbeddingResponse response = new EmbeddingResponse(embeddings, metadata);
 				observationContext.setResponse(response);
@@ -195,8 +195,7 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private ZhiPuAiApi.EmbeddingRequest<List<String>> zhipuEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		return new ZhiPuAiApi.EmbeddingRequest<>(embeddingRequest.getInstructions(),
-				embeddingRequest.getOptions().getModel(),
-				embeddingRequest.getOptions().getDimensions());
+				embeddingRequest.getOptions().getModel(), embeddingRequest.getOptions().getDimensions());
 	}
 
 	private DefaultUsage getDefaultUsage(ZhiPuAiApi.Usage usage) {
