@@ -10,7 +10,7 @@ Bootstrap your AI applications with MCP support using link:https://start.spring.
 
 == MCP Java SDK Architecture
 
-TIP: This section provides an overview for the link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK architecture]. 
+TIP: This section provides an overview for the link:https://modelcontextprotocol.io/sdk/java/mcp-overview[MCP Java SDK architecture]. 
 For the Spring AI MCP integration, refer to the xref:#_spring_ai_mcp_integration[Spring AI MCP Boot Starters] documentation.
 
 The Java MCP implementation follows a three-layer architecture:
@@ -60,10 +60,7 @@ a| The MCP Server is a foundational component in the Model Context Protocol (MCP
 * Concurrent client connection management
 * Synchronous and Asynchronous API support
 * Transport implementations:
-** Stdio-based transport for process-based communication
-** Servlet-based SSE and Streamable-HTTP server transports
-** WebFlux SSE and Streamable-HTTP server transports for reactive HTTP streaming
-** WebMVC SSE and Streamable-HTTP server transports for servlet-based HTTP streaming
+** Stdio, Streamable-HTTP, Stateless Streamable-HTTP, SSE
 
 ^a| image::mcp/java-mcp-server-architecture.jpg[Java MCP Server Architecture, width=600]
 |===
@@ -77,8 +74,8 @@ Spring AI provides MCP integration through the following Spring Boot starters:
 
 === link:mcp-client-boot-starter-docs.html[Client Starters]
 
-* `spring-ai-starter-mcp-client` - Core starter providing `STDIO` and HTTP-based `SSE` and `Streamable-HTTP` support
-* `spring-ai-starter-mcp-client-webflux` - WebFlux-based `SSE` and `Streamable-HTTP` transport implementation
+* `spring-ai-starter-mcp-client` - Core starter providing `STDIO`, Servlet-based `Streamable-HTTP`, `Stateless Streamable-HTTP` and `SSE` support
+* `spring-ai-starter-mcp-client-webflux` - WebFlux-based  `Streamable-HTTP`, `Stateless Streamable-HTTP` and `SSE` transport implementation
 
 === link:mcp-server-boot-starter-docs.html[Server Starters]
 
