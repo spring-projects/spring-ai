@@ -16,16 +16,16 @@
 
 package org.springframework.ai.openai.api.tool;
 
-import java.util.ArrayList;
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -35,8 +35,6 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCal
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.http.ResponseEntity;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Based on the OpenAI Function Calling tutorial:
@@ -130,7 +128,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 				// extend conversation with function response.
 				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
-						functionName, toolCall.id(), null, null, null, null));
+						functionName, toolCall.id(), null, null, null, null, null));
 			}
 		}
 
