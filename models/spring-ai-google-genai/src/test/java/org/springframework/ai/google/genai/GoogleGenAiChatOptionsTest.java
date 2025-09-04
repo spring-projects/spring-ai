@@ -158,8 +158,8 @@ public class GoogleGenAiChatOptionsTest {
 	@Test
 	public void testResponseMultimodality() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-				.responseModalities(List.of(Modality.Known.TEXT.name(), Modality.Known.IMAGE.name()))
-				.build();
+			.responseModalities(List.of(Modality.Known.TEXT.name(), Modality.Known.IMAGE.name()))
+			.build();
 		String toString = options.toString();
 		assertThat(toString).contains("responseModalities=[TEXT, IMAGE]");
 	}

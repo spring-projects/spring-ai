@@ -90,8 +90,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.util.MimeType;
+import org.springframework.util.StringUtils;
 
 /**
  * Google GenAI Chat Model implementation that provides access to Google's Gemini language
@@ -622,26 +622,18 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
 		else {
-			return candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.map(part -> {
-					// Multimodality Response Support
-					List<Media> media = part.inlineData()
-							.filter(blob -> blob.data().isPresent() && blob.mimeType().isPresent())
-							.map(blob -> Media
-									.builder()
-									.mimeType(MimeType.valueOf(blob.mimeType().get()))
-									.data(blob.data().get())
-									.build())
-							.map(List::of)
-							.orElse(List.of());
-					return new AssistantMessage(part.text().orElse(""), messageMetadata, List.of(), media);
-				})
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
+			return candidate.content().get().parts().orElse(List.of()).stream().map(part -> {
+				// Multimodality Response Support
+				List<Media> media = part.inlineData()
+					.filter(blob -> blob.data().isPresent() && blob.mimeType().isPresent())
+					.map(blob -> Media.builder()
+						.mimeType(MimeType.valueOf(blob.mimeType().get()))
+						.data(blob.data().get())
+						.build())
+					.map(List::of)
+					.orElse(List.of());
+				return new AssistantMessage(part.text().orElse(""), messageMetadata, List.of(), media);
+			}).map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata)).toList();
 		}
 	}
 

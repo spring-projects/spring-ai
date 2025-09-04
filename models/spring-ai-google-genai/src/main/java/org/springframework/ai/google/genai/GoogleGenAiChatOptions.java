@@ -363,7 +363,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public List<String> getResponseModalities() {
-		return responseModalities;
+		return this.responseModalities;
 	}
 
 	public void setResponseModalities(List<String> responseModalities) {
