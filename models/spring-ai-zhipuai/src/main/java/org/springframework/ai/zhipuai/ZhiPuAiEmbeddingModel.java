@@ -16,9 +16,7 @@
 
 package org.springframework.ai.zhipuai;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
