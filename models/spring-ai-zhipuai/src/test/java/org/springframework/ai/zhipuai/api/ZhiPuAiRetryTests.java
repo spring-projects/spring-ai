@@ -159,7 +159,8 @@ public class ZhiPuAiRetryTests {
 	public void zhiPuAiEmbeddingTransientError() {
 
 		EmbeddingList<Embedding> expectedEmbeddings = new EmbeddingList<>("list",
-				List.of(new Embedding(0, new float[] { 9.9f, 8.8f })), "model", new ZhiPuAiApi.Usage(10, 10, 10));
+				List.of(new Embedding(0, new float[] { 9.9f, 8.8f }), new Embedding(0, new float[] { 9.9f, 8.8f })),
+				"model", new ZhiPuAiApi.Usage(10, 10, 10));
 
 		given(this.zhiPuAiApi.embeddings(isA(EmbeddingRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
@@ -169,9 +170,11 @@ public class ZhiPuAiRetryTests {
 		var result = this.embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), options));
 
+		assertThat(result.getResults().size()).isEqualTo(2);
 		assertThat(result).isNotNull();
+		// choose the first result
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(0);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
