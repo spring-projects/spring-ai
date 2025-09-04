@@ -38,7 +38,6 @@ import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObse
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.core.OrderComparator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
