@@ -331,7 +331,7 @@
 
 		<!-- MCP-->
 		<mcp.sdk.version>0.12.0</mcp.sdk.version>
-		<mcp-annotations.version>0.3.0-SNAPSHOT</mcp-annotations.version>
+		<mcp-annotations.version>0.3.0</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
