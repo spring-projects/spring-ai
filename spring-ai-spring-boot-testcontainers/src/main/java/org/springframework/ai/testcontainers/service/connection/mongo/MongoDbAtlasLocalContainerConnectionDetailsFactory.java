@@ -16,9 +16,6 @@
 
 package org.springframework.ai.testcontainers.service.connection.mongo;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Method;
-
 import com.mongodb.ConnectionString;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
@@ -26,7 +23,6 @@ import org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails;
 import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * A {@link ContainerConnectionDetailsFactory} implementation that provides
@@ -51,12 +47,6 @@ import org.springframework.util.ReflectionUtils;
 class MongoDbAtlasLocalContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<MongoDBAtlasLocalContainer, MongoConnectionDetails> {
 
-	private static final Method GET_SSL_BUNDLE_METHOD;
-
-	static {
-		GET_SSL_BUNDLE_METHOD = ReflectionUtils.findMethod(MongoConnectionDetails.class, "getSslBundle");
-	}
-
 	@Override
 	protected MongoConnectionDetails getContainerConnectionDetails(
 			ContainerConnectionSource<MongoDBAtlasLocalContainer> source) {
@@ -79,21 +69,10 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactory
 			return new ConnectionString(getContainer().getConnectionString());
 		}
 
-		// Conditional implementation based on whether the method exists
+		@Override
 		public SslBundle getSslBundle() {
-			if (GET_SSL_BUNDLE_METHOD != null) { // Boot 3.5.x+
-				try {
-					return (SslBundle) MethodHandles.lookup()
-						.in(GET_SSL_BUNDLE_METHOD.getDeclaringClass())
-						.unreflectSpecial(GET_SSL_BUNDLE_METHOD, GET_SSL_BUNDLE_METHOD.getDeclaringClass())
-						.bindTo(this)
-						.invokeWithArguments();
-				}
-				catch (Throwable e) {
-					throw new RuntimeException(e);
-				}
-			}
-			return null; // Boot 3.4.x (No-Op)
+			// Delegate to the interface default method by calling it explicitly
+			return MongoConnectionDetails.super.getSslBundle();
 		}
 
 	}
