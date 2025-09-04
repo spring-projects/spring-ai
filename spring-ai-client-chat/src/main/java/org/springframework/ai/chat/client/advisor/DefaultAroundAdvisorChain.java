@@ -68,8 +68,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	private final ObservationRegistry observationRegistry;
 
-	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry,
-			Deque<CallAdvisor> callAdvisors, Deque<StreamAdvisor> streamAdvisors) {
+	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, Deque<CallAdvisor> callAdvisors,
+			Deque<StreamAdvisor> streamAdvisors) {
 
 		Assert.notNull(observationRegistry, "the observationRegistry must be non-null");
 		Assert.notNull(callAdvisors, "the callAdvisors must be non-null");
@@ -215,8 +215,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		}
 
 		public DefaultAroundAdvisorChain build() {
-			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAdvisors,
-					this.streamAdvisors);
+			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAdvisors, this.streamAdvisors);
 		}
 
 	}
