@@ -165,7 +165,8 @@ class SyncMcpToolCallbackProviderTests {
 		// Create a filter that rejects all tools
 		McpToolFilter rejectAllFilter = (client, tool) -> false;
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(rejectAllFilter, this.mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(rejectAllFilter,
+				McpToolNamePrefixGenerator.defaultGenerator(), this.mcpClient);
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -193,7 +194,8 @@ class SyncMcpToolCallbackProviderTests {
 		// Create a filter that only accepts tools with names containing "2" or "3"
 		McpToolFilter nameFilter = (client, tool) -> tool.name().contains("2") || tool.name().contains("3");
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(nameFilter, this.mcpClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(nameFilter,
+				McpToolNamePrefixGenerator.defaultGenerator(), this.mcpClient);
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -226,9 +228,11 @@ class SyncMcpToolCallbackProviderTests {
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
 
 		// Create a filter that only accepts tools from client1
-		McpToolFilter clientFilter = (mcpMetadata, tool) -> mcpMetadata.clientInfo().name().equals("testClient1");
+		McpToolFilter clientFilter = (mcpConnectionInfo,
+				tool) -> mcpConnectionInfo.clientInfo().name().equals("testClient1");
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(clientFilter, mcpClient1, mcpClient2);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(clientFilter,
+				McpToolNamePrefixGenerator.defaultGenerator(), mcpClient1, mcpClient2);
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -253,10 +257,12 @@ class SyncMcpToolCallbackProviderTests {
 		when(weatherClient.getClientInfo()).thenReturn(weatherClientInfo);
 
 		// Create a filter that only accepts weather tools from the weather service
-		McpToolFilter complexFilter = (mcpMetadata, tool) -> mcpMetadata.clientInfo().name().equals("weather-service")
-				&& tool.name().equals("weather");
+		McpToolFilter complexFilter = (mcpConnectionInfo,
+				tool) -> mcpConnectionInfo.clientInfo().name().equals("weather-service")
+						&& tool.name().equals("weather");
 
-		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(complexFilter, weatherClient);
+		SyncMcpToolCallbackProvider provider = new SyncMcpToolCallbackProvider(complexFilter,
+				McpToolNamePrefixGenerator.defaultGenerator(), weatherClient);
 
 		var callbacks = provider.getToolCallbacks();
 

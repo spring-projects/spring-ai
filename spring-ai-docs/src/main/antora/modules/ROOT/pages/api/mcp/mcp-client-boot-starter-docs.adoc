@@ -10,6 +10,7 @@ The MCP Client Boot Starter provides:
 * Support for multiple named transports (STDIO, Http/SSE and Streamable HTTP)
 * Integration with Spring AI's tool execution framework
 * Tool filtering capabilities for selective tool inclusion/exclusion
+* Customizable tool name prefix generation for avoiding naming conflicts
 * Proper lifecycle management with automatic cleanup of resources when the application context is closed
 * Customizable client creation through customizers
 
@@ -383,7 +384,7 @@ The auto-configuration supports multiple transport types:
 
 === Tool Filtering
 
-The MCP Client Boot Starter supports filtering of discovered tools through the `McpToolFilter` interface. This allows you to selectively include or exclude tools based on custom criteria such as the MCP client metadata or tool properties.
+The MCP Client Boot Starter supports filtering of discovered tools through the `McpToolFilter` interface. This allows you to selectively include or exclude tools based on custom criteria such as the MCP connection information or tool properties.
 
 To implement tool filtering, create a bean that implements the `McpToolFilter` interface:
 
@@ -393,12 +394,12 @@ To implement tool filtering, create a bean that implements the `McpToolFilter` i
 public class CustomMcpToolFilter implements McpToolFilter {
     
     @Override
-    public boolean test(McpMetadata metadata, McpSchema.Tool tool) {
-        // Filter logic based on client metadata and tool properties
+    public boolean test(McpConnectionInfo connectionInfo, McpSchema.Tool tool) {
+        // Filter logic based on connection information and tool properties
         // Return true to include the tool, false to exclude it
         
         // Example: Exclude tools from a specific client
-        if (metadata.clientInfo().name().equals("restricted-client")) {
+        if (connectionInfo.clientInfo().name().equals("restricted-client")) {
             return false;
         }
         
@@ -418,7 +419,7 @@ public class CustomMcpToolFilter implements McpToolFilter {
 }
 ----
 
-The `McpMetadata` record provides access to:
+The `McpConnectionInfo` record provides access to:
 
 * `clientCapabilities` - The capabilities of the MCP client
 * `clientInfo` - Information about the MCP client (name and version)
@@ -429,6 +430,59 @@ If no custom filter is provided, all discovered tools are included by default.
 
 Note: Only one `McpToolFilter` bean should be defined in the application context. 
 If multiple filters are needed, combine them into a single composite filter implementation.
+
+=== Tool Name Prefix Generation
+
+The MCP Client Boot Starter supports customizable tool name prefix generation through the `McpToolNamePrefixGenerator` interface. This feature helps avoid naming conflicts when integrating tools from multiple MCP servers by adding unique prefixes to tool names.
+
+By default, the starter uses the MCP client name as a prefix for tool names. You can customize this behavior by providing your own implementation:
+
+[source,java]
+----
+@Component
+public class CustomToolNamePrefixGenerator implements McpToolNamePrefixGenerator {
+    
+    @Override
+    public String prefixedToolName(McpConnectionInfo connectionInfo, Tool tool) {
+        // Custom logic to generate prefixed tool names
+        
+        // Example: Use server name and version as prefix
+        String serverName = connectionInfo.initializeResult().serverInfo().name();
+        String serverVersion = connectionInfo.initializeResult().serverInfo().version();
+        return serverName + "_v" + serverVersion.replace(".", "_") + "_" + tool.name();
+    }
+}
+----
+
+The `McpConnectionInfo` record provides comprehensive information about the MCP connection:
+
+* `clientCapabilities` - The capabilities of the MCP client
+* `clientInfo` - Information about the MCP client (name and version)
+* `initializeResult` - The initialization result from the MCP server, including server information
+
+==== Built-in Prefix Generators
+
+The framework provides several built-in prefix generators:
+
+* `McpToolNamePrefixGenerator.defaultGenerator()` - Uses the MCP client name as prefix (default behavior)
+* `McpToolNamePrefixGenerator.noPrefix()` - Returns tool names without any prefix
+
+To disable prefixing entirely, register the no-prefix generator as a bean:
+
+[source,java]
+----
+@Configuration
+public class McpConfiguration {
+    
+    @Bean
+    public McpToolNamePrefixGenerator mcpToolNamePrefixGenerator() {
+        return McpToolNamePrefixGenerator.noPrefix();
+    }
+}
+----
+
+The prefix generator is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers.
+If no custom generator is provided, the default generator (using client name as prefix) is used.
 
 
 === Disable the MCP ToolCallback Auto-Configuration

@@ -42,12 +42,10 @@ class AsyncMcpToolCallbackTest {
 	@Test
 	void callShouldThrowOnError() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new McpSchema.Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var callToolResult = McpSchema.CallToolResult.builder().addTextContent("Some error data").isError(true).build();
 		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
 
-		var callback = new AsyncMcpToolCallback(this.mcpClient, this.tool);
+		var callback = new AsyncMcpToolCallback(this.mcpClient, this.tool, this.tool.name());
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.cause()
 			.isInstanceOf(IllegalStateException.class)
@@ -57,12 +55,10 @@ class AsyncMcpToolCallbackTest {
 	@Test
 	void callShouldWrapReactiveErrors() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new McpSchema.Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class)))
 			.thenReturn(Mono.error(new Exception("Testing tool error")));
 
-		var callback = new AsyncMcpToolCallback(this.mcpClient, this.tool);
+		var callback = new AsyncMcpToolCallback(this.mcpClient, this.tool, this.tool.name());
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.rootCause()
 			.hasMessage("Testing tool error");

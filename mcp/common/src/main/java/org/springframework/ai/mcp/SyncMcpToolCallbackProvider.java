@@ -72,17 +72,37 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 	private final McpToolFilter toolFilter;
 
+	private McpToolNamePrefixGenerator toolNamePrefixGenerator;
+
 	/**
 	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
 	 * clients.
 	 * @param mcpClients the list of MCP clients to use for discovering tools
 	 * @param toolFilter a filter to apply to each discovered tool
+	 * @deprecated use
+	 * {@link #SyncMcpToolCallbackProvider(McpToolFilter, McpToolNamePrefixGenerator, List)}
 	 */
+	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpSyncClient> mcpClients) {
+		this(toolFilter, McpToolNamePrefixGenerator.defaultGenerator(), mcpClients);
+	}
+
+	/**
+	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with a list of MCP
+	 * clients.
+	 * @param mcpClients the list of MCP clients to use for discovering tools
+	 * @param toolNamePrefixGenerator the tool name prefix generator to use when creating
+	 * tool callbacks.
+	 * @param toolFilter a filter to apply to each discovered tool
+	 */
+	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
+			List<McpSyncClient> mcpClients) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
+		Assert.notNull(toolNamePrefixGenerator, "Tool name prefix generator must not be null");
 		this.mcpClients = mcpClients;
 		this.toolFilter = toolFilter;
+		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 	}
 
 	/**
@@ -98,10 +118,12 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * Creates a new {@code SyncMcpToolCallbackProvider} instance with one or more MCP
 	 * clients.
 	 * @param mcpClients the MCP clients to use for discovering tools
+	 * @param toolNamePrefixGenerator the tool name prefix generator to use when creating
 	 * @param toolFilter a filter to apply to each discovered tool
 	 */
-	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpSyncClient... mcpClients) {
-		this(toolFilter, List.of(mcpClients));
+	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
+			McpSyncClient... mcpClients) {
+		this(toolFilter, toolNamePrefixGenerator, List.of(mcpClients));
 	}
 
 	/**
@@ -131,9 +153,20 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			.flatMap(mcpClient -> mcpClient.listTools()
 				.tools()
 				.stream()
-				.filter(tool -> this.toolFilter.test(new McpMetadata(mcpClient.getClientCapabilities(),
-						mcpClient.getClientInfo(), mcpClient.getCurrentInitializationResult()), tool))
-				.map(tool -> new SyncMcpToolCallback(mcpClient, tool)))
+				.filter(tool -> this.toolFilter.test(McpConnectionInfo.builder()
+					.clientCapabilities(mcpClient.getClientCapabilities())
+					.clientInfo(mcpClient.getClientInfo())
+					.initializeResult(mcpClient.getCurrentInitializationResult())
+					.build(), tool))
+				.map(tool -> {
+					McpConnectionInfo connectionInfo = McpConnectionInfo.builder()
+						.clientCapabilities(mcpClient.getClientCapabilities())
+						.clientInfo(mcpClient.getClientInfo())
+						.initializeResult(mcpClient.getCurrentInitializationResult())
+						.build();
+					return new SyncMcpToolCallback(mcpClient, tool,
+							this.toolNamePrefixGenerator.prefixedToolName(connectionInfo, tool));
+				}))
 			.toArray(ToolCallback[]::new);
 		validateToolCallbacks(array);
 		return array;

@@ -76,17 +76,37 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 	private final List<McpAsyncClient> mcpClients;
 
+	private final McpToolNamePrefixGenerator toolNamePrefixGenerator;
+
 	/**
 	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance with a list of MCP
 	 * clients.
 	 * @param toolFilter a filter to apply to each discovered tool
 	 * @param mcpClients the list of MCP clients to use for discovering tools
+	 * @deprecated use
+	 * {@link #AsyncMcpToolCallbackProvider(McpToolFilter, McpToolNamePrefixGenerator, List)}
 	 */
+	@Deprecated
 	public AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpAsyncClient> mcpClients) {
+		this(toolFilter, McpToolNamePrefixGenerator.defaultGenerator(), mcpClients);
+	}
+
+	/**
+	 * Creates a new {@code AsyncMcpToolCallbackProvider} instance with a list of MCP
+	 * clients.
+	 * @param toolFilter a filter to apply to each discovered tool
+	 * @param toolNamePrefixGenerator the tool name prefix generator to use when creating
+	 * tool callbacks.
+	 * @param mcpClients the list of MCP clients to use for discovering tools
+	 */
+	public AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
+			List<McpAsyncClient> mcpClients) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
+		Assert.notNull(toolNamePrefixGenerator, "Tool name prefix generator must not be null");
 		this.toolFilter = toolFilter;
 		this.mcpClients = mcpClients;
+		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 	}
 
 	/**
@@ -145,9 +165,20 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			ToolCallback[] toolCallbacks = mcpClient.listTools()
 				.map(response -> response.tools()
 					.stream()
-					.filter(tool -> this.toolFilter.test(new McpMetadata(mcpClient.getClientCapabilities(),
-							mcpClient.getClientInfo(), mcpClient.getCurrentInitializationResult()), tool))
-					.map(tool -> new AsyncMcpToolCallback(mcpClient, tool))
+					.filter(tool -> this.toolFilter.test(McpConnectionInfo.builder()
+						.clientCapabilities(mcpClient.getClientCapabilities())
+						.clientInfo(mcpClient.getClientInfo())
+						.initializeResult(mcpClient.getCurrentInitializationResult())
+						.build(), tool))
+					.map(tool -> {
+						McpConnectionInfo connectionInfo = McpConnectionInfo.builder()
+							.clientCapabilities(mcpClient.getClientCapabilities())
+							.clientInfo(mcpClient.getClientInfo())
+							.initializeResult(mcpClient.getCurrentInitializationResult())
+							.build();
+						return new AsyncMcpToolCallback(mcpClient, tool,
+								this.toolNamePrefixGenerator.prefixedToolName(connectionInfo, tool));
+					})
 					.toArray(ToolCallback[]::new))
 				.block();
 

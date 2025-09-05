@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
-import org.springframework.ai.mcp.McpMetadata;
+import org.springframework.ai.mcp.McpConnectionInfo;
 import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition;
@@ -107,8 +107,10 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				McpSchema.ListToolsResult listToolsResult1 = mock(McpSchema.ListToolsResult.class);
 				when(listToolsResult1.tools()).thenReturn(List.of(tool1, tool2));
 				when(syncClient1.listTools()).thenReturn(listToolsResult1);
-				assertThat(toolFilter.test(new McpMetadata(null, syncClient1.getClientInfo(), null), tool1)).isFalse();
-				assertThat(toolFilter.test(new McpMetadata(null, syncClient1.getClientInfo(), null), tool2)).isTrue();
+				assertThat(toolFilter.test(new McpConnectionInfo(null, syncClient1.getClientInfo(), null), tool1))
+					.isFalse();
+				assertThat(toolFilter.test(new McpConnectionInfo(null, syncClient1.getClientInfo(), null), tool2))
+					.isTrue();
 			});
 	}
 
@@ -133,8 +135,10 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				McpSchema.ListToolsResult listToolsResult1 = mock(McpSchema.ListToolsResult.class);
 				when(listToolsResult1.tools()).thenReturn(List.of(tool1, tool2));
 				when(asyncClient1.listTools()).thenReturn(Mono.just(listToolsResult1));
-				assertThat(toolFilter.test(new McpMetadata(null, asyncClient1.getClientInfo(), null), tool1)).isFalse();
-				assertThat(toolFilter.test(new McpMetadata(null, asyncClient1.getClientInfo(), null), tool2)).isTrue();
+				assertThat(toolFilter.test(new McpConnectionInfo(null, asyncClient1.getClientInfo(), null), tool1))
+					.isFalse();
+				assertThat(toolFilter.test(new McpConnectionInfo(null, asyncClient1.getClientInfo(), null), tool2))
+					.isTrue();
 			});
 	}
 
@@ -156,7 +160,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 		McpToolFilter mcpClientFilter() {
 			return new McpToolFilter() {
 				@Override
-				public boolean test(McpMetadata metadata, McpSchema.Tool tool) {
+				public boolean test(McpConnectionInfo metadata, McpSchema.Tool tool) {
 					if (metadata.clientInfo().name().equals("client1") && tool.name().contains("tool1")) {
 						return false;
 					}
