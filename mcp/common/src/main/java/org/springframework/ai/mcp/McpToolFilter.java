@@ -23,10 +23,10 @@ import io.modelcontextprotocol.spec.McpSchema;
 /**
  * A {@link BiPredicate} for {@link SyncMcpToolCallbackProvider} and the
  * {@link AsyncMcpToolCallbackProvider} to filter the discovered tool for the given
- * {@link McpMetadata}.
+ * {@link McpConnectionInfo}.
  *
  * @author Ilayaperumal Gopinathan
  */
-public interface McpToolFilter extends BiPredicate<McpMetadata, McpSchema.Tool> {
+public interface McpToolFilter extends BiPredicate<McpConnectionInfo, McpSchema.Tool> {
 
 }

@@ -31,6 +31,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -71,14 +72,33 @@ public class AsyncMcpToolCallback implements ToolCallback {
 
 	private final Tool tool;
 
+	private final String prefixedToolName;
+
 	/**
 	 * Creates a new {@code AsyncMcpToolCallback} instance.
 	 * @param mcpClient the MCP client to use for tool execution
 	 * @param tool the MCP tool definition to adapt
+	 * @deprecated use {@link #AsyncMcpToolCallback(McpAsyncClient, Tool, String)}
 	 */
+	@Deprecated
 	public AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool) {
+		this(mcpClient, tool, McpToolUtils.prefixedToolName(mcpClient.getClientInfo().name(), tool.name()));
+	}
+
+	/**
+	 * Creates a new {@code AsyncMcpToolCallback} instance.
+	 * @param mcpClient the MCP client to use for tool execution
+	 * @param tool the MCP tool definition to adapt
+	 * @param prefixedToolName the prefixed tool name to use in the tool definition.
+	 */
+	public AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool, String prefixedToolName) {
+		Assert.notNull(mcpClient, "MCP client must not be null");
+		Assert.notNull(tool, "MCP tool must not be null");
+		Assert.hasText(prefixedToolName, "Prefixed tool name must not be empty");
+
 		this.asyncMcpClient = mcpClient;
 		this.tool = tool;
+		this.prefixedToolName = prefixedToolName;
 	}
 
 	/**
@@ -95,7 +115,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return DefaultToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.asyncMcpClient.getClientInfo().name(), this.tool.name()))
+			.name(this.prefixedToolName)
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();

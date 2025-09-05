@@ -22,6 +22,7 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.util.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,15 +72,34 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 	private final Tool tool;
 
+	private final String prefixedToolName;
+
 	/**
 	 * Creates a new {@code SyncMcpToolCallback} instance.
 	 * @param mcpClient the MCP client to use for tool execution
 	 * @param tool the MCP tool definition to adapt
+	 * @deprecated use {@link #SyncMcpToolCallback(McpSyncClient, Tool, String)}
 	 */
+	@Deprecated
 	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
+		this(mcpClient, tool, McpToolUtils.prefixedToolName(mcpClient.getClientInfo().name(), tool.name()));
+	}
+
+	/**
+	 * Creates a new {@code SyncMcpToolCallback} instance.
+	 * @param mcpClient the MCP client to use for tool execution
+	 * @param tool the MCP tool definition to adapt
+	 * @param prefixedToolName the prefixed tool name to use in the tool definition.
+	 *
+	 */
+	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool, String prefixedToolName) {
+		Assert.notNull(mcpClient, "MCP client must not be null");
+		Assert.notNull(tool, "MCP tool must not be null");
+		Assert.hasText(prefixedToolName, "Prefixed tool name must not be empty");
+
 		this.mcpClient = mcpClient;
 		this.tool = tool;
-
+		this.prefixedToolName = prefixedToolName;
 	}
 
 	/**
@@ -96,7 +116,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return DefaultToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
+			.name(this.prefixedToolName)
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();

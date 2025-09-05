@@ -52,11 +52,11 @@ class SyncMcpToolCallbackTests {
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test tool description");
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName(clientInfo.name(), this.tool.name()));
 
 		var toolDefinition = callback.getToolDefinition();
 
@@ -74,7 +74,8 @@ class SyncMcpToolCallbackTests {
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName("testClient", this.tool.name()));
 
 		String response = callback.call("{\"param\":\"value\"}");
 
@@ -91,7 +92,8 @@ class SyncMcpToolCallbackTests {
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName("testClient", this.tool.name()));
 
 		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
@@ -102,13 +104,13 @@ class SyncMcpToolCallbackTests {
 	void callShouldThrowOnError() {
 		when(this.tool.name()).thenReturn("testTool");
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(callResult.isError()).thenReturn(true);
 		when(callResult.content()).thenReturn(List.of(new McpSchema.TextContent("Some error data")));
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName(clientInfo.name(), this.tool.name()));
 
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.cause()
@@ -120,10 +122,10 @@ class SyncMcpToolCallbackTests {
 	void callShouldWrapExceptions() {
 		when(this.tool.name()).thenReturn("testTool");
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenThrow(new RuntimeException("Testing tool error"));
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName(clientInfo.name(), this.tool.name()));
 
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.rootCause()
@@ -138,7 +140,8 @@ class SyncMcpToolCallbackTests {
 		when(callResult.content()).thenReturn(List.of());
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName("testClient", this.tool.name()));
 
 		String response = callback.call("{\"param\":\"value\"}");
 
@@ -154,7 +157,8 @@ class SyncMcpToolCallbackTests {
 				List.of(new McpSchema.TextContent("First content"), new McpSchema.TextContent("Second content")));
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName("testClient", this.tool.name()));
 
 		String response = callback.call("{\"param\":\"value\"}");
 
@@ -170,7 +174,8 @@ class SyncMcpToolCallbackTests {
 		when(callResult.content()).thenReturn(List.of(new McpSchema.ImageContent(null, "base64data", "image/png")));
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool,
+				McpToolUtils.prefixedToolName("testClient", this.tool.name()));
 
 		String response = callback.call("{\"param\":\"value\"}");
 
