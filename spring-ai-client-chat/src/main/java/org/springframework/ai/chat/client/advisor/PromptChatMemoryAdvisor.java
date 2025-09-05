@@ -146,10 +146,10 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		List<Message> assistantMessages = new ArrayList<>();
 		// Handle streaming case where we have a single result
 		Optional.of(chatClientResponse)
-				.map(ChatClientResponse::chatResponse)
-				.map(ChatResponse::getResult)
-				.map(Generation::getOutput)
-				.ifPresent(assistantMessages::add);
+			.map(ChatClientResponse::chatResponse)
+			.map(ChatResponse::getResult)
+			.map(Generation::getOutput)
+			.ifPresent(assistantMessages::add);
 
 		if (!assistantMessages.isEmpty()) {
 			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
