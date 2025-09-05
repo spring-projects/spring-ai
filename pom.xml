@@ -356,6 +356,7 @@
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
 		<disable.checks>false</disable.checks>
 
@@ -892,6 +893,7 @@
 						<plugin>
 								<groupId>org.apache.maven.plugins</groupId>
 								<artifactId>maven-gpg-plugin</artifactId>
+								<version>${maven-gpg-plugin.version}</version>
 								<executions>
 										<execution>
 												<id>sign-artifacts</id>
