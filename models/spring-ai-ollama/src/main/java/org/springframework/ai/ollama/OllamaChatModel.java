@@ -28,6 +28,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -116,7 +117,7 @@ public class OllamaChatModel implements ChatModel {
 
 	private final OllamaApi chatApi;
 
-	private final OllamaOptions defaultOptions;
+	private final OllamaChatOptions defaultOptions;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -134,13 +135,13 @@ public class OllamaChatModel implements ChatModel {
 
 	private final RetryTemplate retryTemplate;
 
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		this(ollamaApi, defaultOptions, toolCallingManager, observationRegistry, modelManagementOptions,
 				new DefaultToolExecutionEligibilityPredicate(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
-	public OllamaChatModel(OllamaApi ollamaApi, OllamaOptions defaultOptions, ToolCallingManager toolCallingManager,
+	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions defaultOptions, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions,
 			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate, RetryTemplate retryTemplate) {
 
@@ -388,21 +389,25 @@ public class OllamaChatModel implements ChatModel {
 
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
-		OllamaOptions runtimeOptions = null;
+		OllamaChatOptions runtimeOptions = null;
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			if (prompt.getOptions() instanceof OllamaOptions ollamaOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(OllamaChatOptions.fromOptions(ollamaOptions),
+						OllamaChatOptions.class, OllamaChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						OllamaOptions.class);
+						OllamaChatOptions.class);
 			}
 			else {
 				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						OllamaOptions.class);
+						OllamaChatOptions.class);
 			}
 		}
 
 		// Define request options by merging runtime options and default options
-		OllamaOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				OllamaOptions.class);
+		OllamaChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				OllamaChatOptions.class);
 		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
 		// Jackson, used by ModelOptionsUtils.
 		if (runtimeOptions != null) {
@@ -474,7 +479,13 @@ public class OllamaChatModel implements ChatModel {
 			throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 		}).flatMap(List::stream).toList();
 
-		OllamaOptions requestOptions = (OllamaOptions) prompt.getOptions();
+		OllamaChatOptions requestOptions = null;
+		if (prompt.getOptions() instanceof OllamaChatOptions) {
+			requestOptions = (OllamaChatOptions) prompt.getOptions();
+		}
+		else {
+			requestOptions = OllamaChatOptions.fromOptions((OllamaOptions) prompt.getOptions());
+		}
 
 		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(requestOptions.getModel())
 			.stream(stream)
@@ -520,7 +531,7 @@ public class OllamaChatModel implements ChatModel {
 
 	@Override
 	public ChatOptions getDefaultOptions() {
-		return OllamaOptions.fromOptions(this.defaultOptions);
+		return OllamaChatOptions.fromOptions(this.defaultOptions);
 	}
 
 	/**
@@ -545,7 +556,7 @@ public class OllamaChatModel implements ChatModel {
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.builder().model(OllamaModel.MISTRAL.id()).build();
+		private OllamaChatOptions defaultOptions = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
 
 		private ToolCallingManager toolCallingManager;
 
@@ -565,7 +576,13 @@ public class OllamaChatModel implements ChatModel {
 			return this;
 		}
 
+		@Deprecated
 		public Builder defaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = OllamaChatOptions.fromOptions(defaultOptions);
+			return this;
+		}
+
+		public Builder defaultOptions(OllamaChatOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
 			return this;
 		}

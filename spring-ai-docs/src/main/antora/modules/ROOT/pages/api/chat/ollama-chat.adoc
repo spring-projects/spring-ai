@@ -158,7 +158,7 @@ TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overrid
 
 == Runtime Options [[chat-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] class provides model configurations, such as the model to use, the temperature,  etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaChatOptions.java[OllamaChatOptions.java] class provides model configurations, such as the model to use, the temperature,  etc.
 
 On start-up, the default options can be configured with the `OllamaChatModel(api, options)` constructor or the `spring.ai.ollama.chat.options.*` properties.
 
@@ -170,14 +170,14 @@ For example, to override the default model and temperature for a specific reques
 ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
-        OllamaOptions.builder()
+        OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_1)
             .temperature(0.4)
             .build()
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaChatOptions.java[OllamaChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 [[auto-pulling-models]]
 == Auto-pulling Models
@@ -271,7 +271,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OllamaOptions.builder().model(OllamaModel.LLAVA)).build());
+        OllamaChatOptions.builder().model(OllamaModel.LLAVA)).build());
 ----
 
 The example shows a model taking as an input the `multimodal.test.png` image:
@@ -295,11 +295,11 @@ In addition to the existing Spring AI model-agnostic xref::api/structured-output
 
 === Configuration
 
-Spring AI allows you to configure your response format programmatically using the `OllamaOptions` builder.
+Spring AI allows you to configure your response format programmatically using the `OllamaChatOptions` builder.
 
 ==== Using the Chat Options Builder
 
-You can set the response format programmatically with the `OllamaOptions` builder as shown below:
+You can set the response format programmatically with the `OllamaChatOptions` builder as shown below:
 
 [source,java]
 ----
@@ -327,7 +327,7 @@ String jsonSchema = """
         """;
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
-        OllamaOptions.builder()
+        OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
             .format(new ObjectMapper().readValue(jsonSchema, Map.class))
             .build());
@@ -358,7 +358,7 @@ record MathReasoning(
 var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
-        OllamaOptions.builder()
+        OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
             .format(outputConverter.getJsonSchemaMap())
             .build());
@@ -488,7 +488,7 @@ var ollamaApi = OllamaApi.builder().build();
 var chatModel = OllamaChatModel.builder()
                     .ollamaApi(ollamaApi)
                     .defaultOptions(
-                        OllamaOptions.builder()
+                        OllamaChatOptions.builder()
                             .model(OllamaModel.MISTRAL)
                             .temperature(0.9)
                             .build())
@@ -502,7 +502,7 @@ Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
-The `OllamaOptions` provides the configuration information for all chat requests.
+The `OllamaChatOptions` provides the configuration information for all chat requests.
 
 == Low-level OllamaApi Client [[low-level-api]]
 
@@ -531,7 +531,7 @@ var request = ChatRequest.builder("orca-mini")
                 .content("What is the capital of Bulgaria and what is the size? "
                         + "What is the national anthem?")
                 .build()))
-    .options(OllamaOptions.builder().temperature(0.9).build())
+    .options(OllamaChatOptions.builder().temperature(0.9).build())
     .build();
 
 ChatResponse response = this.ollamaApi.chat(this.request);
@@ -542,7 +542,7 @@ var request2 = ChatRequest.builder("orca-mini")
     .messages(List.of(Message.builder(Role.USER)
         .content("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
-    .options(OllamaOptions.builder().temperature(0.9).build().toMap())
+    .options(OllamaChatOptions.builder().temperature(0.9).build().toMap())
     .build();
 
 Flux<ChatResponse> streamingResponse = this.ollamaApi.streamingChat(this.request2);

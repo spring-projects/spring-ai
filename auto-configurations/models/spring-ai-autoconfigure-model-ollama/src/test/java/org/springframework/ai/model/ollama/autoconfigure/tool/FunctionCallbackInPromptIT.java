@@ -23,6 +23,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.ollama.api.OllamaModel;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -70,7 +72,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			var promptOptions = OllamaOptions.builder()
+			var promptOptions = OllamaChatOptions.builder()
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
@@ -95,7 +97,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 			UserMessage userMessage = new UserMessage(
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
-			var promptOptions = OllamaOptions.builder()
+			var promptOptions = OllamaChatOptions.builder()
 				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
 					.description(
 							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
