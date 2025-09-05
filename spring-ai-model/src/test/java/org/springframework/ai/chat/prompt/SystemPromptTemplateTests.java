@@ -18,6 +18,7 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -323,6 +324,11 @@ class SystemPromptTemplateTests {
 			// Simple renderer that just appends a marker
 			// Note: This simple renderer ignores the model map for test purposes.
 			return template + " (Rendered by Custom)";
+		}
+
+		@Override
+		public Set<String> getRequiredVariables(String template) {
+			return Set.of();
 		}
 
 	}
