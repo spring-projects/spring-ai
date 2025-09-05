@@ -58,7 +58,6 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>${jedis.version}</version>
         </dependency>
 
 		<!-- TESTING -->
@@ -85,7 +84,6 @@
 		<dependency>
 			<groupId>com.redis</groupId>
 			<artifactId>testcontainers-redis</artifactId>
-			<version>${testcontainers-redis.version}</version>
 			<scope>test</scope>
 		</dependency>
 
