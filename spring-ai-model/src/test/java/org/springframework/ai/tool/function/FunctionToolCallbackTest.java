@@ -138,6 +138,18 @@ class FunctionToolCallbackTest {
 			.isInstanceOf(ToolExecutionException.class);
 	}
 
+	@Test
+	void testEmptyStringInput() {
+		TestFunctionTool tool = new TestFunctionTool();
+		FunctionToolCallback<String, Void> callback = FunctionToolCallback.builder("testTool", tool.stringConsumer())
+			.description("test empty string")
+			.inputType(String.class)
+			.build();
+
+		callback.call("\"\"");
+		assertEquals("", tool.calledValue.get());
+	}
+
 	static class TestFunctionTool {
 
 		AtomicReference<Object> calledValue = new AtomicReference<>();
