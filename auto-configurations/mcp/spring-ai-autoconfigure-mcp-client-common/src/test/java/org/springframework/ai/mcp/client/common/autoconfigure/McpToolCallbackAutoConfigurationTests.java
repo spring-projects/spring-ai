@@ -16,19 +16,29 @@
 
 package org.springframework.ai.mcp.client.common.autoconfigure;
 
+import java.util.List;
+import java.util.Map;
+
+import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.McpConnectionInfo;
+import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.McpToolNamePrefixGenerator;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class McpToolCallbackAutoConfigurationTests {
 
@@ -93,20 +103,26 @@ public class McpToolCallbackAutoConfigurationTests {
 	}
 
 	@Test
-	void defaultMcpToolNamePrefixGeneratorIsCreated() {
-		// Test with SYNC mode (default)
-		this.applicationContext.run(context -> {
-			assertThat(context).hasBean("mcpToolNamePrefixGenerator");
-			McpToolNamePrefixGenerator generator = context.getBean(McpToolNamePrefixGenerator.class);
-			assertThat(generator).isNotNull();
+	void disabledMcpToolCallbackAutoConfiguration() {
+		// Test when MCP client is disabled
+		this.applicationContext.withPropertyValues("spring.ai.mcp.client.enabled=false").run(context -> {
+			assertThat(context).doesNotHaveBean("mcpToolCallbacks");
+			assertThat(context).doesNotHaveBean("mcpAsyncToolCallbacks");
 		});
 
-		// Test with ASYNC mode
-		this.applicationContext.withPropertyValues("spring.ai.mcp.client.type=ASYNC").run(context -> {
-			assertThat(context).hasBean("mcpToolNamePrefixGenerator");
-			McpToolNamePrefixGenerator generator = context.getBean(McpToolNamePrefixGenerator.class);
-			assertThat(generator).isNotNull();
+		// Test when toolcallback is disabled
+		this.applicationContext.withPropertyValues("spring.ai.mcp.client.toolcallback.enabled=false").run(context -> {
+			assertThat(context).doesNotHaveBean("mcpToolCallbacks");
+			assertThat(context).doesNotHaveBean("mcpAsyncToolCallbacks");
 		});
+
+		// Test when both are disabled
+		this.applicationContext
+			.withPropertyValues("spring.ai.mcp.client.enabled=false", "spring.ai.mcp.client.toolcallback.enabled=false")
+			.run(context -> {
+				assertThat(context).doesNotHaveBean("mcpToolCallbacks");
+				assertThat(context).doesNotHaveBean("mcpAsyncToolCallbacks");
+			});
 	}
 
 	@Test
@@ -137,28 +153,97 @@ public class McpToolCallbackAutoConfigurationTests {
 	}
 
 	@Test
-	void mcpToolNamePrefixGeneratorIsInjectedIntoProviders() {
-		// Test SYNC provider receives the generator
-		this.applicationContext.run(context -> {
-			assertThat(context).hasBean("mcpToolNamePrefixGenerator");
+	void customMcpToolFilterOverridesDefault() {
+		// Test with SYNC mode
+		this.applicationContext.withUserConfiguration(CustomToolFilterConfig.class).run(context -> {
+			assertThat(context).hasBean("customToolFilter");
+			McpToolFilter filter = context.getBean("customToolFilter", McpToolFilter.class);
+			assertThat(filter).isInstanceOf(CustomToolFilter.class);
 			assertThat(context).hasBean("mcpToolCallbacks");
-
-			McpToolNamePrefixGenerator generator = context.getBean(McpToolNamePrefixGenerator.class);
+			// Verify the custom filter is injected into the provider
 			SyncMcpToolCallbackProvider provider = context.getBean(SyncMcpToolCallbackProvider.class);
-
-			assertThat(generator).isNotNull();
 			assertThat(provider).isNotNull();
 		});
 
-		// Test ASYNC provider receives the generator
+		// Test with ASYNC mode
+		this.applicationContext.withUserConfiguration(CustomToolFilterConfig.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC")
+			.run(context -> {
+				assertThat(context).hasBean("customToolFilter");
+				McpToolFilter filter = context.getBean("customToolFilter", McpToolFilter.class);
+				assertThat(filter).isInstanceOf(CustomToolFilter.class);
+				assertThat(context).hasBean("mcpAsyncToolCallbacks");
+				// Verify the custom filter is injected into the provider
+				AsyncMcpToolCallbackProvider provider = context.getBean(AsyncMcpToolCallbackProvider.class);
+				assertThat(provider).isNotNull();
+			});
+	}
+
+	@Test
+	void customToolContextToMcpMetaConverterOverridesDefault() {
+		// Test with SYNC mode
+		this.applicationContext.withUserConfiguration(CustomConverterConfig.class).run(context -> {
+			assertThat(context).hasBean("customConverter");
+			ToolContextToMcpMetaConverter converter = context.getBean("customConverter",
+					ToolContextToMcpMetaConverter.class);
+			assertThat(converter).isInstanceOf(CustomToolContextToMcpMetaConverter.class);
+			assertThat(context).hasBean("mcpToolCallbacks");
+			// Verify the custom converter is injected into the provider
+			SyncMcpToolCallbackProvider provider = context.getBean(SyncMcpToolCallbackProvider.class);
+			assertThat(provider).isNotNull();
+		});
+
+		// Test with ASYNC mode
+		this.applicationContext.withUserConfiguration(CustomConverterConfig.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC")
+			.run(context -> {
+				assertThat(context).hasBean("customConverter");
+				ToolContextToMcpMetaConverter converter = context.getBean("customConverter",
+						ToolContextToMcpMetaConverter.class);
+				assertThat(converter).isInstanceOf(CustomToolContextToMcpMetaConverter.class);
+				assertThat(context).hasBean("mcpAsyncToolCallbacks");
+				// Verify the custom converter is injected into the provider
+				AsyncMcpToolCallbackProvider provider = context.getBean(AsyncMcpToolCallbackProvider.class);
+				assertThat(provider).isNotNull();
+			});
+	}
+
+	@Test
+	void providersCreatedWithMcpClients() {
+		// Test SYNC mode with MCP clients
+		this.applicationContext.withUserConfiguration(McpSyncClientConfig.class).run(context -> {
+			assertThat(context).hasBean("mcpToolCallbacks");
+			assertThat(context).hasBean("mcpSyncClient1");
+			assertThat(context).hasBean("mcpSyncClient2");
+			SyncMcpToolCallbackProvider provider = context.getBean(SyncMcpToolCallbackProvider.class);
+			assertThat(provider).isNotNull();
+		});
+
+		// Test ASYNC mode with MCP clients
+		this.applicationContext.withUserConfiguration(McpAsyncClientConfig.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC")
+			.run(context -> {
+				assertThat(context).hasBean("mcpAsyncToolCallbacks");
+				assertThat(context).hasBean("mcpAsyncClient1");
+				assertThat(context).hasBean("mcpAsyncClient2");
+				AsyncMcpToolCallbackProvider provider = context.getBean(AsyncMcpToolCallbackProvider.class);
+				assertThat(provider).isNotNull();
+			});
+	}
+
+	@Test
+	void providersCreatedWithoutMcpClients() {
+		// Test SYNC mode without MCP clients
+		this.applicationContext.run(context -> {
+			assertThat(context).hasBean("mcpToolCallbacks");
+			SyncMcpToolCallbackProvider provider = context.getBean(SyncMcpToolCallbackProvider.class);
+			assertThat(provider).isNotNull();
+		});
+
+		// Test ASYNC mode without MCP clients
 		this.applicationContext.withPropertyValues("spring.ai.mcp.client.type=ASYNC").run(context -> {
-			assertThat(context).hasBean("mcpToolNamePrefixGenerator");
 			assertThat(context).hasBean("mcpAsyncToolCallbacks");
-
-			McpToolNamePrefixGenerator generator = context.getBean(McpToolNamePrefixGenerator.class);
 			AsyncMcpToolCallbackProvider provider = context.getBean(AsyncMcpToolCallbackProvider.class);
-
-			assertThat(generator).isNotNull();
 			assertThat(provider).isNotNull();
 		});
 	}
@@ -178,6 +263,86 @@ public class McpToolCallbackAutoConfigurationTests {
 		@Override
 		public String prefixedToolName(McpConnectionInfo mcpConnInfo, Tool tool) {
 			return "custom_" + tool.name();
+		}
+
+	}
+
+	@Configuration
+	static class CustomToolFilterConfig {
+
+		@Bean
+		public McpToolFilter customToolFilter() {
+			return new CustomToolFilter();
+		}
+
+	}
+
+	static class CustomToolFilter implements McpToolFilter {
+
+		@Override
+		public boolean test(McpConnectionInfo metadata, McpSchema.Tool tool) {
+			// Custom filter logic
+			return !tool.name().startsWith("excluded_");
+		}
+
+	}
+
+	@Configuration
+	static class CustomConverterConfig {
+
+		@Bean
+		public ToolContextToMcpMetaConverter customConverter() {
+			return new CustomToolContextToMcpMetaConverter();
+		}
+
+	}
+
+	static class CustomToolContextToMcpMetaConverter implements ToolContextToMcpMetaConverter {
+
+		@Override
+		public Map<String, Object> convert(ToolContext toolContext) {
+			// Custom conversion logic
+			return Map.of("custom", "metadata");
+		}
+
+	}
+
+	@Configuration
+	static class McpSyncClientConfig {
+
+		@Bean
+		public List<McpSyncClient> mcpSyncClients() {
+			return List.of(mcpSyncClient1(), mcpSyncClient2());
+		}
+
+		@Bean
+		public McpSyncClient mcpSyncClient1() {
+			return mock(McpSyncClient.class);
+		}
+
+		@Bean
+		public McpSyncClient mcpSyncClient2() {
+			return mock(McpSyncClient.class);
+		}
+
+	}
+
+	@Configuration
+	static class McpAsyncClientConfig {
+
+		@Bean
+		public List<McpAsyncClient> mcpAsyncClients() {
+			return List.of(mcpAsyncClient1(), mcpAsyncClient2());
+		}
+
+		@Bean
+		public McpAsyncClient mcpAsyncClient1() {
+			return mock(McpAsyncClient.class);
+		}
+
+		@Bean
+		public McpAsyncClient mcpAsyncClient2() {
+			return mock(McpAsyncClient.class);
 		}
 
 	}
