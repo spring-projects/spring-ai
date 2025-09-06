@@ -435,7 +435,7 @@ If multiple filters are needed, combine them into a single composite filter impl
 
 The MCP Client Boot Starter supports customizable tool name prefix generation through the `McpToolNamePrefixGenerator` interface. This feature helps avoid naming conflicts when integrating tools from multiple MCP servers by adding unique prefixes to tool names.
 
-By default, the starter uses the MCP client name as a prefix for tool names. You can customize this behavior by providing your own implementation:
+By default, if no custom `McpToolNamePrefixGenerator` bean is provided, the starter uses `McpToolNamePrefixGenerator.defaultGenerator()` which uses the MCP client name as a prefix for tool names. You can customize this behavior by providing your own implementation:
 
 [source,java]
 ----
@@ -464,7 +464,7 @@ The `McpConnectionInfo` record provides comprehensive information about the MCP 
 
 The framework provides several built-in prefix generators:
 
-* `McpToolNamePrefixGenerator.defaultGenerator()` - Uses the MCP client name as prefix (default behavior)
+* `McpToolNamePrefixGenerator.defaultGenerator()` - Uses the MCP client name as prefix (used by default if no custom bean is provided)
 * `McpToolNamePrefixGenerator.noPrefix()` - Returns tool names without any prefix
 
 To disable prefixing entirely, register the no-prefix generator as a bean:
@@ -481,9 +481,75 @@ public class McpConfiguration {
 }
 ----
 
-The prefix generator is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers.
-If no custom generator is provided, the default generator (using client name as prefix) is used.
+The prefix generator is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers through Spring's `ObjectProvider` mechanism.
+If no custom generator bean is provided, the default generator (using prefix generated from client's info ) is used automatically.
 
+=== Tool Context to MCP Meta Converter
+
+The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#_tool_context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface. 
+This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
+
+By default, if no custom `ToolContextToMcpMetaConverter` bean is provided, the starter uses `ToolContextToMcpMetaConverter.defaultConverter()` which:
+
+* Filters out the MCP exchange key (`McpToolUtils.TOOL_CONTEXT_MCP_EXCHANGE_KEY`)
+* Filters out entries with null values
+* Passes through all other context entries as metadata
+
+You can customize this behavior by providing your own implementation:
+
+[source,java]
+----
+@Component
+public class CustomToolContextToMcpMetaConverter implements ToolContextToMcpMetaConverter {
+    
+    @Override
+    public Map<String, Object> convert(ToolContext toolContext) {
+        if (toolContext == null || toolContext.getContext() == null) {
+            return Map.of();
+        }
+        
+        // Custom logic to convert tool context to MCP metadata
+        Map<String, Object> metadata = new HashMap<>();
+        
+        // Example: Add custom prefix to all keys
+        for (Map.Entry<String, Object> entry : toolContext.getContext().entrySet()) {
+            if (entry.getValue() != null) {
+                metadata.put("app_" + entry.getKey(), entry.getValue());
+            }
+        }
+        
+        // Example: Add additional metadata
+        metadata.put("timestamp", System.currentTimeMillis());
+        metadata.put("source", "spring-ai");
+        
+        return metadata;
+    }
+}
+----
+
+==== Built-in Converters
+
+The framework provides built-in converters:
+
+* `ToolContextToMcpMetaConverter.defaultConverter()` - Filters out MCP exchange key and null values (used by default if no custom bean is provided)
+* `ToolContextToMcpMetaConverter.noOp()` - Returns an empty map, effectively disabling context-to-metadata conversion
+
+To disable context-to-metadata conversion entirely:
+
+[source,java]
+----
+@Configuration
+public class McpConfiguration {
+    
+    @Bean
+    public ToolContextToMcpMetaConverter toolContextToMcpMetaConverter() {
+        return ToolContextToMcpMetaConverter.noOp();
+    }
+}
+----
+
+The converter is automatically detected and applied to both synchronous and asynchronous MCP tool callbacks through Spring's `ObjectProvider` mechanism.
+If no custom converter bean is provided, the default converter is used automatically.
 
 === Disable the MCP ToolCallback Auto-Configuration
 
