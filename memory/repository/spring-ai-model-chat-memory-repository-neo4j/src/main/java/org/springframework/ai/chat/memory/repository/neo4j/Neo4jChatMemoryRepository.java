@@ -190,7 +190,7 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 					return new AssistantMessage.ToolCall((String) toolCallMap.get("id"),
 							(String) toolCallMap.get("type"), (String) toolCallMap.get("name"),
 							(String) toolCallMap.get("arguments"));
-				}), mediaList);
+				}), mediaList, (String) messageMap.get("name"));
 		return message;
 	}
 

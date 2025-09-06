@@ -209,7 +209,7 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 		Map<String, Object> props = Map.of(CONVERSATION_TS, udt.getInstant(this.conf.messageUdtTimestampColumn));
 		switch (MessageType.valueOf(udt.getString(this.conf.messageUdtTypeColumn))) {
 			case ASSISTANT:
-				return new AssistantMessage(content, props);
+				return new AssistantMessage(content, props, List.of(), List.of(), null);
 			case USER:
 				return UserMessage.builder().text(content).metadata(props).build();
 			case SYSTEM:
