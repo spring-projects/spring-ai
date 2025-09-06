@@ -317,9 +317,9 @@ public final class McpToolUtils {
 
 		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
 
-		return new AsyncToolSpecification(syncToolSpecification.tool(),
-				(exchange, map) -> Mono
-					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
+		return new AsyncToolSpecification(syncToolSpecification.tool(), null,
+				(exchange, request) -> Mono.fromCallable(
+						() -> syncToolSpecification.callHandler().apply(new McpSyncServerExchange(exchange), request))
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
