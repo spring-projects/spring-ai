@@ -115,7 +115,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 	}
 
 	@Test
-	void verifyASyncToolCallbackFilterConfiguration() {
+	void verifyAsyncToolCallbackFilterConfiguration() {
 		this.contextRunner
 			.withUserConfiguration(McpToolCallbackAutoConfiguration.class, McpClientFilterConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.type=ASYNC")
