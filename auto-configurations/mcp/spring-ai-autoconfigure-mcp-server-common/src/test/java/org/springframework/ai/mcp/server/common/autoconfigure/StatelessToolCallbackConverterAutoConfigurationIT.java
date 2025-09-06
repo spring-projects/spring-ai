@@ -215,7 +215,7 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
 			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
 
-			return List.of(new SyncMcpToolCallback(mockClient, mockTool));
+			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
 
 	}
@@ -243,8 +243,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockClient2.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult2);
 			when(mockClient2.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient2", "1.0.0"));
 
-			return List.of(new SyncMcpToolCallback(mockClient1, mockTool1),
-					new SyncMcpToolCallback(mockClient2, mockTool2));
+			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient1).tool(mockTool1).build(),
+					SyncMcpToolCallback.builder().mcpClient(mockClient2).tool(mockTool2).build());
 		}
 
 	}
@@ -272,8 +272,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockClient2.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult2);
 			when(mockClient2.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient2", "1.0.0"));
 
-			return List.of(new SyncMcpToolCallback(mockClient1, mockTool1),
-					new SyncMcpToolCallback(mockClient2, mockTool2));
+			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient1).tool(mockTool1).build(),
+					SyncMcpToolCallback.builder().mcpClient(mockClient2).tool(mockTool2).build());
 		}
 
 	}
@@ -293,7 +293,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 				Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
 				when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
 
-				return new ToolCallback[] { new SyncMcpToolCallback(mockClient, mockTool) };
+				return new ToolCallback[] {
+						SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build() };
 			};
 		}
 

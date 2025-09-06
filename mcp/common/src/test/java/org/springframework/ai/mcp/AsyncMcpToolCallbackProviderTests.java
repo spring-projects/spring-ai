@@ -18,7 +18,7 @@ package org.springframework.ai.mcp;
 
 import java.util.List;
 
-import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -26,6 +26,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,18 +37,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SyncMcpToolCallbackProviderTests {
+class AsyncMcpToolCallbackProviderTests {
 
 	@Mock
-	private McpSyncClient mcpClient;
+	private McpAsyncClient mcpClient;
 
 	@Test
 	void getToolCallbacksShouldReturnEmptyArrayWhenNoTools() {
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of());
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -53,7 +59,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void getToolCallbacksShouldReturnEmptyArrayWhenNoClients() {
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().build();
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder().mcpClients(List.of()).build();
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -73,9 +79,11 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -95,9 +103,11 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
 
 		assertThatThrownBy(() -> provider.getToolCallbacks()).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Multiple tools with the same name");
@@ -111,23 +121,23 @@ class SyncMcpToolCallbackProviderTests {
 		Tool tool2 = mock(Tool.class);
 		when(tool2.name()).thenReturn("sameName");
 
-		McpSyncClient mcpClient1 = mock(McpSyncClient.class);
+		McpAsyncClient mcpClient1 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
-		when(mcpClient1.listTools()).thenReturn(listToolsResult1);
+		when(mcpClient1.listTools()).thenReturn(Mono.just(listToolsResult1));
 
 		var clientInfo1 = new Implementation("testClient1", "1.0.0");
 		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
 
-		McpSyncClient mcpClient2 = mock(McpSyncClient.class);
+		McpAsyncClient mcpClient2 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
-		when(mcpClient2.listTools()).thenReturn(listToolsResult2);
+		when(mcpClient2.listTools()).thenReturn(Mono.just(listToolsResult2));
 
 		var clientInfo2 = new Implementation("testClient2", "1.0.0");
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.mcpClients(mcpClient1, mcpClient2)
 			.build();
 
@@ -149,11 +159,13 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
 		// Using the builder without explicit filter (should use default filter that
 		// accepts all)
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
 
 		var callbacks = provider.getToolCallbacks();
 
@@ -167,12 +179,12 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
 		// Create a filter that rejects all tools
 		McpToolFilter rejectAllFilter = (client, tool) -> false;
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.toolFilter(rejectAllFilter)
 			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
 			.mcpClients(this.mcpClient)
@@ -199,12 +211,12 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2, tool3));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
 		// Create a filter that only accepts tools with names containing "2" or "3"
 		McpToolFilter nameFilter = (client, tool) -> tool.name().contains("2") || tool.name().contains("3");
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.toolFilter(nameFilter)
 			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
 			.mcpClients(this.mcpClient)
@@ -223,19 +235,20 @@ class SyncMcpToolCallbackProviderTests {
 		when(tool1.name()).thenReturn("tool1");
 
 		Tool tool2 = mock(Tool.class);
+		// Don't stub tool2.name() since it won't be used due to the filter
 
-		McpSyncClient mcpClient1 = mock(McpSyncClient.class);
+		McpAsyncClient mcpClient1 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
-		when(mcpClient1.listTools()).thenReturn(listToolsResult1);
+		when(mcpClient1.listTools()).thenReturn(Mono.just(listToolsResult1));
 
 		var clientInfo1 = new Implementation("testClient1", "1.0.0");
 		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
 
-		McpSyncClient mcpClient2 = mock(McpSyncClient.class);
+		McpAsyncClient mcpClient2 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
-		when(mcpClient2.listTools()).thenReturn(listToolsResult2);
+		when(mcpClient2.listTools()).thenReturn(Mono.just(listToolsResult2));
 
 		var clientInfo2 = new Implementation("testClient2", "1.0.0");
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
@@ -244,7 +257,7 @@ class SyncMcpToolCallbackProviderTests {
 		McpToolFilter clientFilter = (mcpConnectionInfo,
 				tool) -> mcpConnectionInfo.clientInfo().name().equals("testClient1");
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.toolFilter(clientFilter)
 			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
 			.mcpClients(mcpClient1, mcpClient2)
@@ -264,10 +277,10 @@ class SyncMcpToolCallbackProviderTests {
 		Tool tool2 = mock(Tool.class);
 		when(tool2.name()).thenReturn("calculator");
 
-		McpSyncClient weatherClient = mock(McpSyncClient.class);
+		McpAsyncClient weatherClient = mock(McpAsyncClient.class);
 		ListToolsResult weatherResult = mock(ListToolsResult.class);
 		when(weatherResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(weatherClient.listTools()).thenReturn(weatherResult);
+		when(weatherClient.listTools()).thenReturn(Mono.just(weatherResult));
 
 		var weatherClientInfo = new Implementation("weather-service", "1.0.0");
 		when(weatherClient.getClientInfo()).thenReturn(weatherClientInfo);
@@ -277,7 +290,7 @@ class SyncMcpToolCallbackProviderTests {
 				tool) -> mcpConnectionInfo.clientInfo().name().equals("weather-service")
 						&& tool.name().equals("weather");
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.toolFilter(complexFilter)
 			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
 			.mcpClients(weatherClient)
@@ -290,54 +303,21 @@ class SyncMcpToolCallbackProviderTests {
 	}
 
 	@Test
-	void builderShouldSupportAddMcpClient() {
-		var clientInfo1 = new Implementation("testClient1", "1.0.0");
-		var clientInfo2 = new Implementation("testClient2", "1.0.0");
+	void asyncToolCallbacksStaticMethodShouldReturnEmptyFluxWhenNoClients() {
+		var flux = AsyncMcpToolCallbackProvider.asyncToolCallbacks(List.of());
 
-		Tool tool1 = mock(Tool.class);
-		when(tool1.name()).thenReturn("tool1");
-
-		Tool tool2 = mock(Tool.class);
-		when(tool2.name()).thenReturn("tool2");
-
-		McpSyncClient mcpClient1 = mock(McpSyncClient.class);
-		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
-		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
-		when(mcpClient1.listTools()).thenReturn(listToolsResult1);
-		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
-
-		McpSyncClient mcpClient2 = mock(McpSyncClient.class);
-		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
-		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
-		when(mcpClient2.listTools()).thenReturn(listToolsResult2);
-		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
-
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
-			.addMcpClient(mcpClient1)
-			.addMcpClient(mcpClient2)
-			.build();
-
-		var callbacks = provider.getToolCallbacks();
-
-		assertThat(callbacks).hasSize(2);
+		StepVerifier.create(flux).expectNextCount(0).verifyComplete();
 	}
 
 	@Test
-	void syncToolCallbacksStaticMethodShouldReturnEmptyListWhenNoClients() {
-		var callbacks = SyncMcpToolCallbackProvider.syncToolCallbacks(List.of());
+	void asyncToolCallbacksStaticMethodShouldReturnEmptyFluxWhenNullClients() {
+		var flux = AsyncMcpToolCallbackProvider.asyncToolCallbacks(null);
 
-		assertThat(callbacks).isEmpty();
+		StepVerifier.create(flux).expectNextCount(0).verifyComplete();
 	}
 
 	@Test
-	void syncToolCallbacksStaticMethodShouldReturnEmptyListWhenNullClients() {
-		var callbacks = SyncMcpToolCallbackProvider.syncToolCallbacks(null);
-
-		assertThat(callbacks).isEmpty();
-	}
-
-	@Test
-	void syncToolCallbacksStaticMethodShouldReturnCallbacks() {
+	void asyncToolCallbacksStaticMethodShouldReturnCallbacks() {
 		var clientInfo = new Implementation("testClient", "1.0.0");
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
@@ -346,11 +326,11 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
-		var callbacks = SyncMcpToolCallbackProvider.syncToolCallbacks(List.of(this.mcpClient));
+		var flux = AsyncMcpToolCallbackProvider.asyncToolCallbacks(List.of(this.mcpClient));
 
-		assertThat(callbacks).hasSize(1);
+		StepVerifier.create(flux).expectNextMatches(callback -> callback instanceof ToolCallback).verifyComplete();
 	}
 
 	@Test
@@ -363,11 +343,11 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
 		ToolContextToMcpMetaConverter customConverter = ToolContextToMcpMetaConverter.defaultConverter();
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.mcpClients(this.mcpClient)
 			.toolContextToMcpMetaConverter(customConverter)
 			.build();
@@ -387,15 +367,61 @@ class SyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
 
-		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.mcpClients(List.of(this.mcpClient))
 			.build();
 
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
+	}
+
+	@Test
+	void builderShouldSupportMcpClientsAsVarargs() {
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool1));
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
+
+		var callbacks = provider.getToolCallbacks();
+
+		assertThat(callbacks).hasSize(1);
+	}
+
+	@Test
+	void builderShouldSupportCustomToolNamePrefixGenerator() {
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool1));
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+
+		McpToolNamePrefixGenerator customGenerator = (mcpConnectionInfo, tool) -> "custom_" + tool.name();
+
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.toolNamePrefixGenerator(customGenerator)
+			.build();
+
+		var callbacks = provider.getToolCallbacks();
+
+		assertThat(callbacks).hasSize(1);
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("custom_tool1");
 	}
 
 }

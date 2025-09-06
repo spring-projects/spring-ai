@@ -345,7 +345,7 @@ public class McpStatelessServerAutoConfigurationIT {
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
 			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
 
-			return List.of(new SyncMcpToolCallback(mockClient, mockTool));
+			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
 
 	}
@@ -363,7 +363,8 @@ public class McpStatelessServerAutoConfigurationIT {
 				Mockito.when(mockTool.description()).thenReturn("Provider Tool");
 				when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
 
-				return new ToolCallback[] { new SyncMcpToolCallback(mockClient, mockTool) };
+				return new ToolCallback[] {
+						SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build() };
 			};
 		}
 
