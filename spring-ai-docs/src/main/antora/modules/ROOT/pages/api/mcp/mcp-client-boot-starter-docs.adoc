@@ -489,11 +489,27 @@ If no custom generator bean is provided, the default generator (using prefix gen
 The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#_tool_context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface. 
 This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
 
-By default, if no custom `ToolContextToMcpMetaConverter` bean is provided, the starter uses `ToolContextToMcpMetaConverter.defaultConverter()` which:
+For example you can pass the MCP `progressToken` to your link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow] in the tool context to track the progress of long-running operations:
+
+[source,java]
+----
+ChatModel chatModel = ...
+
+String response = ChatClient.create(chatModel)
+        .prompt("Tell me more about the customer with ID 42")
+        .toolContext(Map.of("progressToken", "my-progress-token"))
+        .call()
+        .content();
+----
+
+By default, if no custom converter bean is provided, the starter uses `ToolContextToMcpMetaConverter.defaultConverter()` which:
 
 * Filters out the MCP exchange key (`McpToolUtils.TOOL_CONTEXT_MCP_EXCHANGE_KEY`)
 * Filters out entries with null values
 * Passes through all other context entries as metadata
+
+
+
 
 You can customize this behavior by providing your own implementation:
 
