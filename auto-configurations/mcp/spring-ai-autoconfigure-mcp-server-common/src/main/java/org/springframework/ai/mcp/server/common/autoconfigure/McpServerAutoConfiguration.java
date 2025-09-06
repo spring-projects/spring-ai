@@ -308,7 +308,7 @@ public class McpServerAutoConfiguration {
 		}
 
 		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol",
-				havingValue = "STREAMABLE", matchIfMissing = false)
+				havingValue = "STREAMABLE")
 		static class StreamableEnabledCondition {
 
 		}
@@ -348,7 +348,7 @@ public class McpServerAutoConfiguration {
 		}
 
 		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol",
-				havingValue = "STREAMABLE", matchIfMissing = false)
+				havingValue = "STREAMABLE")
 		static class StreamableEnabledCondition {
 
 		}
