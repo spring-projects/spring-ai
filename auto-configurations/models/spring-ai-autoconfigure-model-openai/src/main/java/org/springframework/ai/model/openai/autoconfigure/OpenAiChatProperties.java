@@ -17,9 +17,13 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+/**
+ * @author lambochen
+ */
 @ConfigurationProperties(OpenAiChatProperties.CONFIG_PREFIX)
 public class OpenAiChatProperties extends OpenAiParentProperties {
 
@@ -27,7 +31,7 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = "gpt-4o-mini";
 
-	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
+	public static final String DEFAULT_COMPLETIONS_PATH = OpenAiApiConstants.DEFAULT_COMPLETIONS_PATH;
 
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
