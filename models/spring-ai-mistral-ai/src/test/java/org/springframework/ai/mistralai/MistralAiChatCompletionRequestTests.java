@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Nicolas Krier
  * @since 0.8.1
  */
-class MistralAiChatCompletionRequestTest {
+class MistralAiChatCompletionRequestTests {
 
 	private static final String BASE_URL = "https://faked.url";
 
