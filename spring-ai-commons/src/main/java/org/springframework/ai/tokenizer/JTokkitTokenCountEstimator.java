@@ -24,6 +24,8 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Base64;
+
 /**
  * Estimates the number of tokens in a given text or message using the JTokkit encoding
  * library.
@@ -70,7 +72,8 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 					tokenCount += this.estimate(textData);
 				}
 				else if (media.getData() instanceof byte[] binaryData) {
-					tokenCount += binaryData.length; // This is likely incorrect.
+					String base64 = Base64.getEncoder().encodeToString(binaryData);
+					tokenCount += this.estimate(base64);
 				}
 			}
 		}
