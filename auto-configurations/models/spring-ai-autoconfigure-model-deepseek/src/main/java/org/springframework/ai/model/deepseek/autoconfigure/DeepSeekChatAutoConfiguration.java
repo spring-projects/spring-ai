@@ -18,9 +18,11 @@ package org.springframework.ai.model.deepseek.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.chat.model.StreamFunctionCallingHelper;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
+import org.springframework.ai.deepseek.api.DeepSeekStreamFunctionCallingHelper;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
@@ -69,11 +71,14 @@ public class DeepSeekChatAutoConfiguration {
 			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> deepseekToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityPredicate> deepseekToolExecutionEligibilityPredicate,
+			ObjectProvider<StreamFunctionCallingHelper<DeepSeekApi.ChatCompletionChunk>> streamFunctionCallingHelper) {
 
 		var deepSeekApi = deepSeekApi(chatProperties, commonProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
+				webClientBuilderProvider.getIfAvailable(WebClient::builder),
+				responseErrorHandler,
+				streamFunctionCallingHelper.getIfAvailable(DeepSeekStreamFunctionCallingHelper::new));
 
 		var chatModel = DeepSeekChatModel.builder()
 			.deepSeekApi(deepSeekApi)
@@ -92,7 +97,8 @@ public class DeepSeekChatAutoConfiguration {
 
 	private DeepSeekApi deepSeekApi(DeepSeekChatProperties chatProperties,
 			DeepSeekConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler,
+			StreamFunctionCallingHelper<DeepSeekApi.ChatCompletionChunk> chunkMerger) {
 
 		String resolvedBaseUrl = StringUtils.hasText(chatProperties.getBaseUrl()) ? chatProperties.getBaseUrl()
 				: commonProperties.getBaseUrl();
@@ -110,6 +116,7 @@ public class DeepSeekChatAutoConfiguration {
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(responseErrorHandler)
+			.streamFunctionCallingHelper(chunkMerger)
 			.build();
 	}
 
