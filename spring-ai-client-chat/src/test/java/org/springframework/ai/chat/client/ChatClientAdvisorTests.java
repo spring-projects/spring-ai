@@ -97,15 +97,7 @@ public class ChatClientAdvisorTests {
 
 		// Capture and verify the system message instructions
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
-				Default system text.
-
-				Use the conversation memory from the MEMORY section to provide accurate answers.
-
-				---------------------
-				MEMORY:
-				---------------------
-				""");
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("Default system text.");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Capture and verify the user message instructions
@@ -175,15 +167,7 @@ public class ChatClientAdvisorTests {
 
 		// Capture and verify the system message instructions
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
-		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
-				Default system text.
-
-				Use the conversation memory from the MEMORY section to provide accurate answers.
-
-				---------------------
-				MEMORY:
-				---------------------
-				""");
+		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("Default system text.");
 		assertThat(systemMessage.getMessageType()).isEqualTo(MessageType.SYSTEM);
 
 		// Capture and verify the user message instructions
