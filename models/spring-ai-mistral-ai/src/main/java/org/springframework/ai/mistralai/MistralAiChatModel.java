@@ -35,6 +35,7 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -50,7 +51,6 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion.Choice;
@@ -430,7 +430,7 @@ public class MistralAiChatModel implements ChatModel {
 		// @formatter:off
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
 				.stream()
-				.flatMap(this::createMessages)
+				.flatMap(this::createChatCompletionMessages)
 				.toList();
 		// @formatter:on
 
@@ -450,60 +450,70 @@ public class MistralAiChatModel implements ChatModel {
 		return request;
 	}
 
-	/**
-	 * Accessible for testing.
-	 */
-	Stream<ChatCompletionMessage> createMessages(Message message) {
-		return switch (message.getMessageType()) {
-			case USER -> {
-				Object content = message.getText();
+	private Stream<ChatCompletionMessage> createChatCompletionMessages(Message message) {
+		switch (message.getMessageType()) {
+			case USER:
+				return Stream.of(createUserChatCompletionMessage(message));
+			case SYSTEM:
+				return Stream.of(createSystemChatCompletionMessage(message));
+			case ASSISTANT:
+				return Stream.of(createAssistantChatCompletionMessage(message));
+			case TOOL:
+				return createToolChatCompletionMessages(message);
+			default:
+				throw new IllegalStateException("Unknown message type: " + message.getMessageType());
+		}
+	}
 
-				if (message instanceof MediaContent mediaContent && !CollectionUtils.isEmpty(mediaContent.getMedia())) {
-					List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
-							List.of(new ChatCompletionMessage.MediaContent(message.getText())));
+	private Stream<ChatCompletionMessage> createToolChatCompletionMessages(Message message) {
+		if (message instanceof ToolResponseMessage toolResponseMessage) {
+			var chatCompletionMessages = new ArrayList<ChatCompletionMessage>();
 
-					contentList.addAll(mediaContent.getMedia().stream().map(this::mapToMediaContent).toList());
-
-					content = contentList;
-				}
-
-				yield Stream.of(new ChatCompletionMessage(content, ChatCompletionMessage.Role.USER));
+			for (ToolResponseMessage.ToolResponse toolResponse : toolResponseMessage.getResponses()) {
+				Assert.isTrue(toolResponse.id() != null, "ToolResponseMessage.ToolResponse must have an id.");
+				var chatCompletionMessage = new ChatCompletionMessage(toolResponse.responseData(),
+						ChatCompletionMessage.Role.TOOL, toolResponse.name(), null, toolResponse.id());
+				chatCompletionMessages.add(chatCompletionMessage);
 			}
-			case SYSTEM -> Stream.of(new ChatCompletionMessage(message.getText(), ChatCompletionMessage.Role.SYSTEM));
-			case ASSISTANT -> {
-				if (message instanceof AssistantMessage assistantMessage) {
-					List<ToolCall> toolCalls = null;
 
-					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-						toolCalls = assistantMessage.getToolCalls().stream().map(this::mapToolCall).toList();
-					}
+			return chatCompletionMessages.stream();
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported tool message class: " + message.getClass().getName());
+		}
+	}
 
-					yield Stream.of(new ChatCompletionMessage(assistantMessage.getText(),
-							ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null));
-				}
-				else {
-					throw new IllegalArgumentException(
-							"Unexpected assistant message class: " + message.getClass().getName());
-				}
+	private ChatCompletionMessage createAssistantChatCompletionMessage(Message message) {
+		if (message instanceof AssistantMessage assistantMessage) {
+			List<ToolCall> toolCalls = null;
+
+			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+				toolCalls = assistantMessage.getToolCalls().stream().map(this::mapToolCall).toList();
 			}
-			case TOOL -> {
-				if (message instanceof ToolResponseMessage toolResponseMessage) {
-					var chatCompletionMessages = new ArrayList<ChatCompletionMessage>();
 
-					for (ToolResponseMessage.ToolResponse toolResponse : toolResponseMessage.getResponses()) {
-						Assert.isTrue(toolResponse.id() != null, "ToolResponseMessage must have an id");
-						chatCompletionMessages.add(new ChatCompletionMessage(toolResponse.responseData(),
-								ChatCompletionMessage.Role.TOOL, toolResponse.name(), null, toolResponse.id()));
-					}
+			return new ChatCompletionMessage(assistantMessage.getText(), ChatCompletionMessage.Role.ASSISTANT, null,
+					toolCalls, null);
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported assistant message class: " + message.getClass().getName());
+		}
+	}
 
-					yield chatCompletionMessages.stream();
-				}
-				else {
-					throw new IllegalArgumentException(
-							"Unexpected tool message class: " + message.getClass().getName());
-				}
-			}
-		};
+	private ChatCompletionMessage createSystemChatCompletionMessage(Message message) {
+		return new ChatCompletionMessage(message.getText(), ChatCompletionMessage.Role.SYSTEM);
+	}
+
+	private ChatCompletionMessage createUserChatCompletionMessage(Message message) {
+		Object content = message.getText();
+
+		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
+			List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
+					List.of(new ChatCompletionMessage.MediaContent(message.getText())));
+			contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
+			content = contentList;
+		}
+
+		return new ChatCompletionMessage(content, ChatCompletionMessage.Role.USER);
 	}
 
 	private ToolCall mapToolCall(AssistantMessage.ToolCall toolCall) {

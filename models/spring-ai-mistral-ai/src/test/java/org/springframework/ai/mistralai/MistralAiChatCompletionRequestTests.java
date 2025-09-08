@@ -24,13 +24,13 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -124,24 +124,20 @@ class MistralAiChatCompletionRequestTests {
 	}
 
 	@Test
-	void createMessagesWithUserMessage() {
+	void createChatCompletionMessagesWithUserMessage() {
 		var userMessage = new UserMessage(TEXT_CONTENT);
 		userMessage.getMedia().add(IMAGE_MEDIA);
-		var chatCompletionMessages = this.chatModel.createMessages(userMessage).toList();
-		verifyUserChatCompletionMessages(chatCompletionMessages);
+		var prompt = createPrompt(userMessage);
+		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
+		verifyUserChatCompletionMessages(chatCompletionRequest.messages());
 	}
 
 	@Test
-	void createMessagesWithAnotherUserMessage() {
-		var anotherUserMessage = new AnotherUserMessage(TEXT_CONTENT, List.of(IMAGE_MEDIA));
-		var chatCompletionMessages = this.chatModel.createMessages(anotherUserMessage).toList();
-		verifyUserChatCompletionMessages(chatCompletionMessages);
-	}
-
-	@Test
-	void createMessagesWithSimpleUserMessage() {
+	void createChatCompletionMessagesWithSimpleUserMessage() {
 		var simpleUserMessage = new SimpleMessage(MessageType.USER, TEXT_CONTENT);
-		var chatCompletionMessages = this.chatModel.createMessages(simpleUserMessage).toList();
+		var prompt = createPrompt(simpleUserMessage);
+		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
+		var chatCompletionMessages = chatCompletionRequest.messages();
 		assertThat(chatCompletionMessages).hasSize(1);
 		var chatCompletionMessage = chatCompletionMessages.get(0);
 		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.USER);
@@ -149,26 +145,30 @@ class MistralAiChatCompletionRequestTests {
 	}
 
 	@Test
-	void createMessagesWithSystemMessage() {
+	void createChatCompletionMessagesWithSystemMessage() {
 		var systemMessage = new SystemMessage(TEXT_CONTENT);
-		var chatCompletionMessages = this.chatModel.createMessages(systemMessage).toList();
-		verifySystemChatCompletionMessages(chatCompletionMessages);
+		var prompt = createPrompt(systemMessage);
+		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
+		verifySystemChatCompletionMessages(chatCompletionRequest.messages());
 	}
 
 	@Test
-	void createMessagesWithSimpleSystemMessage() {
+	void createChatCompletionMessagesWithSimpleSystemMessage() {
 		var simpleSystemMessage = new SimpleMessage(MessageType.SYSTEM, TEXT_CONTENT);
-		var chatCompletionMessages = this.chatModel.createMessages(simpleSystemMessage).toList();
-		verifySystemChatCompletionMessages(chatCompletionMessages);
+		var prompt = createPrompt(simpleSystemMessage);
+		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
+		verifySystemChatCompletionMessages(chatCompletionRequest.messages());
 	}
 
 	@Test
-	void createMessagesWithAssistantMessage() {
+	void createChatCompletionMessagesWithAssistantMessage() {
 		var toolCall1 = createToolCall(1);
 		var toolCall2 = createToolCall(2);
 		var toolCall3 = createToolCall(3);
 		var assistantMessage = new AssistantMessage(TEXT_CONTENT, Map.of(), List.of(toolCall1, toolCall2, toolCall3));
-		var chatCompletionMessages = this.chatModel.createMessages(assistantMessage).toList();
+		var prompt = createPrompt(assistantMessage);
+		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
+		var chatCompletionMessages = chatCompletionRequest.messages();
 		assertThat(chatCompletionMessages).hasSize(1);
 		var chatCompletionMessage = chatCompletionMessages.get(0);
 		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.ASSISTANT);
@@ -181,20 +181,23 @@ class MistralAiChatCompletionRequestTests {
 	}
 
 	@Test
-	void createMessagesWithSimpleAssistantMessage() {
+	void createChatCompletionMessagesWithSimpleAssistantMessage() {
 		var simpleAssistantMessage = new SimpleMessage(MessageType.ASSISTANT, TEXT_CONTENT);
-		assertThatThrownBy(() -> this.chatModel.createMessages(simpleAssistantMessage))
+		var prompt = createPrompt(simpleAssistantMessage);
+		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Unexpected assistant message class: " + SimpleMessage.class.getName());
+			.hasMessage("Unsupported assistant message class: " + SimpleMessage.class.getName());
 	}
 
 	@Test
-	void createMessagesWithToolResponseMessage() {
+	void createChatCompletionMessagesWithToolResponseMessage() {
 		var toolResponse1 = createToolResponse(1);
 		var toolResponse2 = createToolResponse(2);
 		var toolResponse3 = createToolResponse(3);
 		var toolResponseMessage = new ToolResponseMessage(List.of(toolResponse1, toolResponse2, toolResponse3));
-		var chatCompletionMessages = this.chatModel.createMessages(toolResponseMessage).toList();
+		var prompt = createPrompt(toolResponseMessage);
+		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
+		var chatCompletionMessages = chatCompletionRequest.messages();
 		assertThat(chatCompletionMessages).hasSize(3);
 		verifyToolChatCompletionMessage(chatCompletionMessages.get(0), toolResponse1);
 		verifyToolChatCompletionMessage(chatCompletionMessages.get(1), toolResponse2);
@@ -202,20 +205,29 @@ class MistralAiChatCompletionRequestTests {
 	}
 
 	@Test
-	void createMessagesWithInvalidToolResponseMessage() {
+	void createChatCompletionMessagesWithInvalidToolResponseMessage() {
 		var toolResponse = new ToolResponseMessage.ToolResponse(null, null, null);
 		var toolResponseMessage = new ToolResponseMessage(List.of(toolResponse));
-		assertThatThrownBy(() -> this.chatModel.createMessages(toolResponseMessage))
+		var prompt = createPrompt(toolResponseMessage);
+		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("ToolResponseMessage must have an id");
+			.hasMessage("ToolResponseMessage.ToolResponse must have an id.");
 	}
 
 	@Test
-	void createMessagesWithSimpleToolMessage() {
+	void createChatCompletionMessagesWithSimpleToolMessage() {
 		var simpleToolMessage = new SimpleMessage(MessageType.TOOL, TEXT_CONTENT);
-		assertThatThrownBy(() -> this.chatModel.createMessages(simpleToolMessage))
+		var prompt = createPrompt(simpleToolMessage);
+		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessage("Unexpected tool message class: " + SimpleMessage.class.getName());
+			.hasMessage("Unsupported tool message class: " + SimpleMessage.class.getName());
+	}
+
+	private Prompt createPrompt(Message message) {
+		var chatOptions = MistralAiChatOptions.builder().temperature(0.7d).build();
+		var prompt = new Prompt(message, chatOptions);
+
+		return this.chatModel.buildRequestPrompt(prompt);
 	}
 
 	private static void verifyToolChatCompletionMessage(ChatCompletionMessage chatCompletionMessage,
@@ -236,6 +248,7 @@ class MistralAiChatCompletionRequestTests {
 		assertThat(mistralToolCall.id()).isEqualTo(toolCall.id());
 		assertThat(mistralToolCall.type()).isEqualTo(toolCall.type());
 		var function = mistralToolCall.function();
+		assertThat(function).isNotNull();
 		assertThat(function.name()).isEqualTo(toolCall.name());
 		assertThat(function.arguments()).isEqualTo(toolCall.arguments());
 	}
@@ -257,43 +270,24 @@ class MistralAiChatCompletionRequestTests {
 		assertThat(chatCompletionMessage.role()).isEqualTo(ChatCompletionMessage.Role.USER);
 		var rawContent = chatCompletionMessage.rawContent();
 		assertThat(rawContent).isNotNull();
-		var mediaContents = (List<ChatCompletionMessage.MediaContent>) rawContent;
-		assertThat(mediaContents).hasSize(2);
-		var textMediaContent = mediaContents.get(0);
-		assertThat(textMediaContent).isNotNull();
-		assertThat(textMediaContent.type()).isEqualTo("text");
-		assertThat(textMediaContent.text()).isEqualTo(TEXT_CONTENT);
-		assertThat(textMediaContent.imageUrl()).isNull();
-		var imageUrlMediaContent = mediaContents.get(1);
-		assertThat(imageUrlMediaContent).isNotNull();
-		assertThat(imageUrlMediaContent.type()).isEqualTo("image_url");
-		assertThat(imageUrlMediaContent.text()).isNull();
-		var imageUrl = imageUrlMediaContent.imageUrl();
-		assertThat(imageUrl).isNotNull();
-		assertThat(imageUrl.url()).isEqualTo(IMAGE_URL);
-		assertThat(imageUrl.detail()).isNull();
+		var maps = (List<Map<String, Object>>) rawContent;
+		assertThat(maps).hasSize(2);
+		// @formatter:off
+		var textMap = maps.get(0);
+		assertThat(textMap).hasSize(2)
+				.containsEntry("type", "text")
+				.containsEntry("text", TEXT_CONTENT);
+		var imageUrlMap = maps.get(1);
+		assertThat(imageUrlMap).hasSize(2)
+				.containsEntry("type", "image_url")
+				.containsEntry("image_url", Map.of("url", IMAGE_URL));
+		// @formatter:on
 	}
 
 	static class SimpleMessage extends AbstractMessage {
 
 		SimpleMessage(MessageType messageType, String textContent) {
 			super(messageType, textContent, Map.of());
-		}
-
-	}
-
-	static class AnotherUserMessage extends AbstractMessage implements MediaContent {
-
-		private final List<Media> media;
-
-		AnotherUserMessage(String textContent, List<Media> media) {
-			super(MessageType.USER, textContent, Map.of());
-			this.media = List.copyOf(media);
-		}
-
-		@Override
-		public List<Media> getMedia() {
-			return this.media;
 		}
 
 	}
