@@ -81,7 +81,7 @@ import org.springframework.web.context.support.StandardServletEnvironment;
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerChangeNotificationProperties.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-@Conditional(McpServerAutoConfiguration.NonStatlessServerCondition.class)
+@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
 public class McpServerAutoConfiguration {
 
 	private static final LogAccessor logger = new LogAccessor(McpServerAutoConfiguration.class);
@@ -295,9 +295,9 @@ public class McpServerAutoConfiguration {
 		return serverBuilder.build();
 	}
 
-	public static class NonStatlessServerCondition extends AnyNestedCondition {
+	public static class NonStatelessServerCondition extends AnyNestedCondition {
 
-		public NonStatlessServerCondition() {
+		public NonStatelessServerCondition() {
 			super(ConfigurationPhase.PARSE_CONFIGURATION);
 		}
 

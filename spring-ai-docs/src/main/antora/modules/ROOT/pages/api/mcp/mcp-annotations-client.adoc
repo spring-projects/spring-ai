@@ -37,23 +37,6 @@ public void handleLoggingWithParams(LoggingLevel level, String logger, String da
 }
 ----
 
-==== Client-Specific Handlers
-
-[source,java]
-----
-@McpLogging(clients = "server1")
-public void handleServer1Logs(LoggingMessageNotification notification) {
-    // Handle logs from specific server
-    logToFile("server1.log", notification);
-}
-
-@McpLogging(clients = "server2")
-public void handleServer2Logs(LoggingMessageNotification notification) {
-    // Handle logs from another server
-    logToDatabase("server2", notification);
-}
-----
-
 === @McpSampling
 
 The `@McpSampling` annotation handles sampling requests from MCP servers for LLM completions.
@@ -98,23 +81,6 @@ public class AsyncSamplingHandler {
                 .build();
         }).subscribeOn(Schedulers.boundedElastic());
     }
-}
-----
-
-==== Client-Specific Sampling
-
-[source,java]
-----
-@McpSampling(clients = "specialized-server")
-public CreateMessageResult handleSpecializedSampling(CreateMessageRequest request) {
-    // Use specialized model for this server
-    String response = generateSpecializedResponse(request);
-    
-    return CreateMessageResult.builder()
-        .role(Role.ASSISTANT)
-        .content(new TextContent(response))
-        .model("specialized-model")
-        .build();
 }
 ----
 
