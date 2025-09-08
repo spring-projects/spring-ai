@@ -50,4 +50,95 @@ class VectorStoreObservationContextTests {
 			.hasMessageContaining("operationName cannot be null or empty");
 	}
 
+	@Test
+	void whenEmptyDbSystemThenThrow() {
+		assertThatThrownBy(
+				() -> VectorStoreObservationContext.builder("", VectorStoreObservationContext.Operation.ADD).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("databaseSystem cannot be null or empty");
+	}
+
+	@Test
+	void whenWhitespaceDbSystemThenThrow() {
+		assertThatThrownBy(
+				() -> VectorStoreObservationContext.builder("   ", VectorStoreObservationContext.Operation.ADD).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("databaseSystem cannot be null or empty");
+	}
+
+	@Test
+	void whenStringOperationNameUsedThenCorrectValue() {
+		var observationContext = VectorStoreObservationContext.builder("testdb", "custom_operation").build();
+		assertThat(observationContext.getDatabaseSystem()).isEqualTo("testdb");
+		assertThat(observationContext.getOperationName()).isEqualTo("custom_operation");
+	}
+
+	@Test
+	void whenCollectionNameProvidedThenSet() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.ADD)
+			.collectionName("documents")
+			.build();
+
+		assertThat(observationContext.getCollectionName()).isEqualTo("documents");
+	}
+
+	@Test
+	void whenNoCollectionNameProvidedThenNull() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.ADD)
+			.build();
+
+		assertThat(observationContext.getCollectionName()).isNull();
+	}
+
+	@Test
+	void whenNoDimensionsProvidedThenNull() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.QUERY)
+			.build();
+
+		assertThat(observationContext.getDimensions()).isNull();
+	}
+
+	@Test
+	void whenFieldNameProvidedThenSet() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.QUERY)
+			.fieldName("embedding_vector")
+			.build();
+
+		assertThat(observationContext.getFieldName()).isEqualTo("embedding_vector");
+	}
+
+	@Test
+	void whenNamespaceProvidedThenSet() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.ADD)
+			.namespace("production")
+			.build();
+
+		assertThat(observationContext.getNamespace()).isEqualTo("production");
+	}
+
+	@Test
+	void whenSimilarityMetricProvidedThenSet() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.QUERY)
+			.similarityMetric("cosine")
+			.build();
+
+		assertThat(observationContext.getSimilarityMetric()).isEqualTo("cosine");
+	}
+
+	@Test
+	void whenEmptyCollectionNameThenSet() {
+		var observationContext = VectorStoreObservationContext
+			.builder("db", VectorStoreObservationContext.Operation.ADD)
+			.collectionName("")
+			.build();
+
+		assertThat(observationContext.getCollectionName()).isEmpty();
+	}
+
 }
