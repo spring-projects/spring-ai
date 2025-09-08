@@ -28,6 +28,7 @@ import org.springframework.util.Assert;
  * An in-memory implementation of {@link ChatMemoryRepository}.
  *
  * @author Thomas Vitale
+ * @author Xiaotong Fan
  * @since 1.0.0
  */
 public final class InMemoryChatMemoryRepository implements ChatMemoryRepository {
@@ -58,6 +59,11 @@ public final class InMemoryChatMemoryRepository implements ChatMemoryRepository 
 	public void deleteByConversationId(String conversationId) {
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		this.chatMemoryStore.remove(conversationId);
+	}
+
+	@Override
+	public void deleteConversationIds() {
+		this.chatMemoryStore.clear();
 	}
 
 }
