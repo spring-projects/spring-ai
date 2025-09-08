@@ -27,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
+import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -35,6 +37,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -53,6 +56,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * Tests various caching strategies to ensure proper cache breakpoint placement and
  * optimal cache utilization according to Anthropic's best practices.
+ *
+ * @author Austin Dase
  */
 @SpringBootTest(classes = AnthropicTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
@@ -97,7 +102,7 @@ public class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.maxTokens(150)
 			.temperature(0.3)
 			.build();
@@ -138,7 +143,7 @@ public class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
 			.temperature(0.3)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", weatherService)
@@ -229,7 +234,8 @@ public class AnthropicPromptCachingIT {
 			.user("What career advice would you give me based on our conversation?")
 			.options(AnthropicChatOptions.builder()
 				.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-				.cacheStrategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+				.cacheOptions(
+						AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build())
 				.maxTokens(200)
 				.temperature(0.3)
 				.build())
@@ -248,13 +254,114 @@ public class AnthropicPromptCachingIT {
 	}
 
 	@Test
+	void shouldRespectMinLengthForSystemCaching() {
+		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+				// Set min length above actual system prompt length to prevent caching
+				.messageTypeMinContentLength(MessageType.SYSTEM, systemPrompt.length() + 1)
+				.build())
+			.maxTokens(60)
+			.temperature(0.2)
+			.build();
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt(List.of(new SystemMessage(systemPrompt), new UserMessage("Ping")), options));
+
+		assertThat(response).isNotNull();
+		AnthropicApi.Usage usage = getAnthropicUsage(response);
+		assertThat(usage).isNotNull();
+		assertThat(usage.cacheCreationInputTokens()).as("No cache should be created below min length").isEqualTo(0);
+		assertThat(usage.cacheReadInputTokens()).as("No cache read expected below min length").isEqualTo(0);
+	}
+
+	@Test
+	void shouldRespectMinLengthForUserHistoryCaching() {
+		// Two-user-message prompt; only the first (history tail) is eligible.
+		String userMessage = loadPrompt("system-only-cache-prompt.txt");
+		List<Message> messages = List.of(new UserMessage(userMessage),
+				new UserMessage("Please answer this question succinctly"));
+
+		// Set USER min length high so caching should not apply
+		AnthropicChatOptions noCacheOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+				.messageTypeMinContentLength(MessageType.USER, userMessage.length() + 1)
+				.build())
+			.maxTokens(80)
+			.temperature(0.2)
+			.build();
+
+		ChatResponse noCacheResponse = this.chatModel.call(new Prompt(messages, noCacheOptions));
+		assertThat(noCacheResponse).isNotNull();
+		AnthropicApi.Usage noCacheUsage = getAnthropicUsage(noCacheResponse);
+		assertThat(noCacheUsage).isNotNull();
+		assertThat(noCacheUsage.cacheCreationInputTokens()).isEqualTo(0);
+		assertThat(noCacheUsage.cacheReadInputTokens()).isEqualTo(0);
+
+		// Now allow caching by lowering the USER min length
+		AnthropicChatOptions cacheOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+				.messageTypeMinContentLength(MessageType.USER, userMessage.length() - 1)
+				.build())
+			.maxTokens(80)
+			.temperature(0.2)
+			.build();
+
+		ChatResponse cacheResponse = this.chatModel.call(new Prompt(messages, cacheOptions));
+		assertThat(cacheResponse).isNotNull();
+		AnthropicApi.Usage cacheUsage = getAnthropicUsage(cacheResponse);
+		assertThat(cacheUsage).isNotNull();
+		assertThat(cacheUsage.cacheCreationInputTokens())
+			.as("Expect some cache creation tokens when USER history tail is cached")
+			.isGreaterThan(0);
+	}
+
+	@Test
+	void shouldRespectAllButLastUserMessageForUserHistoryCaching() {
+		// Three-user-message prompt; only the first (history tail) is eligible.
+		String userMessage = loadPrompt("system-only-cache-prompt.txt");
+		List<Message> messages = List.of(new UserMessage(userMessage),
+				new UserMessage("Additional content to exceed min length"),
+				new UserMessage("Please answer this question succinctly"));
+
+		// The combined length of the first two USER messages exceeds the min length,
+		// so caching should apply
+		AnthropicChatOptions cacheOptions = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+				.messageTypeMinContentLength(MessageType.USER, userMessage.length())
+				.build())
+			.maxTokens(80)
+			.temperature(0.2)
+			.build();
+
+		ChatResponse cacheResponse = this.chatModel.call(new Prompt(messages, cacheOptions));
+		assertThat(cacheResponse).isNotNull();
+		AnthropicApi.Usage cacheUsage = getAnthropicUsage(cacheResponse);
+		assertThat(cacheUsage).isNotNull();
+		assertThat(cacheUsage.cacheCreationInputTokens())
+			.as("Expect some cache creation tokens when USER history tail is cached")
+			.isGreaterThan(0);
+	}
+
+	@Test
 	void shouldHandleExtendedTtlCaching() {
 		String systemPrompt = loadPrompt("extended-ttl-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-			.cacheTtl("1h") // 1-hour TTL requires beta header
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+				.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+				.build())
 			.maxTokens(100)
 			.temperature(0.3)
 			.build();
@@ -292,7 +399,7 @@ public class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.NONE) // Explicit no caching
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 			.maxTokens(50)
 			.temperature(0.3)
 			.build();
@@ -318,19 +425,19 @@ public class AnthropicPromptCachingIT {
 		List<ChatResponse> responses = new ArrayList<>();
 
 		// First: System only
-		responses.add(this.chatModel
-			.call(new Prompt(List.of(new SystemMessage("You are a math tutor."), new UserMessage("What is calculus?")),
-					AnthropicChatOptions.builder()
-						.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-						.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-						.maxTokens(100)
-						.build())));
+		responses.add(this.chatModel.call(new Prompt(
+				List.of(new SystemMessage("You are a math tutor."), new UserMessage("What is calculus?")),
+				AnthropicChatOptions.builder()
+					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+					.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
+					.maxTokens(100)
+					.build())));
 
 		// Second: No caching
 		responses.add(this.chatModel.call(new Prompt(List.of(new UserMessage("What's 5+5?")),
 				AnthropicChatOptions.builder()
 					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-					.cacheStrategy(AnthropicCacheStrategy.NONE)
+					.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 					.maxTokens(50)
 					.build())));
 
