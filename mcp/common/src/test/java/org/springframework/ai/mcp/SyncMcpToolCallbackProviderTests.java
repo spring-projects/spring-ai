@@ -116,7 +116,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
 		when(mcpClient1.listTools()).thenReturn(listToolsResult1);
 
-		var clientInfo1 = new Implementation("testClient1", "1.0.0");
+		var clientInfo1 = new Implementation("FirstClient", "1.0.0");
 		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
 
 		McpSyncClient mcpClient2 = mock(McpSyncClient.class);
@@ -124,7 +124,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
 		when(mcpClient2.listTools()).thenReturn(listToolsResult2);
 
-		var clientInfo2 = new Implementation("testClient2", "1.0.0");
+		var clientInfo2 = new Implementation("SecondClient", "1.0.0");
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
 
 		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
@@ -213,8 +213,8 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(2);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("testClient_tool2");
-		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("testClient_tool3");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("t_tool2");
+		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("t_tool3");
 	}
 
 	@Test
@@ -253,7 +253,7 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("testClient1_tool1");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("t_tool1");
 	}
 
 	@Test
@@ -286,7 +286,7 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("weather_service_weather");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("w_s_weather");
 	}
 
 	@Test

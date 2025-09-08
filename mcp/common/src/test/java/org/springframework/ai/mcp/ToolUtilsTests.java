@@ -49,26 +49,26 @@ class ToolUtilsTests {
 
 	@Test
 	void prefixedToolNameShouldConcatenateWithUnderscore() {
-		String result = McpToolUtils.prefixedToolName("prefix", "toolName");
-		assertThat(result).isEqualTo("prefix_toolName");
+		String result = McpToolUtils.prefixedToolName("prefix", "server1", "toolName");
+		assertThat(result).isEqualTo("p_server1_toolName");
 	}
 
 	@Test
 	void prefixedToolNameShouldReplaceSpecialCharacters() {
-		String result = McpToolUtils.prefixedToolName("pre.fix", "tool@Name");
-		assertThat(result).isEqualTo("prefix_toolName");
+		String result = McpToolUtils.prefixedToolName("pre.fix", "server1", "tool@Name");
+		assertThat(result).isEqualTo("p_server1_toolName");
 	}
 
 	@Test
 	void prefixedToolNameShouldReplaceHyphensWithUnderscores() {
-		String result = McpToolUtils.prefixedToolName("pre-fix", "tool-name");
-		assertThat(result).isEqualTo("pre_fix_tool_name");
+		String result = McpToolUtils.prefixedToolName("p", "tool-name");
+		assertThat(result).isEqualTo("p_tool_name");
 	}
 
 	@Test
 	void prefixedToolNameShouldTruncateLongStrings() {
 		String longPrefix = "a".repeat(40);
-		String longToolName = "b".repeat(40);
+		String longToolName = "b".repeat(62);
 		String result = McpToolUtils.prefixedToolName(longPrefix, longToolName);
 		assertThat(result).hasSize(64);
 		assertThat(result).endsWith("_" + longToolName);
@@ -96,25 +96,25 @@ class ToolUtilsTests {
 	@Test
 	void prefixedToolNameShouldSupportChineseCharacters() {
 		String result = McpToolUtils.prefixedToolName("前缀", "工具名称");
-		assertThat(result).isEqualTo("前缀_工具名称");
+		assertThat(result).isEqualTo("前_工具名称");
 	}
 
 	@Test
 	void prefixedToolNameShouldSupportMixedChineseAndEnglish() {
 		String result = McpToolUtils.prefixedToolName("prefix前缀", "tool工具Name");
-		assertThat(result).isEqualTo("prefix前缀_tool工具Name");
+		assertThat(result).isEqualTo("p_tool工具Name");
 	}
 
 	@Test
 	void prefixedToolNameShouldRemoveSpecialCharactersButKeepChinese() {
 		String result = McpToolUtils.prefixedToolName("pre@fix前缀", "tool#工具$name");
-		assertThat(result).isEqualTo("prefix前缀_tool工具name");
+		assertThat(result).isEqualTo("p_tool工具name");
 	}
 
 	@Test
 	void prefixedToolNameShouldHandleChineseWithHyphens() {
 		String result = McpToolUtils.prefixedToolName("前缀-test", "工具-name");
-		assertThat(result).isEqualTo("前缀_test_工具_name");
+		assertThat(result).isEqualTo("前_t_工具_name");
 	}
 
 	@Test
@@ -123,14 +123,14 @@ class ToolUtilsTests {
 		String longPrefix = "前缀".repeat(20); // 40 Chinese characters
 		String longToolName = "工具".repeat(20); // 40 Chinese characters
 		String result = McpToolUtils.prefixedToolName(longPrefix, longToolName);
-		assertThat(result).hasSize(64);
+		assertThat(result).hasSize(42);
 		assertThat(result).endsWith("_" + "工具".repeat(20));
 	}
 
 	@Test
 	void prefixedToolNameShouldHandleChinesePunctuation() {
 		String result = McpToolUtils.prefixedToolName("前缀，测试", "工具。名称！");
-		assertThat(result).isEqualTo("前缀测试_工具名称");
+		assertThat(result).isEqualTo("前_工具名称");
 	}
 
 	@Test
@@ -139,12 +139,12 @@ class ToolUtilsTests {
 		String result1 = McpToolUtils.prefixedToolName("prefix", "tool\u4e00"); // First
 																				// Chinese
 																				// character
-		assertThat(result1).isEqualTo("prefix_tool\u4e00");
+		assertThat(result1).isEqualTo("p_tool\u4e00");
 
 		String result2 = McpToolUtils.prefixedToolName("prefix", "tool\u9fa5"); // Last
 																				// Chinese
 																				// character
-		assertThat(result2).isEqualTo("prefix_tool\u9fa5");
+		assertThat(result2).isEqualTo("p_tool\u9fa5");
 	}
 
 	@Test
@@ -152,30 +152,30 @@ class ToolUtilsTests {
 		// Test with Japanese Hiragana (outside Chinese range)
 		String result1 = McpToolUtils.prefixedToolName("prefix", "toolあ"); // Japanese
 																			// Hiragana
-		assertThat(result1).isEqualTo("prefix_tool");
+		assertThat(result1).isEqualTo("p_tool");
 
 		// Test with Korean characters (outside Chinese range)
 		String result2 = McpToolUtils.prefixedToolName("prefix", "tool한"); // Korean
 																			// character
-		assertThat(result2).isEqualTo("prefix_tool");
+		assertThat(result2).isEqualTo("p_tool");
 
 		// Test with Arabic characters (outside Chinese range)
 		String result3 = McpToolUtils.prefixedToolName("prefix", "toolع"); // Arabic
 																			// character
-		assertThat(result3).isEqualTo("prefix_tool");
+		assertThat(result3).isEqualTo("p_tool");
 	}
 
 	@Test
 	void prefixedToolNameShouldHandleEmojisAndSymbols() {
 		// Emojis and symbols should be removed
 		String result = McpToolUtils.prefixedToolName("prefix🚀", "tool工具😀name");
-		assertThat(result).isEqualTo("prefix_tool工具name");
+		assertThat(result).isEqualTo("p_tool工具name");
 	}
 
 	@Test
 	void prefixedToolNameShouldPreserveNumbersWithChinese() {
 		String result = McpToolUtils.prefixedToolName("前缀123", "工具456名称");
-		assertThat(result).isEqualTo("前缀123_工具456名称");
+		assertThat(result).isEqualTo("前_工具456名称");
 	}
 
 	@Test
@@ -184,12 +184,12 @@ class ToolUtilsTests {
 		String result1 = McpToolUtils.prefixedToolName("prefix", "tool\u9fff"); // CJK
 																				// block
 																				// boundary
-		assertThat(result1).isEqualTo("prefix_tool\u9fff");
+		assertThat(result1).isEqualTo("p_tool\u9fff");
 
 		// Test CJK Extension A characters
 		String result2 = McpToolUtils.prefixedToolName("prefix", "tool\u3400"); // CJK Ext
 																				// A
-		assertThat(result2).isEqualTo("prefix_tool\u3400");
+		assertThat(result2).isEqualTo("p_tool\u3400");
 	}
 
 	@Test
@@ -197,15 +197,15 @@ class ToolUtilsTests {
 		// Test CJK Compatibility Ideographs
 		String result = McpToolUtils.prefixedToolName("prefix", "tool\uf900"); // Compatibility
 																				// ideograph
-		assertThat(result).isEqualTo("prefix_tool\uf900");
+		assertThat(result).isEqualTo("p_tool\uf900");
 	}
 
 	@Test
 	void prefixedToolNameShouldHandleAllHanScriptCharacters() {
 		// Mix of different Han character blocks: Extension A + CJK Unified +
 		// Compatibility
-		String result = McpToolUtils.prefixedToolName("前缀\u3400", "工具\u9fff名称\uf900");
-		assertThat(result).isEqualTo("前缀\u3400_工具\u9fff名称\uf900");
+		String result = McpToolUtils.prefixedToolName("前缀\u3400", "缀\\u3400", "工具\u9fff名称\uf900");
+		assertThat(result).isEqualTo("前_缀u3400_工具鿿名称豈");
 	}
 
 	@Test
@@ -359,14 +359,14 @@ class ToolUtilsTests {
 		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient);
 
 		assertThat(result).hasSize(2);
-		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("test_client_tool1");
-		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("test_client_tool2");
+		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("t_c_tool1");
+		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("t_c_tool2");
 
 		List<ToolCallback> result2 = McpToolUtils.getToolCallbacksFromSyncClients(List.of(mockClient));
 
 		assertThat(result2).hasSize(2);
-		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("test_client_tool1");
-		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("test_client_tool2");
+		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("t_c_tool1");
+		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("t_c_tool2");
 	}
 
 	@Test
@@ -401,14 +401,14 @@ class ToolUtilsTests {
 		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient1, mockClient2);
 
 		assertThat(result).hasSize(2);
-		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("client1_tool1");
-		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("client2_tool2");
+		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("c_tool1");
+		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("c_tool2");
 
 		List<ToolCallback> result2 = McpToolUtils.getToolCallbacksFromSyncClients(List.of(mockClient1, mockClient2));
 
 		assertThat(result2).hasSize(2);
-		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("client1_tool1");
-		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("client2_tool2");
+		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("c_tool1");
+		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("c_tool2");
 	}
 
 	@Test
