@@ -49,7 +49,7 @@ class SyncMcpToolCallbackBuilderTest {
 		assertThat(callback).isNotNull();
 		assertThat(callback.getOriginalToolName()).isEqualTo("test-tool");
 		assertThat(callback.getToolDefinition()).isNotNull();
-		assertThat(callback.getToolDefinition().name()).isEqualTo("test_client_test_tool");
+		assertThat(callback.getToolDefinition().name()).isEqualTo("t_c_test_tool");
 		assertThat(callback.getToolDefinition().description()).isEqualTo("Test tool description");
 	}
 

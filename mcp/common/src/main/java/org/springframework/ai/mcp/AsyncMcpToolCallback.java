@@ -66,8 +66,8 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 */
 	@Deprecated
 	public AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool) {
-		this(mcpClient, tool, McpToolUtils.prefixedToolName(mcpClient.getClientInfo().name(), tool.name()),
-				ToolContextToMcpMetaConverter.defaultConverter());
+		this(mcpClient, tool, McpToolUtils.prefixedToolName(mcpClient.getClientInfo().name(),
+				mcpClient.getClientInfo().title(), tool.name()), ToolContextToMcpMetaConverter.defaultConverter());
 	}
 
 	/**

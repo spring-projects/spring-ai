@@ -47,7 +47,7 @@ public interface McpToolNamePrefixGenerator {
 	 */
 	static McpToolNamePrefixGenerator defaultGenerator() {
 		return (mcpConnectionIfo, tool) -> McpToolUtils.prefixedToolName(mcpConnectionIfo.clientInfo().name(),
-				tool.name());
+				mcpConnectionIfo.clientInfo().title(), tool.name());
 	}
 
 	/**
