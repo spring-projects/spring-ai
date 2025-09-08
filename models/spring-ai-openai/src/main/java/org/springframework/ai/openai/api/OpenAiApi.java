@@ -22,13 +22,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -185,6 +188,7 @@ public class OpenAiApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
+		Object dynamicRequestBody = createDynamicRequestBody(chatRequest);
 		// @formatter:off
 		return this.restClient.post()
 			.uri(this.completionsPath)
@@ -192,7 +196,7 @@ public class OpenAiApi {
 				headers.addAll(additionalHttpHeader);
 				addDefaultHeadersIfMissing(headers);
 			})
-			.body(chatRequest)
+				.body(dynamicRequestBody)
 			.retrieve()
 			.toEntity(ChatCompletion.class);
 		// @formatter:on
@@ -206,6 +210,29 @@ public class OpenAiApi {
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+	}
+
+	private Object createDynamicRequestBody(ChatCompletionRequest baseRequest) {
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode requestNode = mapper.valueToTree(baseRequest);
+		if (null == baseRequest.extraBody) {
+			return requestNode;
+		}
+
+		// 添加额外字段
+		baseRequest.extraBody().forEach((key, value) -> {
+			if (value instanceof Map) {
+				requestNode.set(key, mapper.valueToTree(value));
+			}
+			else if (value instanceof List) {
+				requestNode.set(key, mapper.valueToTree(value));
+			}
+			else {
+				requestNode.putPOJO(key, value);
+			}
+		});
+
+		return requestNode;
 	}
 
 	/**
@@ -224,14 +251,25 @@ public class OpenAiApi {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
-		// @formatter:off
-		return this.webClient.post()
-			.uri(this.completionsPath)
-			.headers(headers -> {
-				headers.addAll(additionalHttpHeader);
-				addDefaultHeadersIfMissing(headers);
-			}) // @formatter:on
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			var s = objectMapper.writeValueAsString(chatRequest);
+			System.out.println("aaaaaaaa:" + s);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+		Object dynamicBody = createDynamicRequestBody(chatRequest);
+	// @formatter:off
+    return this.webClient
+        .post()
+        .uri(this.completionsPath)
+        .headers(
+            headers -> {
+              headers.addAll(additionalHttpHeader);
+              addDefaultHeadersIfMissing(headers);
+            }) // @formatter:on
+			.bodyValue(dynamicBody)
 			.retrieve()
 			.bodyToFlux(String.class)
 			// cancels the flux stream after the "[DONE]" is received.
