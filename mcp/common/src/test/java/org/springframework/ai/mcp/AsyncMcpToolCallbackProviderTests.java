@@ -225,8 +225,8 @@ class AsyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(2);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("testClient_tool2");
-		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("testClient_tool3");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("t_tool2");
+		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("t_tool3");
 	}
 
 	@Test
@@ -266,7 +266,7 @@ class AsyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("testClient1_tool1");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("t_tool1");
 	}
 
 	@Test
@@ -299,7 +299,7 @@ class AsyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("weather_service_weather");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("w_s_weather");
 	}
 
 	@Test

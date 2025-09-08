@@ -57,13 +57,13 @@ class SyncMcpToolCallbackTests {
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
 		var toolDefinition = callback.getToolDefinition();
 
-		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "_testTool");
+		assertThat(toolDefinition.name()).isEqualTo("t_testTool");
 		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
 	}
 
@@ -89,7 +89,7 @@ class SyncMcpToolCallbackTests {
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
@@ -107,7 +107,7 @@ class SyncMcpToolCallbackTests {
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
@@ -145,7 +145,7 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void callShouldThrowOnError() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = new Implementation("testClient", "server1", "1.0.0");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(callResult.isError()).thenReturn(true);
 		when(callResult.content()).thenReturn(List.of(new McpSchema.TextContent("Some error data")));
@@ -154,7 +154,7 @@ class SyncMcpToolCallbackTests {
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
@@ -167,13 +167,13 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void callShouldWrapExceptions() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = new Implementation("testClient", "server1", "1.0.0");
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenThrow(new RuntimeException("Testing tool error"));
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
@@ -193,7 +193,7 @@ class SyncMcpToolCallbackTests {
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
@@ -214,7 +214,7 @@ class SyncMcpToolCallbackTests {
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
@@ -235,7 +235,7 @@ class SyncMcpToolCallbackTests {
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)
-			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", this.tool.name()))
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 

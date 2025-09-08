@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -73,28 +74,55 @@ public final class McpToolUtils {
 	private McpToolUtils() {
 	}
 
-	public static String prefixedToolName(String prefix, String toolName) {
+	public static String prefixedToolName(String prefix, String title, String toolName) {
 
 		if (StringUtils.isEmpty(prefix) || StringUtils.isEmpty(toolName)) {
 			throw new IllegalArgumentException("Prefix or toolName cannot be null or empty");
 		}
 
-		String input = prefix + "_" + toolName;
+		String input = shorten(format(prefix));
+		if (!StringUtils.isEmpty(title)) {
+			input = input + "_" + format(title); // Do not shorten the title.
+		}
 
+		input = input + "_" + format(toolName);
+
+		// If the string is longer than 64 characters, keep the last 64 characters
+		if (input.length() > 64) {
+			input = input.substring(input.length() - 64);
+		}
+
+		return input;
+	}
+
+	public static String prefixedToolName(String prefix, String toolName) {
+		return prefixedToolName(prefix, null, toolName);
+	}
+
+	private static String format(String input) {
 		// Replace any character that isn't alphanumeric, underscore, or hyphen with
 		// concatenation. Support Han script + CJK blocks for complete Chinese character
 		// coverage
 		String formatted = input
 			.replaceAll("[^\\p{IsHan}\\p{InCJK_Unified_Ideographs}\\p{InCJK_Compatibility_Ideographs}a-zA-Z0-9_-]", "");
 
-		formatted = formatted.replaceAll("-", "_");
+		return formatted.replaceAll("-", "_");
+	}
 
-		// If the string is longer than 64 characters, keep the last 64 characters
-		if (formatted.length() > 64) {
-			formatted = formatted.substring(formatted.length() - 64);
+	/**
+	 * Shortens a string by taking the first letter of each word separated by underscores
+	 * @param input String in format "Word1_Word2_Word3_..."
+	 * @return Shortened string with first letters
+	 */
+	private static String shorten(String input) {
+		if (input == null || input.isEmpty()) {
+			return "";
 		}
 
-		return formatted;
+		return Stream.of(input.toLowerCase().split("_"))
+			.filter(word -> !word.isEmpty())
+			.map(word -> String.valueOf(word.charAt(0)))
+			.collect(java.util.stream.Collectors.joining("_"));
 	}
 
 	/**

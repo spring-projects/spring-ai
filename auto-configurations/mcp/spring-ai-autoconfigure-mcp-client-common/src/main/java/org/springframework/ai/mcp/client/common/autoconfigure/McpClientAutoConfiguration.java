@@ -172,7 +172,7 @@ public class McpClientAutoConfiguration {
 
 				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
+						namedTransport.name(), commonProperties.getVersion());
 
 				McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport())
 					.clientInfo(clientInfo)
