@@ -27,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
+import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -35,6 +37,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -53,6 +56,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * Tests various caching strategies to ensure proper cache breakpoint placement and
  * optimal cache utilization according to Anthropic's best practices.
+ *
+ * @author Austin Dase
  */
 @SpringBootTest(classes = AnthropicTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
@@ -97,7 +102,7 @@ public class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.maxTokens(150)
 			.temperature(0.3)
 			.build();
@@ -138,7 +143,7 @@ public class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
 			.temperature(0.3)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", weatherService)
@@ -229,7 +234,8 @@ public class AnthropicPromptCachingIT {
 			.user("What career advice would you give me based on our conversation?")
 			.options(AnthropicChatOptions.builder()
 				.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-				.cacheStrategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+				.cacheOptions(
+						AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build())
 				.maxTokens(200)
 				.temperature(0.3)
 				.build())
@@ -253,8 +259,10 @@ public class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-			.cacheTtl("1h") // 1-hour TTL requires beta header
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+				.messageTypeTtls(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+				.build())
 			.maxTokens(100)
 			.temperature(0.3)
 			.build();
@@ -292,7 +300,7 @@ public class AnthropicPromptCachingIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-			.cacheStrategy(AnthropicCacheStrategy.NONE) // Explicit no caching
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 			.maxTokens(50)
 			.temperature(0.3)
 			.build();
@@ -318,19 +326,19 @@ public class AnthropicPromptCachingIT {
 		List<ChatResponse> responses = new ArrayList<>();
 
 		// First: System only
-		responses.add(this.chatModel
-			.call(new Prompt(List.of(new SystemMessage("You are a math tutor."), new UserMessage("What is calculus?")),
-					AnthropicChatOptions.builder()
-						.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-						.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-						.maxTokens(100)
-						.build())));
+		responses.add(this.chatModel.call(new Prompt(
+				List.of(new SystemMessage("You are a math tutor."), new UserMessage("What is calculus?")),
+				AnthropicChatOptions.builder()
+					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+					.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
+					.maxTokens(100)
+					.build())));
 
 		// Second: No caching
 		responses.add(this.chatModel.call(new Prompt(List.of(new UserMessage("What's 5+5?")),
 				AnthropicChatOptions.builder()
 					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
-					.cacheStrategy(AnthropicCacheStrategy.NONE)
+					.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 					.maxTokens(50)
 					.build())));
 
