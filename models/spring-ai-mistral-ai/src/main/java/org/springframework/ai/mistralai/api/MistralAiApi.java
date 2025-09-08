@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Single-class, Java Client library for Mistral AI platform. Provides implementation for
- * the <a href="https://docs.mistral.ai/api/#operation/createEmbedding">MistralAI
- * Embedding API</a> and the
- * <a href="https://docs.mistral.ai/api/#operation/createChatCompletion">Chat
+ * the <a href=
+ * "https://docs.mistral.ai/api/#tag/embeddings/operation/embeddings_v1_embeddings_post">Embeddings</a>
+ * and the <a href=
+ * "https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post">Chat
  * Completion</a> APIs.
  * <p>
  * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion and supports latest
@@ -269,12 +270,10 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral chat models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
 	 *
-	 * <p>
-	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
-	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
-	 * Medium, Mistral Large, and Mistral Embeddings).
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
@@ -315,7 +314,10 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral embedding models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-embedding-model
+	 *
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum EmbeddingModel {
 
@@ -828,9 +830,10 @@ public class MistralAiApi {
 
 		/**
 		 * The role of the author of this message.
-		 *
+		 * <p>
 		 * NOTE: Mistral expects the system message to be before the user message or will
 		 * fail with 400 error.
+		 * </p>
 		 */
 		public enum Role {
 
