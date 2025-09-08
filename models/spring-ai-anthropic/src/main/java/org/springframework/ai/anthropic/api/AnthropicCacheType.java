@@ -16,7 +16,7 @@
 
 package org.springframework.ai.anthropic.api;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 
@@ -32,17 +32,18 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.C
  * Caching</a>
  * @author Claudio Silva Junior
  * @author Soby Chacko
+ * @author Austin Dase
  */
 public enum AnthropicCacheType {
 
 	/**
 	 * Ephemeral cache with 5-minute lifetime, refreshed on each use.
 	 */
-	EPHEMERAL(() -> new CacheControl("ephemeral"));
+	EPHEMERAL(ttl -> new CacheControl("ephemeral", ttl));
 
-	private final Supplier<CacheControl> value;
+	private final Function<String, CacheControl> value;
 
-	AnthropicCacheType(Supplier<CacheControl> value) {
+	AnthropicCacheType(Function<String, CacheControl> value) {
 		this.value = value;
 	}
 
@@ -51,7 +52,17 @@ public enum AnthropicCacheType {
 	 * @return a CacheControl instance configured for this cache type
 	 */
 	public CacheControl cacheControl() {
-		return this.value.get();
+		return this.value.apply(null);
+	}
+
+	/**
+	 * Returns a new CacheControl instance for this cache type with the specified TTL.
+	 * @param ttl the time-to-live for the cache entry (e.g., "5m" for 5 minutes, "1h" for
+	 * 1 hour)
+	 * @return a CacheControl instance configured for this cache type and TTL
+	 */
+	public CacheControl cacheControl(String ttl) {
+		return this.value.apply(ttl);
 	}
 
 }
