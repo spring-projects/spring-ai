@@ -72,6 +72,10 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static final ToolExecutionExceptionProcessor DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR
 			= DefaultToolExecutionExceptionProcessor.builder().build();
 
+	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING
+			= "LLM may have adapted the tool name '{}', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
+
+
 	// @formatter:on
 
 	private final ObservationRegistry observationRegistry;
@@ -109,6 +113,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			}
 			ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
 			if (toolCallback == null) {
+				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 			toolCallbacks.add(toolCallback);
@@ -210,6 +215,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
 
 			if (toolCallback == null) {
+				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 
