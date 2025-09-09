@@ -22,7 +22,7 @@ import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
+import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -44,11 +44,11 @@ class McpServerSseWebMvcAutoConfigurationIT {
 			assertThat(context).hasSingleBean(WebMvcSseServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 
-			McpServerSseProperties sseProperties = context.getBean(McpServerSseProperties.class);
-			assertThat(sseProperties.getBaseUrl()).isEqualTo("");
-			assertThat(sseProperties.getSseEndpoint()).isEqualTo("/sse");
-			assertThat(sseProperties.getSseMessageEndpoint()).isEqualTo("/mcp/message");
-			assertThat(sseProperties.getKeepAliveInterval()).isNull();
+			McpServerProperties serverProperties = context.getBean(McpServerProperties.class);
+			assertThat(serverProperties.getSse().getBaseUrl()).isEqualTo("");
+			assertThat(serverProperties.getSse().getSseEndpoint()).isEqualTo("/sse");
+			assertThat(serverProperties.getSse().getSseMessageEndpoint()).isEqualTo("/mcp/message");
+			assertThat(serverProperties.getSse().getKeepAliveInterval()).isNull();
 
 		});
 	}
@@ -57,13 +57,13 @@ class McpServerSseWebMvcAutoConfigurationIT {
 	void endpointConfiguration() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.base-url=http://localhost:8080",
-					"spring.ai.mcp.server.sse-endpoint=/events",
-					"spring.ai.mcp.server.sse-message-endpoint=/api/mcp/message")
+					"spring.ai.mcp.server.sse.sse-endpoint=/events",
+					"spring.ai.mcp.server.sse.sse-message-endpoint=/api/mcp/message")
 			.run(context -> {
-				McpServerSseProperties sseProperties = context.getBean(McpServerSseProperties.class);
-				assertThat(sseProperties.getBaseUrl()).isEqualTo("http://localhost:8080");
-				assertThat(sseProperties.getSseEndpoint()).isEqualTo("/events");
-				assertThat(sseProperties.getSseMessageEndpoint()).isEqualTo("/api/mcp/message");
+				McpServerProperties sseProperties = context.getBean(McpServerProperties.class);
+				assertThat(sseProperties.getSse().getBaseUrl()).isEqualTo("http://localhost:8080");
+				assertThat(sseProperties.getSse().getSseEndpoint()).isEqualTo("/events");
+				assertThat(sseProperties.getSse().getSseMessageEndpoint()).isEqualTo("/api/mcp/message");
 
 				// Verify the server is configured with the endpoints
 				McpSyncServer server = context.getBean(McpSyncServer.class);
@@ -95,7 +95,7 @@ class McpServerSseWebMvcAutoConfigurationIT {
 
 	@Test
 	void serverBaseUrlConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.base-url=/test")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.sse.base-url=/test")
 			.run(context -> assertThat(context.getBean(WebMvcSseServerTransportProvider.class)).extracting("baseUrl")
 				.isEqualTo("/test"));
 	}
