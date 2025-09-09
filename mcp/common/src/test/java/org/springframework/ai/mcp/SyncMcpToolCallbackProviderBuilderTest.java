@@ -47,7 +47,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		assertThat(provider).isNotNull();
 		ToolCallback[] callbacks = provider.getToolCallbacks();
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("test_client_test_tool");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("t_c_test_tool");
 	}
 
 	@Test
@@ -64,8 +64,8 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		assertThat(provider).isNotNull();
 		ToolCallback[] callbacks = provider.getToolCallbacks();
 		assertThat(callbacks).hasSize(2);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("client1_tool1");
-		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("client2_tool2");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("c_tool1");
+		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("c_tool2");
 	}
 
 	@Test
@@ -111,7 +111,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		assertThat(provider).isNotNull();
 		ToolCallback[] callbacks = provider.getToolCallbacks();
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("client_filtered_tool");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("c_filtered_tool");
 	}
 
 	@Test
@@ -230,8 +230,8 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		assertThat(provider).isNotNull();
 		ToolCallback[] callbacks = provider.getToolCallbacks();
 		assertThat(callbacks).hasSize(2);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("client2_tool2");
-		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("client3_tool3");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("c_tool2");
+		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("c_tool3");
 	}
 
 	private McpSyncClient createMockClient(String clientName, String toolName) {
