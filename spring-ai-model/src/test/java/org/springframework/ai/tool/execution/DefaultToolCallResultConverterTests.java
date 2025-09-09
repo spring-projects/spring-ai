@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link DefaultToolCallResultConverter}.
  *
  * @author Thomas Vitale
+ * @author Jemin Huh
  */
 class DefaultToolCallResultConverterTests {
 
@@ -52,13 +53,13 @@ class DefaultToolCallResultConverterTests {
 	@Test
 	void convertVoidReturnTypeShouldReturnDoneJson() {
 		String result = this.converter.convert(null, void.class);
-		assertThat(result).isEqualTo("\"Done\"");
+		assertThat(result).isEqualTo("Done");
 	}
 
 	@Test
 	void convertStringReturnTypeShouldReturnJson() {
 		String result = this.converter.convert("test", String.class);
-		assertThat(result).isEqualTo("\"test\"");
+		assertThat(result).isEqualTo("test");
 	}
 
 	@Test
