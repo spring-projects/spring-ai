@@ -29,6 +29,7 @@ import org.springframework.ai.chat.client.ChatClient.PromptSystemSpec;
 import org.springframework.ai.chat.client.ChatClient.PromptUserSpec;
 import org.springframework.ai.chat.client.DefaultChatClient.DefaultChatClientRequestSpec;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -60,13 +61,24 @@ public class DefaultChatClientBuilder implements Builder {
 		this(chatModel, ObservationRegistry.NOOP, null);
 	}
 
+	/**
+	 * @deprecated in favor of
+	 * {@link #DefaultChatClientBuilder(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
+	 */
+	@Deprecated(since = "1.1.0", forRemoval = true)
 	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention customObservationConvention) {
+			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
+		this(chatModel, observationRegistry, chatClientObservationConvention, null);
+	}
+
+	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention) {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), Map.of(), null, Map.of(),
 				Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
-				observationRegistry, customObservationConvention, Map.of(), null);
+				observationRegistry, chatClientObservationConvention, Map.of(), null, advisorObservationConvention);
 	}
 
 	public ChatClient build() {

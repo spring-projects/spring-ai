@@ -38,6 +38,7 @@ import org.springframework.ai.chat.client.advisor.ChatModelStreamAdvisor;
 import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation;
@@ -615,7 +616,10 @@ public class DefaultChatClient implements ChatClient {
 
 		private final ObservationRegistry observationRegistry;
 
-		private final ChatClientObservationConvention observationConvention;
+		private final ChatClientObservationConvention chatClientObservationConvention;
+
+		@Nullable
+		private final AdvisorObservationConvention advisorObservationConvention;
 
 		private final ChatModel chatModel;
 
@@ -659,7 +663,25 @@ public class DefaultChatClient implements ChatClient {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
 					ccr.systemMetadata, ccr.toolCallbacks, ccr.toolCallbackProviders, ccr.messages, ccr.toolNames,
 					ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
-					ccr.observationConvention, ccr.toolContext, ccr.templateRenderer);
+					ccr.chatClientObservationConvention, ccr.toolContext, ccr.templateRenderer,
+					ccr.advisorObservationConvention);
+		}
+
+		/**
+		 * @deprecated in favor of the other constructor.
+		 */
+		@Deprecated(since = "1.1.0", forRemoval = true)
+		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
+				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
+				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
+				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
+				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
+				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
+				@Nullable ChatClientObservationConvention chatClientObservationConvention,
+				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer) {
+			this(chatModel, userText, userParams, userMetadata, systemText, systemParams, systemMetadata, toolCallbacks,
+					toolCallbackProviders, messages, toolNames, media, chatOptions, advisors, advisorParams,
+					observationRegistry, chatClientObservationConvention, toolContext, templateRenderer, null);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
@@ -668,9 +690,9 @@ public class DefaultChatClient implements ChatClient {
 				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
 				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
 				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
-				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext,
-				@Nullable TemplateRenderer templateRenderer) {
-
+				@Nullable ChatClientObservationConvention chatClientObservationConvention,
+				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer,
+				@Nullable AdvisorObservationConvention advisorObservationConvention) {
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
 			Assert.notNull(userMetadata, "userMetadata cannot be null");
@@ -706,10 +728,11 @@ public class DefaultChatClient implements ChatClient {
 			this.advisors.addAll(advisors);
 			this.advisorParams.putAll(advisorParams);
 			this.observationRegistry = observationRegistry;
-			this.observationConvention = observationConvention != null ? observationConvention
-					: DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION;
+			this.chatClientObservationConvention = chatClientObservationConvention != null
+					? chatClientObservationConvention : DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION;
 			this.toolContext.putAll(toolContext);
 			this.templateRenderer = templateRenderer != null ? templateRenderer : DEFAULT_TEMPLATE_RENDERER;
+			this.advisorObservationConvention = advisorObservationConvention;
 		}
 
 		@Nullable
@@ -786,7 +809,8 @@ public class DefaultChatClient implements ChatClient {
 		@Override
 		public Builder mutate() {
 			DefaultChatClientBuilder builder = (DefaultChatClientBuilder) ChatClient
-				.builder(this.chatModel, this.observationRegistry, this.observationConvention)
+				.builder(this.chatModel, this.observationRegistry, this.chatClientObservationConvention,
+						this.advisorObservationConvention)
 				.defaultTemplateRenderer(this.templateRenderer)
 				.defaultToolCallbacks(this.toolCallbacks)
 				.defaultToolCallbacks(this.toolCallbackProviders.toArray(new ToolCallback[0]))
@@ -1005,14 +1029,14 @@ public class DefaultChatClient implements ChatClient {
 		public CallResponseSpec call() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultCallResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
-					this.observationRegistry, this.observationConvention);
+					this.observationRegistry, this.chatClientObservationConvention);
 		}
 
 		@Override
 		public StreamResponseSpec stream() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultStreamResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
-					this.observationRegistry, this.observationConvention);
+					this.observationRegistry, this.chatClientObservationConvention);
 		}
 
 		private BaseAdvisorChain buildAdvisorChain() {
@@ -1021,7 +1045,10 @@ public class DefaultChatClient implements ChatClient {
 			this.advisors.add(ChatModelCallAdvisor.builder().chatModel(this.chatModel).build());
 			this.advisors.add(ChatModelStreamAdvisor.builder().chatModel(this.chatModel).build());
 
-			return DefaultAroundAdvisorChain.builder(this.observationRegistry).pushAll(this.advisors).build();
+			return DefaultAroundAdvisorChain.builder(this.observationRegistry)
+				.observationConvention(this.advisorObservationConvention)
+				.pushAll(this.advisors)
+				.build();
 		}
 
 	}
