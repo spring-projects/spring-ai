@@ -22,6 +22,7 @@ import io.micrometer.observation.Observation;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
@@ -47,6 +48,9 @@ public class ChatClientObservationContext extends Observation.Context {
 	private final List<? extends Advisor> advisors;
 
 	private final boolean stream;
+
+	@Nullable
+	private ChatClientResponse chatClientResponse;
 
 	ChatClientObservationContext(ChatClientRequest chatClientRequest, List<? extends Advisor> advisors,
 			boolean isStream) {
@@ -76,6 +80,15 @@ public class ChatClientObservationContext extends Observation.Context {
 
 	public boolean isStream() {
 		return this.stream;
+	}
+
+	@Nullable
+	public ChatClientResponse getChatClientResponse() {
+		return this.chatClientResponse;
+	}
+
+	public void setChatClientResponse(@Nullable ChatClientResponse chatClientResponse) {
+		this.chatClientResponse = chatClientResponse;
 	}
 
 	@Nullable
