@@ -16,35 +16,33 @@
 
 package org.springframework.ai.embedding;
 
-import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
-
 /**
- * Options for embedding models.
+ * Default implementation of {@link EmbeddingOptions}.
  *
- * @author Christian Tzolov
  * @author Thomas Vitale
  */
-public interface EmbeddingOptions extends ModelOptions {
+public class DefaultEmbeddingOptions implements EmbeddingOptions {
 
-	@Nullable
-	String getModel();
+	private String model;
 
-	@Nullable
-	Integer getDimensions();
+	private Integer dimensions;
 
-	static Builder builder() {
-		return new DefaultEmbeddingOptionsBuilder();
+	@Override
+	public String getModel() {
+		return this.model;
 	}
 
-	interface Builder {
+	public void setModel(String model) {
+		this.model = model;
+	}
 
-		Builder model(String model);
+	@Override
+	public Integer getDimensions() {
+		return this.dimensions;
+	}
 
-		Builder dimensions(Integer dimensions);
-
-		EmbeddingOptions build();
-
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 }
