@@ -27,11 +27,11 @@ Option 2:
 [source,java]
 ----
 @Container
-private static final SocatContainer socat = new SocatContainer().withTarget(80, "model-runner.docker.internal");
+private static final DockerModelRunnerContainer DMR = new DockerModelRunnerContainer("alpine/socat:1.7.4.3-r0");
 
 @Bean
 public OpenAiApi chatCompletionApi() {
-	var baseUrl = "http://%s:%d/engines".formatted(socat.getHost(), socat.getMappedPort(80));
+	var baseUrl = DMR.getOpenAIEndpoint();
 	return OpenAiApi.builder().baseUrl(baseUrl).apiKey("test").build();
 }
 ----
