@@ -41,6 +41,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
@@ -786,7 +787,15 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private Region region = Region.US_EAST_1;
 
-		private Duration timeout = Duration.ofMinutes(10);
+		private Duration timeout = Duration.ofMinutes(5L);
+
+		private Duration connectionTimeout = Duration.ofSeconds(5L);
+
+		private Duration asyncReadTimeout = Duration.ofSeconds(30L);
+
+		private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
+
+		private Duration socketTimeout = Duration.ofSeconds(30L);
 
 		private ToolCallingManager toolCallingManager;
 
@@ -840,6 +849,30 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
+		public Builder connectionTimeout(Duration connectionTimeout) {
+			Assert.notNull(connectionTimeout, "'connectionTimeout' must not be null.");
+			this.connectionTimeout = connectionTimeout;
+			return this;
+		}
+
+		public Builder asyncReadTimeout(Duration asyncReadTimeout) {
+			Assert.notNull(asyncReadTimeout, "'asyncReadTimeout' must not be null.");
+			this.asyncReadTimeout = asyncReadTimeout;
+			return this;
+		}
+
+		public Builder connectionAcquisitionTimeout(Duration connectionAcquisitionTimeout) {
+			Assert.notNull(connectionAcquisitionTimeout, "'connectionAcquisitionTimeout' must not be null.");
+			this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
+			return this;
+		}
+
+		public Builder socketTimeout(Duration socketTimeout) {
+			Assert.notNull(socketTimeout, "'socketTimeout' must not be null.");
+			this.socketTimeout = socketTimeout;
+			return this;
+		}
+
 		public Builder defaultOptions(BedrockChatOptions defaultOptions) {
 			Assert.notNull(defaultOptions, "'defaultOptions' must not be null.");
 			this.defaultOptions = defaultOptions;
@@ -871,9 +904,15 @@ public class BedrockProxyChatModel implements ChatModel {
 		public BedrockProxyChatModel build() {
 
 			if (this.bedrockRuntimeClient == null) {
+
+				var httpClientBuilder = ApacheHttpClient.builder()
+					.connectionAcquisitionTimeout(this.connectionAcquisitionTimeout)
+					.connectionTimeout(this.connectionTimeout)
+					.socketTimeout(this.socketTimeout);
+
 				this.bedrockRuntimeClient = BedrockRuntimeClient.builder()
 					.region(this.region)
-					.httpClientBuilder(null)
+					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
 					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
 					.build();
@@ -881,10 +920,11 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			if (this.bedrockRuntimeAsyncClient == null) {
 
-				// TODO: Is it ok to configure the NettyNioAsyncHttpClient explicitly???
 				var httpClientBuilder = NettyNioAsyncHttpClient.builder()
 					.tcpKeepAlive(true)
-					.connectionAcquisitionTimeout(Duration.ofSeconds(30))
+					.readTimeout(this.asyncReadTimeout)
+					.connectionTimeout(this.connectionTimeout)
+					.connectionAcquisitionTimeout(this.connectionAcquisitionTimeout)
 					.maxConcurrency(200);
 
 				var builder = BedrockRuntimeAsyncClient.builder()
