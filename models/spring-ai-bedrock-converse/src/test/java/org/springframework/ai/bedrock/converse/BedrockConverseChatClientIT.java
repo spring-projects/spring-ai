@@ -71,7 +71,7 @@ class BedrockConverseChatClientIT {
 						.param("name", "Bob")
 						.param("voice", "pirate"))
 				.user(u -> u.text("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
-						.param("requestId", "1234")
+						.metadata("requestId", "12345")
 				)
 				.call()
 				.chatResponse();
@@ -80,6 +80,7 @@ class BedrockConverseChatClientIT {
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getMetadata().containsKey("requestId"));
 	}
 
 	@Test
