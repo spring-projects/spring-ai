@@ -65,6 +65,8 @@ To clone it you have to either:
 
 ## Building
 
+You'll have the best luck compiling against Java 17.
+
 To build with running unit tests
 
 ```shell
@@ -101,9 +103,10 @@ A full integration test is done twice a day in the [Spring AI Integration Test R
 One way to run integration tests on part of the code is to first do a quick compile and install of the project
 
 ```shell
-./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
+./mvnw -DskipTests  -Dmaven.javadoc.skip=true  -Ddisable.checks=true spring-javaformat:apply clean  install
 ```
 Then run the integration test for a specific module using the `-pl` option
+
 ```shell
 ./mvnw verify -Pintegration-tests -pl spring-ai-spring-boot-testcontainers
 ```
