@@ -14,41 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.document;
+package org.springframework.ai.observation.conventions;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Common set of metadata keys used in {@link Document}s by {@link DocumentReader}s and
- * VectorStores.
+ * Unit tests for {@link SpringAiKind}.
  *
  * @author Thomas Vitale
- * @since 1.0.0
  */
-public enum DocumentMetadata {
+class SpringAiKindTests {
 
-// @formatter:off
+	@Test
+	void enumValuesShouldBeSortedAlphabetically() {
+		List<String> actualNames = Arrays.stream(SpringAiKind.values()).map(Enum::name).collect(Collectors.toList());
 
-	/**
-	 * Measure of distance between the document embedding and the query vector.
-	 * The lower the distance, the more they are similar.
-	 * It's the opposite of the similarity score.
-	 */
-	DISTANCE("distance");
+		List<String> sortedNames = actualNames.stream().sorted().collect(Collectors.toList());
 
-	private final String value;
-
-	DocumentMetadata(String value) {
-		this.value = value;
-	}
-
-	public String value() {
-		return this.value;
-	}
-
-// @formatter:on
-
-	@Override
-	public String toString() {
-		return this.value;
+		assertThat(actualNames).as("Enum values should be sorted alphabetically").isEqualTo(sortedNames);
 	}
 
 }

@@ -16,39 +16,30 @@
 
 package org.springframework.ai.observation.conventions;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
- * Collection of metric attributes used in AI observations. Based on the OpenTelemetry
- * Semantic Conventions for AI Systems.
+ * Unit tests for {@link VectorStoreProvider}.
  *
  * @author Thomas Vitale
- * @since 1.0.0
- * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions/tree/main/docs/gen-ai">OTel
- * Semantic Conventions</a>.
  */
-public enum AiObservationMetricAttributes {
+class VectorStoreProviderTests {
 
-// @formatter:off
+	@Test
+	void enumValuesShouldBeSortedAlphabetically() {
+		List<String> actualNames = Arrays.stream(VectorStoreProvider.values())
+			.map(Enum::name)
+			.collect(Collectors.toList());
 
-	/**
-	 * The type of token being counted (input, output, total).
-	 */
-	TOKEN_TYPE("gen_ai.token.type");
+		List<String> sortedNames = actualNames.stream().sorted().collect(Collectors.toList());
 
-	private final String value;
-
-	AiObservationMetricAttributes(String value) {
-		this.value = value;
+		assertThat(actualNames).as("Enum values should be sorted alphabetically").isEqualTo(sortedNames);
 	}
-
-	/**
-	 * Return the value of the metric attribute.
-	 * @return the value of the metric attribute
-	 */
-	public String value() {
-		return this.value;
-	}
-
-// @formatter:on
 
 }
