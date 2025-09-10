@@ -367,6 +367,26 @@ public class ZhiPuAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		GLM_4_5("glm-4.5"),
+
+		GLM_4_5_X("glm-4.5-x"),
+
+		GLM_4_5_Air("glm-4.5-air"),
+
+		GLM_4_5_AirX("glm-4.5-airx"),
+
+		GLM_4_5V("glm-4.5v"),
+
+		GLM_4_5_Flash("glm-4.5-flash"),
+
+		GLM_Z1_Air("glm-z1-air"),
+
+		GLM_Z1_AirX("glm-z1-airx"),
+
+		GLM_Z1_Flash("glm-z1-flash"),
+
+		GLM_Z1_FlashX("glm-z1-flashx"),
+
 		GLM_4("GLM-4"),
 
 		GLM_4V("glm-4v"),
