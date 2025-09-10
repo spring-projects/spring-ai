@@ -373,12 +373,13 @@ public class MiniMaxChatModel implements ChatModel {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
 							// FIXME: bounded elastic needs to be used since tool calling
 							//  is currently only synchronous
-							return Flux.deferContextual((ctx) -> {
+							return Flux.deferContextual(ctx -> {
 								ToolExecutionResult toolExecutionResult;
 								try {
 									ToolCallReactiveContextHolder.setContext(ctx);
 									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-								} finally {
+								}
+								finally {
 									ToolCallReactiveContextHolder.clearContext();
 								}
 								if (toolExecutionResult.returnDirect()) {

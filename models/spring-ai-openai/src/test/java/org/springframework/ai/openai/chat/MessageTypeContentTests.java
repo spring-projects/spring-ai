@@ -30,8 +30,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -42,7 +40,9 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.MultiValueMap;
 

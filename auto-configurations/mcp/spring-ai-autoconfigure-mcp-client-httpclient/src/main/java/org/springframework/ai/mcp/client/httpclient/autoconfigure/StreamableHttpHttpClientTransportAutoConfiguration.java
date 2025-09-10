@@ -21,6 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.spec.McpSchema;
+
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
@@ -32,14 +39,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.log.LogAccessor;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.AsyncHttpRequestCustomizer;
-import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
-import io.modelcontextprotocol.client.transport.SyncHttpRequestCustomizer;
-import io.modelcontextprotocol.spec.McpSchema;
 
 /**
  * Auto-configuration for Streamable HTTP client transport in the Model Context Protocol
@@ -91,17 +90,17 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	 * configurations
 	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
 	 * available
-	 * @param syncHttpRequestCustomizer provider for {@link SyncHttpRequestCustomizer} if
-	 * available
-	 * @param asyncHttpRequestCustomizer provider fo {@link AsyncHttpRequestCustomizer} if
-	 * available
+	 * @param syncHttpRequestCustomizer provider for
+	 * {@link McpSyncHttpClientRequestCustomizer} if available
+	 * @param asyncHttpRequestCustomizer provider fo
+	 * {@link McpAsyncHttpClientRequestCustomizer} if available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> streamableHttpHttpClientTransports(
 			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<ObjectMapper> objectMapperProvider,
-			ObjectProvider<SyncHttpRequestCustomizer> syncHttpRequestCustomizer,
-			ObjectProvider<AsyncHttpRequestCustomizer> asyncHttpRequestCustomizer) {
+			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
@@ -124,9 +123,9 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);
 			if (asyncHttpRequestCustomizer.getIfUnique() != null && syncHttpRequestCustomizer.getIfUnique() != null) {
 				logger.warn("Found beans of type %s and %s. Using %s.".formatted(
-						AsyncHttpRequestCustomizer.class.getSimpleName(),
-						SyncHttpRequestCustomizer.class.getSimpleName(),
-						SyncHttpRequestCustomizer.class.getSimpleName()));
+						McpAsyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName()));
 			}
 
 			HttpClientStreamableHttpTransport transport = transportBuilder.build();

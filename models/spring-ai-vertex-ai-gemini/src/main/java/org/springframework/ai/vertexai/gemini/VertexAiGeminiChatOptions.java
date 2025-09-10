@@ -347,7 +347,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public Integer getLogprobs() {
-		return logprobs;
+		return this.logprobs;
 	}
 
 	public void setLogprobs(Integer logprobs) {
@@ -355,7 +355,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public boolean getResponseLogprobs() {
-		return responseLogprobs;
+		return this.responseLogprobs;
 	}
 
 	@Override

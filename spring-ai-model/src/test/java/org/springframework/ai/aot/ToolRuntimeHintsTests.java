@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.aot.hint.RuntimeHints;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 /**

@@ -33,11 +33,6 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
@@ -101,6 +96,11 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -272,6 +272,10 @@ public class BedrockProxyChatModel implements ChatModel {
 		if (prompt.getOptions() != null) {
 			if (prompt.getOptions() instanceof BedrockChatOptions bedrockChatOptions) {
 				runtimeOptions = bedrockChatOptions.copy();
+			}
+			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						BedrockChatOptions.class);
 			}
 			else {
 				runtimeOptions = from(prompt.getOptions());
@@ -683,7 +687,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
-					return Flux.deferContextual((ctx) -> {
+					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);

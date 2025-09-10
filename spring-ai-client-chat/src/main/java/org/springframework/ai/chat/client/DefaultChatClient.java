@@ -1006,10 +1006,7 @@ public class DefaultChatClient implements ChatClient {
 			this.advisors.add(ChatModelCallAdvisor.builder().chatModel(this.chatModel).build());
 			this.advisors.add(ChatModelStreamAdvisor.builder().chatModel(this.chatModel).build());
 
-			return DefaultAroundAdvisorChain.builder(this.observationRegistry)
-				.pushAll(this.advisors)
-				.templateRenderer(this.templateRenderer)
-				.build();
+			return DefaultAroundAdvisorChain.builder(this.observationRegistry).pushAll(this.advisors).build();
 		}
 
 	}

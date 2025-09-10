@@ -119,7 +119,9 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
 
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
@@ -188,6 +190,8 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
@@ -213,10 +217,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
-
+		
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
+		<module>mcp/mcp-annotations-spring</module>
 	</modules>
 
 	<organization>
@@ -280,7 +285,7 @@
 		<com.google.genai.version>1.10.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.37.0</jsonschema.version>
-		<swagger-annotations.version>2.2.25</swagger-annotations.version>
+		<swagger-annotations.version>2.2.30</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
@@ -325,7 +330,8 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.11.0</mcp.sdk.version>
+		<mcp.sdk.version>0.12.1</mcp.sdk.version>
+		<mcp-annotations.version>0.3.1</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -351,7 +357,7 @@
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 
-		<disable.checks>true</disable.checks>
+		<disable.checks>false</disable.checks>
 
 	</properties>
 

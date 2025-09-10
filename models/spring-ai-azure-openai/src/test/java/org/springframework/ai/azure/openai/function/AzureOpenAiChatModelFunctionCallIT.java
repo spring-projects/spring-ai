@@ -163,12 +163,18 @@ class AzureOpenAiChatModelFunctionCallIT {
 			.streamOptions(streamOptions)
 			.build();
 
-		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		List<ChatResponse> responses = this.chatModel.stream(new Prompt(messages, promptOptions)).collectList().block();
 
-		ChatResponse chatResponse = response.last().block();
-		logger.info("Response: {}", chatResponse);
+		assertThat(responses).isNotEmpty();
 
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(600).isLessThan(800);
+		ChatResponse finalResponse = responses.get(responses.size() - 2);
+
+		logger.info("Final Response: {}", finalResponse);
+
+		assertThat(finalResponse.getMetadata()).isNotNull();
+		assertThat(finalResponse.getMetadata().getUsage()).isNotNull();
+
+		assertThat(finalResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(600).isLessThan(800);
 
 	}
 

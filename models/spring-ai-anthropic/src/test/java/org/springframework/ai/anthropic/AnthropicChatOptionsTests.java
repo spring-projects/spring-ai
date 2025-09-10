@@ -23,6 +23,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link AnthropicChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Soby Chacko
  */
 class AnthropicChatOptionsTests {
 
@@ -469,6 +471,114 @@ class AnthropicChatOptionsTests {
 
 		assertThat(options.getModel()).isEqualTo("updated-model");
 		assertThat(options.getMaxTokens()).isEqualTo(10);
+	}
+
+	@Test
+	void testCacheStrategyBuilder() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.build();
+
+		assertThat(options.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_AND_TOOLS);
+	}
+
+	@Test
+	void testCacheStrategyDefaultValue() {
+		AnthropicChatOptions options = new AnthropicChatOptions();
+		assertThat(options.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(options.getCacheTtl()).isEqualTo("5m");
+	}
+
+	@Test
+	void testCacheStrategyEqualsAndHashCode() {
+		AnthropicChatOptions options1 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheTtl("1h")
+			.build();
+
+		AnthropicChatOptions options2 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheTtl("1h")
+			.build();
+
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheStrategy(AnthropicCacheStrategy.NONE)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+
+		assertThat(options1).isNotEqualTo(options3);
+		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+	}
+
+	@Test
+	void testCacheStrategyCopy() {
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheStrategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.cacheTtl("1h")
+			.build();
+
+		AnthropicChatOptions copied = original.copy();
+
+		assertThat(copied).isNotSameAs(original).isEqualTo(original);
+		assertThat(copied.getCacheStrategy()).isEqualTo(original.getCacheStrategy());
+		assertThat(copied.getCacheTtl()).isEqualTo(original.getCacheTtl());
+	}
+
+	@Test
+	void testCacheStrategyWithDefaultValues() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test-model").build();
+
+		assertThat(options.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(options.getCacheTtl()).isEqualTo("5m");
+	}
+
+	@Test
+	void testBuilderWithAllFieldsIncludingCacheStrategy() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model("test-model")
+			.maxTokens(100)
+			.stopSequences(List.of("stop1", "stop2"))
+			.temperature(0.7)
+			.topP(0.8)
+			.topK(50)
+			.metadata(new Metadata("userId_123"))
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.cacheTtl("1h")
+			.build();
+
+		assertThat(options)
+			.extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata",
+					"cacheStrategy", "cacheTtl")
+			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"),
+					AnthropicCacheStrategy.SYSTEM_ONLY, "1h");
+	}
+
+	@Test
+	void testCacheStrategyMutationDoesNotAffectOriginal() {
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("original-model")
+			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheTtl("1h")
+			.build();
+
+		AnthropicChatOptions copy = original.copy();
+		copy.setCacheStrategy(AnthropicCacheStrategy.NONE);
+		copy.setCacheTtl("5m");
+
+		// Original should remain unchanged
+		assertThat(original.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_AND_TOOLS);
+		assertThat(original.getCacheTtl()).isEqualTo("1h");
+
+		// Copy should have modified values
+		assertThat(copy.getCacheStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(copy.getCacheTtl()).isEqualTo("5m");
 	}
 
 }
