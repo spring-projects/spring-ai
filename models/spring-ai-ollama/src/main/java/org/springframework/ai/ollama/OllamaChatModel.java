@@ -439,7 +439,10 @@ public class OllamaChatModel implements ChatModel {
 	OllamaApi.ChatRequest ollamaChatRequest(Prompt prompt, boolean stream) {
 
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions().stream().map(message -> {
-			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
+			if (message.getMessageType() == MessageType.SYSTEM) {
+				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(message.getText()).build());
+			}
+			else if (message.getMessageType() == MessageType.USER) {
 				var messageBuilder = OllamaApi.Message.builder(Role.USER).content(message.getText());
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
