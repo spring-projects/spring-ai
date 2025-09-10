@@ -59,8 +59,8 @@ class SafeGuardAdvisorTests {
 
 	@BeforeEach
 	void setUp() {
-		safeRequest = new ChatClientRequest(Prompt.builder().content("hello world").build(), Map.of());
-		unsafeRequest = new ChatClientRequest(Prompt.builder().content("this contains secret").build(), Map.of());
+		this.safeRequest = new ChatClientRequest(Prompt.builder().content("hello world").build(), Map.of());
+		this.unsafeRequest = new ChatClientRequest(Prompt.builder().content("this contains secret").build(), Map.of());
 	}
 
 	@Test
@@ -82,7 +82,7 @@ class SafeGuardAdvisorTests {
 
 		CallAdvisorChain mockChain = mock(CallAdvisorChain.class);
 
-		ChatClientResponse response = advisor.adviseCall(unsafeRequest, mockChain);
+		ChatClientResponse response = advisor.adviseCall(this.unsafeRequest, mockChain);
 
 		assertThat(response.chatResponse().getResult().getOutput().getText()).contains("I'm unable to respond");
 		verify(mockChain, never()).nextCall(any());
@@ -98,12 +98,12 @@ class SafeGuardAdvisorTests {
 			.context(Map.of())
 			.build();
 
-		when(mockChain.nextCall(safeRequest)).thenReturn(expected);
+		when(mockChain.nextCall(this.safeRequest)).thenReturn(expected);
 
-		ChatClientResponse response = advisor.adviseCall(safeRequest, mockChain);
+		ChatClientResponse response = advisor.adviseCall(this.safeRequest, mockChain);
 
 		assertThat(response).isSameAs(expected);
-		verify(mockChain).nextCall(safeRequest);
+		verify(mockChain).nextCall(this.safeRequest);
 	}
 
 	@Test
@@ -112,7 +112,7 @@ class SafeGuardAdvisorTests {
 
 		StreamAdvisorChain mockChain = mock(StreamAdvisorChain.class);
 
-		Flux<ChatClientResponse> flux = advisor.adviseStream(unsafeRequest, mockChain);
+		Flux<ChatClientResponse> flux = advisor.adviseStream(this.unsafeRequest, mockChain);
 
 		StepVerifier.create(flux)
 			.assertNext(r -> assertThat(r.chatResponse().getResult().getOutput().getText())
@@ -132,13 +132,13 @@ class SafeGuardAdvisorTests {
 			.context(Map.of())
 			.build();
 
-		when(mockChain.nextStream(safeRequest)).thenReturn(Flux.just(expected));
+		when(mockChain.nextStream(this.safeRequest)).thenReturn(Flux.just(expected));
 
-		Flux<ChatClientResponse> flux = advisor.adviseStream(safeRequest, mockChain);
+		Flux<ChatClientResponse> flux = advisor.adviseStream(this.safeRequest, mockChain);
 
 		StepVerifier.create(flux).expectNext(expected).verifyComplete();
 
-		verify(mockChain).nextStream(safeRequest);
+		verify(mockChain).nextStream(this.safeRequest);
 	}
 
 	@Test
