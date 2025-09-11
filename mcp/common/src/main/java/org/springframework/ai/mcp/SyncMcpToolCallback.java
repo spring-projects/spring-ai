@@ -224,11 +224,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 			// Apply defaults if not specified
 			if (this.prefixedToolName == null) {
-				this.prefixedToolName = McpToolNamePrefixGenerator.defaultGenerator()
-					.prefixedToolName(McpConnectionInfo.builder()
-						.clientCapabilities(this.mcpClient.getClientCapabilities())
-						.clientInfo(this.mcpClient.getClientInfo())
-						.build(), this.tool);
+				this.prefixedToolName = McpToolUtils.format(this.tool.name());
 			}
 
 			return new SyncMcpToolCallback(this.mcpClient, this.tool, this.prefixedToolName,

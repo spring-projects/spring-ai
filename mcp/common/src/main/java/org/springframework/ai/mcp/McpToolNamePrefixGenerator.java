@@ -41,16 +41,6 @@ public interface McpToolNamePrefixGenerator {
 	String prefixedToolName(McpConnectionInfo mcpConnectionInfo, Tool tool);
 
 	/**
-	 * Default implementation that uses the MCP client name to generate the prefixed tool
-	 * name.
-	 * @return the default prefix generator
-	 */
-	static McpToolNamePrefixGenerator defaultGenerator() {
-		return (mcpConnectionIfo, tool) -> McpToolUtils.prefixedToolName(mcpConnectionIfo.clientInfo().name(),
-				mcpConnectionIfo.clientInfo().title(), tool.name());
-	}
-
-	/**
 	 * Static factory method to create a no-op prefix generator that returns the tool name
 	 * @return a prefix generator that returns the tool name as-is
 	 */
