@@ -754,6 +754,53 @@ public final class AnthropicApi {
 	}
 
 	/**
+	 * Citations configuration for document ContentBlocks.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record CitationsConfig(@JsonProperty("enabled") Boolean enabled) {
+	}
+
+	/**
+	 * Citation response structure from Anthropic API. Maps to the actual API response
+	 * format for citations. Contains location information that varies by document type:
+	 * character indices for plain text, page numbers for PDFs, or content block indices
+	 * for custom content.
+	 *
+	 * @param type The citation location type ("char_location", "page_location", or
+	 * "content_block_location")
+	 * @param citedText The text that was cited from the document
+	 * @param documentIndex The index of the document that was cited (0-based)
+	 * @param documentTitle The title of the document that was cited
+	 * @param startCharIndex The starting character index for "char_location" type
+	 * (0-based, inclusive)
+	 * @param endCharIndex The ending character index for "char_location" type (exclusive)
+	 * @param startPageNumber The starting page number for "page_location" type (1-based,
+	 * inclusive)
+	 * @param endPageNumber The ending page number for "page_location" type (exclusive)
+	 * @param startBlockIndex The starting content block index for
+	 * "content_block_location" type (0-based, inclusive)
+	 * @param endBlockIndex The ending content block index for "content_block_location"
+	 * type (exclusive)
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record CitationResponse(@JsonProperty("type") String type, @JsonProperty("cited_text") String citedText,
+			@JsonProperty("document_index") Integer documentIndex, @JsonProperty("document_title") String documentTitle,
+
+			// For char_location type
+			@JsonProperty("start_char_index") Integer startCharIndex,
+			@JsonProperty("end_char_index") Integer endCharIndex,
+
+			// For page_location type
+			@JsonProperty("start_page_number") Integer startPageNumber,
+			@JsonProperty("end_page_number") Integer endPageNumber,
+
+			// For content_block_location type
+			@JsonProperty("start_block_index") Integer startBlockIndex,
+			@JsonProperty("end_block_index") Integer endBlockIndex) {
+	}
+
+	/**
 	 * The content block of the message.
 	 *
 	 * @param type the content type can be "text", "image", "tool_use", "tool_result" or
@@ -797,7 +844,12 @@ public final class AnthropicApi {
 		@JsonProperty("data") String data,
 
 		// cache object
-		@JsonProperty("cache_control") CacheControl cacheControl
+		@JsonProperty("cache_control") CacheControl cacheControl,
+
+		// Citation fields
+		@JsonProperty("title") String title,
+		@JsonProperty("context") String context,
+		@JsonProperty("citations") Object citations // Can be CitationsConfig for requests or List<CitationResponse> for responses
 	) {
 		// @formatter:on
 
@@ -816,7 +868,7 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Type type, Source source) {
-			this(type, source, null, null, null, null, null, null, null, null, null, null, null);
+			this(type, source, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -824,7 +876,8 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Source source) {
-			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null);
 		}
 
 		/**
@@ -832,11 +885,11 @@ public final class AnthropicApi {
 		 * @param text The text of the content.
 		 */
 		public ContentBlock(String text) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		public ContentBlock(String text, CacheControl cache) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, cache);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, cache, null, null, null);
 		}
 
 		// Tool result
@@ -847,7 +900,8 @@ public final class AnthropicApi {
 		 * @param content The content of the tool result.
 		 */
 		public ContentBlock(Type type, String toolUseId, String content) {
-			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null, null);
+			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null, null, null, null,
+					null);
 		}
 
 		/**
@@ -858,7 +912,7 @@ public final class AnthropicApi {
 		 * @param index The index of the content block.
 		 */
 		public ContentBlock(Type type, Source source, String text, Integer index) {
-			this(type, source, text, index, null, null, null, null, null, null, null, null, null);
+			this(type, source, text, index, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
@@ -870,7 +924,21 @@ public final class AnthropicApi {
 		 * @param input The input of the tool use.
 		 */
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
-			this(type, null, null, null, id, name, input, null, null, null, null, null, null);
+			this(type, null, null, null, id, name, input, null, null, null, null, null, null, null, null, null);
+		}
+
+		/**
+		 * Create a document ContentBlock with citations and optional caching.
+		 * @param source The document source
+		 * @param title Optional document title
+		 * @param context Optional document context
+		 * @param citationsEnabled Whether citations are enabled
+		 * @param cacheControl Optional cache control (can be null)
+		 */
+		public ContentBlock(Source source, String title, String context, boolean citationsEnabled,
+				CacheControl cacheControl) {
+			this(Type.DOCUMENT, source, null, null, null, null, null, null, null, null, null, null, cacheControl, title,
+					context, citationsEnabled ? new CitationsConfig(true) : null);
 		}
 
 		public static ContentBlockBuilder from(ContentBlock contentBlock) {
@@ -983,7 +1051,8 @@ public final class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
 			@JsonProperty("data") String data,
-			@JsonProperty("url") String url) {
+			@JsonProperty("url") String url,
+			@JsonProperty("content") List<ContentBlock> content) {
 			// @formatter:on
 
 			/**
@@ -992,11 +1061,15 @@ public final class AnthropicApi {
 			 * @param data The content data.
 			 */
 			public Source(String mediaType, String data) {
-				this("base64", mediaType, data, null);
+				this("base64", mediaType, data, null, null);
 			}
 
 			public Source(String url) {
-				this("url", null, null, url);
+				this("url", null, null, url, null);
+			}
+
+			public Source(List<ContentBlock> content) {
+				this("content", null, null, null, content);
 			}
 
 		}
@@ -1029,6 +1102,12 @@ public final class AnthropicApi {
 
 			private CacheControl cacheControl;
 
+			private String title;
+
+			private String context;
+
+			private Object citations;
+
 			public ContentBlockBuilder(ContentBlock contentBlock) {
 				this.type = contentBlock.type;
 				this.source = contentBlock.source;
@@ -1043,6 +1122,9 @@ public final class AnthropicApi {
 				this.thinking = contentBlock.thinking;
 				this.data = contentBlock.data;
 				this.cacheControl = contentBlock.cacheControl;
+				this.title = contentBlock.title;
+				this.context = contentBlock.context;
+				this.citations = contentBlock.citations;
 			}
 
 			public ContentBlockBuilder type(Type type) {
@@ -1112,7 +1194,8 @@ public final class AnthropicApi {
 
 			public ContentBlock build() {
 				return new ContentBlock(this.type, this.source, this.text, this.index, this.id, this.name, this.input,
-						this.toolUseId, this.content, this.signature, this.thinking, this.data, this.cacheControl);
+						this.toolUseId, this.content, this.signature, this.thinking, this.data, this.cacheControl,
+						this.title, this.context, this.citations);
 			}
 
 		}
