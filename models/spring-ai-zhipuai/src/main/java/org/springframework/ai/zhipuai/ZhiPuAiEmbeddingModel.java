@@ -153,14 +153,14 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 
-		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
-		var zhipuEmbeddingRequest = zhipuEmbeddingRequest(embeddingRequest);
+		var embeddingRequest = buildEmbeddingRequest(request);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
 			.provider(ZhiPuApiConstants.PROVIDER_NAME)
 			.build();
 
+		var zhipuEmbeddingRequest = zhipuEmbeddingRequest(embeddingRequest);
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
