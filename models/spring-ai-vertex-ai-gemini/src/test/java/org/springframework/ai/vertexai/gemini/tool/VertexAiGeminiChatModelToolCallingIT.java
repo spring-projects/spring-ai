@@ -147,7 +147,7 @@ public class VertexAiGeminiChatModelToolCallingIT {
 
 		var promptOptions = VertexAiGeminiChatOptions.builder()
 			.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH)
-			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
