@@ -47,7 +47,8 @@ class BedrockChatOptionsTests {
 		assertThat(options)
 			.extracting("model", "frequencyPenalty", "maxTokens", "presencePenalty", "requestParameters",
 					"stopSequences", "temperature", "topP", "topK")
-			.containsExactly("test-model", 0.0, 100, 0.0, Map.of("requestId", "1234"), List.of("stop1", "stop2"), 0.7, 0.8, 50);
+			.containsExactly("test-model", 0.0, 100, 0.0, Map.of("requestId", "1234"), List.of("stop1", "stop2"), 0.7,
+					0.8, 50);
 	}
 
 	@Test

@@ -130,7 +130,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 		this.maxTokens = maxTokens;
 	}
 
-	public Map<String, String> getRequestParameters() { return this.requestParameters; }
+	public Map<String, String> getRequestParameters() {
+		return this.requestParameters;
+	}
 
 	public void setRequestParameters(Map<String, String> requestParameters) {
 		this.requestParameters = requestParameters;
@@ -262,9 +264,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
-				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
-				this.toolCallbacks, this.toolNames, this.toolContext,
-				this.internalToolExecutionEnabled);
+				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
+				this.toolNames, this.toolContext, this.internalToolExecutionEnabled);
 	}
 
 	public static class Builder {

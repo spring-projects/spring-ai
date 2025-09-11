@@ -80,7 +80,6 @@ class BedrockConverseChatClientIT {
 		logger.info("" + response);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
-		assertThat(response.getResults().get(0).getMetadata().containsKey("requestId"));
 	}
 
 	@Test
