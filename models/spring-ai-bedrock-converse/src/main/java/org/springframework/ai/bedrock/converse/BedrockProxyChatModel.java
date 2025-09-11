@@ -34,8 +34,6 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
-import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
@@ -51,9 +49,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseMetrics;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
-import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.DocumentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
@@ -76,6 +72,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.VideoSource;
 
 import org.springframework.ai.bedrock.converse.api.BedrockMediaFormat;
 import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
+import org.springframework.ai.bedrock.converse.api.ConverseChatResponseStream;
 import org.springframework.ai.bedrock.converse.api.URLValidator;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -84,6 +81,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -684,9 +682,14 @@ public class BedrockProxyChatModel implements ChatModel {
 				.toolConfig(converseRequest.toolConfig())
 				.build();
 
-			Flux<ConverseStreamOutput> response = converseStream(converseStreamRequest);
+			Usage accumulatedUsage = null;
+			if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null) {
+				accumulatedUsage = perviousChatResponse.getMetadata().getUsage();
+			}
 
-			Flux<ChatResponse> chatResponses = ConverseApiUtils.toChatResponse(response, perviousChatResponse);
+			Flux<ChatResponse> chatResponses = new ConverseChatResponseStream(this.bedrockRuntimeAsyncClient,
+					converseStreamRequest, accumulatedUsage)
+				.stream();
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
 
@@ -731,48 +734,6 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
 		});
-	}
-
-	public static final EmitFailureHandler DEFAULT_EMIT_FAILURE_HANDLER = EmitFailureHandler
-		.busyLooping(Duration.ofSeconds(10));
-
-	/**
-	 * Invoke the model and return the response stream.
-	 *
-	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters.html
-	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
-	 * https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/bedrockruntime/BedrockRuntimeAsyncClient.html#converseStream
-	 * @param converseStreamRequest Model invocation request.
-	 * @return The model invocation response stream.
-	 */
-	public Flux<ConverseStreamOutput> converseStream(ConverseStreamRequest converseStreamRequest) {
-		Assert.notNull(converseStreamRequest, "'converseStreamRequest' must not be null");
-
-		Sinks.Many<ConverseStreamOutput> eventSink = Sinks.many().multicast().onBackpressureBuffer();
-
-		ConverseStreamResponseHandler.Visitor visitor = ConverseStreamResponseHandler.Visitor.builder()
-			.onDefault(output -> {
-				logger.debug("Received converse stream output:{}", output);
-				eventSink.emitNext(output, DEFAULT_EMIT_FAILURE_HANDLER);
-			})
-			.build();
-
-		ConverseStreamResponseHandler responseHandler = ConverseStreamResponseHandler.builder()
-			.onEventStream(stream -> stream.subscribe(e -> e.accept(visitor)))
-			.onComplete(() -> {
-				eventSink.emitComplete(DEFAULT_EMIT_FAILURE_HANDLER);
-				logger.info("Completed streaming response.");
-			})
-			.onError(error -> {
-				logger.error("Error handling Bedrock converse stream response", error);
-				eventSink.emitError(error, DEFAULT_EMIT_FAILURE_HANDLER);
-			})
-			.build();
-
-		this.bedrockRuntimeAsyncClient.converseStream(converseStreamRequest, responseHandler);
-
-		return eventSink.asFlux();
-
 	}
 
 	/**
