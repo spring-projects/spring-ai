@@ -165,7 +165,12 @@ class MistralAiChatCompletionRequestTests {
 		var toolCall1 = createToolCall(1);
 		var toolCall2 = createToolCall(2);
 		var toolCall3 = createToolCall(3);
-		var assistantMessage = new AssistantMessage(TEXT_CONTENT, Map.of(), List.of(toolCall1, toolCall2, toolCall3));
+		// @formatter:off
+		var assistantMessage = AssistantMessage.builder()
+				.content(TEXT_CONTENT)
+				.toolCalls(List.of(toolCall1, toolCall2, toolCall3))
+				.build();
+		// @formatter:on
 		var prompt = createPrompt(assistantMessage);
 		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
 		var chatCompletionMessages = chatCompletionRequest.messages();
