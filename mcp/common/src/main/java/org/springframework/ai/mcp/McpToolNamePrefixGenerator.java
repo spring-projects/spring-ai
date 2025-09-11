@@ -45,10 +45,11 @@ public interface McpToolNamePrefixGenerator {
 	 * name.
 	 * @return the default prefix generator
 	 */
-	static McpToolNamePrefixGenerator defaultGenerator() {
-		return (mcpConnectionIfo, tool) -> McpToolUtils.prefixedToolName(mcpConnectionIfo.clientInfo().name(),
-				mcpConnectionIfo.clientInfo().title(), tool.name());
-	}
+	// static McpToolNamePrefixGenerator defaultGenerator() {
+	// return (mcpConnectionIfo, tool) ->
+	// McpToolUtils.prefixedToolName(mcpConnectionIfo.clientInfo().name(),
+	// mcpConnectionIfo.clientInfo().title(), tool.name());
+	// }
 
 	/**
 	 * Static factory method to create a no-op prefix generator that returns the tool name
