@@ -435,16 +435,18 @@ If multiple filters are needed, combine them into a single composite filter impl
 
 The MCP Client Boot Starter supports customizable tool name prefix generation through the `McpToolNamePrefixGenerator` interface. This feature helps avoid naming conflicts when integrating tools from multiple MCP servers by adding unique prefixes to tool names.
 
-By default, if no custom `McpToolNamePrefixGenerator` bean is provided, the starter uses `McpToolNamePrefixGenerator.defaultGenerator()` which generates a prefix from the MCP client name and title. The default generator:
+By default, if no custom `McpToolNamePrefixGenerator` bean is provided, the starter uses `DefaultMcpToolNamePrefixGenerator` which ensures unique tool names across all MCP client connections. The default generator:
 
-* Shortens the client name by taking the first letter of each word (separated by underscores). The Spring AI injects the connection name at the end of the client name by default.
-* Includes the server title (if available) without shortening. Spring AI sets the title to the connection name by default.
-* Formats the final tool name as: `shortened_prefix_title_toolName`
+* Tracks all existing connections and tool names to ensure uniqueness
+* Formats tool names by replacing non-alphanumeric characters with underscores (e.g., `my-tool` becomes `my_tool`)
+* When duplicate tool names are detected across different connections, adds a counter prefix (e.g., `alt_1_toolName`, `alt_2_toolName`)
+* Is thread-safe and maintains idempotency - the same combination of (client, server, tool) always gets the same unique name
 * Ensures the final name doesn't exceed 64 characters (truncating from the beginning if necessary)
 
 For example:
-* Client name: `spring_ai_mcp_client_server1`, Title: `server1`, Tool: `search` → `s_a_m_c_s_server1_search`
-* Client name: `weather_service`, Title: (none), Tool: `forecast` → `w_s_forecast`
+* First occurrence of tool `search` → `search`
+* Second occurrence of tool `search` from a different connection → `alt_1_search`
+* Tool with special characters `my-special-tool` → `my_special_tool`
 
 You can customize this behavior by providing your own implementation:
 
@@ -475,10 +477,10 @@ The `McpConnectionInfo` record provides comprehensive information about the MCP 
 
 The framework provides several built-in prefix generators:
 
-* `McpToolNamePrefixGenerator.defaultGenerator()` - Uses shortened client name and title as prefix (used by default if no custom bean is provided)
-* `McpToolNamePrefixGenerator.noPrefix()` - Returns tool names without any prefix
+* `DefaultMcpToolNamePrefixGenerator` - Ensures unique tool names by tracking duplicates and adding counter prefixes when needed (used by default if no custom bean is provided)
+* `McpToolNamePrefixGenerator.noPrefix()` - Returns tool names without any prefix (may cause conflicts if multiple servers provide tools with the same name)
 
-To disable prefixing entirely, register the no-prefix generator as a bean:
+To disable prefixing entirely and use raw tool names (not recommended if using multiple MCP servers), register the no-prefix generator as a bean:
 
 [source,java]
 ----
@@ -493,7 +495,9 @@ public class McpConfiguration {
 ----
 
 The prefix generator is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers through Spring's `ObjectProvider` mechanism.
-If no custom generator bean is provided, the default generator is used automatically.
+If no custom generator bean is provided, the `DefaultMcpToolNamePrefixGenerator` is used automatically.
+
+WARNING: When using `McpToolNamePrefixGenerator.noPrefix()` with multiple MCP servers, duplicate tool names will cause an `IllegalStateException`. The default `DefaultMcpToolNamePrefixGenerator` prevents this by automatically adding unique prefixes to duplicate tool names.
 
 === Tool Context to MCP Meta Converter
 

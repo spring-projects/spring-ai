@@ -99,7 +99,17 @@ class SyncMcpToolCallbackProviderTests {
 
 		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
 
-		assertThatThrownBy(() -> provider.getToolCallbacks()).isInstanceOf(IllegalStateException.class)
+		var toolCallbacks = provider.getToolCallbacks();
+		assertThat(toolCallbacks).hasSize(2);
+		assertThat(toolCallbacks[0].getToolDefinition().name()).isEqualTo("sameName");
+		assertThat(toolCallbacks[1].getToolDefinition().name()).isEqualTo("alt_1_sameName");
+
+		SyncMcpToolCallbackProvider provider2 = SyncMcpToolCallbackProvider.builder()
+			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.noPrefix())
+			.mcpClients(this.mcpClient)
+			.build();
+
+		assertThatThrownBy(() -> provider2.getToolCallbacks()).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("Multiple tools with the same name");
 	}
 
@@ -174,7 +184,7 @@ class SyncMcpToolCallbackProviderTests {
 
 		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
 			.toolFilter(rejectAllFilter)
-			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
+			.toolNamePrefixGenerator(new DefaultMcpToolNamePrefixGenerator())
 			.mcpClients(this.mcpClient)
 			.build();
 
@@ -206,15 +216,15 @@ class SyncMcpToolCallbackProviderTests {
 
 		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
 			.toolFilter(nameFilter)
-			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
+			.toolNamePrefixGenerator(new DefaultMcpToolNamePrefixGenerator())
 			.mcpClients(this.mcpClient)
 			.build();
 
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(2);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("t_tool2");
-		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("t_tool3");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("tool2");
+		assertThat(callbacks[1].getToolDefinition().name()).isEqualTo("tool3");
 	}
 
 	@Test
@@ -246,14 +256,14 @@ class SyncMcpToolCallbackProviderTests {
 
 		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
 			.toolFilter(clientFilter)
-			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
+			.toolNamePrefixGenerator(new DefaultMcpToolNamePrefixGenerator())
 			.mcpClients(mcpClient1, mcpClient2)
 			.build();
 
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("t_tool1");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("tool1");
 	}
 
 	@Test
@@ -279,14 +289,14 @@ class SyncMcpToolCallbackProviderTests {
 
 		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
 			.toolFilter(complexFilter)
-			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.defaultGenerator())
+			.toolNamePrefixGenerator(new DefaultMcpToolNamePrefixGenerator())
 			.mcpClients(weatherClient)
 			.build();
 
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
-		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("w_s_weather");
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("weather");
 	}
 
 	@Test
