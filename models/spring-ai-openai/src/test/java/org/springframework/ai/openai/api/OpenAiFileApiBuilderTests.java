@@ -126,13 +126,13 @@ class OpenAiFileApiBuilderTests {
 
 		@BeforeEach
 		void setUp() throws IOException {
-			mockWebServer = new MockWebServer();
-			mockWebServer.start();
+			this.mockWebServer = new MockWebServer();
+			this.mockWebServer.start();
 		}
 
 		@AfterEach
 		void tearDown() throws IOException {
-			mockWebServer.shutdown();
+			this.mockWebServer.shutdown();
 		}
 
 		@Test
@@ -140,35 +140,35 @@ class OpenAiFileApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			OpenAiFileApi api = OpenAiFileApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
 				.setBody("""
 						{
-						  "id": "file-abc123",
-						  "object": "file",
-						  "bytes": 120000,
-						  "created_at": 1677610602,
-						  "filename": "mydata.jsonl",
-						  "purpose": "fine-tune"
+						    "id": "file-abc123",
+						    "object": "file",
+						    "bytes": 120000,
+						    "created_at": 1677610602,
+						    "filename": "mydata.jsonl",
+						    "purpose": "fine-tune"
 						}
 						""");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiFileApi.UploadFileRequest request = new OpenAiFileApi.UploadFileRequest(new byte[] {}, "mydata.jsonl",
 					OpenAiFileApi.Purpose.USER_DATA.getValue());
 			ResponseEntity<OpenAiFileApi.FileObject> response = api.uploadFile(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.uploadFile(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 

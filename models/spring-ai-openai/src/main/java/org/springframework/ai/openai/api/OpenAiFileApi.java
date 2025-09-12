@@ -230,9 +230,9 @@ public class OpenAiFileApi {
 			}
 
 			public UploadFileRequest build() {
-				Assert.notNull(file, "file must not be empty");
-				Assert.notNull(fileName, "fileName must not be empty");
-				Assert.notNull(purpose, "purpose must not be empty");
+				Assert.notNull(this.file, "file must not be empty");
+				Assert.notNull(this.fileName, "fileName must not be empty");
+				Assert.notNull(this.purpose, "purpose must not be empty");
 
 				return new UploadFileRequest(this.file, this.fileName, this.purpose);
 			}
