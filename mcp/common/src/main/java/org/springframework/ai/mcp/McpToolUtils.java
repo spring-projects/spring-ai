@@ -106,7 +106,7 @@ public final class McpToolUtils {
 		return prefixedToolName(prefix, null, toolName);
 	}
 
-	private static String format(String input) {
+	public static String format(String input) {
 		// Replace any character that isn't alphanumeric, underscore, or hyphen with
 		// concatenation. Support Han script + CJK blocks for complete Chinese character
 		// coverage

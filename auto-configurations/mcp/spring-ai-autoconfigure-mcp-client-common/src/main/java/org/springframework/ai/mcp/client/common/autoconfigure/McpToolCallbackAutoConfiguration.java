@@ -22,6 +22,7 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.DefaultMcpToolNamePrefixGenerator;
 import org.springframework.ai.mcp.McpToolFilter;
 import org.springframework.ai.mcp.McpToolNamePrefixGenerator;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
@@ -30,17 +31,27 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClie
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 
 /**
+ * Responsible to convert MCP (sync and async) clients into Spring AI
+ * ToolCallbacksProviders. These providers are used by Spring AI to discover and execute
+ * tools.
  */
 @AutoConfiguration(after = { McpClientAutoConfiguration.class })
 @EnableConfigurationProperties(McpClientCommonProperties.class)
 @Conditional(McpToolCallbackAutoConfiguration.McpToolCallbackAutoConfigurationCondition.class)
 public class McpToolCallbackAutoConfiguration {
+
+	@Bean
+	@ConditionalOnMissingBean
+	public McpToolNamePrefixGenerator defaultMcpToolNamePrefixGenerator() {
+		return new DefaultMcpToolNamePrefixGenerator();
+	}
 
 	/**
 	 * Creates tool callbacks for all configured MCP clients.
@@ -61,12 +72,14 @@ public class McpToolCallbackAutoConfiguration {
 			ObjectProvider<List<McpSyncClient>> syncMcpClients,
 			ObjectProvider<McpToolNamePrefixGenerator> mcpToolNamePrefixGenerator,
 			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter) {
+
 		List<McpSyncClient> mcpClients = syncMcpClients.stream().flatMap(List::stream).toList();
+
 		return SyncMcpToolCallbackProvider.builder()
 			.mcpClients(mcpClients)
 			.toolFilter(syncClientsToolFilter.getIfUnique((() -> (McpSyncClient, tool) -> true)))
 			.toolNamePrefixGenerator(
-					mcpToolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.defaultGenerator()))
+					mcpToolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
 			.toolContextToMcpMetaConverter(
 					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
 			.build();
@@ -81,8 +94,7 @@ public class McpToolCallbackAutoConfiguration {
 		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
 		return AsyncMcpToolCallbackProvider.builder()
 			.toolFilter(asyncClientsToolFilter.getIfUnique(() -> (McpAsyncClient, tool) -> true))
-			.toolNamePrefixGenerator(
-					toolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.defaultGenerator()))
+			.toolNamePrefixGenerator(toolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
 			.toolContextToMcpMetaConverter(
 					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
 			.mcpClients(mcpClients)

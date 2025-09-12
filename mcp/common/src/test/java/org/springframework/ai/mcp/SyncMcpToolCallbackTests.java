@@ -248,8 +248,6 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void builderShouldUseDefaultPrefixWhenNotSpecified() {
 		when(this.tool.name()).thenReturn("testTool");
-		when(this.mcpClient.getClientCapabilities()).thenReturn(null);
-		when(this.mcpClient.getClientInfo()).thenReturn(new Implementation("testClient", "1.0.0"));
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder().mcpClient(this.mcpClient).tool(this.tool).build();
 

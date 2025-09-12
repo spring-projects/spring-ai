@@ -359,14 +359,14 @@ class ToolUtilsTests {
 		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient);
 
 		assertThat(result).hasSize(2);
-		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("t_c_tool1");
-		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("t_c_tool2");
+		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("tool1");
+		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("tool2");
 
 		List<ToolCallback> result2 = McpToolUtils.getToolCallbacksFromSyncClients(List.of(mockClient));
 
 		assertThat(result2).hasSize(2);
-		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("t_c_tool1");
-		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("t_c_tool2");
+		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("tool1");
+		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("tool2");
 	}
 
 	@Test
@@ -401,14 +401,14 @@ class ToolUtilsTests {
 		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient1, mockClient2);
 
 		assertThat(result).hasSize(2);
-		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("c_tool1");
-		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("c_tool2");
+		assertThat(result.get(0).getToolDefinition().name()).isEqualTo("tool1");
+		assertThat(result.get(1).getToolDefinition().name()).isEqualTo("tool2");
 
 		List<ToolCallback> result2 = McpToolUtils.getToolCallbacksFromSyncClients(List.of(mockClient1, mockClient2));
 
 		assertThat(result2).hasSize(2);
-		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("c_tool1");
-		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("c_tool2");
+		assertThat(result2.get(0).getToolDefinition().name()).isEqualTo("tool1");
+		assertThat(result2.get(1).getToolDefinition().name()).isEqualTo("tool2");
 	}
 
 	@Test

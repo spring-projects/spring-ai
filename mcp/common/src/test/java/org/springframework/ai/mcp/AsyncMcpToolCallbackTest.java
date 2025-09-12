@@ -238,9 +238,6 @@ class AsyncMcpToolCallbackTest {
 	@Test
 	void builderShouldGeneratePrefixedToolNameWhenNotProvided() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
-		when(this.mcpClient.getClientCapabilities()).thenReturn(mock(McpSchema.ClientCapabilities.class));
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder().mcpClient(this.mcpClient).tool(this.tool).build();

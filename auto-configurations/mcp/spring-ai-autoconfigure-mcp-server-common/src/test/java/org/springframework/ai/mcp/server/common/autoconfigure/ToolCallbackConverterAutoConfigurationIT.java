@@ -127,8 +127,9 @@ public class ToolCallbackConverterAutoConfigurationIT {
 
 			@SuppressWarnings("unchecked")
 			List<SyncToolSpecification> syncTools = (List<SyncToolSpecification>) context.getBean("syncTools");
-			// Tools have different client prefixes, so both should be present
-			assertThat(syncTools).hasSize(2);
+
+			// On duplicate key, keep the existing tool
+			assertThat(syncTools).hasSize(1);
 		});
 	}
 

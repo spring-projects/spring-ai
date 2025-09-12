@@ -55,7 +55,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 */
 	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpSyncClient> mcpClients) {
-		this(toolFilter, McpToolNamePrefixGenerator.defaultGenerator(), mcpClients,
+		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), mcpClients,
 				ToolContextToMcpMetaConverter.defaultConverter());
 	}
 
@@ -114,6 +114,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 	@Override
 	public ToolCallback[] getToolCallbacks() {
+
 		var array = this.mcpClients.stream()
 			.flatMap(mcpClient -> mcpClient.listTools()
 				.tools()
@@ -184,7 +185,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 
 		private McpToolFilter toolFilter = (mcpClient, tool) -> true;
 
-		private McpToolNamePrefixGenerator toolNamePrefixGenerator = McpToolNamePrefixGenerator.defaultGenerator();
+		private McpToolNamePrefixGenerator toolNamePrefixGenerator = new DefaultMcpToolNamePrefixGenerator();
 
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();
