@@ -433,7 +433,7 @@ public final class McpToolUtils {
 		if (CollectionUtils.isEmpty(asyncMcpClients)) {
 			return List.of();
 		}
-		return List.of((new AsyncMcpToolCallbackProvider(asyncMcpClients).getToolCallbacks()));
+		return List.of((AsyncMcpToolCallbackProvider.builder().mcpClients(asyncMcpClients).build().getToolCallbacks()));
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)

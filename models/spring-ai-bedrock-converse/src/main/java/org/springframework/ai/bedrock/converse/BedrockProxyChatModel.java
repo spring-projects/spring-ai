@@ -572,14 +572,15 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<Generation> generations = message.content()
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
+			.map(content -> new Generation(
+					AssistantMessage.builder().content(content.text()).properties(Map.of()).build(),
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		if (response.stopReasonAsString() != null && generations.isEmpty()) {
-			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
+			Generation generation = new Generation(AssistantMessage.builder().properties(Map.of()).build(),
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(generation);
 		}
@@ -603,7 +604,11 @@ public class BedrockProxyChatModel implements ChatModel {
 					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
 			}
 
-			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(toolCalls)
+				.build();
 			Generation toolCallGeneration = new Generation(assistantMessage,
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(toolCallGeneration);

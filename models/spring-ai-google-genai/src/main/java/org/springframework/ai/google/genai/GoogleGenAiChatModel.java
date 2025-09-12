@@ -616,7 +616,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				})
 				.toList();
 
-			AssistantMessage assistantMessage = new AssistantMessage("", messageMetadata, assistantToolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("")
+				.properties(messageMetadata)
+				.toolCalls(assistantToolCalls)
+				.build();
 
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
@@ -626,7 +630,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.parts()
 				.orElse(List.of())
 				.stream()
-				.map(part -> new AssistantMessage(part.text().orElse(""), messageMetadata))
+				.map(part -> AssistantMessage.builder()
+					.content(part.text().orElse(""))
+					.properties(messageMetadata)
+					.build())
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
 		}

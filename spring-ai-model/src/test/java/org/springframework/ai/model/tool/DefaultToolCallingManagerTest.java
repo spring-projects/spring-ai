@@ -72,7 +72,11 @@ class DefaultToolCallingManagerTest {
 		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("1", "function", "testTool", null);
 
 		// Create a ChatResponse
-		AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), List.of(toolCall));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of())
+			.toolCalls(List.of(toolCall))
+			.build();
 		Generation generation = new Generation(assistantMessage);
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 
@@ -125,7 +129,11 @@ class DefaultToolCallingManagerTest {
 		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("1", "function", "testTool", "");
 
 		// Create a ChatResponse
-		AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), List.of(toolCall));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of())
+			.toolCalls(List.of(toolCall))
+			.build();
 		Generation generation = new Generation(assistantMessage);
 		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 

@@ -255,7 +255,11 @@ public class OllamaChatModel implements ChatModel {
 									ModelOptionsUtils.toJsonString(toolCall.function().arguments())))
 							.toList();
 
-				var assistantMessage = new AssistantMessage(ollamaResponse.message().content(), Map.of(), toolCalls);
+				var assistantMessage = AssistantMessage.builder()
+					.content(ollamaResponse.message().content())
+					.properties(Map.of())
+					.toolCalls(toolCalls)
+					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
@@ -333,7 +337,11 @@ public class OllamaChatModel implements ChatModel {
 						.toList();
 				}
 
-				var assistantMessage = new AssistantMessage(content, Map.of(), toolCalls);
+				var assistantMessage = AssistantMessage.builder()
+					.content(content)
+					.properties(Map.of())
+					.toolCalls(toolCalls)
+					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
