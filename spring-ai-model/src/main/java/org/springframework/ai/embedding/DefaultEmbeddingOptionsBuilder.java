@@ -14,41 +14,32 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.document;
+package org.springframework.ai.embedding;
 
 /**
- * Common set of metadata keys used in {@link Document}s by {@link DocumentReader}s and
- * VectorStores.
+ * Default implementation of {@link EmbeddingOptions.Builder}.
  *
  * @author Thomas Vitale
- * @since 1.0.0
  */
-public enum DocumentMetadata {
+public class DefaultEmbeddingOptionsBuilder implements EmbeddingOptions.Builder {
 
-// @formatter:off
-
-	/**
-	 * Measure of distance between the document embedding and the query vector.
-	 * The lower the distance, the more they are similar.
-	 * It's the opposite of the similarity score.
-	 */
-	DISTANCE("distance");
-
-	private final String value;
-
-	DocumentMetadata(String value) {
-		this.value = value;
-	}
-
-	public String value() {
-		return this.value;
-	}
-
-// @formatter:on
+	private final DefaultEmbeddingOptions embeddingOptions = new DefaultEmbeddingOptions();
 
 	@Override
-	public String toString() {
-		return this.value;
+	public EmbeddingOptions.Builder model(String model) {
+		this.embeddingOptions.setModel(model);
+		return this;
+	}
+
+	@Override
+	public EmbeddingOptions.Builder dimensions(Integer dimensions) {
+		this.embeddingOptions.setDimensions(dimensions);
+		return this;
+	}
+
+	@Override
+	public EmbeddingOptions build() {
+		return this.embeddingOptions;
 	}
 
 }

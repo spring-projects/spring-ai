@@ -367,6 +367,26 @@ public class ZhiPuAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		GLM_4_5("glm-4.5"),
+
+		GLM_4_5_X("glm-4.5-x"),
+
+		GLM_4_5_Air("glm-4.5-air"),
+
+		GLM_4_5_AirX("glm-4.5-airx"),
+
+		GLM_4_5V("glm-4.5v"),
+
+		GLM_4_5_Flash("glm-4.5-flash"),
+
+		GLM_Z1_Air("glm-z1-air"),
+
+		GLM_Z1_AirX("glm-z1-airx"),
+
+		GLM_Z1_Flash("glm-z1-flash"),
+
+		GLM_Z1_FlashX("glm-z1-flashx"),
+
 		GLM_4("GLM-4"),
 
 		GLM_4V("glm-4v"),
@@ -377,7 +397,14 @@ public class ZhiPuAiApi {
 
 		GLM_4_Flash("glm-4-flash"),
 
-		GLM_3_Turbo("GLM-3-Turbo"); // @formatter:on
+		GLM_3_Turbo("GLM-3-Turbo"),
+
+		// --- Visual Reasoning Models ---
+
+		GLM_4_Thinking_FlashX("glm-4.1v-thinking-flashx"),
+
+		GLM_4_Thinking_Flash("glm-4.1v-thinking-flash");
+		// @formatter:on
 
 		public final String value;
 
@@ -772,7 +799,8 @@ public class ZhiPuAiApi {
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls) { // @formatter:on
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -781,7 +809,7 @@ public class ZhiPuAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
+			this(content, role, null, null, null, null);
 		}
 
 		/**

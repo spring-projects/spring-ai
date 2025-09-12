@@ -20,7 +20,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -38,7 +37,10 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 1.0.0
- * @see McpServerAutoConfiguration
+ * @see org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration
+ * @see org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration
+ * @see org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration
+ * @see org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration
  */
 @ConfigurationProperties(McpServerProperties.CONFIG_PREFIX)
 public class McpServerProperties {
