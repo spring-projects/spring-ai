@@ -108,7 +108,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
-			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
+			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
 			Environment environment) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
@@ -179,10 +179,8 @@ public class McpServerAutoConfiguration {
 			}
 		}
 
-		rootsChangeConsumers.ifAvailable(consumer -> {
-			BiConsumer<McpSyncServerExchange, List<McpSchema.Root>> syncConsumer = (exchange, roots) -> consumer
-				.accept(exchange, roots);
-			serverBuilder.rootsChangeHandler(syncConsumer);
+		rootsChangeConsumer.ifAvailable(consumer -> {
+			serverBuilder.rootsChangeHandler(consumer);
 			logger.info("Registered roots change consumer");
 		});
 
