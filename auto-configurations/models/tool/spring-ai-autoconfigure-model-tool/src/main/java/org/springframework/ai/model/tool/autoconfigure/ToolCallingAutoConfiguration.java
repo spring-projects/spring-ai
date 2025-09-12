@@ -32,6 +32,7 @@ import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
+import org.springframework.ai.tool.resolution.InitToolCallbackResolverErrorHandler;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
@@ -63,10 +64,22 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
+			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders,
+			List<InitToolCallbackResolverErrorHandler> errorHandlers) {
 
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
-		tcbProviders.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionAndToolCallbacks::addAll);
+		for (ToolCallbackProvider pr : tcbProviders) {
+			try {
+				allFunctionAndToolCallbacks.addAll(List.of(pr.getToolCallbacks()));
+			}
+			catch (Throwable t) {
+				allFunctionAndToolCallbacks.addAll(errorHandlers.stream()
+					.filter(h -> h.support(pr, t))
+					.findFirst()
+					.orElseThrow(() -> new RuntimeException(t))
+					.handle(pr, t));
+			}
+		}
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
 
