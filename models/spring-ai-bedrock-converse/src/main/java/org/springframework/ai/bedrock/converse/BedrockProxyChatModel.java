@@ -680,6 +680,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				.system(converseRequest.system())
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
 				.toolConfig(converseRequest.toolConfig())
+				.requestMetadata(converseRequest.requestMetadata())
 				.build();
 
 			Usage accumulatedUsage = null;
