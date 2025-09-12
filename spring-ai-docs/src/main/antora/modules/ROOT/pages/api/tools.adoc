@@ -618,7 +618,7 @@ class WeatherTools {
 
 ==== Adding Tools to `ChatClient`
 
-When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `tools()` method of `ChatClient`.
+When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `toolNames()` method of `ChatClient`.
 The tool will only be available for the specific chat request it's added to.
 
 [source,java]
@@ -789,7 +789,7 @@ When building tools from a method, the `ToolDefinition` is automatically generat
 [source,java]
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
-ToolDefinition toolDefinition = ToolDefinition.from(method);
+ToolDefinition toolDefinition = ToolDefinitions.from(method);
 ----
 
 The `ToolDefinition` generated from a method includes the method name as the tool name, the method name as the tool description, and the JSON schema of the method input parameters. If the method is annotated with `@Tool`, the tool name and description will be taken from the annotation, if set.
@@ -1197,7 +1197,7 @@ public interface ToolExecutionExceptionProcessor {
 }
 ----
 
-If you're using any of the Spring AI Spring Boot Starters, `DefaultToolExecutionExceptionProcessor` is the autoconfigured implementation of the `ToolExecutionExceptionProcessor` interface. By default, the error message is sent back to the model. The `DefaultToolExecutionExceptionProcessor` constructor lets you set the `alwaysThrow` attribute to `true` or `false`. If `true`, an exception will be thrown instead of sending an error message back to the model.
+If you're using any of the Spring AI Spring Boot Starters, `DefaultToolExecutionExceptionProcessor` is the autoconfigured implementation of the `ToolExecutionExceptionProcessor` interface. By default, the error message of `RuntimeException` is sent back to the model, while checked exceptions and Errors (e.g., `IOException`, `OutOfMemoryError`) are always thrown. The `DefaultToolExecutionExceptionProcessor` constructor lets you set the `alwaysThrow` attribute to `true` or `false`. If `true`, an exception will be thrown instead of sending an error message back to the model.
 
 You can use the ``spring.ai.tools.throw-exception-on-error` property to control the behavior of the `DefaultToolExecutionExceptionProcessor` bean:
 

@@ -33,13 +33,13 @@ public class TextBlockAssertion extends AbstractCharSequenceAssert<TextBlockAsse
 
 	@Override
 	public TextBlockAssertion isEqualTo(Object expected) {
-		Assertions.assertThat(normalizedEOL(actual)).isEqualTo(normalizedEOL((String) expected));
+		Assertions.assertThat(normalizedEOL(this.actual)).isEqualTo(normalizedEOL((String) expected));
 		return this;
 	}
 
 	@Override
 	public TextBlockAssertion contains(CharSequence... values) {
-		Assertions.assertThat(normalizedEOL(actual)).contains(normalizedEOL(values));
+		Assertions.assertThat(normalizedEOL(this.actual)).contains(normalizedEOL(values));
 		return this;
 	}
 

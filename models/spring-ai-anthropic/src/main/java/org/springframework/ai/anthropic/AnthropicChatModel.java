@@ -42,7 +42,9 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Source;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
+import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -64,11 +66,11 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -266,13 +268,14 @@ public class AnthropicChatModel implements ChatModel {
 					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
-						return Flux.deferContextual((ctx) -> {
-							// TODO: factor out the tool execution logic with setting context into a uitlity.
+						return Flux.deferContextual(ctx -> {
+							// TODO: factor out the tool execution logic with setting context into a utility.
 							ToolExecutionResult toolExecutionResult;
 							try {
 								ToolCallReactiveContextHolder.setContext(ctx);
 								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-							} finally {
+							}
+							finally {
 								ToolCallReactiveContextHolder.clearContext();
 							}
 							if (toolExecutionResult.returnDirect()) {
@@ -287,12 +290,12 @@ public class AnthropicChatModel implements ChatModel {
 										chatResponse);
 							}
 						}).subscribeOn(Schedulers.boundedElastic());
-
-					} else {						
+					}
+					else {
 						return Mono.empty();
 					}
-
-				} else {
+				}
+				else {
 					// If internal tool execution is not required, just return the chat response.
 					return Mono.just(chatResponse);
 				}
@@ -459,6 +462,12 @@ public class AnthropicChatModel implements ChatModel {
 					this.defaultOptions.getToolCallbacks()));
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.defaultOptions.getToolContext()));
+
+			// Merge cache strategy and TTL (also @JsonIgnore fields)
+			requestOptions.setCacheStrategy(runtimeOptions.getCacheStrategy() != null
+					? runtimeOptions.getCacheStrategy() : this.defaultOptions.getCacheStrategy());
+			requestOptions.setCacheTtl(runtimeOptions.getCacheTtl() != null ? runtimeOptions.getCacheTtl()
+					: this.defaultOptions.getCacheTtl());
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -482,69 +491,75 @@ public class AnthropicChatModel implements ChatModel {
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
-		List<AnthropicMessage> userMessages = prompt.getInstructions()
-			.stream()
-			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
-			.map(message -> {
-				if (message.getMessageType() == MessageType.USER) {
-					List<ContentBlock> contents = new ArrayList<>(List.of(new ContentBlock(message.getText())));
-					if (message instanceof UserMessage userMessage) {
-						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-							List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
-								Type contentBlockType = getContentBlockTypeByMedia(media);
-								var source = getSourceByMedia(media);
-								return new ContentBlock(contentBlockType, source);
-							}).toList();
-							contents.addAll(mediaContent);
-						}
-					}
-					return new AnthropicMessage(contents, Role.valueOf(message.getMessageType().name()));
-				}
-				else if (message.getMessageType() == MessageType.ASSISTANT) {
-					AssistantMessage assistantMessage = (AssistantMessage) message;
-					List<ContentBlock> contentBlocks = new ArrayList<>();
-					if (StringUtils.hasText(message.getText())) {
-						contentBlocks.add(new ContentBlock(message.getText()));
-					}
-					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-						for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-							contentBlocks.add(new ContentBlock(Type.TOOL_USE, toolCall.id(), toolCall.name(),
-									ModelOptionsUtils.jsonToMap(toolCall.arguments())));
-						}
-					}
-					return new AnthropicMessage(contentBlocks, Role.ASSISTANT);
-				}
-				else if (message.getMessageType() == MessageType.TOOL) {
-					List<ContentBlock> toolResponses = ((ToolResponseMessage) message).getResponses()
-						.stream()
-						.map(toolResponse -> new ContentBlock(Type.TOOL_RESULT, toolResponse.id(),
-								toolResponse.responseData()))
-						.toList();
-					return new AnthropicMessage(toolResponses, Role.USER);
-				}
-				else {
-					throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
-				}
-			})
-			.toList();
+		// Get caching strategy and options from the request
+		logger.debug("DEBUGINFO: prompt.getOptions() type: {}, value: {}",
+				prompt.getOptions() != null ? prompt.getOptions().getClass().getName() : "null", prompt.getOptions());
 
-		String systemPrompt = prompt.getInstructions()
-			.stream()
-			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
-			.map(m -> m.getText())
-			.collect(Collectors.joining(System.lineSeparator()));
+		AnthropicChatOptions requestOptions = null;
+		if (prompt.getOptions() instanceof AnthropicChatOptions) {
+			requestOptions = (AnthropicChatOptions) prompt.getOptions();
+			logger.debug("DEBUGINFO: Found AnthropicChatOptions - cacheStrategy: {}, cacheTtl: {}",
+					requestOptions.getCacheStrategy(), requestOptions.getCacheTtl());
+		}
+		else {
+			logger.debug("DEBUGINFO: Options is NOT AnthropicChatOptions, it's: {}",
+					prompt.getOptions() != null ? prompt.getOptions().getClass().getName() : "null");
+		}
 
+		AnthropicCacheStrategy strategy = requestOptions != null ? requestOptions.getCacheStrategy()
+				: AnthropicCacheStrategy.NONE;
+		String cacheTtl = requestOptions != null ? requestOptions.getCacheTtl() : "5m";
+
+		logger.debug("Cache strategy: {}, TTL: {}", strategy, cacheTtl);
+
+		// Track how many breakpoints we've used (max 4)
+		CacheBreakpointTracker breakpointsUsed = new CacheBreakpointTracker();
+		ChatCompletionRequest.CacheControl cacheControl = null;
+
+		if (strategy != AnthropicCacheStrategy.NONE) {
+			// Create cache control with TTL if specified, otherwise use default 5m
+			if (cacheTtl != null && !cacheTtl.equals("5m")) {
+				cacheControl = new ChatCompletionRequest.CacheControl("ephemeral", cacheTtl);
+				logger.debug("Created cache control with TTL: type={}, ttl={}", "ephemeral", cacheTtl);
+			}
+			else {
+				cacheControl = new ChatCompletionRequest.CacheControl("ephemeral");
+				logger.debug("Created cache control with default TTL: type={}, ttl={}", "ephemeral", "5m");
+			}
+		}
+
+		// Build messages WITHOUT blanket cache control - strategic placement only
+		List<AnthropicMessage> userMessages = buildMessages(prompt, strategy, cacheControl, breakpointsUsed);
+
+		// Process system - as array if caching, string otherwise
+		Object systemContent = buildSystemContent(prompt, strategy, cacheControl, breakpointsUsed);
+
+		// Build base request
 		ChatCompletionRequest request = new ChatCompletionRequest(this.defaultOptions.getModel(), userMessages,
-				systemPrompt, this.defaultOptions.getMaxTokens(), this.defaultOptions.getTemperature(), stream);
+				systemContent, this.defaultOptions.getMaxTokens(), this.defaultOptions.getTemperature(), stream);
 
-		AnthropicChatOptions requestOptions = (AnthropicChatOptions) prompt.getOptions();
 		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
 
-		// Add the tool definitions to the request's tools parameter.
+		// Add the tool definitions with potential caching
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
-			request = ChatCompletionRequest.from(request).tools(getFunctionTools(toolDefinitions)).build();
+			List<AnthropicApi.Tool> tools = getFunctionTools(toolDefinitions);
+
+			// Apply caching to tools if strategy includes them
+			if ((strategy == AnthropicCacheStrategy.SYSTEM_AND_TOOLS
+					|| strategy == AnthropicCacheStrategy.CONVERSATION_HISTORY) && breakpointsUsed.canUse()) {
+				tools = addCacheToLastTool(tools, cacheControl, breakpointsUsed);
+			}
+
+			request = ChatCompletionRequest.from(request).tools(tools).build();
+		}
+
+		// Add beta header for 1-hour TTL if needed
+		if ("1h".equals(cacheTtl) && requestOptions != null) {
+			Map<String, String> headers = new HashMap<>(requestOptions.getHttpHeaders());
+			headers.put("anthropic-beta", AnthropicApi.BETA_EXTENDED_CACHE_TTL);
+			requestOptions.setHttpHeaders(headers);
 		}
 
 		return request;
@@ -558,6 +573,154 @@ public class AnthropicChatModel implements ChatModel {
 			return new AnthropicApi.Tool(name, description, JsonParser.fromJson(inputSchema, new TypeReference<>() {
 			}));
 		}).toList();
+	}
+
+	/**
+	 * Build messages strategically, applying cache control only where specified by the
+	 * strategy.
+	 */
+	private List<AnthropicMessage> buildMessages(Prompt prompt, AnthropicCacheStrategy strategy,
+			ChatCompletionRequest.CacheControl cacheControl, CacheBreakpointTracker breakpointsUsed) {
+
+		List<Message> allMessages = prompt.getInstructions()
+			.stream()
+			.filter(message -> message.getMessageType() != MessageType.SYSTEM)
+			.toList();
+
+		// Find the last user message (current question) for CONVERSATION_HISTORY strategy
+		int lastUserIndex = -1;
+		if (strategy == AnthropicCacheStrategy.CONVERSATION_HISTORY) {
+			for (int i = allMessages.size() - 1; i >= 0; i--) {
+				if (allMessages.get(i).getMessageType() == MessageType.USER) {
+					lastUserIndex = i;
+					break;
+				}
+			}
+		}
+
+		List<AnthropicMessage> result = new ArrayList<>();
+		for (int i = 0; i < allMessages.size(); i++) {
+			Message message = allMessages.get(i);
+			boolean shouldApplyCache = false;
+
+			// Apply cache to history tail (message before current question) for
+			// CONVERSATION_HISTORY
+			if (strategy == AnthropicCacheStrategy.CONVERSATION_HISTORY && breakpointsUsed.canUse()) {
+				if (lastUserIndex > 0) {
+					// Cache the message immediately before the last user message
+					// (multi-turn conversation)
+					shouldApplyCache = (i == lastUserIndex - 1);
+				}
+				if (shouldApplyCache) {
+					breakpointsUsed.use();
+				}
+			}
+
+			if (message.getMessageType() == MessageType.USER) {
+				List<ContentBlock> contents = new ArrayList<>();
+
+				// Apply cache control strategically, not to all user messages
+				if (shouldApplyCache && cacheControl != null) {
+					contents.add(new ContentBlock(message.getText(), cacheControl));
+				}
+				else {
+					contents.add(new ContentBlock(message.getText()));
+				}
+
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						List<ContentBlock> mediaContent = userMessage.getMedia().stream().map(media -> {
+							Type contentBlockType = getContentBlockTypeByMedia(media);
+							var source = getSourceByMedia(media);
+							return new ContentBlock(contentBlockType, source);
+						}).toList();
+						contents.addAll(mediaContent);
+					}
+				}
+				result.add(new AnthropicMessage(contents, Role.valueOf(message.getMessageType().name())));
+			}
+			else if (message.getMessageType() == MessageType.ASSISTANT) {
+				AssistantMessage assistantMessage = (AssistantMessage) message;
+				List<ContentBlock> contentBlocks = new ArrayList<>();
+				if (StringUtils.hasText(message.getText())) {
+					contentBlocks.add(new ContentBlock(message.getText()));
+				}
+				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+						contentBlocks.add(new ContentBlock(Type.TOOL_USE, toolCall.id(), toolCall.name(),
+								ModelOptionsUtils.jsonToMap(toolCall.arguments())));
+					}
+				}
+				result.add(new AnthropicMessage(contentBlocks, Role.ASSISTANT));
+			}
+			else if (message.getMessageType() == MessageType.TOOL) {
+				List<ContentBlock> toolResponses = ((ToolResponseMessage) message).getResponses()
+					.stream()
+					.map(toolResponse -> new ContentBlock(Type.TOOL_RESULT, toolResponse.id(),
+							toolResponse.responseData()))
+					.toList();
+				result.add(new AnthropicMessage(toolResponses, Role.USER));
+			}
+			else {
+				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Build system content - as array if caching, string otherwise.
+	 */
+	private Object buildSystemContent(Prompt prompt, AnthropicCacheStrategy strategy,
+			ChatCompletionRequest.CacheControl cacheControl, CacheBreakpointTracker breakpointsUsed) {
+
+		String systemText = prompt.getInstructions()
+			.stream()
+			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
+			.map(Message::getText)
+			.collect(Collectors.joining(System.lineSeparator()));
+
+		if (!StringUtils.hasText(systemText)) {
+			return null;
+		}
+
+		// Use array format when caching system
+		if ((strategy == AnthropicCacheStrategy.SYSTEM_ONLY || strategy == AnthropicCacheStrategy.SYSTEM_AND_TOOLS
+				|| strategy == AnthropicCacheStrategy.CONVERSATION_HISTORY) && breakpointsUsed.canUse()
+				&& cacheControl != null) {
+
+			logger.debug("Applying cache control to system message - strategy: {}, cacheControl: {}", strategy,
+					cacheControl);
+			List<ContentBlock> systemBlocks = List.of(new ContentBlock(systemText, cacheControl));
+			breakpointsUsed.use();
+			return systemBlocks;
+		}
+
+		// Use string format when not caching (backward compatible)
+		return systemText;
+	}
+
+	/**
+	 * Add cache control to the last tool for deterministic caching.
+	 */
+	private List<AnthropicApi.Tool> addCacheToLastTool(List<AnthropicApi.Tool> tools,
+			ChatCompletionRequest.CacheControl cacheControl, CacheBreakpointTracker breakpointsUsed) {
+
+		if (tools == null || tools.isEmpty() || !breakpointsUsed.canUse() || cacheControl == null) {
+			return tools;
+		}
+
+		List<AnthropicApi.Tool> modifiedTools = new ArrayList<>();
+		for (int i = 0; i < tools.size(); i++) {
+			AnthropicApi.Tool tool = tools.get(i);
+			if (i == tools.size() - 1) {
+				// Add cache control to last tool
+				tool = new AnthropicApi.Tool(tool.name(), tool.description(), tool.inputSchema(), cacheControl);
+				breakpointsUsed.use();
+			}
+			modifiedTools.add(tool);
+		}
+		return modifiedTools;
 	}
 
 	@Override
@@ -637,6 +800,38 @@ public class AnthropicChatModel implements ChatModel {
 			}
 			return new AnthropicChatModel(this.anthropicApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+		}
+
+	}
+
+	/**
+	 * Tracks cache breakpoints used (max 4 allowed by Anthropic). Non-static to ensure
+	 * each request has its own instance.
+	 */
+	private class CacheBreakpointTracker {
+
+		private int count = 0;
+
+		private boolean hasWarned = false;
+
+		public boolean canUse() {
+			return this.count < 4;
+		}
+
+		public void use() {
+			if (this.count < 4) {
+				this.count++;
+			}
+			else if (!this.hasWarned) {
+				logger.warn(
+						"Anthropic cache breakpoint limit (4) reached. Additional cache_control directives will be ignored. "
+								+ "Consider using fewer cache strategies or simpler content structure.");
+				this.hasWarned = true;
+			}
+		}
+
+		public int getCount() {
+			return this.count;
 		}
 
 	}

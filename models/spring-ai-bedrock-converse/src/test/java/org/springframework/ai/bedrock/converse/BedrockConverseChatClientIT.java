@@ -70,7 +70,9 @@ class BedrockConverseChatClientIT {
 				.system(s -> s.text(this.systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
-				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.user(u -> u.text("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+						.metadata("requestId", "12345")
+				)
 				.call()
 				.chatResponse();
 		// @formatter:on
@@ -381,7 +383,7 @@ class BedrockConverseChatClientIT {
 	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
 	void multiModalityImageUrl2(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
@@ -401,7 +403,7 @@ class BedrockConverseChatClientIT {
 	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
@@ -420,7 +422,7 @@ class BedrockConverseChatClientIT {
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off

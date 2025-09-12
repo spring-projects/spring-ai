@@ -33,7 +33,7 @@ public class WeaviateVectorStoreOptions {
 	private String metaFieldPrefix = "meta_";
 
 	public String getObjectClass() {
-		return objectClass;
+		return this.objectClass;
 	}
 
 	public void setObjectClass(String objectClass) {
@@ -42,7 +42,7 @@ public class WeaviateVectorStoreOptions {
 	}
 
 	public String getContentFieldName() {
-		return contentFieldName;
+		return this.contentFieldName;
 	}
 
 	public void setContentFieldName(String contentFieldName) {
@@ -51,7 +51,7 @@ public class WeaviateVectorStoreOptions {
 	}
 
 	public String getMetaFieldPrefix() {
-		return metaFieldPrefix;
+		return this.metaFieldPrefix;
 	}
 
 	public void setMetaFieldPrefix(String metaFieldPrefix) {

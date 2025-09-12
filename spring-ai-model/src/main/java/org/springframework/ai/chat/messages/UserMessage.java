@@ -57,7 +57,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 
 	@Override
 	public String toString() {
-		return "UserMessage{" + "content='" + getText() + '\'' + ", properties=" + this.metadata + ", messageType="
+		return "UserMessage{" + "content='" + getText() + '\'' + ", metadata=" + this.metadata + ", messageType="
 				+ this.messageType + '}';
 	}
 

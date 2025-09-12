@@ -30,10 +30,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -108,6 +108,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("presencePenalty") Double presencePenalty;
 
 	/**
+	 * Optional. Thinking budget for the thinking process.
+	 * This is part of the thinkingConfig in GenerationConfig.
+	 */
+	private @JsonProperty("thinkingBudget") Integer thinkingBudget;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -138,6 +144,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
+
+	@JsonIgnore
+	private Map<String, String> labels = new HashMap<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -163,6 +172,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
+		options.setThinkingBudget(fromOptions.getThinkingBudget());
+		options.setLabels(fromOptions.getLabels());
 		return options;
 	}
 
@@ -300,6 +311,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.presencePenalty = presencePenalty;
 	}
 
+	public Integer getThinkingBudget() {
+		return this.thinkingBudget;
+	}
+
+	public void setThinkingBudget(Integer thinkingBudget) {
+		this.thinkingBudget = thinkingBudget;
+	}
+
 	public Boolean getGoogleSearchRetrieval() {
 		return this.googleSearchRetrieval;
 	}
@@ -315,6 +334,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	public void setSafetySettings(List<GoogleGenAiSafetySetting> safetySettings) {
 		Assert.notNull(safetySettings, "safetySettings must not be null");
 		this.safetySettings = safetySettings;
+	}
+
+	public Map<String, String> getLabels() {
+		return this.labels;
+	}
+
+	public void setLabels(Map<String, String> labels) {
+		Assert.notNull(labels, "labels must not be null");
+		this.labels = labels;
 	}
 
 	@Override
@@ -341,32 +369,34 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.candidateCount, that.candidateCount)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.thinkingBudget, that.thinkingBudget)
 				&& Objects.equals(this.maxOutputTokens, that.maxOutputTokens) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
-				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
-				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
+				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels);
 	}
 
 	@Override
 	public String toString() {
 		return "GoogleGenAiChatOptions{" + "stopSequences=" + this.stopSequences + ", temperature=" + this.temperature
 				+ ", topP=" + this.topP + ", topK=" + this.topK + ", frequencyPenalty=" + this.frequencyPenalty
-				+ ", presencePenalty=" + this.presencePenalty + ", candidateCount=" + this.candidateCount
-				+ ", maxOutputTokens=" + this.maxOutputTokens + ", model='" + this.model + '\'' + ", responseMimeType='"
-				+ this.responseMimeType + '\'' + ", toolCallbacks=" + this.toolCallbacks + ", toolNames="
-				+ this.toolNames + ", googleSearchRetrieval=" + this.googleSearchRetrieval + ", safetySettings="
-				+ this.safetySettings + '}';
+				+ ", presencePenalty=" + this.presencePenalty + ", thinkingBudget=" + this.thinkingBudget
+				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
+				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
+				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
+				+ '}';
 	}
 
 	@Override
@@ -486,6 +516,17 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder thinkingBudget(Integer thinkingBudget) {
+			this.options.setThinkingBudget(thinkingBudget);
+			return this;
+		}
+
+		public Builder labels(Map<String, String> labels) {
+			Assert.notNull(labels, "labels must not be null");
+			this.options.labels = labels;
 			return this;
 		}
 

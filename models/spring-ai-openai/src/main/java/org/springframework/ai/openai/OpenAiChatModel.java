@@ -218,7 +218,7 @@ public class OpenAiChatModel implements ChatModel {
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
 							"index", choice.index() != null ? choice.index() : 0,
-							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+							"finishReason", getFinishReasonJson(choice.finishReason()),
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
 							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
 					return buildGeneration(choice, metadata, request);
@@ -317,7 +317,7 @@ public class OpenAiChatModel implements ChatModel {
 									"id", id,
 									"role", roleMap.getOrDefault(id, ""),
 									"index", choice.index() != null ? choice.index() : 0,
-									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+									"finishReason", getFinishReasonJson(choice.finishReason()),
 									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
 									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
 							return buildGeneration(choice, metadata, request);
@@ -366,12 +366,13 @@ public class OpenAiChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
-					return Flux.deferContextual((ctx) -> {
+					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						} finally {
+						}
+						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (toolExecutionResult.returnDirect()) {
@@ -420,8 +421,8 @@ public class OpenAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
+		var generationMetadataBuilder = ChatGenerationMetadata.builder()
+			.finishReason(getFinishReasonJson(choice.finishReason()));
 
 		List<Media> media = new ArrayList<>();
 		String textContent = choice.message().content();
@@ -449,6 +450,14 @@ public class OpenAiChatModel implements ChatModel {
 
 		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
+	}
+
+	private String getFinishReasonJson(OpenAiApi.ChatCompletionFinishReason finishReason) {
+		if (finishReason == null) {
+			return "";
+		}
+		// Return enum name for backward compatibility
+		return finishReason.name();
 	}
 
 	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit, Usage usage) {

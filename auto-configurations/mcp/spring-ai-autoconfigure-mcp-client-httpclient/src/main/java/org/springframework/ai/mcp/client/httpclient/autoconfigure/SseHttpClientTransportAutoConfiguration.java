@@ -24,6 +24,8 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
@@ -36,6 +38,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogAccessor;
 
 /**
  * Auto-configuration for Server-Sent Events (SSE) HTTP client transport in the Model
@@ -68,6 +71,8 @@ import org.springframework.context.annotation.Bean;
 		matchIfMissing = true)
 public class SseHttpClientTransportAutoConfiguration {
 
+	private static final LogAccessor logger = new LogAccessor(SseHttpClientTransportAutoConfiguration.class);
+
 	/**
 	 * Creates a list of HTTP client-based SSE transports for MCP communication.
 	 *
@@ -77,15 +82,22 @@ public class SseHttpClientTransportAutoConfiguration {
 	 * <li>A new HttpClient instance
 	 * <li>Server URL from properties
 	 * <li>ObjectMapper for JSON processing
+	 * <li>A sync or async HTTP request customizer. Sync takes precedence.
 	 * </ul>
 	 * @param sseProperties the SSE client properties containing server configurations
 	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
 	 * available
+	 * @param syncHttpRequestCustomizer provider for
+	 * {@link McpSyncHttpClientRequestCustomizer} if available
+	 * @param asyncHttpRequestCustomizer provider fo
+	 * {@link McpAsyncHttpClientRequestCustomizer} if available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> sseHttpClientTransports(McpSseClientProperties sseProperties,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+			ObjectProvider<ObjectMapper> objectMapperProvider,
+			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
@@ -96,11 +108,21 @@ public class SseHttpClientTransportAutoConfiguration {
 			String baseUrl = serverParameters.getValue().url();
 			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
 					? serverParameters.getValue().sseEndpoint() : "/sse";
-			var transport = HttpClientSseClientTransport.builder(baseUrl)
+			HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
 				.sseEndpoint(sseEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper)
-				.build();
+				.objectMapper(objectMapper);
+
+			asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
+			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);
+			if (asyncHttpRequestCustomizer.getIfUnique() != null && syncHttpRequestCustomizer.getIfUnique() != null) {
+				logger.warn("Found beans of type %s and %s. Using %s.".formatted(
+						McpAsyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName()));
+			}
+
+			HttpClientSseClientTransport transport = transportBuilder.build();
 			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}
 

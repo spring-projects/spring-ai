@@ -32,7 +32,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -66,13 +66,10 @@ import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
-
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.retry.support.RetryTemplate;
-
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -352,12 +349,13 @@ public class OllamaChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
-					return Flux.deferContextual((ctx) -> {
+					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						} finally {
+						}
+						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (toolExecutionResult.returnDirect()) {
@@ -441,18 +439,24 @@ public class OllamaChatModel implements ChatModel {
 	OllamaApi.ChatRequest ollamaChatRequest(Prompt prompt, boolean stream) {
 
 		List<OllamaApi.Message> ollamaMessages = prompt.getInstructions().stream().map(message -> {
-			if (message instanceof UserMessage userMessage) {
+			if (message.getMessageType() == MessageType.SYSTEM) {
+				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(message.getText()).build());
+			}
+			else if (message.getMessageType() == MessageType.USER) {
 				var messageBuilder = OllamaApi.Message.builder(Role.USER).content(message.getText());
-				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-					messageBuilder.images(
-							userMessage.getMedia().stream().map(media -> this.fromMediaData(media.getData())).toList());
+				if (message instanceof UserMessage userMessage) {
+					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+						messageBuilder.images(userMessage.getMedia()
+							.stream()
+							.map(media -> this.fromMediaData(media.getData()))
+							.toList());
+					}
 				}
+
 				return List.of(messageBuilder.build());
 			}
-			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(systemMessage.getText()).build());
-			}
-			else if (message instanceof AssistantMessage assistantMessage) {
+			else if (message.getMessageType() == MessageType.ASSISTANT) {
+				var assistantMessage = (AssistantMessage) message;
 				List<ToolCall> toolCalls = null;
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
@@ -467,7 +471,8 @@ public class OllamaChatModel implements ChatModel {
 					.toolCalls(toolCalls)
 					.build());
 			}
-			else if (message instanceof ToolResponseMessage toolMessage) {
+			else if (message.getMessageType() == MessageType.TOOL) {
+				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> OllamaApi.Message.builder(Role.TOOL).content(tr.responseData()).build())

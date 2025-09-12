@@ -351,7 +351,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 							MergeUtils::mergeChatCompletions);
 					return List.of(reduce);
 				})
-				.flatMap(mono -> mono);
+				.flatMapSequential(mono -> mono);
 
 			final Flux<ChatResponse> chatResponseFlux = accessibleChatCompletionsFlux.map(chatCompletion -> {
 				if (previousChatResponse == null) {
@@ -377,11 +377,11 @@ public class AzureOpenAiChatModel implements ChatModel {
 				return chatResponse1;
 			});
 
-			return chatResponseFlux.flatMap(chatResponse -> {
+			return chatResponseFlux.flatMapSequential(chatResponse -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
-					return Flux.deferContextual((ctx) -> {
+					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
@@ -720,6 +720,11 @@ public class AzureOpenAiChatModel implements ChatModel {
 		mergedAzureOptions.setMaxTokens((fromAzureOptions.getMaxTokens() != null) ? fromAzureOptions.getMaxTokens()
 				: toSpringAiOptions.getMaxTokens());
 
+		if (fromAzureOptions.getMaxCompletionTokens() != null || toSpringAiOptions.getMaxCompletionTokens() != null) {
+			mergedAzureOptions.setMaxCompletionTokens((fromAzureOptions.getMaxCompletionTokens() != null)
+					? fromAzureOptions.getMaxCompletionTokens() : toSpringAiOptions.getMaxCompletionTokens());
+		}
+
 		mergedAzureOptions.setLogitBias(fromAzureOptions.getLogitBias() != null ? fromAzureOptions.getLogitBias()
 				: toSpringAiOptions.getLogitBias());
 
@@ -801,6 +806,10 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 		if (fromSpringAiOptions.getMaxTokens() != null) {
 			mergedAzureOptions.setMaxTokens(fromSpringAiOptions.getMaxTokens());
+		}
+
+		if (fromSpringAiOptions.getMaxCompletionTokens() != null) {
+			mergedAzureOptions.setMaxCompletionTokens(fromSpringAiOptions.getMaxCompletionTokens());
 		}
 
 		if (fromSpringAiOptions.getLogitBias() != null) {
@@ -894,6 +903,9 @@ public class AzureOpenAiChatModel implements ChatModel {
 		if (fromOptions.getMaxTokens() != null) {
 			copyOptions.setMaxTokens(fromOptions.getMaxTokens());
 		}
+		if (fromOptions.getMaxCompletionTokens() != null) {
+			copyOptions.setMaxCompletionTokens(fromOptions.getMaxCompletionTokens());
+		}
 		if (fromOptions.getLogitBias() != null) {
 			copyOptions.setLogitBias(fromOptions.getLogitBias());
 		}
@@ -959,6 +971,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 			var responseFormatJsonSchema = new ChatCompletionsJsonSchemaResponseFormatJsonSchema(jsonSchema.getName());
 			String jsonString = ModelOptionsUtils.toJsonString(jsonSchema.getSchema());
 			responseFormatJsonSchema.setSchema(BinaryData.fromString(jsonString));
+			responseFormatJsonSchema.setStrict(jsonSchema.getStrict());
 			return new ChatCompletionsJsonSchemaResponseFormat(responseFormatJsonSchema);
 		}
 		return new ChatCompletionsTextResponseFormat();
