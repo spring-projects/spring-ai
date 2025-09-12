@@ -322,7 +322,8 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		EMBED("mistral-embed");
+		EMBED("mistral-embed"),
+		CODESTRAL_EMBED("codestral-embed");
 		 // @formatter:on
 
 		private final String value;
