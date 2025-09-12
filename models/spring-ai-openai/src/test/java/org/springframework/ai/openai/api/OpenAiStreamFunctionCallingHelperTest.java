@@ -16,15 +16,14 @@
 
 package org.springframework.ai.openai.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for {@link OpenAiStreamFunctionCallingHelper}
@@ -87,8 +86,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		// Test for null.
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null));
 		// Test for empty.
-		assertion.accept(
-				new OpenAiApi.ChatCompletionMessage(null, null, null, null, Collections.emptyList(), null, null, null));
+		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null, Collections.emptyList(), null,
+				null, null, null));
 	}
 
 	@Test
@@ -101,7 +100,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		};
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null,
 				List.of(Mockito.mock(org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall.class)),
-				null, null, null));
+				null, null, null, null));
 	}
 
 	@Test
@@ -190,7 +189,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void isStreamingToolFunctionCall_returnsTrueForValidToolCalls() {
 		var toolCall = Mockito.mock(OpenAiApi.ChatCompletionMessage.ToolCall.class);
-		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null);
+		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null,
+				null);
 		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, delta, null);
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
 
