@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
@@ -157,12 +158,17 @@ public class MessageAggregator {
 
 			if (!CollectionUtils.isEmpty(collectedToolCalls)) {
 
-				finalAssistantMessage = new AssistantMessage(messageTextContentRef.get().toString(),
-						messageMetadataMapRef.get(), collectedToolCalls);
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadataMapRef.get())
+					.toolCalls(collectedToolCalls)
+					.build();
 			}
 			else {
-				finalAssistantMessage = new AssistantMessage(messageTextContentRef.get().toString(),
-						messageMetadataMapRef.get());
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadataMapRef.get())
+					.build();
 			}
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
 

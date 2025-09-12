@@ -263,9 +263,12 @@ class Neo4jChatMemoryRepositoryIT {
 	void handleAssistantMessageWithToolCalls() {
 		var conversationId = UUID.randomUUID().toString();
 
-		AssistantMessage assistantMessage = new AssistantMessage("Message with tool calls", Map.of(),
-				List.of(new AssistantMessage.ToolCall("id1", "type1", "name1", "arguments1"),
-						new AssistantMessage.ToolCall("id2", "type2", "name2", "arguments2")));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("Message with tool calls")
+			.properties(Map.of())
+			.toolCalls(List.of(new AssistantMessage.ToolCall("id1", "type1", "name1", "arguments1"),
+					new AssistantMessage.ToolCall("id2", "type2", "name2", "arguments2")))
+			.build();
 
 		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(assistantMessage));
 
@@ -389,7 +392,8 @@ class Neo4jChatMemoryRepositoryIT {
 		assertThat(retrievedEmptyContentMsg.getMetadata().keySet()).hasSize(1); // Only
 																				// messageType
 
-		// Verify second message (empty metadata from input, should only have messageType
+		// Verify second message (empty metadata from input, should only have
+		// messageType
 		// after retrieval)
 		Message retrievedEmptyMetadataMsg = retrievedMessages.get(1);
 		assertThat(retrievedEmptyMetadataMsg).isInstanceOf(UserMessage.class);

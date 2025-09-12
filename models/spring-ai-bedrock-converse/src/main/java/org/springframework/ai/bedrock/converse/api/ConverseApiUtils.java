@@ -140,7 +140,11 @@ public final class ConverseApiUtils {
 					}
 				}
 
-				AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
+				AssistantMessage assistantMessage = AssistantMessage.builder()
+					.content("")
+					.properties(Map.of())
+					.toolCalls(toolCalls)
+					.build();
 				Generation toolCallGeneration = new Generation(assistantMessage,
 						ChatGenerationMetadata.builder().finishReason("tool_use").build());
 
@@ -176,7 +180,10 @@ public final class ConverseApiUtils {
 				if (contentBlockDeltaEvent.delta().type().equals(ContentBlockDelta.Type.TEXT)) {
 
 					var generation = new Generation(
-							new AssistantMessage(contentBlockDeltaEvent.delta().text(), Map.of()),
+							AssistantMessage.builder()
+								.content(contentBlockDeltaEvent.delta().text())
+								.properties(Map.of())
+								.build(),
 							ChatGenerationMetadata.builder()
 								.finishReason(lastAggregation.metadataAggregation().stopReason())
 								.build());

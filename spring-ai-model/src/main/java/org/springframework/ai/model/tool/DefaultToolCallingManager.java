@@ -164,8 +164,11 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
 			AssistantMessage assistantMessage) {
 		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-		messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-				assistantMessage.getToolCalls()));
+		messageHistory.add(AssistantMessage.builder()
+			.content(assistantMessage.getText())
+			.properties(assistantMessage.getMetadata())
+			.toolCalls(assistantMessage.getToolCalls())
+			.build());
 		return messageHistory;
 	}
 
