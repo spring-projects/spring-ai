@@ -631,7 +631,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				})
 				.toList();
 
-			AssistantMessage assistantMessage = new AssistantMessage("", messageMetadata, assistantToolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("")
+				.properties(messageMetadata)
+				.toolCalls(assistantToolCalls)
+				.build();
 
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
@@ -639,7 +643,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			List<Generation> generations = candidate.getContent()
 				.getPartsList()
 				.stream()
-				.map(part -> new AssistantMessage(part.getText(), messageMetadata))
+				.map(part -> AssistantMessage.builder().content(part.getText()).properties(messageMetadata).build())
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
 

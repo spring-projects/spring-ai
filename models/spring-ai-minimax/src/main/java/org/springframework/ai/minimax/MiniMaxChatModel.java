@@ -226,7 +226,11 @@ public class MiniMaxChatModel implements ChatModel {
 						acc1.addAll(acc2);
 						return acc1;
 					});
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		var assistantMessage = AssistantMessage.builder()
+			.content(choice.message().content())
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
@@ -432,7 +436,11 @@ public class MiniMaxChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = new AssistantMessage(message.content(), metadata, toolCalls);
+		var assistantMessage = AssistantMessage.builder()
+			.content(message.content())
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
 		String finishReason = (completionFinishReason != null ? completionFinishReason.name() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);

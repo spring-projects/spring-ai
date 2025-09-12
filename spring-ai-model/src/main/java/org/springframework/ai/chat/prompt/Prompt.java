@@ -177,8 +177,11 @@ public class Prompt implements ModelRequest<List<Message>> {
 				messagesCopy.add(systemMessage.copy());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
-				messagesCopy.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-						assistantMessage.getToolCalls()));
+				messagesCopy.add(AssistantMessage.builder()
+					.content(assistantMessage.getText())
+					.properties(assistantMessage.getMetadata())
+					.toolCalls(assistantMessage.getToolCalls())
+					.build());
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
 				messagesCopy.add(new ToolResponseMessage(new ArrayList<>(toolResponseMessage.getResponses()),
