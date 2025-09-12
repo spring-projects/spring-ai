@@ -16,8 +16,12 @@
 
 package org.springframework.ai.openai.api;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
@@ -32,9 +36,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriBuilder;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * OpenAI File API.

@@ -16,19 +16,22 @@
 
 package org.springframework.ai.openai.api;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
+import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
+ * Tests for {@link OpenAiFileApi}.
+ * 
  * @author Sun Yuhan
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
