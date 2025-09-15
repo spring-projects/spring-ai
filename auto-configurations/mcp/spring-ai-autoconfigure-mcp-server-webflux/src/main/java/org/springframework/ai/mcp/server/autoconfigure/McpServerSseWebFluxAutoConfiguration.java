@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
@@ -87,7 +88,7 @@ public class McpServerSseWebFluxAutoConfiguration {
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		return WebFluxSseServerTransportProvider.builder()
-			.objectMapper(objectMapper)
+			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 			.basePath(serverProperties.getBaseUrl())
 			.messageEndpoint(serverProperties.getSseMessageEndpoint())
 			.sseEndpoint(serverProperties.getSseEndpoint())

@@ -26,6 +26,7 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
@@ -119,7 +120,7 @@ public class SseHttpClientTransportAutoConfiguration {
 			HttpClientSseClientTransport.Builder transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
 				.sseEndpoint(sseEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper);
+				.jsonMapper(new JacksonMcpJsonMapper(objectMapper));
 
 			asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
 			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);
