@@ -178,4 +178,43 @@ class ListOutputConverterTest {
 		assertThat(list.get(0)).isBlank();
 	}
 
+	@Test
+	void csvWithCommasInQuotedValues() {
+		String csvAsString = "\"value, with, commas\", normal, \"another, comma\"";
+		List<String> list = this.listOutputConverter.convert(csvAsString);
+		assertThat(list).isNotEmpty();
+		assertThat(list).doesNotContainNull();
+	}
+
+	@Test
+	void csvWithNewlinesInQuotedValues() {
+		String csvAsString = "\"line1\nline2\", normal, \"another\nline\"";
+		List<String> list = this.listOutputConverter.convert(csvAsString);
+		assertThat(list).isNotEmpty();
+		assertThat(list).doesNotContainNull();
+	}
+
+	@Test
+	void csvWithMixedQuotingStyles() {
+		String csvAsString = "'single quoted', \"double quoted\", `backtick quoted`, unquoted";
+		List<String> list = this.listOutputConverter.convert(csvAsString);
+		assertThat(list).hasSize(4);
+		assertThat(list).doesNotContainNull();
+	}
+
+	@Test
+	void csvWithOnlyCommasAndSpaces() {
+		String csvAsString = " , , , ";
+		List<String> list = this.listOutputConverter.convert(csvAsString);
+		assertThat(list).hasSize(4);
+		assertThat(list).allMatch(String::isEmpty);
+	}
+
+	@Test
+	void csvWithMalformedQuoting() {
+		String csvAsString = "\"unclosed quote, normal, \"properly closed\"";
+		List<String> list = this.listOutputConverter.convert(csvAsString);
+		assertThat(list).isNotEmpty();
+	}
+
 }
