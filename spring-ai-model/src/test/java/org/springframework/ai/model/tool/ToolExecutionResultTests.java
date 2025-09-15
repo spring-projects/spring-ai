@@ -140,4 +140,51 @@ class ToolExecutionResultTests {
 		assertThat(toolExecutionResult.conversationHistory()).isEmpty();
 	}
 
+	@Test
+	void whenMultipleToolResponseMessagesOnlyLastOneIsProcessed() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new AssistantMessage("First response"),
+					new ToolResponseMessage(
+							List.of(new ToolResponseMessage.ToolResponse("1", "old_tool", "Old response"))),
+					new AssistantMessage("Second response"),
+					new ToolResponseMessage(
+							List.of(new ToolResponseMessage.ToolResponse("2", "new_tool", "New response")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isEqualTo("New response");
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("new_tool");
+	}
+
+	@Test
+	void whenToolResponseWithEmptyToolNameThenMetadataContainsEmptyString() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new ToolResponseMessage(
+					List.of(new ToolResponseMessage.ToolResponse("1", "", "Response content")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME)).isEmpty();
+	}
+
+	@Test
+	void whenToolResponseWithNullToolIdThenGenerationStillCreated() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new ToolResponseMessage(
+					List.of(new ToolResponseMessage.ToolResponse(null, "tool", "Response content")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isEqualTo("Response content");
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("tool");
+	}
+
 }
