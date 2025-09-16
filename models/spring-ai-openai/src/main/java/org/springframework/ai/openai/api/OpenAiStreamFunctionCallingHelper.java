@@ -18,6 +18,7 @@ package org.springframework.ai.openai.api;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;

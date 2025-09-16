@@ -16,6 +16,13 @@
 
 package org.springframework.ai.openai.api;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -26,12 +33,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -50,8 +54,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 /**
  * Single class implementation of the
@@ -196,7 +198,7 @@ public class OpenAiApi {
 				headers.addAll(additionalHttpHeader);
 				addDefaultHeadersIfMissing(headers);
 			})
-				.body(dynamicRequestBody)
+			.body(dynamicRequestBody)
 			.retrieve()
 			.toEntity(ChatCompletion.class);
 		// @formatter:on
@@ -260,15 +262,13 @@ public class OpenAiApi {
 			throw new RuntimeException(e);
 		}
 		Object dynamicBody = createDynamicRequestBody(chatRequest);
-	// @formatter:off
-    return this.webClient
-        .post()
-        .uri(this.completionsPath)
-        .headers(
-            headers -> {
-              headers.addAll(additionalHttpHeader);
-              addDefaultHeadersIfMissing(headers);
-            }) // @formatter:on
+		// @formatter:off
+		return this.webClient.post()
+			.uri(this.completionsPath)
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			}) // @formatter:on
 			.bodyValue(dynamicBody)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -1123,38 +1123,37 @@ public class OpenAiApi {
 	 * @param verbosity Controls the verbosity of the model's response.
 	 */
 	@JsonInclude(Include.NON_NULL)
-	public record ChatCompletionRequest( // @formatter:off
-      @JsonProperty("messages") List<ChatCompletionMessage> messages,
-      @JsonProperty("model") String model,
-      @JsonProperty("store") Boolean store,
-      @JsonProperty("metadata") Map<String, String> metadata,
-      @JsonProperty("frequency_penalty") Double frequencyPenalty,
-      @JsonProperty("logit_bias") Map<String, Integer> logitBias,
-      @JsonProperty("logprobs") Boolean logprobs,
-      @JsonProperty("top_logprobs") Integer topLogprobs,
-      @JsonProperty("max_tokens") Integer maxTokens, // original field for specifying token usage.
-      @JsonProperty("max_completion_tokens")
-          Integer maxCompletionTokens, // new field for gpt-o1 and other reasoning models
-      @JsonProperty("n") Integer n,
-      @JsonProperty("modalities") List<OutputModality> outputModalities,
-      @JsonProperty("audio") AudioParameters audioParameters,
-      @JsonProperty("presence_penalty") Double presencePenalty,
-      @JsonProperty("response_format") ResponseFormat responseFormat,
-      @JsonProperty("seed") Integer seed,
-      @JsonProperty("service_tier") String serviceTier,
-      @JsonProperty("stop") List<String> stop,
-      @JsonProperty("stream") Boolean stream,
-      @JsonProperty("stream_options") StreamOptions streamOptions,
-      @JsonProperty("temperature") Double temperature,
-      @JsonProperty("top_p") Double topP,
-      @JsonProperty("tools") List<FunctionTool> tools,
-      @JsonProperty("tool_choice") Object toolChoice,
-      @JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
-      @JsonProperty("user") String user,
-      @JsonProperty("reasoning_effort") String reasoningEffort,
-      @JsonProperty("web_search_options") WebSearchOptions webSearchOptions,
-      @JsonProperty("verbosity") String verbosity,
-      @JsonProperty("extra_body") Map<String, Object> extraBody) {
+	public record ChatCompletionRequest(// @formatter:off
+			@JsonProperty("messages") List<ChatCompletionMessage> messages,
+			@JsonProperty("model") String model,
+			@JsonProperty("store") Boolean store,
+			@JsonProperty("metadata") Map<String, String> metadata,
+			@JsonProperty("frequency_penalty") Double frequencyPenalty,
+			@JsonProperty("logit_bias") Map<String, Integer> logitBias,
+			@JsonProperty("logprobs") Boolean logprobs,
+			@JsonProperty("top_logprobs") Integer topLogprobs,
+			@JsonProperty("max_tokens") Integer maxTokens, // original field for specifying token usage.
+			@JsonProperty("max_completion_tokens") Integer maxCompletionTokens, // new field for gpt-o1 and other reasoning models
+			@JsonProperty("n") Integer n,
+			@JsonProperty("modalities") List<OutputModality> outputModalities,
+			@JsonProperty("audio") AudioParameters audioParameters,
+			@JsonProperty("presence_penalty") Double presencePenalty,
+			@JsonProperty("response_format") ResponseFormat responseFormat,
+			@JsonProperty("seed") Integer seed,
+			@JsonProperty("service_tier") String serviceTier,
+			@JsonProperty("stop") List<String> stop,
+			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("stream_options") StreamOptions streamOptions,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("tools") List<FunctionTool> tools,
+			@JsonProperty("tool_choice") Object toolChoice,
+			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
+			@JsonProperty("user") String user,
+			@JsonProperty("reasoning_effort") String reasoningEffort,
+			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions,
+			@JsonProperty("verbosity") String verbosity,
+			@JsonProperty("extra_body") Map<String, Object> extraBody) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -1164,37 +1163,9 @@ public class OpenAiApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-      this(
-          messages,
-          model,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          false,
-          null,
-          temperature,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null);
+			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null, null, false, null, temperature, null,
+					null, null, null, null, null, null, null,null);
 		}
 
 		/**
@@ -1205,37 +1176,10 @@ public class OpenAiApi {
 		 * @param audio Parameters for audio output. Required when audio output is requested with outputModalities: ["audio"].
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, AudioParameters audio, boolean stream) {
-      this(
-          messages,
-          model,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          List.of(OutputModality.AUDIO, OutputModality.TEXT),
-          audio,
-          null,
-          null,
-          null,
-          null,
-          null,
-          stream,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null);
+			this(messages, model, null, null, null, null, null, null,
+					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
+					null, null, null, stream, null, null, null,
+					null, null, null, null, null, null, null,null);
 		}
 
 		/**
@@ -1248,37 +1192,9 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
-      this(
-          messages,
-          model,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          stream,
-          null,
-          temperature,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null);
+			this(messages, model, null, null, null, null, null, null, null, null, null,
+					null, null, null, null, null, null, null, stream, null, temperature, null,
+					null, null, null, null, null, null, null,null);
 		}
 
 		/**
@@ -1292,37 +1208,9 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model,
 				List<FunctionTool> tools, Object toolChoice) {
-      this(
-          messages,
-          model,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null,
-          false,
-          null,
-          0.8,
-          null,
-          tools,
-          toolChoice,
-          null,
-          null,
-          null,
-          null,
-          null,
-          null);
+			this(messages, model, null, null, null, null, null, null, null, null, null,
+					null, null, null, null, null, null, null, false, null, 0.8, null,
+					tools, toolChoice, null, null, null, null, null,null);
 		}
 
 		/**
@@ -1333,10 +1221,9 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-      this(
-          messages, null, null, null, null, null, null, null, null, null, null, null, null, null,
-          null, null, null, null, stream, null, null, null, null, null, null, null, null, null,
-          null, null);
+			this(messages, null, null, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, null, stream, null, null, null, null, null, null, null, null, null,
+				null, null);
 		}
 
 		/**
@@ -1346,37 +1233,10 @@ public class OpenAiApi {
 		 * @return A new {@link ChatCompletionRequest} with the specified stream options.
 		 */
 		public ChatCompletionRequest streamOptions(StreamOptions streamOptions) {
-      return new ChatCompletionRequest(
-          this.messages,
-          this.model,
-          this.store,
-          this.metadata,
-          this.frequencyPenalty,
-          this.logitBias,
-          this.logprobs,
-          this.topLogprobs,
-          this.maxTokens,
-          this.maxCompletionTokens,
-          this.n,
-          this.outputModalities,
-          this.audioParameters,
-          this.presencePenalty,
-          this.responseFormat,
-          this.seed,
-          this.serviceTier,
-          this.stop,
-          this.stream,
-          streamOptions,
-          this.temperature,
-          this.topP,
-          this.tools,
-          this.toolChoice,
-          this.parallelToolCalls,
-          this.user,
-          this.reasoningEffort,
-          this.webSearchOptions,
-          this.verbosity,
-          this.extraBody);
+			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
+					this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
+					this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
+					this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions, this.verbosity,this.extraBody);
 		}
 
 		/**
@@ -1580,18 +1440,17 @@ public class OpenAiApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record ChatCompletionMessage( // @formatter:off
-      @JsonProperty("content") Object rawContent,
-      @JsonProperty("role") Role role,
-      @JsonProperty("name") String name,
-      @JsonProperty("tool_call_id") String toolCallId,
-      @JsonProperty("tool_calls")
-          @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
-          List<ToolCall> toolCalls,
-      @JsonProperty("refusal") String refusal,
-      @JsonProperty("audio") AudioOutput audioOutput,
-      @JsonProperty("annotations") List<Annotation> annotations,
-      @JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
+	public record ChatCompletionMessage(// @formatter:off
+			@JsonProperty("content") Object rawContent,
+			@JsonProperty("role") Role role,
+			@JsonProperty("name") String name,
+			@JsonProperty("tool_call_id") String toolCallId,
+			@JsonProperty("tool_calls") @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
+			@JsonProperty("refusal") String refusal,
+			@JsonProperty("audio") AudioOutput audioOutput,
+			@JsonProperty("annotations") List<Annotation> annotations,
+			@JsonProperty("reasoning_content") String reasoningContent
+	) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other

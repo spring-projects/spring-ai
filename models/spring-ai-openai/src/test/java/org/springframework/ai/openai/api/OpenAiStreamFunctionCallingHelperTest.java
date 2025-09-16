@@ -16,14 +16,15 @@
 
 package org.springframework.ai.openai.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
@@ -255,7 +256,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	public void isStreamingToolFunctionCall_withMultipleChoicesAndOnlyFirstHasToolCalls() {
 		var toolCall = Mockito.mock(OpenAiApi.ChatCompletionMessage.ToolCall.class);
 		var deltaWithToolCalls = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null,
-				null, null);
+				null, null, null);
 		var deltaWithoutToolCalls = new OpenAiApi.ChatCompletionMessage(null, null);
 
 		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, deltaWithToolCalls, null);
@@ -327,7 +328,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 
 	@Test
 	public void isStreamingToolFunctionCall_withNullToolCallsList() {
-		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, null, null, null, null);
+		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, null, null, null, null, null);
 		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, delta, null);
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
 

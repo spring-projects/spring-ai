@@ -16,9 +16,6 @@
 
 package org.springframework.ai.openai;
 
-import io.micrometer.observation.Observation;
-import io.micrometer.observation.ObservationRegistry;
-import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -26,8 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -81,9 +86,6 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal OpenAI}
@@ -116,16 +118,24 @@ public class OpenAiChatModel implements ChatModel {
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
-	/** The default options used for the chat completion requests. */
+	/**
+	 * The default options used for the chat completion requests.
+	 */
 	private final OpenAiChatOptions defaultOptions;
 
-	/** The retry template used to retry the OpenAI API calls. */
+	/**
+	 * The retry template used to retry the OpenAI API calls.
+	 */
 	private final RetryTemplate retryTemplate;
 
-	/** Low-level access to the OpenAI API. */
+	/**
+	 * Low-level access to the OpenAI API.
+	 */
 	private final OpenAiApi openAiApi;
 
-	/** Observation registry used for instrumentation. */
+	/**
+	 * Observation registry used for instrumentation.
+	 */
 	private final ObservationRegistry observationRegistry;
 
 	private final ToolCallingManager toolCallingManager;
@@ -136,7 +146,9 @@ public class OpenAiChatModel implements ChatModel {
 	 */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
-	/** Conventions to use for generating observations. */
+	/**
+	 * Conventions to use for generating observations.
+	 */
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public OpenAiChatModel(OpenAiApi openAiApi, OpenAiChatOptions defaultOptions, ToolCallingManager toolCallingManager,
@@ -183,6 +195,7 @@ public class OpenAiChatModel implements ChatModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
+
 				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
 					.execute(ctx -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
 
@@ -200,32 +213,17 @@ public class OpenAiChatModel implements ChatModel {
 				}
 
 			// @formatter:off
-                  List<Generation> generations =
-                      choices.stream()
-                          .map(
-                              choice -> {
-                                Map<String, Object> metadata =
-                                    Map.of(
-                                        "id",
-                                            chatCompletion.id() != null ? chatCompletion.id() : "",
-                                        "role",
-                                            choice.message().role() != null
-                                                ? choice.message().role().name()
-                                                : "",
-                                        "index", choice.index() != null ? choice.index() : 0,
-                                        "finishReason", getFinishReasonJson(choice.finishReason()),
-                                        "refusal",
-                                            StringUtils.hasText(choice.message().refusal())
-                                                ? choice.message().refusal()
-                                                : "",
-                                        "annotations",
-                                            choice.message().annotations() != null
-                                                ? choice.message().annotations()
-                                                : List.of(Map.of()));
-                                return buildGeneration(choice, metadata, request);
-                              })
-                          .toList();
-                  // @formatter:on
+				List<Generation> generations = choices.stream().map(choice -> {
+					Map<String, Object> metadata = Map.of(
+							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
+							"role", choice.message().role() != null ? choice.message().role().name() : "",
+							"index", choice.index() != null ? choice.index() : 0,
+							"finishReason", getFinishReasonJson(choice.finishReason()),
+							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
+					return buildGeneration(choice, metadata, request);
+				}).toList();
+				// @formatter:on
 
 				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
@@ -240,6 +238,7 @@ public class OpenAiChatModel implements ChatModel {
 				observationContext.setResponse(chatResponse);
 
 				return chatResponse;
+
 			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
@@ -307,49 +306,24 @@ public class OpenAiChatModel implements ChatModel {
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
 				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(chatCompletion2 -> {
 					try {
-						// If an id is not provided, set to "NO_ID" (for compatible
-						// APIs).
+						// If an id is not provided, set to "NO_ID" (for compatible APIs).
 						String id = chatCompletion2.id() == null ? "NO_ID" : chatCompletion2.id();
 
 						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
-                                                    if (choice.message().role() != null) {
-                                                      roleMap.putIfAbsent(
-                                                          id, choice.message().role().name());
-                                                    }
-                                                    Map<String, Object> metadata =
-                                                        Map.of(
-                                                            "id",
-                                                            id,
-                                                            "role",
-                                                            roleMap.getOrDefault(id, ""),
-                                                            "index",
-                                                            choice.index() != null
-                                                                ? choice.index()
-                                                                : 0,
-                                                            "finishReason",
-                                                            getFinishReasonJson(
-                                                                choice.finishReason()),
-                                                            "refusal",
-                                                            StringUtils.hasText(
-                                                                    choice.message().refusal())
-                                                                ? choice.message().refusal()
-                                                                : "",
-                                                            "annotations",
-                                                            choice.message().annotations() != null
-                                                                ? choice.message().annotations()
-                                                                : List.of(),
-                                                            "reasoningContent",
-                                                            choice.message().reasoningContent()
-                                                                    != null
-                                                                ? choice
-                                                                    .message()
-                                                                    .reasoningContent()
-                                                                : "");
-                                                    return buildGeneration(
-                                                        choice, metadata, request);
-                                                  })
-                                              .toList();
-                                      // @formatter:on
+							if (choice.message().role() != null) {
+								roleMap.putIfAbsent(id, choice.message().role().name());
+							}
+							Map<String, Object> metadata = Map.of(
+									"id", id,
+									"role", roleMap.getOrDefault(id, ""),
+									"index", choice.index() != null ? choice.index() : 0,
+									"finishReason", getFinishReasonJson(choice.finishReason()),
+									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(),
+									"reasoningContent", choice.message().reasoningContent() != null ? choice.message().reasoningContent() : "");
+							return buildGeneration(choice, metadata, request);
+						}).toList();
+						// @formatter:on
 						OpenAiApi.Usage usage = chatCompletion2.usage();
 						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
@@ -360,8 +334,7 @@ public class OpenAiChatModel implements ChatModel {
 						logger.error("Error processing chat completion", e);
 						return new ChatResponse(List.of());
 					}
-					// When in stream mode and enabled to include the usage, the
-					// OpenAI
+					// When in stream mode and enabled to include the usage, the OpenAI
 					// Chat completion response would have the usage set only in its
 					// final response. Hence, the following overlapping buffer is
 					// created to store both the current and the subsequent response
@@ -390,54 +363,43 @@ public class OpenAiChatModel implements ChatModel {
 				});
 
 			// @formatter:off
-          Flux<ChatResponse> flux =
-              chatResponse
-                  .flatMap(
-                      response -> {
-                        if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(
-                            prompt.getOptions(), response)) {
-                          // FIXME: bounded elastic needs to be used since tool calling
-                          //  is currently only synchronous
-                          return Flux.deferContextual(
-                                  ctx -> {
-                                    ToolExecutionResult toolExecutionResult;
-                                    try {
-                                      ToolCallReactiveContextHolder.setContext(ctx);
-                                      toolExecutionResult =
-                                          this.toolCallingManager.executeToolCalls(
-                                              prompt, response);
-                                    } finally {
-                                      ToolCallReactiveContextHolder.clearContext();
-                                    }
-                                    if (toolExecutionResult.returnDirect()) {
-                                      // Return tool execution result directly to the client.
-                                      return Flux.just(
-                                          ChatResponse.builder()
-                                              .from(response)
-                                              .generations(
-                                                  ToolExecutionResult.buildGenerations(
-                                                      toolExecutionResult))
-                                              .build());
-                                    } else {
-                                      // Send the tool execution result back to the model.
-                                      return this.internalStream(
-                                          new Prompt(
-                                              toolExecutionResult.conversationHistory(),
-                                              prompt.getOptions()),
-                                          response);
-                                    }
-                                  })
-                              .subscribeOn(Schedulers.boundedElastic());
-                        } else {
-                          return Flux.just(response);
-                        }
-                      })
-                  .doOnError(observation::error)
-                  .doFinally(s -> observation.stop())
-                  .contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-          // @formatter:on
+			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+					// FIXME: bounded elastic needs to be used since tool calling
+					//  is currently only synchronous
+					return Flux.deferContextual(ctx -> {
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder().from(response)
+									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+									.build());
+						}
+						else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									response);
+						}
+					}).subscribeOn(Schedulers.boundedElastic());
+				}
+				else {
+					return Flux.just(response);
+				}
+			})
+			.doOnError(observation::error)
+			.doFinally(s -> observation.stop())
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			// @formatter:on
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+
 		});
 	}
 
@@ -607,7 +569,9 @@ public class OpenAiChatModel implements ChatModel {
 		return mergedHttpHeaders;
 	}
 
-	/** Accessible for testing. */
+	/**
+	 * Accessible for testing.
+	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
@@ -640,6 +604,7 @@ public class OpenAiChatModel implements ChatModel {
 					Assert.isTrue(assistantMessage.getMedia().size() == 1,
 							"Only one media content is supported for assistant messages");
 					audioOutput = new AudioOutput(assistantMessage.getMedia().get(0).getId(), null, null, null);
+
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
 						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null, null));
@@ -756,7 +721,9 @@ public class OpenAiChatModel implements ChatModel {
 		return new Builder();
 	}
 
-	/** Returns a builder pre-populated with the current configuration for mutation. */
+	/**
+	 * Returns a builder pre-populated with the current configuration for mutation.
+	 */
 	public Builder mutate() {
 		return new Builder(this);
 	}
