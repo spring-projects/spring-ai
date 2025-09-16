@@ -169,4 +169,42 @@ class AzureOpenAiRuntimeHintsTests {
 		assertThat(this.runtimeHints).matches(reflection().onType(OpenAIAsyncClient.class));
 	}
 
+	@Test
+	void verifyNoSerializationHintsAreRegistered() {
+		this.azureOpenAiRuntimeHints.registerHints(this.runtimeHints, null);
+
+		// Azure OpenAI should only register reflection and resource hints, not serialization hints
+		assertThat(this.runtimeHints.serialization().javaSerializationHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void verifyRegistrationWithDifferentRuntimeHintsInstances() {
+		RuntimeHints hints1 = new RuntimeHints();
+		RuntimeHints hints2 = new RuntimeHints();
+
+		this.azureOpenAiRuntimeHints.registerHints(hints1, null);
+		this.azureOpenAiRuntimeHints.registerHints(hints2, null);
+
+		// Both instances should have same number of reflection hints
+		long count1 = hints1.reflection().typeHints().count();
+		long count2 = hints2.reflection().typeHints().count();
+
+		assertThat(count1).isEqualTo(count2);
+		assertThat(count1).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyEnumTypesInAzurePackageAreRegistered() {
+		this.azureOpenAiRuntimeHints.registerHints(this.runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify that enum types from Azure OpenAI package are registered
+		boolean hasEnumTypes = registeredTypes.stream()
+				.anyMatch(tr -> tr.getName().contains("com.azure.ai.openai.models") &&
+						tr.getName().toLowerCase().contains("choice"));
+
+		assertThat(hasEnumTypes).as("Azure OpenAI enum types should be registered").isTrue();
+	}
 }
