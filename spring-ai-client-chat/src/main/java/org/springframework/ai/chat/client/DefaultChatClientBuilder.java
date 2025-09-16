@@ -69,39 +69,47 @@ public class DefaultChatClientBuilder implements Builder {
 				customObservationConvention, Map.of(), null);
 	}
 
+	@Override
 	public ChatClient build() {
 		return new DefaultChatClient(this.defaultRequest);
 	}
 
+	@Override
 	public Builder clone() {
 		return this.defaultRequest.mutate();
 	}
 
+	@Override
 	public Builder defaultAdvisors(Advisor... advisors) {
 		this.defaultRequest.advisors(advisors);
 		return this;
 	}
 
+	@Override
 	public Builder defaultAdvisors(Consumer<ChatClient.AdvisorSpec> advisorSpecConsumer) {
 		this.defaultRequest.advisors(advisorSpecConsumer);
 		return this;
 	}
 
+	@Override
 	public Builder defaultAdvisors(List<Advisor> advisors) {
 		this.defaultRequest.advisors(advisors);
 		return this;
 	}
 
+	@Override
 	public Builder defaultOptions(ChatOptions chatOptions) {
 		this.defaultRequest.options(chatOptions);
 		return this;
 	}
 
+	@Override
 	public Builder defaultUser(String text) {
 		this.defaultRequest.user(text);
 		return this;
 	}
 
+	@Override
 	public Builder defaultUser(Resource text, Charset charset) {
 		Assert.notNull(text, "text cannot be null");
 		Assert.notNull(charset, "charset cannot be null");
@@ -114,20 +122,24 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	@Override
 	public Builder defaultUser(Resource text) {
 		return this.defaultUser(text, Charset.defaultCharset());
 	}
 
+	@Override
 	public Builder defaultUser(Consumer<PromptUserSpec> userSpecConsumer) {
 		this.defaultRequest.user(userSpecConsumer);
 		return this;
 	}
 
+	@Override
 	public Builder defaultSystem(String text) {
 		this.defaultRequest.system(text);
 		return this;
 	}
 
+	@Override
 	public Builder defaultSystem(Resource text, Charset charset) {
 		Assert.notNull(text, "text cannot be null");
 		Assert.notNull(charset, "charset cannot be null");
@@ -140,10 +152,12 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	@Override
 	public Builder defaultSystem(Resource text) {
 		return this.defaultSystem(text, Charset.defaultCharset());
 	}
 
+	@Override
 	public Builder defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer) {
 		this.defaultRequest.system(systemSpecConsumer);
 		return this;
@@ -179,11 +193,13 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
+	@Override
 	public Builder defaultToolContext(Map<String, Object> toolContext) {
 		this.defaultRequest.toolContext(toolContext);
 		return this;
 	}
 
+	@Override
 	public Builder defaultTemplateRenderer(TemplateRenderer templateRenderer) {
 		Assert.notNull(templateRenderer, "templateRenderer cannot be null");
 		this.defaultRequest.templateRenderer(templateRenderer);
