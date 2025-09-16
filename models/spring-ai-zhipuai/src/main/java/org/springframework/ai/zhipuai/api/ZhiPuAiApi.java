@@ -672,6 +672,9 @@ public class ZhiPuAiApi {
 	 * logged and can be used for debugging purposes.
 	 * @param doSample If set, the model will use sampling to generate the next token. If
 	 * not set, the model will use greedy decoding to generate the next token.
+	 * @param responseFormat Control the format of the model output. Set to `json_object`
+	 * to ensure the message is a valid JSON object.
+	 * @param thinking Control whether to enable the large model's chain of thought.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -684,9 +687,11 @@ public class ZhiPuAiApi {
 			@JsonProperty("top_p") Double topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
-			@JsonProperty("user") String user,
+			@JsonProperty("user_id") String user,
 			@JsonProperty("request_id") String requestId,
-			@JsonProperty("do_sample") Boolean doSample) { // @formatter:on
+			@JsonProperty("do_sample") Boolean doSample,
+			@JsonProperty("response_format") ResponseFormat responseFormat,
+			@JsonProperty("thinking") Thinking thinking) { // @formatter:on
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and
@@ -696,7 +701,7 @@ public class ZhiPuAiApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(messages, model, null, null, false, temperature, null, null, null, null, null, null);
+			this(messages, model, null, null, false, temperature, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -711,7 +716,7 @@ public class ZhiPuAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				boolean stream) {
-			this(messages, model, null, null, stream, temperature, null, null, null, null, null, null);
+			this(messages, model, null, null, stream, temperature, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -726,7 +731,7 @@ public class ZhiPuAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				Object toolChoice) {
-			this(messages, model, null, null, false, 0.8, null, tools, toolChoice, null, null, null);
+			this(messages, model, null, null, false, 0.8, null, tools, toolChoice, null, null, null, null, null);
 		}
 
 		/**
@@ -739,7 +744,7 @@ public class ZhiPuAiApi {
 		 * terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(messages, null, null, null, stream, null, null, null, null, null, null, null);
+			this(messages, null, null, null, stream, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -774,7 +779,32 @@ public class ZhiPuAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(@JsonProperty("type") String type) {
+
+			public static ResponseFormat text() {
+				return new ResponseFormat("text");
+			}
+
+			public static ResponseFormat jsonObject() {
+				return new ResponseFormat("json_object");
+			}
 		}
+
+		/**
+		 * Control whether to enable the large model's chain of thought
+		 *
+		 * @param type Available options: (default) enabled, disabled
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Thinking(@JsonProperty("type") String type) {
+			public static Thinking enabled() {
+				return new Thinking("enabled");
+			}
+
+			public static Thinking disabled() {
+				return new Thinking("disabled");
+			}
+		}
+
 	}
 
 	/**

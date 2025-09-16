@@ -487,7 +487,12 @@ public class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("logprobs", choice.logprobs());
 		}
 
-		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
+		var assistantMessage = AssistantMessage.builder()
+			.content(textContent)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.media(media)
+			.build();
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 

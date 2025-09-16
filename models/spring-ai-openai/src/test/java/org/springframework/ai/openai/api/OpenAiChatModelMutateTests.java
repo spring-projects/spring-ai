@@ -24,6 +24,7 @@ import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.util.LinkedMultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /*
  * Integration test for mutate/clone functionality on OpenAiApi and OpenAiChatModel.
@@ -188,6 +189,33 @@ class OpenAiChatModelMutateTests {
 		OpenAiChatModel unchanged = this.baseModel.mutate().build();
 		assertThat(unchanged).isNotNull();
 		assertThat(unchanged).isNotSameAs(this.baseModel);
+	}
+
+	@Test
+	void testMutateWithInvalidBaseUrl() {
+		assertThatThrownBy(() -> this.baseApi.mutate().baseUrl("").build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("baseUrl");
+
+		assertThatThrownBy(() -> this.baseApi.mutate().baseUrl(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("baseUrl");
+	}
+
+	@Test
+	void testMutateWithNullOpenAiApi() {
+		assertThatThrownBy(() -> this.baseModel.mutate().openAiApi(null).build())
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void testMutatePreservesUnchangedFields() {
+		String originalBaseUrl = this.baseApi.getBaseUrl();
+		String newApiKey = "new-test-key";
+
+		OpenAiApi mutated = this.baseApi.mutate().apiKey(newApiKey).build();
+
+		assertThat(mutated.getBaseUrl()).isEqualTo(originalBaseUrl);
+		assertThat(mutated.getApiKey().getValue()).isEqualTo(newApiKey);
 	}
 
 }
