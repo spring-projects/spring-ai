@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -82,16 +83,22 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 
-		// 2. Advise the request messages list.
-		List<Message> processedMessages = new ArrayList<>(memoryMessages);
-		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
+		// 2. Retrieve prompt & instructions and pre-compute expected size (memory + instructions) to reduce reallocations.
+		Prompt prompt = chatClientRequest.prompt();
+		List<Message> instructions = prompt.getInstructions();
+		int expectedSize = memoryMessages.size() + instructions.size();
 
-		// 3. Create a new request with the advised messages.
+		// 3. Advise the request messages list.
+		List<Message> processedMessages = new ArrayList<>(expectedSize);
+		processedMessages.addAll(memoryMessages);
+		processedMessages.addAll(prompt.getInstructions());
+
+		// 4. Create a new request with the advised messages.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
-			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
+			.prompt(prompt.mutate().messages(processedMessages).build())
 			.build();
 
-		// 4. Add the new user message to the conversation memory.
+		// 5. Add the new user message to the conversation memory.
 		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
 		this.chatMemory.add(conversationId, userMessage);
 
