@@ -94,6 +94,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 public class StreamableMcpAnnotationsIT {
 
@@ -219,7 +220,9 @@ public class StreamableMcpAnnotationsIT {
 
 						assertThat(calculatorToolResponse.structuredContent()).isNotNull();
 
-						assertThat(calculatorToolResponse.structuredContent()).containsEntry("result", 5.0)
+						assertThat(calculatorToolResponse.structuredContent())
+							.asInstanceOf(map(String.class, Object.class))
+							.containsEntry("result", 5.0)
 							.containsEntry("operation", "2 + 3")
 							.containsEntry("timestamp", "2024-01-01T10:00:00Z");
 
