@@ -232,7 +232,8 @@ public final class McpToolUtils {
 		var tool = McpSchema.Tool.builder()
 			.name(toolCallback.getToolDefinition().name())
 			.description(toolCallback.getToolDefinition().description())
-			.inputSchema(toolCallback.getToolDefinition().inputSchema())
+			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
+					McpSchema.JsonSchema.class))
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {

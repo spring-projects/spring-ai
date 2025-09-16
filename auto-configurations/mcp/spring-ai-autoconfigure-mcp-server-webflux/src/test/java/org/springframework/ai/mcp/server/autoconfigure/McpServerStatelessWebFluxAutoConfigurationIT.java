@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport;
 import org.junit.jupiter.api.Test;
 
@@ -116,7 +117,7 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 		this.contextRunner
 			.withBean("customWebFluxProvider", WebFluxStatelessServerTransport.class,
 					() -> WebFluxStatelessServerTransport.builder()
-						.objectMapper(new ObjectMapper())
+						.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
 						.messageEndpoint("/custom")
 						.build())
 			.run(context -> {
