@@ -57,6 +57,7 @@ import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.lang.Nullable;
@@ -634,6 +635,8 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> toolContext = new HashMap<>();
 
+		private ToolCallResultConverter toolCallResultConverter;
+
 		private TemplateRenderer templateRenderer;
 
 		@Nullable
@@ -650,7 +653,7 @@ public class DefaultChatClient implements ChatClient {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
 					ccr.systemMetadata, ccr.toolCallbacks, ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions,
 					ccr.advisors, ccr.advisorParams, ccr.observationRegistry, ccr.observationConvention,
-					ccr.toolContext, ccr.templateRenderer);
+					ccr.toolContext, ccr.toolCallResultConverter, ccr.templateRenderer);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
@@ -659,6 +662,7 @@ public class DefaultChatClient implements ChatClient {
 				List<Message> messages, List<String> toolNames, List<Media> media, @Nullable ChatOptions chatOptions,
 				List<Advisor> advisors, Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext,
+				@Nullable ToolCallResultConverter toolCallResultConverter,
 				@Nullable TemplateRenderer templateRenderer) {
 
 			Assert.notNull(chatModel, "chatModel cannot be null");
@@ -697,6 +701,7 @@ public class DefaultChatClient implements ChatClient {
 			this.observationConvention = observationConvention != null ? observationConvention
 					: DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION;
 			this.toolContext.putAll(toolContext);
+			this.toolCallResultConverter = toolCallResultConverter;
 			this.templateRenderer = templateRenderer != null ? templateRenderer : DEFAULT_TEMPLATE_RENDERER;
 		}
 
@@ -774,6 +779,7 @@ public class DefaultChatClient implements ChatClient {
 				.defaultTemplateRenderer(this.templateRenderer)
 				.defaultToolCallbacks(this.toolCallbacks)
 				.defaultToolContext(this.toolContext)
+				.defaultToolCallResultConverter(this.toolCallResultConverter)
 				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
@@ -877,7 +883,7 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec tools(Object... toolObjects) {
 			Assert.notNull(toolObjects, "toolObjects cannot be null");
 			Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
-			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(toolObjects)));
+			this.toolCallbacks.addAll(Arrays.asList(ToolCallbacks.from(this.toolCallResultConverter, toolObjects)));
 			return this;
 		}
 
@@ -897,6 +903,11 @@ public class DefaultChatClient implements ChatClient {
 			Assert.noNullElements(toolContext.keySet(), "toolContext keys cannot contain null elements");
 			Assert.noNullElements(toolContext.values(), "toolContext values cannot contain null elements");
 			this.toolContext.putAll(toolContext);
+			return this;
+		}
+
+		public ChatClientRequestSpec toolCallResultConverter(ToolCallResultConverter converter) {
+			this.toolCallResultConverter = converter;
 			return this;
 		}
 
