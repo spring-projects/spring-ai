@@ -173,7 +173,8 @@ class AzureOpenAiRuntimeHintsTests {
 	void verifyNoSerializationHintsAreRegistered() {
 		this.azureOpenAiRuntimeHints.registerHints(this.runtimeHints, null);
 
-		// Azure OpenAI should only register reflection and resource hints, not serialization hints
+		// Azure OpenAI should only register reflection and resource hints, not
+		// serialization hints
 		assertThat(this.runtimeHints.serialization().javaSerializationHints().count()).isEqualTo(0);
 	}
 
@@ -202,9 +203,10 @@ class AzureOpenAiRuntimeHintsTests {
 
 		// Verify that enum types from Azure OpenAI package are registered
 		boolean hasEnumTypes = registeredTypes.stream()
-				.anyMatch(tr -> tr.getName().contains("com.azure.ai.openai.models") &&
-						tr.getName().toLowerCase().contains("choice"));
+			.anyMatch(tr -> tr.getName().contains("com.azure.ai.openai.models")
+					&& tr.getName().toLowerCase().contains("choice"));
 
 		assertThat(hasEnumTypes).as("Azure OpenAI enum types should be registered").isTrue();
 	}
+
 }

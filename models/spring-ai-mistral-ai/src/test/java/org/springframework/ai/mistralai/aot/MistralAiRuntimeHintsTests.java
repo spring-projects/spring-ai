@@ -181,8 +181,7 @@ class MistralAiRuntimeHintsTests {
 		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
 
 		// Should not throw any exception even with empty runtime hints
-		assertThatCode(() -> mistralAiRuntimeHints.registerHints(emptyRuntimeHints, null))
-				.doesNotThrowAnyException();
+		assertThatCode(() -> mistralAiRuntimeHints.registerHints(emptyRuntimeHints, null)).doesNotThrowAnyException();
 
 		assertThat(emptyRuntimeHints.reflection().typeHints().count()).isGreaterThan(0);
 	}
@@ -218,12 +217,12 @@ class MistralAiRuntimeHintsTests {
 
 		// Verify response wrapper types are registered
 		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("EmbeddingList")))
-				.as("EmbeddingList response type should be registered")
-				.isTrue();
+			.as("EmbeddingList response type should be registered")
+			.isTrue();
 
 		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("ChatCompletion")))
-				.as("ChatCompletion response type should be registered")
-				.isTrue();
+			.as("ChatCompletion response type should be registered")
+			.isTrue();
 	}
 
 	@Test
@@ -242,4 +241,5 @@ class MistralAiRuntimeHintsTests {
 
 		assertThat(count1).isEqualTo(count2);
 	}
+
 }
