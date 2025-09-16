@@ -29,6 +29,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -66,6 +67,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 
 	@Override
 	public KeyValues getLowCardinalityKeyValues(ChatClientObservationContext context) {
+		Assert.notNull(context, "context cannot be null");
 		return KeyValues.of(aiOperationType(context), aiProvider(context), springAiKind(), stream(context));
 	}
 
@@ -90,6 +92,7 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 
 	@Override
 	public KeyValues getHighCardinalityKeyValues(ChatClientObservationContext context) {
+		Assert.notNull(context, "context cannot be null");
 		var keyValues = KeyValues.empty();
 		keyValues = advisors(keyValues, context);
 		keyValues = conversationId(keyValues, context);
