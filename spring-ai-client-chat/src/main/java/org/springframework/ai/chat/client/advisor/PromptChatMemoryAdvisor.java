@@ -161,12 +161,10 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			if (logger.isDebugEnabled()) {
 				logger.debug(
 						"[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-						cid,
-						assistantMessages);
+						cid, assistantMessages);
 				List<Message> memoryMessages = this.chatMemory.get(cid);
 				logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-						cid,
-						memoryMessages);
+						cid, memoryMessages);
 			}
 		}
 		return chatClientResponse;

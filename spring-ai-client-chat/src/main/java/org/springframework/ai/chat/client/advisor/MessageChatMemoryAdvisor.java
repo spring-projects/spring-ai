@@ -83,7 +83,8 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 
-		// 2. Retrieve prompt & instructions and pre-compute expected size (memory + instructions) to reduce reallocations.
+		// 2. Retrieve prompt & instructions and pre-compute expected size (memory +
+		// instructions) to reduce reallocations.
 		Prompt prompt = chatClientRequest.prompt();
 		List<Message> instructions = prompt.getInstructions();
 		int expectedSize = memoryMessages.size() + instructions.size();

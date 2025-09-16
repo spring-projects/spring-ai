@@ -39,7 +39,7 @@ public interface BaseChatMemoryAdvisor extends BaseAdvisor {
 		Assert.state(!context.containsKey(null), "context cannot contain null keys");
 		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
 
-		Object value =  context.get(ChatMemory.CONVERSATION_ID);
+		Object value = context.get(ChatMemory.CONVERSATION_ID);
 		return (value != null) ? value.toString() : defaultConversationId;
 	}
 
