@@ -54,6 +54,26 @@ class JsonSchemaConverterTests {
 			.hasMessage("JSON Schema node must not be null");
 	}
 
+	@Test
+	void fromJsonShouldHandleEmptyObject() {
+		String json = "{}";
+		ObjectNode result = JsonSchemaConverter.fromJson(json);
+
+		assertThat(result).isNotNull();
+		assertThat(result.size()).isEqualTo(0);
+	}
+
+	@Test
+	void fromJsonShouldHandleEmptyString() {
+		assertThatThrownBy(() -> JsonSchemaConverter.fromJson("")).isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Failed to parse JSON");
+	}
+
+	@Test
+	void fromJsonShouldHandleNullInput() {
+		assertThatThrownBy(() -> JsonSchemaConverter.fromJson(null)).isInstanceOf(RuntimeException.class);
+	}
+
 	@Nested
 	class SchemaConversionTests {
 
