@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -50,7 +51,7 @@ public class McpServerStatelessWebMvcAutoConfiguration {
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		return WebMvcStatelessServerTransport.builder()
-			.objectMapper(objectMapper)
+			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 			.messageEndpoint(serverProperties.getMcpEndpoint())
 			// .disallowDelete(serverProperties.isDisallowDelete())
 			.build();

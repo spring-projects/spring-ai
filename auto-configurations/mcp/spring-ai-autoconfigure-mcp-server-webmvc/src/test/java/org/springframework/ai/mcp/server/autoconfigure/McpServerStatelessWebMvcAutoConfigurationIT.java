@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport;
 import org.junit.jupiter.api.Test;
 
@@ -116,7 +117,7 @@ class McpServerStatelessWebMvcAutoConfigurationIT {
 		this.contextRunner
 			.withBean("customWebMvcProvider", WebMvcStatelessServerTransport.class,
 					() -> WebMvcStatelessServerTransport.builder()
-						.objectMapper(new ObjectMapper())
+						.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
 						.messageEndpoint("/custom")
 						.build())
 			.run(context -> {

@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -51,7 +52,7 @@ public class McpServerStreamableHttpWebFluxAutoConfiguration {
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		return WebFluxStreamableServerTransportProvider.builder()
-			.objectMapper(objectMapper)
+			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 			.messageEndpoint(serverProperties.getMcpEndpoint())
 			.keepAliveInterval(serverProperties.getKeepAliveInterval())
 			.disallowDelete(serverProperties.isDisallowDelete())

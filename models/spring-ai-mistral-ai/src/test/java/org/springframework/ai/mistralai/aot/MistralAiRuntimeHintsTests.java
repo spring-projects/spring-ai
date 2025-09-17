@@ -28,6 +28,7 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 
 class MistralAiRuntimeHintsTests {
@@ -172,6 +173,73 @@ class MistralAiRuntimeHintsTests {
 				.contains(org.springframework.aot.hint.MemberCategory.INVOKE_DECLARED_CONSTRUCTORS));
 
 		assertThat(hasConstructorHints).as("Should register constructor hints for JSON deserialization").isTrue();
+	}
+
+	@Test
+	void verifyNoExceptionThrownWithEmptyRuntimeHints() {
+		RuntimeHints emptyRuntimeHints = new RuntimeHints();
+		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
+
+		// Should not throw any exception even with empty runtime hints
+		assertThatCode(() -> mistralAiRuntimeHints.registerHints(emptyRuntimeHints, null)).doesNotThrowAnyException();
+
+		assertThat(emptyRuntimeHints.reflection().typeHints().count()).isGreaterThan(0);
+	}
+
+	@Test
+	void verifyProxyHintsAreNotRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
+		mistralAiRuntimeHints.registerHints(runtimeHints, null);
+
+		// MistralAi should only register reflection hints, not proxy hints
+		assertThat(runtimeHints.proxies().jdkProxyHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void verifySerializationHintsAreNotRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
+		mistralAiRuntimeHints.registerHints(runtimeHints, null);
+
+		// MistralAi should only register reflection hints, not serialization hints
+		assertThat(runtimeHints.serialization().javaSerializationHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void verifyResponseTypesAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		MistralAiRuntimeHints mistralAiRuntimeHints = new MistralAiRuntimeHints();
+		mistralAiRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify response wrapper types are registered
+		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("EmbeddingList")))
+			.as("EmbeddingList response type should be registered")
+			.isTrue();
+
+		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("ChatCompletion")))
+			.as("ChatCompletion response type should be registered")
+			.isTrue();
+	}
+
+	@Test
+	void verifyMultipleInstancesRegisterSameHints() {
+		RuntimeHints runtimeHints1 = new RuntimeHints();
+		RuntimeHints runtimeHints2 = new RuntimeHints();
+
+		MistralAiRuntimeHints hints1 = new MistralAiRuntimeHints();
+		MistralAiRuntimeHints hints2 = new MistralAiRuntimeHints();
+
+		hints1.registerHints(runtimeHints1, null);
+		hints2.registerHints(runtimeHints2, null);
+
+		long count1 = runtimeHints1.reflection().typeHints().count();
+		long count2 = runtimeHints2.reflection().typeHints().count();
+
+		assertThat(count1).isEqualTo(count2);
 	}
 
 }

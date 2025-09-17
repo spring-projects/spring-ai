@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -490,7 +490,7 @@ public class McpServerAutoConfigurationIT {
 		}
 
 		@Override
-		public <T> T unmarshalFrom(Object value, TypeReference<T> type) {
+		public <T> T unmarshalFrom(Object data, TypeRef<T> type) {
 			return null; // Test implementation
 		}
 
