@@ -78,6 +78,80 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	@JsonProperty("truncate")
 	private Boolean truncate;
 
+	// @formatter:off
+
+	/**
+	 * Whether to use NUMA. (Default: false)
+	 */
+	@JsonProperty("numa")
+	private Boolean useNUMA;
+
+	/**
+	 * Prompt processing maximum batch size. (Default: 512)
+	 */
+	@JsonProperty("num_batch")
+	private Integer numBatch;
+
+	/**
+	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
+	 * to enable metal support, 0 to disable.
+	 * (Default: -1, which indicates that numGPU should be set dynamically)
+	 */
+	@JsonProperty("num_gpu")
+	private Integer numGPU;
+
+	/**
+	 * When using multiple GPUs this option controls which GPU is used
+	 * for small tensors for which the overhead of splitting the computation
+	 * across all GPUs is not worthwhile. The GPU in question will use slightly
+	 * more VRAM to store a scratch buffer for temporary results.
+	 * By default, GPU 0 is used.
+	 */
+	@JsonProperty("main_gpu")
+	private Integer mainGPU;
+
+	/**
+	 * (Default: false)
+	 */
+	@JsonProperty("low_vram")
+	private Boolean lowVRAM;
+
+	/**
+	 * Load only the vocabulary, not the weights.
+	 */
+	@JsonProperty("vocab_only")
+	private Boolean vocabOnly;
+
+	/**
+	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
+	 * of the model as needed. However, if the model is larger than your total amount of RAM or if your system is low
+	 * on available memory, using mmap might increase the risk of pageouts, negatively impacting performance.
+	 * Disabling mmap results in slower load times but may reduce pageouts if you're not using mlock.
+	 * Note that if the model is larger than the total amount of RAM, turning off mmap would prevent
+	 * the model from loading at all.
+	 * (Default: null)
+	 */
+	@JsonProperty("use_mmap")
+	private Boolean useMMap;
+
+	/**
+	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
+	 * This can improve performance but trades away some of the advantages of memory-mapping
+	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
+	 * (Default: false)
+	 */
+	@JsonProperty("use_mlock")
+	private Boolean useMLock;
+
+	/**
+	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
+	 * to the number of physical CPU cores your system has (as opposed to the logical number of cores).
+	 * Using the correct number of threads can greatly improve performance.
+	 * By default, Ollama will detect this value for optimal performance.
+	 */
+	@JsonProperty("num_thread")
+	private Integer numThread;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -93,19 +167,37 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	public static OllamaEmbeddingOptions fromOptions(OllamaOptions fromOptions) {
-		return builder()
-				.model(fromOptions.getModel())
-				.keepAlive(fromOptions.getKeepAlive())
-				.truncate(fromOptions.getTruncate())
-				.build();
-	}
-
 	public static OllamaEmbeddingOptions fromOptions(OllamaEmbeddingOptions fromOptions) {
 		return builder()
 				.model(fromOptions.getModel())
 				.keepAlive(fromOptions.getKeepAlive())
 				.truncate(fromOptions.getTruncate())
+				.useNUMA(fromOptions.getUseNUMA())
+				.numBatch(fromOptions.getNumBatch())
+				.numGPU(fromOptions.getNumGPU())
+				.mainGPU(fromOptions.getMainGPU())
+				.lowVRAM(fromOptions.getLowVRAM())
+				.vocabOnly(fromOptions.getVocabOnly())
+				.useMMap(fromOptions.getUseMMap())
+				.useMLock(fromOptions.getUseMLock())
+				.numThread(fromOptions.getNumThread())
+				.build();
+	}
+
+	public static OllamaEmbeddingOptions fromOptions(OllamaOptions fromOptions) {
+		return builder()
+				.model(fromOptions.getModel())
+				.keepAlive(fromOptions.getKeepAlive())
+				.truncate(fromOptions.getTruncate())
+				.useNUMA(fromOptions.getUseNUMA())
+				.numBatch(fromOptions.getNumBatch())
+				.numGPU(fromOptions.getNumGPU())
+				.mainGPU(fromOptions.getMainGPU())
+				.lowVRAM(fromOptions.getLowVRAM())
+				.vocabOnly(fromOptions.getVocabOnly())
+				.useMMap(fromOptions.getUseMMap())
+				.useMLock(fromOptions.getUseMLock())
+				.numThread(fromOptions.getNumThread())
 				.build();
 	}
 
@@ -135,6 +227,78 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 	public void setTruncate(Boolean truncate) {
 		this.truncate = truncate;
+	}
+
+	public Boolean getUseNUMA() {
+		return this.useNUMA;
+	}
+
+	public void setUseNUMA(Boolean useNUMA) {
+		this.useNUMA = useNUMA;
+	}
+
+	public Integer getNumBatch() {
+		return this.numBatch;
+	}
+
+	public void setNumBatch(Integer numBatch) {
+		this.numBatch = numBatch;
+	}
+
+	public Integer getNumGPU() {
+		return this.numGPU;
+	}
+
+	public void setNumGPU(Integer numGPU) {
+		this.numGPU = numGPU;
+	}
+
+	public Integer getMainGPU() {
+		return this.mainGPU;
+	}
+
+	public void setMainGPU(Integer mainGPU) {
+		this.mainGPU = mainGPU;
+	}
+
+	public Boolean getLowVRAM() {
+		return this.lowVRAM;
+	}
+
+	public void setLowVRAM(Boolean lowVRAM) {
+		this.lowVRAM = lowVRAM;
+	}
+
+	public Boolean getVocabOnly() {
+		return this.vocabOnly;
+	}
+
+	public void setVocabOnly(Boolean vocabOnly) {
+		this.vocabOnly = vocabOnly;
+	}
+
+	public Boolean getUseMMap() {
+		return this.useMMap;
+	}
+
+	public void setUseMMap(Boolean useMMap) {
+		this.useMMap = useMMap;
+	}
+
+	public Boolean getUseMLock() {
+		return this.useMLock;
+	}
+
+	public void setUseMLock(Boolean useMLock) {
+		this.useMLock = useMLock;
+	}
+
+	public Integer getNumThread() {
+		return this.numThread;
+	}
+
+	public void setNumThread(Integer numThread) {
+		this.numThread = numThread;
 	}
 
 	@Override
@@ -195,6 +359,51 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder truncate(Boolean truncate) {
 			this.options.truncate = truncate;
+			return this;
+		}
+
+		public Builder useNUMA(Boolean useNUMA) {
+			this.options.useNUMA = useNUMA;
+			return this;
+		}
+
+		public Builder numBatch(Integer numBatch) {
+			this.options.numBatch = numBatch;
+			return this;
+		}
+
+		public Builder numGPU(Integer numGPU) {
+			this.options.numGPU = numGPU;
+			return this;
+		}
+
+		public Builder mainGPU(Integer mainGPU) {
+			this.options.mainGPU = mainGPU;
+			return this;
+		}
+
+		public Builder lowVRAM(Boolean lowVRAM) {
+			this.options.lowVRAM = lowVRAM;
+			return this;
+		}
+
+		public Builder vocabOnly(Boolean vocabOnly) {
+			this.options.vocabOnly = vocabOnly;
+			return this;
+		}
+
+		public Builder useMMap(Boolean useMMap) {
+			this.options.useMMap = useMMap;
+			return this;
+		}
+
+		public Builder useMLock(Boolean useMLock) {
+			this.options.useMLock = useMLock;
+			return this;
+		}
+
+		public Builder numThread(Integer numThread) {
+			this.options.numThread = numThread;
 			return this;
 		}
 

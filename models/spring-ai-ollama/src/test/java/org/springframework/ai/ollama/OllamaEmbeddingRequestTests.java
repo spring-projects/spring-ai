@@ -43,7 +43,8 @@ public class OllamaEmbeddingRequestTests {
 	public void setUp() {
 		this.embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").build())
+			.defaultOptions(
+					OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").mainGPU(11).useMMap(true).numGPU(1).build())
 			.build();
 	}
 
