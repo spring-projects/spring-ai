@@ -19,11 +19,11 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.ai.chat.prompt.Prompt;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
