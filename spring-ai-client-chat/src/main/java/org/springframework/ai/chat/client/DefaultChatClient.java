@@ -662,7 +662,7 @@ public class DefaultChatClient implements ChatClient {
 		/**
 		 * @deprecated in favor of the other constructor.
 		 */
-		@Deprecated
+		@Deprecated(since = "1.1.0", forRemoval = true)
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
 				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,

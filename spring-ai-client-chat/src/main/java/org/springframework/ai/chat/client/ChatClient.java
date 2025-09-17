@@ -70,7 +70,7 @@ public interface ChatClient {
 	 * @deprecated in favor of
 	 * {@link #create(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
 	 */
-	@Deprecated
+	@Deprecated(since = "1.1.0", forRemoval = true)
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
 		return create(chatModel, observationRegistry, chatClientObservationConvention, null);
@@ -93,7 +93,7 @@ public interface ChatClient {
 	 * @deprecated in favor of
 	 * {@link #builder(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
 	 */
-	@Deprecated
+	@Deprecated(since = "1.1.0", forRemoval = true)
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
 		return builder(chatModel, observationRegistry, chatClientObservationConvention, null);

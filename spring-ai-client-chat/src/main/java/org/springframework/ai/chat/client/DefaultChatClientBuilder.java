@@ -65,7 +65,7 @@ public class DefaultChatClientBuilder implements Builder {
 	 * @deprecated in favor of
 	 * {@link #DefaultChatClientBuilder(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
 	 */
-	@Deprecated
+	@Deprecated(since = "1.1.0", forRemoval = true)
 	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
 		this(chatModel, observationRegistry, chatClientObservationConvention, null);
