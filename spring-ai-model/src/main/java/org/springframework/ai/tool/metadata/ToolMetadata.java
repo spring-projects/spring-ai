@@ -33,7 +33,7 @@ public interface ToolMetadata {
 	 * Whether the tool result should be returned directly or passed back to the model.
 	 */
 	default boolean returnDirect() {
-		return false;
+		return true;
 	}
 
 	/**
