@@ -51,7 +51,7 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		
+
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test tool description");
 
