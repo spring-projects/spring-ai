@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +36,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
+import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -71,6 +73,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link DefaultChatClient}.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
 class DefaultChatClientTests {
 
@@ -842,6 +845,39 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenSimplePromptThenSetRequestAndResponseOnObservationContext() {
+		ChatModel chatModel = mock(ChatModel.class);
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null).build();
+		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt("my question");
+		DefaultChatClient.DefaultCallResponseSpec spec = (DefaultChatClient.DefaultCallResponseSpec) chatClientRequestSpec
+			.call();
+
+		ChatClientResponse chatClientResponse = spec.chatClientResponse();
+		assertThat(chatClientResponse).isNotNull();
+
+		ChatResponse chatResponse = chatClientResponse.chatResponse();
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
+
+		Prompt actualPrompt = promptCaptor.getValue();
+		assertThat(actualPrompt.getInstructions()).hasSize(1);
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
+
+		assertThat(observationRegistry).hasObservationWithNameEqualTo("spring.ai.chat.client")
+			.that()
+			.isInstanceOfSatisfying(ChatClientObservationContext.class, context -> {
+				assertThat(context.getRequest().prompt()).isEqualTo(actualPrompt);
+				assertThat(context.getResponse()).isSameAs(chatClientResponse);
+			});
+	}
+
+	@Test
 	void whenSimplePromptThenChatResponse() {
 		ChatModel chatModel = mock(ChatModel.class);
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
@@ -1352,6 +1388,40 @@ class DefaultChatClientTests {
 		Prompt actualPrompt = promptCaptor.getValue();
 		assertThat(actualPrompt.getInstructions()).hasSize(1);
 		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
+	}
+
+	@Test
+	void whenSimplePromptThenSetFluxResponseOnObservationContext() {
+		ChatModel chatModel = mock(ChatModel.class);
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.stream(promptCaptor.capture()))
+			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null).build();
+		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt("my question");
+		DefaultChatClient.DefaultStreamResponseSpec spec = (DefaultChatClient.DefaultStreamResponseSpec) chatClientRequestSpec
+			.stream();
+
+		ChatClientResponse chatClientResponse = spec.chatClientResponse().blockLast();
+		assertThat(chatClientResponse).isNotNull();
+
+		ChatResponse chatResponse = chatClientResponse.chatResponse();
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
+
+		Prompt actualPrompt = promptCaptor.getValue();
+		assertThat(actualPrompt.getInstructions()).hasSize(1);
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
+
+		assertThat(observationRegistry).hasObservationWithNameEqualTo("spring.ai.chat.client")
+			.that()
+			.isInstanceOfSatisfying(ChatClientObservationContext.class, context -> {
+				assertThat(context.getRequest().prompt()).isEqualTo(actualPrompt);
+				assertThat(context.getResponse().chatResponse().getResults())
+					.isEqualTo(chatClientResponse.chatResponse().getResults());
+			});
 	}
 
 	@Test
