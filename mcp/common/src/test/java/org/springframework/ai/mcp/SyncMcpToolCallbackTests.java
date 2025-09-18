@@ -58,7 +58,6 @@ class SyncMcpToolCallbackTests {
 		when(this.tool.description()).thenReturn("Test tool description");
 		when(this.tool.annotations()).thenReturn(toolAnnotations);
 
-
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
 			.tool(this.tool)

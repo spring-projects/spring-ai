@@ -231,8 +231,8 @@ public final class McpToolUtils {
 	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
 		boolean returnDirect = Optional.ofNullable(toolCallback.getToolMetadata())
-				.map(ToolMetadata::returnDirect)
-				.orElse(false);
+			.map(ToolMetadata::returnDirect)
+			.orElse(false);
 		McpSchema.ToolAnnotations toolAnnotations = new McpSchema.ToolAnnotations(null, null, null, null, null,
 				returnDirect);
 

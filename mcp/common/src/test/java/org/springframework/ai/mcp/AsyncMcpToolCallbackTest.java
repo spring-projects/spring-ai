@@ -49,27 +49,6 @@ class AsyncMcpToolCallbackTest {
 	private McpSchema.Tool tool;
 
 	@Test
-	void getToolDefinitionShouldReturnCorrectDefinition() {
-
-		var clientInfo = new McpSchema.Implementation("testClient", "1.0.0");
-		var toolAnnotations = new McpSchema.ToolAnnotations(null, false, false, false, false, true);
-
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
-		when(this.tool.name()).thenReturn("testTool");
-		when(this.tool.description()).thenReturn("Test tool description");
-		when(this.tool.annotations()).thenReturn(toolAnnotations);
-
-		AsyncMcpToolCallback callback = new AsyncMcpToolCallback(this.mcpClient, this.tool);
-
-		var toolDefinition = callback.getToolDefinition();
-		var toolMetadata = callback.getToolMetadata();
-
-		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "_testTool");
-		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
-		assertThat(toolMetadata.returnDirect()).isEqualTo(true);
-	}
-
-	@Test
 	void callShouldThrowOnError() {
 		when(this.tool.name()).thenReturn("testTool");
 		var callToolResult = McpSchema.CallToolResult.builder().addTextContent("Some error data").isError(true).build();
@@ -225,6 +204,8 @@ class AsyncMcpToolCallbackTest {
 		when(this.tool.description()).thenReturn("Test tool description");
 		var jsonSchema = mock(McpSchema.JsonSchema.class);
 		when(this.tool.inputSchema()).thenReturn(jsonSchema);
+		var toolAnnotations = new McpSchema.ToolAnnotations(null, false, false, false, false, true);
+		when(this.tool.annotations()).thenReturn(toolAnnotations);
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder()
@@ -234,11 +215,13 @@ class AsyncMcpToolCallbackTest {
 			.build();
 
 		ToolDefinition definition = callback.getToolDefinition();
+		var toolMetadata = callback.getToolMetadata();
 
 		// Assert
 		assertThat(definition.name()).isEqualTo("prefix_testTool");
 		assertThat(definition.description()).isEqualTo("Test tool description");
 		assertThat(definition.inputSchema()).isNotNull();
+		assertThat(toolMetadata.returnDirect()).isEqualTo(true);
 	}
 
 	@Test
