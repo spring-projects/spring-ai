@@ -25,6 +25,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * Unit tests for {@link ToolExecutionResult}.
@@ -78,6 +79,112 @@ class ToolExecutionResultTests {
 		assertThat((String) generations.get(1).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
 			.isEqualTo("news");
 		assertThat(generations.get(1).getMetadata().getFinishReason()).isEqualTo(ToolExecutionResult.FINISH_REASON);
+	}
+
+	@Test
+	void whenEmptyConversationHistoryThenThrowsException() {
+		var toolExecutionResult = ToolExecutionResult.builder().conversationHistory(List.of()).build();
+
+		assertThatThrownBy(() -> ToolExecutionResult.buildGenerations(toolExecutionResult))
+			.isInstanceOf(ArrayIndexOutOfBoundsException.class);
+	}
+
+	@Test
+	void whenToolResponseWithEmptyResponseListThenEmptyGenerations() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(
+					List.of(new AssistantMessage("Processing request"), new ToolResponseMessage(List.of())))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).isEmpty();
+	}
+
+	@Test
+	void whenToolResponseWithNullContentThenGenerationWithNullText() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(
+					List.of(new ToolResponseMessage(List.of(new ToolResponseMessage.ToolResponse("1", "tool", null)))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isNull();
+	}
+
+	@Test
+	void whenToolResponseWithEmptyStringContentThenGenerationWithEmptyText() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(
+					List.of(new ToolResponseMessage(List.of(new ToolResponseMessage.ToolResponse("1", "tool", "")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isEmpty();
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("tool");
+	}
+
+	@Test
+	void whenBuilderCalledWithoutConversationHistoryThenThrowsException() {
+		var toolExecutionResult = ToolExecutionResult.builder().build();
+
+		assertThatThrownBy(() -> ToolExecutionResult.buildGenerations(toolExecutionResult))
+			.isInstanceOf(ArrayIndexOutOfBoundsException.class);
+
+		assertThat(toolExecutionResult.conversationHistory()).isNotNull();
+		assertThat(toolExecutionResult.conversationHistory()).isEmpty();
+	}
+
+	@Test
+	void whenMultipleToolResponseMessagesOnlyLastOneIsProcessed() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new AssistantMessage("First response"),
+					new ToolResponseMessage(
+							List.of(new ToolResponseMessage.ToolResponse("1", "old_tool", "Old response"))),
+					new AssistantMessage("Second response"),
+					new ToolResponseMessage(
+							List.of(new ToolResponseMessage.ToolResponse("2", "new_tool", "New response")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isEqualTo("New response");
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("new_tool");
+	}
+
+	@Test
+	void whenToolResponseWithEmptyToolNameThenMetadataContainsEmptyString() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new ToolResponseMessage(
+					List.of(new ToolResponseMessage.ToolResponse("1", "", "Response content")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME)).isEmpty();
+	}
+
+	@Test
+	void whenToolResponseWithNullToolIdThenGenerationStillCreated() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new ToolResponseMessage(
+					List.of(new ToolResponseMessage.ToolResponse(null, "tool", "Response content")))))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isEqualTo("Response content");
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("tool");
 	}
 
 }

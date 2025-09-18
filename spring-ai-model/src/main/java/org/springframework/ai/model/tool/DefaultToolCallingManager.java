@@ -46,6 +46,7 @@ import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Default implementation of {@link ToolCallingManager}.
@@ -163,8 +164,11 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
 			AssistantMessage assistantMessage) {
 		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-		messageHistory.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-				assistantMessage.getToolCalls()));
+		messageHistory.add(AssistantMessage.builder()
+			.content(assistantMessage.getText())
+			.properties(assistantMessage.getMetadata())
+			.toolCalls(assistantMessage.getToolCalls())
+			.build());
 		return messageHistory;
 	}
 
@@ -189,6 +193,17 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			String toolName = toolCall.name();
 			String toolInputArguments = toolCall.arguments();
 
+			// Handle the possible null parameter situation in streaming mode.
+			final String finalToolInputArguments;
+			if (!StringUtils.hasText(toolInputArguments)) {
+				logger.warn("Tool call arguments are null or empty for tool: {}. Using empty JSON object as default.",
+						toolName);
+				finalToolInputArguments = "{}";
+			}
+			else {
+				finalToolInputArguments = toolInputArguments;
+			}
+
 			ToolCallback toolCallback = toolCallbacks.stream()
 				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
 				.findFirst()
@@ -208,7 +223,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
 				.toolMetadata(toolCallback.getToolMetadata())
-				.toolCallArguments(toolInputArguments)
+				.toolCallArguments(finalToolInputArguments)
 				.build();
 
 			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
@@ -217,7 +232,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.observe(() -> {
 					String toolResult;
 					try {
-						toolResult = toolCallback.call(toolInputArguments, toolContext);
+						toolResult = toolCallback.call(finalToolInputArguments, toolContext);
 					}
 					catch (ToolExecutionException ex) {
 						toolResult = this.toolExecutionExceptionProcessor.process(ex);

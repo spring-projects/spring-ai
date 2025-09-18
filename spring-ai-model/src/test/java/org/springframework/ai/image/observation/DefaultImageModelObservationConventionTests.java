@@ -120,6 +120,83 @@ class DefaultImageModelObservationConventionTests {
 					HighCardinalityKeyNames.REQUEST_IMAGE_STYLE.asString());
 	}
 
+	@Test
+	void shouldHandleNullModel() {
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(new ImagePrompt("test prompt"))
+			.provider("test-provider")
+			.build();
+
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("image");
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(AiObservationAttributes.REQUEST_MODEL.value(), KeyValue.NONE_VALUE));
+	}
+
+	@Test
+	void shouldHandleEmptyModel() {
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(generateImagePrompt(ImageOptionsBuilder.builder().model("").build()))
+			.provider("test-provider")
+			.build();
+
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("image");
+	}
+
+	@Test
+	void shouldHandleBlankModel() {
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(generateImagePrompt(ImageOptionsBuilder.builder().model("   ").build()))
+			.provider("test-provider")
+			.build();
+
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("image");
+	}
+
+	@Test
+	void shouldHandleEmptyStyle() {
+		var imageOptions = ImageOptionsBuilder.builder().model("test-model").style("").build();
+
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(generateImagePrompt(imageOptions))
+			.provider("test-provider")
+			.build();
+
+		// Empty style should not be included
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_IMAGE_STYLE.asString());
+	}
+
+	@Test
+	void shouldHandleEmptyResponseFormat() {
+		var imageOptions = ImageOptionsBuilder.builder().model("test-model").responseFormat("").build();
+
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(generateImagePrompt(imageOptions))
+			.provider("test-provider")
+			.build();
+
+		// Empty response format should not be included
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString());
+	}
+
+	@Test
+	void shouldHandleImagePromptWithoutOptions() {
+		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(new ImagePrompt("simple prompt"))
+			.provider("simple-provider")
+			.build();
+
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("image");
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(AiObservationAttributes.REQUEST_MODEL.value(), KeyValue.NONE_VALUE));
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).isEmpty();
+	}
+
 	private ImagePrompt generateImagePrompt(ImageOptions imageOptions) {
 		return new ImagePrompt("here comes the sun", imageOptions);
 	}

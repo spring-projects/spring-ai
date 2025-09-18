@@ -142,7 +142,7 @@ public final class DefaultContentFormatter implements ContentFormatter {
 		return new HashMap<>(metadata.entrySet()
 			.stream()
 			.filter(e -> usableMetadataKeys.contains(e.getKey()))
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 	}
 
 	public String getMetadataTemplate() {

@@ -31,6 +31,7 @@ import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
@@ -268,7 +269,7 @@ public class BedrockNovaChatClientIT {
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
 				.region(Region.US_EAST_1)
 				.timeout(Duration.ofSeconds(120))
-				.defaultOptions(ToolCallingChatOptions.builder().model(modelId).build())
+				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
 
@@ -283,7 +284,7 @@ public class BedrockNovaChatClientIT {
 	public static class DummyWeatherForecastTools {
 
 		@Tool(description = "Get the current weather forecast in Amsterdam")
-		String getCurrentDateTime() {
+		String getCurrentWeather() {
 			return "Weather is hot and sunny with a temperature of 20 degrees";
 		}
 
