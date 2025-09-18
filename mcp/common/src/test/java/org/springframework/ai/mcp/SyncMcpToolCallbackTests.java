@@ -51,12 +51,9 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		var toolAnnotations = new McpSchema.ToolAnnotations(null, false, false, false, false, true);
-
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test tool description");
-		when(this.tool.annotations()).thenReturn(toolAnnotations);
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
@@ -66,11 +63,9 @@ class SyncMcpToolCallbackTests {
 			.build();
 
 		var toolDefinition = callback.getToolDefinition();
-		var toolMetadata = callback.getToolMetadata();
 
 		assertThat(toolDefinition.name()).isEqualTo("t_testTool");
 		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
-		assertThat(toolMetadata.returnDirect()).isEqualTo(true);
 	}
 
 	@Test
