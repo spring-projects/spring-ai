@@ -25,8 +25,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +42,7 @@ import static org.mockito.Mockito.mock;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
 @ExtendWith(MockitoExtension.class)
 class ChatClientObservationContextTests {
@@ -182,6 +187,75 @@ class ChatClientObservationContextTests {
 		// Should return either empty list or null when no advisors specified
 		assertThat(observationContext.getAdvisors()).satisfiesAnyOf(advisors -> assertThat(advisors).isNull(),
 				advisors -> assertThat(advisors).isEmpty());
+	}
+
+	@Test
+	void whenSetChatClientResponseThenReturnResponseText() {
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
+			.build();
+		var response = ChatClientResponse.builder()
+			.chatResponse(ChatResponse.builder()
+				.generations(List.of(new Generation(new AssistantMessage("Test message"))))
+				.build())
+			.build();
+
+		observationContext.setResponse(response);
+		assertThat(observationContext.getResponseText()).isEqualTo("Test message");
+	}
+
+	@Test
+	void whenSetChatClientResponseWithNullChatResponseThenReturnNull() {
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
+			.build();
+		var nullResponse = ChatClientResponse.builder().chatResponse(null).build();
+
+		observationContext.setResponse(nullResponse);
+		assertThat(observationContext.getResponseText()).isNull();
+	}
+
+	@Test
+	void whenAppendChatClientResponseThenReturnResponseText() {
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
+			.build();
+		var response1 = ChatClientResponse.builder()
+			.chatResponse(ChatResponse.builder()
+				.generations(List.of(new Generation(new AssistantMessage("Test message "))))
+				.build())
+			.build();
+		var response2 = ChatClientResponse.builder()
+			.chatResponse(ChatResponse.builder()
+				.generations(List.of(new Generation(new AssistantMessage("and another test message"))))
+				.build())
+			.build();
+
+		observationContext.appendResponse(response1);
+		assertThat(observationContext.getResponseText()).isEqualTo("Test message ");
+
+		observationContext.appendResponse(response2);
+		assertThat(observationContext.getResponseText()).isEqualTo("Test message and another test message");
+	}
+
+	@Test
+	void whenAppendChatClientResponseWithNullChatResponseThenReturnNull() {
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
+			.build();
+		var nullResponse = ChatClientResponse.builder().chatResponse(null).build();
+		var response = ChatClientResponse.builder()
+			.chatResponse(ChatResponse.builder()
+				.generations(List.of(new Generation(new AssistantMessage("Test message "))))
+				.build())
+			.build();
+
+		observationContext.appendResponse(nullResponse);
+		assertThat(observationContext.getResponseText()).isNull();
+		observationContext.appendResponse(response);
+		assertThat(observationContext.getResponseText()).isEqualTo("Test message ");
+		observationContext.appendResponse(nullResponse);
+		assertThat(observationContext.getResponseText()).isEqualTo("Test message ");
 	}
 
 }
