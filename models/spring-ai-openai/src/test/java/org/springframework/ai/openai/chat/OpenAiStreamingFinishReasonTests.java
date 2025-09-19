@@ -124,7 +124,8 @@ public class OpenAiStreamingFinishReasonTests {
 						"index": 0,
 						"delta": {
 							"role": "assistant",
-							"content": ""
+							"content": "",
+							"reasoning_content": ""
 						},
 						"finish_reason": ""
 					}]
@@ -161,7 +162,8 @@ public class OpenAiStreamingFinishReasonTests {
 						"index": 0,
 						"delta": {
 							"role": "assistant",
-							"content": "Hello"
+							"content": "Hello",
+							"reasoning_content": "test"
 						},
 						"finish_reason": null
 					}]
@@ -176,6 +178,7 @@ public class OpenAiStreamingFinishReasonTests {
 		var choice = chunk.choices().get(0);
 		assertThat(choice.finishReason()).isNull();
 		assertThat(choice.delta().content()).isEqualTo("Hello");
+		assertThat(choice.delta().reasoningContent()).isEqualTo("test");
 	}
 
 	@Test

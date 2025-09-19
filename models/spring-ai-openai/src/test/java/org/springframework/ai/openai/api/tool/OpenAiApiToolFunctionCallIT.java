@@ -130,7 +130,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 				// extend conversation with function response.
 				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
-						functionName, toolCall.id(), null, null, null, null));
+						functionName, toolCall.id(), null, null, null, null, null));
 			}
 		}
 

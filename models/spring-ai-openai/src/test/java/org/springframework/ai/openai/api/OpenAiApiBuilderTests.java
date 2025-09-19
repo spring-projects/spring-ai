@@ -412,6 +412,7 @@ public class OpenAiApiBuilderTests {
 									"role": "assistant",
 									"content": "Hello world"
 									},
+									"reasoning_content": "test",
 									"finish_reason": "stop"
 								}
 							],
