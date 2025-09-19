@@ -54,7 +54,7 @@ public class McpServerAnnotationScannerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ServerAnnotatedMethodBeanPostProcessor serverAnnotatedMethodBeanPostProcessor(
+	public static ServerAnnotatedMethodBeanPostProcessor serverAnnotatedMethodBeanPostProcessor(
 			ServerMcpAnnotatedBeans serverMcpAnnotatedBeans, McpServerAnnotationScannerProperties properties) {
 		return new ServerAnnotatedMethodBeanPostProcessor(serverMcpAnnotatedBeans, SERVER_MCP_ANNOTATIONS);
 	}
