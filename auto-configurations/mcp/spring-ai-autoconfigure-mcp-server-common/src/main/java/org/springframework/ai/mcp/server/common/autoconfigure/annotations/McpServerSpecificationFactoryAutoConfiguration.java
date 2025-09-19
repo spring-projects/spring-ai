@@ -54,8 +54,10 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 		@Bean
 		public List<McpServerFeatures.SyncResourceSpecification> resourceSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
+
+			List<McpServerFeatures.SyncResourceSpecification> syncResourceSpecifications = SyncMcpAnnotationProviders
 				.resourceSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+			return syncResourceSpecifications;
 		}
 
 		@Bean
@@ -75,8 +77,10 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 		@Bean
 		public List<McpServerFeatures.SyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.toolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+			List<McpServerFeatures.SyncToolSpecification> syncToolSpecifications = SyncMcpAnnotationProviders
+				.toolSpecifications(beansByAnnotation);
+			return syncToolSpecifications;
 		}
 
 	}
