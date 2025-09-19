@@ -322,7 +322,7 @@
 		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
 
-		<couchbase.version>3.8.0</couchbase.version>
+		<couchbase.version>3.9.1</couchbase.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
 
 		<!-- testing dependencies -->
