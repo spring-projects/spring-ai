@@ -104,9 +104,22 @@ public class TokenTextSplitterTest {
 		assertThat(chunks.get(4).getText()).isEqualTo("It isn’t the lack of an exit, but");
 		assertThat(chunks.get(5).getText()).isEqualTo("the abundance of exits that is so disorienting");
 
-		// Verify that the same, merged metadata is copied to all chunks.
-		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());
-		assertThat(chunks.get(2).getMetadata()).isEqualTo(chunks.get(3).getMetadata());
+		// Verify that the original metadata is copied to all chunks (including
+		// chunk-specific fields)
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(1).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(3).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
+
+		// Verify chunk indices are correct
+		assertThat(chunks.get(0).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(1).getMetadata().get("chunk_index")).isEqualTo(1);
+		assertThat(chunks.get(2).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(3).getMetadata().get("chunk_index")).isEqualTo(1);
 
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
 		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");

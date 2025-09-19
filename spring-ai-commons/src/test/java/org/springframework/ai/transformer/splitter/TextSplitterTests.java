@@ -82,7 +82,7 @@ public class TextSplitterTests {
 		assertThat(chunks.get(3).getText())
 			.isEqualTo("choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.");
 
-		// Verify that the original metadata is copied to all chunks (excluding
+		// Verify that the original metadata is copied to all chunks (including
 		// chunk-specific fields)
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
 				"total_chunks");
