@@ -16,7 +16,15 @@
 
 package org.springframework.ai.aot;
 
-import org.springframework.ai.chat.messages.*;
+import java.util.Set;
+
+import org.springframework.ai.chat.messages.AbstractMessage;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Content;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.tool.ToolCallback;
@@ -24,12 +32,9 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.aot.hint.TypeReference;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
-
-import java.util.Set;
 
 public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -45,8 +50,9 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 		for (var c : chatTypes) {
 			hints.reflection().registerType(c, memberCategories);
 			var innerClassesFor = AiRuntimeHints.findInnerClassesFor(c);
-			for (var cc : innerClassesFor)
+			for (var cc : innerClassesFor) {
 				hints.reflection().registerType(cc, memberCategories);
+			}
 		}
 
 		for (var r : Set.of("embedding/embedding-model-dimensions.properties")) {
