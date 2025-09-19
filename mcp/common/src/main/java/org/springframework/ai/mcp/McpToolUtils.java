@@ -40,6 +40,7 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -63,6 +64,7 @@ import org.springframework.util.MimeType;
  * </ul>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public final class McpToolUtils {
 
@@ -228,12 +230,18 @@ public final class McpToolUtils {
 
 	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
+		boolean returnDirect = Optional.ofNullable(toolCallback.getToolMetadata())
+			.map(ToolMetadata::returnDirect)
+			.orElse(false);
+		McpSchema.ToolAnnotations toolAnnotations = new McpSchema.ToolAnnotations(null, null, null, null, null,
+				returnDirect);
 
 		var tool = McpSchema.Tool.builder()
 			.name(toolCallback.getToolDefinition().name())
 			.description(toolCallback.getToolDefinition().description())
 			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
 					McpSchema.JsonSchema.class))
+			.annotations(toolAnnotations)
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
