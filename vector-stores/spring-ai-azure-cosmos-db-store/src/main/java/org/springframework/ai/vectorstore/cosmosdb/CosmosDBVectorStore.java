@@ -128,31 +128,27 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			logger.error("Error creating database: {}", e.getMessage());
 		}
 
-		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
-				this.partitionKeyPath);
+		initializeContainer();
 	}
 
 	public static Builder builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
 		return new Builder(cosmosClient, embeddingModel);
 	}
 
-	private void initializeContainer(String containerName, String databaseName, int vectorStoreThroughput,
-			long vectorDimensions, String partitionKeyPath) {
+	private void initializeContainer() {
 
 		// Set defaults if not provided
 		if (this.vectorStoreThroughput == 0) {
 			this.vectorStoreThroughput = 400;
-			vectorStoreThroughput = this.vectorStoreThroughput;
 		}
 		if (this.partitionKeyPath == null) {
 			this.partitionKeyPath = "/id";
-			partitionKeyPath = this.partitionKeyPath;
 		}
 
 		// handle hierarchical partition key
 		PartitionKeyDefinition subPartitionKeyDefinition = new PartitionKeyDefinition();
 		List<String> pathsFromCommaSeparatedList = new ArrayList<>();
-		String[] subPartitionKeyPaths = partitionKeyPath.split(",");
+		String[] subPartitionKeyPaths = this.partitionKeyPath.split(",");
 		Collections.addAll(pathsFromCommaSeparatedList, subPartitionKeyPaths);
 		if (subPartitionKeyPaths.length > 1) {
 			subPartitionKeyDefinition.setPaths(pathsFromCommaSeparatedList);
