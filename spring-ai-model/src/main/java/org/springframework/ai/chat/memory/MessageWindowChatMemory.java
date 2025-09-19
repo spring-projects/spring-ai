@@ -77,6 +77,19 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		this.chatMemoryRepository.deleteByConversationId(conversationId);
 	}
 
+	/**
+	 * Remove a specific message and its subsequent assistant response from the
+	 * conversation memory. This is used when a user message is updated to clean up the
+	 * old message pair.
+	 * @param conversationId the conversation ID
+	 * @param messageId the unique message ID to remove
+	 */
+	public void removeMessageAndResponse(String conversationId, String messageId) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		Assert.hasText(messageId, "messageId cannot be null or empty");
+		this.chatMemoryRepository.deleteMessageAndResponse(conversationId, messageId);
+	}
+
 	private List<Message> process(List<Message> memoryMessages, List<Message> newMessages) {
 		List<Message> processedMessages = new ArrayList<>();
 
