@@ -47,8 +47,6 @@ public abstract class AbstractAnnotatedMethodBeanPostProcessor extends Annotated
 		Set<Class<? extends Annotation>> foundAnnotations = scan(beanClass);
 		// Register the bean if it has any of our target annotations
 		if (!foundAnnotations.isEmpty()) {
-			System.out.println("registering " + beanName + " for " + beanClass.getName() + " with annotations "
-					+ foundAnnotations.toString() + " in " + this.getClass().getName());
 			this.registry.addMcpAnnotatedBean(bean, foundAnnotations);
 		}
 
