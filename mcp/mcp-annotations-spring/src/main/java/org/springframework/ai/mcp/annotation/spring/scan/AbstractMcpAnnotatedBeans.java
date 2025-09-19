@@ -37,7 +37,6 @@ public abstract class AbstractMcpAnnotatedBeans {
 
 	public void addMcpAnnotatedBean(Object bean, Set<Class<? extends Annotation>> annotations) {
 		this.beansWithCustomAnnotations.add(bean);
-
 		annotations
 			.forEach(annotationType -> this.beansByAnnotation.computeIfAbsent(annotationType, k -> new ArrayList<>())
 				.add(bean));
