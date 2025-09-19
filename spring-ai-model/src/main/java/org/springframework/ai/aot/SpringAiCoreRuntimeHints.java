@@ -24,6 +24,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
+import org.springframework.aot.hint.TypeReference;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -34,22 +35,18 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
-		//
+
 		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ToolResponseMessage.class, Message.class,
-				AssistantMessage.ToolCall.class, MessageType.class, UserMessage.class, SystemMessage.class,
-				Content.class, MediaContent.class);
+				ToolCallback.class, ToolDefinition.class, AssistantMessage.ToolCall.class, MessageType.class,
+				UserMessage.class, SystemMessage.class, Content.class, MediaContent.class);
 
 		var memberCategories = MemberCategory.values();
+
 		for (var c : chatTypes) {
 			hints.reflection().registerType(c, memberCategories);
-			System.out.println("registering " + c);
-		}
-
-		// Register tool-related types for reflection
-		var toolTypes = Set.of(ToolCallback.class, ToolDefinition.class);
-		for (var c : toolTypes) {
-			hints.reflection().registerType(c, memberCategories);
-			System.out.println("registering " + c);
+			var innerClassesFor = AiRuntimeHints.findInnerClassesFor(c);
+			for (var cc : innerClassesFor)
+				hints.reflection().registerType(cc, memberCategories);
 		}
 
 		for (var r : Set.of("embedding/embedding-model-dimensions.properties")) {

@@ -154,7 +154,6 @@ public abstract class AiRuntimeHints {
 		return jsonTypes;
 	}
 
-
 	/**
 	 * Discovers all inner classes of a given class.
 	 * <p>
