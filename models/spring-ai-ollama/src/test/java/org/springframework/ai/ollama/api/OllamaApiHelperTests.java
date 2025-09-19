@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Tests for {@link OllamaApiHelper}
- * 
+ *
  * @author Sun Yuhan
  */
 @ExtendWith(MockitoExtension.class)
