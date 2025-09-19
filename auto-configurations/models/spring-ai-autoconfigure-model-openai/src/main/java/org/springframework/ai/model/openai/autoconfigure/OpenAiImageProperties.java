@@ -18,6 +18,7 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.ai.openai.api.OpenAiImageApi;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -33,7 +34,7 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.image";
 
-	public static final String DEFAULT_IMAGES_PATH = "v1/images/generations";
+	public static final String DEFAULT_IMAGES_PATH = OpenAiApiConstants.DEFAULT_IMAGES_PATH;
 
 	private String imagesPath = DEFAULT_IMAGES_PATH;
 

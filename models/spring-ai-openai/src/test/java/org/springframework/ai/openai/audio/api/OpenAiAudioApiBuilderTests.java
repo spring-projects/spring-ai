@@ -49,12 +49,19 @@ import static org.mockito.Mockito.mock;
 
 /**
  * @author Filip Hrisafov
+ * @author lambochen
  */
 class OpenAiAudioApiBuilderTests {
 
 	private static final ApiKey TEST_API_KEY = new SimpleApiKey("test-api-key");
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
+
+	private static final String TEST_AUDIO_SPEECH_PATH = "/test/audio/speech";
+
+	private static final String TEST_AUDIO_TRANSCRIPTION_PATH = "/test/audio/transcriptions";
+
+	private static final String TEST_AUDIO_TRANSLATION_PATH = "/test/audio/translations";
 
 	@Test
 	void testMinimalBuilder() {
@@ -74,6 +81,9 @@ class OpenAiAudioApiBuilderTests {
 		OpenAiAudioApi api = OpenAiAudioApi.builder()
 			.baseUrl(TEST_BASE_URL)
 			.apiKey(TEST_API_KEY)
+			.audioSpeechPath(TEST_AUDIO_SPEECH_PATH)
+			.audioTranscriptionPath(TEST_AUDIO_TRANSCRIPTION_PATH)
+			.audioTranslationPath(TEST_AUDIO_TRANSLATION_PATH)
 			.headers(headers)
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
@@ -98,6 +108,28 @@ class OpenAiAudioApiBuilderTests {
 		assertThatThrownBy(() -> OpenAiAudioApi.builder().baseUrl(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("baseUrl cannot be null or empty");
+	}
+
+	@Test
+	void testInvalidAudioSpeechPath() {
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().audioSpeechPath("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("audioSpeechPath cannot be null or empty");
+
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().audioSpeechPath(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("audioSpeechPath cannot be null or empty");
+	}
+
+	@Test
+	void testInvalidAudioTranscriptionPath() {
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().audioTranscriptionPath("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("audioTranscriptionPath cannot be null or empty");
+
+		assertThatThrownBy(() -> OpenAiAudioApi.builder().audioTranscriptionPath(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("audioTranscriptionPath cannot be null or empty");
 	}
 
 	@Test

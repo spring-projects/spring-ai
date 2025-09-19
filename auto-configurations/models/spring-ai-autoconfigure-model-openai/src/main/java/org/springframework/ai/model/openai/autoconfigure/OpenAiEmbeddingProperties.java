@@ -18,9 +18,13 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+/**
+ * @author lambochen
+ */
 @ConfigurationProperties(OpenAiEmbeddingProperties.CONFIG_PREFIX)
 public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
@@ -28,7 +32,7 @@ public class OpenAiEmbeddingProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = "text-embedding-ada-002";
 
-	public static final String DEFAULT_EMBEDDINGS_PATH = "/v1/embeddings";
+	public static final String DEFAULT_EMBEDDINGS_PATH = OpenAiApiConstants.DEFAULT_EMBEDDINGS_PATH;
 
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 

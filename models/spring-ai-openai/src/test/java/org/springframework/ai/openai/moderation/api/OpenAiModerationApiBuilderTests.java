@@ -55,6 +55,8 @@ class OpenAiModerationApiBuilderTests {
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
 
+	private static final String TEST_MODERATION_PATH = "/test/moderations";
+
 	@Test
 	void testMinimalBuilder() {
 		OpenAiModerationApi api = OpenAiModerationApi.builder().apiKey(TEST_API_KEY).build();
@@ -71,6 +73,7 @@ class OpenAiModerationApiBuilderTests {
 
 		OpenAiModerationApi api = OpenAiModerationApi.builder()
 			.baseUrl(TEST_BASE_URL)
+			.moderationPath(TEST_MODERATION_PATH)
 			.apiKey(TEST_API_KEY)
 			.headers(headers)
 			.restClientBuilder(restClientBuilder)
@@ -95,6 +98,17 @@ class OpenAiModerationApiBuilderTests {
 		assertThatThrownBy(() -> OpenAiModerationApi.builder().baseUrl(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("baseUrl cannot be null or empty");
+	}
+
+	@Test
+	void testInvalidModerationPath() {
+		assertThatThrownBy(() -> OpenAiModerationApi.builder().moderationPath("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("moderationPath cannot be null or empty");
+
+		assertThatThrownBy(() -> OpenAiModerationApi.builder().moderationPath(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("moderationPath cannot be null or empty");
 	}
 
 	@Test

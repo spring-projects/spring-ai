@@ -50,6 +50,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
  * @author Filip Hrisafov
+ * @author lambochen
  * @since 0.8.1
  */
 public class OpenAiAudioApi {
@@ -57,6 +58,12 @@ public class OpenAiAudioApi {
 	private final RestClient restClient;
 
 	private final WebClient webClient;
+
+	private final String audioSpeechPath;
+
+	private final String audioTranscriptionPath;
+
+	private final String audioTranslationPath;
 
 	/**
 	 * Create a new audio api.
@@ -70,6 +77,34 @@ public class OpenAiAudioApi {
 	public OpenAiAudioApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, apiKey, headers, OpenAiApiConstants.DEFAULT_AUDIO_SPEECH_PATH,
+				OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTION_PATH, OpenAiApiConstants.DEFAULT_AUDIO_TRANSLATION_PATH,
+				restClientBuilder, webClientBuilder, responseErrorHandler);
+	}
+
+	/**
+	 * Create a new audio api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 * @param audioSpeechPath Audio speech path.
+	 * @param audioTranscriptionPath Audio transcriptions path.
+	 * @param audioTranslationPath Audio translations path.
+	 */
+	public OpenAiAudioApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String audioSpeechPath,
+			String audioTranscriptionPath, String audioTranslationPath, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+		Assert.hasText(audioSpeechPath, "audioSpeechPath cannot be null or empty");
+		Assert.hasText(audioTranscriptionPath, "audioTranscriptionPath cannot be null or empty");
+		Assert.hasText(audioTranslationPath, "audioTranslationPath cannot be null or empty");
+
+		this.audioSpeechPath = audioSpeechPath;
+		this.audioTranscriptionPath = audioTranscriptionPath;
+		this.audioTranslationPath = audioTranslationPath;
 
 		Consumer<HttpHeaders> authHeaders = h -> h.addAll(headers);
 
@@ -106,7 +141,7 @@ public class OpenAiAudioApi {
 	 * @return Response entity containing the audio binary.
 	 */
 	public ResponseEntity<byte[]> createSpeech(SpeechRequest requestBody) {
-		return this.restClient.post().uri("/v1/audio/speech").body(requestBody).retrieve().toEntity(byte[].class);
+		return this.restClient.post().uri(this.audioSpeechPath).body(requestBody).retrieve().toEntity(byte[].class);
 	}
 
 	/**
@@ -123,7 +158,7 @@ public class OpenAiAudioApi {
 	public Flux<ResponseEntity<byte[]>> stream(SpeechRequest requestBody) {
 
 		return this.webClient.post()
-			.uri("/v1/audio/speech")
+			.uri(this.audioSpeechPath)
 			.body(Mono.just(requestBody), SpeechRequest.class)
 			.accept(MediaType.APPLICATION_OCTET_STREAM)
 			.exchangeToFlux(clientResponse -> {
@@ -173,7 +208,7 @@ public class OpenAiAudioApi {
 		}
 
 		return this.restClient.post()
-			.uri("/v1/audio/transcriptions")
+			.uri(this.audioTranscriptionPath)
 			.body(multipartBody)
 			.retrieve()
 			.toEntity(responseType);
@@ -213,7 +248,7 @@ public class OpenAiAudioApi {
 		multipartBody.add("temperature", requestBody.temperature());
 
 		return this.restClient.post()
-			.uri("/v1/audio/translations")
+			.uri(this.audioTranslationPath)
 			.body(multipartBody)
 			.retrieve()
 			.toEntity(responseType);
@@ -794,6 +829,12 @@ public class OpenAiAudioApi {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
+		private String audioSpeechPath = OpenAiApiConstants.DEFAULT_AUDIO_SPEECH_PATH;
+
+		private String audioTranscriptionPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTION_PATH;
+
+		private String audioTranslationPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSLATION_PATH;
+
 		private ApiKey apiKey;
 
 		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
@@ -807,6 +848,24 @@ public class OpenAiAudioApi {
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
 			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder audioSpeechPath(String audioSpeechPath) {
+			Assert.hasText(audioSpeechPath, "audioSpeechPath cannot be null or empty");
+			this.audioSpeechPath = audioSpeechPath;
+			return this;
+		}
+
+		public Builder audioTranscriptionPath(String audioTranscriptionPath) {
+			Assert.hasText(audioTranscriptionPath, "audioTranscriptionPath cannot be null or empty");
+			this.audioTranscriptionPath = audioTranscriptionPath;
+			return this;
+		}
+
+		public Builder audioTranslationPath(String audioTranslationPath) {
+			Assert.hasText(audioTranslationPath, "audioTranslationPath cannot be null or empty");
+			this.audioTranslationPath = audioTranslationPath;
 			return this;
 		}
 
@@ -848,7 +907,8 @@ public class OpenAiAudioApi {
 
 		public OpenAiAudioApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiAudioApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
+			return new OpenAiAudioApi(this.baseUrl, this.apiKey, this.headers, this.audioSpeechPath,
+					this.audioTranscriptionPath, this.audioTranslationPath, this.restClientBuilder,
 					this.webClientBuilder, this.responseErrorHandler);
 		}
 

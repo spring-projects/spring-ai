@@ -46,6 +46,7 @@ import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfig
  * @author Stefan Vassilev
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
@@ -70,6 +71,7 @@ public class OpenAiModerationAutoConfiguration {
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
 			.headers(resolved.headers())
+			.moderationPath(moderationProperties.getModerationPath())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.responseErrorHandler(responseErrorHandler)
 			.build();

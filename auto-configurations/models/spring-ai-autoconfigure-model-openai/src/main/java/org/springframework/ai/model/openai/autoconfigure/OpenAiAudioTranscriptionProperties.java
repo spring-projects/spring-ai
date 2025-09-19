@@ -18,9 +18,18 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
+/**
+ * Configuration properties for OpenAI audio transcription.
+ *
+ * Default values for required options are model = whisper-1, temperature = 0.7, and
+ * response format = text.
+ *
+ * @author lambochen
+ */
 @ConfigurationProperties(OpenAiAudioTranscriptionProperties.CONFIG_PREFIX)
 public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
@@ -31,6 +40,8 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
+
+	private String audioTranscriptionPath = OpenAiApiConstants.DEFAULT_AUDIO_TRANSCRIPTION_PATH;
 
 	@NestedConfigurationProperty
 	private OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
@@ -45,6 +56,14 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiAudioTranscriptionOptions options) {
 		this.options = options;
+	}
+
+	public String getAudioTranscriptionPath() {
+		return audioTranscriptionPath;
+	}
+
+	public void setAudioTranscriptionPath(String audioTranscriptionPath) {
+		this.audioTranscriptionPath = audioTranscriptionPath;
 	}
 
 }

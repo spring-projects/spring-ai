@@ -18,6 +18,7 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -30,6 +31,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * @author Ahmed Yousri
  * @author Stefan Vassilev
  * @author Jonghoon Park
+ * @author lambochen
  */
 @ConfigurationProperties(OpenAiAudioSpeechProperties.CONFIG_PREFIX)
 public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
@@ -43,6 +45,8 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 	private static final String VOICE = OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue();
 
 	private static final OpenAiAudioApi.SpeechRequest.AudioResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
+
+	private String audioSpeechPath = OpenAiApiConstants.DEFAULT_AUDIO_SPEECH_PATH;
 
 	@NestedConfigurationProperty
 	private OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
@@ -58,6 +62,14 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public void setOptions(OpenAiAudioSpeechOptions options) {
 		this.options = options;
+	}
+
+	public String getAudioSpeechPath() {
+		return audioSpeechPath;
+	}
+
+	public void setAudioSpeechPath(String audioSpeechPath) {
+		this.audioSpeechPath = audioSpeechPath;
 	}
 
 }
