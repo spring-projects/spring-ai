@@ -77,8 +77,12 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 		@Bean
 		public List<McpStatelessServerFeatures.SyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.statelessToolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+			System.out.println("MCPTool SyncToolSpecs: " + beansByAnnotation + ".");
+			List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications = SyncMcpAnnotationProviders
+				.statelessToolSpecifications(beansByAnnotation);
+			System.out.println("SyncToolSpecs: " + syncToolSpecifications + ".");
+			return syncToolSpecifications;
 		}
 
 	}
