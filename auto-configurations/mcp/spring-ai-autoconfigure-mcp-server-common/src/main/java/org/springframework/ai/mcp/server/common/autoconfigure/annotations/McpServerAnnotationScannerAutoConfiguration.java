@@ -16,10 +16,14 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 
+import java.lang.annotation.Annotation;
+import java.util.Set;
+
 import org.springaicommunity.mcp.annotation.McpComplete;
 import org.springaicommunity.mcp.annotation.McpPrompt;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpTool;
+
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
@@ -33,9 +37,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
-
-import java.lang.annotation.Annotation;
-import java.util.Set;
 
 /**
  * @author Christian Tzolov
@@ -51,15 +52,6 @@ public class McpServerAnnotationScannerAutoConfiguration {
 
 	private static final Set<Class<? extends Annotation>> SERVER_MCP_ANNOTATIONS = Set.of(McpTool.class,
 			McpResource.class, McpPrompt.class, McpComplete.class);
-
-	static class AnnotationHints implements RuntimeHintsRegistrar {
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-			SERVER_MCP_ANNOTATIONS.forEach(an -> hints.reflection().registerType(an, MemberCategory.values()));
-		}
-
-	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -98,6 +90,15 @@ public class McpServerAnnotationScannerAutoConfiguration {
 		public ServerAnnotatedMethodBeanPostProcessor(ServerMcpAnnotatedBeans serverMcpAnnotatedBeans,
 				Set<Class<? extends Annotation>> targetAnnotations) {
 			super(serverMcpAnnotatedBeans, targetAnnotations);
+		}
+
+	}
+
+	static class AnnotationHints implements RuntimeHintsRegistrar {
+
+		@Override
+		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+			SERVER_MCP_ANNOTATIONS.forEach(an -> hints.reflection().registerType(an, MemberCategory.values()));
 		}
 
 	}

@@ -27,8 +27,6 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.lang.Nullable;
 
-import static org.springframework.ai.aot.AiRuntimeHints.findInnerClassesFor;
-
 /**
  * Runtime hints registrar for Model Context Protocol (MCP) schema classes.
  * <p>
@@ -65,7 +63,6 @@ public class McpHints implements RuntimeHintsRegistrar {
 		var mcs = MemberCategory.values();
 
 		Set<TypeReference> typeReferences = AiRuntimeHints.findInnerClassesFor(McpSchema.class);
-		System.out.println("typeReferences: " + typeReferences + "(" + typeReferences.size() + ")");
 		for (var tr : typeReferences) {
 			hints.reflection().registerType(tr, mcs);
 		}
