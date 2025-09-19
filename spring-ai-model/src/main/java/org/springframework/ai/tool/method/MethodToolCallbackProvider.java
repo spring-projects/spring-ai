@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.ai.tool.support.ToolUtils;
@@ -55,11 +56,18 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	private final List<Object> toolObjects;
 
+	private final ToolCallResultConverter toolCallResultConverter;
+
 	private MethodToolCallbackProvider(List<Object> toolObjects) {
+		this(toolObjects, null);
+	}
+
+	private MethodToolCallbackProvider(List<Object> toolObjects, ToolCallResultConverter toolCallResultConverter) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
 		Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
 		assertToolAnnotatedMethodsPresent(toolObjects);
 		this.toolObjects = toolObjects;
+		this.toolCallResultConverter = toolCallResultConverter;
 		validateToolCallbacks(getToolCallbacks());
 	}
 
@@ -89,13 +97,17 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 				.filter(this::isToolAnnotatedMethod)
 				.filter(toolMethod -> !isFunctionalType(toolMethod))
 				.filter(ReflectionUtils.USER_DECLARED_METHODS::matches)
-				.map(toolMethod -> MethodToolCallback.builder()
-					.toolDefinition(ToolDefinitions.from(toolMethod))
-					.toolMetadata(ToolMetadata.from(toolMethod))
-					.toolMethod(toolMethod)
-					.toolObject(toolObject)
-					.toolCallResultConverter(ToolUtils.getToolCallResultConverter(toolMethod))
-					.build())
+				.map(toolMethod -> {
+					ToolCallResultConverter converter = this.toolCallResultConverter != null
+							? this.toolCallResultConverter : ToolUtils.getToolCallResultConverter(toolMethod);
+					return MethodToolCallback.builder()
+						.toolDefinition(ToolDefinitions.from(toolMethod))
+						.toolMetadata(ToolMetadata.from(toolMethod))
+						.toolMethod(toolMethod)
+						.toolObject(toolObject)
+						.toolCallResultConverter(converter)
+						.build();
+				})
 				.toArray(ToolCallback[]::new))
 			.flatMap(Stream::of)
 			.toArray(ToolCallback[]::new);
@@ -140,6 +152,8 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 		private List<Object> toolObjects;
 
+		private ToolCallResultConverter toolCallResultConverter;
+
 		private Builder() {
 		}
 
@@ -149,8 +163,20 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 			return this;
 		}
 
+		/**
+		 * Sets a custom {@link ToolCallResultConverter} to be used for all tools created
+		 * by this provider.
+		 * @param toolCallResultConverter the converter to use, or null to use the default
+		 * @return this builder
+		 * @since 1.0.0
+		 */
+		public Builder toolCallResultConverter(ToolCallResultConverter toolCallResultConverter) {
+			this.toolCallResultConverter = toolCallResultConverter;
+			return this;
+		}
+
 		public MethodToolCallbackProvider build() {
-			return new MethodToolCallbackProvider(this.toolObjects);
+			return new MethodToolCallbackProvider(this.toolObjects, this.toolCallResultConverter);
 		}
 
 	}

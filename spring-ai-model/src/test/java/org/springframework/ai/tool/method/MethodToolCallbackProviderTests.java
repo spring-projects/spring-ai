@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Unit tests for {@link MethodToolCallbackProvider}.
@@ -128,6 +129,30 @@ class MethodToolCallbackProviderTests {
 		ToolCallback[] toolCallbacks = provider.getToolCallbacks();
 		assertEquals(1, toolCallbacks.length);
 		assertInstanceOf(MethodToolCallback.class, toolCallbacks[0]);
+	}
+
+	@Test
+	void whenCustomToolCallResultConverterIsProvidedThenUsesIt() {
+		// Given a custom converter that prefixes results
+		ToolCallResultConverter customConverter = (result, returnType) -> "CUSTOM: " + result;
+
+		// When creating a provider with the custom converter
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new ToolWithAnnotations())
+			.toolCallResultConverter(customConverter)
+			.build();
+
+		// Then the callbacks should be created
+		ToolCallback[] callbacks = provider.getToolCallbacks();
+		assertNotNull(callbacks);
+		assertThat(callbacks.length).isEqualTo(1);
+
+		// And when calling the tool
+		String toolInput = "{\"text\":\"test\"}";
+		String result = callbacks[0].call(toolInput);
+
+		// Then the custom converter should be used
+		assertThat(result).startsWith("CUSTOM: ");
 	}
 
 	abstract class TestObjectClass<T> {
@@ -255,6 +280,15 @@ class MethodToolCallbackProviderTests {
 		@EnhanceTool
 		public Function<String, String> functionTool() {
 			return input -> "Function result: " + input;
+		}
+
+	}
+
+	static class ToolWithAnnotations {
+
+		@Tool(description = "Process text")
+		public String processText(String text) {
+			return "Processed: " + text;
 		}
 
 	}

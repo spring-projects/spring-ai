@@ -17,7 +17,9 @@
 package org.springframework.ai.support;
 
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.lang.Nullable;
 
 /**
  * Provides {@link ToolCallback} instances for tools defined in different sources.
@@ -31,7 +33,23 @@ public final class ToolCallbacks {
 	}
 
 	public static ToolCallback[] from(Object... sources) {
-		return MethodToolCallbackProvider.builder().toolObjects(sources).build().getToolCallbacks();
+		return from(null, sources);
+	}
+
+	/**
+	 * Creates {@link ToolCallback} instances from the provided sources using a custom
+	 * {@link ToolCallResultConverter}.
+	 * @param converter the converter to use for tool results, or null to use the default
+	 * @param sources the tool objects containing @Tool annotated methods
+	 * @return an array of ToolCallback instances
+	 * @since 1.0.0
+	 */
+	public static ToolCallback[] from(@Nullable ToolCallResultConverter converter, Object... sources) {
+		return MethodToolCallbackProvider.builder()
+			.toolObjects(sources)
+			.toolCallResultConverter(converter)
+			.build()
+			.getToolCallbacks();
 	}
 
 }

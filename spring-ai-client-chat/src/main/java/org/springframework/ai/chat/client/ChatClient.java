@@ -307,6 +307,22 @@ public interface ChatClient {
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
 
+		/**
+		 * Sets a default
+		 * {@link org.springframework.ai.tool.execution.ToolCallResultConverter} to be
+		 * used for all tools created via the {@code tools()} method.
+		 * <p>
+		 * This converter will be used to serialize tool results before sending them back
+		 * to the AI model. Tools created with {@code toolCallbacks()} must have their
+		 * converter set at callback creation time.
+		 * </p>
+		 * @param converter the converter to use for tool results, or null to use the
+		 * default
+		 * @return this builder
+		 * @since 1.0.0
+		 */
+		Builder defaultToolCallResultConverter(org.springframework.ai.tool.execution.ToolCallResultConverter converter);
+
 		Builder clone();
 
 		ChatClient build();
