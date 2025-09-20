@@ -33,7 +33,7 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
 
 	@NestedConfigurationProperty
-	private OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+	private final OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 		.model(DEFAULT_TRANSCRIPTION_MODEL)
 		.temperature(DEFAULT_TEMPERATURE.floatValue())
 		.responseFormat(DEFAULT_RESPONSE_FORMAT)
@@ -41,10 +41,6 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public OpenAiAudioTranscriptionOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiAudioTranscriptionOptions options) {
-		this.options = options;
 	}
 
 }
