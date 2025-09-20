@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.util.Assert;
 
 /**
  * Configuration properties for Bedrock Converse.
@@ -39,15 +38,13 @@ public class BedrockConverseProxyChatProperties {
 	private boolean enabled;
 
 	@NestedConfigurationProperty
-	private ToolCallingChatOptions options = ToolCallingChatOptions.builder().temperature(0.7).maxTokens(300).build();
+	private final ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+		.temperature(0.7)
+		.maxTokens(300)
+		.build();
 
 	public ToolCallingChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(ToolCallingChatOptions options) {
-		Assert.notNull(options, "ToolCallingChatOptions must not be null");
-		this.options = options;
 	}
 
 	public boolean isEnabled() {
