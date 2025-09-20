@@ -19,7 +19,6 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure;
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.util.Assert;
 
 /**
  * Configuration properties for Bedrock Converse.
@@ -39,15 +38,10 @@ public class BedrockConverseProxyChatProperties {
 	private boolean enabled;
 
 	@NestedConfigurationProperty
-	private BedrockChatOptions options = BedrockChatOptions.builder().temperature(0.7).maxTokens(300).build();
+	private final BedrockChatOptions options = BedrockChatOptions.builder().temperature(0.7).maxTokens(300).build();
 
 	public BedrockChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(BedrockChatOptions options) {
-		Assert.notNull(options, "BedrockChatOptions must not be null");
-		this.options = options;
 	}
 
 	public boolean isEnabled() {

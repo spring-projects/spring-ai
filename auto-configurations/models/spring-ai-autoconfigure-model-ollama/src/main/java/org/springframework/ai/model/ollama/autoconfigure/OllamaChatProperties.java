@@ -38,7 +38,7 @@ public class OllamaChatProperties {
 	 * generative's defaults.
 	 */
 	@NestedConfigurationProperty
-	private OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
+	private final OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
 
 	public String getModel() {
 		return this.options.getModel();
