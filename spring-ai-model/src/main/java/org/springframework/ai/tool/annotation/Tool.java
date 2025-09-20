@@ -68,4 +68,23 @@ public @interface Tool {
 	 */
 	Class<? extends ToolCallResultConverter> resultConverter() default DefaultToolCallResultConverter.class;
 
+	/**
+	 * Key of a common description to reference from this tool. This key must be defined
+	 * in the class-level {@link ToolCommonDescriptions} annotation. The common
+	 * description will be included in the tool's metadata but not duplicated in the final
+	 * description sent to the language model.
+	 * <p>
+	 * Usage example: <pre>{@code
+	 * &#64;ToolCommonDescriptions({
+	 *     &#64;ToolCommonDescription(key = "dateTimeFormats",
+	 *                             description = "Supported formats: yyyy-MM-dd, dd/MM/yyyy, etc.")
+	 * })
+	 * public class TimeTools {
+	 *     &#64;Tool(description = "get current time", commonDescriptionRef = "dateTimeFormats")
+	 *     public String getCurrentTime(String format, String timezone) { ... }
+	 * }
+	 * }</pre>
+	 */
+	String commonDescriptionRef() default "";
+
 }

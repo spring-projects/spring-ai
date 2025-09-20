@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolClassCommonDescription;
+import org.springframework.ai.tool.annotation.ToolCommonDescription;
+import org.springframework.ai.tool.annotation.ToolCommonDescriptions;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.util.ParsingUtils;
@@ -79,7 +82,80 @@ public final class ToolUtils {
 		if (tool == null) {
 			return ParsingUtils.reConcatenateCamelCase(method.getName(), " ");
 		}
-		return StringUtils.hasText(tool.description()) ? tool.description() : method.getName();
+
+		String baseDescription = StringUtils.hasText(tool.description()) ? tool.description() : method.getName();
+
+		// Check for class-level common description (legacy approach)
+		Class<?> declaringClass = method.getDeclaringClass();
+		ToolClassCommonDescription classCommonDesc = AnnotatedElementUtils.findMergedAnnotation(declaringClass,
+				ToolClassCommonDescription.class);
+
+		if (classCommonDesc != null && StringUtils.hasText(classCommonDesc.value())) {
+			return classCommonDesc.value() + "\n\n" + baseDescription;
+		}
+
+		// Check for common description reference (new approach)
+		if (StringUtils.hasText(tool.commonDescriptionRef())) {
+			ToolCommonDescriptions commonDescs = AnnotatedElementUtils.findMergedAnnotation(declaringClass,
+					ToolCommonDescriptions.class);
+			if (commonDescs != null) {
+				Map<String, String> commonDescMap = Arrays.stream(commonDescs.value())
+					.collect(Collectors.toMap(ToolCommonDescription::key, ToolCommonDescription::description));
+				String commonDesc = commonDescMap.get(tool.commonDescriptionRef());
+				if (commonDesc != null) {
+					return baseDescription; // Only return base description, common
+											// description is handled separately
+				}
+				else {
+					logger.warn("Common description key '{}' not found in class {}", tool.commonDescriptionRef(),
+							declaringClass.getName());
+				}
+			}
+			else {
+				logger.warn(
+						"Tool '{}' references common description but class '{}' is not annotated with @ToolCommonDescriptions",
+						method.getName(), declaringClass.getName());
+			}
+		}
+
+		return baseDescription;
+	}
+
+	/**
+	 * Extracts all common descriptions from a class for efficient transmission to LLMs.
+	 * This method collects all common descriptions defined in
+	 * {@link ToolCommonDescriptions} and returns them as a single string, avoiding
+	 * duplication.
+	 * @param clazz the class to extract common descriptions from
+	 * @return combined common descriptions, or empty string if none found
+	 */
+	public static String getClassCommonDescriptions(Class<?> clazz) {
+		Assert.notNull(clazz, "clazz cannot be null");
+
+		ToolCommonDescriptions commonDescs = AnnotatedElementUtils.findMergedAnnotation(clazz,
+				ToolCommonDescriptions.class);
+
+		if (commonDescs != null && commonDescs.value().length > 0) {
+			return Arrays.stream(commonDescs.value())
+				.map(ToolCommonDescription::description)
+				.collect(Collectors.joining("\n\n"));
+		}
+
+		return "";
+	}
+
+	/**
+	 * Checks if a class has any common descriptions defined.
+	 * @param clazz the class to check
+	 * @return true if the class has common descriptions, false otherwise
+	 */
+	public static boolean hasClassCommonDescriptions(Class<?> clazz) {
+		Assert.notNull(clazz, "clazz cannot be null");
+
+		ToolCommonDescriptions commonDescs = AnnotatedElementUtils.findMergedAnnotation(clazz,
+				ToolCommonDescriptions.class);
+
+		return commonDescs != null && commonDescs.value().length > 0;
 	}
 
 	public static boolean getToolReturnDirect(Method method) {
