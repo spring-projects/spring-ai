@@ -3,9 +3,8 @@
 The Spring AI MCP Annotations module provides annotation-based method handling for link:https://github.com/modelcontextprotocol/spec[Model Context Protocol (MCP)] servers and clients in Java. 
 It simplifies the creation and registration of MCP server methods and client handlers through a clean, declarative approach using Java annotations.
 
-
-The MCP Annotations enables developers to easily create and register methods for handling MCP operations using simple annotations. 
-It provides a clean, declarative approach to implementing MCP server and client functionality, reducing boilerplate code and improving maintainability.
+ The MCP Annotations enable developers to create and register MCP operation handlers using declarative annotations.
+This approach simplifies implementing MCP server and client functionality by reducing boilerplate code and improving maintainability.
 
 This library builds on top of the link:https://github.com/modelcontextprotocol/sdk-java[MCP Java SDK] to provide a higher-level, annotation-based programming model for implementing MCP servers and clients.
 
