@@ -264,8 +264,13 @@ spring:
 
 The starter supports two types of clients:
 
-* Synchronous - default client type, suitable for traditional request-response patterns with blocking operations
+* Synchronous - default client type (`spring.ai.mcp.client.type=SYNC`), suitable for traditional request-response patterns with blocking operations
+
+**NOTE:** The SYNC client will register only synchronous MCP annotated methods. Asynchronous methods will be ignored.
+
 * Asynchronous - suitable for reactive applications with non-blocking operations, configured using `spring.ai.mcp.client.type=ASYNC`
+
+**NOTE:** The ASYNC client will register only asynchronous MCP annotated methods. Synchronous methods will be ignored.
 
 === Client Customization
 
