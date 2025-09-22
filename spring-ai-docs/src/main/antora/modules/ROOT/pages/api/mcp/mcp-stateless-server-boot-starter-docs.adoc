@@ -1,7 +1,7 @@
 
-== Stateless MCP Servers
+== Stateless Streamable-HTTP MCP Servers
 
-Stateless MCP servers are designed for simplified deployments where session state is not maintained between requests. 
+Stateless Streamable-HTTP MCP servers are designed for simplified deployments where session state is not maintained between requests. 
 These servers are ideal for microservices architectures and cloud-native deployments.
 
 TIP: Set the `spring.ai.mcp.server.protocol=STATELESS` property

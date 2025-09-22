@@ -72,7 +72,7 @@ They are ideal for microservices architectures and cloud-native deployments. To 
 
 == Sync/Async Server API Options
 
-The MCP Server API supports imperative (e.g. synchronous) and reactive (e.g. asynchronous) programming models.
+The MCP Server API supports imperative (i.e. synchronous) and reactive (e.g. asynchronous) programming models.
 
 * **Synchronous Server** - The default server type implemented using `McpSyncServer`.
 It is designed for straightforward request-response patterns in your applications.
