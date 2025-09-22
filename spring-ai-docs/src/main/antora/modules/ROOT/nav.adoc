@@ -85,7 +85,7 @@
 *** xref:api/mcp/mcp-server-boot-starter-docs.adoc[MCP Server Boot Starters]
 **** xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[STDIO and SSE MCP Servers]
 **** xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc[Streamable-HTTP MCP Servers]
-**** xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc[Stateless MCP Servers]
+**** xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc[Stateless Streamable-HTTP MCP Servers]
 // *** xref:api/mcp/mcp-helpers.adoc[MCP Utilities]
 *** xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations]
 **** xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]
@@ -129,6 +129,7 @@
 
 * Guides
 ** https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI]
+** xref:guides/getting-started-mcp.adoc[Getting Started with MCP]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 ** xref:api/effective-agents.adoc[Building Effective Agents]
 ** xref:api/cloud-bindings.adoc[Deploying to the Cloud]
