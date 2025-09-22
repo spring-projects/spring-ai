@@ -58,7 +58,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -71,8 +70,10 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -157,6 +158,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 */
 	private final RetryTemplate retryTemplate;
 
+	/**
+	 * The cached content service for managing cached content.
+	 */
+	private final GoogleGenAiCachedContentService cachedContentService;
+
 	// GenerationConfig is now built dynamically per request
 
 	/**
@@ -225,6 +231,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+		// Initialize cached content service only if the client supports it
+		this.cachedContentService = (genAiClient != null && genAiClient.caches != null && genAiClient.async != null
+				&& genAiClient.async.caches != null) ? new GoogleGenAiCachedContentService(genAiClient) : null;
 
 		// Wrap the provided tool calling manager in a GoogleGenAiToolCallingManager to
 		// ensure
@@ -414,8 +423,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					.toList();
 
 				var usage = generateContentResponse.usageMetadata();
-				Usage currentUsage = (usage.isPresent()) ? new DefaultUsage(usage.get().promptTokenCount().orElse(0),
-						usage.get().candidatesTokenCount().orElse(0)) : new EmptyUsage();
+				GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+				Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
+						: getDefaultUsage(null, options);
 				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
@@ -533,7 +543,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					var usage = response.usageMetadata();
-					Usage currentUsage = usage.isPresent() ? getDefaultUsage(usage.get()) : new EmptyUsage();
+					GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+					Usage currentUsage = usage.isPresent() ? getDefaultUsage(usage.get(), options)
+							: getDefaultUsage(null, options);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations,
 							toChatResponseMetadata(cumulativeUsage, response.modelVersion().get()));
@@ -643,9 +655,26 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		return ChatResponseMetadata.builder().usage(usage).model(modelVersion).build();
 	}
 
-	private DefaultUsage getDefaultUsage(com.google.genai.types.GenerateContentResponseUsageMetadata usageMetadata) {
-		return new DefaultUsage(usageMetadata.promptTokenCount().orElse(0),
-				usageMetadata.candidatesTokenCount().orElse(0), usageMetadata.totalTokenCount().orElse(0));
+	private Usage getDefaultUsage(com.google.genai.types.GenerateContentResponseUsageMetadata usageMetadata,
+			GoogleGenAiChatOptions options) {
+		// Check if extended metadata should be included (default to true if not
+		// configured)
+		boolean includeExtended = true;
+		if (options != null && options.getIncludeExtendedUsageMetadata() != null) {
+			includeExtended = options.getIncludeExtendedUsageMetadata();
+		}
+		else if (this.defaultOptions.getIncludeExtendedUsageMetadata() != null) {
+			includeExtended = this.defaultOptions.getIncludeExtendedUsageMetadata();
+		}
+
+		if (includeExtended) {
+			return GoogleGenAiUsage.from(usageMetadata);
+		}
+		else {
+			// Fall back to basic usage for backward compatibility
+			return new DefaultUsage(usageMetadata.promptTokenCount().orElse(0),
+					usageMetadata.candidatesTokenCount().orElse(0), usageMetadata.totalTokenCount().orElse(0));
+		}
 	}
 
 	GeminiRequest createGeminiRequest(Prompt prompt) {
@@ -721,6 +750,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		if (!CollectionUtils.isEmpty(tools)) {
 			configBuilder.tools(tools);
+		}
+
+		// Handle cached content
+		if (requestOptions.getUseCachedContent() != null && requestOptions.getUseCachedContent()
+				&& requestOptions.getCachedContentName() != null) {
+			// Set the cached content name in the config
+			configBuilder.cachedContent(requestOptions.getCachedContentName());
+			logger.debug("Using cached content: {}", requestOptions.getCachedContentName());
 		}
 
 		// Handle system instruction
@@ -830,6 +867,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return GoogleGenAiChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Gets the cached content service for managing cached content.
+	 * @return the cached content service
+	 */
+	public GoogleGenAiCachedContentService getCachedContentService() {
+		return this.cachedContentService;
 	}
 
 	@Override
