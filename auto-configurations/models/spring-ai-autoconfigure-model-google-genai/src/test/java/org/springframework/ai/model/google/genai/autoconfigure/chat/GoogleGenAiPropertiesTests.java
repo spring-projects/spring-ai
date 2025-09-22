@@ -80,6 +80,57 @@ public class GoogleGenAiPropertiesTests {
 			});
 	}
 
+	@Test
+	void cachedContentPropertiesBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.options.use-cached-content=true",
+					"spring.ai.google.genai.chat.options.cached-content-name=cachedContent/test123",
+					"spring.ai.google.genai.chat.options.auto-cache-threshold=100000",
+					"spring.ai.google.genai.chat.options.auto-cache-ttl=PT1H")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				assertThat(chatProperties.getOptions().getUseCachedContent()).isTrue();
+				assertThat(chatProperties.getOptions().getCachedContentName()).isEqualTo("cachedContent/test123");
+				assertThat(chatProperties.getOptions().getAutoCacheThreshold()).isEqualTo(100000);
+				// The Duration keeps its original ISO-8601 format
+				assertThat(chatProperties.getOptions().getAutoCacheTtl()).isNotNull();
+				assertThat(chatProperties.getOptions().getAutoCacheTtl().toString()).isEqualTo("PT1H");
+			});
+	}
+
+	@Test
+	void extendedUsageMetadataPropertiesBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.options.include-extended-usage-metadata=true")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				assertThat(chatProperties.getOptions().getIncludeExtendedUsageMetadata()).isTrue();
+			});
+	}
+
+	@Test
+	void cachedContentDefaultValuesBinding() {
+		// Test that defaults are applied when not specified
+		this.contextRunner.run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			// These should be null when not set
+			assertThat(chatProperties.getOptions().getUseCachedContent()).isNull();
+			assertThat(chatProperties.getOptions().getCachedContentName()).isNull();
+			assertThat(chatProperties.getOptions().getAutoCacheThreshold()).isNull();
+			assertThat(chatProperties.getOptions().getAutoCacheTtl()).isNull();
+		});
+	}
+
+	@Test
+	void extendedUsageMetadataDefaultBinding() {
+		// Test that defaults are applied when not specified
+		this.contextRunner.run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			// Should be null when not set (defaults to true in the model implementation)
+			assertThat(chatProperties.getOptions().getIncludeExtendedUsageMetadata()).isNull();
+		});
+	}
+
 	@Configuration
 	@EnableConfigurationProperties({ GoogleGenAiConnectionProperties.class, GoogleGenAiChatProperties.class,
 			GoogleGenAiEmbeddingConnectionProperties.class })
