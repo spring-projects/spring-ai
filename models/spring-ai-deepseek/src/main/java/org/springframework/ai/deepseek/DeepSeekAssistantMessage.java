@@ -57,6 +57,13 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		this.reasoningContent = reasoningContent;
 	}
 
+	public DeepSeekAssistantMessage(String content, String reasoningContent, Boolean prefix,
+			Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
+		super(content, properties, toolCalls, media);
+		this.reasoningContent = reasoningContent;
+		this.prefix = prefix;
+	}
+
 	public static DeepSeekAssistantMessage prefixAssistantMessage(String context) {
 		return prefixAssistantMessage(context, null);
 	}
@@ -105,6 +112,57 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		return "AssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
 				+ ", textContent=" + this.textContent + ", reasoningContent=" + this.reasoningContent + ", prefix="
 				+ this.prefix + ", metadata=" + this.metadata + "]";
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder extends AssistantMessage.Builder {
+
+		private Boolean prefix;
+
+		private String reasoningContent;
+
+		@Override
+		public Builder content(String content) {
+			this.content = content;
+			return this;
+		}
+
+		@Override
+		public Builder properties(Map<String, Object> properties) {
+			this.properties = properties;
+			return this;
+		}
+
+		@Override
+		public Builder toolCalls(List<ToolCall> toolCalls) {
+			this.toolCalls = toolCalls;
+			return this;
+		}
+
+		@Override
+		public Builder media(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		public Builder prefix(Boolean prefix) {
+			this.prefix = prefix;
+			return this;
+		}
+
+		public Builder reasoningContent(String reasoningContent) {
+			this.reasoningContent = reasoningContent;
+			return this;
+		}
+
+		public DeepSeekAssistantMessage build() {
+			return new DeepSeekAssistantMessage(this.content, this.reasoningContent, this.prefix, this.properties,
+					this.toolCalls, this.media);
+		}
+
 	}
 
 }
