@@ -30,6 +30,7 @@ import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
@@ -200,6 +201,43 @@ public class AzureEmbeddingsOptionsTests {
 
 		// Verify original list wasn't modified
 		assertThat(inputsCopy).isEqualTo(originalInputs);
+	}
+
+	@Test
+	public void shouldHandleNullInputList() {
+		var requestOptions = this.client.toEmbeddingOptions(new EmbeddingRequest(null, null));
+		assertThat(requestOptions.getInput()).isNull();
+	}
+
+	@Test
+	public void shouldHandleNullEmbeddingRequest() {
+		assertThatThrownBy(() -> this.client.toEmbeddingOptions(null)).isInstanceOf(NullPointerException.class);
+	}
+
+	@Test
+	public void shouldHandlePartialOptionsOverride() {
+		var partialOptions = AzureOpenAiEmbeddingOptions.builder()
+			.deploymentName("CUSTOM_MODEL")
+			// user is not set, should use default
+			.build();
+
+		var requestOptions = this.client
+			.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), partialOptions));
+
+		assertThat(requestOptions.getModel()).isEqualTo("CUSTOM_MODEL");
+		assertThat(requestOptions.getUser()).isEqualTo("USER_TEST"); // from default
+	}
+
+	@Test
+	public void shouldHandleDefaultOptionsOnlyClient() {
+		var clientWithMinimalDefaults = new AzureOpenAiEmbeddingModel(this.mockClient, MetadataMode.EMBED,
+				AzureOpenAiEmbeddingOptions.builder().deploymentName("MINIMAL_MODEL").build());
+
+		var requestOptions = clientWithMinimalDefaults
+			.toEmbeddingOptions(new EmbeddingRequest(List.of("Test content"), null));
+
+		assertThat(requestOptions.getModel()).isEqualTo("MINIMAL_MODEL");
+		assertThat(requestOptions.getUser()).isNull();
 	}
 
 }
