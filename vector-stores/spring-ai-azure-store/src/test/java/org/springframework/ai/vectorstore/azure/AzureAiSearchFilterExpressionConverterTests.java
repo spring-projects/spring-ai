@@ -32,8 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NIN;
@@ -182,6 +184,77 @@ public class AzureAiSearchFilterExpressionConverterTests {
 		assertThat(vectorExpr).isEqualTo(expected);
 
 		vectorExpr = converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo(expected);
+	}
+
+	@Test
+	public void testNullValue() {
+		FilterExpressionConverter converter = new AzureAiSearchFilterExpressionConverter(
+				List.of(MetadataField.text("value1")));
+
+		// value1 == null
+		String expected = "meta_value1 eq null";
+		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("value1"), new Value(null)));
+		assertThat(vectorExpr).isEqualTo(expected);
+	}
+
+	@Test
+	public void testEmptyStringValue() {
+		FilterExpressionConverter converter = new AzureAiSearchFilterExpressionConverter(
+				List.of(MetadataField.text("field1")));
+
+		// field1 == ""
+		String expected = "meta_field1 eq ''";
+		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("field1"), new Value("")));
+		assertThat(vectorExpr).isEqualTo(expected);
+	}
+
+	@Test
+	public void testGtAndLt() {
+		FilterExpressionConverter converter = new AzureAiSearchFilterExpressionConverter(
+				List.of(MetadataField.int32("number1")));
+
+		// number1 > 100
+		String expected = "meta_number1 gt 100";
+		String vectorExpr = converter.convertExpression(new Expression(GT, new Key("number1"), new Value(100)));
+		assertThat(vectorExpr).isEqualTo(expected);
+
+		// number1 < 500
+		expected = "meta_number1 lt 500";
+		vectorExpr = converter.convertExpression(new Expression(LT, new Key("number1"), new Value(500)));
+		assertThat(vectorExpr).isEqualTo(expected);
+	}
+
+	@Test
+	public void testNestedGroups() {
+		FilterExpressionConverter converter = new AzureAiSearchFilterExpressionConverter(
+				List.of(MetadataField.text("type1"), MetadataField.int32("value1"), MetadataField.text("code1"),
+						MetadataField.bool("flag1")));
+
+		// ((type1 == "alpha" AND value1 <= 1000) OR (code1 == "beta")) AND flag1 == true
+		String expected = "((meta_type1 eq 'alpha' and meta_value1 le 1000) or meta_code1 eq 'beta') and meta_flag1 eq true";
+		String vectorExpr = converter.convertExpression(new Expression(AND,
+				new Group(new Expression(OR,
+						new Group(new Expression(AND, new Expression(EQ, new Key("type1"), new Value("alpha")),
+								new Expression(LTE, new Key("value1"), new Value(1000)))),
+						new Expression(EQ, new Key("code1"), new Value("beta")))),
+				new Expression(EQ, new Key("flag1"), new Value(true))));
+		assertThat(vectorExpr).isEqualTo(expected);
+	}
+
+	@Test
+	public void testCaseSensitiveFieldNames() {
+		FilterExpressionConverter converter = new AzureAiSearchFilterExpressionConverter(
+				List.of(MetadataField.text("ConfigValue"), MetadataField.text("configvalue")));
+
+		// ConfigValue == "data1"
+		String expected = "meta_ConfigValue eq 'data1'";
+		String vectorExpr = converter.convertExpression(new Expression(EQ, new Key("ConfigValue"), new Value("data1")));
+		assertThat(vectorExpr).isEqualTo(expected);
+
+		// configvalue == "data2"
+		expected = "meta_configvalue eq 'data2'";
+		vectorExpr = converter.convertExpression(new Expression(EQ, new Key("configvalue"), new Value("data2")));
 		assertThat(vectorExpr).isEqualTo(expected);
 	}
 
