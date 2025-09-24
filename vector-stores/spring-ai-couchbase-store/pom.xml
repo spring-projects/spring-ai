@@ -25,6 +25,7 @@
 		<dependency>
 			<groupId>com.couchbase.client</groupId>
 			<artifactId>java-client</artifactId>
+			<version>${couchbase.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

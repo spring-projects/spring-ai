@@ -63,7 +63,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 						.content("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.options(OllamaOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.9).build())
 			.build();
 
 		ChatResponse response = getOllamaApi().chat(request);
@@ -84,7 +84,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.messages(List.of(Message.builder(Role.USER)
 				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
+			.options(OllamaChatOptions.builder().temperature(0.9).build().toMap())
 			.build();
 
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);

@@ -66,17 +66,32 @@ public class OpenAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiChatModel openAiChatModel(OpenAiConnectionProperties commonProperties,
-			OpenAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
-			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+	public OpenAiApi openAiApi(OpenAiConnectionProperties commonProperties, OpenAiChatProperties chatProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+
+		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
+				commonProperties, chatProperties, "chat");
+
+		return OpenAiApi.builder()
+			.baseUrl(resolved.baseUrl())
+			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.headers(resolved.headers())
+			.completionsPath(chatProperties.getCompletionsPath())
+			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
+			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.responseErrorHandler(responseErrorHandler)
+			.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public OpenAiChatModel openAiChatModel(OpenAiApi openAiApi, OpenAiChatProperties chatProperties,
+			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
-
-		var openAiApi = openAiApi(chatProperties, commonProperties,
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "chat");
 
 		var chatModel = OpenAiChatModel.builder()
 			.openAiApi(openAiApi)
@@ -91,25 +106,6 @@ public class OpenAiChatAutoConfiguration {
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
-	}
-
-	private OpenAiApi openAiApi(OpenAiChatProperties chatProperties, OpenAiConnectionProperties commonProperties,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler, String modelType) {
-
-		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
-				commonProperties, chatProperties, modelType);
-
-		return OpenAiApi.builder()
-			.baseUrl(resolved.baseUrl())
-			.apiKey(new SimpleApiKey(resolved.apiKey()))
-			.headers(resolved.headers())
-			.completionsPath(chatProperties.getCompletionsPath())
-			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
-			.restClientBuilder(restClientBuilder)
-			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
-			.build();
 	}
 
 }

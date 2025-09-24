@@ -18,4 +18,5 @@ org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAuto
 org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration
 org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration
 org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration
+org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration
 org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration

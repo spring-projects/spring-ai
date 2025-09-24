@@ -35,14 +35,10 @@ public class OpenAiModerationProperties extends OpenAiParentProperties {
 	 * Options for OpenAI Moderation API.
 	 */
 	@NestedConfigurationProperty
-	private OpenAiModerationOptions options = OpenAiModerationOptions.builder().build();
+	private final OpenAiModerationOptions options = OpenAiModerationOptions.builder().build();
 
 	public OpenAiModerationOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiModerationOptions options) {
-		this.options = options;
 	}
 
 }

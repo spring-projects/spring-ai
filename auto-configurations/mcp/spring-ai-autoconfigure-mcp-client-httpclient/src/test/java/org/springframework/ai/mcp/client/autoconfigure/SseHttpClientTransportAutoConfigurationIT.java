@@ -94,8 +94,6 @@ public class SseHttpClientTransportAutoConfigurationIT {
 
 			mcpClient.ping();
 
-			System.out.println("mcpClient = " + mcpClient.getServerInfo());
-
 			ListToolsResult toolsResult = mcpClient.listTools();
 
 			assertThat(toolsResult).isNotNull();

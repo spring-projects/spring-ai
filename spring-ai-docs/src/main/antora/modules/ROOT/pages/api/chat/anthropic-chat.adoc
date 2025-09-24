@@ -216,14 +216,14 @@ Spring AI provides strategic cache placement through the `AnthropicCacheStrategy
 
 * `NONE`: Disables prompt caching completely
 * `SYSTEM_ONLY`: Caches only the system message content  
-* `SYSTEM_AND_TOOLS`: Caches system message and tool definitions
+* `SYSTEM_AND_TOOLS`: Caches system message and the last tool definition
 * `CONVERSATION_HISTORY`: Caches conversation history in chat memory scenarios
 
 This strategic approach ensures optimal cache breakpoint placement while staying within Anthropic's 4-breakpoint limit.
 
 === Enabling Prompt Caching
 
-To enable prompt caching, use the `cacheStrategy()` method in `AnthropicChatOptions`:
+Enable prompt caching by setting `cacheOptions` on `AnthropicChatOptions` and choosing a `strategy`.
 
 ==== System-Only Caching
 
@@ -238,7 +238,9 @@ ChatResponse response = chatModel.call(
         ),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4")
-            .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
             .maxTokens(500)
             .build()
     )
@@ -249,7 +251,7 @@ ChatResponse response = chatModel.call(
 
 [source,java]
 ----
-// Cache system message and tool definitions
+// Cache system message and the last tool definition
 ChatResponse response = chatModel.call(
     new Prompt(
         List.of(
@@ -258,7 +260,9 @@ ChatResponse response = chatModel.call(
         ),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4") 
-            .cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+                .build())
             .toolCallbacks(weatherToolCallback)
             .maxTokens(500)
             .build()
@@ -270,7 +274,7 @@ ChatResponse response = chatModel.call(
 
 [source,java]
 ----
-// Cache conversation history with ChatClient and memory
+// Cache conversation history with ChatClient and memory (latest user question is not cached)
 ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultSystem("You are a personalized career counselor...")
     .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
@@ -282,7 +286,9 @@ String response = chatClient.prompt()
     .user("What career advice would you give me?")
     .options(AnthropicChatOptions.builder()
         .model("claude-sonnet-4")
-        .cacheStrategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+        .cacheOptions(AnthropicCacheOptions.builder()
+            .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+            .build())
         .maxTokens(500)
         .build())
     .call()
@@ -299,7 +305,9 @@ String response = ChatClient.create(chatModel)
     .user("Analyze this large document: " + document)
     .options(AnthropicChatOptions.builder()
         .model("claude-sonnet-4")
-        .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+        .cacheOptions(AnthropicCacheOptions.builder()
+            .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .build())
         .build())
     .call()
     .content();
@@ -307,9 +315,9 @@ String response = ChatClient.create(chatModel)
 
 === Advanced Caching Options
 
-==== Extended TTL Caching
+==== Per-Message TTL (5m or 1h)
 
-For longer cache lifetimes, you can specify a custom TTL (requires beta features):
+By default, cached content uses a 5-minute TTL. You can set a 1-hour TTL for specific message types. When 1-hour TTL is used, Spring AI automatically sets the required Anthropic beta header.
 
 [source,java]
 ----
@@ -318,13 +326,44 @@ ChatResponse response = chatModel.call(
         List.of(new SystemMessage(largeSystemPrompt)),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4")
-            .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-            .cacheTtl("1h")  // 1-hour cache lifetime
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+                .build())
             .maxTokens(500)
             .build()
     )
 );
 ----
+
+NOTE: Extended TTL uses Anthropic beta feature `extended-cache-ttl-2025-04-11`.
+
+==== Cache Eligibility Filters
+
+Control when cache breakpoints are used by setting minimum content lengths and an optional token-based length function:
+
+[source,java]
+----
+AnthropicCacheOptions cache = AnthropicCacheOptions.builder()
+    .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+    .messageTypeMinContentLength(MessageType.SYSTEM, 1024)
+    .messageTypeMinContentLength(MessageType.USER, 1024)
+    .messageTypeMinContentLength(MessageType.ASSISTANT, 1024)
+    .contentLengthFunction(text -> MyTokenCounter.count(text))
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(/* messages */),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(cache)
+            .build()
+    )
+);
+----
+
+NOTE: Tool Definitions are always considered for caching if `SYSTEM_AND_TOOLS` strategy is used, regardless of content length.
 
 === Usage Example
 
@@ -344,7 +383,9 @@ ChatResponse firstResponse = chatModel.call(
         ),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4")
-            .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
             .maxTokens(500)
             .build()
     )
@@ -366,7 +407,9 @@ ChatResponse secondResponse = chatModel.call(
         ),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4")
-            .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
             .maxTokens(500)
             .build()
     )
@@ -428,7 +471,9 @@ ChatResponse riskAnalysis = chatModel.call(
         ),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4")
-            .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
             .maxTokens(1000)
             .build()
     )
@@ -443,7 +488,9 @@ ChatResponse obligationAnalysis = chatModel.call(
         ),
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4")
-            .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
             .maxTokens(1000)
             .build()
     )
@@ -483,7 +530,9 @@ for (String filename : codeFiles) {
             ),
             AnthropicChatOptions.builder()
                 .model("claude-sonnet-4")
-                .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .cacheOptions(AnthropicCacheOptions.builder()
+                    .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                    .build())
                 .maxTokens(800)
                 .build()
         )
@@ -524,7 +573,9 @@ public class CustomerSupportService {
                 ),
                 AnthropicChatOptions.builder()
                     .model("claude-sonnet-4")
-                    .cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                    .cacheOptions(AnthropicCacheOptions.builder()
+                        .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                        .build())
                     .maxTokens(600)
                     .build()
             )
@@ -542,7 +593,7 @@ public class CustomerSupportService {
 
 1. **Choose the Right Strategy**: 
    - Use `SYSTEM_ONLY` for reusable system prompts and instructions
-   - Use `SYSTEM_AND_TOOLS` when you have both system content and tool definitions to cache
+   - Use `SYSTEM_AND_TOOLS` when you have both system content and tool definitions to cache (the last tool definition is cached)
    - Use `CONVERSATION_HISTORY` with ChatClient memory for multi-turn conversations
    - Use `NONE` to explicitly disable caching
 
@@ -562,8 +613,7 @@ Even small changes will require a new cache entry.
 
 5. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
 
-6. **Cache Lifetime**: Default caches expire after 5 minutes of inactivity (can be extended to 1 hour with `cacheTtl()`).
-Each time cached content is accessed, the timer resets.
+6. **Cache Lifetime**: Default TTL is 5 minutes; set 1-hour TTL per message type via `messageTypeTtl(...)`. Each cache access resets the timer.
 
 7. **Tool Caching Limitations**: Be aware that tool-based interactions may not provide cache usage metadata in the response.
 

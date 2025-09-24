@@ -30,8 +30,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
+import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -48,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests the wire format and cache control headers without requiring real API calls.
  *
  * @author Mark Pollack
+ * @author Austin Dase
  * @since 1.1.0
  */
 class AnthropicPromptCachingMockTest {
@@ -102,7 +106,7 @@ class AnthropicPromptCachingMockTest {
 
 		// Test with SYSTEM_ONLY cache strategy
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.build();
 
 		Prompt prompt = new Prompt(
@@ -129,6 +133,76 @@ class AnthropicPromptCachingMockTest {
 		// Verify response
 		assertThat(response).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).contains("Hello!");
+	}
+
+	@Test
+	void testSystemMinLengthDisablesCaching() throws Exception {
+		String mockResponse = """
+				{
+					"id": "msg_test123",
+					"type": "message",
+					"role": "assistant",
+					"content": [ { "type": "text", "text": "ok" } ],
+					"model": "claude-3-7-sonnet",
+					"stop_reason": "end_turn",
+					"usage": { "input_tokens": 10, "output_tokens": 2 }
+				}
+				""";
+		this.mockWebServer
+			.enqueue(new MockResponse().setBody(mockResponse).setHeader("Content-Type", "application/json"));
+
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.messageTypeMinContentLength(MessageType.SYSTEM, 1000)
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
+		Prompt prompt = new Prompt(List.of(new SystemMessage("short"), new UserMessage("Test message")), options);
+		this.chatModel.call(prompt);
+
+		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+		assertThat(recordedRequest).isNotNull();
+		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+
+		// Ensure no cache_control present since system content was below min length
+		String req = requestBody.toString();
+		assertThat(req).doesNotContain("\"cache_control\"");
+	}
+
+	@Test
+	void testCustomContentLengthFunctionEnablesCaching() throws Exception {
+		String mockResponse = """
+				{
+					"id": "msg_test123",
+					"type": "message",
+					"role": "assistant",
+					"content": [ { "type": "text", "text": "ok" } ],
+					"model": "claude-3-7-sonnet",
+					"stop_reason": "end_turn",
+					"usage": { "input_tokens": 10, "output_tokens": 2 }
+				}
+				""";
+		this.mockWebServer
+			.enqueue(new MockResponse().setBody(mockResponse).setHeader("Content-Type", "application/json"));
+
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.messageTypeMinContentLength(MessageType.SYSTEM, 1000)
+			.contentLengthFunction(s -> 2000) // force eligibility even for short text
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
+		Prompt prompt = new Prompt(List.of(new SystemMessage("short"), new UserMessage("Test message")), options);
+		this.chatModel.call(prompt);
+
+		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+		assertThat(recordedRequest).isNotNull();
+		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode systemNode = requestBody.get("system");
+		if (systemNode != null && systemNode.isArray()) {
+			JsonNode lastSystemBlock = systemNode.get(systemNode.size() - 1);
+			assertThat(lastSystemBlock.has("cache_control")).isTrue();
+		}
 	}
 
 	@Test
@@ -166,7 +240,7 @@ class AnthropicPromptCachingMockTest {
 
 		// Test with SYSTEM_AND_TOOLS cache strategy
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.toolCallbacks(List.of(toolCallback))
 			.build();
 
@@ -235,7 +309,7 @@ class AnthropicPromptCachingMockTest {
 
 		// Test with CONVERSATION_HISTORY cache strategy
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build())
 			.build();
 
 		// Create a prompt with conversation history
@@ -302,7 +376,7 @@ class AnthropicPromptCachingMockTest {
 
 		// Test with NONE cache strategy (default)
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.NONE)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 			.build();
 
 		Prompt prompt = new Prompt("Simple test message", options);
@@ -352,8 +426,10 @@ class AnthropicPromptCachingMockTest {
 
 		// Test with 1-hour cache TTL
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
-			.cacheTtl("1h")
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+				.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+				.build())
 			.build();
 
 		Prompt prompt = new Prompt(
@@ -417,7 +493,7 @@ class AnthropicPromptCachingMockTest {
 
 		// Test with SYSTEM_AND_TOOLS strategy and multiple large system messages
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.toolCallbacks(List.of(weatherTool, calculateTool, searchTool))
 			.build();
 
@@ -476,7 +552,7 @@ class AnthropicPromptCachingMockTest {
 
 		// Test with SYSTEM_ONLY caching strategy
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.build();
 
 		Prompt prompt = new Prompt(
@@ -552,7 +628,7 @@ class AnthropicPromptCachingMockTest {
 
 		// Test SYSTEM_AND_TOOLS with large content and conversation history
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.cacheStrategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.toolCallbacks(List.of(toolCallback))
 			.build();
 

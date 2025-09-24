@@ -153,4 +153,18 @@ public class GoogleGenAiChatOptionsTest {
 		assertThat(toString).contains("test-model");
 	}
 
+	@Test
+	public void testThinkingBudgetWithZeroValue() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().thinkingBudget(0).build();
+
+		assertThat(options.getThinkingBudget()).isEqualTo(0);
+	}
+
+	@Test
+	public void testLabelsWithEmptyMap() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().labels(Map.of()).build();
+
+		assertThat(options.getLabels()).isEmpty();
+	}
+
 }

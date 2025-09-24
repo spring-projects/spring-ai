@@ -114,6 +114,39 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("thinkingBudget") Integer thinkingBudget;
 
 	/**
+	 * Optional. Whether to include extended usage metadata in responses.
+	 * When true, includes thinking tokens, cached content, tool-use tokens, and modality details.
+	 * Defaults to true for full metadata access.
+	 */
+	private @JsonProperty("includeExtendedUsageMetadata") Boolean includeExtendedUsageMetadata;
+
+	/**
+	 * Optional. The name of cached content to use for this request.
+	 * When set, the cached content will be used as context for the request.
+	 */
+	private @JsonProperty("cachedContentName") String cachedContentName;
+
+	/**
+	 * Optional. Whether to use cached content if available.
+	 * When true and cachedContentName is set, the system will use the cached content.
+	 */
+	private @JsonProperty("useCachedContent") Boolean useCachedContent;
+
+	/**
+	 * Optional. Automatically cache prompts that exceed this token threshold.
+	 * When set, prompts larger than this value will be automatically cached for reuse.
+	 * Set to null to disable auto-caching.
+	 */
+	private @JsonProperty("autoCacheThreshold") Integer autoCacheThreshold;
+
+	/**
+	 * Optional. Time-to-live for auto-cached content.
+	 * Used when auto-caching is enabled. Defaults to 1 hour if not specified.
+	 */
+	@JsonIgnore
+	private java.time.Duration autoCacheTtl;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -174,6 +207,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setToolContext(fromOptions.getToolContext());
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
 		options.setLabels(fromOptions.getLabels());
+		options.setIncludeExtendedUsageMetadata(fromOptions.getIncludeExtendedUsageMetadata());
+		options.setCachedContentName(fromOptions.getCachedContentName());
+		options.setUseCachedContent(fromOptions.getUseCachedContent());
+		options.setAutoCacheThreshold(fromOptions.getAutoCacheThreshold());
+		options.setAutoCacheTtl(fromOptions.getAutoCacheTtl());
 		return options;
 	}
 
@@ -317,6 +355,46 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setThinkingBudget(Integer thinkingBudget) {
 		this.thinkingBudget = thinkingBudget;
+	}
+
+	public Boolean getIncludeExtendedUsageMetadata() {
+		return this.includeExtendedUsageMetadata;
+	}
+
+	public void setIncludeExtendedUsageMetadata(Boolean includeExtendedUsageMetadata) {
+		this.includeExtendedUsageMetadata = includeExtendedUsageMetadata;
+	}
+
+	public String getCachedContentName() {
+		return this.cachedContentName;
+	}
+
+	public void setCachedContentName(String cachedContentName) {
+		this.cachedContentName = cachedContentName;
+	}
+
+	public Boolean getUseCachedContent() {
+		return this.useCachedContent;
+	}
+
+	public void setUseCachedContent(Boolean useCachedContent) {
+		this.useCachedContent = useCachedContent;
+	}
+
+	public Integer getAutoCacheThreshold() {
+		return this.autoCacheThreshold;
+	}
+
+	public void setAutoCacheThreshold(Integer autoCacheThreshold) {
+		this.autoCacheThreshold = autoCacheThreshold;
+	}
+
+	public java.time.Duration getAutoCacheTtl() {
+		return this.autoCacheTtl;
+	}
+
+	public void setAutoCacheTtl(java.time.Duration autoCacheTtl) {
+		this.autoCacheTtl = autoCacheTtl;
 	}
 
 	public Boolean getGoogleSearchRetrieval() {
@@ -524,9 +602,34 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
+		public Builder includeExtendedUsageMetadata(Boolean includeExtendedUsageMetadata) {
+			this.options.setIncludeExtendedUsageMetadata(includeExtendedUsageMetadata);
+			return this;
+		}
+
 		public Builder labels(Map<String, String> labels) {
 			Assert.notNull(labels, "labels must not be null");
 			this.options.labels = labels;
+			return this;
+		}
+
+		public Builder cachedContentName(String cachedContentName) {
+			this.options.setCachedContentName(cachedContentName);
+			return this;
+		}
+
+		public Builder useCachedContent(Boolean useCachedContent) {
+			this.options.setUseCachedContent(useCachedContent);
+			return this;
+		}
+
+		public Builder autoCacheThreshold(Integer autoCacheThreshold) {
+			this.options.setAutoCacheThreshold(autoCacheThreshold);
+			return this;
+		}
+
+		public Builder autoCacheTtl(java.time.Duration autoCacheTtl) {
+			this.options.setAutoCacheTtl(autoCacheTtl);
 			return this;
 		}
 

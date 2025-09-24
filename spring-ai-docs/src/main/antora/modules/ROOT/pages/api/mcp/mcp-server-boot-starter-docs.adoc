@@ -72,16 +72,22 @@ They are ideal for microservices architectures and cloud-native deployments. To 
 
 == Sync/Async Server API Options
 
-The MCP Server API supports imperative (e.g. synchronous) and reactive (e.g. asynchronous) programming models.
+The MCP Server API supports imperative (i.e. synchronous) and reactive (e.g. asynchronous) programming models.
 
 * **Synchronous Server** - The default server type implemented using `McpSyncServer`.
 It is designed for straightforward request-response patterns in your applications.
 To enable this server type, set `spring.ai.mcp.server.type=SYNC` in your configuration.
 When activated, it automatically handles the configuration of synchronous tool specifications.
 
+**NOTE:** The SYNC server will register only synchronous MCP annotated methods. Asynchronous methods will be ignored.
+
 * **Asynchronous Server** - The asynchronous server implementation uses `McpAsyncServer` and is optimized for non-blocking operations.
 To enable this server type, configure your application with `spring.ai.mcp.server.type=ASYNC`.
 This server type automatically sets up asynchronous tool specifications with built-in Project Reactor support.
+
+**NOTE:** The ASYNC server will register only asynchronous MCP annotated methods. Synchronous methods will be ignored.
+
+
 
 == MCP Server Annotations
 

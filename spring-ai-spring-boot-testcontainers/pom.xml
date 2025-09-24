@@ -101,6 +101,20 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-client-webflux</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- production dependencies -->
 
 		<dependency>
@@ -239,6 +253,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
+			<version>1.21.3</version>
 			<optional>true</optional>
 		</dependency>
 

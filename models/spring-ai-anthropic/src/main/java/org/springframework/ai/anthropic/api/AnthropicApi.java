@@ -67,6 +67,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Claudio Silva Junior
  * @author Filip Hrisafov
  * @author Soby Chacko
+ * @author Austin Dase
  * @since 1.0.0
  */
 public final class AnthropicApi {
@@ -860,6 +861,10 @@ public final class AnthropicApi {
 			this(type, null, null, null, id, name, input, null, null, null, null, null, null);
 		}
 
+		public static ContentBlockBuilder from(ContentBlock contentBlock) {
+			return new ContentBlockBuilder(contentBlock);
+		}
+
 		/**
 		 * The ContentBlock type.
 		 */
@@ -984,6 +989,121 @@ public final class AnthropicApi {
 
 		}
 
+		public static class ContentBlockBuilder {
+
+			private Type type;
+
+			private Source source;
+
+			private String text;
+
+			private Integer index;
+
+			private String id;
+
+			private String name;
+
+			private Map<String, Object> input;
+
+			private String toolUseId;
+
+			private String content;
+
+			private String signature;
+
+			private String thinking;
+
+			private String data;
+
+			private CacheControl cacheControl;
+
+			public ContentBlockBuilder(ContentBlock contentBlock) {
+				this.type = contentBlock.type;
+				this.source = contentBlock.source;
+				this.text = contentBlock.text;
+				this.index = contentBlock.index;
+				this.id = contentBlock.id;
+				this.name = contentBlock.name;
+				this.input = contentBlock.input;
+				this.toolUseId = contentBlock.toolUseId;
+				this.content = contentBlock.content;
+				this.signature = contentBlock.signature;
+				this.thinking = contentBlock.thinking;
+				this.data = contentBlock.data;
+				this.cacheControl = contentBlock.cacheControl;
+			}
+
+			public ContentBlockBuilder type(Type type) {
+				this.type = type;
+				return this;
+			}
+
+			public ContentBlockBuilder source(Source source) {
+				this.source = source;
+				return this;
+			}
+
+			public ContentBlockBuilder text(String text) {
+				this.text = text;
+				return this;
+			}
+
+			public ContentBlockBuilder index(Integer index) {
+				this.index = index;
+				return this;
+			}
+
+			public ContentBlockBuilder id(String id) {
+				this.id = id;
+				return this;
+			}
+
+			public ContentBlockBuilder name(String name) {
+				this.name = name;
+				return this;
+			}
+
+			public ContentBlockBuilder input(Map<String, Object> input) {
+				this.input = input;
+				return this;
+			}
+
+			public ContentBlockBuilder toolUseId(String toolUseId) {
+				this.toolUseId = toolUseId;
+				return this;
+			}
+
+			public ContentBlockBuilder content(String content) {
+				this.content = content;
+				return this;
+			}
+
+			public ContentBlockBuilder signature(String signature) {
+				this.signature = signature;
+				return this;
+			}
+
+			public ContentBlockBuilder thinking(String thinking) {
+				this.thinking = thinking;
+				return this;
+			}
+
+			public ContentBlockBuilder data(String data) {
+				this.data = data;
+				return this;
+			}
+
+			public ContentBlockBuilder cacheControl(CacheControl cacheControl) {
+				this.cacheControl = cacheControl;
+				return this;
+			}
+
+			public ContentBlock build() {
+				return new ContentBlock(this.type, this.source, this.text, this.index, this.id, this.name, this.input,
+						this.toolUseId, this.content, this.signature, this.thinking, this.data, this.cacheControl);
+			}
+
+		}
 	}
 
 	///////////////////////////////////////

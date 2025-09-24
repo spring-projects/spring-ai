@@ -38,9 +38,7 @@ public class OllamaEmbeddingAutoConfigurationTests {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
 			"spring.ai.ollama.base-url=TEST_BASE_URL",
-				"spring.ai.ollama.embedding.options.model=MODEL_XYZ",
-				"spring.ai.ollama.embedding.options.temperature=0.13",
-				"spring.ai.ollama.embedding.options.topK=13"
+				"spring.ai.ollama.embedding.options.model=MODEL_XYZ"
 				// @formatter:on
 		)
 
@@ -52,9 +50,6 @@ public class OllamaEmbeddingAutoConfigurationTests {
 
 				assertThat(embeddingProperties.getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
-				assertThat(embeddingProperties.getOptions().toMap()).containsKeys("temperature");
-				assertThat(embeddingProperties.getOptions().toMap().get("temperature")).isEqualTo(0.13);
-				assertThat(embeddingProperties.getOptions().getTopK()).isEqualTo(13);
 			});
 	}
 

@@ -33,18 +33,10 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.stabilityai.image";
 
 	@NestedConfigurationProperty
-	private StabilityAiImageOptions options = StabilityAiImageOptions.builder().build(); // stable-diffusion-v1-6
-
-	// is
-	// default
-	// model
+	private final StabilityAiImageOptions options = StabilityAiImageOptions.builder().build(); // stable-diffusion-v1-6
 
 	public StabilityAiImageOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(StabilityAiImageOptions options) {
-		this.options = options;
 	}
 
 }
