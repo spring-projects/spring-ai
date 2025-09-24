@@ -31,7 +31,7 @@ public class CalculatorTools {
 ----
 @McpTool(name = "calculate-area", 
          description = "Calculate the area of a rectangle",
-         annotations = @McpTool.McpAnnotations(
+         annotations = McpTool.McpAnnotations(
              title = "Rectangle Area Calculator",
              readOnlyHint = true,
              destructiveHint = false,
