@@ -26,6 +26,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public interface ChatMemory {
@@ -60,5 +61,11 @@ public interface ChatMemory {
 	 * Clear the chat memory for the specified conversation.
 	 */
 	void clear(String conversationId);
+
+	/**
+	 * Get all conversation IDs
+	 * @return All conversation IDs
+	 */
+	List<String> getConversations();
 
 }
