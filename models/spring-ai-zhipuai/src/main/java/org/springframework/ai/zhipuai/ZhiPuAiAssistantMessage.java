@@ -25,6 +25,7 @@ import org.springframework.ai.content.Media;
 
 /**
  * @author YunKui Lu
+ * @author Sun Yuhan
  */
 public class ZhiPuAiAssistantMessage extends AssistantMessage {
 
@@ -76,6 +77,50 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 		return "ZhiPuAiAssistantMessage{" + "media=" + this.media + ", messageType=" + this.messageType + ", metadata="
 				+ this.metadata + ", reasoningContent='" + this.reasoningContent + '\'' + ", textContent='"
 				+ this.textContent + '\'' + '}';
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder extends AssistantMessage.Builder {
+
+		private String reasoningContent;
+
+		@Override
+		public Builder content(String content) {
+			this.content = content;
+			return this;
+		}
+
+		@Override
+		public Builder properties(Map<String, Object> properties) {
+			this.properties = properties;
+			return this;
+		}
+
+		@Override
+		public Builder toolCalls(List<ToolCall> toolCalls) {
+			this.toolCalls = toolCalls;
+			return this;
+		}
+
+		@Override
+		public Builder media(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		public Builder reasoningContent(String reasoningContent) {
+			this.reasoningContent = reasoningContent;
+			return this;
+		}
+
+		public ZhiPuAiAssistantMessage build() {
+			return new ZhiPuAiAssistantMessage(this.content, this.reasoningContent, this.properties, this.toolCalls,
+					this.media);
+		}
+
 	}
 
 }

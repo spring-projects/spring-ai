@@ -121,17 +121,17 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	}
 
-	public static final class Builder {
+	public static class Builder {
 
-		private String content;
+		protected String content;
 
-		private Map<String, Object> properties = Map.of();
+		protected Map<String, Object> properties = Map.of();
 
-		private List<ToolCall> toolCalls = List.of();
+		protected List<ToolCall> toolCalls = List.of();
 
-		private List<Media> media = List.of();
+		protected List<Media> media = List.of();
 
-		private Builder() {
+		protected Builder() {
 		}
 
 		public Builder content(String content) {
