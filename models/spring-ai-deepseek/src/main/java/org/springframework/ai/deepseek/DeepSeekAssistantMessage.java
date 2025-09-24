@@ -23,6 +23,11 @@ import java.util.Objects;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.content.Media;
 
+/**
+ * @author Mark Pollack
+ * @author Soby Chacko
+ * @author Sun Yuhan
+ */
 public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	private Boolean prefix;
@@ -109,7 +114,7 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	@Override
 	public String toString() {
-		return "AssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
+		return "DeepSeekAssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
 				+ ", textContent=" + this.textContent + ", reasoningContent=" + this.reasoningContent + ", prefix="
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
