@@ -506,7 +506,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public Map<String, Object> getExtraBody() {
-		return extraBody;
+		return this.extraBody;
 	}
 
 	public void setExtraBody(Map<String, Object> extraBody) {
