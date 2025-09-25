@@ -95,4 +95,5 @@ class QueryTests {
 		assertThat(toString).contains("text");
 		assertThat(toString).contains("Test query text");
 	}
+
 }

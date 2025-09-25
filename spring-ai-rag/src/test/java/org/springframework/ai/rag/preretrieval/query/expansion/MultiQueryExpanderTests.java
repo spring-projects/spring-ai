@@ -72,17 +72,16 @@ class MultiQueryExpanderTests {
 
 	@Test
 	void whenBuilderIsNullThenThrow() {
-		assertThatThrownBy(() -> MultiQueryExpander.builder().build())
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("chatClientBuilder cannot be null");
+		assertThatThrownBy(() -> MultiQueryExpander.builder().build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 
 	@Test
 	void whenPromptTemplateIsNullThenUseDefault() {
 		MultiQueryExpander queryExpander = MultiQueryExpander.builder()
-				.chatClientBuilder(mock(ChatClient.Builder.class))
-				.promptTemplate(null)
-				.build();
+			.chatClientBuilder(mock(ChatClient.Builder.class))
+			.promptTemplate(null)
+			.build();
 		assertThat(queryExpander).isNotNull();
 	}
 
