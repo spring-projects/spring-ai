@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.client.observation;
 
-import java.util.Collections;
 import java.util.List;
 
 import io.micrometer.observation.Observation;
@@ -24,6 +23,8 @@ import io.micrometer.observation.ObservationHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.util.StringUtils;
 
@@ -43,14 +44,18 @@ public class ChatClientCompletionObservationHandler implements ObservationHandle
 	}
 
 	private List<String> completion(ChatClientObservationContext context) {
-		if (context.getResponseText() == null) {
-			return List.of();
-		}
-		else if (!StringUtils.hasText(context.getResponseText())) {
+		if (context.getResponse() == null || context.getResponse().chatResponse() == null) {
 			return List.of();
 		}
 
-		return Collections.singletonList(context.getResponseText());
+		return context.getResponse()
+			.chatResponse()
+			.getResults()
+			.stream()
+			.map(Generation::getOutput)
+			.map(Message::getText)
+			.filter(StringUtils::hasText)
+			.toList();
 	}
 
 	@Override

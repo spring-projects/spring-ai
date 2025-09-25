@@ -190,7 +190,7 @@ class ChatClientObservationContextTests {
 	}
 
 	@Test
-	void whenSetChatClientResponseThenReturnResponseText() {
+	void whenSetChatClientResponseThenReturnTheSameResponse() {
 		var observationContext = ChatClientObservationContext.builder()
 			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
 			.build();
@@ -201,7 +201,7 @@ class ChatClientObservationContextTests {
 			.build();
 
 		observationContext.setResponse(response);
-		assertThat(observationContext.getResponseText()).isEqualTo("Test message");
+		assertThat(observationContext.getResponse()).isSameAs(response);
 	}
 
 	@Test
@@ -209,53 +209,9 @@ class ChatClientObservationContextTests {
 		var observationContext = ChatClientObservationContext.builder()
 			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
 			.build();
-		var nullResponse = ChatClientResponse.builder().chatResponse(null).build();
 
-		observationContext.setResponse(nullResponse);
-		assertThat(observationContext.getResponseText()).isNull();
-	}
-
-	@Test
-	void whenAppendChatClientResponseThenReturnResponseText() {
-		var observationContext = ChatClientObservationContext.builder()
-			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
-			.build();
-		var response1 = ChatClientResponse.builder()
-			.chatResponse(ChatResponse.builder()
-				.generations(List.of(new Generation(new AssistantMessage("Test message "))))
-				.build())
-			.build();
-		var response2 = ChatClientResponse.builder()
-			.chatResponse(ChatResponse.builder()
-				.generations(List.of(new Generation(new AssistantMessage("and another test message"))))
-				.build())
-			.build();
-
-		observationContext.appendResponse(response1);
-		assertThat(observationContext.getResponseText()).isEqualTo("Test message ");
-
-		observationContext.appendResponse(response2);
-		assertThat(observationContext.getResponseText()).isEqualTo("Test message and another test message");
-	}
-
-	@Test
-	void whenAppendChatClientResponseWithNullChatResponseThenReturnNull() {
-		var observationContext = ChatClientObservationContext.builder()
-			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
-			.build();
-		var nullResponse = ChatClientResponse.builder().chatResponse(null).build();
-		var response = ChatClientResponse.builder()
-			.chatResponse(ChatResponse.builder()
-				.generations(List.of(new Generation(new AssistantMessage("Test message "))))
-				.build())
-			.build();
-
-		observationContext.appendResponse(nullResponse);
-		assertThat(observationContext.getResponseText()).isNull();
-		observationContext.appendResponse(response);
-		assertThat(observationContext.getResponseText()).isEqualTo("Test message ");
-		observationContext.appendResponse(nullResponse);
-		assertThat(observationContext.getResponseText()).isEqualTo("Test message ");
+		observationContext.setResponse(null);
+		assertThat(observationContext.getResponse()).isNull();
 	}
 
 }

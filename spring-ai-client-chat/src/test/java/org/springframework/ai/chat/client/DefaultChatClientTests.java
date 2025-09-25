@@ -869,7 +869,7 @@ class DefaultChatClientTests {
 			.that()
 			.isInstanceOfSatisfying(ChatClientObservationContext.class, context -> {
 				assertThat(context.getRequest().prompt()).isEqualTo(actualPrompt);
-				assertThat(context).extracting("responseText").isEqualTo("response");
+				assertThat(context.getResponse()).isSameAs(chatClientResponse);
 			});
 	}
 
@@ -1415,7 +1415,8 @@ class DefaultChatClientTests {
 			.that()
 			.isInstanceOfSatisfying(ChatClientObservationContext.class, context -> {
 				assertThat(context.getRequest().prompt()).isEqualTo(actualPrompt);
-				assertThat(context).extracting("responseText").isEqualTo("response");
+				assertThat(context.getResponse().chatResponse().getResults())
+					.isEqualTo(chatClientResponse.chatResponse().getResults());
 			});
 	}
 

@@ -17,7 +17,6 @@
 package org.springframework.ai.chat.client.observation;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
 
@@ -25,8 +24,6 @@ import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -47,7 +44,7 @@ public class ChatClientObservationContext extends Observation.Context {
 	private final ChatClientRequest request;
 
 	@Nullable
-	private String responseText;
+	private ChatClientResponse response;
 
 	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(AiOperationType.FRAMEWORK.value(),
 			AiProvider.SPRING_AI.value());
@@ -94,9 +91,13 @@ public class ChatClientObservationContext extends Observation.Context {
 		return null;
 	}
 
+	/**
+	 * @return Chat client response
+	 * @since 1.1.0
+	 */
 	@Nullable
-	String getResponseText() {
-		return this.responseText;
+	public ChatClientResponse getResponse() {
+		return this.response;
 	}
 
 	/**
@@ -104,26 +105,7 @@ public class ChatClientObservationContext extends Observation.Context {
 	 * @since 1.1.0
 	 */
 	public void setResponse(ChatClientResponse response) {
-		if (response.chatResponse() != null) {
-			this.responseText = generationsToString(response.chatResponse().getResults());
-		}
-	}
-
-	/**
-	 * @param response Chat client response to record.
-	 * @since 1.1.0
-	 */
-	public void appendResponse(ChatClientResponse response) {
-		if (this.responseText == null) {
-			setResponse(response);
-		}
-		else if (response.chatResponse() != null) {
-			this.responseText += generationsToString(response.chatResponse().getResults());
-		}
-	}
-
-	private String generationsToString(List<Generation> generations) {
-		return generations.stream().map(Generation::getOutput).map(Message::getText).collect(Collectors.joining("\n"));
+		this.response = response;
 	}
 
 	public static final class Builder {
