@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionContext;
@@ -38,6 +39,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
+import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
 /**
@@ -52,7 +54,7 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	private final Neo4jChatMemoryRepositoryConfig config;
 
-	public Neo4jChatMemoryRepository(Neo4jChatMemoryRepositoryConfig config) {
+	private Neo4jChatMemoryRepository(Neo4jChatMemoryRepositoryConfig config) {
 		this.config = config;
 	}
 
@@ -326,6 +328,58 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 			mediaMaps.add(mediaMap);
 		}
 		return mediaMaps;
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private final Neo4jChatMemoryRepositoryConfig.Builder builder = Neo4jChatMemoryRepositoryConfig.builder();
+
+		private Builder() {
+		}
+
+		public Builder driver(Driver driver) {
+			this.builder.withDriver(driver);
+			return this;
+		}
+
+		public Builder sessionLabel(String sessionLabel) {
+			this.builder.withSessionLabel(sessionLabel);
+			return this;
+		}
+
+		public Builder toolCallLabel(String toolCallLabel) {
+			this.builder.withToolCallLabel(toolCallLabel);
+			return this;
+		}
+
+		public Builder metadataLabel(String metadataLabel) {
+			this.builder.withMetadataLabel(metadataLabel);
+			return this;
+		}
+
+		public Builder messageLabel(String messageLabel) {
+			this.builder.withMessageLabel(messageLabel);
+			return this;
+		}
+
+		public Builder toolResponseLabel(String toolResponseLabel) {
+			this.builder.withToolResponseLabel(toolResponseLabel);
+			return this;
+		}
+
+		public Builder mediaLabel(String mediaLabel) {
+			this.builder.withMediaLabel(mediaLabel);
+			return this;
+		}
+
+		public Neo4jChatMemoryRepository build() {
+			Assert.notNull(this.builder.getDriver(), "Driver cannot be null");
+			return new Neo4jChatMemoryRepository(this.builder.build());
+		}
 	}
 
 }
