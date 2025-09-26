@@ -151,4 +151,64 @@ class MistralAiBindingsPropertiesProcessorTests {
 		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", null);
 	}
 
+	@Test
+	void extraPropertiesAreIgnored() {
+		Bindings extraPropsBinding = new Bindings(new Binding("test-name", Paths.get("test-path"),
+				Map.of(Binding.TYPE, MistralAiBindingsPropertiesProcessor.TYPE, "api-key", "demo", "uri",
+						"https://mistralai.example.com", "extra-property", "should-be-ignored", "another-prop",
+						"also-ignored")));
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, extraPropsBinding, this.properties);
+
+		assertThat(this.properties).hasSize(2);
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", "demo");
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", "https://mistralai.example.com");
+		assertThat(this.properties).doesNotContainKey("spring.ai.mistralai.extra-property");
+	}
+
+	@Test
+	void existingPropertiesAreOverwritten() {
+		this.properties.put("spring.ai.mistralai.api-key", "old-key");
+		this.properties.put("spring.ai.mistralai.base-url", "https://old.example.com");
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, this.bindings, this.properties);
+
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", "demo");
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", "https://my.mistralai.example.net");
+	}
+
+	@Test
+	void bindingWithDifferentKeyNamesAreIgnored() {
+		// Using different key names (not "api-key" and "uri")
+		Bindings wrongKeysBinding = new Bindings(new Binding("test-name", Paths.get("test-path"),
+				Map.of(Binding.TYPE, MistralAiBindingsPropertiesProcessor.TYPE, "apiKey", "demo", // Wrong
+																									// key
+																									// name
+																									// (camelCase)
+						"url", "https://mistralai.example.com"))); // Wrong key name
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, wrongKeysBinding, this.properties);
+
+		// Should set null for missing expected keys
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", null);
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", null);
+	}
+
+	@Test
+	void multipleBindingsWithMistralAiTypeShouldProcessLast() {
+		Binding mistralBinding1 = new Binding("mistral-1", Paths.get("path-1"), Map.of(Binding.TYPE,
+				MistralAiBindingsPropertiesProcessor.TYPE, "api-key", "key1", "uri", "https://mistral1.example.com"));
+
+		Binding mistralBinding2 = new Binding("mistral-2", Paths.get("path-2"), Map.of(Binding.TYPE,
+				MistralAiBindingsPropertiesProcessor.TYPE, "api-key", "key2", "uri", "https://mistral2.example.com"));
+
+		Bindings multipleBindings = new Bindings(mistralBinding1, mistralBinding2);
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, multipleBindings, this.properties);
+
+		// Should process the last matching binding (overrides previous)
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", "key2");
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", "https://mistral2.example.com");
+	}
+
 }
