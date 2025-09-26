@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -39,6 +40,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * </pre>
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 1.0.0
  * @see SseParameters
  */
@@ -68,8 +70,9 @@ public class McpSseClientProperties {
 	 *
 	 * @param url the URL endpoint for SSE communication with the MCP server
 	 * @param sseEndpoint the SSE endpoint for the MCP server
+	 * @param headers the custom HTTP headers for the MCP server
 	 */
-	public record SseParameters(String url, String sseEndpoint) {
+	public record SseParameters(String url, String sseEndpoint, Map<String, List<String>> headers) {
 	}
 
 }
