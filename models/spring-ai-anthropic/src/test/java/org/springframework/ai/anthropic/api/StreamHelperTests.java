@@ -77,6 +77,19 @@ class StreamHelperTests {
 	}
 
 	@Test
+	void testPingEventHandling() {
+		StreamHelper streamHelper = new StreamHelper();
+		AtomicReference<ChatCompletionResponseBuilder> contentBlockReference = new AtomicReference<>();
+
+		AnthropicApi.PingEvent pingEvent = new AnthropicApi.PingEvent(AnthropicApi.EventType.PING);
+
+		AnthropicApi.ChatCompletionResponse response = streamHelper.eventToChatCompletionResponse(pingEvent,
+				contentBlockReference);
+
+		assertThat(response).isNotNull();
+	}
+
+	@Test
 	void testMessageStartEvent() {
 		StreamHelper streamHelper = new StreamHelper();
 		AtomicReference<ChatCompletionResponseBuilder> contentBlockReference = new AtomicReference<>();
