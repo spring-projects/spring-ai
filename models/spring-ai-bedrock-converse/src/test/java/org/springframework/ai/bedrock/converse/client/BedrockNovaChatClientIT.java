@@ -27,18 +27,17 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -197,7 +196,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.options(BedrockChatOptions.builder().model(modelName).build())
 			.tools(new DummyWeatherForecastTools())
 			.user("Get current weather in Amsterdam")
 			.stream()
