@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import org.springframework.util.StringUtils;
  * @author Alexandros Pappas
  * @author Claudio Silva Junior
  * @author Soby Chacko
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public class StreamHelper {
@@ -83,7 +84,9 @@ public class StreamHelper {
 	 */
 	public StreamEvent mergeToolUseEvents(StreamEvent previousEvent, StreamEvent event) {
 
-		ToolUseAggregationEvent eventAggregator = (ToolUseAggregationEvent) previousEvent;
+		if (!(previousEvent instanceof ToolUseAggregationEvent eventAggregator)) {
+			return event;
+		}
 
 		if (event.type() == EventType.CONTENT_BLOCK_START) {
 			ContentBlockStartEvent contentBlockStart = (ContentBlockStartEvent) event;
@@ -161,7 +164,7 @@ public class StreamHelper {
 			}
 			else if (contentBlockStartEvent.contentBlock() instanceof ContentBlockThinking thinkingBlock) {
 				ContentBlock cb = new ContentBlock(Type.THINKING, null, null, contentBlockStartEvent.index(), null,
-						null, null, null, null, null, thinkingBlock.thinking(), null, null);
+						null, null, null, null, thinkingBlock.signature(), thinkingBlock.thinking(), null, null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else {
