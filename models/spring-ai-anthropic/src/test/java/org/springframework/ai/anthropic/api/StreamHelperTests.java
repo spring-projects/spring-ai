@@ -40,7 +40,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * Tests for {@link StreamHelper}.
- * 
+ *
  * @author Ilayaperumal Gopinathan
  * @author Sun Yuhan
  */
