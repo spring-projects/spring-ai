@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.observation.ChatClientCompletionObservationHandler;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
@@ -71,6 +72,11 @@ public class ChatClientAutoConfiguration {
 				"You have enabled logging out the ChatClient prompt content with the risk of exposing sensitive or private information. Please, be careful!");
 	}
 
+	private static void logCompletionWarning() {
+		logger.warn(
+				"You have enabled logging out the ChatClient completion content with the risk of exposing sensitive or private information. Please, be careful!");
+	}
+
 	@Bean
 	@ConditionalOnMissingBean
 	ChatClientBuilderConfigurer chatClientBuilderConfigurer(ObjectProvider<ChatClientCustomizer> customizerProvider) {
@@ -108,6 +114,17 @@ public class ChatClientAutoConfiguration {
 			return new TracingAwareLoggingObservationHandler<>(new ChatClientPromptContentObservationHandler(), tracer);
 		}
 
+		@Bean
+		@ConditionalOnMissingBean(value = ChatClientCompletionObservationHandler.class,
+				name = "chatClientCompletionObservationHandler")
+		@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
+				name = "log-completion", havingValue = "true")
+		TracingAwareLoggingObservationHandler<ChatClientObservationContext> chatClientCompletionObservationHandler(
+				Tracer tracer) {
+			logCompletionWarning();
+			return new TracingAwareLoggingObservationHandler<>(new ChatClientCompletionObservationHandler(), tracer);
+		}
+
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -121,6 +138,15 @@ public class ChatClientAutoConfiguration {
 		ChatClientPromptContentObservationHandler chatClientPromptContentObservationHandler() {
 			logPromptContentWarning();
 			return new ChatClientPromptContentObservationHandler();
+		}
+
+		@Bean
+		@ConditionalOnMissingBean
+		@ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX + ".observations",
+				name = "log-completion", havingValue = "true")
+		ChatClientCompletionObservationHandler chatClientCompletionObservationHandler() {
+			logCompletionWarning();
+			return new ChatClientCompletionObservationHandler();
 		}
 
 	}
