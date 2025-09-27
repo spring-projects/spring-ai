@@ -30,6 +30,7 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncPromptSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncResourceSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncPromptSpecification;
@@ -330,7 +331,12 @@ public class McpStatelessServerAutoConfigurationIT {
 				ConcurrentHashMap<String, AsyncResourceSpecification> resources = (ConcurrentHashMap<String, AsyncResourceSpecification>) ReflectionTestUtils
 					.getField(asyncServer, "resources");
 				assertThat(resources).hasSize(1);
-				assertThat(resources.get("config://{key}")).isNotNull();
+				assertThat(resources.get("simple://static")).isNotNull();
+
+				ConcurrentHashMap<String, AsyncResourceTemplateSpecification> resourceTemplates = (ConcurrentHashMap<String, AsyncResourceTemplateSpecification>) ReflectionTestUtils
+					.getField(asyncServer, "resourceTemplates");
+				assertThat(resourceTemplates).hasSize(1);
+				assertThat(resourceTemplates.get("config://{key}")).isNotNull();
 
 				ConcurrentHashMap<String, AsyncPromptSpecification> prompts = (ConcurrentHashMap<String, AsyncPromptSpecification>) ReflectionTestUtils
 					.getField(asyncServer, "prompts");
@@ -363,7 +369,12 @@ public class McpStatelessServerAutoConfigurationIT {
 				ConcurrentHashMap<String, AsyncResourceSpecification> resources = (ConcurrentHashMap<String, AsyncResourceSpecification>) ReflectionTestUtils
 					.getField(asyncServer, "resources");
 				assertThat(resources).hasSize(1);
-				assertThat(resources.get("config://{key}")).isNotNull();
+				assertThat(resources.get("simple://static")).isNotNull();
+
+				ConcurrentHashMap<String, AsyncResourceTemplateSpecification> resourceTemplates = (ConcurrentHashMap<String, AsyncResourceTemplateSpecification>) ReflectionTestUtils
+					.getField(asyncServer, "resourceTemplates");
+				assertThat(resourceTemplates).hasSize(1);
+				assertThat(resourceTemplates.get("config://{key}")).isNotNull();
 
 				ConcurrentHashMap<String, AsyncPromptSpecification> prompts = (ConcurrentHashMap<String, AsyncPromptSpecification>) ReflectionTestUtils
 					.getField(asyncServer, "prompts");
@@ -530,6 +541,11 @@ public class McpStatelessServerAutoConfigurationIT {
 			return a + b;
 		}
 
+		@McpResource(uri = "simple://static", name = "Configuration", description = "Provides configuration data")
+		public String getSimple() {
+			return "Hi there!";
+		}
+
 		@McpResource(uri = "config://{key}", name = "Configuration", description = "Provides configuration data")
 		public String getConfig(String key) {
 			return "config value";
@@ -564,6 +580,11 @@ public class McpStatelessServerAutoConfigurationIT {
 		public Mono<Integer> add(@McpToolParam(description = "First number", required = true) int a,
 				@McpToolParam(description = "Second number", required = true) int b) {
 			return Mono.just(a + b);
+		}
+
+		@McpResource(uri = "simple://static", name = "Configuration", description = "Provides configuration data")
+		public Mono<String> getSimple() {
+			return Mono.just("Hi there!");
 		}
 
 		@McpResource(uri = "config://{key}", name = "Configuration", description = "Provides configuration data")
