@@ -31,10 +31,12 @@ import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -111,6 +113,7 @@ public class McpServerAutoConfiguration {
 			McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<SyncToolSpecification>> tools,
 			ObjectProvider<List<SyncResourceSpecification>> resources,
+			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
@@ -154,6 +157,21 @@ public class McpServerAutoConfiguration {
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 				serverBuilder.resources(resourceSpecifications);
 				logger.info("Registered resources: " + resourceSpecifications.size());
+			}
+		}
+
+		// Resources Templates
+		if (serverProperties.getCapabilities().isResource()) {
+			logger.info("Enable resources templates capabilities, notification: "
+					+ changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+
+			List<SyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
+				.flatMap(List::stream)
+				.toList();
+			if (!CollectionUtils.isEmpty(resourceTemplateSpecifications)) {
+				serverBuilder.resourceTemplates(resourceTemplateSpecifications);
+				logger.info("Registered resource templates: " + resourceTemplateSpecifications.size());
 			}
 		}
 
@@ -210,6 +228,7 @@ public class McpServerAutoConfiguration {
 			McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<AsyncToolSpecification>> tools,
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
+			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer) {
@@ -252,6 +271,21 @@ public class McpServerAutoConfiguration {
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 				serverBuilder.resources(resourceSpecifications);
 				logger.info("Registered resources: " + resourceSpecifications.size());
+			}
+		}
+
+		// Resources Templates
+		if (serverProperties.getCapabilities().isResource()) {
+			logger.info("Enable resources templates capabilities, notification: "
+					+ changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+
+			List<AsyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
+				.flatMap(List::stream)
+				.toList();
+			if (!CollectionUtils.isEmpty(resourceTemplateSpecifications)) {
+				serverBuilder.resourceTemplates(resourceTemplateSpecifications);
+				logger.info("Registered resources templates: " + resourceTemplateSpecifications.size());
 			}
 		}
 

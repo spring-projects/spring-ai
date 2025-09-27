@@ -26,10 +26,12 @@ import io.modelcontextprotocol.server.McpStatelessAsyncServer;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncPromptSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncResourceSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -80,6 +82,7 @@ public class McpServerStatelessAutoConfiguration {
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
 			ObjectProvider<List<SyncToolSpecification>> tools,
 			ObjectProvider<List<SyncResourceSpecification>> resources,
+			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment) {
 
@@ -110,6 +113,19 @@ public class McpServerStatelessAutoConfiguration {
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 				serverBuilder.resources(resourceSpecifications);
 				logger.info("Registered resources: " + resourceSpecifications.size());
+			}
+		}
+
+		// Resources Templates
+		if (serverProperties.getCapabilities().isResource()) {
+			capabilitiesBuilder.resources(false, false);
+
+			List<SyncResourceTemplateSpecification> resourceSpecifications = resourceTemplates.stream()
+				.flatMap(List::stream)
+				.toList();
+			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
+				serverBuilder.resourceTemplates(resourceSpecifications);
+				logger.info("Registered resource templates: " + resourceSpecifications.size());
 			}
 		}
 
@@ -156,6 +172,7 @@ public class McpServerStatelessAutoConfiguration {
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
 			ObjectProvider<List<AsyncToolSpecification>> tools,
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
+			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions) {
 
@@ -186,6 +203,19 @@ public class McpServerStatelessAutoConfiguration {
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 				serverBuilder.resources(resourceSpecifications);
 				logger.info("Registered resources: " + resourceSpecifications.size());
+			}
+		}
+
+		// Resources Templates
+		if (serverProperties.getCapabilities().isResource()) {
+			capabilitiesBuilder.resources(false, false);
+
+			List<AsyncResourceTemplateSpecification> resourceSpecifications = resourceTemplates.stream()
+				.flatMap(List::stream)
+				.toList();
+			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
+				serverBuilder.resourceTemplates(resourceSpecifications);
+				logger.info("Registered resource templates: " + resourceSpecifications.size());
 			}
 		}
 

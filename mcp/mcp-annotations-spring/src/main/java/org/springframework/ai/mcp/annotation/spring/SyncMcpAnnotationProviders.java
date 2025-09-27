@@ -22,6 +22,7 @@ import java.util.List;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
@@ -97,6 +98,16 @@ public final class SyncMcpAnnotationProviders {
 	public static List<McpStatelessServerFeatures.SyncResourceSpecification> statelessResourceSpecifications(
 			List<Object> resourceObjects) {
 		return new SpringAiSyncStatelessResourceProvider(resourceObjects).getResourceSpecifications();
+	}
+
+	// RESOURCE TEMPLATE
+	public static List<SyncResourceTemplateSpecification> resourceTemplateSpecifications(List<Object> resourceObjects) {
+		return new SpringAiSyncMcpResourceProvider(resourceObjects).getResourceTemplateSpecifications();
+	}
+
+	public static List<McpStatelessServerFeatures.SyncResourceTemplateSpecification> statelessResourceTemplateSpecifications(
+			List<Object> resourceObjects) {
+		return new SpringAiSyncStatelessResourceProvider(resourceObjects).getResourceTemplateSpecifications();
 	}
 
 	// LOGGING (CLIENT)
