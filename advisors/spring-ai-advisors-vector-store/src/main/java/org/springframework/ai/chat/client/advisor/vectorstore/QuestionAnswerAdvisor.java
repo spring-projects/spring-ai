@@ -28,6 +28,7 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.client.advisor.api.SchedulerHolder;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -83,7 +84,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 	private final int order;
 
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
-		this(vectorStore, SearchRequest.builder().build(), DEFAULT_PROMPT_TEMPLATE, BaseAdvisor.DEFAULT_SCHEDULER,
+		this(vectorStore, SearchRequest.builder().build(), DEFAULT_PROMPT_TEMPLATE, SchedulerHolder.DEFAULT_SCHEDULER,
 				DEFAULT_ORDER);
 	}
 
@@ -95,7 +96,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 		this.vectorStore = vectorStore;
 		this.searchRequest = searchRequest;
 		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
-		this.scheduler = scheduler != null ? scheduler : BaseAdvisor.DEFAULT_SCHEDULER;
+		this.scheduler = scheduler != null ? scheduler : SchedulerHolder.DEFAULT_SCHEDULER;
 		this.order = order;
 	}
 
@@ -197,7 +198,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 		}
 
 		public Builder protectFromBlocking(boolean protectFromBlocking) {
-			this.scheduler = protectFromBlocking ? BaseAdvisor.DEFAULT_SCHEDULER : Schedulers.immediate();
+			this.scheduler = protectFromBlocking ? SchedulerHolder.DEFAULT_SCHEDULER : Schedulers.immediate();
 			return this;
 		}
 

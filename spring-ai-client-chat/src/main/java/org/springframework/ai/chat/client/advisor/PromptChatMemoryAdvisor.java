@@ -33,8 +33,8 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.api.SchedulerHolder;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
@@ -202,7 +202,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
-		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
+		private Scheduler scheduler = SchedulerHolder.DEFAULT_SCHEDULER;
 
 		private ChatMemory chatMemory;
 
