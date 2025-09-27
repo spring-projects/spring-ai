@@ -61,6 +61,13 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 		}
 
 		@Bean
+		public List<McpStatelessServerFeatures.SyncResourceTemplateSpecification> resourceTemplateSpecs(
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+			return SyncMcpAnnotationProviders.statelessResourceTemplateSpecifications(
+					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+		}
+
+		@Bean
 		public List<McpStatelessServerFeatures.SyncPromptSpecification> promptSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 			return SyncMcpAnnotationProviders
@@ -94,6 +101,13 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 			return AsyncMcpAnnotationProviders
 				.statelessResourceSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+		}
+
+		@Bean
+		public List<McpStatelessServerFeatures.AsyncResourceTemplateSpecification> resourceTemplateSpecs(
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+			return AsyncMcpAnnotationProviders.statelessResourceTemplateSpecifications(
+					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
 		}
 
 		@Bean
