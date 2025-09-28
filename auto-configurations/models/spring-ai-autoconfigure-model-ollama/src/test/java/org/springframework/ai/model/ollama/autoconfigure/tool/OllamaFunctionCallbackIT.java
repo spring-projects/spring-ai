@@ -38,7 +38,6 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,7 +57,7 @@ public class OllamaFunctionCallbackIT extends BaseOllamaIT {
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
 				// @formatter:on
-		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class))
+		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@BeforeAll
