@@ -493,7 +493,11 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 
 		var content = responseMessage == null ? "" : responseMessage.getContent();
-		var assistantMessage = new AssistantMessage(content, metadata, toolCalls);
+		var assistantMessage = AssistantMessage.builder()
+			.content(content)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
 		var generationMetadata = generateChoiceMetadata(choice);
 
 		return new Generation(assistantMessage, generationMetadata);

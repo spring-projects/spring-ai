@@ -140,7 +140,11 @@ public final class ConverseApiUtils {
 					}
 				}
 
-				AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
+				AssistantMessage assistantMessage = AssistantMessage.builder()
+					.content("")
+					.properties(Map.of())
+					.toolCalls(toolCalls)
+					.build();
 				Generation toolCallGeneration = new Generation(assistantMessage,
 						ChatGenerationMetadata.builder().finishReason("tool_use").build());
 
@@ -176,7 +180,10 @@ public final class ConverseApiUtils {
 				if (contentBlockDeltaEvent.delta().type().equals(ContentBlockDelta.Type.TEXT)) {
 
 					var generation = new Generation(
-							new AssistantMessage(contentBlockDeltaEvent.delta().text(), Map.of()),
+							AssistantMessage.builder()
+								.content(contentBlockDeltaEvent.delta().text())
+								.properties(Map.of())
+								.build(),
 							ChatGenerationMetadata.builder()
 								.finishReason(lastAggregation.metadataAggregation().stopReason())
 								.build());
@@ -382,6 +389,26 @@ public final class ConverseApiUtils {
 		else {
 			throw new IllegalArgumentException("Unsupported value type:" + value.getClass().getSimpleName());
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public static Map<String, String> getRequestMetadata(Map<String, Object> metadata) {
+
+		if (metadata.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<String, String> result = new HashMap<>();
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+
+			if (key != null && value != null) {
+				result.put(key, value.toString());
+			}
+		}
+
+		return result;
 	}
 
 	private static Document convertMapToDocument(Map<String, Object> value) {

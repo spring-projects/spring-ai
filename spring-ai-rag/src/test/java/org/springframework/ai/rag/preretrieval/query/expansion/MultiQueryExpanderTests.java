@@ -22,6 +22,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -67,6 +68,21 @@ class MultiQueryExpanderTests {
 			.build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("The following placeholders must be present in the prompt template")
 			.hasMessageContaining("query");
+	}
+
+	@Test
+	void whenBuilderIsNullThenThrow() {
+		assertThatThrownBy(() -> MultiQueryExpander.builder().build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("chatClientBuilder cannot be null");
+	}
+
+	@Test
+	void whenPromptTemplateIsNullThenUseDefault() {
+		MultiQueryExpander queryExpander = MultiQueryExpander.builder()
+			.chatClientBuilder(mock(ChatClient.Builder.class))
+			.promptTemplate(null)
+			.build();
+		assertThat(queryExpander).isNotNull();
 	}
 
 }

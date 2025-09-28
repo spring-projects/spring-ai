@@ -183,14 +183,16 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	private Message buildAssistantMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
 			List<Media> mediaList) {
-		Message message;
-		message = new AssistantMessage(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString(),
-				record.get("metadata").asMap(Map.of()), record.get("toolCalls").asList(v -> {
-					var toolCallMap = v.asMap();
-					return new AssistantMessage.ToolCall((String) toolCallMap.get("id"),
-							(String) toolCallMap.get("type"), (String) toolCallMap.get("name"),
-							(String) toolCallMap.get("arguments"));
-				}), mediaList);
+		Message message = AssistantMessage.builder()
+			.content(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
+			.properties(record.get("metadata").asMap(Map.of()))
+			.toolCalls(record.get("toolCalls").asList(v -> {
+				var toolCallMap = v.asMap();
+				return new AssistantMessage.ToolCall((String) toolCallMap.get("id"), (String) toolCallMap.get("type"),
+						(String) toolCallMap.get("name"), (String) toolCallMap.get("arguments"));
+			}))
+			.media(mediaList)
+			.build();
 		return message;
 	}
 

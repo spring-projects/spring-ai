@@ -16,8 +16,8 @@
 
 package org.springframework.ai.model.ollama.autoconfigure;
 
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -38,7 +38,7 @@ public class OllamaChatProperties {
 	 * generative's defaults.
 	 */
 	@NestedConfigurationProperty
-	private OllamaOptions options = OllamaOptions.builder().model(OllamaModel.MISTRAL.id()).build();
+	private final OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL.id()).build();
 
 	public String getModel() {
 		return this.options.getModel();
@@ -48,7 +48,7 @@ public class OllamaChatProperties {
 		this.options.setModel(model);
 	}
 
-	public OllamaOptions getOptions() {
+	public OllamaChatOptions getOptions() {
 		return this.options;
 	}
 

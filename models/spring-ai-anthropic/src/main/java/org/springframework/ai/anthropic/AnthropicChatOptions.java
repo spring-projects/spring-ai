@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -44,6 +45,8 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author Soby Chacko
+ * @author Austin Dase
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -59,6 +62,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("top_k") Integer topK;
 	private @JsonProperty("thinking") ChatCompletionRequest.ThinkingConfig thinking;
 
+	@JsonIgnore
+	private AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.DISABLED;
+
+	public AnthropicCacheOptions getCacheOptions() {
+		return this.cacheOptions;
+	}
+
+	public void setCacheOptions(AnthropicCacheOptions cacheOptions) {
+		this.cacheOptions = cacheOptions;
+	}
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
@@ -111,6 +124,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
+			.cacheOptions(fromOptions.getCacheOptions())
 			.build();
 	}
 
@@ -282,14 +296,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.httpHeaders, that.httpHeaders);
+				&& Objects.equals(this.httpHeaders, that.httpHeaders)
+				&& Objects.equals(this.cacheOptions, that.cacheOptions);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext, this.httpHeaders);
+				this.toolContext, this.httpHeaders, this.cacheOptions);
 	}
 
 	public static class Builder {
@@ -386,6 +401,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder httpHeaders(Map<String, String> httpHeaders) {
 			this.options.setHttpHeaders(httpHeaders);
+			return this;
+		}
+
+		public Builder cacheOptions(AnthropicCacheOptions cacheOptions) {
+			this.options.setCacheOptions(cacheOptions);
 			return this;
 		}
 

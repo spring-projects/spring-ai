@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 
 import java.util.List;
 
-import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import org.springaicommunity.mcp.annotation.McpComplete;
 import org.springaicommunity.mcp.annotation.McpPrompt;
@@ -76,10 +75,12 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 		}
 
 		@Bean
-		public List<McpServerFeatures.SyncToolSpecification> toolSpecs(
+		public List<McpStatelessServerFeatures.SyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.toolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+			List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications = SyncMcpAnnotationProviders
+				.statelessToolSpecifications(beansByAnnotation);
+			return syncToolSpecifications;
 		}
 
 	}

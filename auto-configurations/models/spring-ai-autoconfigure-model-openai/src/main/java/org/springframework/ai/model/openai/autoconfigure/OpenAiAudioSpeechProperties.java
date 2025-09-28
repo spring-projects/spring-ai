@@ -45,7 +45,7 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 	private static final OpenAiAudioApi.SpeechRequest.AudioResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
 
 	@NestedConfigurationProperty
-	private OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+	private final OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
 		.model(DEFAULT_SPEECH_MODEL)
 		.responseFormat(DEFAULT_RESPONSE_FORMAT)
 		.voice(VOICE)
@@ -54,10 +54,6 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public OpenAiAudioSpeechOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiAudioSpeechOptions options) {
-		this.options = options;
 	}
 
 }

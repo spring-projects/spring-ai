@@ -214,6 +214,8 @@ public class McpClientApplication {
     public static void main(String[] args) {
         SpringApplication.run(McpClientApplication.class, args);
     }
+
+
 }
 
 @Component
@@ -223,7 +225,7 @@ public class ClientHandlers {
     private final ProgressTracker progressTracker = new ProgressTracker();
     private final ChatModel chatModel;
 
-    public ClientHandlers(ChatModel chatModel) {
+    public ClientHandlers(@Lazy ChatModel chatModel) {
         this.chatModel = chatModel;
     }
 
@@ -661,7 +663,7 @@ public class McpClientHandlers {
 
 === Client Application Setup
 
-The client application configures multiple ChatClient instances for different LLM providers:
+Regisster the MCP tools and handlers in the client application:
 
 [source,java]
 ----
@@ -674,10 +676,9 @@ public class McpClientApplication {
 
     @Bean
     public CommandLineRunner predefinedQuestions(OpenAiChatModel openAiChatModel,
-            List<McpSyncClient> mcpClients) {
+            ToolCallbackProvider mcpToolProvider) {
 
-        return args -> {
-            var mcpToolProvider = new SyncMcpToolCallbackProvider(mcpClients);
+        return args -> {            
 
             ChatClient chatClient = ChatClient.builder(openAiChatModel)
                     .defaultToolCallbacks(mcpToolProvider)
@@ -692,14 +693,6 @@ public class McpClientApplication {
             System.out.println("> USER: " + userQuestion);
             System.out.println("> ASSISTANT: " + chatClient.prompt(userQuestion).call().content());
         };
-    }
-
-    @Bean
-    public Map<String, ChatClient> chatClients(List<ChatModel> chatModels) {
-        return chatModels.stream()
-                .collect(Collectors.toMap(
-                    model -> model.getClass().getSimpleName().toLowerCase(),
-                    model -> ChatClient.builder(model).build()));
     }
 }
 ----

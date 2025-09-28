@@ -23,6 +23,7 @@ import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link ImageModelObservationContext}.
@@ -39,6 +40,75 @@ class ImageModelObservationContextTests {
 			.build();
 
 		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void shouldBuildContextWithImageOptions() {
+		var imageOptions = ImageOptionsBuilder.builder().model("test-model").build();
+		var imagePrompt = new ImagePrompt("test prompt", imageOptions);
+
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt)
+			.provider("test-provider")
+			.build();
+
+		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void shouldThrowExceptionWhenImagePromptIsNull() {
+		assertThatThrownBy(
+				() -> ImageModelObservationContext.builder().imagePrompt(null).provider("test-provider").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("request cannot be null");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenProviderIsNull() {
+		var imagePrompt = new ImagePrompt("test prompt");
+
+		assertThatThrownBy(() -> ImageModelObservationContext.builder().imagePrompt(imagePrompt).provider(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("provider cannot be null or empty");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenProviderIsEmpty() {
+		var imagePrompt = new ImagePrompt("test prompt");
+
+		assertThatThrownBy(() -> ImageModelObservationContext.builder().imagePrompt(imagePrompt).provider("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("provider cannot be null or empty");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenProviderIsBlank() {
+		var imagePrompt = new ImagePrompt("test prompt");
+
+		assertThatThrownBy(
+				() -> ImageModelObservationContext.builder().imagePrompt(imagePrompt).provider("   ").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("provider cannot be null or empty");
+	}
+
+	@Test
+	void shouldBuildMultipleContextsIndependently() {
+		var imagePrompt1 = new ImagePrompt("first prompt");
+		var imagePrompt2 = new ImagePrompt("second prompt");
+
+		var context1 = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt1)
+			.provider("provider-alpha")
+			.build();
+
+		var context2 = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt2)
+			.provider("provider-beta")
+			.build();
+
+		assertThat(context1).isNotNull();
+		assertThat(context2).isNotNull();
+		assertThat(context1).isNotEqualTo(context2);
 	}
 
 	private ImagePrompt generateImagePrompt(ImageOptions imageOptions) {

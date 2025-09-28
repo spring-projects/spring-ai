@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link ZhiPuAiEmbeddingProperties}.
  *
  * @author Geng Rong
+ * @author YunKui Lu
  */
 public class ZhiPuAiPropertiesTests {
 
@@ -243,7 +244,9 @@ public class ZhiPuAiPropertiesTests {
 						"required": ["location", "lat", "lon", "unit"]
 					}
 					""",
-					"spring.ai.zhipuai.chat.options.user=userXYZ"
+					"spring.ai.zhipuai.chat.options.user=userXYZ",
+					"spring.ai.zhipuai.chat.options.response-format.type=json_object",
+					"spring.ai.zhipuai.chat.options.thinking.type=disabled"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
@@ -262,6 +265,8 @@ public class ZhiPuAiPropertiesTests {
 				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
 				assertThat(chatProperties.getOptions().getRequestId()).isEqualTo("RequestId");
 				assertThat(chatProperties.getOptions().getDoSample()).isEqualTo(Boolean.TRUE);
+				assertThat(chatProperties.getOptions().getResponseFormat().type()).isEqualTo("json_object");
+				assertThat(chatProperties.getOptions().getThinking().type()).isEqualTo("disabled");
 
 				JSONAssert.assertEquals("{\"type\":\"function\",\"function\":{\"name\":\"toolChoiceFunctionName\"}}",
 						chatProperties.getOptions().getToolChoice(), JSONCompareMode.LENIENT);

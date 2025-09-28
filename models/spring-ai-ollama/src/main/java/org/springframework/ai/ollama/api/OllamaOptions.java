@@ -49,8 +49,10 @@ import org.springframework.util.Assert;
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
+ * @deprecated use OllamaChatOptions or OllamaEmbeddingOptions instead.
  */
 @JsonInclude(Include.NON_NULL)
+@Deprecated
 public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
@@ -944,6 +946,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				this.toolContext);
 	}
 
+	@Deprecated
 	public static class Builder {
 
 		private final OllamaOptions options = new OllamaOptions();

@@ -43,8 +43,11 @@ class ChatResponseTests {
 	@Test
 	void whenToolCallsArePresentThenReturnTrue() {
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(
-					new AssistantMessage("", Map.of(), List.of(new ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
 			.build();
 		assertThat(chatResponse.hasToolCalls()).isTrue();
 	}
@@ -136,8 +139,11 @@ class ChatResponseTests {
 	void whenMultipleGenerationsWithToolCallsThenReturnTrue() {
 		ChatResponse chatResponse = ChatResponse.builder()
 			.generations(List.of(new Generation(new AssistantMessage("First response")),
-					new Generation(new AssistantMessage("", Map.of(),
-							List.of(new ToolCall("toolB", "function", "toolB", "{}"))))))
+					new Generation(AssistantMessage.builder()
+						.content("")
+						.properties(Map.of())
+						.toolCalls(List.of(new ToolCall("toolB", "function", "toolB", "{}")))
+						.build())))
 			.build();
 		assertThat(chatResponse.hasToolCalls()).isTrue();
 	}
