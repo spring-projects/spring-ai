@@ -55,7 +55,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 			"spring.ai.ollama.chat.options.temperature=0.5",
 			"spring.ai.ollama.chat.options.topK=10"
 		)
-		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration::class.java))
+		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration::class.java))
 		.withUserConfiguration(Config::class.java)
 
 	@Test
