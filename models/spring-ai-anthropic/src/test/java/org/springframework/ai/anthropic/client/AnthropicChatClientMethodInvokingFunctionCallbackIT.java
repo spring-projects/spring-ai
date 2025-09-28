@@ -19,18 +19,24 @@ package org.springframework.ai.anthropic.client;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.support.ToolDefinitions;
@@ -52,6 +58,9 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		.getLogger(AnthropicChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
+
+	@Autowired
+	ChatModel chatModel;
 
 	@BeforeEach
 	void beforeEach() {
@@ -262,8 +271,38 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 			.containsEntry("color", TestFunctionClass.LightColor.RED);
 	}
 
-	@Autowired
-	ChatModel chatModel;
+	// https://github.com/spring-projects/spring-ai/issues/1878
+	@ParameterizedTest
+	@ValueSource(strings = { "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-7-sonnet-latest" })
+	void streamingParameterLessTool(String modelName) {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.tools(new ParameterLessTools())
+			.user("Get current weather in Amsterdam")
+			.stream()
+			.chatResponse();
+
+		String content = responses.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		assertThat(content).contains("20");
+	}
+
+	public static class ParameterLessTools {
+
+		@Tool(description = "Get the current weather forecast in Amsterdam")
+		String getCurrentDateTime() {
+			return "Weather is hot and sunny with a temperature of 20 degrees";
+		}
+
+	}
 
 	record MyRecord(String foo, String bar) {
 	}

@@ -28,7 +28,10 @@ import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMet
  *
  * @author Ahmed Yousri
  * @since 1.0.0-M1
+ * @deprecated Use {@link org.springframework.ai.audio.tts.TextToSpeechResponse} from the
+ * core package instead. This class will be removed in a future release.
  */
+@Deprecated
 public class SpeechResponse implements ModelResponse<Speech> {
 
 	private final Speech speech;

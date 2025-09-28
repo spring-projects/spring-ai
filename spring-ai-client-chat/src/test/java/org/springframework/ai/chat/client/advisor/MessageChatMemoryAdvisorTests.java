@@ -17,11 +17,12 @@
 package org.springframework.ai.chat.client.advisor;
 
 import org.junit.jupiter.api.Test;
+import reactor.core.scheduler.Schedulers;
+
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
-import reactor.core.scheduler.Schedulers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

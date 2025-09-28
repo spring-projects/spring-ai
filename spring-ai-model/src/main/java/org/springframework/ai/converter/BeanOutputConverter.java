@@ -37,7 +37,9 @@ import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.core.KotlinDetector;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.lang.NonNull;
 
@@ -136,6 +138,11 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
+
+		if (KotlinDetector.isKotlinReflectPresent()) {
+			configBuilder.with(new KotlinModule());
+		}
+
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.type);

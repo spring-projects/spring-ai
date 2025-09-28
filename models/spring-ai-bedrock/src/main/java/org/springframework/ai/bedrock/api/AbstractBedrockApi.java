@@ -22,7 +22,8 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,7 +36,9 @@ import reactor.core.publisher.Sinks.EmitFailureHandler;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelRequest;
@@ -46,6 +49,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Abstract class for the Bedrock API. It provides the basic functionality to invoke the chat completion model and
@@ -147,14 +151,12 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 		Assert.hasText(modelId, "Model id must not be empty");
 		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
-		Assert.notNull(region, "Region must not be empty");
 		Assert.notNull(objectMapper, "Object mapper must not be null");
 		Assert.notNull(timeout, "Timeout must not be null");
 
 		this.modelId = modelId;
 		this.objectMapper = objectMapper;
-		this.region = region;
-
+		this.region = getRegion(region);
 
 		this.client = BedrockRuntimeClient.builder()
 				.region(this.region)
@@ -320,6 +322,20 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		return eventSink.asFlux();
 	}
 
+	private Region getRegion(Region region) {
+		if (ObjectUtils.isEmpty(region)) {
+			try {
+				return DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				throw new IllegalArgumentException("Region is empty and cannot be loaded from DefaultAwsRegionProviderChain: " + e.getMessage(), e);
+			}
+		}
+		else {
+			return region;
+		}
+	}
+
 	/**
 	 * Encapsulates the metrics about the model invocation.
 	 * https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-claude.html
@@ -338,5 +354,6 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 			@JsonProperty("outputTokenCount") Long outputTokenCount,
 			@JsonProperty("invocationLatency") Long invocationLatency) {
 	}
+
 }
 // @formatter:on

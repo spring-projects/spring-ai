@@ -16,15 +16,16 @@
 
 package org.springframework.ai.template.st;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
+
 import org.springframework.ai.template.ValidationMode;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link StTemplateRenderer}.
@@ -93,7 +94,7 @@ class StTemplateRendererTests {
 	void shouldNotAcceptVariablesWithNullKeySet() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 		String template = "Hello!";
-		Map<String, Object> variables = new HashMap<String, Object>();
+		Map<String, Object> variables = new HashMap<>();
 		variables.put(null, "Spring AI");
 
 		assertThatThrownBy(() -> renderer.apply(template, variables)).isInstanceOf(IllegalArgumentException.class)

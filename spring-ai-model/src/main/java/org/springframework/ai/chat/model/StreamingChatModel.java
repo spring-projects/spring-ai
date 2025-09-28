@@ -17,9 +17,11 @@
 package org.springframework.ai.chat.model;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.StreamingModel;
@@ -29,16 +31,18 @@ public interface StreamingChatModel extends StreamingModel<Prompt, ChatResponse>
 
 	default Flux<String> stream(String message) {
 		Prompt prompt = new Prompt(message);
-		return stream(prompt).map(response -> (response.getResult() == null || response.getResult().getOutput() == null
-				|| response.getResult().getOutput().getText() == null) ? ""
-						: response.getResult().getOutput().getText());
+		return stream(prompt).map(response -> Optional.ofNullable(response.getResult())
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.orElse(""));
 	}
 
 	default Flux<String> stream(Message... messages) {
 		Prompt prompt = new Prompt(Arrays.asList(messages));
-		return stream(prompt).map(response -> (response.getResult() == null || response.getResult().getOutput() == null
-				|| response.getResult().getOutput().getText() == null) ? ""
-						: response.getResult().getOutput().getText());
+		return stream(prompt).map(response -> Optional.ofNullable(response.getResult())
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.orElse(""));
 	}
 
 	@Override

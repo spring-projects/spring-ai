@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ package org.springframework.ai.embedding;
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated in favor of {@link EmbeddingOptions#builder()}
  */
-public final class EmbeddingOptionsBuilder {
+@Deprecated
+public final class EmbeddingOptionsBuilder implements EmbeddingOptions.Builder {
 
 	private final DefaultEmbeddingOptions embeddingOptions = new DefaultEmbeddingOptions();
 
@@ -33,44 +35,28 @@ public final class EmbeddingOptionsBuilder {
 		return new EmbeddingOptionsBuilder();
 	}
 
-	public EmbeddingOptionsBuilder withModel(String model) {
+	public EmbeddingOptionsBuilder model(String model) {
 		this.embeddingOptions.setModel(model);
 		return this;
 	}
 
-	public EmbeddingOptionsBuilder withDimensions(Integer dimensions) {
+	@Deprecated
+	public EmbeddingOptionsBuilder withModel(String model) {
+		return model(model);
+	}
+
+	public EmbeddingOptionsBuilder dimensions(Integer dimensions) {
 		this.embeddingOptions.setDimensions(dimensions);
 		return this;
 	}
 
-	public EmbeddingOptions build() {
-		return this.embeddingOptions;
+	@Deprecated
+	public EmbeddingOptionsBuilder withDimensions(Integer dimensions) {
+		return dimensions(dimensions);
 	}
 
-	private static class DefaultEmbeddingOptions implements EmbeddingOptions {
-
-		private String model;
-
-		private Integer dimensions;
-
-		@Override
-		public String getModel() {
-			return this.model;
-		}
-
-		public void setModel(String model) {
-			this.model = model;
-		}
-
-		@Override
-		public Integer getDimensions() {
-			return this.dimensions;
-		}
-
-		public void setDimensions(Integer dimensions) {
-			this.dimensions = dimensions;
-		}
-
+	public EmbeddingOptions build() {
+		return this.embeddingOptions;
 	}
 
 }

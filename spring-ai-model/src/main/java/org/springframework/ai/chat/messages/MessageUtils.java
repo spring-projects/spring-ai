@@ -16,13 +16,13 @@
 
 package org.springframework.ai.chat.messages;
 
-import org.springframework.core.io.Resource;
-import org.springframework.util.Assert;
-import org.springframework.util.StreamUtils;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+
+import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
+import org.springframework.util.StreamUtils;
 
 /**
  * Utility class for managing messages.

@@ -18,8 +18,8 @@ package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import javax.sql.DataSource;
 
-import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepositoryDialect;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
+import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepositoryDialect;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

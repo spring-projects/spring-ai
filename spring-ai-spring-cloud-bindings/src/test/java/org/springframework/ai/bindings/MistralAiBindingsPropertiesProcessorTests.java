@@ -27,6 +27,7 @@ import org.springframework.cloud.bindings.Bindings;
 import org.springframework.mock.env.MockEnvironment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link MistralAiBindingsPropertiesProcessor}.
@@ -63,6 +64,91 @@ class MistralAiBindingsPropertiesProcessorTests {
 
 		new MistralAiBindingsPropertiesProcessor().process(this.environment, this.bindings, this.properties);
 		assertThat(this.properties).isEmpty();
+	}
+
+	@Test
+	void nullBindingsShouldThrowException() {
+		assertThatThrownBy(
+				() -> new MistralAiBindingsPropertiesProcessor().process(this.environment, null, this.properties))
+			.isInstanceOf(NullPointerException.class);
+	}
+
+	@Test
+	void nullEnvironmentShouldThrowException() {
+		assertThatThrownBy(
+				() -> new MistralAiBindingsPropertiesProcessor().process(null, this.bindings, this.properties))
+			.isInstanceOf(NullPointerException.class);
+	}
+
+	@Test
+	void nullPropertiesShouldThrowException() {
+		assertThatThrownBy(
+				() -> new MistralAiBindingsPropertiesProcessor().process(this.environment, this.bindings, null))
+			.isInstanceOf(NullPointerException.class);
+	}
+
+	@Test
+	void missingApiKeyShouldStillSetNullValue() {
+		Bindings bindingsWithoutApiKey = new Bindings(new Binding("test-name", Paths.get("test-path"), Map
+			.of(Binding.TYPE, MistralAiBindingsPropertiesProcessor.TYPE, "uri", "https://my.mistralai.example.net")));
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, bindingsWithoutApiKey, this.properties);
+
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", "https://my.mistralai.example.net");
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", null);
+	}
+
+	@Test
+	void emptyApiKeyIsStillSet() {
+		Bindings bindingsWithEmptyApiKey = new Bindings(new Binding("test-name", Paths.get("test-path"),
+				Map.of(Binding.TYPE, MistralAiBindingsPropertiesProcessor.TYPE, "api-key", "", "uri",
+						"https://my.mistralai.example.net")));
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, bindingsWithEmptyApiKey, this.properties);
+
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", "");
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", "https://my.mistralai.example.net");
+	}
+
+	@Test
+	void wrongBindingTypeShouldBeIgnored() {
+		Bindings wrongTypeBindings = new Bindings(new Binding("test-name", Paths.get("test-path"),
+				Map.of(Binding.TYPE, "different-type", "api-key", "demo", "uri", "https://my.mistralai.example.net")));
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, wrongTypeBindings, this.properties);
+
+		assertThat(this.properties).isEmpty();
+	}
+
+	@Test
+	void emptyBindingsShouldNotThrowException() {
+		Bindings emptyBindings = new Bindings();
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, emptyBindings, this.properties);
+
+		assertThat(this.properties).isEmpty();
+	}
+
+	@Test
+	void onlyUriWithoutApiKeyShouldSetBothProperties() {
+		Bindings bindingsWithOnlyUri = new Bindings(new Binding("test-name", Paths.get("test-path"), Map
+			.of(Binding.TYPE, MistralAiBindingsPropertiesProcessor.TYPE, "uri", "https://custom.mistralai.com")));
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, bindingsWithOnlyUri, this.properties);
+
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", "https://custom.mistralai.com");
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", null);
+	}
+
+	@Test
+	void onlyApiKeyWithoutUriShouldSetBothProperties() {
+		Bindings bindingsWithOnlyApiKey = new Bindings(new Binding("test-name", Paths.get("test-path"),
+				Map.of(Binding.TYPE, MistralAiBindingsPropertiesProcessor.TYPE, "api-key", "secret-key")));
+
+		new MistralAiBindingsPropertiesProcessor().process(this.environment, bindingsWithOnlyApiKey, this.properties);
+
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.api-key", "secret-key");
+		assertThat(this.properties).containsEntry("spring.ai.mistralai.base-url", null);
 	}
 
 }

@@ -20,30 +20,73 @@ Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service 
 
 Spring AI defines two configuration properties:
 
-
 1. `spring.ai.azure.openai.api-key`: Set this to the value of the `API Key` obtained from Azure.
 2. `spring.ai.azure.openai.endpoint`: Set this to the endpoint URL obtained when provisioning your model in Azure.
 
-You can set these configuration properties by exporting environment variables:
+You can set these configuration properties in your `application.properties` or `application.yml` file:
 
-[source,shell]
+[source,properties]
 ----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT AZURE KEY HERE>
-export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
+spring.ai.azure.openai.api-key=<your-azure-api-key>
+spring.ai.azure.openai.endpoint=<your-azure-endpoint-url>
 ----
 
+If you prefer to use environment variables for sensitive information like API keys, you can use Spring Expression Language (SpEL) in your configuration:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    azure:
+      openai:
+        api-key: ${AZURE_OPENAI_API_KEY}
+        endpoint: ${AZURE_OPENAI_ENDPOINT}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AZURE_OPENAI_API_KEY=<your-azure-openai-api-key>
+export AZURE_OPENAI_ENDPOINT=<your-azure-endpoint-url>
+----
 
 === OpenAI Key
 
-To authenticate with the OpenAI service (not Azure), provide an OpenAI API key. This will automatically set the endpoint to https://api.openai.com/v1.
+To authenticate with the OpenAI service (not Azure), provide an OpenAI API key.
+This will automatically set the endpoint to https://api.openai.com/v1.
 
 When using this approach, set the `spring.ai.azure.openai.chat.options.deployment-name` property to the name of the https://platform.openai.com/docs/models[OpenAI model] you wish to use.
 
-[source,shell]
+In your application configuration:
+
+[source,properties]
 ----
-export SPRING_AI_AZURE_OPENAI_OPENAI_API_KEY=<INSERT OPENAI KEY HERE>
+spring.ai.azure.openai.openai-api-key=<your-azure-openai-key>
+spring.ai.azure.openai.chat.options.deployment-name=<openai-model-name>
 ----
 
+Using environment variables with SpEL:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    azure:
+      openai:
+        openai-api-key: ${AZURE_OPENAI_API_KEY}
+        chat:
+          options:
+            deployment-name: ${OPENAI_MODEL_NAME}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AZURE_OPENAI_API_KEY=<your-openai-key>
+export OPENAI_MODEL_NAME=<openai-model-name>
+----
 === Microsoft Entra ID
 
 For keyless authentication using Microsoft Entra ID (formerly Azure Active Directory), set _only_ the `spring.ai.azure.openai.endpoint` configuration property and _not_ the api-key property mentioned above.
@@ -102,7 +145,7 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 | spring.ai.azure.openai.endpoint | The endpoint from the Azure AI OpenAI `Keys and Endpoint` section under `Resource Management` | -
 | spring.ai.azure.openai.openai-api-key |  (non Azure) OpenAI API key. Used to authenticate with the OpenAI service, instead of Azure OpenAI. 
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property. 
-With this configuration the `spring.ai.azure.openai.embedding.options.deployment-name` is threated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
+With this configuration the `spring.ai.azure.openai.embedding.options.deployment-name` is treated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 |====
 
 

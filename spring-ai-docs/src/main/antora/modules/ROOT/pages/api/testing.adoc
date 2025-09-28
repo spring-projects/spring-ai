@@ -6,8 +6,6 @@ One method to evaluate the response is to use the AI model itself for evaluation
 
 The Spring AI interface for evaluating responses is `Evaluator`, defined as:
 
-
-
 [source,java]
 ----
 @FunctionalInterface
@@ -42,58 +40,88 @@ public class EvaluationRequest {
 * `dataList`: Contextual data, such as from Retrieval Augmented Generation, appended to the raw input.
 * `responseContent`: The AI model's response content as a `String`
 
-== RelevancyEvaluator
+== Relevancy Evaluator
 
-One implementation is the `RelevancyEvaluator`, which uses the AI model for evaluation. More implementations will be available in future releases.
+The `RelevancyEvaluator` is an implementation of the `Evaluator` interface, designed to assess the relevance of AI-generated responses against provided context. This evaluator helps assess the quality of a RAG flow by determining if the AI model's response is relevant to the user's input with respect to the retrieved context.
 
-The `RelevancyEvaluator` uses the input (`userText`) and the AI model's output (`chatResponse`) to ask the question:
+The evaluation is based on the user input, the AI model's response, and the context information. It uses a prompt template to ask the AI model if the response is relevant to the user input and context.
 
-[source, text]
+This is the default prompt template used by the `RelevancyEvaluator`:
+
+[source,text]
 ----
 Your task is to evaluate if the response for the query
-is in line with the context information provided.\n
-You have two options to answer. Either YES/ NO.\n
-Answer - YES, if the response for the query
-is in line with context information otherwise NO.\n
-Query: \n {query}\n
-Response: \n {response}\n
-Context: \n {context}\n
-Answer: "
+is in line with the context information provided.
+
+You have two options to answer. Either YES or NO.
+
+Answer YES, if the response for the query
+is in line with context information otherwise NO.
+
+Query:
+{query}
+
+Response:
+{response}
+
+Context:
+{context}
+
+Answer:
 ----
 
-Here is an example of a JUnit test that performs a RAG query over a PDF document loaded into a Vector Store and then evaluates if the response is relevant to the user text.
+NOTE: You can customize the prompt template by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method. See xref:_custom_template[Custom Template] for details.
+
+== Usage in Integration Tests
+
+Here is an example of usage of the `RelevancyEvaluator` in an integration test, validating the result of a RAG flow using the `RetrievalAugmentationAdvisor`:
 
 [source,java]
 ----
 @Test
-void testEvaluation() {
+void evaluateRelevancy() {
+    String question = "Where does the adventure of Anacletus and Birba take place?";
 
-    dataController.delete();
-    dataController.load();
+    RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+            .vectorStore(pgVectorStore)
+            .build())
+        .build();
 
-    String userText = "What is the purpose of Carina?";
+    ChatResponse chatResponse = ChatClient.builder(chatModel).build()
+        .prompt(question)
+        .advisors(ragAdvisor)
+        .call()
+        .chatResponse();
 
-    ChatResponse response = ChatClient.builder(chatModel)
-            .build().prompt()
-            .advisors(new QuestionAnswerAdvisor(vectorStore))
-            .user(userText)
-            .call()
-            .chatResponse();
-    String responseContent = response.getResult().getOutput().getContent();
+    EvaluationRequest evaluationRequest = new EvaluationRequest(
+        // The original user question
+        question,
+        // The retrieved context from the RAG flow
+        chatResponse.getMetadata().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT),
+        // The AI model's response
+        chatResponse.getResult().getOutput().getText()
+    );
 
-    var relevancyEvaluator = new RelevancyEvaluator(ChatClient.builder(chatModel));
+    RelevancyEvaluator evaluator = new RelevancyEvaluator(ChatClient.builder(chatModel));
 
-    EvaluationRequest evaluationRequest = new EvaluationRequest(userText,
-            (List<Content>) response.getMetadata().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS), responseContent);
+    EvaluationResponse evaluationResponse = evaluator.evaluate(evaluationRequest);
 
-    EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
-
-    assertTrue(evaluationResponse.isPass(), "Response is not relevant to the question");
-
+    assertThat(evaluationResponse.isPass()).isTrue();
 }
 ----
 
-The code above is from the example application located https://github.com/rd-1-2022/ai-azure-rag.git[here].
+You can find several integration tests in the Spring AI project that use the `RelevancyEvaluator` to test the functionality of the `QuestionAnswerAdvisor` (see https://github.com/spring-projects/spring-ai/blob/main/spring-ai-integration-tests/src/test/java/org/springframework/ai/integration/tests/client/advisor/QuestionAnswerAdvisorIT.java[tests]) and `RetrievalAugmentationAdvisor` (see https://github.com/spring-projects/spring-ai/blob/main/spring-ai-integration-tests/src/test/java/org/springframework/ai/integration/tests/client/advisor/RetrievalAugmentationAdvisorIT.java[tests]).
+
+=== Custom Template
+
+The `RelevancyEvaluator` uses a default template to prompt the AI model for evaluation. You can customize this behavior by providing your own `PromptTemplate` object via the `.promptTemplate()` builder method.
+
+The custom `PromptTemplate` can use any `TemplateRenderer` implementation (by default, it uses `StPromptTemplate` based on the https://www.stringtemplate.org/[StringTemplate] engine). The important requirement is that the template must contain the following placeholders:
+
+* a `query` placeholder to receive the user question.
+* a `response` placeholder to receive the AI model's response.
+* a `context` placeholder to receive the context information.
 
 == FactCheckingEvaluator
 
@@ -129,7 +157,7 @@ void testFactChecking() {
   OllamaApi ollamaApi = new OllamaApi("http://localhost:11434");
 
   ChatModel chatModel = new OllamaChatModel(ollamaApi,
-				OllamaOptions.builder().model(BESPOKE_MINICHECK).numPredict(2).temperature(0.0d).build())
+				OllamaChatOptions.builder().model(BESPOKE_MINICHECK).numPredict(2).temperature(0.0d).build())
 
 
   // Create the FactCheckingEvaluator

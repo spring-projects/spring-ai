@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,13 +28,17 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
+import static org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a
@@ -42,6 +47,7 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Thomas Vitale
+ * @author Heonwoo Kim
  * @since 1.0.0
  */
 public class MessageAggregator {
@@ -54,15 +60,16 @@ public class MessageAggregator {
 		// Assistant Message
 		AtomicReference<StringBuilder> messageTextContentRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
+		AtomicReference<List<ToolCall>> toolCallsRef = new AtomicReference<>(new ArrayList<>());
 
 		// ChatGeneration Metadata
 		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
 				ChatGenerationMetadata.NULL);
 
 		// Usage
-		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<Integer>(0);
-		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<Integer>(0);
-		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<Integer>(0);
+		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<>(0);
+		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<>(0);
+		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<>(0);
 
 		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
 		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
@@ -73,6 +80,7 @@ public class MessageAggregator {
 		return fluxChatResponse.doOnSubscribe(subscription -> {
 			messageTextContentRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
+			toolCallsRef.set(new ArrayList<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
@@ -94,6 +102,11 @@ public class MessageAggregator {
 				if (chatResponse.getResult().getOutput().getMetadata() != null) {
 					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
 				}
+				AssistantMessage outputMessage = chatResponse.getResult().getOutput();
+				if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
+					toolCallsRef.get().addAll(outputMessage.getToolCalls());
+				}
+
 			}
 			if (chatResponse.getMetadata() != null) {
 				if (chatResponse.getMetadata().getUsage() != null) {
@@ -119,6 +132,13 @@ public class MessageAggregator {
 				if (StringUtils.hasText(chatResponse.getMetadata().getModel())) {
 					metadataModelRef.set(chatResponse.getMetadata().getModel());
 				}
+				Object toolCallsFromMetadata = chatResponse.getMetadata().get("toolCalls");
+				if (toolCallsFromMetadata instanceof List) {
+					@SuppressWarnings("unchecked")
+					List<ToolCall> toolCallsList = (List<ToolCall>) toolCallsFromMetadata;
+					toolCallsRef.get().addAll(toolCallsList);
+				}
+
 			}
 		}).doOnComplete(() -> {
 
@@ -133,12 +153,30 @@ public class MessageAggregator {
 				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
-			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(
-					new AssistantMessage(messageTextContentRef.get().toString(), messageMetadataMapRef.get()),
+			AssistantMessage finalAssistantMessage;
+			List<ToolCall> collectedToolCalls = toolCallsRef.get();
+
+			if (!CollectionUtils.isEmpty(collectedToolCalls)) {
+
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadataMapRef.get())
+					.toolCalls(collectedToolCalls)
+					.build();
+			}
+			else {
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadataMapRef.get())
+					.build();
+			}
+			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
+
 					generationMetadataRef.get())), chatResponseMetadata));
 
 			messageTextContentRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
+			toolCallsRef.set(new ArrayList<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);

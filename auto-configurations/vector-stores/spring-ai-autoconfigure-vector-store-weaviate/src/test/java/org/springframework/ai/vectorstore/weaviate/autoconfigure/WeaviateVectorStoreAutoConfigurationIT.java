@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.MetadataField;
+import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStoreOptions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -48,6 +49,7 @@ import static org.springframework.ai.test.vectorstore.ObservationTestUtil.assert
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Jonghoon Park
  */
 @Testcontainers
 public class WeaviateVectorStoreAutoConfigurationIT {
@@ -172,6 +174,24 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(WeaviateVectorStore.class);
 		});
+	}
+
+	@Test
+	public void testMappingPropertiesToOptions() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.weaviate.object-class=CustomObjectClass",
+					"spring.ai.vectorstore.weaviate.content-field-name=customContentFieldName",
+					"spring.ai.vectorstore.weaviate.meta-field-prefix=custom_")
+			.run(context -> {
+				WeaviateVectorStoreAutoConfiguration autoConfiguration = context
+					.getBean(WeaviateVectorStoreAutoConfiguration.class);
+				WeaviateVectorStoreProperties properties = context.getBean(WeaviateVectorStoreProperties.class);
+				WeaviateVectorStoreOptions options = autoConfiguration.mappingPropertiesToOptions(properties);
+
+				assertThat(options.getObjectClass()).isEqualTo("CustomObjectClass");
+				assertThat(options.getContentFieldName()).isEqualTo("customContentFieldName");
+				assertThat(options.getMetaFieldPrefix()).isEqualTo("custom_");
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)

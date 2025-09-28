@@ -16,18 +16,6 @@
 
 package org.springframework.ai.chat.client;
 
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,13 +23,33 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.DefaultChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+
 /**
  * Utilities for supporting the {@link DefaultChatClient} implementation.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
-class DefaultChatClientUtils {
+final class DefaultChatClientUtils {
+
+	private DefaultChatClientUtils() {
+		// prevents instantiation
+	}
 
 	static ChatClientRequest toChatClientRequest(DefaultChatClient.DefaultChatClientRequestSpec inputRequest) {
 		Assert.notNull(inputRequest, "inputRequest cannot be null");
@@ -63,7 +71,10 @@ class DefaultChatClientUtils {
 					.build()
 					.render();
 			}
-			processedMessages.add(new SystemMessage(processedSystemText));
+			processedMessages.add(SystemMessage.builder()
+				.text(processedSystemText)
+				.metadata(inputRequest.getSystemMetadata())
+				.build());
 		}
 
 		// Messages => In the middle of the list
@@ -82,7 +93,11 @@ class DefaultChatClientUtils {
 					.build()
 					.render();
 			}
-			processedMessages.add(UserMessage.builder().text(processedUserText).media(inputRequest.getMedia()).build());
+			processedMessages.add(UserMessage.builder()
+				.text(processedUserText)
+				.media(inputRequest.getMedia())
+				.metadata(inputRequest.getUserMetadata())
+				.build());
 		}
 
 		/*
@@ -90,6 +105,15 @@ class DefaultChatClientUtils {
 		 */
 
 		ChatOptions processedChatOptions = inputRequest.getChatOptions();
+
+		if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
+			if (!inputRequest.getToolNames().isEmpty() || !inputRequest.getToolCallbacks().isEmpty()
+					|| !CollectionUtils.isEmpty(inputRequest.getToolContext())) {
+				processedChatOptions = ModelOptionsUtils.copyToTarget(defaultChatOptions, ChatOptions.class,
+						DefaultToolCallingChatOptions.class);
+			}
+		}
+
 		if (processedChatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			if (!inputRequest.getToolNames().isEmpty()) {
 				Set<String> toolNames = ToolCallingChatOptions

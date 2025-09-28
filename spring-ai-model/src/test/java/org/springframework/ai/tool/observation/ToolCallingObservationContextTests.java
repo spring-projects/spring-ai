@@ -17,6 +17,7 @@
 package org.springframework.ai.tool.observation;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,9 +34,28 @@ class ToolCallingObservationContextTests {
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.build();
+		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void whenToolArgumentsIsNullThenReturn() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallArguments(null)
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("{}");
+	}
+
+	@Test
+	void whenToolArgumentsIsNotNullThenReturn() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("lizard")
 			.build();
 		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("lizard");
 	}
 
 	@Test
@@ -55,21 +75,49 @@ class ToolCallingObservationContextTests {
 	}
 
 	@Test
-	void whenToolCallInputIsNullThenThrow() {
-		assertThatThrownBy(() -> ToolCallingObservationContext.builder()
+	void whenToolArgumentsIsEmptyStringThenReturnEmptyString() {
+		var observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
-			.toolCallArguments(null)
-			.build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallArguments cannot be null or empty");
+			.toolCallArguments("")
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallArguments()).isEqualTo("");
 	}
 
 	@Test
-	void whenToolCallInputIsEmptyThenThrow() {
-		assertThatThrownBy(() -> ToolCallingObservationContext.builder()
+	void whenToolCallResultIsNullThenReturnNull() {
+		var observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
-			.toolCallArguments("")
-			.build()).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("toolCallArguments cannot be null or empty");
+			.toolCallResult(null)
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallResult()).isNull();
+	}
+
+	@Test
+	void whenToolCallResultIsEmptyStringThenReturnEmptyString() {
+		var observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
+			.toolCallResult("")
+			.build();
+		assertThat(observationContext).isNotNull();
+		assertThat(observationContext.getToolCallResult()).isEqualTo("");
+	}
+
+	@Test
+	void whenToolDefinitionIsSetThenGetReturnsIt() {
+		var toolDef = ToolDefinition.builder()
+			.name("testTool")
+			.description("Test description")
+			.inputSchema("{\"type\": \"object\"}")
+			.build();
+
+		var observationContext = ToolCallingObservationContext.builder().toolDefinition(toolDef).build();
+
+		assertThat(observationContext.getToolDefinition()).isEqualTo(toolDef);
+		assertThat(observationContext.getToolDefinition().name()).isEqualTo("testTool");
+		assertThat(observationContext.getToolDefinition().description()).isEqualTo("Test description");
+		assertThat(observationContext.getToolDefinition().inputSchema()).isEqualTo("{\"type\": \"object\"}");
 	}
 
 }

@@ -111,7 +111,7 @@ If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by
 ----
 ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
     .jdbcTemplate(jdbcTemplate)
-    .dialect(new PostgresChatMemoryDialect())
+    .dialect(new PostgresChatMemoryRepositoryDialect())
     .build();
 
 ChatMemory chatMemory = MessageWindowChatMemory.builder()
@@ -222,7 +222,7 @@ If you'd rather create the `CassandraChatMemoryRepository` manually, you can do 
 [source,java]
 ----
 ChatMemoryRepository chatMemoryRepository = CassandraChatMemoryRepository
-    .create(CassandraChatMemoryConfig.builder().withCqlSession(cqlSession));
+    .create(CassandraChatMemoryRepositoryConfig.builder().withCqlSession(cqlSession));
 
 ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .chatMemoryRepository(chatMemoryRepository)

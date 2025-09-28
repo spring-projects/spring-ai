@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -47,11 +46,12 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,7 +65,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 class OllamaChatModelIT extends BaseOllamaIT {
 
-	private static final String MODEL = OllamaModel.LLAMA3_2.getName();
+	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
 	private static final String ADDITIONAL_MODEL = "tinyllama";
 
@@ -82,7 +82,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		String joke = ChatClient.create(this.chatModel)
 			.prompt("Tell me a joke")
-			.options(OllamaOptions.builder().model(ADDITIONAL_MODEL).build())
+			.options(OllamaChatOptions.builder().model(ADDITIONAL_MODEL).build())
 			.call()
 			.content();
 
@@ -111,7 +111,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
 
 		// ollama specific options
-		var ollamaOptions = OllamaOptions.builder().lowVRAM(true).build();
+		var ollamaOptions = OllamaChatOptions.builder().lowVRAM(true).build();
 
 		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
 		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
@@ -253,7 +253,6 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	// Example inspired by https://ollama.com/blog/structured-outputs
 	@Test
-	@Disabled("Pending review")
 	void jsonSchemaFormatStructuredOutput() {
 		var outputConverter = new BeanOutputConverter<>(CountryInfo.class);
 		var userPromptTemplate = new PromptTemplate("""
@@ -261,10 +260,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				""");
 		Map<String, Object> model = Map.of("country", "denmark");
 		var prompt = userPromptTemplate.create(model,
-				OllamaOptions.builder()
-					.model(OllamaModel.LLAMA3_2.getName())
-					.format(outputConverter.getJsonSchemaMap())
-					.build());
+				OllamaChatOptions.builder().format(outputConverter.getJsonSchemaMap()).build());
 
 		var chatResponse = this.chatModel.call(prompt);
 
@@ -280,14 +276,14 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		UserMessage userMessage1 = new UserMessage("My name is James Bond");
 		memory.add(conversationId, userMessage1);
-		ChatResponse response1 = chatModel.call(new Prompt(memory.get(conversationId)));
+		ChatResponse response1 = this.chatModel.call(new Prompt(memory.get(conversationId)));
 
 		assertThat(response1).isNotNull();
 		memory.add(conversationId, response1.getResult().getOutput());
 
 		UserMessage userMessage2 = new UserMessage("What is my name?");
 		memory.add(conversationId, userMessage2);
-		ChatResponse response2 = chatModel.call(new Prompt(memory.get(conversationId)));
+		ChatResponse response2 = this.chatModel.call(new Prompt(memory.get(conversationId)));
 
 		assertThat(response2).isNotNull();
 		memory.add(conversationId, response2.getResult().getOutput());
@@ -312,7 +308,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		chatMemory.add(conversationId, prompt.getInstructions());
 
 		Prompt promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
-		ChatResponse chatResponse = chatModel.call(promptWithMemory);
+		ChatResponse chatResponse = this.chatModel.call(promptWithMemory);
 		chatMemory.add(conversationId, chatResponse.getResult().getOutput());
 
 		while (chatResponse.hasToolCalls()) {
@@ -321,7 +317,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 			chatMemory.add(conversationId, toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1));
 			promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
-			chatResponse = chatModel.call(promptWithMemory);
+			chatResponse = this.chatModel.call(promptWithMemory);
 			chatMemory.add(conversationId, chatResponse.getResult().getOutput());
 		}
 
@@ -331,7 +327,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		UserMessage newUserMessage = new UserMessage("What did I ask you earlier?");
 		chatMemory.add(conversationId, newUserMessage);
 
-		ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversationId)));
+		ChatResponse newResponse = this.chatModel.call(new Prompt(chatMemory.get(conversationId)));
 
 		assertThat(newResponse).isNotNull();
 		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");
@@ -366,11 +362,12 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 				.modelManagementOptions(ModelManagementOptions.builder()
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))
 					.build())
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 

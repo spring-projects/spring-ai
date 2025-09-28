@@ -16,10 +16,13 @@
 
 package org.springframework.ai.model.chat.observation.autoconfigure;
 
+import java.util.List;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.model.ChatModel;
@@ -33,12 +36,14 @@ import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 /**
  * Auto-configuration for Spring AI chat model observations.

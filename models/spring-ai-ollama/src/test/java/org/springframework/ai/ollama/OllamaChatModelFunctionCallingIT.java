@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,10 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.api.OllamaApi;
-import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.tool.MockWeatherService;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -48,7 +50,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);
 
-	private static final String MODEL = "qwen2.5:3b";
+	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
 	@Autowired
 	ChatModel chatModel;
@@ -60,7 +62,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OllamaOptions.builder()
+		var promptOptions = OllamaChatOptions.builder()
 			.model(MODEL)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -83,7 +85,7 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = OllamaOptions.builder()
+		var promptOptions = OllamaChatOptions.builder()
 			.model(MODEL)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -119,7 +121,8 @@ class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
+				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.build();
 		}
 

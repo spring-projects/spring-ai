@@ -20,13 +20,18 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.util.ParsingUtils;
+import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -37,16 +42,30 @@ import org.springframework.util.StringUtils;
  */
 public final class ToolUtils {
 
+	private static final Logger logger = LoggerFactory.getLogger(ToolUtils.class);
+
+	/**
+	 * Regular expression pattern for recommended tool names. Tool names should contain
+	 * only alphanumeric characters, underscores, hyphens, and dots for maximum
+	 * compatibility across different LLMs.
+	 */
+	private static final Pattern RECOMMENDED_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\.-]+$");
+
 	private ToolUtils() {
 	}
 
 	public static String getToolName(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
+		String toolName;
 		if (tool == null) {
-			return method.getName();
+			toolName = method.getName();
 		}
-		return StringUtils.hasText(tool.name()) ? tool.name() : method.getName();
+		else {
+			toolName = StringUtils.hasText(tool.name()) ? tool.name() : method.getName();
+		}
+		validateToolName(toolName);
+		return toolName;
 	}
 
 	public static String getToolDescriptionFromName(String toolName) {
@@ -56,7 +75,7 @@ public final class ToolUtils {
 
 	public static String getToolDescription(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		if (tool == null) {
 			return ParsingUtils.reConcatenateCamelCase(method.getName(), " ");
 		}
@@ -65,13 +84,13 @@ public final class ToolUtils {
 
 	public static boolean getToolReturnDirect(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		return tool != null && tool.returnDirect();
 	}
 
 	public static ToolCallResultConverter getToolCallResultConverter(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		var tool = method.getAnnotation(Tool.class);
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		if (tool == null) {
 			return new DefaultToolCallResultConverter();
 		}
@@ -99,6 +118,19 @@ public final class ToolUtils {
 	public static List<String> getDuplicateToolNames(ToolCallback... toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		return getDuplicateToolNames(Arrays.asList(toolCallbacks));
+	}
+
+	/**
+	 * Validates that a tool name follows recommended naming conventions. Logs a warning
+	 * if the tool name contains characters that may not be compatible with some LLMs.
+	 * @param toolName the tool name to validate
+	 */
+	private static void validateToolName(String toolName) {
+		Assert.hasText(toolName, "Tool name cannot be null or empty");
+		if (!RECOMMENDED_NAME_PATTERN.matcher(toolName).matches()) {
+			logger.warn("Tool name '{}' may not be compatible with some LLMs (e.g., OpenAI). "
+					+ "Consider using only alphanumeric characters, underscores, hyphens, and dots.", toolName);
+		}
 	}
 
 }

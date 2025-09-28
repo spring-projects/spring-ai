@@ -27,11 +27,11 @@ Option 2:
 [source,java]
 ----
 @Container
-private static final SocatContainer socat = new SocatContainer().withTarget(80, "model-runner.docker.internal");
+private static final DockerModelRunnerContainer DMR = new DockerModelRunnerContainer("alpine/socat:1.7.4.3-r0");
 
 @Bean
 public OpenAiApi chatCompletionApi() {
-	var baseUrl = "http://%s:%d/engines".formatted(socat.getHost(), socat.getMappedPort(80));
+	var baseUrl = DMR.getOpenAIEndpoint();
 	return OpenAiApi.builder().baseUrl(baseUrl).apiKey("test").build();
 }
 ----
@@ -162,7 +162,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions#builder()].
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 == Function Calling
 

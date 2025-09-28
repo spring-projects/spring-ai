@@ -19,6 +19,7 @@ package org.springframework.ai.tool.observation;
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
@@ -95,6 +96,49 @@ class DefaultToolCallingObservationConventionTests {
 				KeyValue.of(
 						ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_DEFINITION_SCHEMA.asString(),
 						"{}"));
+	}
+
+	@Test
+	void shouldHaveAllStandardLowCardinalityKeys() {
+		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder().name("tool").description("Tool").inputSchema("{}").build())
+			.toolCallArguments("args")
+			.build();
+
+		var lowCardinalityKeys = this.observationConvention.getLowCardinalityKeyValues(observationContext);
+
+		// Verify all expected low cardinality keys are present
+		assertThat(lowCardinalityKeys).extracting(KeyValue::getKey)
+			.contains(ToolCallingObservationDocumentation.LowCardinalityKeyNames.TOOL_DEFINITION_NAME.asString(),
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					ToolCallingObservationDocumentation.LowCardinalityKeyNames.SPRING_AI_KIND.asString());
+	}
+
+	@Test
+	void shouldHandleNullContext() {
+		assertThat(this.observationConvention.supportsContext(null)).isFalse();
+	}
+
+	@Test
+	void shouldBeConsistentAcrossMultipleCalls() {
+		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(ToolDefinition.builder()
+				.name("consistentTool")
+				.description("Consistent description")
+				.inputSchema("{}")
+				.build())
+			.toolCallArguments("args")
+			.build();
+
+		// Call multiple times and verify consistency
+		String name1 = this.observationConvention.getContextualName(observationContext);
+		String name2 = this.observationConvention.getContextualName(observationContext);
+		var lowCard1 = this.observationConvention.getLowCardinalityKeyValues(observationContext);
+		var lowCard2 = this.observationConvention.getLowCardinalityKeyValues(observationContext);
+
+		assertThat(name1).isEqualTo(name2);
+		assertThat(lowCard1).isEqualTo(lowCard2);
 	}
 
 }

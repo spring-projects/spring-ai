@@ -106,4 +106,73 @@ public class PromptMetadataTests {
 		assertThat(promptFilterMetadata.<String>getContentFilterMetadata()).isEqualTo("{ content-sentiment: 'SAFE' }");
 	}
 
+	@Test
+	void promptMetadataWithEmptyFiltersArray() {
+		PromptMetadata promptMetadata = PromptMetadata.of();
+
+		assertThat(promptMetadata).isNotNull();
+		assertThat(promptMetadata).isEmpty();
+	}
+
+	@Test
+	void promptMetadataWithMultipleFilters() {
+		PromptFilterMetadata filter1 = mockPromptFilterMetadata(0);
+		PromptFilterMetadata filter2 = mockPromptFilterMetadata(1);
+		PromptFilterMetadata filter3 = mockPromptFilterMetadata(2);
+		PromptFilterMetadata filter4 = mockPromptFilterMetadata(3);
+
+		PromptMetadata promptMetadata = PromptMetadata.of(filter1, filter2, filter3, filter4);
+
+		assertThat(promptMetadata).isNotNull();
+		assertThat(promptMetadata).hasSize(4);
+		assertThat(promptMetadata).containsExactly(filter1, filter2, filter3, filter4);
+	}
+
+	@Test
+	void promptMetadataWithDuplicateIndices() {
+		PromptFilterMetadata filter1 = mockPromptFilterMetadata(1);
+		PromptFilterMetadata filter2 = mockPromptFilterMetadata(1);
+
+		PromptMetadata promptMetadata = PromptMetadata.of(filter1, filter2);
+
+		assertThat(promptMetadata).isNotNull();
+		assertThat(promptMetadata).hasSize(2);
+
+		assertThat(promptMetadata.findByPromptIndex(1).orElse(null)).isEqualTo(filter1);
+	}
+
+	@Test
+	void promptFilterMetadataWithEmptyContentFilter() {
+		PromptFilterMetadata promptFilterMetadata = PromptFilterMetadata.from(0, "");
+
+		assertThat(promptFilterMetadata).isNotNull();
+		assertThat(promptFilterMetadata.getPromptIndex()).isZero();
+		assertThat(promptFilterMetadata.<String>getContentFilterMetadata()).isEmpty();
+	}
+
+	@Test
+	void promptMetadataSize() {
+		PromptFilterMetadata filter1 = mockPromptFilterMetadata(0);
+		PromptFilterMetadata filter2 = mockPromptFilterMetadata(1);
+
+		PromptMetadata empty = PromptMetadata.empty();
+		PromptMetadata single = PromptMetadata.of(filter1);
+		PromptMetadata multiple = PromptMetadata.of(filter1, filter2);
+
+		assertThat(empty).hasSize(0);
+		assertThat(single).hasSize(1);
+		assertThat(multiple).hasSize(2);
+	}
+
+	@Test
+	void promptMetadataImmutability() {
+		PromptFilterMetadata filter1 = mockPromptFilterMetadata(0);
+		PromptFilterMetadata filter2 = mockPromptFilterMetadata(1);
+
+		PromptMetadata promptMetadata = PromptMetadata.of(filter1, filter2);
+
+		assertThat(promptMetadata).isNotNull();
+		assertThat(promptMetadata).hasSize(2);
+	}
+
 }

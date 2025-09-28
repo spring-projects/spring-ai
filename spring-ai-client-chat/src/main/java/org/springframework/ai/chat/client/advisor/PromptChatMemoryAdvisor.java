@@ -19,11 +19,11 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -42,6 +42,7 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.util.Assert;
 
 /**
  * Memory is retrieved added into the prompt's system text.
@@ -52,7 +53,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
  * @author Mark Pollack
  * @since 1.0.0
  */
-public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(PromptChatMemoryAdvisor.class);
 
@@ -97,7 +98,7 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	@Override
 	public int getOrder() {
-		return order;
+		return this.order;
 	}
 
 	@Override
@@ -141,29 +142,36 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
 		List<Message> assistantMessages = new ArrayList<>();
-		if (chatClientResponse.chatResponse() != null) {
-			assistantMessages = chatClientResponse.chatResponse()
-				.getResults()
+		// Extract assistant messages from chat client response.
+		// Processes all results from getResults() which automatically handles both single
+		// and multiple
+		// result scenarios (since getResult() == getResults().get(0)). Uses Optional
+		// chaining for
+		// null safety and returns empty list if no results are available.
+		assistantMessages = Optional.ofNullable(chatClientResponse)
+			.map(ChatClientResponse::chatResponse)
+			.filter(response -> response.getResults() != null && !response.getResults().isEmpty())
+			.map(response -> response.getResults()
 				.stream()
 				.map(g -> (Message) g.getOutput())
-				.toList();
-		}
-		// Handle streaming case where we have a single result
-		else if (chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().getResult() != null
-				&& chatClientResponse.chatResponse().getResult().getOutput() != null) {
-			assistantMessages = List.of((Message) chatClientResponse.chatResponse().getResult().getOutput());
-		}
+				.collect(Collectors.toList()))
+			.orElse(List.of());
 
 		if (!assistantMessages.isEmpty()) {
 			this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
 					assistantMessages);
-			logger.debug("[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
-					this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
-					assistantMessages);
-			List<Message> memoryMessages = this.chatMemory
-				.get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
-			logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
-					this.getConversationId(chatClientResponse.context(), this.defaultConversationId), memoryMessages);
+
+			if (logger.isDebugEnabled()) {
+				logger.debug(
+						"[PromptChatMemoryAdvisor.after] Added ASSISTANT messages to memory for conversationId={}: {}",
+						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+						assistantMessages);
+				List<Message> memoryMessages = this.chatMemory
+					.get(this.getConversationId(chatClientResponse.context(), this.defaultConversationId));
+				logger.debug("[PromptChatMemoryAdvisor.after] Memory after ASSISTANT add for conversationId={}: {}",
+						this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
+						memoryMessages);
+			}
 		}
 		return chatClientResponse;
 	}
@@ -186,7 +194,7 @@ public class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	/**
 	 * Builder for PromptChatMemoryAdvisor.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 

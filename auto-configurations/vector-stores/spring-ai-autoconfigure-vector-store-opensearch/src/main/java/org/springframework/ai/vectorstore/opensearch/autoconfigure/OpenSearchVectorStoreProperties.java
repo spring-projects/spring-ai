@@ -55,6 +55,13 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	 */
 	private Duration readTimeout;
 
+	/**
+	 * Path prefix for OpenSearch API endpoints. Used when OpenSearch is behind a reverse
+	 * proxy with a non-root path. For example, if your OpenSearch instance is accessible
+	 * at https://example.com/opensearch/, set this to "/opensearch".
+	 */
+	private String pathPrefix;
+
 	private Aws aws = new Aws();
 
 	public List<String> getUris() {
@@ -98,7 +105,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public String getSslBundle() {
-		return sslBundle;
+		return this.sslBundle;
 	}
 
 	public void setSslBundle(String sslBundle) {
@@ -106,7 +113,7 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public Duration getConnectionTimeout() {
-		return connectionTimeout;
+		return this.connectionTimeout;
 	}
 
 	public void setConnectionTimeout(Duration connectionTimeout) {
@@ -114,11 +121,19 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	}
 
 	public Duration getReadTimeout() {
-		return readTimeout;
+		return this.readTimeout;
 	}
 
 	public void setReadTimeout(Duration readTimeout) {
 		this.readTimeout = readTimeout;
+	}
+
+	public String getPathPrefix() {
+		return this.pathPrefix;
+	}
+
+	public void setPathPrefix(String pathPrefix) {
+		this.pathPrefix = pathPrefix;
 	}
 
 	public Aws getAws() {

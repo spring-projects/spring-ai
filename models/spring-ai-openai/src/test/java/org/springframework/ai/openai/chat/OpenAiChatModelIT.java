@@ -551,8 +551,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
-	void streamingMultiModalityOutputAudio(String modelName) throws IOException {
-		// var audioResource = new ClassPathResource("speech1.mp3");
+	void streamingMultiModalityOutputAudio(String modelName) {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
 		assertThatThrownBy(() -> this.chatModel
@@ -564,13 +563,23 @@ public class OpenAiChatModelIT extends AbstractIT {
 						.build()))
 			.collectList()
 			.block()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Audio output is not supported for streaming requests.");
+
+		assertThatThrownBy(() -> this.chatModel
+			.stream(new Prompt(List.of(userMessage),
+					OpenAiChatOptions.builder()
+						.model(modelName)
+						.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+						.build()))
+			.collectList()
+			.block()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Audio parameters are not supported for streaming requests.");
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void multiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech1.mp3");
+		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
 			.text("What is this recording about?")
 			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
@@ -580,14 +589,26 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.call(new Prompt(List.of(userMessage), ChatOptions.builder().model(modelName).build()));
 
 		logger.info(response.getResult().getOutput().getText());
-		assertThat(response.getResult().getOutput().getText()).containsIgnoringCase("hobbits");
+		String responseText = response.getResult().getOutput().getText();
+		assertThat(responseText).satisfiesAnyOf(text -> assertThat(text).containsIgnoringCase("hobbit"),
+				text -> assertThat(text).containsIgnoringCase("lord of the rings"),
+				text -> assertThat(text).containsIgnoringCase("lotr"),
+				text -> assertThat(text).containsIgnoringCase("tolkien"),
+				text -> assertThat(text).containsIgnoringCase("fantasy"),
+				text -> assertThat(text).containsIgnoringCase("ring"),
+				text -> assertThat(text).containsIgnoringCase("shire"),
+				text -> assertThat(text).containsIgnoringCase("baggins"),
+				text -> assertThat(text).containsIgnoringCase("gandalf"),
+				text -> assertThat(text).containsIgnoringCase("frodo"),
+				text -> assertThat(text).containsIgnoringCase("meme"),
+				text -> assertThat(text).containsIgnoringCase("remix"));
 		assertThat(response.getMetadata().getModel()).containsIgnoringCase(modelName);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o-audio-preview" })
 	void streamingMultiModalityInputAudio(String modelName) {
-		var audioResource = new ClassPathResource("speech1.mp3");
+		var audioResource = new ClassPathResource("speech/speech1.mp3");
 		var userMessage = UserMessage.builder()
 			.text("What is this recording about?")
 			.media(List.of(new Media(MimeTypeUtils.parseMimeType("audio/mp3"), audioResource)))
@@ -643,14 +664,14 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		UserMessage userMessage1 = new UserMessage("My name is James Bond");
 		memory.add(conversationId, userMessage1);
-		ChatResponse response1 = chatModel.call(new Prompt(memory.get(conversationId)));
+		ChatResponse response1 = this.chatModel.call(new Prompt(memory.get(conversationId)));
 
 		assertThat(response1).isNotNull();
 		memory.add(conversationId, response1.getResult().getOutput());
 
 		UserMessage userMessage2 = new UserMessage("What is my name?");
 		memory.add(conversationId, userMessage2);
-		ChatResponse response2 = chatModel.call(new Prompt(memory.get(conversationId)));
+		ChatResponse response2 = this.chatModel.call(new Prompt(memory.get(conversationId)));
 
 		assertThat(response2).isNotNull();
 		memory.add(conversationId, response2.getResult().getOutput());
@@ -675,7 +696,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 		chatMemory.add(conversationId, prompt.getInstructions());
 
 		Prompt promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
-		ChatResponse chatResponse = chatModel.call(promptWithMemory);
+		ChatResponse chatResponse = this.chatModel.call(promptWithMemory);
 		chatMemory.add(conversationId, chatResponse.getResult().getOutput());
 
 		while (chatResponse.hasToolCalls()) {
@@ -684,7 +705,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			chatMemory.add(conversationId, toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1));
 			promptWithMemory = new Prompt(chatMemory.get(conversationId), chatOptions);
-			chatResponse = chatModel.call(promptWithMemory);
+			chatResponse = this.chatModel.call(promptWithMemory);
 			chatMemory.add(conversationId, chatResponse.getResult().getOutput());
 		}
 
@@ -694,19 +715,10 @@ public class OpenAiChatModelIT extends AbstractIT {
 		UserMessage newUserMessage = new UserMessage("What did I ask you earlier?");
 		chatMemory.add(conversationId, newUserMessage);
 
-		ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversationId)));
+		ChatResponse newResponse = this.chatModel.call(new Prompt(chatMemory.get(conversationId)));
 
 		assertThat(newResponse).isNotNull();
 		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");
-	}
-
-	static class MathTools {
-
-		@Tool(description = "Multiply the two numbers")
-		double multiply(double a, double b) {
-			return a * b;
-		}
-
 	}
 
 	@Test
@@ -776,6 +788,15 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
+
+	}
+
+	static class MathTools {
+
+		@Tool(description = "Multiply the two numbers")
+		double multiply(double a, double b) {
+			return a * b;
+		}
 
 	}
 

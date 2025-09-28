@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -62,6 +64,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author David Frizelle
  * @author Alexandros Pappas
+ * @author Filip Hrisafov
  */
 public class OpenAiApi {
 
@@ -128,10 +131,6 @@ public class OpenAiApi {
 
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
-			if (!(apiKey instanceof NoopApiKey)) {
-				h.setBearerAuth(apiKey.getValue());
-			}
-
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(headers);
 		};
@@ -147,11 +146,20 @@ public class OpenAiApi {
 			.build(); // @formatter:on
 	}
 
+	/**
+	 * Returns a string containing all text values from the given media content list. Only
+	 * elements of type "text" are processed and concatenated in order.
+	 * @param content The list of {@link ChatCompletionMessage.MediaContent}
+	 * @return a string containing all text values from "text" type elements
+	 * @throws IllegalArgumentException if content is null
+	 */
 	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
+		Assert.notNull(content, "content cannot be null");
+
 		return content.stream()
 			.filter(c -> "text".equals(c.type()))
 			.map(ChatCompletionMessage.MediaContent::text)
-			.reduce("", (a, b) -> a + b);
+			.collect(Collectors.joining());
 	}
 
 	/**
@@ -179,12 +187,17 @@ public class OpenAiApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
+		// @formatter:off
 		return this.restClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			})
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletion.class);
+		// @formatter:on
 	}
 
 	/**
@@ -213,9 +226,13 @@ public class OpenAiApi {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
+		// @formatter:off
 		return this.webClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			}) // @formatter:on
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -289,11 +306,43 @@ public class OpenAiApi {
 
 		return this.restClient.post()
 			.uri(this.embeddingsPath)
+			.headers(this::addDefaultHeadersIfMissing)
 			.body(embeddingRequest)
 			.retrieve()
 			.toEntity(new ParameterizedTypeReference<>() {
 
 			});
+	}
+
+	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
+		if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+			headers.setBearerAuth(this.apiKey.getValue());
+		}
+	}
+
+	// Package-private getters for mutate/copy
+	String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	ApiKey getApiKey() {
+		return this.apiKey;
+	}
+
+	MultiValueMap<String, String> getHeaders() {
+		return this.headers;
+	}
+
+	String getCompletionsPath() {
+		return this.completionsPath;
+	}
+
+	String getEmbeddingsPath() {
+		return this.embeddingsPath;
+	}
+
+	ResponseErrorHandler getResponseErrorHandler() {
+		return this.responseErrorHandler;
 	}
 
 	/**
@@ -419,6 +468,52 @@ public class OpenAiApi {
 		 * See: <a href="https://platform.openai.com/docs/models/gpt-4.1">gpt-4.1</a>
 		 */
 		GPT_4_1("gpt-4.1"),
+
+		/**
+		 * <b>GPT-5</b> is the next-generation flagship model with enhanced capabilities
+		 * for complex reasoning and problem-solving tasks.
+		 * <p>
+		 * Note: GPT-5 models require temperature=1.0 (default value). Custom temperature
+		 * values are not supported and will cause errors.
+		 * <p>
+		 * Model ID: gpt-5
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-5">gpt-5</a>
+		 */
+		GPT_5("gpt-5"),
+
+		/**
+		 * GPT-5 mini is a faster, more cost-efficient version of GPT-5. It's great for
+		 * well-defined tasks and precise prompts.
+		 * <p>
+		 * Model ID: gpt-5-mini
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-mini">gpt-5-mini</a>
+		 */
+		GPT_5_MINI("gpt-5-mini"),
+
+		/**
+		 * GPT-5 Nano is the fastest, cheapest version of GPT-5. It's great for
+		 * summarization and classification tasks.
+		 * <p>
+		 * Model ID: gpt-5-nano
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-nano">gpt-5-nano</a>
+		 */
+		GPT_5_NANO("gpt-5-nano"),
+
+		/**
+		 * GPT-5 Chat points to the GPT-5 snapshot currently used in ChatGPT. GPT-5
+		 * accepts both text and image inputs, and produces text outputs.
+		 * <p>
+		 * Model ID: gpt-5-chat-latest
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5-chat-latest">gpt-5-chat-latest</a>
+		 */
+		GPT_5_CHAT_LATEST("gpt-5-chat-latest"),
 
 		/**
 		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
@@ -989,6 +1084,7 @@ public class OpenAiApi {
 	 * Currently supported values are low, medium, and high. Reducing reasoning effort can
 	 * result in faster responses and fewer tokens used on reasoning in a response.
 	 * @param webSearchOptions Options for web search.
+	 * @param verbosity Controls the verbosity of the model's response.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -1019,7 +1115,8 @@ public class OpenAiApi {
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
 			@JsonProperty("user") String user,
 			@JsonProperty("reasoning_effort") String reasoningEffort,
-			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions) {
+			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions,
+			@JsonProperty("verbosity") String verbosity)  {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -1031,7 +1128,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1045,7 +1142,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1060,7 +1157,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1076,7 +1173,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null, null, null);
+					tools, toolChoice, null, null, null, null, null);
 		}
 
 		/**
@@ -1089,7 +1186,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1102,7 +1199,7 @@ public class OpenAiApi {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
 			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions);
+			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions, this.verbosity);
 		}
 
 		/**
@@ -1142,6 +1239,12 @@ public class OpenAiApi {
 			public enum Voice {
 				/** Alloy voice */
 				@JsonProperty("alloy") ALLOY,
+				/** Ash voice */
+				@JsonProperty("ash") ASH,
+				/** Ballad voice */
+				@JsonProperty("ballad") BALLAD,
+				/** Coral voice */
+				@JsonProperty("coral") CORAL,
 				/** Echo voice */
 				@JsonProperty("echo") ECHO,
 				/** Fable voice */
@@ -1150,6 +1253,8 @@ public class OpenAiApi {
 				@JsonProperty("onyx") ONYX,
 				/** Nova voice */
 				@JsonProperty("nova") NOVA,
+				/** Sage voice */
+				@JsonProperty("sage") SAGE,
 				/** Shimmer voice */
 				@JsonProperty("shimmer") SHIMMER
 			}
@@ -1193,7 +1298,7 @@ public class OpenAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record WebSearchOptions(@JsonProperty("search_context_size") SearchContextSize searchContextSize,
-									   @JsonProperty("user_location") UserLocation userLocation) {
+									@JsonProperty("user_location") UserLocation userLocation) {
 
 			/**
 			 * High level guidance for the amount of context window space to use for the
@@ -1229,17 +1334,52 @@ public class OpenAiApi {
 			 */
 			@JsonInclude(Include.NON_NULL)
 			public record UserLocation(@JsonProperty("type") String type,
-									   @JsonProperty("approximate") Approximate approximate) {
+									@JsonProperty("approximate") Approximate approximate) {
 
 				@JsonInclude(Include.NON_NULL)
 				public record Approximate(@JsonProperty("city") String city, @JsonProperty("country") String country,
-										  @JsonProperty("region") String region, @JsonProperty("timezone") String timezone) {
+										@JsonProperty("region") String region, @JsonProperty("timezone") String timezone) {
 				}
 			}
 
 		}
 
 	} // @formatter:on
+
+	/**
+	 * Specifies the processing type used for serving the request.
+	 */
+	public enum ServiceTier {
+
+		/**
+		 * Then the request will be processed with the service tier configured in the
+		 * Project settings.
+		 */
+		AUTO("auto"),
+		/**
+		 * Then the request will be processed with the standard pricing.
+		 */
+		DEFAULT("default"),
+		/**
+		 * Then the request will be processed with the flex pricing.
+		 */
+		FLEX("flex"),
+		/**
+		 * Then the request will be processed with the priority pricing.
+		 */
+		PRIORITY("priority");
+
+		private final String value;
+
+		ServiceTier(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
 
 	/**
 	 * Message comprising the conversation.
@@ -1342,14 +1482,15 @@ public class OpenAiApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text,
 			@JsonProperty("image_url") ImageUrl imageUrl,
-			@JsonProperty("input_audio") InputAudio inputAudio) { // @formatter:on
+			@JsonProperty("input_audio") InputAudio inputAudio,
+			@JsonProperty("file") InputFile inputFile) { // @formatter:on
 
 			/**
 			 * Shortcut constructor for a text content.
 			 * @param text The text content of the message.
 			 */
 			public MediaContent(String text) {
-				this("text", text, null, null);
+				this("text", text, null, null, null);
 			}
 
 			/**
@@ -1357,7 +1498,7 @@ public class OpenAiApi {
 			 * @param imageUrl The image content of the message.
 			 */
 			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl, null);
+				this("image_url", null, imageUrl, null, null);
 			}
 
 			/**
@@ -1365,7 +1506,15 @@ public class OpenAiApi {
 			 * @param inputAudio The audio content of the message.
 			 */
 			public MediaContent(InputAudio inputAudio) {
-				this("input_audio", null, null, inputAudio);
+				this("input_audio", null, null, inputAudio, null);
+			}
+
+			/**
+			 * Shortcut constructor for a file content
+			 * @param inputFile The file content of the message.
+			 */
+			public MediaContent(InputFile inputFile) {
+				this("file", null, null, null, inputFile);
 			}
 
 			/**
@@ -1400,6 +1549,18 @@ public class OpenAiApi {
 				public ImageUrl(String url) {
 					this(url, null);
 				}
+
+			}
+
+			/**
+			 * Constructor for base64-encoded file
+			 *
+			 * @param filename name of the file
+			 * @param fileData file data with format
+			 * "data:{mimetype};base64,{base64-encoded-image-data}".
+			 */
+			public record InputFile(@JsonProperty("filename") String filename,
+					@JsonProperty("file_data") String fileData) {
 
 			}
 
@@ -1716,7 +1877,7 @@ public class OpenAiApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Embedding(// @formatter:off
 			@JsonProperty("index") Integer index,
-			@JsonProperty("embedding") float[] embedding,
+			@JsonProperty("embedding") @JsonDeserialize(using = OpenAiEmbeddingDeserializer.class) float[] embedding,
 			@JsonProperty("object") String object) { // @formatter:on
 
 		/**
@@ -1842,7 +2003,6 @@ public class OpenAiApi {
 		}
 
 		public Builder apiKey(String simpleApiKey) {
-			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
 			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
@@ -1889,31 +2049,6 @@ public class OpenAiApi {
 					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
 		}
 
-	}
-
-	// Package-private getters for mutate/copy
-	String getBaseUrl() {
-		return this.baseUrl;
-	}
-
-	ApiKey getApiKey() {
-		return this.apiKey;
-	}
-
-	MultiValueMap<String, String> getHeaders() {
-		return this.headers;
-	}
-
-	String getCompletionsPath() {
-		return this.completionsPath;
-	}
-
-	String getEmbeddingsPath() {
-		return this.embeddingsPath;
-	}
-
-	ResponseErrorHandler getResponseErrorHandler() {
-		return this.responseErrorHandler;
 	}
 
 }

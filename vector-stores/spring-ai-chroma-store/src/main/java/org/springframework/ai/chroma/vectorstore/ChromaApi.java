@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
 import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
+import org.springframework.ai.util.json.JsonParser;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
@@ -443,7 +444,27 @@ public class ChromaApi {
 			@JsonProperty("metadatas") List<Map<String, Object>> metadata,
 			@JsonProperty("documents") List<String> documents) { // @formatter:on
 
-		// Convenance for adding a single embedding.
+		public AddEmbeddingsRequest {
+			// Process metadata to ensure all values are Integer, Boolean, or String.
+			// Other types are converted to JSON string using JsonParser.toJson().
+			List<Map<String, Object>> processedMetadatas = new ArrayList<>();
+			for (Map<String, Object> meta : metadata) {
+				Map<String, Object> processed = new HashMap<>();
+				for (Map.Entry<String, Object> entry : meta.entrySet()) {
+					Object value = entry.getValue();
+					if (value instanceof Number || value instanceof Boolean || value instanceof String) {
+						processed.put(entry.getKey(), value);
+					}
+					else {
+						processed.put(entry.getKey(), JsonParser.toJson(value));
+					}
+				}
+				processedMetadatas.add(processed);
+			}
+			metadata = processedMetadatas;
+		}
+
+		// Convenience for adding a single embedding.
 		public AddEmbeddingsRequest(String id, float[] embedding, Map<String, Object> metadata, String document) {
 			this(List.of(id), List.of(embedding), List.of(metadata), List.of(document));
 		}
@@ -634,7 +655,7 @@ public class ChromaApi {
 		}
 
 		public ChromaApi build() {
-			return new ChromaApi(this.baseUrl, this.restClientBuilder, objectMapper);
+			return new ChromaApi(this.baseUrl, this.restClientBuilder, this.objectMapper);
 		}
 
 	}

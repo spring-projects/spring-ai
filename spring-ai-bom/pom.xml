@@ -21,7 +21,7 @@
 
 	<groupId>org.springframework.ai</groupId>
     <artifactId>spring-ai-bom</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -82,11 +82,6 @@
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
 		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-		<maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
-		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
-		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
-		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
-		<disable.checks>true</disable.checks>
 	</properties>
 
     <dependencyManagement>
@@ -248,6 +243,25 @@
                 <version>${project.version}</version>
             </dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-elevenlabs</artifactId>
+				<version>${project.version}</version>
+				<optional>true</optional>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-google-genai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-google-genai-embedding</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-huggingface</artifactId>
@@ -314,7 +328,6 @@
                 <artifactId>spring-ai-vertex-ai-gemini</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
@@ -530,15 +543,39 @@
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-client</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-client-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
-			<!-- Spring AI MCP server autoconfiguration -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.springframework.ai</groupId>
-                <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
+                <artifactId>spring-ai-autoconfigure-mcp-client-webflux</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+			<!-- Spring AI MCP server autoconfigurations -->
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-webmvc</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-autoconfigure-mcp-server-webflux</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -567,6 +604,18 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-bedrock-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-elevenlabs</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-google-genai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -799,6 +848,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-couchbase</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-elasticsearch</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -915,6 +970,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-elevenlabs</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-minimax</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -977,6 +1038,18 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-google-genai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-google-genai-embedding</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-zhipuai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1003,6 +1076,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-server-common</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-mcp-server</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1016,6 +1095,21 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mcp-annotations</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+
+			<!-- Spring AI Spring Boot starter for Chat Memory (with the default in-memory Chat memory repository) -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-chat-memory</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1141,51 +1235,6 @@
 						<inherited>true</inherited>
 						<goals>
 							<goal>validate</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>${maven-checkstyle-plugin.version}</version>
-				<dependencies>
-					<dependency>
-						<groupId>com.puppycrawl.tools</groupId>
-						<artifactId>checkstyle</artifactId>
-						<version>${puppycrawl-tools-checkstyle.version}</version>
-					</dependency>
-					<dependency>
-						<groupId>io.spring.javaformat</groupId>
-						<artifactId>spring-javaformat-checkstyle</artifactId>
-						<version>0.0.43</version>
-					</dependency>
-				</dependencies>
-				<executions>
-					<execution>
-						<id>checkstyle-validation</id>
-						<phase>validate</phase>
-						<inherited>true</inherited>
-						<configuration>
-							<skip>${disable.checks}</skip>
-							<configLocation>src/checkstyle/checkstyle.xml</configLocation>
-							<headerLocation>src/checkstyle/checkstyle-header.txt</headerLocation>
-							<includeTestSourceDirectory>true</includeTestSourceDirectory>
-							<propertyExpansion>
-								checkstyle.build.directory=${project.build.directory}
-								checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-								checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-								checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
-							</propertyExpansion>
-							<consoleOutput>true</consoleOutput>
-							<failsOnError>${maven-checkstyle-plugin.failsOnError}
-							</failsOnError>
-							<failOnViolation>
-								${maven-checkstyle-plugin.failOnViolation}
-							</failOnViolation>
-						</configuration>
-						<goals>
-							<goal>check</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -1364,44 +1413,43 @@
 				</repository>
 			</distributionManagement>
 		</profile>
-		<profile>
-			<id>sonatype</id>
-			<properties>
-				<maven.test.skip>true</maven.test.skip>
-			</properties>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-gpg-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>sign-artifacts</id>
-								<phase>verify</phase>
-								<goals>
-									<goal>sign</goal>
-								</goals>
-							</execution>
-						</executions>
-						<configuration>
-							<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-						</configuration>
-					</plugin>
-					<plugin>
-						<groupId>org.sonatype.plugins</groupId>
-						<artifactId>nexus-staging-maven-plugin</artifactId>
-						<version>1.7.0</version>
-						<extensions>true</extensions>
-						<configuration>
-							<serverId>sonatype-new</serverId>
-							<nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-							<autoReleaseAfterClose>true</autoReleaseAfterClose>
-							<keepStagingRepositoryOnFailure>true</keepStagingRepositoryOnFailure>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
+    <profile>
+	    <id>sonatype</id>
+	    <properties>
+	        <maven.test.skip>true</maven.test.skip>
+	    </properties>
+	    <build>
+	        <plugins>
+	            <plugin>
+	                <groupId>org.sonatype.central</groupId>
+	                <artifactId>central-publishing-maven-plugin</artifactId>
+	                <version>0.8.0</version>
+	                <extensions>true</extensions>
+	                <configuration>
+	                    <publishingServerId>central</publishingServerId>
+	                    <autoPublish>true</autoPublish>
+	                </configuration>
+	            </plugin>
+	            <plugin>
+	                <groupId>org.apache.maven.plugins</groupId>
+	                <artifactId>maven-gpg-plugin</artifactId>
+	                <version>3.2.5</version>
+	                <executions>
+	                    <execution>
+	                        <id>sign-artifacts</id>
+	                        <phase>verify</phase>
+	                        <goals>
+	                            <goal>sign</goal>
+	                        </goals>
+	                    </execution>
+	                </executions>
+	                <configuration>
+	                    <!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
+	                </configuration>
+	            </plugin>
+	        </plugins>
+	    </build>
+	   </profile>
 	</profiles>
 
 </project>

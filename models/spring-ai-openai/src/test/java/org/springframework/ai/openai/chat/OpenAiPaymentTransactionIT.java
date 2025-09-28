@@ -28,10 +28,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -85,7 +85,7 @@ public class OpenAiPaymentTransactionIT {
 					What is the status of my payment transactions 001, 002 and 003?
 					""")
 			.call()
-			.entity(new ParameterizedTypeReference<List<TransactionStatusResponse>>() {
+			.entity(new ParameterizedTypeReference<>() {
 
 			});
 

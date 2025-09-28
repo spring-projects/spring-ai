@@ -16,16 +16,32 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.metadata.*;
-import org.springframework.ai.chat.model.*;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -41,7 +57,12 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Too
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.tool.*;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -49,12 +70,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal DeepSeek}
@@ -248,12 +263,12 @@ public class DeepSeekChatModel implements ChatModel {
 							}
 
 				// @formatter:off
-                                Map<String, Object> metadata = Map.of(
-                                        "id", chatCompletion2.id(),
-                                        "role", roleMap.getOrDefault(id, ""),
-                                        "finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
-                                );
-                                // @formatter:on
+								Map<String, Object> metadata = Map.of(
+										"id", chatCompletion2.id(),
+										"role", roleMap.getOrDefault(id, ""),
+										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
+								);
+  				// @formatter:on
 							return buildGeneration(choice, metadata);
 						}).toList();
 						DeepSeekApi.Usage usage = chatCompletion2.usage();
@@ -272,10 +287,17 @@ public class DeepSeekChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-					return Flux.defer(() -> {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+					// FIXME: bounded elastic needs to be used since tool calling
+					//  is currently only synchronous
+					return Flux.deferContextual(ctx -> {
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
 							return Flux.just(ChatResponse.builder().from(response)

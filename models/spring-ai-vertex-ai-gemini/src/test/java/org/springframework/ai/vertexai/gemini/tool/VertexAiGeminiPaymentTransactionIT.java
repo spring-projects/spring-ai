@@ -29,10 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -57,8 +57,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
 public class VertexAiGeminiPaymentTransactionIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionIT.class);
@@ -159,8 +159,8 @@ public class VertexAiGeminiPaymentTransactionIT {
 		@Bean
 		public VertexAI vertexAiApi() {
 
-			String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
-			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 
 			return new VertexAI.Builder().setLocation(location)
 				.setProjectId(projectId)

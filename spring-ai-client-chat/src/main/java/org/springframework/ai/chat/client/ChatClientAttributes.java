@@ -37,7 +37,7 @@ public enum ChatClientAttributes {
 	}
 
 	public String getKey() {
-		return key;
+		return this.key;
 	}
 
 }

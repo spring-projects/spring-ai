@@ -23,14 +23,13 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
-
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepository;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.neo4j.Neo4jChatMemoryRepositoryConfig;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -84,8 +83,11 @@ class Neo4jChatMemoryRepositoryAutoConfigurationIT {
 			memory.deleteByConversationId(sessionId);
 			assertThat(memory.findByConversationId(sessionId)).isEmpty();
 
-			AssistantMessage assistantMessage = new AssistantMessage("test answer", Map.of(),
-					List.of(new AssistantMessage.ToolCall("id", "type", "name", "arguments")));
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("test answer")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("id", "type", "name", "arguments")))
+				.build();
 
 			memory.saveAll(sessionId, List.of(userMessage, assistantMessage));
 			messages = memory.findByConversationId(sessionId);

@@ -158,7 +158,7 @@ TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overrid
 
 == Runtime Options [[chat-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] class provides model configurations, such as the model to use, the temperature,  etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaChatOptions.java[OllamaChatOptions.java] class provides model configurations, such as the model to use, the temperature,  etc.
 
 On start-up, the default options can be configured with the `OllamaChatModel(api, options)` constructor or the `spring.ai.ollama.chat.options.*` properties.
 
@@ -170,14 +170,14 @@ For example, to override the default model and temperature for a specific reques
 ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
-        OllamaOptions.builder()
+        OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_1)
             .temperature(0.4)
             .build()
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaChatOptions.java[OllamaChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 [[auto-pulling-models]]
 == Auto-pulling Models
@@ -245,7 +245,7 @@ This configuration will apply the pulling strategy to all models except chat mod
 
 You can register custom Java functions with the `OllamaChatModel` and have the Ollama model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
-Read more about xref:api/chat/functions/ollama-chat-functions.adoc[Ollama Function Calling].
+Read more about xref:api/tools.adoc[Tool Calling].
 
 TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
 
@@ -258,7 +258,7 @@ For further details, refer to the link:https://llava-vl.github.io/[LLaVA: Large 
 
 The Ollama link:https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1[Message API] provides an "images" parameter to incorporate a list of base64-encoded images with the message.
 
-Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/Media.java[Media] type.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-commons/src/main/java/org/springframework/ai/content/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 
 Below is a straightforward code example excerpted from link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/test/java/org/springframework/ai/ollama/OllamaChatModelMultimodalIT.java[OllamaChatModelMultimodalIT.java], illustrating the fusion of user text with an image.
@@ -271,7 +271,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
         new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource));
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage,
-        OllamaOptions.builder().model(OllamaModel.LLAVA)).build());
+        OllamaChatOptions.builder().model(OllamaModel.LLAVA)).build());
 ----
 
 The example shows a model taking as an input the `multimodal.test.png` image:
@@ -295,11 +295,11 @@ In addition to the existing Spring AI model-agnostic xref::api/structured-output
 
 === Configuration
 
-Spring AI allows you to configure your response format programmatically using the `OllamaOptions` builder.
+Spring AI allows you to configure your response format programmatically using the `OllamaChatOptions` builder.
 
 ==== Using the Chat Options Builder
 
-You can set the response format programmatically with the `OllamaOptions` builder as shown below:
+You can set the response format programmatically with the `OllamaChatOptions` builder as shown below:
 
 [source,java]
 ----
@@ -327,7 +327,7 @@ String jsonSchema = """
         """;
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
-        OllamaOptions.builder()
+        OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
             .format(new ObjectMapper().readValue(jsonSchema, Map.class))
             .build());
@@ -358,7 +358,7 @@ record MathReasoning(
 var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
-        OllamaOptions.builder()
+        OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
             .format(outputConverter.getJsonSchemaMap())
             .build());
@@ -488,7 +488,7 @@ var ollamaApi = OllamaApi.builder().build();
 var chatModel = OllamaChatModel.builder()
                     .ollamaApi(ollamaApi)
                     .defaultOptions(
-                        OllamaOptions.builder()
+                        OllamaChatOptions.builder()
                             .model(OllamaModel.MISTRAL)
                             .temperature(0.9)
                             .build())
@@ -502,7 +502,7 @@ Flux<ChatResponse> response = this.chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
-The `OllamaOptions` provides the configuration information for all chat requests.
+The `OllamaChatOptions` provides the configuration information for all chat requests.
 
 == Low-level OllamaApi Client [[low-level-api]]
 
@@ -531,7 +531,7 @@ var request = ChatRequest.builder("orca-mini")
                 .content("What is the capital of Bulgaria and what is the size? "
                         + "What is the national anthem?")
                 .build()))
-    .options(OllamaOptions.builder().temperature(0.9).build())
+    .options(OllamaChatOptions.builder().temperature(0.9).build())
     .build();
 
 ChatResponse response = this.ollamaApi.chat(this.request);
@@ -542,7 +542,7 @@ var request2 = ChatRequest.builder("orca-mini")
     .messages(List.of(Message.builder(Role.USER)
         .content("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
-    .options(OllamaOptions.builder().temperature(0.9).build().toMap())
+    .options(OllamaChatOptions.builder().temperature(0.9).build().toMap())
     .build();
 
 Flux<ChatResponse> streamingResponse = this.ollamaApi.streamingChat(this.request2);

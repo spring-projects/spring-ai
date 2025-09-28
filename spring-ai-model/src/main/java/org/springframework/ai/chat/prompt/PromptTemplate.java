@@ -24,21 +24,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
-import org.springframework.ai.template.TemplateRenderer;
-import org.springframework.ai.template.st.StTemplateRenderer;
-import org.springframework.util.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
-import org.springframework.core.io.Resource;
+import org.springframework.ai.template.TemplateRenderer;
+import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A template for creating prompts. It allows you to define a template string with
@@ -89,7 +87,7 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 		try (InputStream inputStream = resource.getInputStream()) {
 			this.template = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-			Assert.hasText(template, "template cannot be null or empty");
+			Assert.hasText(this.template, "template cannot be null or empty");
 		}
 		catch (IOException ex) {
 			throw new RuntimeException("Failed to read resource", ex);
@@ -113,14 +111,14 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		// Process internal variables to handle Resources before rendering
 		Map<String, Object> processedVariables = new HashMap<>();
 		for (Entry<String, Object> entry : this.variables.entrySet()) {
-			if (entry.getValue() instanceof Resource) {
-				processedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
+			if (entry.getValue() instanceof Resource resource) {
+				processedVariables.put(entry.getKey(), renderResource(resource));
 			}
 			else {
 				processedVariables.put(entry.getKey(), entry.getValue());
 			}
 		}
-		return this.renderer.apply(template, processedVariables);
+		return this.renderer.apply(this.template, processedVariables);
 	}
 
 	@Override
@@ -128,15 +126,15 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		Map<String, Object> combinedVariables = new HashMap<>(this.variables);
 
 		for (Entry<String, Object> entry : additionalVariables.entrySet()) {
-			if (entry.getValue() instanceof Resource) {
-				combinedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
+			if (entry.getValue() instanceof Resource resource) {
+				combinedVariables.put(entry.getKey(), renderResource(resource));
 			}
 			else {
 				combinedVariables.put(entry.getKey(), entry.getValue());
 			}
 		}
 
-		return this.renderer.apply(template, combinedVariables);
+		return this.renderer.apply(this.template, combinedVariables);
 	}
 
 	private String renderResource(Resource resource) {
@@ -213,15 +211,15 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	public static class Builder {
 
-		private String template;
+		protected String template;
 
-		private Resource resource;
+		protected Resource resource;
 
-		private Map<String, Object> variables = new HashMap<>();
+		protected Map<String, Object> variables = new HashMap<>();
 
-		private TemplateRenderer renderer = DEFAULT_TEMPLATE_RENDERER;
+		protected TemplateRenderer renderer = DEFAULT_TEMPLATE_RENDERER;
 
-		private Builder() {
+		protected Builder() {
 		}
 
 		public Builder template(String template) {

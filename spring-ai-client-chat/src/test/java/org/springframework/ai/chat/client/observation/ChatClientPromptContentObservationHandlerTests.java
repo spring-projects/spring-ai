@@ -16,17 +16,18 @@
 
 package org.springframework.ai.chat.client.observation;
 
+import java.util.List;
+
 import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,9 +61,9 @@ class ChatClientPromptContentObservationHandlerTests {
 		var context = ChatClientObservationContext.builder()
 			.request(ChatClientRequest.builder().prompt(new Prompt(List.of())).build())
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Client Prompt Content:
+				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				[]
 				""");
 	}
@@ -72,9 +73,9 @@ class ChatClientPromptContentObservationHandlerTests {
 		var context = ChatClientObservationContext.builder()
 			.request(ChatClientRequest.builder().prompt(new Prompt("supercalifragilisticexpialidocious")).build())
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Client Prompt Content:
+				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				["user":"supercalifragilisticexpialidocious"]
 				""");
 	}
@@ -87,9 +88,9 @@ class ChatClientPromptContentObservationHandlerTests {
 						new UserMessage("supercalifragilisticexpialidocious"))))
 				.build())
 			.build();
-		observationHandler.onStop(context);
+		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
-				Chat Client Prompt Content:
+				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				["system":"you're a chimney sweep", "user":"supercalifragilisticexpialidocious"]
 				""");
 	}

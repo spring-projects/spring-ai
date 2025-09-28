@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 
@@ -55,7 +56,7 @@ class MethodToolCallbackGenericTypesTest {
 		// Create a JSON input with a list of strings
 		String toolInput = """
 				{
-				    "strings": ["one", "two", "three"]
+					"strings": ["one", "two", "three"]
 				}
 				""";
 
@@ -63,7 +64,7 @@ class MethodToolCallbackGenericTypesTest {
 		String result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("\"3 strings processed: [one, two, three]\"");
+		assertThat(result).isEqualTo("3 strings processed: [one, two, three]");
 	}
 
 	@Test
@@ -89,7 +90,7 @@ class MethodToolCallbackGenericTypesTest {
 		// Create a JSON input with a map of string to integer
 		String toolInput = """
 				{
-				    "map": {"one": 1, "two": 2, "three": 3}
+					"map": {"one": 1, "two": 2, "three": 3}
 				}
 				""";
 
@@ -97,7 +98,7 @@ class MethodToolCallbackGenericTypesTest {
 		String result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("\"3 entries processed: {one=1, two=2, three=3}\"");
+		assertThat(result).isEqualTo("3 entries processed: {one=1, two=2, three=3}");
 	}
 
 	@Test
@@ -123,10 +124,10 @@ class MethodToolCallbackGenericTypesTest {
 		// Create a JSON input with a list of maps
 		String toolInput = """
 				{
-				    "listOfMaps": [
-				        {"a": 1, "b": 2},
-				        {"c": 3, "d": 4}
-				    ]
+					"listOfMaps": [
+						{"a": 1, "b": 2},
+						{"c": 3, "d": 4}
+					]
 				}
 				""";
 
@@ -134,7 +135,42 @@ class MethodToolCallbackGenericTypesTest {
 		String result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("\"2 maps processed: [{a=1, b=2}, {c=3, d=4}]\"");
+		assertThat(result).isEqualTo("2 maps processed: [{a=1, b=2}, {c=3, d=4}]");
+	}
+
+	@Test
+	void testToolContextType() throws Exception {
+		// Create a test object with a method that takes a List<Map<String, Integer>>
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("processStringListInToolContext", ToolContext.class);
+
+		// Create a tool definition
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("processToolContext")
+			.description("Process tool context")
+			.inputSchema("{}")
+			.build();
+
+		// Create a MethodToolCallback
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		// Create an empty JSON input
+		String toolInput = """
+				{}
+				""";
+
+		// Create a toolContext
+		ToolContext toolContext = new ToolContext(Map.of("foo", "bar"));
+
+		// Call the tool
+		String result = callback.call(toolInput, toolContext);
+
+		// Verify the result
+		assertThat(result).isEqualTo("1 entries processed {foo=bar}");
 	}
 
 	/**
@@ -152,6 +188,11 @@ class MethodToolCallbackGenericTypesTest {
 
 		public String processListOfMaps(List<Map<String, Integer>> listOfMaps) {
 			return listOfMaps.size() + " maps processed: " + listOfMaps;
+		}
+
+		public String processStringListInToolContext(ToolContext toolContext) {
+			Map<String, Object> context = toolContext.getContext();
+			return context.size() + " entries processed " + context;
 		}
 
 	}

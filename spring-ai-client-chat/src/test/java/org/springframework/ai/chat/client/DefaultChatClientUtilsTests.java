@@ -16,11 +16,17 @@
 
 package org.springframework.ai.chat.client;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
@@ -30,10 +36,6 @@ import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -42,6 +44,7 @@ import static org.mockito.Mockito.mock;
  * Unit tests for {@link DefaultChatClientUtils}.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  */
 class DefaultChatClientUtilsTests {
 
@@ -319,6 +322,64 @@ class DefaultChatClientUtilsTests {
 		assertThat(resultOptions).isNotNull();
 		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext1)
 			.containsAllEntriesOf(toolContext2);
+	}
+
+	@Test
+	void whenToolNamesAndChatOptionsAreDefaultChatOptions() {
+		Set<String> toolNames1 = Set.of("toolA", "toolB");
+		DefaultChatOptions chatOptions = new DefaultChatOptions();
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.options(chatOptions)
+			.toolNames(toolNames1.toArray(new String[0]));
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolNames()).containsExactlyInAnyOrderElementsOf(toolNames1);
+	}
+
+	@Test
+	void whenToolCallbacksAndChatOptionsAreDefaultChatOptions() {
+		ToolCallback toolCallback1 = new TestToolCallback("tool1");
+		DefaultChatOptions chatOptions = new DefaultChatOptions();
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.options(chatOptions)
+			.toolCallbacks(toolCallback1);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result).isNotNull();
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolCallbacks()).containsExactlyInAnyOrder(toolCallback1);
+	}
+
+	@Test
+	void whenToolContextAndChatOptionsAreDefaultChatOptions() {
+		Map<String, Object> toolContext1 = Map.of("key1", "value1");
+		DefaultChatOptions chatOptions = new DefaultChatOptions();
+		ChatModel chatModel = mock(ChatModel.class);
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.options(chatOptions)
+			.toolContext(toolContext1);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+		assertThat(result.prompt().getOptions()).isInstanceOf(ToolCallingChatOptions.class);
+		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
+		assertThat(resultOptions).isNotNull();
+		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext1);
 	}
 
 	@Test
