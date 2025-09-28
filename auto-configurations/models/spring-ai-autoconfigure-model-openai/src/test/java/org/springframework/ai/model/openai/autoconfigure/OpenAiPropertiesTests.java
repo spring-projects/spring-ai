@@ -322,6 +322,31 @@ public class OpenAiPropertiesTests {
 	}
 
 	@Test
+	public void imageEditProperties() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.api-key=abc123",
+						"spring.ai.openai.image.edit.options.model=MODEL_XYZ",
+						"spring.ai.openai.image.edit.options.n=3")
+				// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiImageEditAutoConfiguration.class))
+			.run(context -> {
+				var imageEditProperties = context.getBean(OpenAiImageEditProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+
+				assertThat(imageEditProperties.getApiKey()).isNull();
+				assertThat(imageEditProperties.getBaseUrl()).isNull();
+
+				assertThat(imageEditProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
+				assertThat(imageEditProperties.getOptions().getN()).isEqualTo(3);
+			});
+	}
+
+	@Test
 	public void imageOverrideConnectionProperties() {
 		new ApplicationContextRunner().withPropertyValues(
 		// @formatter:off
