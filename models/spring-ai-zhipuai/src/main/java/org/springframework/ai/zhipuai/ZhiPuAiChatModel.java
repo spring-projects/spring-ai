@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,11 @@ public class ZhiPuAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		String textContent = choice.message().content();
+		String reasoningContent = choice.message().reasoningContent();
+
+		var assistantMessage = new ZhiPuAiAssistantMessage(textContent, reasoningContent, metadata, toolCalls,
+				List.of());
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
@@ -360,12 +364,13 @@ public class ZhiPuAiChatModel implements ChatModel {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
 							// FIXME: bounded elastic needs to be used since tool calling
 							//  is currently only synchronous
-							return Flux.deferContextual((ctx) -> {
+							return Flux.deferContextual(ctx -> {
 								ToolExecutionResult toolExecutionResult;
 								try {
 									ToolCallReactiveContextHolder.setContext(ctx);
 									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-								} finally {
+								}
+								finally {
 									ToolCallReactiveContextHolder.clearContext();
 								}
 								if (toolExecutionResult.returnDirect()) {
@@ -510,7 +515,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 					}).toList();
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -521,7 +526,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null))
+							tr.id(), null, null))
 					.toList();
 			}
 			else {

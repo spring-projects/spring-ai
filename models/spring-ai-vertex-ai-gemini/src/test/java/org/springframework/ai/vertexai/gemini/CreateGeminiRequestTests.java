@@ -23,6 +23,8 @@ import java.util.List;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
 import com.google.cloud.vertexai.api.Part;
+import com.google.cloud.vertexai.api.Schema;
+import com.google.cloud.vertexai.api.Type;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -86,7 +88,7 @@ public class CreateGeminiRequestTests {
 			.vertexAI(this.vertexAI)
 			.defaultOptions(VertexAiGeminiChatOptions.builder()
 				.model("DEFAULT_MODEL")
-				.frequencePenalty(.25)
+				.frequencyPenalty(.25)
 				.presencePenalty(.75)
 				.build())
 			.build();
@@ -262,6 +264,11 @@ public class CreateGeminiRequestTests {
 				.stopSequences(List.of("stop1", "stop2"))
 				.candidateCount(1)
 				.responseMimeType("application/json")
+				.responseLogprobs(true)
+				.logprobs(2)
+				.responseSchema("""
+						{"type": "OBJECT"}
+						""")
 				.build())
 			.build();
 
@@ -280,6 +287,10 @@ public class CreateGeminiRequestTests {
 		assertThat(request.model().getGenerationConfig().getStopSequences(0)).isEqualTo("stop1");
 		assertThat(request.model().getGenerationConfig().getStopSequences(1)).isEqualTo("stop2");
 		assertThat(request.model().getGenerationConfig().getResponseMimeType()).isEqualTo("application/json");
+		assertThat(request.model().getGenerationConfig().getLogprobs()).isEqualTo(2);
+		assertThat(request.model().getGenerationConfig().getResponseLogprobs()).isEqualTo(true);
+		assertThat(request.model().getGenerationConfig().getResponseSchema())
+			.isEqualTo(Schema.newBuilder().setType(Type.OBJECT).build());
 	}
 
 }

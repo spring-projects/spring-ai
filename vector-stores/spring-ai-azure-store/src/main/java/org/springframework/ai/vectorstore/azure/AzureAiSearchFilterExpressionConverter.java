@@ -16,11 +16,12 @@
 
 package org.springframework.ai.vectorstore.azure;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.azure.AzureVectorStore.MetadataField;
@@ -40,9 +41,9 @@ import org.springframework.util.Assert;
  */
 public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-	private static Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
+	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
 
-	private final SimpleDateFormat dateFormat;
+	private final DateTimeFormatter dateFormat;
 
 	private List<String> allowedIdentifierNames;
 
@@ -50,8 +51,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 		Assert.notNull(filterMetadataFields, "The filterMetadataFields can not null.");
 
 		this.allowedIdentifierNames = filterMetadataFields.stream().map(MetadataField::name).toList();
-		this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		this.dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+		this.dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
 	}
 
 	@Override
@@ -137,15 +137,15 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
 		if (value instanceof Date date) {
-			context.append(this.dateFormat.format(date));
+			context.append(this.dateFormat.format(date.toInstant()));
 		}
 		else if (value instanceof String text) {
 			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
 				try {
-					Date date = this.dateFormat.parse(text);
+					Instant date = Instant.from(this.dateFormat.parse(text));
 					context.append(this.dateFormat.format(date));
 				}
-				catch (ParseException e) {
+				catch (DateTimeParseException e) {
 					throw new IllegalArgumentException("Invalid date type:" + text, e);
 				}
 			}

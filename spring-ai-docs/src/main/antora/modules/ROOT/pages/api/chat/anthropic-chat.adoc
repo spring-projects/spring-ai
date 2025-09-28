@@ -40,7 +40,7 @@ spring:
 export ANTHROPIC_API_KEY=<your-anthropic-api-key>
 ----
 
-You can also set this configuration programmatically in your application code:
+You can also get this configuration programmatically in your application code:
 
 [source,java]
 ----
@@ -149,7 +149,7 @@ The prefix `spring.ai.anthropic.chat` is the property prefix that lets you confi
 
 | spring.ai.anthropic.chat.enabled (Removed and no longer valid) | Enable Anthropic chat model.  | true
 | spring.ai.model.chat | Enable Anthropic chat model.  | anthropic
-| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307` | `claude-3-7-sonnet-latest`
+| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307`, `claude-3-7-sonnet-latest`, `claude-sonnet-4-20250514`, `claude-opus-4-1-20250805` | `claude-opus-4-20250514`
 | spring.ai.anthropic.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.anthropic.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | 500
 | spring.ai.anthropic.chat.options.stop-sequence | Custom text sequences that will cause the model to stop generating. Our models will normally stop when they have naturally completed their turn, which will result in a response stop_reason of "end_turn". If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter. If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence. | -
@@ -190,6 +190,455 @@ ChatResponse response = chatModel.call(
 ----
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Prompt Caching
+
+Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching[prompt caching feature] allows you to cache frequently used prompts to reduce costs and improve response times for repeated interactions.
+When you cache a prompt, subsequent identical requests can reuse the cached content, significantly reducing the number of input tokens processed.
+
+[NOTE]
+====
+*Supported Models*
+
+Prompt caching is currently supported on Claude Opus 4, Claude Sonnet 4, Claude Sonnet 3.7, Claude Sonnet 3.5, Claude Haiku 3.5, Claude Haiku 3, and Claude Opus 3.
+
+*Token Requirements*
+
+Different models have different minimum token thresholds for cache effectiveness:
+- Claude Sonnet 4: 1024+ tokens
+- Claude Haiku models: 2048+ tokens
+- Other models: 1024+ tokens
+====
+
+=== Cache Strategies
+
+Spring AI provides strategic cache placement through the `AnthropicCacheStrategy` enum:
+
+* `NONE`: Disables prompt caching completely
+* `SYSTEM_ONLY`: Caches only the system message content  
+* `SYSTEM_AND_TOOLS`: Caches system message and the last tool definition
+* `CONVERSATION_HISTORY`: Caches conversation history in chat memory scenarios
+
+This strategic approach ensures optimal cache breakpoint placement while staying within Anthropic's 4-breakpoint limit.
+
+=== Enabling Prompt Caching
+
+Enable prompt caching by setting `cacheOptions` on `AnthropicChatOptions` and choosing a `strategy`.
+
+==== System-Only Caching
+
+[source,java]
+----
+// Cache system message content
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a helpful AI assistant with extensive knowledge..."),
+            new UserMessage("What is machine learning?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+==== System and Tools Caching
+
+[source,java]
+----
+// Cache system message and the last tool definition
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a weather analysis assistant..."),
+            new UserMessage("What's the weather like in San Francisco?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4") 
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+                .build())
+            .toolCallbacks(weatherToolCallback)
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+==== Conversation History Caching
+
+[source,java]
+----
+// Cache conversation history with ChatClient and memory (latest user question is not cached)
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultSystem("You are a personalized career counselor...")
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
+        .conversationId(conversationId)
+        .build())
+    .build();
+
+String response = chatClient.prompt()
+    .user("What career advice would you give me?")
+    .options(AnthropicChatOptions.builder()
+        .model("claude-sonnet-4")
+        .cacheOptions(AnthropicCacheOptions.builder()
+            .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+            .build())
+        .maxTokens(500)
+        .build())
+    .call()
+    .content();
+----
+
+==== Using ChatClient Fluent API
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .system("You are an expert document analyst...")
+    .user("Analyze this large document: " + document)
+    .options(AnthropicChatOptions.builder()
+        .model("claude-sonnet-4")
+        .cacheOptions(AnthropicCacheOptions.builder()
+            .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .build())
+        .build())
+    .call()
+    .content();
+----
+
+=== Advanced Caching Options
+
+==== Per-Message TTL (5m or 1h)
+
+By default, cached content uses a 5-minute TTL. You can set a 1-hour TTL for specific message types. When 1-hour TTL is used, Spring AI automatically sets the required Anthropic beta header.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(new SystemMessage(largeSystemPrompt)),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+NOTE: Extended TTL uses Anthropic beta feature `extended-cache-ttl-2025-04-11`.
+
+==== Cache Eligibility Filters
+
+Control when cache breakpoints are used by setting minimum content lengths and an optional token-based length function:
+
+[source,java]
+----
+AnthropicCacheOptions cache = AnthropicCacheOptions.builder()
+    .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+    .messageTypeMinContentLength(MessageType.SYSTEM, 1024)
+    .messageTypeMinContentLength(MessageType.USER, 1024)
+    .messageTypeMinContentLength(MessageType.ASSISTANT, 1024)
+    .contentLengthFunction(text -> MyTokenCounter.count(text))
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(/* messages */),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(cache)
+            .build()
+    )
+);
+----
+
+NOTE: Tool Definitions are always considered for caching if `SYSTEM_AND_TOOLS` strategy is used, regardless of content length.
+
+=== Usage Example
+
+Here's a complete example demonstrating prompt caching with cost tracking:
+
+[source,java]
+----
+// Create system content that will be reused multiple times
+String largeSystemPrompt = "You are an expert software architect specializing in distributed systems...";
+
+// First request - creates cache
+ChatResponse firstResponse = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(largeSystemPrompt),
+            new UserMessage("What is microservices architecture?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+
+// Access cache-related token usage
+AnthropicApi.Usage firstUsage = (AnthropicApi.Usage) firstResponse.getMetadata()
+    .getUsage().getNativeUsage();
+
+System.out.println("Cache creation tokens: " + firstUsage.cacheCreationInputTokens());
+System.out.println("Cache read tokens: " + firstUsage.cacheReadInputTokens());
+
+// Second request with same system prompt - reads from cache  
+ChatResponse secondResponse = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(largeSystemPrompt),
+            new UserMessage("What are the benefits of event sourcing?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+
+AnthropicApi.Usage secondUsage = (AnthropicApi.Usage) secondResponse.getMetadata()
+    .getUsage().getNativeUsage();
+
+System.out.println("Cache creation tokens: " + secondUsage.cacheCreationInputTokens()); // Should be 0
+System.out.println("Cache read tokens: " + secondUsage.cacheReadInputTokens()); // Should be > 0
+----
+
+=== Token Usage Tracking
+
+The `Usage` record provides detailed information about cache-related token consumption.
+To access Anthropic-specific cache metrics, use the `getNativeUsage()` method:
+
+[source,java]
+----
+AnthropicApi.Usage usage = (AnthropicApi.Usage) response.getMetadata()
+    .getUsage().getNativeUsage();
+----
+
+Cache-specific metrics include:
+
+* `cacheCreationInputTokens()`: Returns the number of tokens used when creating a cache entry
+* `cacheReadInputTokens()`: Returns the number of tokens read from an existing cache entry
+
+When you first send a cached prompt:
+- `cacheCreationInputTokens()` will be greater than 0
+- `cacheReadInputTokens()` will be 0
+
+When you send the same cached prompt again:
+- `cacheCreationInputTokens()` will be 0
+- `cacheReadInputTokens()` will be greater than 0
+
+=== Real-World Use Cases
+
+==== Legal Document Analysis
+
+Analyze large legal contracts or compliance documents efficiently by caching document content across multiple questions:
+
+[source,java]
+----
+// Load a legal contract (PDF or text)
+String legalContract = loadDocument("merger-agreement.pdf"); // ~3000 tokens
+
+// System prompt with legal expertise
+String legalSystemPrompt = "You are an expert legal analyst specializing in corporate law. " +
+    "Analyze the following contract and provide precise answers about terms, obligations, and risks: " +
+    legalContract;
+
+// First analysis - creates cache
+ChatResponse riskAnalysis = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(legalSystemPrompt),
+            new UserMessage("What are the key termination clauses and associated penalties?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(1000)
+            .build()
+    )
+);
+
+// Subsequent questions reuse cached document - 90% cost savings
+ChatResponse obligationAnalysis = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(legalSystemPrompt), // Same content - cache hit
+            new UserMessage("List all financial obligations and payment schedules.")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(1000)
+            .build()
+    )
+);
+----
+
+==== Batch Code Review
+
+Process multiple code files with consistent review criteria while caching the review guidelines:
+
+[source,java]
+----
+// Define comprehensive code review guidelines
+String reviewGuidelines = """
+    You are a senior software engineer conducting code reviews. Apply these criteria:
+    - Security vulnerabilities and best practices
+    - Performance optimizations and memory usage
+    - Code maintainability and readability
+    - Testing coverage and edge cases
+    - Design patterns and architecture compliance
+    """;
+
+List<String> codeFiles = Arrays.asList(
+    "UserService.java", "PaymentController.java", "SecurityConfig.java"
+);
+
+List<String> reviews = new ArrayList<>();
+
+for (String filename : codeFiles) {
+    String sourceCode = loadSourceFile(filename);
+    
+    ChatResponse review = chatModel.call(
+        new Prompt(
+            List.of(
+                new SystemMessage(reviewGuidelines), // Cached across all reviews
+                new UserMessage("Review this " + filename + " code:\n\n" + sourceCode)
+            ),
+            AnthropicChatOptions.builder()
+                .model("claude-sonnet-4")
+                .cacheOptions(AnthropicCacheOptions.builder()
+                    .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                    .build())
+                .maxTokens(800)
+                .build()
+        )
+    );
+    
+    reviews.add(review.getResult().getOutput().getText());
+}
+
+// Guidelines cached after first request, subsequent reviews are faster and cheaper
+----
+
+==== Customer Support with Knowledge Base
+
+Create a customer support system that caches your product knowledge base for consistent, accurate responses:
+
+[source,java]
+----
+// Load comprehensive product knowledge
+String knowledgeBase = """
+    PRODUCT DOCUMENTATION:
+    - API endpoints and authentication methods
+    - Common troubleshooting procedures
+    - Billing and subscription details
+    - Integration guides and examples
+    - Known issues and workarounds
+    """ + loadProductDocs(); // ~2500 tokens
+
+@Service
+public class CustomerSupportService {
+    
+    public String handleCustomerQuery(String customerQuery, String customerId) {
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                List.of(
+                    new SystemMessage("You are a helpful customer support agent. " +
+                        "Use this knowledge base to provide accurate solutions: " + knowledgeBase),
+                    new UserMessage("Customer " + customerId + " asks: " + customerQuery)
+                ),
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4")
+                    .cacheOptions(AnthropicCacheOptions.builder()
+                        .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                        .build())
+                    .maxTokens(600)
+                    .build()
+            )
+        );
+        
+        return response.getResult().getOutput().getText();
+    }
+}
+
+// Knowledge base is cached across all customer queries
+// Multiple support agents can benefit from the same cached content
+----
+
+=== Best Practices
+
+1. **Choose the Right Strategy**: 
+   - Use `SYSTEM_ONLY` for reusable system prompts and instructions
+   - Use `SYSTEM_AND_TOOLS` when you have both system content and tool definitions to cache (the last tool definition is cached)
+   - Use `CONVERSATION_HISTORY` with ChatClient memory for multi-turn conversations
+   - Use `NONE` to explicitly disable caching
+
+2. **Meet Token Requirements**: Focus on caching content that meets the minimum token requirements (1024+ tokens for Sonnet 4, 2048+ for Haiku models).
+
+3. **Reuse Identical Content**: Caching works best with exact matches of prompt content.
+Even small changes will require a new cache entry.
+
+4. **Monitor Token Usage**: Use the cache usage statistics to track cache effectiveness:
+   ```java
+   AnthropicApi.Usage usage = (AnthropicApi.Usage) response.getMetadata().getUsage().getNativeUsage();
+   if (usage != null) {
+       System.out.println("Cache creation: " + usage.cacheCreationInputTokens());
+       System.out.println("Cache read: " + usage.cacheReadInputTokens());
+   }
+   ```
+
+5. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
+
+6. **Cache Lifetime**: Default TTL is 5 minutes; set 1-hour TTL per message type via `messageTypeTtl(...)`. Each cache access resets the timer.
+
+7. **Tool Caching Limitations**: Be aware that tool-based interactions may not provide cache usage metadata in the response.
+
+=== Implementation Details
+
+The prompt caching implementation in Spring AI follows these key design principles:
+
+1. **Strategic Cache Placement**: Cache breakpoints are automatically placed at optimal locations based on the chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
+
+2. **Provider Portability**: Cache configuration is done through `AnthropicChatOptions` rather than individual messages, preserving compatibility when switching between different AI providers.
+
+3. **Thread Safety**: The cache breakpoint tracking is implemented with thread-safe mechanisms to handle concurrent requests correctly.
+
+4. **Automatic Content Ordering**: The implementation ensures proper on-the-wire ordering of JSON content blocks and cache controls according to Anthropic's API requirements.
+
+=== Future Enhancements
+
+The current cache strategies are designed to handle **90% of common use cases** effectively. For applications requiring more granular control, future enhancements may include:
+
+- **Message-level cache control** for fine-grained breakpoint placement
+- **Multi-block content caching** within individual messages  
+- **Advanced cache boundary selection** for complex tool scenarios
+- **Mixed TTL strategies** for optimized cache hierarchies
+
+These enhancements will maintain full backward compatibility while unlocking Anthropic's complete prompt caching capabilities for specialized use cases.
 
 == Thinking
 
@@ -484,13 +933,13 @@ Next, create a `AnthropicChatModel` and use it for text generations:
 [source,java]
 ----
 var anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
-
-var chatModel = new AnthropicChatModel(this.anthropicApi,
-        AnthropicChatOptions.builder()
-            .model("claude-3-opus-20240229")
+var anthropicChatOptions = AnthropicChatOptions.builder()
+            .model("claude-3-7-sonnet-20250219")
             .temperature(0.4)
             .maxTokens(200)
-        .build());
+        .build()
+var chatModel = AnthropicChatModel.builder().anthropicApi(anthropicApi)
+                .defaultOptions(anthropicChatOptions).build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));

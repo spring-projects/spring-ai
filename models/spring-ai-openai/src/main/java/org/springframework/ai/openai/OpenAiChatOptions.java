@@ -29,6 +29,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -54,6 +56,8 @@ import org.springframework.util.Assert;
  */
 @JsonInclude(Include.NON_NULL)
 public class OpenAiChatOptions implements ToolCallingChatOptions {
+
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatOptions.class);
 
 	// @formatter:off
 	/**
@@ -84,13 +88,31 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 */
 	private @JsonProperty("top_logprobs") Integer topLogprobs;
 	/**
-	 * The maximum number of tokens to generate in the chat completion. The total length of input
-	 * tokens and generated tokens is limited by the model's context length.
+	 * The maximum number of tokens to generate in the chat completion.
+	 * The total length of input tokens and generated tokens is limited by the model's context length.
+	 *
+	 * <p><strong>Model-specific usage:</strong></p>
+	 * <ul>
+	 * <li><strong>Use for non-reasoning models</strong> (e.g., gpt-4o, gpt-3.5-turbo)</li>
+	 * <li><strong>Cannot be used with reasoning models</strong> (e.g., o1, o3, o4-mini series)</li>
+	 * </ul>
+	 *
+	 * <p><strong>Mutual exclusivity:</strong> This parameter cannot be used together with
+	 * {@link #maxCompletionTokens}. Setting both will result in an API error.</p>
 	 */
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
 	 * An upper bound for the number of tokens that can be generated for a completion,
 	 * including visible output tokens and reasoning tokens.
+	 *
+	 * <p><strong>Model-specific usage:</strong></p>
+	 * <ul>
+	 * <li><strong>Required for reasoning models</strong> (e.g., o1, o3, o4-mini series)</li>
+	 * <li><strong>Cannot be used with non-reasoning models</strong> (e.g., gpt-4o, gpt-3.5-turbo)</li>
+	 * </ul>
+	 *
+	 * <p><strong>Mutual exclusivity:</strong> This parameter cannot be used together with
+	 * {@link #maxTokens}. Setting both will result in an API error.</p>
 	 */
 	private @JsonProperty("max_completion_tokens") Integer maxCompletionTokens;
 	/**
@@ -197,6 +219,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("reasoning_effort") String reasoningEffort;
 
 	/**
+	 * verbosity: string or null
+	 * Optional - Defaults to medium
+	 * Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses.
+	 * Currently supported values are low, medium, and high.
+	 * If specified, the model will use web search to find relevant information to answer the user's question.
+	 */
+	private @JsonProperty("verbosity") String verbosity;
+
+	/**
 	 * This tool searches the web for relevant results to use in a response.
 	 */
 	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
@@ -206,6 +237,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 */
 	private @JsonProperty("chat_template_kwargs")  Map<String,Object> chatTemplateKwargs;
 
+  /**
+	 * Specifies the <a href="https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier">processing type</a> used for serving the request.
+	 */
+	private @JsonProperty("service_tier") String serviceTier;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
@@ -275,6 +310,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.reasoningEffort(fromOptions.getReasoningEffort())
 			.webSearchOptions(fromOptions.getWebSearchOptions())
 			.chatTemplateKwargs(fromOptions.chatTemplateKwargs)
+			.verbosity(fromOptions.getVerbosity())
+			.serviceTier(fromOptions.getServiceTier())
 			.build();
 	}
 
@@ -577,6 +614,22 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setChatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
 		this.chatTemplateKwargs = chatTemplateKwargs;
+  }
+  
+  public String getVerbosity() {
+		return this.verbosity;
+	}
+
+	public void setVerbosity(String verbosity) {
+		this.verbosity = verbosity;
+	}
+
+	public String getServiceTier() {
+		return this.serviceTier;
+	}
+
+	public void setServiceTier(String serviceTier) {
+		this.serviceTier = serviceTier;
 	}
 
 	@Override
@@ -591,7 +644,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.chatTemplateKwargs);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.chatTemplateKwargs, this.serviceTier);
 	}
 
 	@Override
@@ -626,6 +679,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
 				&& Objects.equals(this.chatTemplateKwargs, other.chatTemplateKwargs);
+				&& Objects.equals(this.verbosity, other.verbosity)
+				&& Objects.equals(this.serviceTier, other.serviceTier);
 	}
 
 	@Override
@@ -675,12 +730,72 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
+		/**
+		 * Sets the maximum number of tokens to generate in the chat completion. The total
+		 * length of input tokens and generated tokens is limited by the model's context
+		 * length.
+		 *
+		 * <p>
+		 * <strong>Model-specific usage:</strong>
+		 * </p>
+		 * <ul>
+		 * <li><strong>Use for non-reasoning models</strong> (e.g., gpt-4o,
+		 * gpt-3.5-turbo)</li>
+		 * <li><strong>Cannot be used with reasoning models</strong> (e.g., o1, o3,
+		 * o4-mini series)</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * <strong>Mutual exclusivity:</strong> This parameter cannot be used together
+		 * with {@link #maxCompletionTokens(Integer)}. If both are set, the last one set
+		 * will be used and the other will be cleared with a warning.
+		 * </p>
+		 * @param maxTokens the maximum number of tokens to generate, or null to unset
+		 * @return this builder instance
+		 */
 		public Builder maxTokens(Integer maxTokens) {
+			if (maxTokens != null && this.options.maxCompletionTokens != null) {
+				logger
+					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+							+ "The previously set maxCompletionTokens ({}) will be cleared and maxTokens ({}) will be used.",
+							this.options.maxCompletionTokens, maxTokens);
+				this.options.maxCompletionTokens = null;
+			}
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
+		/**
+		 * Sets an upper bound for the number of tokens that can be generated for a
+		 * completion, including visible output tokens and reasoning tokens.
+		 *
+		 * <p>
+		 * <strong>Model-specific usage:</strong>
+		 * </p>
+		 * <ul>
+		 * <li><strong>Required for reasoning models</strong> (e.g., o1, o3, o4-mini
+		 * series)</li>
+		 * <li><strong>Cannot be used with non-reasoning models</strong> (e.g., gpt-4o,
+		 * gpt-3.5-turbo)</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * <strong>Mutual exclusivity:</strong> This parameter cannot be used together
+		 * with {@link #maxTokens(Integer)}. If both are set, the last one set will be
+		 * used and the other will be cleared with a warning.
+		 * </p>
+		 * @param maxCompletionTokens the maximum number of completion tokens to generate,
+		 * or null to unset
+		 * @return this builder instance
+		 */
 		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
+			if (maxCompletionTokens != null && this.options.maxTokens != null) {
+				logger
+					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+							+ "The previously set maxTokens ({}) will be cleared and maxCompletionTokens ({}) will be used.",
+							this.options.maxTokens, maxCompletionTokens);
+				this.options.maxTokens = null;
+			}
 			this.options.maxCompletionTokens = maxCompletionTokens;
 			return this;
 		}
@@ -820,6 +935,21 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder chatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
 			this.options.chatTemplateKwargs = chatTemplateKwargs;
+      return this;
+    }
+    
+		public Builder verbosity(String verbosity) {
+			this.options.verbosity = verbosity;
+			return this;
+		}
+
+		public Builder serviceTier(String serviceTier) {
+			this.options.serviceTier = serviceTier;
+			return this;
+		}
+
+		public Builder serviceTier(OpenAiApi.ServiceTier serviceTier) {
+			this.options.serviceTier = serviceTier.getValue();
 			return this;
 		}
 

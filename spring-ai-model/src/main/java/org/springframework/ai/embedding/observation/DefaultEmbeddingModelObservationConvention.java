@@ -16,9 +16,15 @@
 
 package org.springframework.ai.embedding.observation;
 
+import java.util.Optional;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.util.StringUtils;
 
 /**
@@ -26,6 +32,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Mengqi Xu
  * @since 1.0.0
  */
 public class DefaultEmbeddingModelObservationConvention implements EmbeddingModelObservationConvention {
@@ -45,11 +52,11 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 
 	@Override
 	public String getContextualName(EmbeddingModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequest().getOptions().getModel())) {
-			return "%s %s".formatted(context.getOperationMetadata().operationType(),
-					context.getRequest().getOptions().getModel());
-		}
-		return context.getOperationMetadata().operationType();
+		return Optional.ofNullable(context.getRequest().getOptions())
+			.map(EmbeddingOptions::getModel)
+			.filter(StringUtils::hasText)
+			.map(model -> "%s %s".formatted(context.getOperationMetadata().operationType(), model))
+			.orElseGet(() -> context.getOperationMetadata().operationType());
 	}
 
 	@Override
@@ -69,20 +76,22 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 	}
 
 	protected KeyValue requestModel(EmbeddingModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequest().getOptions().getModel())) {
-			return KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
-					context.getRequest().getOptions().getModel());
-		}
-		return REQUEST_MODEL_NONE;
+		return Optional.ofNullable(context.getRequest().getOptions())
+			.map(EmbeddingOptions::getModel)
+			.filter(StringUtils::hasText)
+			.map(model -> KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
+					model))
+			.orElse(REQUEST_MODEL_NONE);
 	}
 
 	protected KeyValue responseModel(EmbeddingModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& StringUtils.hasText(context.getResponse().getMetadata().getModel())) {
-			return KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL,
-					context.getResponse().getMetadata().getModel());
-		}
-		return RESPONSE_MODEL_NONE;
+		return Optional.ofNullable(context.getResponse())
+			.map(EmbeddingResponse::getMetadata)
+			.map(EmbeddingResponseMetadata::getModel)
+			.filter(StringUtils::hasText)
+			.map(model -> KeyValue.of(EmbeddingModelObservationDocumentation.LowCardinalityKeyNames.RESPONSE_MODEL,
+					model))
+			.orElse(RESPONSE_MODEL_NONE);
 	}
 
 	@Override
@@ -99,36 +108,36 @@ public class DefaultEmbeddingModelObservationConvention implements EmbeddingMode
 	// Request
 
 	protected KeyValues requestEmbeddingDimension(KeyValues keyValues, EmbeddingModelObservationContext context) {
-		if (context.getRequest().getOptions().getDimensions() != null) {
-			return keyValues
+		return Optional.ofNullable(context.getRequest().getOptions())
+			.map(EmbeddingOptions::getDimensions)
+			.map(dimensions -> keyValues
 				.and(EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS
-					.asString(), String.valueOf(context.getRequest().getOptions().getDimensions()));
-		}
-		return keyValues;
+					.asString(), String.valueOf(dimensions)))
+			.orElse(keyValues);
 	}
 
 	// Response
 
 	protected KeyValues usageInputTokens(KeyValues keyValues, EmbeddingModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getUsage() != null
-				&& context.getResponse().getMetadata().getUsage().getPromptTokens() != null) {
-			return keyValues.and(
+		return Optional.ofNullable(context.getResponse())
+			.map(EmbeddingResponse::getMetadata)
+			.map(EmbeddingResponseMetadata::getUsage)
+			.map(Usage::getPromptTokens)
+			.map(promptTokens -> keyValues.and(
 					EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
-					String.valueOf(context.getResponse().getMetadata().getUsage().getPromptTokens()));
-		}
-		return keyValues;
+					String.valueOf(promptTokens)))
+			.orElse(keyValues);
 	}
 
 	protected KeyValues usageTotalTokens(KeyValues keyValues, EmbeddingModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getUsage() != null
-				&& context.getResponse().getMetadata().getUsage().getTotalTokens() != null) {
-			return keyValues.and(
+		return Optional.ofNullable(context.getResponse())
+			.map(EmbeddingResponse::getMetadata)
+			.map(EmbeddingResponseMetadata::getUsage)
+			.map(Usage::getTotalTokens)
+			.map(totalTokens -> keyValues.and(
 					EmbeddingModelObservationDocumentation.HighCardinalityKeyNames.USAGE_TOTAL_TOKENS.asString(),
-					String.valueOf(context.getResponse().getMetadata().getUsage().getTotalTokens()));
-		}
-		return keyValues;
+					String.valueOf(totalTokens)))
+			.orElse(keyValues);
 	}
 
 }

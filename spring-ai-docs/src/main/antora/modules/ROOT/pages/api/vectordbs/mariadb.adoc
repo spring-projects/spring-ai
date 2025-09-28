@@ -47,7 +47,8 @@ The vector store implementation can initialize the required schema for you, but 
 
 NOTE: This is a breaking change! In earlier versions of Spring AI, this schema initialization happened by default.
 
-Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+Additionally, you will need a configured `EmbeddingModel` bean.
+Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
 For example, to use the xref:api/embeddings/openai-embeddings.adoc[OpenAI EmbeddingModel], add the following dependency:
 
@@ -126,7 +127,8 @@ This ensures the correctness of the names and reduces the risk of SQL injection 
 
 == Manual Configuration
 
-Instead of using the Spring Boot auto-configuration, you can manually configure the MariaDB vector store. For this you need to add the following dependencies to your project:
+Instead of using the Spring Boot auto-configuration, you can manually configure the MariaDB vector store.
+For this you need to add the following dependencies to your project:
 
 [source,xml]
 ----
@@ -210,6 +212,74 @@ vectorStore.similaritySearch(SearchRequest.builder()
 ----
 
 NOTE: These filter expressions are automatically converted into the equivalent MariaDB JSON path expressions.
+
+== Similarity Scores
+
+The MariaDB Vector Store automatically calculates similarity scores for documents returned from similarity searches.
+These scores provide a normalized measure of how closely each document matches your search query.
+
+=== Score Calculation
+
+Similarity scores are calculated using the formula `score = 1.0 - distance`, where:
+
+* Score: A value between `0.0` and `1.0`, where `1.0` indicates perfect similarity and `0.0` indicates no similarity
+* Distance: The raw distance value calculated using the configured distance type (`COSINE` or `EUCLIDEAN`)
+
+This means that documents with smaller distances (more similar) will have higher scores, making the results more intuitive to interpret.
+
+=== Accessing Scores
+
+You can access the similarity score for each document through the `getScore()` method:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("Spring AI")
+        .topK(5)
+        .build());
+
+for (Document doc : results) {
+    double score = doc.getScore();  // Value between 0.0 and 1.0
+    System.out.println("Document: " + doc.getText());
+    System.out.println("Similarity Score: " + score);
+}
+----
+
+=== Search Results Ordering
+
+Search results are automatically ordered by similarity score in descending order (highest score first).
+This ensures that the most relevant documents appear at the top of your results.
+
+=== Distance Metadata
+
+In addition to the similarity score, the raw distance value is still available in the document metadata:
+
+[source,java]
+----
+for (Document doc : results) {
+    double score = doc.getScore();
+    float distance = (Float) doc.getMetadata().get("distance");
+
+    System.out.println("Score: " + score + ", Distance: " + distance);
+}
+----
+
+=== Similarity Threshold
+
+When using similarity thresholds in your search requests, specify the threshold as a score value (`0.0` to `1.0`) rather than a distance:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("Spring AI")
+        .topK(10)
+        .similarityThreshold(0.8)  // Only return documents with score >= 0.8
+        .build());
+----
+
+This makes threshold values consistent and intuitive - higher values mean more restrictive searches that only return highly similar documents.
 
 == Accessing the Native Client
 

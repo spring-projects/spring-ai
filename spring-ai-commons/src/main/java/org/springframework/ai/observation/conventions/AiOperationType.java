@@ -30,7 +30,6 @@ public enum AiOperationType {
 
 	// @formatter:off
 
-	// Please, keep the alphabetical sorting.
 	/**
 	 * AI operation type for chat.
 	 */

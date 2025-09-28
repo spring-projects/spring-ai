@@ -111,8 +111,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		// Process internal variables to handle Resources before rendering
 		Map<String, Object> processedVariables = new HashMap<>();
 		for (Entry<String, Object> entry : this.variables.entrySet()) {
-			if (entry.getValue() instanceof Resource) {
-				processedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
+			if (entry.getValue() instanceof Resource resource) {
+				processedVariables.put(entry.getKey(), renderResource(resource));
 			}
 			else {
 				processedVariables.put(entry.getKey(), entry.getValue());
@@ -126,8 +126,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		Map<String, Object> combinedVariables = new HashMap<>(this.variables);
 
 		for (Entry<String, Object> entry : additionalVariables.entrySet()) {
-			if (entry.getValue() instanceof Resource) {
-				combinedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
+			if (entry.getValue() instanceof Resource resource) {
+				combinedVariables.put(entry.getKey(), renderResource(resource));
 			}
 			else {
 				combinedVariables.put(entry.getKey(), entry.getValue());
@@ -209,17 +209,17 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		return new Builder();
 	}
 
-	public static final class Builder {
+	public static class Builder {
 
-		private String template;
+		protected String template;
 
-		private Resource resource;
+		protected Resource resource;
 
-		private Map<String, Object> variables = new HashMap<>();
+		protected Map<String, Object> variables = new HashMap<>();
 
-		private TemplateRenderer renderer = DEFAULT_TEMPLATE_RENDERER;
+		protected TemplateRenderer renderer = DEFAULT_TEMPLATE_RENDERER;
 
-		private Builder() {
+		protected Builder() {
 		}
 
 		public Builder template(String template) {

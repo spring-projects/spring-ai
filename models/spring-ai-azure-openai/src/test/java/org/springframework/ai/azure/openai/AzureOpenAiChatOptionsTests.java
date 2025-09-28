@@ -51,6 +51,7 @@ class AzureOpenAiChatOptionsTests {
 			.frequencyPenalty(0.5)
 			.logitBias(Map.of("token1", 1, "token2", -1))
 			.maxTokens(200)
+			.maxCompletionTokens(150)
 			.N(2)
 			.presencePenalty(0.8)
 			.stop(List.of("stop1", "stop2"))
@@ -68,10 +69,10 @@ class AzureOpenAiChatOptionsTests {
 			.build();
 
 		assertThat(options)
-			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "n", "presencePenalty", "stop",
-					"temperature", "topP", "user", "responseFormat", "streamUsage", "reasoningEffort", "seed",
-					"logprobs", "topLogProbs", "enhancements", "streamOptions")
-			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), 200, 2, 0.8,
+			.extracting("deploymentName", "frequencyPenalty", "logitBias", "maxTokens", "maxCompletionTokens", "n",
+					"presencePenalty", "stop", "temperature", "topP", "user", "responseFormat", "streamUsage",
+					"reasoningEffort", "seed", "logprobs", "topLogProbs", "enhancements", "streamOptions")
+			.containsExactly("test-deployment", 0.5, Map.of("token1", 1, "token2", -1), null, 150, 2, 0.8,
 					List.of("stop1", "stop2"), 0.7, 0.9, "test-user", responseFormat, true, "low", 12345L, true, 5,
 					enhancements, streamOptions);
 	}
@@ -93,6 +94,7 @@ class AzureOpenAiChatOptionsTests {
 			.frequencyPenalty(0.5)
 			.logitBias(Map.of("token1", 1, "token2", -1))
 			.maxTokens(200)
+			.maxCompletionTokens(150)
 			.N(2)
 			.presencePenalty(0.8)
 			.stop(List.of("stop1", "stop2"))
@@ -131,6 +133,7 @@ class AzureOpenAiChatOptionsTests {
 		options.setFrequencyPenalty(0.5);
 		options.setLogitBias(Map.of("token1", 1, "token2", -1));
 		options.setMaxTokens(200);
+		options.setMaxCompletionTokens(150);
 		options.setN(2);
 		options.setPresencePenalty(0.8);
 		options.setStop(List.of("stop1", "stop2"));
@@ -153,6 +156,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
 		assertThat(options.getLogitBias()).isEqualTo(Map.of("token1", 1, "token2", -1));
 		assertThat(options.getMaxTokens()).isEqualTo(200);
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(150);
 		assertThat(options.getN()).isEqualTo(2);
 		assertThat(options.getPresencePenalty()).isEqualTo(0.8);
 		assertThat(options.getStop()).isEqualTo(List.of("stop1", "stop2"));
@@ -178,6 +182,7 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isNull();
 		assertThat(options.getN()).isNull();
 		assertThat(options.getPresencePenalty()).isNull();
 		assertThat(options.getStop()).isNull();
@@ -193,6 +198,201 @@ class AzureOpenAiChatOptionsTests {
 		assertThat(options.getEnhancements()).isNull();
 		assertThat(options.getStreamOptions()).isNull();
 		assertThat(options.getModel()).isNull();
+	}
+
+	@Test
+	void testModelAndDeploymentNameRelationship() {
+		AzureOpenAiChatOptions options = new AzureOpenAiChatOptions();
+
+		// Test setting deployment name first
+		options.setDeploymentName("deployment-1");
+		assertThat(options.getDeploymentName()).isEqualTo("deployment-1");
+		assertThat(options.getModel()).isEqualTo("deployment-1");
+
+		// Test setting model overwrites deployment name
+		options.setModel("model-1");
+		assertThat(options.getDeploymentName()).isEqualTo("model-1");
+		assertThat(options.getModel()).isEqualTo("model-1");
+	}
+
+	@Test
+	void testResponseFormatVariations() {
+		// Test with JSON response format
+		AzureOpenAiResponseFormat jsonFormat = AzureOpenAiResponseFormat.builder()
+			.type(AzureOpenAiResponseFormat.Type.JSON_OBJECT)
+			.build();
+
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder().responseFormat(jsonFormat).build();
+
+		assertThat(options.getResponseFormat()).isEqualTo(jsonFormat);
+		assertThat(options.getResponseFormat().getType()).isEqualTo(AzureOpenAiResponseFormat.Type.JSON_OBJECT);
+	}
+
+	@Test
+	void testEnhancementsConfiguration() {
+		AzureChatEnhancementConfiguration enhancements = new AzureChatEnhancementConfiguration();
+		AzureChatOCREnhancementConfiguration ocrConfig = new AzureChatOCREnhancementConfiguration(false);
+		AzureChatGroundingEnhancementConfiguration groundingConfig = new AzureChatGroundingEnhancementConfiguration(
+				false);
+
+		enhancements.setOcr(ocrConfig);
+		enhancements.setGrounding(groundingConfig);
+
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder().enhancements(enhancements).build();
+
+		assertThat(options.getEnhancements()).isEqualTo(enhancements);
+		assertThat(options.getEnhancements().getOcr()).isEqualTo(ocrConfig);
+		assertThat(options.getEnhancements().getGrounding()).isEqualTo(groundingConfig);
+	}
+
+	@Test
+	void testMaxCompletionTokensConfiguration() {
+		// Test maxCompletionTokens with builder
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxCompletionTokens(100)
+			.build();
+
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
+		assertThat(options.getDeploymentName()).isEqualTo("gpt-4o");
+
+		// Test maxCompletionTokens with setter
+		AzureOpenAiChatOptions options2 = new AzureOpenAiChatOptions();
+		options2.setMaxCompletionTokens(250);
+		assertThat(options2.getMaxCompletionTokens()).isEqualTo(250);
+
+		// Test null maxCompletionTokens
+		AzureOpenAiChatOptions options3 = new AzureOpenAiChatOptions();
+		assertThat(options3.getMaxCompletionTokens()).isNull();
+
+		options3.setMaxCompletionTokens(null);
+		assertThat(options3.getMaxCompletionTokens()).isNull();
+	}
+
+	@Test
+	void testMaxCompletionTokensOverridesMaxTokens() {
+		// Test that maxCompletionTokens clears maxTokens due to mutual exclusivity
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxTokens(500)
+			.maxCompletionTokens(300) // This should clear maxTokens
+			.temperature(0.7)
+			.build();
+
+		assertThat(options.getMaxTokens()).isNull(); // Should be cleared
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(300); // Should remain
+		assertThat(options.getDeploymentName()).isEqualTo("gpt-4o");
+		assertThat(options.getTemperature()).isEqualTo(0.7);
+	}
+
+	@Test
+	void testMaxCompletionTokensCopy() {
+		// Test that maxCompletionTokens is properly copied
+		AzureOpenAiChatOptions originalOptions = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxCompletionTokens(200)
+			.temperature(0.8)
+			.build();
+
+		AzureOpenAiChatOptions copiedOptions = originalOptions.copy();
+
+		assertThat(copiedOptions).isNotSameAs(originalOptions).isEqualTo(originalOptions);
+		assertThat(copiedOptions.getMaxCompletionTokens()).isEqualTo(200);
+		assertThat(copiedOptions.getMaxTokens()).isNull(); // Should be null since only
+															// maxCompletionTokens was set
+		assertThat(copiedOptions.getDeploymentName()).isEqualTo("gpt-4o");
+		assertThat(copiedOptions.getTemperature()).isEqualTo(0.8);
+	}
+
+	@Test
+	void testMutualExclusivityMaxTokensFirst() {
+		// Test that setting maxTokens first, then maxCompletionTokens clears maxTokens
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxTokens(500) // Set first
+			.maxCompletionTokens(300) // Set second - should clear maxTokens
+			.build();
+
+		// maxCompletionTokens should win (last one set)
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(300);
+		assertThat(options.getDeploymentName()).isEqualTo("gpt-4o");
+	}
+
+	@Test
+	void testMutualExclusivityMaxCompletionTokensFirst() {
+		// Test that setting maxCompletionTokens first, then maxTokens clears
+		// maxCompletionTokens
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxCompletionTokens(300) // Set first
+			.maxTokens(500) // Set second - should clear maxCompletionTokens
+			.build();
+
+		// maxTokens should win (last one set)
+		assertThat(options.getMaxTokens()).isEqualTo(500);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+		assertThat(options.getDeploymentName()).isEqualTo("gpt-4o");
+	}
+
+	@Test
+	void testMutualExclusivityWithNullValues() {
+		// Test that setting null values doesn't trigger warnings
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxTokens(500)
+			.maxCompletionTokens(null) // Setting null should not clear maxTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(500);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+
+		// Test the reverse
+		AzureOpenAiChatOptions options2 = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxCompletionTokens(300)
+			.maxTokens(null) // Setting null should not clear maxCompletionTokens
+			.build();
+
+		assertThat(options2.getMaxTokens()).isNull();
+		assertThat(options2.getMaxCompletionTokens()).isEqualTo(300);
+	}
+
+	@Test
+	void testMutualExclusivityMultipleChanges() {
+		// Test multiple changes to verify the last non-null value wins
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxTokens(500)
+			.maxCompletionTokens(300) // Should clear maxTokens
+			.maxTokens(400) // Should clear maxCompletionTokens
+			.maxCompletionTokens(250) // Should clear maxTokens again
+			.build();
+
+		// Final state: only maxCompletionTokens should be set
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(250);
+		assertThat(options.getDeploymentName()).isEqualTo("gpt-4o");
+	}
+
+	@Test
+	void testNoMutualExclusivityWhenOnlyOneIsSet() {
+		// Test that no warnings occur when only one parameter is set
+		AzureOpenAiChatOptions optionsWithMaxTokens = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxTokens(500)
+			.build();
+
+		assertThat(optionsWithMaxTokens.getMaxTokens()).isEqualTo(500);
+		assertThat(optionsWithMaxTokens.getMaxCompletionTokens()).isNull();
+
+		AzureOpenAiChatOptions optionsWithMaxCompletionTokens = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxCompletionTokens(300)
+			.build();
+
+		assertThat(optionsWithMaxCompletionTokens.getMaxTokens()).isNull();
+		assertThat(optionsWithMaxCompletionTokens.getMaxCompletionTokens()).isEqualTo(300);
 	}
 
 }

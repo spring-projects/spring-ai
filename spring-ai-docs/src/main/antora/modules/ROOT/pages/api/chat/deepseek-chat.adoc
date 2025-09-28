@@ -313,14 +313,18 @@ Next, create a `DeepSeekChatModel` and use it for text generation:
 
 [source,java]
 ----
-var deepSeekApi = new DeepSeekApi(System.getenv("DEEPSEEK_API_KEY"));
-
-var chatModel = new DeepSeekChatModel(deepSeekApi, DeepSeekChatOptions.builder()
-                .withModel(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
-                .withTemperature(0.4f)
-                .withMaxTokens(200)
-                .build());
-
+DeepSeekApi deepSeekApi = DeepSeekApi.builder()
+        .apiKey(System.getenv("DEEPSEEK_API_KEY"))
+        .build();
+DeepSeekChatOptions options = DeepSeekChatOptions.builder()
+        .model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
+        .temperature(0.4)
+        .maxTokens(200)
+        .build();
+DeepSeekChatModel chatModel = DeepSeekChatModel.builder()
+        .deepSeekApi(deepSeekApi)
+        .defaultOptions(options)
+        .build();
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 

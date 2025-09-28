@@ -41,8 +41,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -201,12 +201,7 @@ class OpenSearchVectorStoreWithOllamaIT {
 		public EmbeddingModel embeddingModel() {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(OllamaApi.builder().build())
-				.defaultOptions(OllamaOptions.builder()
-					.model(OllamaModel.MXBAI_EMBED_LARGE)
-					.mainGPU(11)
-					.useMMap(true)
-					.numGPU(1)
-					.build())
+				.defaultOptions(OllamaEmbeddingOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE).build())
 				.build();
 		}
 
