@@ -329,6 +329,7 @@ public class OpenAiChatModel implements ChatModel {
 								previousChatResponse);
 						return new ChatResponse(generations, from(chatCompletion2, null, accumulatedUsage));
 					}
+
 					catch (Exception e) {
 						logger.error("Error processing chat completion", e);
 						return new ChatResponse(List.of());
@@ -492,14 +493,20 @@ public class OpenAiChatModel implements ChatModel {
 	 * @return the ChatCompletion
 	 */
 	private OpenAiApi.ChatCompletion chunkToChatCompletion(OpenAiApi.ChatCompletionChunk chunk) {
-		List<Choice> choices = chunk.choices()
-			.stream()
-			.map(chunkChoice -> new Choice(chunkChoice.finishReason(), chunkChoice.index(), chunkChoice.delta(),
-					chunkChoice.logprobs()))
-			.toList();
+		try {
+			List<Choice> choices = chunk.choices()
+				.stream()
+				.map(chunkChoice -> new Choice(chunkChoice.finishReason(), chunkChoice.index(), chunkChoice.delta(),
+						chunkChoice.logprobs()))
+				.toList();
 
-		return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.serviceTier(),
-				chunk.systemFingerprint(), "chat.completion", chunk.usage());
+			return new OpenAiApi.ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(),
+					chunk.serviceTier(), chunk.systemFingerprint(), "chat.completion", chunk.usage());
+		}
+		catch (Exception e) {
+			logger.warn("Invalid JSON chunk received, skipping. Raw chunk: {}", chunk, e);
+			throw new RuntimeException("Failed to parse ChatCompletionChunk", e);
+		}
 	}
 
 	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {
