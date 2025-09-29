@@ -172,9 +172,11 @@ public class StTemplateRenderer implements TemplateRenderer {
 				// Only add as variable if:
 				// - Not a function call
 				// - Not a built-in function used as property (unless validateStFunctions)
-				if (!isFunctionCall && (!Compiler.funcs.containsKey(token.getText()) || this.validateStFunctions
-						|| !(isDotProperty && Compiler.funcs.containsKey(token.getText())))) {
-					inputVariables.add(token.getText());
+				if (!isFunctionCall && !isDotProperty) {
+					String name = token.getText();
+					if (!Compiler.funcs.containsKey(name) || this.validateStFunctions) {
+						inputVariables.add(name);
+					}
 				}
 			}
 		}
