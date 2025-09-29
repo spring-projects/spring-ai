@@ -49,6 +49,7 @@ import org.springframework.util.Assert;
  * is shared between threads.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public class StTemplateRenderer implements TemplateRenderer {
@@ -165,16 +166,25 @@ public class StTemplateRenderer implements TemplateRenderer {
 			else if (token.getType() == STLexer.RDELIM) {
 				isInsideList = false;
 			}
-			// Only add IDs that are not function calls (i.e., not immediately followed by
+			// Handle regular variables - only add IDs that are at the start of an
+			// expression
 			else if (!isInsideList && token.getType() == STLexer.ID) {
+				// Check if this ID is a function call
 				boolean isFunctionCall = (i + 1 < tokens.size() && tokens.get(i + 1).getType() == STLexer.LPAREN);
-				boolean isDotProperty = (i > 0 && tokens.get(i - 1).getType() == STLexer.DOT);
-				// Only add as variable if:
-				// - Not a function call
-				// - Not a built-in function used as property (unless validateStFunctions)
-				if (!isFunctionCall && (!Compiler.funcs.containsKey(token.getText()) || this.validateStFunctions
-						|| !(isDotProperty && Compiler.funcs.containsKey(token.getText())))) {
-					inputVariables.add(token.getText());
+
+				// Check if this ID is at the beginning of an expression (not a property
+				// access)
+				boolean isAfterDot = (i > 0 && tokens.get(i - 1).getType() == STLexer.DOT);
+
+				// Only add IDs that are:
+				// 1. Not function calls
+				// 2. Not property values (not preceded by a dot)
+				// 3. Either not built-in functions or we're validating functions
+				if (!isFunctionCall && !isAfterDot) {
+					String varName = token.getText();
+					if (!Compiler.funcs.containsKey(varName) || this.validateStFunctions) {
+						inputVariables.add(varName);
+					}
 				}
 			}
 		}
