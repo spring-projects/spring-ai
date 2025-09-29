@@ -14,6 +14,12 @@ It provides tools to store document embeddings, content, and metadata and to sea
 
 == Dependencies
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Add the Weaviate Vector Store dependency to your project:
 
 [source,xml]
@@ -38,7 +44,7 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 == Configuration
 
 To connect to Weaviate and use the `WeaviateVectorStore`, you need to provide access details for your instance.
-A simple configuration can either be provided via Spring Boot's _application.properties_,
+Configuration can be provided via Spring Boot's _application.properties_:
 
 [source,properties]
 ----
@@ -49,20 +55,46 @@ spring.ai.vectorstore.weaviate.api-key=<your_api_key>
 spring.ai.openai.api-key=<api-key>
 ----
 
-environment variables,
+If you prefer to use environment variables for sensitive information like API keys, you have multiple options:
+
+=== Option 1: Using Spring Expression Language (SpEL)
+
+You can use custom environment variable names and reference them in your application configuration:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    vectorstore:
+      weaviate:
+        host: ${WEAVIATE_HOST}
+        scheme: ${WEAVIATE_SCHEME}
+        api-key: ${WEAVIATE_API_KEY}
+    openai:
+      api-key: ${OPENAI_API_KEY}
+----
 
 [source,bash]
 ----
-export SPRING_AI_VECTORSTORE_WEAVIATE_HOST=<host_of_your_weaviate_instance>
-export SPRING_AI_VECTORSTORE_WEAVIATE_SCHEME=<http_or_https>
-export SPRING_AI_VECTORSTORE_WEAVIATE_API_KEY=<your_api_key>
-# API key if needed, e.g. OpenAI
-export SPRING_AI_OPENAI_API_KEY=<api-key>
+# In your environment or .env file
+export WEAVIATE_HOST=<host_of_your_weaviate_instance>
+export WEAVIATE_SCHEME=<http_or_https>
+export WEAVIATE_API_KEY=<your_api_key>
+export OPENAI_API_KEY=<api-key>
 ----
 
-or can be a mix of those.
+=== Option 2: Accessing Environment Variables Programmatically
 
-NOTE: If you choose to create a shell script for ease in future work, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
+Alternatively, you can access environment variables in your Java code:
+
+[source,java]
+----
+String weaviateApiKey = System.getenv("WEAVIATE_API_KEY");
+String openAiApiKey = System.getenv("OPENAI_API_KEY");
+----
+
+NOTE: If you choose to create a shell script to manage your environment variables, be sure to run it prior to starting your application by "sourcing" the file, i.e. `source <your_script_name>.sh`.
 
 == Auto-configuration
 
@@ -73,7 +105,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-weaviate-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-weaviate</artifactId>
 </dependency>
 ----
 
@@ -82,7 +114,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-weaviate-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-weaviate'
 }
 ----
 
@@ -90,18 +122,22 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 Please have a look at the list of xref:#_weaviatevectorstore_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
-TIP: Refer to the xref:getting-started.adoc#repositories[Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
+TIP: Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add Maven Central and/or Snapshot Repositories to your build file.
 
-Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
+Additionally, you will need a configured `EmbeddingModel` bean.
+Refer to the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] section for more information.
 
-Here is an example of the needed bean:
+Here is an example of the required bean:
 
 [source,java]
 ----
 @Bean
 public EmbeddingModel embeddingModel() {
-    // Can be any other Embeddingmodel implementation.
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("SPRING_AI_OPENAI_API_KEY")));
+    // Retrieve API key from a secure source or environment variable
+    String apiKey = System.getenv("OPENAI_API_KEY");
+
+    // Can be any other EmbeddingModel implementation
+    return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(apiKey).build());
 }
 ----
 
@@ -121,7 +157,7 @@ public WeaviateClient weaviateClient() {
 @Bean
 public VectorStore vectorStore(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
     return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
-        .objectClass("CustomClass")                    // Optional: defaults to "SpringAiWeaviate"
+        .options(options)                              // Optional: use custom options
         .consistencyLevel(ConsistentLevel.QUORUM)      // Optional: defaults to ConsistentLevel.ONE
         .filterMetadataFields(List.of(                 // Optional: fields that can be used in filters
             MetadataField.text("country"),
@@ -226,10 +262,15 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.weaviate.host`|The host of the Weaviate server|localhost:8080
 |`spring.ai.vectorstore.weaviate.scheme`|Connection schema|http
 |`spring.ai.vectorstore.weaviate.api-key`|The API key for authentication|
-|`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents|SpringAiWeaviate
+|`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents. |SpringAiWeaviate
+|`spring.ai.vectorstore.weaviate.content-field-name`|The field name for content|content
+|`spring.ai.vectorstore.weaviate.meta-field-prefix`|The field prefix for metadata|meta_
 |`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
 |`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
 |===
+
+TIP: Object class names should start with an uppercase letter, and field names should start with a lowercase letter.
+See link:https://weaviate.io/developers/weaviate/concepts/data#data-object-concepts[data-object-concepts]
 
 == Accessing the Native Client
 

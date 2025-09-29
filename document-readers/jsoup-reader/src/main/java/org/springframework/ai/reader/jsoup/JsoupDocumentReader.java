@@ -68,7 +68,7 @@ public class JsoupDocumentReader implements DocumentReader {
 
 	@Override
 	public List<Document> get() {
-		try (InputStream inputStream = htmlResource.getInputStream()) {
+		try (InputStream inputStream = this.htmlResource.getInputStream()) {
 			org.jsoup.nodes.Document doc = Jsoup.parse(inputStream, this.config.charset, "");
 
 			List<Document> documents = new ArrayList<>();
@@ -104,7 +104,7 @@ public class JsoupDocumentReader implements DocumentReader {
 
 		}
 		catch (IOException e) {
-			throw new RuntimeException("Failed to read HTML resource: " + htmlResource, e);
+			throw new RuntimeException("Failed to read HTML resource: " + this.htmlResource, e);
 		}
 	}
 

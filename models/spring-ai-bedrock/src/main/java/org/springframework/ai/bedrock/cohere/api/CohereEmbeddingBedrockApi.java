@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.cohere.api;
 import java.time.Duration;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -233,6 +234,7 @@ public class CohereEmbeddingBedrockApi
 	 * doesn't return invocationMetrics for the cohere embedding model.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record CohereEmbeddingResponse(@JsonProperty("id") String id,
 			@JsonProperty("embeddings") List<float[]> embeddings, @JsonProperty("texts") List<String> texts,
 			@JsonProperty("response_type") String responseType,

@@ -23,6 +23,8 @@ import java.util.List;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -75,7 +77,7 @@ public class OpenAiApiIT {
 				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
-				null, null, null, "low");
+				null, null, null, "low", null, null);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();
@@ -100,7 +102,7 @@ public class OpenAiApiIT {
 
 	@Test
 	void inputAudio() throws IOException {
-		var audioData = new ClassPathResource("speech1.mp3").getContentAsByteArray();
+		var audioData = new ClassPathResource("speech/speech1.mp3").getContentAsByteArray();
 		List<ChatCompletionMessage.MediaContent> content = List
 			.of(new ChatCompletionMessage.MediaContent("What is this recording about?"),
 					new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.InputAudio(
@@ -122,8 +124,7 @@ public class OpenAiApiIT {
 
 	@Test
 	void outputAudio() {
-		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
-				"What is the magic spell to make objects fly?", Role.USER);
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Say 'I am a robot'", Role.USER);
 		ChatCompletionRequest.AudioParameters audioParameters = new ChatCompletionRequest.AudioParameters(
 				ChatCompletionRequest.AudioParameters.Voice.NOVA,
 				ChatCompletionRequest.AudioParameters.AudioResponseFormat.MP3);
@@ -139,7 +140,7 @@ public class OpenAiApiIT {
 
 		assertThat(response.getBody().choices().get(0).message().audioOutput().data()).isNotNull();
 		assertThat(response.getBody().choices().get(0).message().audioOutput().transcript())
-			.containsIgnoringCase("leviosa");
+			.containsIgnoringCase("robot");
 	}
 
 	@Test
@@ -155,6 +156,84 @@ public class OpenAiApiIT {
 		assertThatThrownBy(() -> this.openAiApi.chatCompletionStream(chatCompletionRequest).collectList().block())
 			.isInstanceOf(RuntimeException.class)
 			.hasMessageContaining("400 Bad Request from POST https://api.openai.com/v1/chat/completions");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "GPT_5", "GPT_5_CHAT_LATEST", "GPT_5_MINI", "GPT_5_NANO" })
+	void chatCompletionEntityWithNewModels(OpenAiApi.ChatModel modelName) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(
+				new ChatCompletionRequest(List.of(chatCompletionMessage), modelName.getValue(), 1.0, false));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().choices()).isNotEmpty();
+		assertThat(response.getBody().choices().get(0).message().content()).isNotEmpty();
+		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "GPT_5_NANO" })
+	void chatCompletionEntityWithNewModelsAndLowVerbosity(OpenAiApi.ChatModel modelName) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
+				"What is the answer to the ultimate question of life, the universe, and everything?", Role.USER);
+
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
+				modelName.getValue(), null, null, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, false, null, 1.0, null, null, null, null, null, null, null, "low");
+
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().choices()).isNotEmpty();
+		assertThat(response.getBody().choices().get(0).message().content()).isNotEmpty();
+		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "GPT_5", "GPT_5_MINI", "GPT_5_NANO" })
+	void chatCompletionEntityWithGpt5ModelsAndTemperatureShouldFail(OpenAiApi.ChatModel modelName) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), modelName.getValue(),
+				0.8);
+
+		assertThatThrownBy(() -> this.openAiApi.chatCompletionEntity(request)).isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Unsupported value");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "GPT_5_CHAT_LATEST" })
+	void chatCompletionEntityWithGpt5ChatAndTemperatureShouldSucceed(OpenAiApi.ChatModel modelName) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), modelName.getValue(),
+				0.8);
+
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().choices()).isNotEmpty();
+		assertThat(response.getBody().choices().get(0).message().content()).isNotEmpty();
+		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "DEFAULT", "PRIORITY" })
+	void chatCompletionEntityWithServiceTier(OpenAiApi.ServiceTier serviceTier) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
+				"What is the answer to the ultimate question of life, the universe, and everything?", Role.USER);
+
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
+				OpenAiApi.ChatModel.GPT_4_O.value, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, serviceTier.getValue(), null, false, null, 1.0, null, null, null, null, null, null,
+				null, null);
+
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().serviceTier()).containsIgnoringCase(serviceTier.getValue());
 	}
 
 }

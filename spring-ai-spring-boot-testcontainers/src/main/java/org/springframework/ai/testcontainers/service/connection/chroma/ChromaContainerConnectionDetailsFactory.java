@@ -20,7 +20,7 @@ import java.util.Map;
 
 import org.testcontainers.chromadb.ChromaDBContainer;
 
-import org.springframework.ai.autoconfigure.vectorstore.chroma.ChromaConnectionDetails;
+import org.springframework.ai.vectorstore.chroma.autoconfigure.ChromaConnectionDetails;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
 

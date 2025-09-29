@@ -122,7 +122,7 @@ public class VertexAiEmbeddingConnectionDetails {
 		private String publisher;
 
 		/**
-		 * Allows the connection settings to be customised
+		 * Allows the connection settings to be customized
 		 */
 		private PredictionServiceSettings predictionServiceSettings;
 

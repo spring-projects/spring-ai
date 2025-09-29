@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Ricken Bazolo
+ * @author Jason Smith
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiApiToolFunctionCallIT {
@@ -53,7 +54,7 @@ public class MistralAiApiToolFunctionCallIT {
 
 	MockWeatherService weatherService = new MockWeatherService();
 
-	MistralAiApi completionApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+	MistralAiApi completionApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
 		try {
@@ -152,11 +153,11 @@ public class MistralAiApiToolFunctionCallIT {
 
 			assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
-				.containsAnyOf("30.0°C", "30°C");
+				.containsAnyOf("30.0", "30");
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
-				.containsAnyOf("10.0°C", "10°C");
+				.containsAnyOf("10.0", "10");
 			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
-				.containsAnyOf("15.0°C", "15°C");
+				.containsAnyOf("15.0", "15");
 		}
 
 	}

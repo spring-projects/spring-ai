@@ -140,6 +140,49 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
+	void jsonSchemaThroughIndividualSetters() throws JsonMappingException, JsonProcessingException {
+
+		var jsonSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"steps": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"explanation": { "type": "string" },
+									"output": { "type": "string" }
+								},
+								"required": ["explanation", "output"],
+								"additionalProperties": false
+							}
+						},
+						"final_answer": { "type": "string" }
+					},
+					"required": ["steps", "final_answer"],
+					"additionalProperties": false
+				}
+				""";
+
+		var responseFormat = new ResponseFormat();
+		responseFormat.setType(ResponseFormat.Type.JSON_SCHEMA);
+		responseFormat.setSchema(jsonSchema);
+		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
+				OpenAiChatOptions.builder().model(ChatModel.GPT_4_O_MINI).responseFormat(responseFormat).build());
+
+		ChatResponse response = this.openAiChatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+
+		String content = response.getResult().getOutput().getText();
+
+		logger.info("Response content: {}", content);
+
+		assertThat(isValidJson(content)).isTrue();
+	}
+
+	@Test
 	void jsonSchemaBeanConverter() throws JsonMappingException, JsonProcessingException {
 
 		@JsonPropertyOrder({ "steps", "final_answer" })

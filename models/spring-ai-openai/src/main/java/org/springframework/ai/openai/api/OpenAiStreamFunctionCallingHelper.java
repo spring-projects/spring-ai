@@ -31,6 +31,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCal
 import org.springframework.ai.openai.api.OpenAiApi.LogProbs;
 import org.springframework.ai.openai.api.OpenAiApi.Usage;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Helper class to support Streaming function calling.
@@ -39,6 +40,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.1
  */
 public class OpenAiStreamFunctionCallingHelper {
@@ -53,6 +55,10 @@ public class OpenAiStreamFunctionCallingHelper {
 
 		if (previous == null) {
 			return current;
+		}
+
+		if (current == null) {
+			return previous;
 		}
 
 		String id = (current.id() != null ? current.id() : previous.id());
@@ -77,6 +83,10 @@ public class OpenAiStreamFunctionCallingHelper {
 			return current;
 		}
 
+		if (current == null) {
+			return previous;
+		}
+
 		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
 				: previous.finishReason());
 		Integer index = (current.index() != null ? current.index() : previous.index());
@@ -97,21 +107,23 @@ public class OpenAiStreamFunctionCallingHelper {
 		String refusal = (current.refusal() != null ? current.refusal() : previous.refusal());
 		ChatCompletionMessage.AudioOutput audioOutput = (current.audioOutput() != null ? current.audioOutput()
 				: previous.audioOutput());
+		List<ChatCompletionMessage.Annotation> annotations = (current.annotations() != null ? current.annotations()
+				: previous.annotations());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
-		if (previous.toolCalls() != null) {
+		if (previous.toolCalls() != null && !previous.toolCalls().isEmpty()) {
 			lastPreviousTooCall = previous.toolCalls().get(previous.toolCalls().size() - 1);
 			if (previous.toolCalls().size() > 1) {
 				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
 			}
 		}
-		if (current.toolCalls() != null) {
+		if (current.toolCalls() != null && !current.toolCalls().isEmpty()) {
 			if (current.toolCalls().size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (currentToolCall.id() != null) {
+			if (StringUtils.hasText(currentToolCall.id())) {
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
@@ -126,14 +138,14 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput, annotations);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
 		if (previous == null) {
 			return current;
 		}
-		String id = (current.id() != null ? current.id() : previous.id());
+		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
 		String type = (current.type() != null ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
 		return new ToolCall(id, type, function);
@@ -143,7 +155,7 @@ public class OpenAiStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String name = (current.name() != null ? current.name() : previous.name());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
 		StringBuilder arguments = new StringBuilder();
 		if (previous.arguments() != null) {
 			arguments.append(previous.arguments());

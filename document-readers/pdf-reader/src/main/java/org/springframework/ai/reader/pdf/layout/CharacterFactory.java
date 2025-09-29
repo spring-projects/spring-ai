@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class CharacterFactory {
 
 	private char getCharacterFromTextPosition(final TextPosition textPosition) {
 		String string = textPosition.getUnicode();
-		char character = string.charAt(0);
+		char character = !string.isEmpty() ? string.charAt(0) : '\0';
 		return character;
 	}
 

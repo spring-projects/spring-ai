@@ -33,7 +33,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testBasicOptions() {
-		var options = OllamaOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
+		var options = OllamaChatOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("temperature", 3.14);
@@ -43,7 +43,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testAllNumericOptions() {
-		var options = OllamaOptions.builder()
+		var options = OllamaChatOptions.builder()
 			.numCtx(2048)
 			.numBatch(512)
 			.numGPU(1)
@@ -91,7 +91,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testBooleanOptions() {
-		var options = OllamaOptions.builder()
+		var options = OllamaChatOptions.builder()
 			.truncate(true)
 			.useNUMA(true)
 			.lowVRAM(false)
@@ -101,7 +101,6 @@ public class OllamaModelOptionsTests {
 			.useMMap(true)
 			.useMLock(false)
 			.penalizeNewline(true)
-			.proxyToolCalls(true)
 			.build();
 
 		var optionsMap = options.toMap();
@@ -118,7 +117,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testModelAndFormat() {
-		var options = OllamaOptions.builder().model("llama2").format("json").build();
+		var options = OllamaChatOptions.builder().model("llama2").format("json").build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("model", "llama2");
@@ -127,10 +126,10 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testFunctionAndToolOptions() {
-		var options = OllamaOptions.builder()
-			.function("function1")
-			.function("function2")
-			.function("function3")
+		var options = OllamaChatOptions.builder()
+			.toolNames("function1")
+			.toolNames("function2")
+			.toolNames("function3")
 			.toolContext(Map.of("key1", "value1", "key2", "value2"))
 			.build();
 
@@ -140,7 +139,7 @@ public class OllamaModelOptionsTests {
 		assertThat(optionsMap).doesNotContainKey("tool_context");
 
 		// But they are accessible through getters
-		assertThat(options.getFunctions()).containsExactlyInAnyOrder("function1", "function2", "function3");
+		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
 		assertThat(options.getToolContext())
 			.containsExactlyInAnyOrderEntriesOf(Map.of("key1", "value1", "key2", "value2"));
 	}
@@ -151,50 +150,54 @@ public class OllamaModelOptionsTests {
 		functionSet.add("function1");
 		functionSet.add("function2");
 
-		var options = OllamaOptions.builder().functions(functionSet).function("function3").build();
+		var options = OllamaChatOptions.builder().toolNames(functionSet).toolNames("function3").build();
 
-		assertThat(options.getFunctions()).containsExactlyInAnyOrder("function1", "function2", "function3");
+		assertThat(options.getToolNames()).containsExactlyInAnyOrder("function1", "function2", "function3");
 	}
 
 	@Test
 	public void testFromOptions() {
-		var originalOptions = OllamaOptions.builder()
+		var originalOptions = OllamaChatOptions.builder()
 			.model("llama2")
 			.temperature(0.7)
 			.topK(40)
-			.functions(Set.of("function1"))
+			.toolNames(Set.of("function1"))
 			.build();
 
-		var copiedOptions = OllamaOptions.fromOptions(originalOptions);
+		var copiedOptions = OllamaChatOptions.fromOptions(originalOptions);
 
 		// Test the copied options directly rather than through toMap()
 		assertThat(copiedOptions.getModel()).isEqualTo("llama2");
 		assertThat(copiedOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(copiedOptions.getTopK()).isEqualTo(40);
-		assertThat(copiedOptions.getFunctions()).containsExactly("function1");
+		assertThat(copiedOptions.getToolNames()).containsExactly("function1");
 	}
 
 	@Test
 	public void testFunctionOptionsNotInMap() {
-		var options = OllamaOptions.builder().model("llama2").functions(Set.of("function1")).build();
+		var options = OllamaChatOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
 
 		var optionsMap = options.toMap();
 
 		// Verify function-related fields are not included in the map due to @JsonIgnore
 		assertThat(optionsMap).containsEntry("model", "llama2");
 		assertThat(optionsMap).doesNotContainKey("functions");
-		assertThat(optionsMap).doesNotContainKey("functionCallbacks");
+		assertThat(optionsMap).doesNotContainKey("toolCallbacks");
 		assertThat(optionsMap).doesNotContainKey("proxyToolCalls");
 		assertThat(optionsMap).doesNotContainKey("toolContext");
 
 		// But verify they are still accessible through getters
-		assertThat(options.getFunctions()).containsExactly("function1");
+		assertThat(options.getToolNames()).containsExactly("function1");
 	}
 
-	@SuppressWarnings("deprecation")
 	@Test
 	public void testDeprecatedMethods() {
-		var options = OllamaOptions.builder().model("llama2").temperature(0.7).topK(40).function("function1").build();
+		var options = OllamaChatOptions.builder()
+			.model("llama2")
+			.temperature(0.7)
+			.topK(40)
+			.toolNames("function1")
+			.build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("model", "llama2");
@@ -202,7 +205,45 @@ public class OllamaModelOptionsTests {
 		assertThat(optionsMap).containsEntry("top_k", 40);
 
 		// Function is not in map but accessible via getter
-		assertThat(options.getFunctions()).containsExactly("function1");
+		assertThat(options.getToolNames()).containsExactly("function1");
+	}
+
+	@Test
+	public void testEmptyOptions() {
+		var options = OllamaOptions.builder().build();
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).isEmpty();
+
+		// Verify all getters return null/empty
+		assertThat(options.getModel()).isNull();
+		assertThat(options.getTemperature()).isNull();
+		assertThat(options.getTopK()).isNull();
+		assertThat(options.getToolNames()).isEmpty();
+		assertThat(options.getToolContext()).isEmpty();
+	}
+
+	@Test
+	public void testNullValuesNotIncludedInMap() {
+		var options = OllamaOptions.builder().model("llama2").temperature(null).topK(null).stop(null).build();
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsEntry("model", "llama2");
+		assertThat(optionsMap).doesNotContainKey("temperature");
+		assertThat(optionsMap).doesNotContainKey("top_k");
+		assertThat(optionsMap).doesNotContainKey("stop");
+	}
+
+	@Test
+	public void testZeroValuesIncludedInMap() {
+		var options = OllamaOptions.builder().temperature(0.0).topK(0).mainGPU(0).numGPU(0).seed(0).build();
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsEntry("temperature", 0.0);
+		assertThat(optionsMap).containsEntry("top_k", 0);
+		assertThat(optionsMap).containsEntry("main_gpu", 0);
+		assertThat(optionsMap).containsEntry("num_gpu", 0);
+		assertThat(optionsMap).containsEntry("seed", 0);
 	}
 
 }

@@ -17,7 +17,6 @@
 package org.springframework.ai.vertexai.gemini;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 import com.google.cloud.vertexai.VertexAI;
@@ -77,7 +76,7 @@ public class VertexAiGeminiRetryTests {
 					.topP(1.0)
 					.model(VertexAiGeminiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
 					.build(),
-				null, Collections.emptyList(), this.retryTemplate);
+				this.retryTemplate);
 
 		this.chatModel.setMockGenerativeModel(this.mockGenerativeModel);
 	}
@@ -114,6 +113,144 @@ public class VertexAiGeminiRetryTests {
 
 		// Assert that a RuntimeException is thrown when calling the chat model
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("test prompt")));
+	}
+
+	@Test
+	public void vertexAiGeminiChatSuccessOnFirstAttempt() throws Exception {
+		// Create a mocked successful response
+		GenerateContentResponse mockedResponse = GenerateContentResponse.newBuilder()
+			.addCandidates(Candidate.newBuilder()
+				.setContent(Content.newBuilder()
+					.addParts(Part.newBuilder().setText("First Attempt Success").build())
+					.build())
+				.build())
+			.build();
+
+		given(this.mockGenerativeModel.generateContent(any(List.class))).willReturn(mockedResponse);
+
+		// Call the chat model
+		ChatResponse result = this.chatModel.call(new Prompt("test prompt"));
+
+		// Assertions
+		assertThat(result).isNotNull();
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("First Attempt Success");
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(0); // No retries
+																			// needed
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(0);
+	}
+
+	@Test
+	public void vertexAiGeminiChatWithEmptyResponse() throws Exception {
+		// Test handling of empty response after retries
+		GenerateContentResponse emptyResponse = GenerateContentResponse.newBuilder().build();
+
+		given(this.mockGenerativeModel.generateContent(any(List.class)))
+			.willThrow(new TransientAiException("Temporary issue"))
+			.willReturn(emptyResponse);
+
+		// Call the chat model
+		ChatResponse result = this.chatModel.call(new Prompt("test prompt"));
+
+		// Should handle empty response gracefully
+		assertThat(result).isNotNull();
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(1);
+	}
+
+	@Test
+	public void vertexAiGeminiChatMaxRetriesExceeded() throws Exception {
+		// Test that after max retries, the exception is propagated
+		given(this.mockGenerativeModel.generateContent(any(List.class)))
+			.willThrow(new TransientAiException("Persistent Error"))
+			.willThrow(new TransientAiException("Persistent Error"))
+			.willThrow(new TransientAiException("Persistent Error"))
+			.willThrow(new TransientAiException("Persistent Error"));
+
+		// Should throw the last TransientAiException after exhausting retries
+		assertThrows(TransientAiException.class, () -> this.chatModel.call(new Prompt("test prompt")));
+
+		// Verify retry attempts were made
+		assertThat(this.retryListener.onErrorRetryCount).isGreaterThan(0);
+	}
+
+	@Test
+	public void vertexAiGeminiChatWithMultipleCandidatesResponse() throws Exception {
+		// Test response with multiple candidates
+		GenerateContentResponse multiCandidateResponse = GenerateContentResponse.newBuilder()
+			.addCandidates(Candidate.newBuilder()
+				.setContent(Content.newBuilder().addParts(Part.newBuilder().setText("First candidate").build()).build())
+				.build())
+			.addCandidates(Candidate.newBuilder()
+				.setContent(
+						Content.newBuilder().addParts(Part.newBuilder().setText("Second candidate").build()).build())
+				.build())
+			.build();
+
+		given(this.mockGenerativeModel.generateContent(any(List.class)))
+			.willThrow(new TransientAiException("Temporary failure"))
+			.willReturn(multiCandidateResponse);
+
+		ChatResponse result = this.chatModel.call(new Prompt("test prompt"));
+
+		assertThat(result).isNotNull();
+		// Assuming the implementation uses the first candidate
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("First candidate");
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+	}
+
+	@Test
+	public void vertexAiGeminiChatWithNullPrompt() throws Exception {
+		// Test handling of null prompt
+		Prompt prompt = null;
+		assertThrows(Exception.class, () -> this.chatModel.call(prompt));
+
+		// Should not trigger any retries for validation errors
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(0);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(0);
+	}
+
+	@Test
+	public void vertexAiGeminiChatWithEmptyPrompt() throws Exception {
+		// Test handling of empty prompt
+		GenerateContentResponse mockedResponse = GenerateContentResponse.newBuilder()
+			.addCandidates(Candidate.newBuilder()
+				.setContent(Content.newBuilder()
+					.addParts(Part.newBuilder().setText("Response to empty prompt").build())
+					.build())
+				.build())
+			.build();
+
+		given(this.mockGenerativeModel.generateContent(any(List.class))).willReturn(mockedResponse);
+
+		ChatResponse result = this.chatModel.call(new Prompt(""));
+
+		assertThat(result).isNotNull();
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response to empty prompt");
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(0);
+	}
+
+	@Test
+	public void vertexAiGeminiChatAlternatingErrorsAndSuccess() throws Exception {
+		// Test pattern of error -> success -> error -> success
+		GenerateContentResponse successResponse = GenerateContentResponse.newBuilder()
+			.addCandidates(Candidate.newBuilder()
+				.setContent(Content.newBuilder()
+					.addParts(Part.newBuilder().setText("Success after alternating errors").build())
+					.build())
+				.build())
+			.build();
+
+		given(this.mockGenerativeModel.generateContent(any(List.class)))
+			.willThrow(new TransientAiException("First error"))
+			.willThrow(new TransientAiException("Second error"))
+			.willReturn(successResponse);
+
+		ChatResponse result = this.chatModel.call(new Prompt("test prompt"));
+
+		assertThat(result).isNotNull();
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Success after alternating errors");
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
 	private static class TestRetryListener implements RetryListener {

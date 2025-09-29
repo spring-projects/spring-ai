@@ -8,21 +8,55 @@ Spring AI supports CogView, the Image generation model from ZhiPuAI.
 You will need to create an API with ZhiPuAI to access ZhiPu AI language models.
 
 Create an account at https://open.bigmodel.cn/login[ZhiPu AI registration page] and generate the token on the https://open.bigmodel.cn/usercenter/apikeys[API Keys page].
-The Spring AI project defines a configuration property named `spring.ai.zhipuai.api-key` that you should set to the value of the `API Key` obtained from https://open.bigmodel.cn/usercenter/apikeys[API Keys page].
-Exporting an environment variable is one way to set that configuration property:
 
-[source,shell]
+The Spring AI project defines a configuration property named `spring.ai.zhipuai.api-key` that you should set to the value of the `API Key` obtained from the API Keys page.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_ZHIPU_AI_API_KEY=<INSERT KEY HERE>
+spring.ai.zhipuai.api-key=<your-zhipuai-api-key>
 ----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference a custom environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    zhipuai:
+      api-key: ${ZHIPUAI_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export ZHIPUAI_API_KEY=<your-zhipuai-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("ZHIPUAI_API_KEY");
+----
+
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
 == Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
 
 Spring AI provides Spring Boot auto-configuration for the ZhiPuAI Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
@@ -31,7 +65,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-zhipuai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-zhipuai</artifactId>
 </dependency>
 ----
 
@@ -40,7 +74,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-zhipuai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-zhipuai'
 }
 ----
 
@@ -48,12 +82,24 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Image Generation Properties
 
+[NOTE]
+====
+Enabling and disabling of the image auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.
+
+To enable, spring.ai.model.image=stabilityai (It is enabled by default)
+
+To disable, spring.ai.model.image=none (or any value which doesn't match stabilityai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.zhipuai.image` is the property prefix that lets you configure the `ImageModel` implementation for ZhiPuAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
-| spring.ai.zhipuai.image.enabled        | Enable ZhiPuAI image model.  | true
+| spring.ai.zhipuai.image.enabled (Removed and no longer valid)       | Enable ZhiPuAI image model.  | true
+| spring.ai.model.image       | Enable ZhiPuAI image model.  | zhipuai
 | spring.ai.zhipuai.image.base-url       | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url |  -
 | spring.ai.zhipuai.image.api-key        | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key |  -
 | spring.ai.zhipuai.image.options.model  | The model to use for image generation.  | cogview-3
@@ -114,4 +160,4 @@ ImageResponse response = zhiPuAiImageModel.call(
 );
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiImageOptions.java[ZhiPuAiImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiImageOptions.java[ZhiPuAiImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].

@@ -6,14 +6,47 @@ Spring AI supports DALL-E, the Image generation model from Azure OpenAI.
 == Prerequisites
 
 Obtain your Azure OpenAI `endpoint` and `api-key` from the Azure OpenAI Service section on the link:https://portal.azure.com[Azure Portal].
-Spring AI defines a configuration property named `spring.ai.azure.openai.api-key` that you should set to the value of the `API Key` obtained from Azure.
-There is also a configuration property named `spring.ai.azure.openai.endpoint` that you should set to the endpoint URL obtained when provisioning your model in Azure.
-Exporting environment variables is one way to set these configuration properties:
 
-[source,shell]
+Spring AI defines two configuration properties:
+
+1. `spring.ai.azure.openai.api-key`: Set this to the value of the `API Key` obtained from Azure.
+2. `spring.ai.azure.openai.endpoint`: Set this to the endpoint URL obtained when provisioning your model in Azure.
+
+You can set these configuration properties in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_AZURE_OPENAI_API_KEY=<INSERT KEY HERE>
-export SPRING_AI_AZURE_OPENAI_ENDPOINT=<INSERT ENDPOINT URL HERE>
+spring.ai.azure.openai.api-key=<your-azure-openai-api-key>
+spring.ai.azure.openai.endpoint=<your-azure-openai-endpoint>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference custom environment variables:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    azure:
+      openai:
+        api-key: ${AZURE_OPENAI_API_KEY}
+        endpoint: ${AZURE_OPENAI_ENDPOINT}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AZURE_OPENAI_API_KEY=<your-azure-openai-api-key>
+export AZURE_OPENAI_ENDPOINT=<your-azure-openai-endpoint>
+----
+
+You can also set these configurations programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key and endpoint from secure sources or environment variables
+String apiKey = System.getenv("AZURE_OPENAI_API_KEY");
+String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
 ----
 
 === Deployment Name
@@ -45,12 +78,18 @@ This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
 
 == Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
 
 Spring AI provides Spring Boot auto-configuration for the Azure OpenAI Chat Client.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
@@ -59,7 +98,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-azure-openai</artifactId>
 </dependency>
 ----
 
@@ -68,7 +107,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-azure-openai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-azure-openai'
 }
 ----
 
@@ -76,13 +115,24 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Image Generation Properties
 
+[NOTE]
+====
+Enabling and disabling of the image auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.
+
+To enable, spring.ai.model.image=azure-openai (It is enabled by default)
+
+To disable, spring.ai.model.image=none (or any value which doesn't match azure-openai)
+
+This change is done to allow configuration of multiple models.
+====
 
 The prefix `spring.ai.openai.image` is the property prefix that lets you configure the `ImageModel` implementation for OpenAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
-| spring.ai.azure.openai.image.enabled | Enable OpenAI image model.  | true
+| spring.ai.azure.openai.image.enabled (Removed and no longer valid) | Enable OpenAI image model.  | true
+| spring.ai.model.image | Enable OpenAI image model.  | azure-openai
 | spring.ai.azure.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
 | spring.ai.azure.openai.image.options.model        | The model to use for image generation.  | AzureOpenAiImageOptions.DEFAULT_IMAGE_MODEL
 | spring.ai.azure.openai.image.options.quality      | The quality of the image that will be generated. HD creates images with finer details and greater consistency across the image. This parameter is only supported for dall-e-3. | -
@@ -127,4 +177,4 @@ ImageResponse response = azureOpenaiImageModel.call(
 );
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiImageOptions.java[AzureOpenAiImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiImageOptions.java[AzureOpenAiImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].

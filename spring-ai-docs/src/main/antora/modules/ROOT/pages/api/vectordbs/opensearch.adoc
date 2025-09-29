@@ -15,6 +15,12 @@ The link:https://opensearch.org/docs/latest/search-plugins/knn/index/[OpenSearch
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the OpenSearch Vector Store.
 To enable it, add the following dependency to your project's Maven `pom.xml` file:
 
@@ -22,7 +28,7 @@ To enable it, add the following dependency to your project's Maven `pom.xml` fil
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-opensearch-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
 </dependency>
 ----
 
@@ -31,30 +37,12 @@ or to your Gradle `build.gradle` build file:
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-opensearch-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-For Amazon OpenSearch Service, use these dependencies instead:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-aws-opensearch-store-spring-boot-starter</artifactId>
-</dependency>
-----
-
-or for Gradle:
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-aws-opensearch-store-spring-boot-starter'
-}
-----
+TIP: For both self-hosted and Amazon OpenSearch Service, use the same dependency.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
@@ -97,7 +85,10 @@ spring:
         index-name: spring-ai-document-index
         initialize-schema: true
         similarity-function: cosinesimil
-        batching-strategy: TOKEN_COUNT
+        read-timeout: <time to wait for response>
+        connect-timeout: <time to wait until connection established>
+        path-prefix: <custom path prefix>
+        ssl-bundle: <name of SSL bundle>
         aws:  # Only for Amazon OpenSearch Service
           host: <aws opensearch host>
           service-name: <aws service name>
@@ -118,13 +109,33 @@ Properties starting with `spring.ai.vectorstore.opensearch.*` are used to config
 |`spring.ai.vectorstore.opensearch.index-name`| Name of the index to store vectors | `spring-ai-document-index`
 |`spring.ai.vectorstore.opensearch.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use | `cosinesimil`
-|`spring.ai.vectorstore.opensearch.batching-strategy`| Strategy for batching documents when calculating embeddings. Options are `TOKEN_COUNT` or `FIXED_SIZE` | `TOKEN_COUNT`
+|`spring.ai.vectorstore.opensearch.read-timeout`| Time to wait for response from the opposite endpoint. 0 - infinity. | -
+|`spring.ai.vectorstore.opensearch.connect-timeout`| Time to wait until connection established. 0 - infinity. | -
+|`spring.ai.vectorstore.opensearch.path-prefix`| Path prefix for OpenSearch API endpoints. Useful when OpenSearch is behind a reverse proxy with a non-root path. | -
+|`spring.ai.vectorstore.opensearch.ssl-bundle`| Name of the SSL Bundle to use in case of SSL connection | -
 |`spring.ai.vectorstore.opensearch.aws.host`| Hostname of the OpenSearch instance | -
 |`spring.ai.vectorstore.opensearch.aws.service-name`| AWS service name | -
 |`spring.ai.vectorstore.opensearch.aws.access-key`| AWS access key | -
 |`spring.ai.vectorstore.opensearch.aws.secret-key`| AWS secret key | -
 |`spring.ai.vectorstore.opensearch.aws.region`| AWS region | -
 |===
+
+[NOTE]
+====
+You can control whether the AWS-specific OpenSearch auto-configuration is enabled using the `spring.ai.vectorstore.opensearch.aws.enabled` property.
+
+- If this property is set to `false`, the non-AWS OpenSearch configuration is activated, even if AWS SDK classes are present on the classpath. This allows you to use self-managed or third-party OpenSearch clusters in environments where AWS SDKs are present for other services.
+- If AWS SDK classes are not present, the non-AWS configuration is always used.
+- If AWS SDK classes are present and the property is not set or set to `true`, the AWS-specific configuration is used by default.
+
+This fallback logic ensures that users have explicit control over the type of OpenSearch integration, preventing accidental activation of AWS-specific logic when not desired.
+====
+
+[NOTE]
+====
+The `path-prefix` property allows you to specify a custom path prefix when OpenSearch is running behind a reverse proxy that uses a non-root path.
+For example, if your OpenSearch instance is accessible at `https://example.com/opensearch/` instead of `https://example.com/`, you would set `path-prefix: /opensearch`.
+====
 
 The following similarity functions are available:
 

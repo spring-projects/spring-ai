@@ -45,11 +45,11 @@ public class MariaDBSchemaValidator {
 
 	private boolean isTableExists(String schemaName, String tableName) {
 		// schema and table are expected to be escaped
-		String sql = String.format("SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = ",
-				(schemaName == null) ? "SCHEMA()" : schemaName, tableName);
+		String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
-			this.jdbcTemplate.queryForObject(sql, Integer.class);
+			this.jdbcTemplate.queryForObject(sql, Integer.class, (schemaName == null) ? "SCHEMA()" : schemaName,
+					tableName);
 			return true;
 		}
 		catch (DataAccessException e) {

@@ -19,8 +19,8 @@
     <modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
-		<artifactId>spring-ai</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<artifactId>spring-ai-parent</artifactId>
+		<version>1.1.0-SNAPSHOT</version>
 	</parent>
     <artifactId>spring-ai-docs</artifactId>
     <name>Spring AI Docs</name>
@@ -38,6 +38,7 @@
 			<plugin>
 				<groupId>org.antora</groupId>
 				<artifactId>antora-maven-plugin</artifactId>
+				<version>${antora-maven-plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
 					<options>
@@ -60,6 +61,7 @@
 			<plugin>
 				<groupId>io.spring.maven.antora</groupId>
 				<artifactId>antora-component-version-maven-plugin</artifactId>
+				<version>${antora-component-version-maven-plugin.version}</version>
 				<executions>
 					<execution>
 						<goals>

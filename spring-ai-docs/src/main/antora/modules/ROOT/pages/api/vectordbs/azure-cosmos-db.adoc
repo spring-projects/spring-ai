@@ -87,13 +87,19 @@ public class DemoApplication implements CommandLineRunner {
 
 == Auto Configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Add the following dependency to your Maven project:
 
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-azure-cosmos-db-store-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-vector-store-azure-cosmos-db</artifactId>
 </dependency>
 ----
 
@@ -112,7 +118,7 @@ The following configuration properties are available for the Cosmos DB vector st
 | spring.ai.vectorstore.cosmosdb.vectorStoreThroughput | The throughput for the vector store.
 | spring.ai.vectorstore.cosmosdb.vectorDimensions | The number of dimensions for the vectors.
 | spring.ai.vectorstore.cosmosdb.endpoint | The endpoint for the Cosmos DB.
-| spring.ai.vectorstore.cosmosdb.key | The key for the Cosmos DB.
+| spring.ai.vectorstore.cosmosdb.key | The key for the Cosmos DB (if key is not present, [DefaultAzureCredential](https://learn.microsoft.com/azure/developer/java/sdk/authentication/credential-chains#defaultazurecredential-overview) will be used).
 |===
 
 
@@ -146,7 +152,7 @@ List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().qu
 
 == Setting up Azure Cosmos DB Vector Store without Auto Configuration
 
-The following code demonstrates how to set up the `CosmosDBVectorStore` without relying on auto-configuration:
+The following code demonstrates how to set up the `CosmosDBVectorStore` without relying on auto-configuration. [DefaultAzureCredential](https://learn.microsoft.com/azure/developer/java/sdk/authentication/credential-chains#defaultazurecredential-overview) is recommended for authentication to Azure Cosmos DB.
 
 [source,java]
 ----
@@ -155,7 +161,7 @@ public VectorStore vectorStore(ObservationRegistry observationRegistry) {
     // Create the Cosmos DB client
     CosmosAsyncClient cosmosClient = new CosmosClientBuilder()
             .endpoint(System.getenv("COSMOSDB_AI_ENDPOINT"))
-            .key(System.getenv("COSMOSDB_AI_KEY"))
+            .credential(new DefaultAzureCredentialBuilder().build())
             .userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
             .gatewayMode()
             .buildAsyncClient();

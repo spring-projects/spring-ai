@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,13 @@
 
 package org.springframework.ai.openai.chat.client;
 
-import java.util.HashMap;
 import java.util.Map;
 
-import reactor.core.publisher.Flux;
-
-import org.springframework.ai.chat.client.advisor.api.AdvisedRequest;
-import org.springframework.ai.chat.client.advisor.api.AdvisedResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAroundAdvisorChain;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisor;
-import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 
 /**
  * Drawing inspiration from the human strategy of re-reading, this advisor implements a
@@ -36,9 +32,10 @@ import org.springframework.ai.chat.client.advisor.api.StreamAroundAdvisorChain;
  * Language Models</a>
  *
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
-public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor {
+public class ReReadingAdvisor implements BaseAdvisor {
 
 	private static final String DEFAULT_RE2_ADVISE_TEMPLATE = """
 			{re2_input_query}
@@ -57,29 +54,22 @@ public class ReReadingAdvisor implements CallAroundAdvisor, StreamAroundAdvisor 
 		this.re2AdviseTemplate = re2AdviseTemplate;
 	}
 
-	public String getName() {
-		return this.getClass().getSimpleName();
-	}
+	@Override
+	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+		String augmentedUserText = PromptTemplate.builder()
+			.template(this.re2AdviseTemplate)
+			.variables(Map.of("re2_input_query", chatClientRequest.prompt().getUserMessage().getText()))
+			.build()
+			.render();
 
-	private AdvisedRequest before(AdvisedRequest advisedRequest) {
-
-		Map<String, Object> advisedUserParams = new HashMap<>(advisedRequest.userParams());
-		advisedUserParams.put("re2_input_query", advisedRequest.userText());
-
-		return AdvisedRequest.from(advisedRequest)
-			.userText(this.re2AdviseTemplate)
-			.userParams(advisedUserParams)
+		return chatClientRequest.mutate()
+			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedUserText))
 			.build();
 	}
 
 	@Override
-	public AdvisedResponse aroundCall(AdvisedRequest advisedRequest, CallAroundAdvisorChain chain) {
-		return chain.nextAroundCall(this.before(advisedRequest));
-	}
-
-	@Override
-	public Flux<AdvisedResponse> aroundStream(AdvisedRequest advisedRequest, StreamAroundAdvisorChain chain) {
-		return chain.nextAroundStream(this.before(advisedRequest));
+	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+		return chatClientResponse;
 	}
 
 	@Override

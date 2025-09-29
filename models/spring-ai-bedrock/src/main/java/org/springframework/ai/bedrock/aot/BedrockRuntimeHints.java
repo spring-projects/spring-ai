@@ -16,11 +16,6 @@
 
 package org.springframework.ai.bedrock.aot;
 
-import org.springframework.ai.bedrock.api.AbstractBedrockApi;
-import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingOptions;
-import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
-import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingOptions;
-import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -41,21 +36,8 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(AbstractBedrockApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
 
-		for (var tr : findJsonAnnotatedClassesInPackage(CohereEmbeddingBedrockApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockCohereEmbeddingOptions.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-
-		for (var tr : findJsonAnnotatedClassesInPackage(BedrockTitanEmbeddingOptions.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(TitanEmbeddingBedrockApi.class)) {
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.bedrock")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

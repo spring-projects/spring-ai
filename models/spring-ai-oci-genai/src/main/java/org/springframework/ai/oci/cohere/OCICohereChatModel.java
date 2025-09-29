@@ -104,10 +104,10 @@ public class OCICohereChatModel implements ChatModel {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
+		Prompt requestPrompt = this.buildRequestPrompt(prompt);
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-			.prompt(prompt)
+			.prompt(requestPrompt)
 			.provider(AiProvider.OCI_GENAI.value())
-			.requestOptions(prompt.getOptions() != null ? prompt.getOptions() : this.defaultOptions)
 			.build();
 
 		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
@@ -118,6 +118,21 @@ public class OCICohereChatModel implements ChatModel {
 				observationContext.setResponse(chatResponse);
 				return chatResponse;
 			});
+	}
+
+	Prompt buildRequestPrompt(Prompt prompt) {
+		// Process runtime options
+		OCICohereChatOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					OCICohereChatOptions.class);
+		}
+
+		// Define request options by merging runtime options and default options
+		OCICohereChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				OCICohereChatOptions.class);
+
+		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
 	@Override
@@ -185,7 +200,7 @@ public class OCICohereChatModel implements ChatModel {
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
 				.finishReason(resp.getFinishReason().getValue())
 				.build();
-			AssistantMessage message = new AssistantMessage(resp.getText(), Map.of());
+			AssistantMessage message = AssistantMessage.builder().content(resp.getText()).properties(Map.of()).build();
 			generations.add(new Generation(message, metadata));
 			return generations;
 		}

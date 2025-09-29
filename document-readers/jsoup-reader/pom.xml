@@ -21,8 +21,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
-		<artifactId>spring-ai</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+		<artifactId>spring-ai-parent</artifactId>
+		<version>1.1.0-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 
@@ -39,16 +39,17 @@
 	</scm>
 
 	<dependencies>
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-core</artifactId>
+			<artifactId>spring-ai-commons</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.18.3</version>
+			<version>${jsoup.version}</version>
 		</dependency>
 
 		<!-- TESTING -->

@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -153,6 +153,7 @@ import org.springframework.util.StringUtils;
  * @author Sebastien Deleuze
  * @author Jihoon Kim
  * @author YeongMin Song
+ * @author Jonghoon Park
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -202,6 +203,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final ObjectMapper objectMapper;
 
+	private final DocumentRowMapper documentRowMapper;
+
 	private final boolean removeExistingVectorStoreTable;
 
 	private final PgIndexType createIndexMethod;
@@ -219,6 +222,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.documentRowMapper = new DocumentRowMapper(this.objectMapper);
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
@@ -252,7 +256,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		List<List<Document>> batchedDocuments = batchDocuments(documents);
@@ -372,13 +376,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),
 						jsonPathFilter),
-				new DocumentRowMapper(this.objectMapper), queryEmbedding, queryEmbedding, distance, request.getTopK());
+				this.documentRowMapper, queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
 
 	public List<Double> embeddingDistance(String query) {
 		return this.jdbcTemplate.query(
 				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + getFullyQualifiedTableName(),
-				new RowMapper<Double>() {
+				new RowMapper<>() {
 
 					@Override
 					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -420,7 +424,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// Enable the PGVector, JSONB and UUID support.
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
-		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+
+		if (this.idType == PgIdType.UUID) {
+			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+		}
 
 		this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", this.getSchemaName()));
 
@@ -431,12 +438,12 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		this.jdbcTemplate.execute(String.format("""
 				CREATE TABLE IF NOT EXISTS %s (
-					id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
+					id %s PRIMARY KEY,
 					content text,
 					metadata json,
 					embedding vector(%d)
 				)
-				""", this.getFullyQualifiedTableName(), this.embeddingDimensions()));
+				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.embeddingDimensions()));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
@@ -464,6 +471,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private String getVectorIndexName() {
 		return this.vectorIndexName;
+	}
+
+	private String getColumnTypeName() {
+		return switch (getIdType()) {
+			case UUID -> "uuid DEFAULT uuid_generate_v4()";
+			case TEXT -> "text";
+			case INTEGER -> "integer";
+			case SERIAL -> "serial";
+			case BIGSERIAL -> "bigserial";
+		};
 	}
 
 	int embeddingDimensions() {
@@ -585,8 +602,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private static class DocumentRowMapper implements RowMapper<Document> {
-
-		private static final String COLUMN_EMBEDDING = "embedding";
 
 		private static final String COLUMN_METADATA = "metadata";
 

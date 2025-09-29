@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.retry.RetryUtils;
@@ -116,7 +117,8 @@ public class VertexAiTextEmbeddingRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(mockResponse);
 
-		EmbeddingResponse result = this.embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), null));
+		EmbeddingOptions options = VertexAiTextEmbeddingOptions.builder().model("model").build();
+		EmbeddingResponse result = this.embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), options));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResults()).hasSize(1);
@@ -132,11 +134,25 @@ public class VertexAiTextEmbeddingRetryTests {
 		// Setup the mock PredictionServiceClient to throw a non-transient error
 		given(this.mockPredictionServiceClient.predict(any())).willThrow(new RuntimeException("Non Transient Error"));
 
+		EmbeddingOptions options = VertexAiTextEmbeddingOptions.builder().model("model").build();
 		// Assert that a RuntimeException is thrown and not retried
-		assertThatThrownBy(() -> this.embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), null)))
+		assertThatThrownBy(() -> this.embeddingModel.call(new EmbeddingRequest(List.of("text1", "text2"), options)))
 			.isInstanceOf(RuntimeException.class);
 
 		// Verify that predict was called only once (no retries for non-transient errors)
+		verify(this.mockPredictionServiceClient, times(1)).predict(any());
+	}
+
+	@Test
+	public void vertexAiEmbeddingWithEmptyTextList() {
+		PredictResponse emptyResponse = PredictResponse.newBuilder().build();
+		given(this.mockPredictionServiceClient.predict(any())).willReturn(emptyResponse);
+
+		EmbeddingOptions options = VertexAiTextEmbeddingOptions.builder().model("model").build();
+		EmbeddingResponse result = this.embeddingModel.call(new EmbeddingRequest(List.of(), options));
+
+		assertThat(result).isNotNull();
+		// Behavior depends on implementation - might be empty results or exception
 		verify(this.mockPredictionServiceClient, times(1)).predict(any());
 	}
 

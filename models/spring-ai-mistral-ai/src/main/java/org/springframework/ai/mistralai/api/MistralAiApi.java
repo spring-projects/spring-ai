@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -47,9 +48,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Single-class, Java Client library for Mistral AI platform. Provides implementation for
- * the <a href="https://docs.mistral.ai/api/#operation/createEmbedding">MistralAI
- * Embedding API</a> and the
- * <a href="https://docs.mistral.ai/api/#operation/createChatCompletion">Chat
+ * the <a href=
+ * "https://docs.mistral.ai/api/#tag/embeddings/operation/embeddings_v1_embeddings_post">Embeddings</a>
+ * and the <a href=
+ * "https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post">Chat
  * Completion</a> APIs.
  * <p>
  * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion and supports latest
@@ -59,9 +61,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jason Smith
  * @since 1.0.0
  */
 public class MistralAiApi {
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
 
@@ -77,42 +84,58 @@ public class MistralAiApi {
 
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 */
-	public MistralAiApi(String mistralAiApiKey) {
-		this(DEFAULT_BASE_URL, mistralAiApiKey);
+	@Deprecated
+	public MistralAiApi(String apiKey) {
+		this(DEFAULT_BASE_URL, apiKey);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey) {
-		this(baseUrl, mistralAiApiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	@Deprecated
+	public MistralAiApi(String baseUrl, String apiKey) {
+		this(baseUrl, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+	@Deprecated
+	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
+		this(baseUrl, apiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
+	}
+
+	/**
+	 * Create a new client api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey Mistral api Key.
+	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(mistralAiApiKey);
+			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = WebClient.builder().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
 	}
 
 	/**
@@ -255,28 +278,29 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral chat models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
 	 *
-	 * <p>
-	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
-	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
-	 * Medium, Mistral Large, and Mistral Embeddings).
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
 		// Premier Models
+		MAGISTRAL_MEDIUM("magistral-medium-latest"),
+		MISTRAL_MEDIUM("mistral-medium-latest"),
 		CODESTRAL("codestral-latest"),
 		LARGE("mistral-large-latest"),
 		PIXTRAL_LARGE("pixtral-large-latest"),
 		MINISTRAL_3B_LATEST("ministral-3b-latest"),
 		MINISTRAL_8B_LATEST("ministral-8b-latest"),
 		// Free Models
+		MAGISTRAL_SMALL("magistral-small-latest"),
+		DEVSTRAL_SMALL("devstral-small-latest"),
 		SMALL("mistral-small-latest"),
 		PIXTRAL("pixtral-12b-2409"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
-		OPEN_CODESTRAL_MAMBA("open-codestral-mamba");
+		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
 		private final String value;
@@ -298,7 +322,10 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral embedding models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-embedding-model
+	 *
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum EmbeddingModel {
 
@@ -475,6 +502,7 @@ public class MistralAiApi {
 	 * applicable for completion requests.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("prompt_tokens") Integer promptTokens,
@@ -492,6 +520,7 @@ public class MistralAiApi {
 	 * @param object The object type, which is always 'embedding'.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Embedding(
 	// @formatter:off
 		@JsonProperty("index") Integer index,
@@ -585,6 +614,7 @@ public class MistralAiApi {
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record EmbeddingList<T>(
 	// @formatter:off
 			@JsonProperty("object") String object,
@@ -627,9 +657,11 @@ public class MistralAiApi {
 	 * @param stop A list of tokens that the model should stop generating after. If set,
 	 * @param randomSeed The seed to use for random sampling. If set, different calls will
 	 * generate deterministic results.
-	 * @param responseFormat An object specifying the format that the model must output.
-	 * Setting to { "type": "json_object" } enables JSON mode, which guarantees the
-	 * message the model generates is valid JSON.
+	 * @param responseFormat An object specifying the format or schema that the model must
+	 * output. Setting to { "type": "json_object" } enables JSON mode, which guarantees
+	 * the message the model generates is valid JSON. Setting to { "type": "json_object" ,
+	 * "json_schema": schema} allows you to ensure the model provides an answer in a very
+	 * specific JSON format by supplying a clear JSON schema.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -731,11 +763,16 @@ public class MistralAiApi {
 		/**
 		 * An object specifying the format that the model must output.
 		 *
-		 * @param type Must be one of 'text' or 'json_object'.
+		 * @param type Must be one of 'text', 'json_object' or 'json_schema'.
+		 * @param jsonSchema A specific JSON schema to match, if 'type' is 'json_schema'.
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(@JsonProperty("type") String type) {
+		public record ResponseFormat(@JsonProperty("type") String type,
+				@JsonProperty("json_schema") Map<String, Object> jsonSchema) {
 
+			public ResponseFormat(String type) {
+				this(type, null);
+			}
 		}
 
 	}
@@ -754,6 +791,7 @@ public class MistralAiApi {
 	 * the {@link Role#TOOL} role and null otherwise.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(
 	// @formatter:off
 		@JsonProperty("content") Object rawContent,
@@ -800,9 +838,10 @@ public class MistralAiApi {
 
 		/**
 		 * The role of the author of this message.
-		 *
+		 * <p>
 		 * NOTE: Mistral expects the system message to be before the user message or will
 		 * fail with 400 error.
+		 * </p>
 		 */
 		public enum Role {
 
@@ -830,6 +869,7 @@ public class MistralAiApi {
 		 * @param index The index of the tool call in the list of tool calls.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
 
@@ -843,6 +883,7 @@ public class MistralAiApi {
 		 * function.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) {
 
@@ -857,6 +898,7 @@ public class MistralAiApi {
 		 * @param imageUrl The image content of the message.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MediaContent(
 		// @formatter:off
 		   		@JsonProperty("type") String type,
@@ -920,6 +962,7 @@ public class MistralAiApi {
 	 * @param usage Usage statistics for the completion request.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletion(
 	// @formatter:off
 		@JsonProperty("id") String id,
@@ -939,6 +982,7 @@ public class MistralAiApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Choice(
 		// @formatter:off
 			@JsonProperty("index") Integer index,
@@ -957,6 +1001,7 @@ public class MistralAiApi {
 	 * @param content A list of message content tokens with log probability information.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record LogProbs(@JsonProperty("content") List<Content> content) {
 
 		/**
@@ -974,6 +1019,7 @@ public class MistralAiApi {
 		 * requested top_logprobs returned.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Content(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
 				@JsonProperty("bytes") List<Integer> probBytes,
 				@JsonProperty("top_logprobs") List<TopLogProbs> topLogprobs) {
@@ -990,6 +1036,7 @@ public class MistralAiApi {
 			 * is no bytes representation for the token.
 			 */
 			@JsonInclude(Include.NON_NULL)
+			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record TopLogProbs(@JsonProperty("token") String token, @JsonProperty("logprob") Float logprob,
 					@JsonProperty("bytes") List<Integer> probBytes) {
 
@@ -1013,6 +1060,7 @@ public class MistralAiApi {
 	 * @param usage usage metrics for the chat completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionChunk(
 	// @formatter:off
 		@JsonProperty("id") String id,
@@ -1032,13 +1080,63 @@ public class MistralAiApi {
 		 * @param logprobs Log probability information for the choice.
 		 */
 		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(
 		// @formatter:off
 			@JsonProperty("index") Integer index,
 			@JsonProperty("delta") ChatCompletionMessage delta,
 			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-		@JsonProperty("logprobs") LogProbs logprobs) {
+			@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
+		}
+
+	}
+
+	public static final class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			Assert.hasText(apiKey, "apiKey cannot be null or empty");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public MistralAiApi build() {
+			return new MistralAiApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.webClientBuilder,
+					this.responseErrorHandler);
 		}
 
 	}

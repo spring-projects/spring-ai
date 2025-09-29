@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.springframework.ai.openai.chat.proxy;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,8 +27,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
@@ -45,14 +43,12 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.Media;
 import org.springframework.ai.model.NoopApiKey;
-import org.springframework.ai.model.SimpleApiKey;
-import org.springframework.ai.model.function.FunctionCallback;
-import org.springframework.ai.model.tool.LegacyToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -78,10 +74,12 @@ class OllamaWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaWithOpenAiChatModelIT.class);
 
-	private static final String DEFAULT_OLLAMA_MODEL = "mistral";
+	private static final String DEFAULT_OLLAMA_MODEL = "qwen2.5:3b";
+
+	private static final String MULTIMODAL_MODEL = "gemma3:4b";
 
 	@Container
-	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.5.7");
+	static OllamaContainer ollamaContainer = new OllamaContainer("ollama/ollama:0.10.1");
 
 	static String baseUrl = "http://localhost:11434";
 
@@ -95,8 +93,7 @@ class OllamaWithOpenAiChatModelIT {
 	public static void beforeAll() throws IOException, InterruptedException {
 		logger.info("Start pulling the '" + DEFAULT_OLLAMA_MODEL + " ' generative ... would take several minutes ...");
 		ollamaContainer.execInContainer("ollama", "pull", DEFAULT_OLLAMA_MODEL);
-		ollamaContainer.execInContainer("ollama", "pull", "llava");
-		ollamaContainer.execInContainer("ollama", "pull", "llama3.2:1b");
+		ollamaContainer.execInContainer("ollama", "pull", MULTIMODAL_MODEL);
 		logger.info(DEFAULT_OLLAMA_MODEL + " pulling competed!");
 
 		baseUrl = "http://" + ollamaContainer.getHost() + ":" + ollamaContainer.getMappedPort(11434);
@@ -104,20 +101,18 @@ class OllamaWithOpenAiChatModelIT {
 
 	@Test
 	void roleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
+		UserMessage userMessage = new UserMessage("What's the capital of Denmark?");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
+		assertThat(response.getResults().get(0).getOutput().getText()).contains("Copenhagen");
 	}
 
 	@Test
 	void streamRoleTest() {
-		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
+		UserMessage userMessage = new UserMessage("What's the capital of Denmark?");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage));
@@ -133,11 +128,10 @@ class OllamaWithOpenAiChatModelIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 
-		assertThat(stitchedResponseContent).contains("Blackbeard");
+		assertThat(stitchedResponseContent).contains("Copenhagen");
 	}
 
 	@Test
-	@Disabled("Not supported by the current Ollama API")
 	void streamingWithTokenUsage() {
 		var promptOptions = OpenAiChatOptions.builder().streamUsage(true).seed(1).build();
 
@@ -166,14 +160,15 @@ class OllamaWithOpenAiChatModelIT {
 				List five {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "ice cream flavors", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "ice cream flavors", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		List<String> list = outputConverter.convert(generation.getOutput().getText());
 		assertThat(list).hasSize(5);
-
 	}
 
 	@Test
@@ -185,8 +180,10 @@ class OllamaWithOpenAiChatModelIT {
 				Provide me a List of {subject}
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template,
-				Map.of("subject", "numbers from 1 to 9 under they key name 'numbers'", "format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("subject", "numbers from 1 to 9 under they key name 'numbers'", "format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -197,7 +194,6 @@ class OllamaWithOpenAiChatModelIT {
 
 	@Test
 	void beanOutputConverter() {
-
 		BeanOutputConverter<ActorsFilms> outputConverter = new BeanOutputConverter<>(ActorsFilms.class);
 
 		String format = outputConverter.getFormat();
@@ -205,7 +201,10 @@ class OllamaWithOpenAiChatModelIT {
 				Generate the filmography for a random actor.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -215,7 +214,6 @@ class OllamaWithOpenAiChatModelIT {
 
 	@Test
 	void beanOutputConverterRecords() {
-
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputConverter.getFormat();
@@ -223,7 +221,10 @@ class OllamaWithOpenAiChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
@@ -235,7 +236,6 @@ class OllamaWithOpenAiChatModelIT {
 
 	@Test
 	void beanStreamOutputConverterRecords() {
-
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
 
 		String format = outputConverter.getFormat();
@@ -243,7 +243,10 @@ class OllamaWithOpenAiChatModelIT {
 				Generate the filmography of 5 movies for Tom Hanks.
 				{format}
 				""";
-		PromptTemplate promptTemplate = new PromptTemplate(template, Map.of("format", format));
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 
 		String generationTextFromStream = this.chatModel.stream(prompt)
@@ -262,17 +265,15 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llama3.1:latest", "llama3.2:latest" })
-	void functionCallTest(String modelName) {
-
+	@Test
+	void functionCallTest() {
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.model(modelName)
+			.model(DEFAULT_OLLAMA_MODEL)
 			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
 			// (which defaults to "auto") Ollama defaults to "nono"
 			.toolChoice("auto")
@@ -289,22 +290,19 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llama3.1:latest", "llama3.2:latest" })
-	void streamFunctionCallTest(String modelName) {
-
+	@Test
+	void streamFunctionCallTest() {
 		UserMessage userMessage = new UserMessage(
 				"What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiChatOptions.builder()
-			.model(modelName)
+			.model(DEFAULT_OLLAMA_MODEL)
 			// Note for Ollama you must set the tool choice to explicitly. Unlike OpenAI
 			// (which defaults to "auto") Ollama defaults to "nono"
 			.toolChoice("auto")
-			.functionCallbacks(List.of(FunctionCallback.builder()
-				.function("getCurrentWeather", new MockWeatherService())
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
@@ -325,17 +323,17 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(content).contains("30", "10", "15");
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llava" })
-	void multiModalityEmbeddedImage(String modelName) throws IOException {
-
+	@Test
+	void multiModalityEmbeddedImage() {
 		var imageData = new ClassPathResource("/test.png");
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
 
 		var response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(MULTIMODAL_MODEL).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
@@ -343,18 +341,19 @@ class OllamaWithOpenAiChatModelIT {
 	}
 
 	@Disabled("Not supported by the current Ollama API")
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llava" })
-	void multiModalityImageUrl(String modelName) throws IOException {
+	@Test
+	void multiModalityImageUrl() {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		ChatResponse response = this.chatModel
-			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(MULTIMODAL_MODEL).build()));
 
 		logger.info(response.getResult().getOutput().getText());
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
@@ -362,18 +361,19 @@ class OllamaWithOpenAiChatModelIT {
 	}
 
 	@Disabled("Not supported by the current Ollama API")
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llava" })
-	void streamingMultiModalityImageUrl(String modelName) throws IOException {
+	@Test
+	void streamingMultiModalityImageUrl() {
 
-		var userMessage = new UserMessage("Explain what do you see on this picture?",
-				List.of(Media.builder()
-					.mimeType(MimeTypeUtils.IMAGE_PNG)
-					.data(new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
-					.build()));
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.build();
 
 		Flux<ChatResponse> response = this.chatModel
-			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(modelName).build()));
+			.stream(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().model(MULTIMODAL_MODEL).build()));
 
 		String content = response.collectList()
 			.block()
@@ -387,12 +387,11 @@ class OllamaWithOpenAiChatModelIT {
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
-	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "mistral" })
-	void validateCallResponseMetadata(String model) {
+	@Test
+	void validateCallResponseMetadata() {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiChatOptions.builder().model(model).build())
+				.options(OpenAiChatOptions.builder().model(DEFAULT_OLLAMA_MODEL).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -400,7 +399,7 @@ class OllamaWithOpenAiChatModelIT {
 
 		logger.info(response.toString());
 		assertThat(response.getMetadata().getId()).isNotEmpty();
-		assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
+		assertThat(response.getMetadata().getModel()).containsIgnoringCase(DEFAULT_OLLAMA_MODEL);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
@@ -422,7 +421,7 @@ class OllamaWithOpenAiChatModelIT {
 		public OpenAiChatModel openAiClient(OpenAiApi openAiApi) {
 			return OpenAiChatModel.builder()
 				.openAiApi(openAiApi)
-				.toolCallingManager(LegacyToolCallingManager.builder().build())
+				.toolCallingManager(ToolCallingManager.builder().build())
 				.defaultOptions(OpenAiChatOptions.builder().model(DEFAULT_OLLAMA_MODEL).build())
 				.build();
 		}

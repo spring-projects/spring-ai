@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,17 @@
 
 package org.springframework.ai.testcontainers.service.connection.mongo;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Method;
+
 import com.mongodb.ConnectionString;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
 import org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails;
+import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * A {@link ContainerConnectionDetailsFactory} implementation that provides
@@ -36,6 +41,8 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
  * testcontainers in Spring Boot applications.
  *
  * @author Eddú Meléndez
+ * @author Soby Chacko
+ * @author Yanming Zhou
  * @since 1.0.0
  * @see ContainerConnectionDetailsFactory
  * @see MongoConnectionDetails
@@ -43,6 +50,12 @@ import org.springframework.boot.testcontainers.service.connection.ContainerConne
  */
 class MongoDbAtlasLocalContainerConnectionDetailsFactory
 		extends ContainerConnectionDetailsFactory<MongoDBAtlasLocalContainer, MongoConnectionDetails> {
+
+	private static final Method GET_SSL_BUNDLE_METHOD;
+
+	static {
+		GET_SSL_BUNDLE_METHOD = ReflectionUtils.findMethod(MongoConnectionDetails.class, "getSslBundle");
+	}
 
 	@Override
 	protected MongoConnectionDetails getContainerConnectionDetails(
@@ -64,6 +77,23 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactory
 		@Override
 		public ConnectionString getConnectionString() {
 			return new ConnectionString(getContainer().getConnectionString());
+		}
+
+		// Conditional implementation based on whether the method exists
+		public SslBundle getSslBundle() {
+			if (GET_SSL_BUNDLE_METHOD != null) { // Boot 3.5.x+
+				try {
+					return (SslBundle) MethodHandles.lookup()
+						.in(GET_SSL_BUNDLE_METHOD.getDeclaringClass())
+						.unreflectSpecial(GET_SSL_BUNDLE_METHOD, GET_SSL_BUNDLE_METHOD.getDeclaringClass())
+						.bindTo(this)
+						.invokeWithArguments();
+				}
+				catch (Throwable e) {
+					throw new RuntimeException(e);
+				}
+			}
+			return null; // Boot 3.4.x (No-Op)
 		}
 
 	}

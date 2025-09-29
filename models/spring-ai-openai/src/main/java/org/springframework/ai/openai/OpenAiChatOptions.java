@@ -29,14 +29,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
+import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -49,10 +51,13 @@ import org.springframework.util.Assert;
  * @author Mariusz Bernacki
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
 public class OpenAiChatOptions implements ToolCallingChatOptions {
+
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatOptions.class);
 
 	// @formatter:off
 	/**
@@ -83,13 +88,31 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 */
 	private @JsonProperty("top_logprobs") Integer topLogprobs;
 	/**
-	 * The maximum number of tokens to generate in the chat completion. The total length of input
-	 * tokens and generated tokens is limited by the model's context length.
+	 * The maximum number of tokens to generate in the chat completion.
+	 * The total length of input tokens and generated tokens is limited by the model's context length.
+	 *
+	 * <p><strong>Model-specific usage:</strong></p>
+	 * <ul>
+	 * <li><strong>Use for non-reasoning models</strong> (e.g., gpt-4o, gpt-3.5-turbo)</li>
+	 * <li><strong>Cannot be used with reasoning models</strong> (e.g., o1, o3, o4-mini series)</li>
+	 * </ul>
+	 *
+	 * <p><strong>Mutual exclusivity:</strong> This parameter cannot be used together with
+	 * {@link #maxCompletionTokens}. Setting both will result in an API error.</p>
 	 */
 	private @JsonProperty("max_tokens") Integer maxTokens;
 	/**
 	 * An upper bound for the number of tokens that can be generated for a completion,
 	 * including visible output tokens and reasoning tokens.
+	 *
+	 * <p><strong>Model-specific usage:</strong></p>
+	 * <ul>
+	 * <li><strong>Required for reasoning models</strong> (e.g., o1, o3, o4-mini series)</li>
+	 * <li><strong>Cannot be used with non-reasoning models</strong> (e.g., gpt-4o, gpt-3.5-turbo)</li>
+	 * </ul>
+	 *
+	 * <p><strong>Mutual exclusivity:</strong> This parameter cannot be used together with
+	 * {@link #maxTokens}. Setting both will result in an API error.</p>
 	 */
 	private @JsonProperty("max_completion_tokens") Integer maxCompletionTokens;
 	/**
@@ -181,6 +204,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 * Whether to store the output of this chat completion request for use in our model <a href="https://platform.openai.com/docs/guides/distillation">distillation</a> or <a href="https://platform.openai.com/docs/guides/evals">evals</a> products.
 	 */
 	private @JsonProperty("store") Boolean store;
+
 	/**
 	 * Developer-defined tags and values used for filtering completions in the <a href="https://platform.openai.com/chat-completions">dashboard</a>.
 	 */
@@ -195,10 +219,29 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("reasoning_effort") String reasoningEffort;
 
 	/**
+	 * verbosity: string or null
+	 * Optional - Defaults to medium
+	 * Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses.
+	 * Currently supported values are low, medium, and high.
+	 * If specified, the model will use web search to find relevant information to answer the user's question.
+	 */
+	private @JsonProperty("verbosity") String verbosity;
+
+	/**
+	 * This tool searches the web for relevant results to use in a response.
+	 */
+	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
+
+	/**
+	 * Specifies the <a href="https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier">processing type</a> used for serving the request.
+	 */
+	private @JsonProperty("service_tier") String serviceTier;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
 	 */
 	@JsonIgnore
-	private List<FunctionCallback> toolCallbacks = new ArrayList<>();
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * Collection of tool names to be resolved at runtime and used for tool calling in the chat completion requests.
@@ -237,27 +280,32 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.maxTokens(fromOptions.getMaxTokens())
 			.maxCompletionTokens(fromOptions.getMaxCompletionTokens())
 			.N(fromOptions.getN())
-			.outputModalities(fromOptions.getOutputModalities())
+			.outputModalities(fromOptions.getOutputModalities() != null
+					? new ArrayList<>(fromOptions.getOutputModalities()) : null)
 			.outputAudio(fromOptions.getOutputAudio())
 			.presencePenalty(fromOptions.getPresencePenalty())
 			.responseFormat(fromOptions.getResponseFormat())
 			.streamUsage(fromOptions.getStreamUsage())
 			.seed(fromOptions.getSeed())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.tools(fromOptions.getTools())
 			.toolChoice(fromOptions.getToolChoice())
 			.user(fromOptions.getUser())
 			.parallelToolCalls(fromOptions.getParallelToolCalls())
-			.toolCallbacks(fromOptions.getToolCallbacks())
-			.toolNames(fromOptions.getToolNames())
-			.httpHeaders(fromOptions.getHttpHeaders())
-			.internalToolExecutionEnabled(fromOptions.isInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
+			.toolCallbacks(
+					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
+			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.store(fromOptions.getStore())
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
+			.webSearchOptions(fromOptions.getWebSearchOptions())
+			.verbosity(fromOptions.getVerbosity())
+			.serviceTier(fromOptions.getServiceTier())
 			.build();
 	}
 
@@ -438,19 +486,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.toolChoice = toolChoice;
 	}
 
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public Boolean getProxyToolCalls() {
-		return this.internalToolExecutionEnabled != null ? !this.internalToolExecutionEnabled : null;
-	}
-
-	@Deprecated
-	@JsonIgnore
-	public void setProxyToolCalls(Boolean proxyToolCalls) {
-		this.internalToolExecutionEnabled = proxyToolCalls != null ? !proxyToolCalls : null;
-	}
-
 	public String getUser() {
 		return this.user;
 	}
@@ -469,13 +504,13 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@JsonIgnore
-	public List<FunctionCallback> getToolCallbacks() {
+	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
 	@JsonIgnore
-	public void setToolCallbacks(List<FunctionCallback> toolCallbacks) {
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
 		this.toolCallbacks = toolCallbacks;
@@ -499,42 +534,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	@Nullable
 	@JsonIgnore
-	public Boolean isInternalToolExecutionEnabled() {
-		return internalToolExecutionEnabled;
+	public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public List<FunctionCallback> getFunctionCallbacks() {
-		return this.getToolCallbacks();
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public void setFunctionCallbacks(List<FunctionCallback> functionCallbacks) {
-		this.setToolCallbacks(functionCallbacks);
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public Set<String> getFunctions() {
-		return this.getToolNames();
-	}
-
-	@Override
-	@Deprecated
-	@JsonIgnore
-	public void setFunctions(Set<String> functionNames) {
-		this.setToolNames(functionNames);
 	}
 
 	public Map<String, String> getHttpHeaders() {
@@ -587,6 +594,30 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.reasoningEffort = reasoningEffort;
 	}
 
+	public WebSearchOptions getWebSearchOptions() {
+		return this.webSearchOptions;
+	}
+
+	public void setWebSearchOptions(WebSearchOptions webSearchOptions) {
+		this.webSearchOptions = webSearchOptions;
+	}
+
+	public String getVerbosity() {
+		return this.verbosity;
+	}
+
+	public void setVerbosity(String verbosity) {
+		this.verbosity = verbosity;
+	}
+
+	public String getServiceTier() {
+		return this.serviceTier;
+	}
+
+	public void setServiceTier(String serviceTier) {
+		this.serviceTier = serviceTier;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -599,7 +630,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier);
 	}
 
 	@Override
@@ -631,7 +662,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.outputModalities, other.outputModalities)
 				&& Objects.equals(this.outputAudio, other.outputAudio) && Objects.equals(this.store, other.store)
 				&& Objects.equals(this.metadata, other.metadata)
-				&& Objects.equals(this.reasoningEffort, other.reasoningEffort);
+				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
+				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
+				&& Objects.equals(this.verbosity, other.verbosity)
+				&& Objects.equals(this.serviceTier, other.serviceTier);
 	}
 
 	@Override
@@ -681,12 +715,72 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
+		/**
+		 * Sets the maximum number of tokens to generate in the chat completion. The total
+		 * length of input tokens and generated tokens is limited by the model's context
+		 * length.
+		 *
+		 * <p>
+		 * <strong>Model-specific usage:</strong>
+		 * </p>
+		 * <ul>
+		 * <li><strong>Use for non-reasoning models</strong> (e.g., gpt-4o,
+		 * gpt-3.5-turbo)</li>
+		 * <li><strong>Cannot be used with reasoning models</strong> (e.g., o1, o3,
+		 * o4-mini series)</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * <strong>Mutual exclusivity:</strong> This parameter cannot be used together
+		 * with {@link #maxCompletionTokens(Integer)}. If both are set, the last one set
+		 * will be used and the other will be cleared with a warning.
+		 * </p>
+		 * @param maxTokens the maximum number of tokens to generate, or null to unset
+		 * @return this builder instance
+		 */
 		public Builder maxTokens(Integer maxTokens) {
+			if (maxTokens != null && this.options.maxCompletionTokens != null) {
+				logger
+					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+							+ "The previously set maxCompletionTokens ({}) will be cleared and maxTokens ({}) will be used.",
+							this.options.maxCompletionTokens, maxTokens);
+				this.options.maxCompletionTokens = null;
+			}
 			this.options.maxTokens = maxTokens;
 			return this;
 		}
 
+		/**
+		 * Sets an upper bound for the number of tokens that can be generated for a
+		 * completion, including visible output tokens and reasoning tokens.
+		 *
+		 * <p>
+		 * <strong>Model-specific usage:</strong>
+		 * </p>
+		 * <ul>
+		 * <li><strong>Required for reasoning models</strong> (e.g., o1, o3, o4-mini
+		 * series)</li>
+		 * <li><strong>Cannot be used with non-reasoning models</strong> (e.g., gpt-4o,
+		 * gpt-3.5-turbo)</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * <strong>Mutual exclusivity:</strong> This parameter cannot be used together
+		 * with {@link #maxTokens(Integer)}. If both are set, the last one set will be
+		 * used and the other will be cleared with a warning.
+		 * </p>
+		 * @param maxCompletionTokens the maximum number of completion tokens to generate,
+		 * or null to unset
+		 * @return this builder instance
+		 */
 		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
+			if (maxCompletionTokens != null && this.options.maxTokens != null) {
+				logger
+					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+							+ "The previously set maxTokens ({}) will be cleared and maxCompletionTokens ({}) will be used.",
+							this.options.maxTokens, maxCompletionTokens);
+				this.options.maxTokens = null;
+			}
 			this.options.maxCompletionTokens = maxCompletionTokens;
 			return this;
 		}
@@ -761,12 +855,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder toolCallbacks(List<FunctionCallback> toolCallbacks) {
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
 			this.options.setToolCallbacks(toolCallbacks);
 			return this;
 		}
 
-		public Builder toolCallbacks(FunctionCallback... toolCallbacks) {
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
 			return this;
@@ -786,29 +880,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		@Deprecated
-		public Builder functionCallbacks(List<FunctionCallback> functionCallbacks) {
-			return toolCallbacks(functionCallbacks);
-		}
-
-		@Deprecated
-		public Builder functions(Set<String> functionNames) {
-			return toolNames(functionNames);
-		}
-
-		@Deprecated
-		public Builder function(String functionName) {
-			return toolNames(functionName);
-		}
-
-		@Deprecated
-		public Builder proxyToolCalls(Boolean proxyToolCalls) {
-			if (proxyToolCalls != null) {
-				this.options.setInternalToolExecutionEnabled(!proxyToolCalls);
-			}
 			return this;
 		}
 
@@ -839,6 +910,26 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder reasoningEffort(String reasoningEffort) {
 			this.options.reasoningEffort = reasoningEffort;
+			return this;
+		}
+
+		public Builder webSearchOptions(WebSearchOptions webSearchOptions) {
+			this.options.webSearchOptions = webSearchOptions;
+			return this;
+		}
+
+		public Builder verbosity(String verbosity) {
+			this.options.verbosity = verbosity;
+			return this;
+		}
+
+		public Builder serviceTier(String serviceTier) {
+			this.options.serviceTier = serviceTier;
+			return this;
+		}
+
+		public Builder serviceTier(OpenAiApi.ServiceTier serviceTier) {
+			this.options.serviceTier = serviceTier.getValue();
 			return this;
 		}
 

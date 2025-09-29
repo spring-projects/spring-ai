@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,6 +41,9 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.test.CurlyBracketEscaper;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -108,7 +110,7 @@ class AnthropicChatClientIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -141,7 +143,7 @@ class AnthropicChatClientIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -189,7 +191,7 @@ class AnthropicChatClientIT {
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
-						.param("format", outputConverter.getFormat()))
+						.param("format", CurlyBracketEscaper.escapeCurlyBrackets(outputConverter.getFormat())))
 				.stream()
 				.content();
 
@@ -211,8 +213,8 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.user("What's the weather like in San Francisco (California, USA), Tokyo (Japan), and Paris (France)? Use Celsius.")
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
@@ -230,7 +232,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris?  Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeatherInLocation", new MockWeatherService())
 					.inputType(MockWeatherService.Request.class)
 					.build())
 				.call()
@@ -247,7 +249,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-				.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -269,7 +271,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Use Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -284,8 +286,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20241022" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -301,14 +302,12 @@ class AnthropicChatClientIT {
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
-	@Disabled("Currently Anthropic API does not support external image URLs")
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307",
-			"claude-3-5-sonnet-20241022" })
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
-		URL url = new URL("https://docs.spring.io/spring-ai/reference/1.0.0-SNAPSHOT/_images/multimodal.test.png");
+		// TODO: add url method that wraps the checked exception.
+		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
@@ -340,6 +339,41 @@ class AnthropicChatClientIT {
 
 		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	void streamToolCallingResponseShouldNotContainToolCallMessages(String modelName) {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.tools(new MyTools())
+			.user("Get current weather in Amsterdam and Paris")
+			// .user("Get current weather in Amsterdam. Please don't explain that you will
+			// call tools.")
+			.stream()
+			.chatResponse();
+
+		List<ChatResponse> chatResponses = responses.collectList().block();
+
+		assertThat(chatResponses).isNotEmpty();
+
+		// Verify that none of the ChatResponse objects have tool calls
+		chatResponses.forEach(chatResponse -> {
+			logger.info("ChatResponse Results: {}", chatResponse.getResults());
+			assertThat(chatResponse.hasToolCalls()).isFalse();
+		});
+	}
+
+	public static class MyTools {
+
+		@Tool(description = "Get the current weather forecast by city name")
+		String getCurrentDateTime(String cityName) {
+			return "For " + cityName + " Weather is hot and sunny with a temperature of 20 degrees";
+		}
+
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

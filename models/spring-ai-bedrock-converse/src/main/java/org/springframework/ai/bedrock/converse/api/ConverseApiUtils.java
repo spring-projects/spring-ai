@@ -140,7 +140,11 @@ public final class ConverseApiUtils {
 					}
 				}
 
-				AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
+				AssistantMessage assistantMessage = AssistantMessage.builder()
+					.content("")
+					.properties(Map.of())
+					.toolCalls(toolCalls)
+					.build();
 				Generation toolCallGeneration = new Generation(assistantMessage,
 						ChatGenerationMetadata.builder().finishReason("tool_use").build());
 
@@ -176,7 +180,10 @@ public final class ConverseApiUtils {
 				if (contentBlockDeltaEvent.delta().type().equals(ContentBlockDelta.Type.TEXT)) {
 
 					var generation = new Generation(
-							new AssistantMessage(contentBlockDeltaEvent.delta().text(), Map.of()),
+							AssistantMessage.builder()
+								.content(contentBlockDeltaEvent.delta().text())
+								.properties(Map.of())
+								.build(),
 							ChatGenerationMetadata.builder()
 								.finishReason(lastAggregation.metadataAggregation().stopReason())
 								.build());
@@ -329,7 +336,7 @@ public final class ConverseApiUtils {
 		attributes.remove("proxyToolCalls");
 		attributes.remove("functions");
 		attributes.remove("toolContext");
-		attributes.remove("functionCallbacks");
+		attributes.remove("toolCallbacks");
 
 		attributes.remove("toolCallbacks");
 		attributes.remove("toolNames");
@@ -384,6 +391,26 @@ public final class ConverseApiUtils {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	public static Map<String, String> getRequestMetadata(Map<String, Object> metadata) {
+
+		if (metadata.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<String, String> result = new HashMap<>();
+		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+			String key = entry.getKey();
+			Object value = entry.getValue();
+
+			if (key != null && value != null) {
+				result.put(key, value.toString());
+			}
+		}
+
+		return result;
+	}
+
 	private static Document convertMapToDocument(Map<String, Object> value) {
 		Map<String, Document> attr = value.entrySet()
 			.stream()
@@ -421,8 +448,7 @@ public final class ConverseApiUtils {
 		}
 
 		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
+			return (this.index == null || this.id == null || this.name == null || this.partialJson == null);
 		}
 
 		ToolUseAggregationEvent withIndex(Integer index) {
@@ -451,7 +477,9 @@ public final class ConverseApiUtils {
 		}
 
 		void squashIntoContentBlock() {
-			this.toolUseEntries.add(new ToolUseEntry(this.index, this.id, this.name, this.partialJson, this.usage));
+			// Workaround to handle streaming tool calling with no input arguments.
+			String json = StringUtils.hasText(this.partialJson) ? this.partialJson : "{}";
+			this.toolUseEntries.add(new ToolUseEntry(this.index, this.id, this.name, json, this.usage));
 			this.index = null;
 			this.id = null;
 			this.name = null;

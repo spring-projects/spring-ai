@@ -39,8 +39,6 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.matches;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -48,6 +46,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 /**
  * @author Ahmed Yousri
+ * @author Jonghoon Park
  */
 @RestClientTest(OpenAiSpeechModelWithSpeechResponseMetadataTests.Config.class)
 public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
@@ -73,7 +72,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 		prepareMock();
 
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.TTS_1.value)

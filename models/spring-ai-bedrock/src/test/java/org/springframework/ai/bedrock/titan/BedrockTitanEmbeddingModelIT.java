@@ -22,6 +22,7 @@ import java.util.Base64;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -47,11 +48,14 @@ class BedrockTitanEmbeddingModelIT {
 	@Autowired
 	private BedrockTitanEmbeddingModel embeddingModel;
 
+	@Autowired
+	TestObservationRegistry observationRegistry;
+
 	@Test
 	void singleEmbedding() {
 		assertThat(this.embeddingModel).isNotNull();
 		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(List.of("Hello World"),
-				BedrockTitanEmbeddingOptions.builder().withInputType(InputType.TEXT).build()));
+				BedrockTitanEmbeddingOptions.builder().inputType(InputType.TEXT).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
@@ -65,7 +69,7 @@ class BedrockTitanEmbeddingModelIT {
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel
 			.call(new EmbeddingRequest(List.of(Base64.getEncoder().encodeToString(image)),
-					BedrockTitanEmbeddingOptions.builder().withInputType(InputType.IMAGE).build()));
+					BedrockTitanEmbeddingOptions.builder().inputType(InputType.IMAGE).build()));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
@@ -75,6 +79,11 @@ class BedrockTitanEmbeddingModelIT {
 	public static class TestConfiguration {
 
 		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
 			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
 					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
@@ -82,8 +91,9 @@ class BedrockTitanEmbeddingModelIT {
 		}
 
 		@Bean
-		public BedrockTitanEmbeddingModel titanEmbedding(TitanEmbeddingBedrockApi titanEmbeddingApi) {
-			return new BedrockTitanEmbeddingModel(titanEmbeddingApi);
+		public BedrockTitanEmbeddingModel titanEmbedding(TitanEmbeddingBedrockApi titanEmbeddingApi,
+				TestObservationRegistry observationRegistry) {
+			return new BedrockTitanEmbeddingModel(titanEmbeddingApi, observationRegistry);
 		}
 
 	}

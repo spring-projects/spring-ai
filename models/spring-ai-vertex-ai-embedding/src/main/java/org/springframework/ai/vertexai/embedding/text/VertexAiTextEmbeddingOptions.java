@@ -187,6 +187,9 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 			if (fromOptions.getTaskType() != null) {
 				this.options.setTaskType(fromOptions.getTaskType());
 			}
+			if (fromOptions.getAutoTruncate() != null) {
+				this.options.setAutoTruncate(fromOptions.getAutoTruncate());
+			}
 			if (StringUtils.hasText(fromOptions.getTitle())) {
 				this.options.setTitle(fromOptions.getTitle());
 			}

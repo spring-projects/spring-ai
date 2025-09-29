@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,15 @@ package org.springframework.ai.mistralai;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi;
+import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
+/**
+ * @author Jason Smith
+ */
 @SpringBootConfiguration
 public class MistralAiTestConfiguration {
 
@@ -32,13 +37,22 @@ public class MistralAiTestConfiguration {
 			throw new IllegalArgumentException(
 					"Missing MISTRAL_AI_API_KEY environment variable. Please set it to your Mistral AI API key.");
 		}
-		return new MistralAiApi(apiKey);
+		return MistralAiApi.builder().apiKey(apiKey).build();
+	}
+
+	@Bean
+	public MistralAiModerationApi mistralAiModerationApi() {
+		var apiKey = System.getenv("MISTRAL_AI_API_KEY");
+		if (!StringUtils.hasText(apiKey)) {
+			throw new IllegalArgumentException(
+					"Missing MISTRAL_AI_API_KEY environment variable. Please set it to your Mistral AI API key.");
+		}
+		return MistralAiModerationApi.builder().apiKey(apiKey).build();
 	}
 
 	@Bean
 	public EmbeddingModel mistralAiEmbeddingModel(MistralAiApi api) {
-		return new MistralAiEmbeddingModel(api,
-				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build());
+		return MistralAiEmbeddingModel.builder().build();
 	}
 
 	@Bean
@@ -47,6 +61,11 @@ public class MistralAiTestConfiguration {
 			.mistralAiApi(mistralAiApi)
 			.defaultOptions(MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.SMALL.getValue()).build())
 			.build();
+	}
+
+	@Bean
+	public MistralAiModerationModel mistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi) {
+		return MistralAiModerationModel.builder().mistralAiModerationApi(mistralAiModerationApi).build();
 	}
 
 }

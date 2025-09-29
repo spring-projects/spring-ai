@@ -16,8 +16,8 @@
 
 package org.springframework.ai.docker.compose.service.connection.opensearch;
 
-import org.springframework.ai.autoconfigure.vectorstore.opensearch.AwsOpenSearchConnectionDetails;
-import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchConnectionDetails;
+import org.springframework.ai.vectorstore.opensearch.autoconfigure.AwsOpenSearchConnectionDetails;
+import org.springframework.ai.vectorstore.opensearch.autoconfigure.OpenSearchConnectionDetails;
 import org.springframework.boot.docker.compose.core.RunningService;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionDetailsFactory;
 import org.springframework.boot.docker.compose.service.connection.DockerComposeConnectionSource;

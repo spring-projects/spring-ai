@@ -43,6 +43,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -64,7 +65,6 @@ import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.cassandra.SchemaUtil;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -96,7 +96,7 @@ import org.springframework.util.Assert;
  *
  * A schema matching the configuration is automatically created if it doesn't exist.
  * Missing columns and indexes in existing tables will also be automatically created.
- * Disable this with the CassandraBuilder#disallowSchemaChanges().
+ * Disable this with the CassandraBuilder#initializeSchema(boolean) method().
  *
  * <p>
  * Basic usage example:
@@ -140,7 +140,7 @@ import org.springframework.util.Assert;
  *     .contentColumnName("text")
  *     .embeddingColumnName("vector")
  *     .fixedThreadPoolExecutorSize(32)
- *     .disallowSchemaChanges(false)
+ *     .initializeSchema(true)
  *     .batchingStrategy(new TokenCountBatchingStrategy())
  *     .build();
  * }</pre>
@@ -203,7 +203,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Schema schema;
 
-	private final boolean disallowSchemaChanges;
+	private final boolean initializeSchema;
 
 	private final FilterExpressionConverter filterExpressionConverter;
 
@@ -230,13 +230,13 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		this.session = builder.session;
 		this.schema = builder.buildSchema();
-		this.disallowSchemaChanges = builder.disallowSchemaChanges;
+		this.initializeSchema = builder.initializeSchema;
 		this.documentIdTranslator = builder.documentIdTranslator;
 		this.primaryKeyTranslator = builder.primaryKeyTranslator;
 		this.executor = Executors.newFixedThreadPool(builder.fixedThreadPoolExecutorSize);
 		this.closeSessionOnClose = builder.closeSessionOnClose;
 
-		ensureSchemaExists(embeddingModel.dimensions());
+		ensureSchemaExists(this.embeddingModel.dimensions());
 		prepareAddStatement(Set.of());
 		this.deleteStmt = prepareDeleteStatement();
 
@@ -398,11 +398,16 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private Similarity getIndexSimilarity(TableMetadata metadata) {
 
-		return Similarity.valueOf(metadata.getIndex(this.schema.index())
-			.get()
-			.getOptions()
-			.getOrDefault("similarity_function", "COSINE")
-			.toUpperCase());
+		Optional<IndexMetadata> indexMetadata = metadata.getIndex(this.schema.index());
+
+		if (indexMetadata.isEmpty()) {
+			throw new IllegalStateException(
+					String.format("Index %s does not exist in table %s", this.schema.index(), this.schema.table));
+		}
+
+		return Similarity
+			.valueOf(indexMetadata.get().getOptions().getOrDefault("similarity_function", "COSINE").toUpperCase());
+
 	}
 
 	private PreparedStatement prepareDeleteStatement() {
@@ -526,7 +531,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	void ensureSchemaExists(int vectorDimension) {
-		if (!this.disallowSchemaChanges) {
+		if (this.initializeSchema) {
 			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
 			ensureTableExists(vectorDimension);
 			ensureTableColumnsExist(vectorDimension);
@@ -547,13 +552,16 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			.getKeyspace(this.schema.keyspace)
 			.get()
 			.getTable(this.schema.table)
-			.isPresent(), "table %s does not exist");
+			.isPresent(), "table %s does not exist", this.schema.table);
 
 		TableMetadata tableMetadata = this.session.getMetadata()
 			.getKeyspace(this.schema.keyspace)
 			.get()
 			.getTable(this.schema.table)
 			.get();
+
+		Preconditions.checkState(tableMetadata.getIndex(this.schema.index()).isPresent(), "index %s does not exist",
+				this.schema.index());
 
 		Preconditions.checkState(tableMetadata.getColumn(this.schema.content).isPresent(), "column %s does not exist",
 				this.schema.content);
@@ -806,7 +814,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		private Set<SchemaColumn> metadataColumns = new HashSet<>();
 
-		private boolean disallowSchemaChanges = false;
+		private boolean initializeSchema = true;
 
 		private int fixedThreadPoolExecutorSize = DEFAULT_ADD_CONCURRENCY;
 
@@ -821,8 +829,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			Preconditions.checkArgument(1 == primaryKeyColumns.size());
 			return (String) primaryKeyColumns.get(0);
 		};
-
-		private boolean returnEmbeddings = false;
 
 		private Builder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -939,12 +945,12 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		}
 
 		/**
-		 * Sets whether to disallow schema changes.
-		 * @param disallowSchemaChanges true to disallow schema changes
+		 * Sets whether to initialize the schema.
+		 * @param initializeSchema true to initialize schema, false otherwise
 		 * @return the builder instance
 		 */
-		public Builder disallowSchemaChanges(boolean disallowSchemaChanges) {
-			this.disallowSchemaChanges = disallowSchemaChanges;
+		public Builder initializeSchema(boolean initializeSchema) {
+			this.initializeSchema = initializeSchema;
 			return this;
 		}
 
@@ -1014,11 +1020,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		public Builder primaryKeyTranslator(PrimaryKeyTranslator translator) {
 			Assert.notNull(translator, "PrimaryKeyTranslator must not be null");
 			this.primaryKeyTranslator = translator;
-			return this;
-		}
-
-		public Builder returnEmbeddings(boolean returnEmbeddings) {
-			this.returnEmbeddings = true;
 			return this;
 		}
 

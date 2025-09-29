@@ -1,0 +1,389 @@
+= Google GenAI Chat
+
+The https://ai.google.dev/gemini-api/docs[Google GenAI API] allows developers to build generative AI applications using Google's Gemini models through either the Gemini Developer API or Vertex AI.
+The Google GenAI API supports multimodal prompts as input and outputs text or code.
+A multimodal model is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
+
+Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to link:https://ai.google.dev/gemini-api/docs/models/gemini/2-0-flash[Gemini 2.0 Flash], link:https://ai.google.dev/gemini-api/docs/models/gemini/2-0-flash-lite[Gemini 2.0 Flash-Lite], and link:https://ai.google.dev/gemini-api/docs/models/gemini-pro[Gemini Pro] models.
+
+This implementation provides two authentication modes:
+
+- **Gemini Developer API**: Use an API key for quick prototyping and development
+- **Vertex AI**: Use Google Cloud credentials for production deployments with enterprise features
+
+link:https://ai.google.dev/gemini-api/docs/reference[Gemini API Reference]
+
+== Prerequisites
+
+Choose one of the following authentication methods:
+
+=== Option 1: Gemini Developer API (API Key)
+
+- Obtain an API key from the https://aistudio.google.com/app/apikey[Google AI Studio]
+- Set the API key as an environment variable or in your application properties
+
+=== Option 2: Vertex AI (Google Cloud)
+
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for your OS.
+- Authenticate by running the following command.
+Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+
+[source]
+----
+gcloud config set project <PROJECT_ID> &&
+gcloud auth application-default login <ACCOUNT>
+----
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Google GenAI Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=google-genai (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match google-genai)
+
+This change is done to allow configuration of multiple models.
+====
+
+==== Connection Properties
+
+The prefix `spring.ai.google.genai` is used as the property prefix that lets you connect to Google GenAI.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.model.chat   | Enable Chat Model client |  google-genai
+| spring.ai.google.genai.api-key   | API key for Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. |  -
+| spring.ai.google.genai.project-id   | Google Cloud Platform project ID (required for Vertex AI mode) |  -
+| spring.ai.google.genai.location    | Google Cloud region (required for Vertex AI mode) |  -
+| spring.ai.google.genai.credentials-uri    | URI to Google Cloud credentials. When provided it is used to create a `GoogleCredentials` instance for authentication. |  -
+|====
+
+==== Chat Model Properties
+
+The prefix `spring.ai.google.genai.chat` is the property prefix that lets you configure the chat model implementation for Google GenAI Chat.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.chat.options.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use include `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-pro`, and `gemini-1.5-flash`. | gemini-2.0-flash
+| spring.ai.google.genai.chat.options.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
+| spring.ai.google.genai.chat.options.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
+| spring.ai.google.genai.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. | 0.7
+| spring.ai.google.genai.chat.options.top-k | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
+| spring.ai.google.genai.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
+| spring.ai.google.genai.chat.options.candidate-count | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | 1
+| spring.ai.google.genai.chat.options.max-output-tokens | The maximum number of tokens to generate. | -
+| spring.ai.google.genai.chat.options.frequency-penalty | Frequency penalties for reducing repetition. | -
+| spring.ai.google.genai.chat.options.presence-penalty | Presence penalties for reducing repetition. | -
+| spring.ai.google.genai.chat.options.thinking-budget | Thinking budget for the thinking process. | -
+| spring.ai.google.genai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.google.genai.chat.options.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
+| spring.ai.google.genai.chat.options.safety-settings | List of safety settings to control safety filters, as defined by https://ai.google.dev/gemini-api/docs/safety-settings[Google GenAI Safety Settings]. Each safety setting can have a method, threshold, and category. | -
+
+|====
+
+TIP: All properties prefixed with `spring.ai.google.genai.chat.options` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
+
+== Runtime options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai/src/main/java/org/springframework/ai/google/genai/GoogleGenAiChatOptions.java[GoogleGenAiChatOptions.java] provides model configurations, such as the temperature, the topK, etc.
+
+On start-up, the default options can be configured with the `GoogleGenAiChatModel(client, options)` constructor or the `spring.ai.google.genai.chat.options.*` properties.
+
+At runtime, you can override the default options by adding new, request specific, options to the `Prompt` call.
+For example, to override the default temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        GoogleGenAiChatOptions.builder()
+            .temperature(0.4)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific `GoogleGenAiChatOptions` you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Tool Calling
+
+The Google GenAI model supports tool calling (function calling) capabilities, allowing models to use tools during conversations.
+Here's an example of how to define and use `@Tool`-based tools:
+
+[source,java]
+----
+
+public class WeatherService {
+
+    @Tool(description = "Get the weather in location")
+    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
+        ...
+    }
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")
+        .tools(new WeatherService())
+        .call()
+        .content();
+----
+
+You can use the java.util.function beans as tools as well:
+
+[source,java]
+----
+@Bean
+@Description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+public Function<Request, Response> weatherFunction() {
+    return new MockWeatherService();
+}
+
+String response = ChatClient.create(this.chatModel)
+        .prompt("What's the weather like in Boston?")
+        .toolNames("weatherFunction")
+        .inputType(Request.class)
+        .call()
+        .content();
+----
+
+Find more in xref:api/tools.adoc[Tools] documentation.
+
+
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various (input) sources, including `text`, `pdf`, `images`, `audio`, and other data formats.
+
+=== Image, Audio, Video
+Google's Gemini AI models support this capability by comprehending and integrating text, code, audio, images, and video.
+For more details, refer to the blog post https://blog.google/technology/ai/google-gemini-ai/#introducing-gemini[Introducing Gemini].
+
+Spring AI's `Message` interface supports multimodal AI models by introducing the Media type.
+This type contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+Below is a simple code example extracted from https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai/src/test/java/org/springframework/ai/google/genai/GoogleGenAiChatModelIT.java[GoogleGenAiChatModelIT.java], demonstrating the combination of user text with an image.
+
+
+[source,java]
+----
+byte[] data = new ClassPathResource("/vertex-test.png").getContentAsByteArray();
+
+var userMessage = new UserMessage("Explain what do you see on this picture?",
+        List.of(new Media(MimeTypeUtils.IMAGE_PNG, this.data)));
+
+ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage)));
+----
+
+=== PDF
+
+Google GenAI provides support for PDF input types.
+Use the `application/pdf` media type to attach a PDF file to the message:
+
+[source,java]
+----
+var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
+
+var userMessage = new UserMessage(
+        "You are a very professional document summarization specialist. Please summarize the given document.",
+        List.of(new Media(new MimeType("application", "pdf"), pdfData)));
+
+var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+----
+
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-google-genai` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Google GenAI chat model:
+
+=== Using Gemini Developer API (API Key)
+
+[source,application.properties]
+----
+spring.ai.google.genai.api-key=YOUR_API_KEY
+spring.ai.google.genai.chat.options.model=gemini-2.0-flash
+spring.ai.google.genai.chat.options.temperature=0.5
+----
+
+=== Using Vertex AI
+
+[source,application.properties]
+----
+spring.ai.google.genai.project-id=PROJECT_ID
+spring.ai.google.genai.location=LOCATION
+spring.ai.google.genai.chat.options.model=gemini-2.0-flash
+spring.ai.google.genai.chat.options.temperature=0.5
+----
+
+TIP: Replace the `project-id` with your Google Cloud Project ID and `location` is Google Cloud Region
+like `us-central1`, `europe-west1`, etc...
+
+[NOTE]
+====
+Each model has its own set of supported regions, you can find the list of supported regions in the model page.
+====
+
+
+This will create a `GoogleGenAiChatModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the chat model for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final GoogleGenAiChatModel chatModel;
+
+    @Autowired
+    public ChatController(GoogleGenAiChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", this.chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return this.chatModel.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai/src/main/java/org/springframework/ai/google/genai/GoogleGenAiChatModel.java[GoogleGenAiChatModel] implements the `ChatModel` and uses the `com.google.genai.Client` to connect to the Google GenAI service.
+
+Add the `spring-ai-google-genai` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-google-genai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-google-genai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `GoogleGenAiChatModel` and use it for text generations:
+
+=== Using API Key
+
+[source,java]
+----
+Client genAiClient = Client.builder()
+    .apiKey(System.getenv("GOOGLE_API_KEY"))
+    .build();
+
+var chatModel = new GoogleGenAiChatModel(genAiClient,
+    GoogleGenAiChatOptions.builder()
+        .model(ChatModel.GEMINI_2_0_FLASH)
+        .temperature(0.4)
+    .build());
+
+ChatResponse response = this.chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+=== Using Vertex AI
+
+[source,java]
+----
+Client genAiClient = Client.builder()
+    .project(System.getenv("GOOGLE_CLOUD_PROJECT"))
+    .location(System.getenv("GOOGLE_CLOUD_LOCATION"))
+    .vertexAI(true)
+    .build();
+
+var chatModel = new GoogleGenAiChatModel(genAiClient,
+    GoogleGenAiChatOptions.builder()
+        .model(ChatModel.GEMINI_2_0_FLASH)
+        .temperature(0.4)
+    .build());
+
+ChatResponse response = this.chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+The `GoogleGenAiChatOptions` provides the configuration information for the chat requests.
+The `GoogleGenAiChatOptions.Builder` is fluent options builder.
+
+== Migration from Vertex AI Gemini
+
+If you're currently using the Vertex AI Gemini implementation (`spring-ai-vertex-ai-gemini`), you can migrate to Google GenAI with minimal changes:
+
+=== Key Differences
+
+1. **SDK**: Google GenAI uses the new `com.google.genai.Client` instead of `com.google.cloud.vertexai.VertexAI`
+2. **Authentication**: Supports both API key and Google Cloud credentials
+3. **Package Names**: Classes are in `org.springframework.ai.google.genai` instead of `org.springframework.ai.vertexai.gemini`
+4. **Property Prefix**: Uses `spring.ai.google.genai` instead of `spring.ai.vertex.ai.gemini`
+
+=== When to Use Google GenAI vs Vertex AI Gemini
+
+**Use Google GenAI when:**
+- You want quick prototyping with API keys
+- You need the latest Gemini features from the Developer API
+- You want flexibility to switch between API key and Vertex AI modes
+
+**Use Vertex AI Gemini when:**
+- You have existing Vertex AI infrastructure
+- You need specific Vertex AI enterprise features
+- Your organization requires Google Cloud-only deployment
+
+== Low-level Java Client [[low-level-api]]
+
+The Google GenAI implementation is built on the new Google GenAI Java SDK, which provides a modern, streamlined API for accessing Gemini models.

@@ -25,6 +25,7 @@ import java.util.UUID;
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosAsyncContainer;
 import com.azure.cosmos.CosmosClientBuilder;
+import com.azure.identity.DefaultAzureCredentialBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -50,7 +51,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @since 1.0.0
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_KEY", matches = ".+")
 public class CosmosDBVectorStoreIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -141,6 +141,11 @@ public class CosmosDBVectorStoreIT {
 
 		assertThat(results).hasSize(2);
 		assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder("1", "2");
+		for (Document doc : results) {
+			assertThat(doc.getMetadata().get("country")).isIn("UK", "NL");
+			assertThat(doc.getMetadata().get("year")).isIn(2021, 2022);
+			assertThat(doc.getMetadata().get("city")).isIn("London", "Amsterdam").isNotEqualTo("Sofia");
+		}
 
 		List<Document> results2 = this.vectorStore.similaritySearch(SearchRequest.builder()
 			.query("The World")
@@ -199,7 +204,7 @@ public class CosmosDBVectorStoreIT {
 		@Bean
 		public CosmosAsyncClient cosmosClient() {
 			return new CosmosClientBuilder().endpoint(System.getenv("AZURE_COSMOSDB_ENDPOINT"))
-				.key(System.getenv("AZURE_COSMOSDB_KEY"))
+				.credential(new DefaultAzureCredentialBuilder().build())
 				.userAgentSuffix("SpringAI-CDBNoSQL-VectorStore")
 				.gatewayMode()
 				.buildAsyncClient();

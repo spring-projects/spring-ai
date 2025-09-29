@@ -19,11 +19,11 @@ This section provides a guide to the Spring AI Chat Model API interface and asso
 
 === ChatModel
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat//model/ChatModel.java[ChatModel] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/model/ChatModel.java[ChatModel] interface definition:
 
 [source,java]
 ----
-public interface ChatModel extends Model<Prompt, ChatResponse> {
+public interface ChatModel extends Model<Prompt, ChatResponse>, StreamingChatModel {
 
 	default String call(String message) {...}
 
@@ -38,7 +38,7 @@ In real-world applications, it is more common to use the `call()` method that ta
 
 === StreamingChatModel
 
-Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/StreamingChatModel.java[StreamingChatModel] interface definition:
+Here is the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/model/StreamingChatModel.java[StreamingChatModel] interface definition:
 
 [source,java]
 ----
@@ -55,7 +55,7 @@ The `stream()` method takes a `String` or `Prompt` parameter similar to `ChatMod
 
 === Prompt
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/Prompt.java[Prompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] objects and optional model request options.
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/Prompt.java[Prompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] objects and optional model request options.
 The following listing shows a truncated version of the `Prompt` class, excluding constructors and other utility methods:
 
 [source,java]
@@ -82,10 +82,11 @@ The `Message` interface encapsulates a `Prompt` textual content, a collection of
 
 The interface is defined as follows:
 
-```java
+[source,java]
+----
 public interface Content {
 
-	String getContent();
+	String getText();
 
 	Map<String, Object> getMetadata();
 }
@@ -94,17 +95,18 @@ public interface Message extends Content {
 
 	MessageType getMessageType();
 }
-```
+----
 
 The multimodal message types implement also the `MediaContent` interface providing a list of `Media` content objects.
 
-```java
+[source,java]
+----
 public interface MediaContent extends Content {
 
 	Collection<Media> getMedia();
 
 }
-```
+----
 
 The `Message` interface has various implementations that correspond to the categories of messages that an AI model can process:
 
@@ -185,14 +187,14 @@ public class ChatResponse implements ModelResponse<Generation> {
 }
 ----
 
-The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/ChatResponse.java[ChatResponse] class holds the AI Model's output, with each `Generation` instance containing one of potentially multiple outputs resulting from a single prompt.
+The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/model/ChatResponse.java[ChatResponse] class holds the AI Model's output, with each `Generation` instance containing one of potentially multiple outputs resulting from a single prompt.
 
 The `ChatResponse` class also carries a `ChatResponseMetadata` metadata about the AI Model's response.
 
 [[Generation]]
 === Generation
 
-Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/model/Generation.java[Generation] class extends from the `ModelResult` to represent the model output (assistant message) and related metadata:
+Finally, the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/model/Generation.java[Generation] class extends from the `ModelResult` to represent the model output (assistant message) and related metadata:
 
 [source,java]
 ----

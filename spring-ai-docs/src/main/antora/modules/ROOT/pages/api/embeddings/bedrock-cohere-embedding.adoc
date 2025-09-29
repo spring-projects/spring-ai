@@ -12,19 +12,25 @@ Refer to the xref:api/bedrock.adoc[Spring AI documentation on Amazon Bedrock] fo
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
 == Auto-configuration
 
-Add the `spring-ai-bedrock-ai-spring-boot-starter` dependency to your project's Maven `pom.xml` file:
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Add the `spring-ai-starter-model-bedrock` dependency to your project's Maven `pom.xml` file:
 
 [source,xml]
 ----
 <dependency>
   <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-bedrock-ai-spring-boot-starter</artifactId>
+  <artifactId>spring-ai-starter-model-bedrock</artifactId>
 </dependency>
 ----
 
@@ -33,7 +39,7 @@ or to your Gradle `build.gradle` build file.
 [source,gradle]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-bedrock-ai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-bedrock'
 }
 ----
 
@@ -41,13 +47,36 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Enable Cohere Embedding Support
 
-By default the Cohere model is disabled.
-To enable it set the `spring.ai.bedrock.cohere.embedding.enabled` property to `true`.
-Exporting environment variable is one way to set this configuration property:
+By default, the Cohere embedding model is disabled.
+To enable it, set the `spring.ai.model.embedding` property to `bedrock-cohere` in your application configuration:
+
+[source,properties]
+----
+spring.ai.model.embedding=bedrock-cohere
+----
+
+Alternatively, you can use Spring Expression Language (SpEL) to reference an environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    model:
+      embedding: ${AI_MODEL_EMBEDDING}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export AI_MODEL_EMBEDDING=bedrock-cohere
+----
+
+You can also set this property using Java system properties when starting your application:
 
 [source,shell]
 ----
-export SPRING_AI_BEDROCK_COHERE_EMBEDDING_ENABLED=true
+java -Dspring.ai.model.embedding=bedrock-cohere -jar your-application.jar
 ----
 
 === Embedding Properties
@@ -63,12 +92,24 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
 |====
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=bedrock-cohere (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match bedrock-cohere)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.bedrock.cohere.embedding` (defined in `BedrockCohereEmbeddingProperties`) is the property prefix that configures the embedding model implementation for Cohere.
 
 [cols="3,4,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.bedrock.cohere.embedding.enabled              | Enable or disable support for Cohere  | false
+| spring.ai.model.embedding           | Enable or disable support for Cohere  | bedrock-cohere
+| spring.ai.bedrock.cohere.embedding.enabled (Removed and no longer valid)             | Enable or disable support for Cohere  | false
 | spring.ai.bedrock.cohere.embedding.model                | The model id to use. See the https://github.com/spring-projects/spring-ai/blob/056b95a00efa5b014a1f488329fbd07a46c02378/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/cohere/api/CohereEmbeddingBedrockApi.java#L150[CohereEmbeddingModel] for the supported models.  | cohere.embed-multilingual-v3
 | spring.ai.bedrock.cohere.embedding.options.input-type  | Prepends special tokens to differentiate each type from one another. You should not mix different types together, except when mixing types for search and retrieval. In this case, embed your corpus with the search_document type and embedded queries with type search_query type.  | SEARCH_DOCUMENT
 | spring.ai.bedrock.cohere.embedding.options.truncate  | Specifies how the API handles inputs longer than the maximum token length. If you specify LEFT or RIGHT, the model discards the input until the remaining input is exactly the maximum input token length for the model.  | NONE
@@ -102,7 +143,7 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
 
 == Sample Controller
 
-https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-bedrock-ai-spring-boot-starter` to your pom (or gradle) dependencies.
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-bedrock` to your pom (or gradle) dependencies.
 
 Add a `application.properties` file, under the `src/main/resources` directory, to enable and configure the Cohere Embedding model:
 
@@ -112,7 +153,7 @@ spring.ai.bedrock.aws.region=eu-central-1
 spring.ai.bedrock.aws.access-key=${AWS_ACCESS_KEY_ID}
 spring.ai.bedrock.aws.secret-key=${AWS_SECRET_ACCESS_KEY}
 
-spring.ai.bedrock.cohere.embedding.enabled=true
+spring.ai.model.embedding=bedrock-cohere
 spring.ai.bedrock.cohere.embedding.options.input-type=search-document
 ----
 

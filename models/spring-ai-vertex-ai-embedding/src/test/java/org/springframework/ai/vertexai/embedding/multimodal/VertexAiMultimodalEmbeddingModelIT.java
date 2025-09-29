@@ -23,11 +23,11 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.DocumentEmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
-import org.springframework.ai.model.Media;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -114,7 +114,7 @@ class VertexAiMultimodalEmbeddingModelIT {
 		var document = Document.builder()
 			.media(Media.builder()
 				.mimeType(MimeTypeUtils.TEXT_PLAIN)
-				.data(URI.create("http://example.com/image.png").toURL())
+				.data(URI.create("http://example.com/image.png"))
 				.build())
 			.build();
 

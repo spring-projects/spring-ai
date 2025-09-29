@@ -109,7 +109,7 @@ class WeatherTools {
 }
 ----
 
-And you can use the same `ChatClient#tools()` API to register method-based tool callbackes:
+And you can use the same `ChatClient#tools()` API to register method-based tool callbacks:
 
 [source,java]
 ----

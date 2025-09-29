@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BookService {
 
 	private static final ConcurrentHashMap<Integer, Book> books = new ConcurrentHashMap<>(Map
-		.of( // @formatter:off
+		.of(// @formatter:off
 		1, new Book("His Dark Materials", "Philip Pullman"),
 		2, new Book("The Lion, the Witch and the Wardrobe", "C.S. Lewis"),
 		3, new Book("The Hobbit", "J.R.R. Tolkien"),

@@ -27,13 +27,13 @@ import org.opensearch.testcontainers.OpensearchContainer;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
-import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreAutoConfiguration;
-import org.springframework.ai.autoconfigure.vectorstore.opensearch.OpenSearchVectorStoreProperties;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.opensearch.autoconfigure.OpenSearchVectorStoreAutoConfiguration;
+import org.springframework.ai.vectorstore.opensearch.autoconfigure.OpenSearchVectorStoreProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -55,7 +55,8 @@ class OpenSearchContainerConnectionDetailsFactoryIT {
 				OpenSearchVectorStoreAutoConfiguration.class))
 		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.ai.vectorstore.opensearch.initialize-schema=true",
+		.withPropertyValues("spring.ai.vectorstore.opensearch.aws.enabled=false",
+				"spring.ai.vectorstore.opensearch.initialize-schema=true",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".indexName=auto-spring-ai-document-index",
 				OpenSearchVectorStoreProperties.CONFIG_PREFIX + ".mappingJson=" + """
 						{

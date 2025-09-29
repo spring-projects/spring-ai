@@ -34,6 +34,12 @@ Alternatively, you can enable the option to download automatically any needed mo
 
 == Auto-configuration
 
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
 Spring AI provides Spring Boot auto-configuration for the Azure Ollama Embedding Model.
 To enable it add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
@@ -45,7 +51,7 @@ Maven::
 ----
 <dependency>
    <groupId>org.springframework.ai</groupId>
-   <artifactId>spring-ai-ollama-spring-boot-starter</artifactId>
+   <artifactId>spring-ai-starter-model-ollama</artifactId>
 </dependency>
 ----
 
@@ -54,7 +60,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-ollama-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
 }
 ----
 ======
@@ -87,6 +93,17 @@ Here are the properties for initializing the Ollama integration and xref:auto-pu
 
 === Embedding Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=ollama (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match ollama)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.ollama.embedding.options` is the property prefix that configures the Ollama embedding model.
 It includes the Ollama request (advanced) parameters such as the `model`, `keep-alive`, and `truncate` as well as the Ollama model `options` properties.
 
@@ -95,8 +112,9 @@ Here are the advanced request parameter for the Ollama embedding model:
 [cols="4,5,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.ollama.embedding.enabled      | Enables the Ollama embedding model auto-configuration. | true
-| spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. 
+| spring.ai.ollama.embedding.enabled (Removed and no longer valid)     | Enables the Ollama embedding model auto-configuration. | true
+| spring.ai.model.embedding      | Enables the Ollama embedding model auto-configuration. | mxbai-embed-large
+| spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use.
 You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mistral
 | spring.ai.ollama.embedding.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 | spring.ai.ollama.embedding.options.truncate  | Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.  | true
@@ -124,6 +142,7 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | spring.ai.ollama.embedding.options.num-predict       | Maximum number of tokens to predict when generating text. (-1 = infinite generation, -2 = fill context) | -1
 | spring.ai.ollama.embedding.options.top-k             | Reduces the probability of generating nonsense. A higher value (e.g., 100) will give more diverse answers, while a lower value (e.g., 10) will be more conservative.  | 40
 | spring.ai.ollama.embedding.options.top-p             | Works together with top-k. A higher value (e.g., 0.95) will lead to more diverse text, while a lower value (e.g., 0.5) will generate more focused and conservative text.  | 0.9
+| spring.ai.ollama.embedding.options.min-p             | Alternative to the top_p, and aims to ensure a balance of quality and variety. The parameter p represents the minimum probability for a token to be considered, relative to the probability of the most likely token. For example, with p=0.05 and the most likely token having a probability of 0.9, logits with a value less than 0.045 are filtered out.  | 0.0
 | spring.ai.ollama.embedding.options.tfs-z             | Tail-free sampling is used to reduce the impact of less probable tokens from the output. A higher value (e.g., 2.0) will reduce the impact more, while a value of 1.0 disables this setting. | 1.0
 | spring.ai.ollama.embedding.options.typical-p         | -                                                             | 1.0
 | spring.ai.ollama.embedding.options.repeat-last-n     | Sets how far back for the model to look back to prevent repetition. (Default: 64, 0 = disabled, -1 = num_ctx) | 64
@@ -143,12 +162,12 @@ TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be ov
 
 == Runtime Options [[embedding-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaEmbeddingOptions.java[OllamaEmbeddingOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
 
 The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
 
-At start-time use the `OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions)` to configure the  default options used for all embedding requests.
-At run-time you can override the default options, using a `OllamaOptions` instance as part of your `EmbeddingRequest`.
+At start-time use the `OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions)` to configure the  default options used for all embedding requests.
+At run-time you can override the default options, using a `OllamaEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:
 
@@ -156,7 +175,7 @@ For example to override the default model name for a specific request:
 ----
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-        OllamaOptions.builder()
+        OllamaEmbeddingOptions.builder()
             .model("Different-Embedding-Model-Deployment-Name"))
             .truncates(false)
             .build());
@@ -300,19 +319,19 @@ Next, create an `OllamaEmbeddingModel` instance and use it to compute the embedd
 
 [source,java]
 ----
-var ollamaApi = new OllamaApi();
+var ollamaApi = OllamaApi.builder().build();
 
 var embeddingModel = new OllamaEmbeddingModel(this.ollamaApi,
-        OllamaOptions.builder()
+        OllamaEmbeddingOptions.builder()
 			.model(OllamaModel.MISTRAL.id())
             .build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-        OllamaOptions.builder()
+        OllamaEmbeddingOptions.builder()
             .model("chroma/all-minilm-l6-v2-f32"))
             .truncate(false)
             .build());
 ----
 
-The `OllamaOptions` provides the configuration information for all embedding requests.
+The `OllamaEmbeddingOptions` provides the configuration information for all embedding requests.

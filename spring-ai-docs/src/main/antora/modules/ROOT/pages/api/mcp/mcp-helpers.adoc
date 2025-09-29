@@ -65,7 +65,24 @@ For multiple clients:
 List<McpSyncClient> clients = // obtain list of clients
 List<ToolCallback> callbacks = SyncMcpToolCallbackProvider.syncToolCallbacks(clients);
 ----
++
+For dynamic selection of a subset of clients 
++
+[source,java]
+----
+@Autowired
+private List<McpSyncClient> mcpSyncClients;
 
+public ToolCallbackProvider buildProvider(Set<String> allowedServerNames) {
+    // Filter by server.name().
+    List<McpSyncClient> selected = mcpSyncClients.stream()
+        .filter(c -> allowedServerNames.contains(c.getServerInfo().name()))
+        .toList();
+
+    return new SyncMcpToolCallbackProvider(selected);
+}
+
+----
 Async::
 +
 [source,java]
@@ -88,9 +105,9 @@ Flux<ToolCallback> callbacks = AsyncMcpToolCallbackProvider.asyncToolCallbacks(c
 
 == McpToolUtils
 
-=== ToolCallbacks to ToolRegistrations
+=== ToolCallbacks to ToolSpecifications
 
-Converting Spring AI tool callbacks to MCP tool registrations:
+Converting Spring AI tool callbacks to MCP tool specifications:
 
 [tabs]
 ======
@@ -99,15 +116,15 @@ Sync::
 [source,java]
 ----
 List<ToolCallback> toolCallbacks = // obtain tool callbacks
-List<SyncToolRegistration> syncToolRegs = McpToolUtils.toSyncToolRegistration(toolCallbacks);
+List<SyncToolSpecifications> syncToolSpecs = McpToolUtils.toSyncToolSpecifications(toolCallbacks);
 ----
 +
-then you can use the `McpServer.SyncSpec` to register the tool registrations:
+then you can use the `McpServer.SyncSpecification` to register the tool specifications:
 +
 [source,java]
 ----
-McpServer.SyncSpec syncSpec = ...
-syncSpec.tools(syncToolRegs);
+McpServer.SyncSpecification syncSpec = ...
+syncSpec.tools(syncToolSpecs);
 ----
 
 Async::
@@ -115,15 +132,15 @@ Async::
 [source,java]
 ----
 List<ToolCallback> toolCallbacks = // obtain tool callbacks
-List<AsyncToolRegistration> asyncToolRegs = McpToolUtils.toAsyncToolRegistration(toolCallbacks);
+List<AsyncToolSpecification> asyncToolSpecifications = McpToolUtils.toAsyncToolSpecifications(toolCallbacks);
 ----
 +
-then you can use the `McpServer.AsyncSpec` to register the tool registrations:
+then you can use the `McpServer.AsyncSpecification` to register the tool specifications:
 +
 [source,java]
 ----
-McpServer.AsyncSpec asyncSpec = ...
-asyncSpec.tools(asyncToolRegs);
+McpServer.AsyncSpecification asyncSpec = ...
+asyncSpec.tools(asyncToolSpecifications);
 ----
 ======
 

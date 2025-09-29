@@ -23,7 +23,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 
@@ -118,10 +120,19 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 	}
 
 	private void doValue(ColumnMetadata column, Object v, StringBuilder context) {
+
+		DataType dataType = column.getType();
+
+		// Check if we're handling an element inside a collection for an IN clause
+		if ((dataType instanceof ListType) && !(v instanceof Collection)) {
+			// Extract the element type from the collection type
+			dataType = ((ListType) dataType).getElementType();
+		}
+
 		if (DataTypes.SMALLINT.equals(column.getType())) {
 			v = ((Number) v).shortValue();
 		}
-		context.append(CodecRegistry.DEFAULT.codecFor(column.getType()).format(v));
+		context.append(CodecRegistry.DEFAULT.codecFor(dataType).format(v));
 	}
 
 	private Optional<ColumnMetadata> getColumn(String name) {

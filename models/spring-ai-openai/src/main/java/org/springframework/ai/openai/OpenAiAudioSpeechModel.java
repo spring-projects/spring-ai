@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openai;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -35,6 +34,7 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * OpenAI audio speech client implementation for backed by {@link OpenAiAudioApi}.
@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * @author Ahmed Yousri
  * @author Hyunjoon Choi
  * @author Thomas Vitale
+ * @author Jonghoon Park
  * @see OpenAiAudioApi
  * @since 1.0.0-M1
  */
@@ -81,7 +82,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 				OpenAiAudioSpeechOptions.builder()
 					.model(OpenAiAudioApi.TtsModel.TTS_1.getValue())
 					.responseFormat(AudioResponseFormat.MP3)
-					.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
+					.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 					.speed(SPEED)
 					.build());
 	}
@@ -173,7 +174,7 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 			}
 		}
 
-		String input = StringUtils.isNotBlank(options.getInput()) ? options.getInput()
+		String input = StringUtils.hasText(options.getInput()) ? options.getInput()
 				: request.getInstructions().getText();
 
 		OpenAiAudioApi.SpeechRequest.Builder requestBuilder = OpenAiAudioApi.SpeechRequest.builder()

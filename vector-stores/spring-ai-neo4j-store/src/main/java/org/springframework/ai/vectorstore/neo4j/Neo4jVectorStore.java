@@ -136,6 +136,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final Logger logger = LoggerFactory.getLogger(Neo4jVectorStore.class);
 
+	@Deprecated(forRemoval = true)
 	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
 
 	public static final int DEFAULT_TRANSACTION_SIZE = 10_000;
@@ -147,6 +148,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	public static final String DEFAULT_EMBEDDING_PROPERTY = "embedding";
 
 	public static final String DEFAULT_ID_PROPERTY = "id";
+
+	public static final String DEFAULT_TEXT_PROPERTY = "text";
 
 	public static final String DEFAULT_CONSTRAINT_NAME = DEFAULT_LABEL + "_unique_idx";
 
@@ -172,6 +175,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final String idProperty;
 
+	private final String textProperty;
+
 	private final String constraintName;
 
 	private final Neo4jVectorFilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
@@ -185,13 +190,14 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		this.driver = builder.driver;
 		this.sessionConfig = builder.sessionConfig;
-		this.embeddingDimension = builder.embeddingDimension;
+		this.embeddingDimension = builder.embeddingDimension.orElseGet(() -> builder.getEmbeddingModel().dimensions());
 		this.distanceType = builder.distanceType;
 		this.embeddingProperty = SchemaNames.sanitize(builder.embeddingProperty).orElseThrow();
 		this.label = SchemaNames.sanitize(builder.label).orElseThrow();
 		this.indexNameNotSanitized = builder.indexName;
 		this.indexName = SchemaNames.sanitize(builder.indexName, true).orElseThrow();
 		this.idProperty = SchemaNames.sanitize(builder.idProperty).orElseThrow();
+		this.textProperty = SchemaNames.sanitize(builder.textProperty).orElseThrow();
 		this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
 		this.initializeSchema = builder.initializeSchema;
 	}
@@ -323,7 +329,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		row.put("id", document.getId());
 
 		var properties = new HashMap<String, Object>();
-		properties.put("text", document.getText());
+		properties.put(this.textProperty, document.getText());
 
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);
@@ -345,7 +351,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		return Document.builder()
 			.id(node.get(this.idProperty).asString())
-			.text(node.get("text").asString())
+			.text(node.get(this.textProperty).asString())
 			.metadata(Map.copyOf(metaData))
 			.score((double) score)
 			.build();
@@ -399,7 +405,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private SessionConfig sessionConfig = SessionConfig.defaultConfig();
 
-		private int embeddingDimension = DEFAULT_EMBEDDING_DIMENSION;
+		private Optional<Integer> embeddingDimension = Optional.empty();
 
 		private Neo4jDistanceType distanceType = Neo4jDistanceType.COSINE;
 
@@ -410,6 +416,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		private String indexName = DEFAULT_INDEX_NAME;
 
 		private String idProperty = DEFAULT_ID_PROPERTY;
+
+		private String textProperty = DEFAULT_TEXT_PROPERTY;
 
 		private String constraintName = DEFAULT_CONSTRAINT_NAME;
 
@@ -452,7 +460,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder embeddingDimension(int dimension) {
 			Assert.isTrue(dimension >= 1, "Dimension has to be positive");
-			this.embeddingDimension = dimension;
+			this.embeddingDimension = Optional.of(dimension);
 			return this;
 		}
 
@@ -512,6 +520,18 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		public Builder idProperty(String idProperty) {
 			if (StringUtils.hasText(idProperty)) {
 				this.idProperty = idProperty;
+			}
+			return this;
+		}
+
+		/**
+		 * Sets the property name for text-content.
+		 * @param textProperty the text property to use
+		 * @return the builder instance
+		 */
+		public Builder textProperty(String textProperty) {
+			if (StringUtils.hasText(textProperty)) {
+				this.textProperty = textProperty;
 			}
 			return this;
 		}

@@ -41,8 +41,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -89,7 +89,7 @@ class OpenSearchVectorStoreWithOllamaIT {
 	}
 
 	private static void ensureModelIsPresent(final String model) {
-		final OllamaApi api = new OllamaApi(OLLAMA_LOCAL_URL);
+		final OllamaApi api = OllamaApi.builder().baseUrl(OLLAMA_LOCAL_URL).build();
 		final var modelManagementOptions = ModelManagementOptions.builder()
 			.maxRetries(DEFAULT_MAX_RETRIES)
 			.timeout(DEFAULT_TIMEOUT)
@@ -200,13 +200,8 @@ class OpenSearchVectorStoreWithOllamaIT {
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return OllamaEmbeddingModel.builder()
-				.ollamaApi(new OllamaApi())
-				.defaultOptions(OllamaOptions.builder()
-					.model(OllamaModel.MXBAI_EMBED_LARGE)
-					.mainGPU(11)
-					.useMMap(true)
-					.numGPU(1)
-					.build())
+				.ollamaApi(OllamaApi.builder().build())
+				.defaultOptions(OllamaEmbeddingOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE).build())
 				.build();
 		}
 

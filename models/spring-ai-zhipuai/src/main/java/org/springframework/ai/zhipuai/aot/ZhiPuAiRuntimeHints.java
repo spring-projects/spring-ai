@@ -16,8 +16,6 @@
 
 package org.springframework.ai.zhipuai.aot;
 
-import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
-import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -38,10 +36,7 @@ public class ZhiPuAiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClassesInPackage(ZhiPuAiApi.class)) {
-			hints.reflection().registerType(tr, mcs);
-		}
-		for (var tr : findJsonAnnotatedClassesInPackage(ZhiPuAiImageApi.class)) {
+		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.zhipuai")) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}

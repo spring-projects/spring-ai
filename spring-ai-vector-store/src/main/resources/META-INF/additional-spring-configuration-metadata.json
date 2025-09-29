@@ -1,0 +1,14 @@
+{
+  "groups": [],
+  "properties": [
+    {
+      "name": "spring.ai.vectorstore.type",
+      "type": "java.lang.String",
+      "description": "Vector store type. Requires a vector store."
+    }
+  ],
+  "hints": [],
+  "ignored": {
+    "properties": []
+  }
+}

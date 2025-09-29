@@ -50,6 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  *
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author Jason Smith
  */
 @SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -74,6 +75,9 @@ public class MistralAiChatModelObservationIT {
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topP(1.0)
+			.presencePenalty(0.0)
+			.frequencyPenalty(0.0)
+			.n(2)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -95,6 +99,9 @@ public class MistralAiChatModelObservationIT {
 			.stop(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topP(1.0)
+			.presencePenalty(0.0)
+			.frequencyPenalty(0.0)
+			.n(2)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -133,9 +140,9 @@ public class MistralAiChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
 					StringUtils.hasText(responseMetadata.getModel()) ? responseMetadata.getModel()
 							: KeyValue.NONE_VALUE)
-			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(), "0.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
-			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
@@ -174,11 +181,11 @@ public class MistralAiChatModelObservationIT {
 
 		@Bean
 		public MistralAiApi mistralAiApi() {
-			return new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+			return MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 		}
 
 		@Bean
-		public MistralAiChatModel openAiChatModel(MistralAiApi mistralAiApi,
+		public MistralAiChatModel mistralAiChatModel(MistralAiApi mistralAiApi,
 				TestObservationRegistry observationRegistry) {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)

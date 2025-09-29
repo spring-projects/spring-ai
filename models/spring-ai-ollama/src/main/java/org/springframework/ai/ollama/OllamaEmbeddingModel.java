@@ -31,7 +31,6 @@ import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -42,8 +41,10 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
@@ -69,7 +70,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OllamaApi ollamaApi;
 
-	private final OllamaOptions defaultOptions;
+	private final OllamaEmbeddingOptions defaultOptions;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -77,7 +78,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions,
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(defaultOptions, "options must not be null");
@@ -105,13 +106,15 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	public EmbeddingResponse call(EmbeddingRequest request) {
 		Assert.notEmpty(request.getInstructions(), "At least one text is required!");
 
-		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(request.getInstructions(),
-				request.getOptions());
+		// Before moving any further, build the final request EmbeddingRequest,
+		// merging runtime and default options.
+		EmbeddingRequest embeddingRequest = buildEmbeddingRequest(request);
+
+		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
-			.provider(OllamaApi.PROVIDER_NAME)
-			.requestOptions(buildRequestOptions(ollamaEmbeddingRequest))
+			.provider(OllamaApiConstants.PROVIDER_NAME)
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -142,31 +145,41 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		return new DefaultUsage(Optional.ofNullable(response.promptEvalCount()).orElse(0), 0);
 	}
 
+	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		// Process runtime options
+		OllamaEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OllamaEmbeddingOptions.class);
+		}
+
+		// Define request options by merging runtime options and default options
+		OllamaEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
+				OllamaEmbeddingOptions.class);
+
+		// Validate request options
+		if (!StringUtils.hasText(requestOptions.getModel())) {
+			throw new IllegalArgumentException("model cannot be null or empty");
+		}
+
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+	}
+
 	/**
 	 * Package access for testing.
 	 */
-	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(List<String> inputContent, EmbeddingOptions options) {
-
-		// runtime options
-		OllamaOptions runtimeOptions = null;
-		if (options != null && options instanceof OllamaOptions ollamaOptions) {
-			runtimeOptions = ollamaOptions;
+	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(EmbeddingRequest embeddingRequest) {
+		OllamaEmbeddingOptions requestOptions = null;
+		if (embeddingRequest.getOptions() instanceof OllamaEmbeddingOptions) {
+			requestOptions = (OllamaEmbeddingOptions) embeddingRequest.getOptions();
+		}
+		else {
+			requestOptions = OllamaEmbeddingOptions.fromOptions((OllamaOptions) embeddingRequest.getOptions());
 		}
 
-		OllamaOptions mergedOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OllamaOptions.class);
-
-		// Override the model.
-		if (!StringUtils.hasText(mergedOptions.getModel())) {
-			throw new IllegalArgumentException("Model is not set!");
-		}
-		String model = mergedOptions.getModel();
-
-		return new OllamaApi.EmbeddingsRequest(model, inputContent, DurationParser.parse(mergedOptions.getKeepAlive()),
-				OllamaOptions.filterNonSupportedFields(mergedOptions.toMap()), mergedOptions.getTruncate());
-	}
-
-	private EmbeddingOptions buildRequestOptions(OllamaApi.EmbeddingsRequest request) {
-		return EmbeddingOptionsBuilder.builder().withModel(request.model()).build();
+		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
+				DurationParser.parse(requestOptions.getKeepAlive()),
+				OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()), requestOptions.getTruncate());
 	}
 
 	/**
@@ -222,7 +235,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		private OllamaApi ollamaApi;
 
-		private OllamaOptions defaultOptions = OllamaOptions.builder()
+		private OllamaEmbeddingOptions defaultOptions = OllamaEmbeddingOptions.builder()
 			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
 			.build();
 
@@ -238,7 +251,13 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			return this;
 		}
 
+		@Deprecated
 		public Builder defaultOptions(OllamaOptions defaultOptions) {
+			this.defaultOptions = OllamaEmbeddingOptions.fromOptions(defaultOptions);
+			return this;
+		}
+
+		public Builder defaultOptions(OllamaEmbeddingOptions defaultOptions) {
 			this.defaultOptions = defaultOptions;
 			return this;
 		}

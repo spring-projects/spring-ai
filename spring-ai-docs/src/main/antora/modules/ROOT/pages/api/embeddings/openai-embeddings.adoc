@@ -9,23 +9,56 @@ An embedding is a vector (list) of floating point numbers. The distance between 
 You will need to create an API with OpenAI to access OpenAI embeddings models.
 
 Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
-The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
-Exporting an environment variable is one way to set that configuration property:
 
-[source,shell]
+The Spring AI project defines a configuration property named `spring.ai.openai.api-key` that you should set to the value of the `API Key` obtained from openai.com.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
 ----
-export SPRING_AI_OPENAI_API_KEY=<INSERT KEY HERE>
+spring.ai.openai.api-key=<your-openai-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference an environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export OPENAI_API_KEY=<your-openai-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("OPENAI_API_KEY");
 ----
 
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
-Refer to the xref:getting-started.adoc#repositories[Repositories] section to add these repositories to your build system.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
 
 To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
 
 
 == Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
 
 Spring AI provides Spring Boot auto-configuration for the OpenAI Embedding Model.
 To enable it add the following dependency to your project's Maven `pom.xml` file:
@@ -34,7 +67,7 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-spring-boot-starter</artifactId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
 </dependency>
 ----
 
@@ -43,7 +76,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
 }
 ----
 
@@ -87,15 +120,27 @@ Usage from these API requests will count as usage for the specified organization
 
 ==== Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=openai (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match openai)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.openai.embedding` is property prefix that configures the `EmbeddingModel` implementation for OpenAI.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.openai.embedding.enabled | Enable OpenAI embedding model.  | true
+| spring.ai.openai.embedding.enabled (Required and no longer valid) | Enable OpenAI embedding model.  | true
+| spring.ai.model.embedding | Enable OpenAI embedding model.  | openai
 | spring.ai.openai.embedding.base-url   | Optional overrides the spring.ai.openai.base-url to provide embedding specific url | -
-| spring.ai.openai.chat.embeddings-path   | The path to append to the base-url  |  `/v1/embeddings`
+| spring.ai.openai.embedding.embeddings-path   | The path to append to the base-url  |  `/v1/embeddings`
 | spring.ai.openai.embedding.api-key    | Optional overrides the spring.ai.openai.api-key to provide embedding specific api-key  | -
 | spring.ai.openai.embedding.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.embedding.project-id      | Optionally, you can specify which project is used for an API request. |  -
@@ -194,7 +239,9 @@ Next, create an `OpenAiEmbeddingModel` instance and use it to compute the simila
 
 [source,java]
 ----
-var openAiApi = new OpenAiApi(System.getenv("OPENAI_API_KEY"));
+var openAiApi = OpenAiApi.builder()
+                .apiKey(System.getenv("OPENAI_API_KEY"))
+                .build();
 
 var embeddingModel = new OpenAiEmbeddingModel(
 		this.openAiApi,
@@ -210,6 +257,6 @@ EmbeddingResponse embeddingResponse = this.embeddingModel
 ----
 
 The `OpenAiEmbeddingOptions` provides the configuration information for the embedding requests.
-The options class offers a `builder()` for easy options creation.
+The api and options class offers a `builder()` for easy options creation.
 
 

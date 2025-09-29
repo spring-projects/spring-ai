@@ -36,7 +36,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.test.CurlyBracketEscaper;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,7 +70,9 @@ class BedrockConverseChatClientIT {
 				.system(s -> s.text(this.systemTextResource)
 						.param("name", "Bob")
 						.param("voice", "pirate"))
-				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.user(u -> u.text("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+						.metadata("requestId", "12345")
+				)
 				.call()
 				.chatResponse();
 		// @formatter:on
@@ -87,7 +89,7 @@ class BedrockConverseChatClientIT {
 				.user(u -> u.text("List five {subject}")
 						.param("subject", "ice cream flavors"))
 				.call()
-				.entity(new ParameterizedTypeReference<List<String>>() { });
+				.entity(new ParameterizedTypeReference<>() { });
 		// @formatter:on
 
 		logger.info(collection.toString());
@@ -101,7 +103,7 @@ class BedrockConverseChatClientIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -134,7 +136,7 @@ class BedrockConverseChatClientIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -182,7 +184,7 @@ class BedrockConverseChatClientIT {
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "{format}")
-						.param("format", outputConverter.getFormat()))
+						.param("format", CurlyBracketEscaper.escapeCurlyBrackets(outputConverter.getFormat())))
 				.stream()
 				.chatResponse();
 
@@ -211,7 +213,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -230,7 +232,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -264,7 +266,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel)
 				.prompt("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -283,7 +285,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.builder(this.chatModel)
-			.defaultTools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.defaultToolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build())
@@ -305,7 +307,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<ChatResponse> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in San Francisco, Tokyo, and Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -346,7 +348,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.user("What's the weather like in Paris? Return the temperature in Celsius.")
-				.tools(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
@@ -366,7 +368,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(ToolCallingChatOptions.builder().model(modelName).build())
+				.options(BedrockChatOptions.builder().model(modelName).build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -379,16 +381,15 @@ class BedrockConverseChatClientIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
-	@Deprecated
 	void multiModalityImageUrl2(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(ToolCallingChatOptions.builder().model(modelName).build())
+		.options(BedrockChatOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();
@@ -402,13 +403,13 @@ class BedrockConverseChatClientIT {
 	@ValueSource(strings = { "anthropic.claude-3-5-sonnet-20240620-v1:0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(ToolCallingChatOptions.builder().model(modelName).build())
+		.options(BedrockChatOptions.builder().model(modelName).build())
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();
@@ -421,7 +422,7 @@ class BedrockConverseChatClientIT {
 	@Test
 	void streamingMultiModalityImageUrl() throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off

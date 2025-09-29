@@ -22,107 +22,215 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import io.modelcontextprotocol.util.Assert;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 /**
- * Implementation of {@link ToolCallback} that adapts MCP tools to Spring AI's tool
- * interface.
- * <p>
- * This class acts as a bridge between the Model Context Protocol (MCP) and Spring AI's
- * tool system, allowing MCP tools to be used seamlessly within Spring AI applications.
- * It:
- * <ul>
- * <li>Converts MCP tool definitions to Spring AI tool definitions</li>
- * <li>Handles the execution of tool calls through the MCP client</li>
- * <li>Manages JSON serialization/deserialization of tool inputs and outputs</li>
- * </ul>
- * <p>
- * Example usage:
- *
- * <pre>{@code
- * McpSyncClient mcpClient = // obtain MCP client
- * Tool mcpTool = // obtain MCP tool definition
- * ToolCallback callback = new McpToolCallback(mcpClient, mcpTool);
- *
- * // Use the tool through Spring AI's interfaces
- * ToolDefinition definition = callback.getToolDefinition();
- * String result = callback.call("{\"param\": \"value\"}");
- * }</pre>
+ * Synchronous adapter bridging MCP tools to Spring AI's {@link ToolCallback} interface.
+ * Handles tool execution and data conversion between MCP and Spring AI.
  *
  * @author Christian Tzolov
- * @see ToolCallback
- * @see McpSyncClient
- * @see Tool
+ * @author YunKui Lu
+ * @since 1.0.0
  */
 public class SyncMcpToolCallback implements ToolCallback {
+
+	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
 
 	private final McpSyncClient mcpClient;
 
 	private final Tool tool;
 
-	/**
-	 * Creates a new {@code SyncMcpToolCallback} instance.
-	 * @param mcpClient the MCP client to use for tool execution
-	 * @param tool the MCP tool definition to adapt
-	 */
-	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
-		this.mcpClient = mcpClient;
-		this.tool = tool;
+	private final String prefixedToolName;
 
+	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
+
+	/**
+	 * Creates a callback with default settings.
+	 * @param mcpClient the MCP client for tool execution
+	 * @param tool the MCP tool to adapt
+	 * @deprecated use {@link #builder()} instead
+	 */
+	@Deprecated
+	public SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool) {
+		this(mcpClient, tool, McpToolUtils.prefixedToolName(mcpClient.getClientInfo().name(),
+				mcpClient.getClientInfo().title(), tool.name()), ToolContextToMcpMetaConverter.defaultConverter());
 	}
 
 	/**
-	 * Returns a Spring AI tool definition adapted from the MCP tool.
-	 * <p>
-	 * The tool definition includes:
-	 * <ul>
-	 * <li>The tool's name from the MCP definition</li>
-	 * <li>The tool's description from the MCP definition</li>
-	 * <li>The input schema converted to JSON format</li>
-	 * </ul>
-	 * @return the Spring AI tool definition
+	 * Creates a callback with full configuration.
+	 * @param mcpClient the MCP client for tool execution
+	 * @param tool the MCP tool to adapt
+	 * @param prefixedToolName the prefixed name for the tool
+	 * @param toolContextToMcpMetaConverter converter for tool context metadata
 	 */
+	private SyncMcpToolCallback(McpSyncClient mcpClient, Tool tool, String prefixedToolName,
+			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter) {
+		Assert.notNull(mcpClient, "MCP client must not be null");
+		Assert.notNull(tool, "MCP tool must not be null");
+		Assert.hasText(prefixedToolName, "Prefixed tool name must not be empty");
+		Assert.notNull(toolContextToMcpMetaConverter, "ToolContextToMcpMetaConverter must not be null");
+
+		this.mcpClient = mcpClient;
+		this.tool = tool;
+		this.prefixedToolName = prefixedToolName;
+		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+	}
+
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return ToolDefinition.builder()
-			.name(McpToolUtils.prefixedToolName(this.mcpClient.getClientInfo().name(), this.tool.name()))
+		return DefaultToolDefinition.builder()
+			.name(this.prefixedToolName)
 			.description(this.tool.description())
 			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
 			.build();
 	}
 
 	/**
-	 * Executes the tool with the provided input.
-	 * <p>
-	 * This method:
-	 * <ol>
-	 * <li>Converts the JSON input string to a map of arguments</li>
-	 * <li>Calls the tool through the MCP client</li>
-	 * <li>Converts the tool's response content to a JSON string</li>
-	 * </ol>
-	 * @param functionInput the tool input as a JSON string
-	 * @return the tool's response as a JSON string
+	 * Returns the original MCP tool name without prefixing.
+	 * @return the original tool name
 	 */
+	public String getOriginalToolName() {
+		return this.tool.name();
+	}
+
 	@Override
-	public String call(String functionInput) {
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(functionInput);
-		// Note that we use the original tool name here, not the adapted one from
-		// getToolDefinition
-		CallToolResult response = this.mcpClient.callTool(new CallToolRequest(this.tool.name(), arguments));
+	public String call(String toolCallInput) {
+		return this.call(toolCallInput, null);
+	}
+
+	@Override
+	public String call(String toolCallInput, @Nullable ToolContext toolContext) {
+
+		// Handle the possible null parameter situation in streaming mode.
+		if (!StringUtils.hasText(toolCallInput)) {
+			logger.warn("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.",
+					this.tool.name());
+			toolCallInput = "{}";
+		}
+
+		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolCallInput);
+
+		CallToolResult response;
+		try {
+			var mcpMeta = toolContext != null ? this.toolContextToMcpMetaConverter.convert(toolContext) : null;
+
+			var request = CallToolRequest.builder()
+				// Use the original tool name, not the prefixed one from getToolDefinition
+				.name(this.tool.name())
+				.arguments(arguments)
+				.meta(mcpMeta)
+				.build();
+
+			// Note that we use the original tool name here, not the adapted one from
+			// getToolDefinition
+			response = this.mcpClient.callTool(request);
+		}
+		catch (Exception ex) {
+			logger.error("Exception while tool calling: ", ex);
+			throw new ToolExecutionException(this.getToolDefinition(), ex);
+		}
+
 		if (response.isError() != null && response.isError()) {
-			throw new IllegalStateException("Error calling tool: " + response.content());
+			logger.error("Error calling tool: {}", response.content());
+			throw new ToolExecutionException(this.getToolDefinition(),
+					new IllegalStateException("Error calling tool: " + response.content()));
 		}
 		return ModelOptionsUtils.toJsonString(response.content());
 	}
 
-	@Override
-	public String call(String toolArguments, ToolContext toolContext) {
-		// ToolContext is not supported by the MCP tools
-		return this.call(toolArguments);
+	/**
+	 * Creates a builder for constructing {@code SyncMcpToolCallback} instances.
+	 * @return a new builder
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder for {@code SyncMcpToolCallback} instances.
+	 */
+	public static class Builder {
+
+		private McpSyncClient mcpClient;
+
+		private Tool tool;
+
+		private String prefixedToolName;
+
+		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
+			.defaultConverter();
+
+		/**
+		 * Sets the MCP client for tool execution.
+		 * @param mcpClient the MCP client (required)
+		 * @return this builder
+		 */
+		public Builder mcpClient(McpSyncClient mcpClient) {
+			this.mcpClient = mcpClient;
+			return this;
+		}
+
+		/**
+		 * Sets the MCP tool to adapt.
+		 * @param tool the MCP tool (required)
+		 * @return this builder
+		 */
+		public Builder tool(Tool tool) {
+			this.tool = tool;
+			return this;
+		}
+
+		/**
+		 * Sets the prefixed tool name. If not specified, a default prefix is generated.
+		 * @param prefixedToolName the prefixed tool name
+		 * @return this builder
+		 */
+		public Builder prefixedToolName(String prefixedToolName) {
+			this.prefixedToolName = prefixedToolName;
+			return this;
+		}
+
+		/**
+		 * Sets the converter for tool context to MCP metadata transformation. Defaults to
+		 * {@link ToolContextToMcpMetaConverter#defaultConverter()}.
+		 * @param toolContextToMcpMetaConverter the converter
+		 * @return this builder
+		 */
+		public Builder toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter toolContextToMcpMetaConverter) {
+			Assert.notNull(toolContextToMcpMetaConverter, "ToolContextToMcpMetaConverter must not be null");
+			this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+			return this;
+		}
+
+		/**
+		 * Builds a {@code SyncMcpToolCallback} with the configured parameters.
+		 * @return a new {@code SyncMcpToolCallback}
+		 * @throws IllegalArgumentException if required parameters are missing
+		 */
+		public SyncMcpToolCallback build() {
+			Assert.notNull(this.mcpClient, "MCP client must not be null");
+			Assert.notNull(this.tool, "MCP tool must not be null");
+
+			// Apply defaults if not specified
+			if (this.prefixedToolName == null) {
+				this.prefixedToolName = McpToolUtils.format(this.tool.name());
+			}
+
+			return new SyncMcpToolCallback(this.mcpClient, this.tool, this.prefixedToolName,
+					this.toolContextToMcpMetaConverter);
+		}
+
 	}
 
 }

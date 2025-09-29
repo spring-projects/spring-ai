@@ -24,18 +24,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.AbstractChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.RetrievalAugmentationAdvisor;
-import org.springframework.ai.chat.memory.InMemoryChatMemory;
+import org.springframework.ai.chat.evaluation.RelevancyEvaluator;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
-import org.springframework.ai.evaluation.RelevancyEvaluator;
 import org.springframework.ai.integration.tests.TestApplication;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
 import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.RewriteQueryTransformer;
@@ -133,7 +133,9 @@ class RetrievalAugmentationAdvisorIT {
 
 	@Test
 	void ragWithCompression() {
-		MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor.builder(new InMemoryChatMemory()).build();
+		MessageChatMemoryAdvisor memoryAdvisor = MessageChatMemoryAdvisor
+			.builder(MessageWindowChatMemory.builder().build())
+			.build();
 
 		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
 			.queryTransformers(CompressionQueryTransformer.builder()
@@ -150,8 +152,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		ChatResponse chatResponse1 = chatClient.prompt()
 			.user("Where does the adventure of Anacletus and Birba take place?")
-			.advisors(advisors -> advisors.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY,
-					conversationId))
+			.advisors(advisors -> advisors.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 
@@ -161,8 +162,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		ChatResponse chatResponse2 = chatClient.prompt()
 			.user("Did they meet any cow?")
-			.advisors(advisors -> advisors.param(AbstractChatMemoryAdvisor.CHAT_MEMORY_CONVERSATION_ID_KEY,
-					conversationId))
+			.advisors(advisors -> advisors.param(ChatMemory.CONVERSATION_ID, conversationId))
 			.call()
 			.chatResponse();
 
@@ -255,6 +255,32 @@ class RetrievalAugmentationAdvisorIT {
 		String response = chatResponse.getResult().getOutput().getText();
 		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
+
+		evaluateRelevancy(question, chatResponse);
+	}
+
+	@Test
+	void ragWithDocumentPostProcessor() {
+		String question = "Where does the adventure of Anacletus and Birba take place?";
+
+		RetrievalAugmentationAdvisor ragAdvisor = RetrievalAugmentationAdvisor.builder()
+			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(this.pgVectorStore).build())
+			.documentPostProcessors((query, documents) -> List
+				.of(Document.builder().text("The adventure of Anacletus and Birba takes place in Molise").build()))
+			.build();
+
+		ChatResponse chatResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(question)
+			.advisors(ragAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(chatResponse).isNotNull();
+
+		String response = chatResponse.getResult().getOutput().getText();
+		System.out.println(response);
+		assertThat(response).containsIgnoringCase("Molise");
 
 		evaluateRelevancy(question, chatResponse);
 	}

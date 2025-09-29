@@ -18,7 +18,6 @@ package org.springframework.ai.reader.jsoup;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +27,7 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Tests for {@link JsoupDocumentReader}.
@@ -177,8 +177,8 @@ class JsoupDocumentReaderTests {
 	}
 
 	@Test
-	void testNonExistingUrl() {
-		JsoupDocumentReader reader = new JsoupDocumentReader("https://nonexistingurl.com",
+	void testNonExistingHtmlResource() {
+		JsoupDocumentReader reader = new JsoupDocumentReader("classpath:/non-existing.html",
 				JsoupDocumentReaderConfig.builder().build());
 		assertThatThrownBy(reader::get).isInstanceOf(RuntimeException.class);
 	}

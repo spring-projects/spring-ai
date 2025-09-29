@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 import io.weaviate.client.Config;
 import io.weaviate.client.WeaviateClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -47,6 +49,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Christian Tzolov
@@ -83,7 +88,16 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	private void resetCollection(VectorStore vectorStore) {
+		initCollection(vectorStore);
 		vectorStore.delete(this.documents.stream().map(Document::getId).toList());
+	}
+
+	// This method is used to resolve errors that occur when it is executed independently
+	// without BaseVectorStoreTests.
+	private void initCollection(VectorStore vectorStore) {
+		List<Document> dummyDocuments = List.of(new Document("", Map.of("country", "", "year", 0)));
+		vectorStore.add(dummyDocuments);
+		vectorStore.delete(List.of(dummyDocuments.get(0).getId()));
 	}
 
 	@Override
@@ -136,6 +150,8 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 					Map.of("country", "NL"));
 			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "BG", "year", 2023));
+
+			resetCollection(vectorStore);
 
 			vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
 
@@ -274,15 +290,154 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
+	@Test
+	public void addAndSearchWithCustomObjectClass() {
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			resetCollection(vectorStore);
+		});
+
+		this.contextRunner.run(context -> {
+			WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			WeaviateVectorStoreOptions optionsWithCustomObjectClass = new WeaviateVectorStoreOptions();
+			optionsWithCustomObjectClass.setObjectClass("CustomObjectClass");
+
+			VectorStore customVectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.options(optionsWithCustomObjectClass)
+				.build();
+
+			resetCollection(customVectorStore);
+			customVectorStore.add(this.documents);
+
+			List<Document> results = customVectorStore
+				.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
+			assertFalse(results.isEmpty());
+		});
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
+			assertTrue(results.isEmpty());
+		});
+	}
+
+	@Test
+	public void addAndSearchWithCustomContentFieldName() {
+
+		WeaviateVectorStoreOptions optionsWithCustomContentFieldName = new WeaviateVectorStoreOptions();
+		optionsWithCustomContentFieldName.setContentFieldName("customContentFieldName");
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			resetCollection(vectorStore);
+		});
+
+		this.contextRunner.run(context -> {
+			WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			VectorStore customVectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.options(optionsWithCustomContentFieldName)
+				.build();
+
+			customVectorStore.add(this.documents);
+
+			List<Document> results = customVectorStore
+				.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
+			assertFalse(results.isEmpty());
+		});
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			assertThatThrownBy(
+					() -> vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build()))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("exactly one of text or media must be specified");
+		});
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "custom_", "" })
+	public void addAndSearchWithCustomMetaFieldPrefix(String metaFieldPrefix) {
+		WeaviateVectorStoreOptions optionsWithCustomContentFieldName = new WeaviateVectorStoreOptions();
+		optionsWithCustomContentFieldName.setMetaFieldPrefix(metaFieldPrefix);
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			resetCollection(vectorStore);
+		});
+
+		this.contextRunner.run(context -> {
+			WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			VectorStore customVectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country")))
+				.options(optionsWithCustomContentFieldName)
+				.build();
+
+			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2020));
+			var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "NL"));
+			var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("country", "BG", "year", 2023));
+
+			customVectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+			List<Document> results = customVectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
+			assertThat(results).hasSize(3);
+
+			results = customVectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'NL'")
+				.build());
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
+		});
+
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'NL'")
+				.build());
+			assertThat(results).hasSize(0);
+		});
+
+		// remove documents for parameterized test
+		this.contextRunner.run(context -> {
+			WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			VectorStore customVectorStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country")))
+				.options(optionsWithCustomContentFieldName)
+				.build();
+
+			List<Document> results = customVectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(5).build());
+
+			customVectorStore.delete(results.stream().map(Document::getId).toList());
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration
 	public static class TestApplication {
 
 		@Bean
-		public VectorStore vectorStore(EmbeddingModel embeddingModel) {
-			WeaviateClient weaviateClient = new WeaviateClient(
-					new Config("http", weaviateContainer.getHttpHostAddress()));
-
+		public VectorStore vectorStore(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
 			return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
 				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country"),
 						WeaviateVectorStore.MetadataField.number("year")))
@@ -293,6 +448,11 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new TransformersEmbeddingModel();
+		}
+
+		@Bean
+		public WeaviateClient weaviateClient() {
+			return new WeaviateClient(new Config("http", weaviateContainer.getHttpHostAddress()));
 		}
 
 	}

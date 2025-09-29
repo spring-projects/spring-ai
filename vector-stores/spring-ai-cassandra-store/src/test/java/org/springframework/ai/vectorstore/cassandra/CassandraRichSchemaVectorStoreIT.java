@@ -37,12 +37,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.CassandraContainer;
+import org.testcontainers.cassandra.CassandraContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
-import org.springframework.ai.cassandra.CassandraImage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -88,7 +87,7 @@ class CassandraRichSchemaVectorStoreIT {
 	private static final String URANUS_ORBIT_QUERY = "It was the first planet to be discovered using mathematics. In 1821, astronomers saw that Uranus orbit was different from what they expected. Another nearby planets mass was changing Uranus orbit.";
 
 	@Container
-	static CassandraContainer<?> cassandraContainer = new CassandraContainer<>(CassandraImage.DEFAULT_IMAGE);
+	static CassandraContainer cassandraContainer = new CassandraContainer(CassandraImage.DEFAULT_IMAGE);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -151,7 +150,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void ensureSchemaCreation() {
 		this.contextRunner.run(context -> {
-			try (CassandraVectorStore store = createStore(context, false)) {
+			try (CassandraVectorStore store = createStore(context, true)) {
 				Assertions.assertNotNull(store);
 				store.checkSchemaValid();
 				store.similaritySearch(SearchRequest.builder().query("1843").topK(1).build());
@@ -163,7 +162,7 @@ class CassandraRichSchemaVectorStoreIT {
 	void ensureSchemaNoCreation() {
 		this.contextRunner.run(context -> {
 			executeCqlFile(context, "test_wiki_full_schema.cql");
-			var builder = createBuilder(context, List.of(), true, false);
+			var builder = createBuilder(context, List.of(), false, false);
 			Assertions.assertNotNull(builder);
 			var store = new CassandraVectorStore(builder);
 			try {
@@ -177,9 +176,9 @@ class CassandraRichSchemaVectorStoreIT {
 
 				// IllegalStateException: column all_minilm_l6_v2_embedding does not exist
 				IllegalStateException ise = Assertions.assertThrows(IllegalStateException.class,
-						() -> createStore(context, List.of(), true, false));
+						() -> createStore(context, List.of(), false, false));
 
-				Assertions.assertEquals("column all_minilm_l6_v2_embedding does not exist", ise.getMessage());
+				Assertions.assertEquals("index all_minilm_l6_v2_ann does not exist", ise.getMessage());
 			}
 			finally {
 				CassandraVectorStore.dropKeyspace(builder);
@@ -194,7 +193,7 @@ class CassandraRichSchemaVectorStoreIT {
 			int PARTIAL_FILES = 5;
 			for (int i = 0; i < PARTIAL_FILES; ++i) {
 				executeCqlFile(context, java.lang.String.format("test_wiki_partial_%d_schema.cql", i));
-				var builder = createBuilder(context, List.of(), false, false);
+				var builder = createBuilder(context, List.of(), true, false);
 				Assertions.assertNotNull(builder);
 				CassandraVectorStore.dropKeyspace(builder);
 				var store = builder.build();
@@ -217,7 +216,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void addAndSearch() {
 		this.contextRunner.run(context -> {
-			try (CassandraVectorStore store = createStore(context, false)) {
+			try (CassandraVectorStore store = createStore(context, true)) {
 				store.add(documents);
 
 				List<Document> results = store.similaritySearch(
@@ -291,7 +290,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void searchWithPartitionFilter() throws InterruptedException {
 		this.contextRunner.run(context -> {
-			try (CassandraVectorStore store = createStore(context, false)) {
+			try (CassandraVectorStore store = createStore(context, true)) {
 				store.add(documents);
 
 				List<Document> results = store
@@ -347,7 +346,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void unsearchableFilters() throws InterruptedException {
 		this.contextRunner.run(context -> {
-			try (CassandraVectorStore store = createStore(context, false)) {
+			try (CassandraVectorStore store = createStore(context, true)) {
 				store.add(documents);
 
 				List<Document> results = store
@@ -368,7 +367,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void searchWithFilters() throws InterruptedException {
 		this.contextRunner.run(context -> {
-			try (CassandraVectorStore store = createStore(context, false)) {
+			try (CassandraVectorStore store = createStore(context, true)) {
 				store.add(documents);
 
 				List<Document> results = store
@@ -448,7 +447,7 @@ class CassandraRichSchemaVectorStoreIT {
 					new SchemaColumn("title", DataTypes.TEXT, CassandraVectorStore.SchemaColumnTags.INDEXED),
 					new SchemaColumn("chunk_no", DataTypes.INT, CassandraVectorStore.SchemaColumnTags.INDEXED));
 
-			try (CassandraVectorStore store = createStore(context, overrides, false, true)) {
+			try (CassandraVectorStore store = createStore(context, overrides, true, true)) {
 
 				store.add(documents);
 
@@ -482,7 +481,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void documentUpdate() {
 		this.contextRunner.run(context -> {
-			try (CassandraVectorStore store = createStore(context, false)) {
+			try (CassandraVectorStore store = createStore(context, true)) {
 				store.add(documents);
 
 				List<Document> results = store
@@ -533,7 +532,7 @@ class CassandraRichSchemaVectorStoreIT {
 	@Test
 	void searchWithThreshold() {
 		this.contextRunner.run(context -> {
-			try (CassandraVectorStore store = createStore(context, false)) {
+			try (CassandraVectorStore store = createStore(context, true)) {
 				store.add(documents);
 
 				List<Document> fullResult = store.similaritySearch(
@@ -563,19 +562,16 @@ class CassandraRichSchemaVectorStoreIT {
 		});
 	}
 
-	private CassandraVectorStore createStore(ApplicationContext context, boolean disallowSchemaCreation)
-			throws IOException {
+	private CassandraVectorStore createStore(ApplicationContext context, boolean initializeSchema) throws IOException {
 
-		return createStore(context, List.of(), disallowSchemaCreation, true);
+		return createStore(context, List.of(), initializeSchema, true);
 	}
 
 	private CassandraVectorStore createStore(ApplicationContext context, List<SchemaColumn> columnOverrides,
-			boolean disallowSchemaCreation, boolean dropKeyspaceFirst) throws IOException {
+			boolean initializeSchema, boolean dropKeyspaceFirst) throws IOException {
 
 		CassandraVectorStore.Builder builder = storeBuilder(context, columnOverrides);
-		if (disallowSchemaCreation) {
-			builder = builder.disallowSchemaChanges(true);
-		}
+		builder.initializeSchema(initializeSchema);
 
 		if (dropKeyspaceFirst) {
 			CassandraVectorStore.dropKeyspace(builder);
@@ -585,12 +581,10 @@ class CassandraRichSchemaVectorStoreIT {
 	}
 
 	private CassandraVectorStore.Builder createBuilder(ApplicationContext context, List<SchemaColumn> columnOverrides,
-			boolean disallowSchemaCreation, boolean dropKeyspaceFirst) throws IOException {
+			boolean initailzeSchema, boolean dropKeyspaceFirst) throws IOException {
 
 		CassandraVectorStore.Builder builder = storeBuilder(context, columnOverrides);
-		if (disallowSchemaCreation) {
-			builder = builder.disallowSchemaChanges(true);
-		}
+		builder.initializeSchema(initailzeSchema);
 
 		if (dropKeyspaceFirst) {
 			CassandraVectorStore.dropKeyspace(builder);

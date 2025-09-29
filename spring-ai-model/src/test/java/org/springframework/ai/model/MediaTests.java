@@ -1,0 +1,411 @@
+/*
+ * Copyright 2024-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.model;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.content.Media;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.util.MimeType;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+class MediaTests {
+
+	@Test
+	void testMediaBuilderWithByteArrayResource() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		byte[] data = new byte[] { 1, 2, 3 };
+		String id = "123";
+		String name = "test-media";
+
+		Media media = Media.builder().mimeType(mimeType).data(new ByteArrayResource(data)).id(id).name(name).build();
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(byte[].class);
+		assertThat(media.getDataAsByteArray()).isEqualTo(data);
+		assertThat(media.getId()).isEqualTo(id);
+		assertThat(media.getName()).isEqualTo(name);
+	}
+
+	@Test
+	void testMediaBuilderWithUri() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		URI uri = URI.create("http://example.com/image.png");
+		String id = "123";
+		String name = "test-media";
+
+		Media media = Media.builder().mimeType(mimeType).data(uri).id(id).name(name).build();
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(String.class);
+		assertThat(media.getData()).isEqualTo(uri.toString());
+		assertThat(media.getId()).isEqualTo(id);
+		assertThat(media.getName()).isEqualTo(name);
+	}
+
+	@Test
+	void testMediaBuilderWithURI() throws MalformedURLException {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		URI uri = URI.create("http://example.com/image.png");
+		String id = "123";
+		String name = "test-media";
+
+		Media media = Media.builder().mimeType(mimeType).data(uri).id(id).name(name).build();
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(String.class);
+		assertThat(media.getData()).isEqualTo(uri.toString());
+		assertThat(media.getId()).isEqualTo(id);
+		assertThat(media.getName()).isEqualTo(name);
+	}
+
+	@Test
+	void testMediaBuilderWithNullMimeType() {
+		assertThatThrownBy(() -> Media.builder().mimeType(null).build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("MimeType must not be null");
+	}
+
+	@Test
+	void testMediaBuilderWithNullData() {
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((Object) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Data must not be null");
+	}
+
+	@Test
+	void testGetDataAsByteArrayWithInvalidData() {
+		Media media = Media.builder()
+			.mimeType(MimeType.valueOf("image/png"))
+			.data("invalid data")
+			.id("123")
+			.name("test-media")
+			.build();
+
+		assertThatThrownBy(media::getDataAsByteArray).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Media data is not a byte[]");
+	}
+
+	@Test
+	void testMediaBuilderWithNullUri() {
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((URI) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("URI must not be null");
+	}
+
+	@Test
+	void testMediaBuilderWithNullURI() {
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((URI) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("URI must not be null");
+	}
+
+	@Test
+	void testMediaBuilderWithNullResource() {
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((Resource) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Data must not be null");
+	}
+
+	@Test
+	void testMediaBuilderWithOptionalId() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		byte[] data = new byte[] { 1, 2, 3 };
+
+		Media media = Media.builder().mimeType(mimeType).data(data).name("test-media").build();
+
+		assertThat(media.getId()).isNull();
+		assertThat(media.getName()).isEqualTo("test-media");
+	}
+
+	@Test
+	void testMediaBuilderWithDefaultName() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		byte[] data = new byte[] { 1, 2, 3 };
+
+		Media media = Media.builder().mimeType(mimeType).data(data).build();
+
+		assertValidMediaName(media.getName(), "png");
+	}
+
+	@Test
+	void testMediaBuilderWithFailingResource() {
+		Resource failingResource = new ByteArrayResource(new byte[] { 1, 2, 3 }) {
+			// Implement other methods...
+			@Override
+			public byte[] getContentAsByteArray() throws IOException {
+				throw new IOException("Simulated failure");
+			}
+		};
+
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data(failingResource).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasCauseInstanceOf(IOException.class);
+	}
+
+	@Test
+	void testMediaBuilderWithDifferentMimeTypes() {
+		byte[] data = new byte[] { 1, 2, 3 };
+
+		Media jpegMedia = Media.builder().mimeType(Media.Format.IMAGE_JPEG).data(data).build();
+		assertValidMediaName(jpegMedia.getName(), "jpeg");
+
+		Media pdfMedia = Media.builder().mimeType(Media.Format.DOC_PDF).data(data).build();
+		assertValidMediaName(pdfMedia.getName(), "pdf");
+	}
+
+	@Test
+	void testLastDataMethodWins() {
+		URI uri = URI.create("http://example.com/image.png");
+		byte[] bytes = new byte[] { 1, 2, 3 };
+
+		Media media = Media.builder().mimeType(Media.Format.IMAGE_PNG).data(uri).data(bytes).build();
+
+		assertThat(media.getData()).isSameAs(bytes);
+	}
+
+	@Test
+	void testMediaConstructorWithUri() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		URI uri = URI.create("http://example.com/image.png");
+
+		Media media = new Media(mimeType, uri);
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(String.class);
+		assertThat(media.getData()).isEqualTo(uri.toString());
+		assertThat(media.getId()).isNull();
+		assertValidMediaName(media.getName(), "png");
+	}
+
+	@Test
+	void testMediaConstructorWithUrl() throws MalformedURLException {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		String url = "http://example.com/image.png";
+
+		Media media = Media.builder().mimeType(mimeType).data(URI.create(url)).build();
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(String.class);
+		assertThat(media.getData()).isEqualTo(url);
+		assertThat(media.getId()).isNull();
+		String name = media.getName();
+		assertValidMediaName(media.getName(), "png");
+	}
+
+	private void assertValidMediaName(String name, String expectedMimeSubtype) {
+		// Split name into parts (media-subtype-uuid)
+		String[] parts = name.split("-", 3);
+
+		// Verify we have all three parts
+		assertThat(parts).hasSize(3);
+
+		// Verify the prefix is "media"
+		assertThat(parts[0]).isEqualTo("media");
+
+		// Verify the subtype matches expected
+		assertThat(parts[1]).isEqualTo(expectedMimeSubtype);
+
+		// Validate the UUID portion
+		assertThat(UUID.fromString(parts[2])).isNotNull();
+	}
+
+	@Test
+	void testMediaConstructorWithResource() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		byte[] data = new byte[] { 1, 2, 3 };
+		Resource resource = new ByteArrayResource(data);
+
+		Media media = new Media(mimeType, resource);
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(byte[].class);
+		assertThat(media.getDataAsByteArray()).isEqualTo(data);
+		assertThat(media.getId()).isNull();
+		assertValidMediaName(media.getName(), "png");
+	}
+
+	@Test
+	void testMediaConstructorWithResourceAndId() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		byte[] data = new byte[] { 1, 2, 3 };
+		Resource resource = new ByteArrayResource(data);
+		String id = "123";
+
+		Media media = Media.builder().mimeType(mimeType).data(resource).id(id).build();
+
+		assertThat(media.getMimeType()).isEqualTo(mimeType);
+		assertThat(media.getData()).isInstanceOf(byte[].class);
+		assertThat(media.getDataAsByteArray()).isEqualTo(data);
+		assertThat(media.getId()).isEqualTo(id);
+		assertValidMediaName(media.getName(), "png");
+	}
+
+	@Test
+	void testMediaConstructorWithFailingResource() {
+		Resource failingResource = new ByteArrayResource(new byte[] { 1, 2, 3 }) {
+			@Override
+			public byte[] getContentAsByteArray() throws IOException {
+				throw new IOException("Simulated failure");
+			}
+		};
+
+		assertThatThrownBy(() -> new Media(Media.Format.IMAGE_PNG, failingResource))
+			.isInstanceOf(RuntimeException.class)
+			.hasCauseInstanceOf(IOException.class);
+	}
+
+	@Test
+	void testMediaConstructorWithFailingResourceAndId() {
+		Resource failingResource = new ByteArrayResource(new byte[] { 1, 2, 3 }) {
+			@Override
+			public byte[] getContentAsByteArray() throws IOException {
+				throw new IOException("Simulated failure");
+			}
+		};
+
+		assertThatThrownBy(
+				() -> Media.builder().mimeType(Media.Format.IMAGE_PNG).data(failingResource).id("123").build())
+			.isInstanceOf(RuntimeException.class)
+			.hasCauseInstanceOf(IOException.class);
+	}
+
+	@Test
+	void testUriConstructorNullValidation() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+
+		// Test null mimeType
+		assertThatThrownBy(() -> new Media(null, URI.create("http://example.com/image.png")))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		// Test null URL
+		assertThatThrownBy(() -> new Media(mimeType, (URI) null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("URI must not be null");
+
+		// Compare with builder validation
+		assertThatThrownBy(
+				() -> Media.builder().mimeType(null).data(URI.create("http://example.com/image.png")).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		assertThatThrownBy(() -> Media.builder().mimeType(mimeType).data((URI) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("URI must not be null");
+	}
+
+	@Test
+	void testURLConstructorNullValidation() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+
+		// Test null mimeType
+		assertThatThrownBy(() -> new Media(null, URI.create("http://example.com/image.png")))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		// Test null URL
+		assertThatThrownBy(() -> new Media(mimeType, (URI) null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("URI must not be null");
+
+		// Compare with builder validation
+		assertThatThrownBy(
+				() -> Media.builder().mimeType(null).data(URI.create("http://example.com/image.png")).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		assertThatThrownBy(() -> Media.builder().mimeType(mimeType).data((URI) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("URI must not be null");
+	}
+
+	@Test
+	void testResourceConstructorNullValidation() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+
+		// Test null mimeType
+		assertThatThrownBy(() -> new Media(null, new ByteArrayResource(new byte[] { 1, 2, 3 })))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		// Test null resource
+		assertThatThrownBy(() -> new Media(mimeType, (Resource) null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Data must not be null");
+
+		// Compare with builder validation
+		assertThatThrownBy(
+				() -> Media.builder().mimeType(null).data(new ByteArrayResource(new byte[] { 1, 2, 3 })).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("MimeType must not be null");
+
+		assertThatThrownBy(() -> Media.builder().mimeType(mimeType).data((Resource) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Data must not be null");
+	}
+
+	@Test
+	void testResourceIOExceptionHandling() {
+		MimeType mimeType = MimeType.valueOf("image/png");
+		Resource failingResource = new ByteArrayResource(new byte[] { 1, 2, 3 }) {
+			@Override
+			public byte[] getContentAsByteArray() throws IOException {
+				throw new IOException("Simulated failure");
+			}
+		};
+
+		// Test constructor exception handling
+		assertThatThrownBy(() -> new Media(mimeType, failingResource)).isInstanceOf(RuntimeException.class)
+			.hasCauseInstanceOf(IOException.class)
+			.hasMessageContaining("Simulated failure");
+
+		// Compare with builder exception handling
+		assertThatThrownBy(() -> Media.builder().mimeType(mimeType).data(failingResource).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasCauseInstanceOf(IOException.class)
+			.hasMessageContaining("Simulated failure");
+	}
+
+	@Test
+	void testDifferentMimeTypesNameFormat() {
+		// Test constructor name generation
+		Media jpegMediaCtor = new Media(Media.Format.IMAGE_JPEG, new ByteArrayResource(new byte[] { 1, 2, 3 }));
+		assertValidMediaName(jpegMediaCtor.getName(), "jpeg");
+
+		Media pngMediaCtor = new Media(Media.Format.IMAGE_PNG, new ByteArrayResource(new byte[] { 1, 2, 3 }));
+		assertValidMediaName(pngMediaCtor.getName(), "png");
+
+		// Compare with builder name generation
+		Media jpegMediaBuilder = Media.builder()
+			.mimeType(Media.Format.IMAGE_JPEG)
+			.data(new ByteArrayResource(new byte[] { 1, 2, 3 }))
+			.build();
+		assertValidMediaName(jpegMediaBuilder.getName(), "jpeg");
+
+		Media pngMediaBuilder = Media.builder()
+			.mimeType(Media.Format.IMAGE_PNG)
+			.data(new ByteArrayResource(new byte[] { 1, 2, 3 }))
+			.build();
+		assertValidMediaName(pngMediaBuilder.getName(), "png");
+	}
+
+}
