@@ -289,7 +289,7 @@
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
-		<jsoup.version>1.21.1</jsoup.version>
+		<jsoup.version>1.21.2</jsoup.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.8</protobuf-java.version>
