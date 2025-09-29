@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -139,7 +139,7 @@ public class OpenAiImageModelWithImageResponseMetadataTests {
 
 		@Bean
 		public OpenAiImageModel openAiImageModel(OpenAiImageApi openAiImageApi) {
-			return new OpenAiImageModel(openAiImageApi);
+			return OpenAiImageModel.builder().openAiImageApi(openAiImageApi).build();
 		}
 
 	}
