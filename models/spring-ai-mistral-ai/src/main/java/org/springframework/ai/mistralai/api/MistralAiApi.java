@@ -61,9 +61,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jason Smith
  * @since 1.0.0
  */
 public class MistralAiApi {
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
 
@@ -79,45 +84,48 @@ public class MistralAiApi {
 
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 */
-	public MistralAiApi(String mistralAiApiKey) {
-		this(DEFAULT_BASE_URL, mistralAiApiKey);
+	@Deprecated
+	public MistralAiApi(String apiKey) {
+		this(DEFAULT_BASE_URL, apiKey);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey) {
-		this(baseUrl, mistralAiApiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	@Deprecated
+	public MistralAiApi(String baseUrl, String apiKey) {
+		this(baseUrl, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+	@Deprecated
+	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, mistralAiApiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
+		this(baseUrl, apiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(mistralAiApiKey);
+			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -1080,6 +1088,55 @@ public class MistralAiApi {
 			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 			@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
+		}
+
+	}
+
+	public static final class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			Assert.hasText(apiKey, "apiKey cannot be null or empty");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public MistralAiApi build() {
+			return new MistralAiApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.webClientBuilder,
+					this.responseErrorHandler);
 		}
 
 	}
