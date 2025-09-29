@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -306,6 +307,53 @@ class PromptTemplateTests {
 		assertThat(promptTemplate.render()).isEqualTo("Hello Builder from Resource!");
 	}
 
+	@Test
+	void renderWithSimpleValueType() {
+		String content = "Spring AI";
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("content", content);
+		variables.put("val", 5);
+		variables.put("d", 12.30d);
+		variables.put("l", 2025L);
+		variables.put("n", BigDecimal.ONE);
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Hello {content}, int:{val},double:{d},long:{l},n:{n}")
+			.variables(variables)
+			.build();
+
+		assertThat(promptTemplate.render()).isEqualTo("Hello Spring AI, int:5,double:12.3,long:2025,n:1");
+	}
+
+	@Test
+	void renderWithMap() {
+		String name = "Spring AI";
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("key", Map.of("name", name));
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Hello {key.name}!")
+			.variables(variables)
+			.build();
+
+		assertThat(promptTemplate.render()).isEqualTo("Hello Spring AI!");
+	}
+
+	@Test
+	void renderWithBean() {
+		String name = "Spring AI";
+		BeanName bn = new BeanName(name);
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("key", bn);
+
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("Hello {key.name}!")
+			.variables(variables)
+			.build();
+
+		assertThat(promptTemplate.render()).isEqualTo("Hello Spring AI!");
+	}
+
 	// Helper Custom Renderer for testing
 	private static class CustomTestRenderer implements TemplateRenderer {
 
@@ -314,6 +362,25 @@ class PromptTemplateTests {
 			// Simple renderer that just appends a marker
 			// Note: This simple renderer ignores the model map for test purposes.
 			return template + " (Rendered by Custom)";
+		}
+
+	}
+
+	/**
+	 * helper test bean name
+	 *
+	 * @author lance
+	 */
+	private static class BeanName {
+
+		private final String name;
+
+		BeanName(String name) {
+			this.name = name;
+		}
+
+		String getName() {
+			return this.name;
 		}
 
 	}
