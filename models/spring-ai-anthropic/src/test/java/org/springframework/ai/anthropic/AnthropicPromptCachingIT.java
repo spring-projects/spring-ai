@@ -101,7 +101,7 @@ public class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 			.maxTokens(150)
 			.temperature(0.3)
@@ -142,7 +142,7 @@ public class AnthropicPromptCachingIT {
 		MockWeatherService weatherService = new MockWeatherService();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build())
 			.maxTokens(200)
 			.temperature(0.3)
@@ -233,7 +233,7 @@ public class AnthropicPromptCachingIT {
 		String response = chatClient.prompt()
 			.user("What career advice would you give me based on our conversation?")
 			.options(AnthropicChatOptions.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+				.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 				.cacheOptions(
 						AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build())
 				.maxTokens(200)
@@ -258,7 +258,7 @@ public class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				// Set min length above actual system prompt length to prevent caching
@@ -287,7 +287,7 @@ public class AnthropicPromptCachingIT {
 
 		// Set USER min length high so caching should not apply
 		AnthropicChatOptions noCacheOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.messageTypeMinContentLength(MessageType.USER, userMessage.length() + 1)
@@ -305,7 +305,7 @@ public class AnthropicPromptCachingIT {
 
 		// Now allow caching by lowering the USER min length
 		AnthropicChatOptions cacheOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.messageTypeMinContentLength(MessageType.USER, userMessage.length() - 1)
@@ -334,7 +334,7 @@ public class AnthropicPromptCachingIT {
 		// The combined length of the first two USER messages exceeds the min length,
 		// so caching should apply
 		AnthropicChatOptions cacheOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
 				.messageTypeMinContentLength(MessageType.USER, userMessage.length())
@@ -357,7 +357,7 @@ public class AnthropicPromptCachingIT {
 		String systemPrompt = loadPrompt("extended-ttl-cache-prompt.txt");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 				.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
@@ -398,7 +398,7 @@ public class AnthropicPromptCachingIT {
 		String systemPrompt = "You are a helpful assistant.";
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 			.maxTokens(50)
 			.temperature(0.3)
@@ -428,7 +428,7 @@ public class AnthropicPromptCachingIT {
 		responses.add(this.chatModel.call(new Prompt(
 				List.of(new SystemMessage("You are a math tutor."), new UserMessage("What is calculus?")),
 				AnthropicChatOptions.builder()
-					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 					.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
 					.maxTokens(100)
 					.build())));
@@ -436,7 +436,7 @@ public class AnthropicPromptCachingIT {
 		// Second: No caching
 		responses.add(this.chatModel.call(new Prompt(List.of(new UserMessage("What's 5+5?")),
 				AnthropicChatOptions.builder()
-					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4.getValue())
+					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 					.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build())
 					.maxTokens(50)
 					.build())));
