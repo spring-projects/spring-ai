@@ -60,6 +60,28 @@ class DefaultToolExecutionExceptionProcessorTests {
 	}
 
 	@Test
+	void processReturnsFallbackMessageWhenNull() {
+		DefaultToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder().build();
+
+		ToolExecutionException exception = new ToolExecutionException(this.toolDefinition, new IllegalStateException());
+
+		String result = processor.process(exception);
+
+		assertThat(result).isEqualTo("Exception occurred in tool: toolName (IllegalStateException)");
+	}
+
+	@Test
+	void processReturnsFallbackMessageWhenBlank() {
+		DefaultToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder().build();
+
+		ToolExecutionException exception = new ToolExecutionException(this.toolDefinition, new RuntimeException(" "));
+
+		String result = processor.process(exception);
+
+		assertThat(result).isEqualTo("Exception occurred in tool: toolName (RuntimeException)");
+	}
+
+	@Test
 	void processAlwaysThrows() {
 		DefaultToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder()
 			.alwaysThrow(true)
