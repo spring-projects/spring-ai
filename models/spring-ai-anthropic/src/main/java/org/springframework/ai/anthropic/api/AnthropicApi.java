@@ -276,14 +276,24 @@ public final class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-sonnet-4-5 model.
+		 */
+		CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
+
+		/**
+		 * The claude-opus-4-1 model.
+		 */
+		CLAUDE_OPUS_4_1("claude-opus-4-1"),
+
+		/**
 		 * The claude-opus-4-0 model.
 		 */
-		CLAUDE_OPUS_4("claude-opus-4-0"),
+		CLAUDE_OPUS_4_0("claude-opus-4-0"),
 
 		/**
 		 * The claude-sonnet-4-0 model.
 		 */
-		CLAUDE_SONNET_4("claude-sonnet-4-0"),
+		CLAUDE_SONNET_4_0("claude-sonnet-4-0"),
 
 		/**
 		 * The claude-3-7-sonnet-latest model.
@@ -313,18 +323,7 @@ public final class AnthropicApi {
 		/**
 		 * The CLAUDE_3_HAIKU
 		 */
-		CLAUDE_3_HAIKU("claude-3-haiku-20240307"),
-
-		// Legacy models
-		/**
-		 * The CLAUDE_2_1 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2_1("claude-2.1"),
-
-		/**
-		 * The CLAUDE_2_0 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2("claude-2.0");
+		CLAUDE_3_HAIKU("claude-3-haiku-20240307");
 
 		// @formatter:on
 
