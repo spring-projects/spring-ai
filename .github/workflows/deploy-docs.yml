@@ -28,6 +28,8 @@ jobs:
         if: github.ref_type == 'branch'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            GIT_TRACE: 1
+            GIT_CURL_VERBOSE: 1
         run: gh workflow run deploy-docs.yml -r $(git rev-parse --abbrev-ref HEAD) -f build-refname=${{ github.ref_name }}
       - name: Dispatch (full build)
         if: github.ref_type == 'tag'
