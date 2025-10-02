@@ -26,7 +26,6 @@ import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDeta
 import org.springframework.ai.vertexai.embedding.text.VertexAiTextEmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,13 +41,11 @@ import org.springframework.retry.support.RetryTemplate;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class })
 @ConditionalOnClass(VertexAiTextEmbeddingModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.TEXT_EMBEDDING_MODEL, havingValue = SpringAIModels.VERTEX_AI,
 		matchIfMissing = true)
 @EnableConfigurationProperties(VertexAiTextEmbeddingProperties.class)
-@ImportAutoConfiguration(
-		classes = { SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class })
 public class VertexAiTextEmbeddingAutoConfiguration {
 
 	@Bean
