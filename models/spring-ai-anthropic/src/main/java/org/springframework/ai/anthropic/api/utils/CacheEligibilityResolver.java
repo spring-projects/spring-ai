@@ -108,11 +108,16 @@ public class CacheEligibilityResolver {
 	}
 
 	public AnthropicApi.ChatCompletionRequest.CacheControl resolveToolCacheControl() {
-		// Tool definitions are only cache-eligible when caching is enabled and
-		// the strategy includes SYSTEM messages (SYSTEM_ONLY, SYSTEM_AND_TOOLS, or
-		// CONVERSATION_HISTORY). When NONE, tools must not be cached.
-		if (!isCachingEnabled() || !this.cacheEligibleMessageTypes.contains(TOOL_DEFINITION_MESSAGE_TYPE)
-				|| this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
+		// Tool definitions are only cache-eligible for SYSTEM_AND_TOOLS and
+		// CONVERSATION_HISTORY strategies. SYSTEM_ONLY caches only system messages,
+		// relying on Anthropic's cache hierarchy to implicitly cache tools.
+		if (this.cacheStrategy != AnthropicCacheStrategy.SYSTEM_AND_TOOLS
+				&& this.cacheStrategy != AnthropicCacheStrategy.CONVERSATION_HISTORY) {
+			logger.debug("Caching not enabled for tool definition, cacheStrategy={}", this.cacheStrategy);
+			return null;
+		}
+
+		if (this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
 			logger.debug("Caching not enabled for tool definition, usedBreakpoints={}",
 					this.cacheBreakpointTracker.getCount());
 			return null;

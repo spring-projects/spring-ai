@@ -78,14 +78,26 @@ class CacheEligibilityResolverTests {
 			.from(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build());
 		assertThat(none.resolveToolCacheControl()).isNull();
 
-		// SYSTEM_ONLY -> tool caching enabled (uses SYSTEM TTL)
+		// SYSTEM_ONLY -> no explicit tool caching (tools cached implicitly via hierarchy)
 		CacheEligibilityResolver sys = CacheEligibilityResolver.from(AnthropicCacheOptions.builder()
 			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
 			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
 			.build());
-		var cc = sys.resolveToolCacheControl();
+		assertThat(sys.resolveToolCacheControl()).isNull();
+
+		// SYSTEM_AND_TOOLS -> tool caching enabled (uses SYSTEM TTL)
+		CacheEligibilityResolver sysAndTools = CacheEligibilityResolver.from(AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+			.build());
+		var cc = sysAndTools.resolveToolCacheControl();
 		assertThat(cc).isNotNull();
 		assertThat(cc.ttl()).isEqualTo(AnthropicCacheTtl.ONE_HOUR.getValue());
+
+		// CONVERSATION_HISTORY -> tool caching enabled
+		CacheEligibilityResolver history = CacheEligibilityResolver
+			.from(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build());
+		assertThat(history.resolveToolCacheControl()).isNotNull();
 	}
 
 }
