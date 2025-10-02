@@ -230,8 +230,8 @@ public class ZhiPuAiChatModel implements ChatModel {
 		String textContent = choice.message().content();
 		String reasoningContent = choice.message().reasoningContent();
 
-		var assistantMessage = ZhiPuAiAssistantMessage.builder()
-			.content(textContent)
+		ZhiPuAiAssistantMessage.Builder builder = new ZhiPuAiAssistantMessage.Builder();
+		var assistantMessage = builder.content(textContent)
 			.reasoningContent(reasoningContent)
 			.properties(metadata)
 			.toolCalls(toolCalls)

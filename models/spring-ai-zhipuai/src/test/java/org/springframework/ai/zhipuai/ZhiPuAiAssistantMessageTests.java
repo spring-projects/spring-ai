@@ -117,8 +117,8 @@ class ZhiPuAiAssistantMessageTests {
 		List<ToolCall> toolCalls = List.of(new ToolCall("1", "function", "testFunction", "{}"));
 		List<Media> media = List.of();
 
-		ZhiPuAiAssistantMessage message = ZhiPuAiAssistantMessage.builder()
-			.content("content")
+		ZhiPuAiAssistantMessage.Builder builder = new ZhiPuAiAssistantMessage.Builder();
+		ZhiPuAiAssistantMessage message = builder.content("content")
 			.reasoningContent("reasoning")
 			.properties(properties)
 			.toolCalls(toolCalls)
