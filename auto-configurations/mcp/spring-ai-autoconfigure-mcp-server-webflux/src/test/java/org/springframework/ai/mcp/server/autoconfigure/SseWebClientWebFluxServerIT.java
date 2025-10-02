@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
@@ -79,10 +80,13 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 public class SseWebClientWebFluxServerIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(SseWebClientWebFluxServerIT.class);
+
+	private static final JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new ObjectMapper());
 
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
@@ -132,14 +136,17 @@ public class SseWebClientWebFluxServerIT {
 
 						// tool list
 						assertThat(mcpClient.listTools().tools()).hasSize(2);
-						assertThat(mcpClient.listTools().tools())
-							.contains(Tool.builder().name("tool1").description("tool1 description").inputSchema("""
+						assertThat(mcpClient.listTools().tools()).contains(Tool.builder()
+							.name("tool1")
+							.description("tool1 description")
+							.inputSchema(jsonMapper, """
 									{
 										"": "http://json-schema.org/draft-07/schema#",
 										"type": "object",
 										"properties": {}
 									}
-									""").build());
+									""")
+							.build());
 
 						// Call a tool that sends progress notifications
 						CallToolRequest toolRequest = CallToolRequest.builder()
@@ -167,7 +174,9 @@ public class SseWebClientWebFluxServerIT {
 
 						assertThat(calculatorToolResponse.structuredContent()).isNotNull();
 
-						assertThat(calculatorToolResponse.structuredContent()).containsEntry("result", 5.0)
+						assertThat(calculatorToolResponse.structuredContent())
+							.asInstanceOf(map(String.class, Object.class))
+							.containsEntry("result", 5.0)
 							.containsEntry("operation", "2 + 3")
 							.containsEntry("timestamp", "2024-01-01T10:00:00Z");
 
@@ -298,7 +307,7 @@ public class SseWebClientWebFluxServerIT {
 
 			// Tool 1
 			McpServerFeatures.SyncToolSpecification tool1 = McpServerFeatures.SyncToolSpecification.builder()
-				.tool(Tool.builder().name("tool1").description("tool1 description").inputSchema("""
+				.tool(Tool.builder().name("tool1").description("tool1 description").inputSchema(jsonMapper, """
 						{
 							"": "http://json-schema.org/draft-07/schema#",
 							"type": "object",

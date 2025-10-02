@@ -43,7 +43,7 @@ public class ElevenLabsSpeechProperties {
 	private boolean enabled = true;
 
 	@NestedConfigurationProperty
-	private ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder()
+	private final ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder()
 		.modelId(DEFAULT_MODEL_ID)
 		.voiceId(DEFAULT_VOICE_ID)
 		.outputFormat(DEFAULT_OUTPUT_FORMAT.getValue())
@@ -51,10 +51,6 @@ public class ElevenLabsSpeechProperties {
 
 	public ElevenLabsTextToSpeechOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(ElevenLabsTextToSpeechOptions options) {
-		this.options = options;
 	}
 
 	public boolean isEnabled() {

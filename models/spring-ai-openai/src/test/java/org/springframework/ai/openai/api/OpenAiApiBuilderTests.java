@@ -159,6 +159,122 @@ public class OpenAiApiBuilderTests {
 			.hasMessageContaining("responseErrorHandler cannot be null");
 	}
 
+	@Test
+	void testBuilderWithAllCustomPaths() {
+		OpenAiApi api = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.baseUrl(TEST_BASE_URL)
+			.completionsPath("/custom/completions")
+			.embeddingsPath("/custom/embeddings")
+			.build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testBuilderImmutability() {
+		OpenAiApi.Builder builder = OpenAiApi.builder().apiKey(TEST_API_KEY).baseUrl(TEST_BASE_URL);
+
+		OpenAiApi api1 = builder.build();
+		OpenAiApi api2 = builder.build();
+
+		assertThat(api1).isNotNull();
+		assertThat(api2).isNotNull();
+		assertThat(api1).isNotSameAs(api2);
+	}
+
+	@Test
+	void testNullApiKeyValue() {
+		assertThatThrownBy(() -> OpenAiApi.builder().apiKey((ApiKey) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("apiKey cannot be null");
+	}
+
+	@Test
+	void testBuilderMethodChaining() {
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		headers.add("Test-Header", "test-value");
+
+		OpenAiApi api = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.baseUrl(TEST_BASE_URL)
+			.completionsPath(TEST_COMPLETIONS_PATH)
+			.embeddingsPath(TEST_EMBEDDINGS_PATH)
+			.headers(headers)
+			.restClientBuilder(RestClient.builder())
+			.webClientBuilder(WebClient.builder())
+			.responseErrorHandler(mock(ResponseErrorHandler.class))
+			.build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testCustomHeadersPreservation() {
+		MultiValueMap<String, String> customHeaders = new LinkedMultiValueMap<>();
+		customHeaders.add("X-Custom-Header", "custom-value");
+		customHeaders.add("X-Organization", "org-123");
+		customHeaders.add("User-Agent", "Custom-Client/1.0");
+
+		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).headers(customHeaders).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testComplexMultiValueHeaders() {
+		MultiValueMap<String, String> multiHeaders = new LinkedMultiValueMap<>();
+		multiHeaders.add("Accept", "application/json");
+		multiHeaders.add("Accept", "text/plain");
+		multiHeaders.add("Cache-Control", "no-cache");
+		multiHeaders.add("Cache-Control", "no-store");
+
+		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).headers(multiHeaders).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testPathValidationWithSlashes() {
+		OpenAiApi api1 = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.completionsPath("/v1/completions")
+			.embeddingsPath("/v1/embeddings")
+			.build();
+
+		OpenAiApi api2 = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.completionsPath("v1/completions")
+			.embeddingsPath("v1/embeddings")
+			.build();
+
+		assertThat(api1).isNotNull();
+		assertThat(api2).isNotNull();
+	}
+
+	@Test
+	void testInvalidPathsWithSpecialCharacters() {
+		assertThatThrownBy(() -> OpenAiApi.builder().apiKey(TEST_API_KEY).completionsPath(" ").build())
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void testBuilderWithOnlyRequiredFields() {
+		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testDifferentApiKeyTypes() {
+		SimpleApiKey simpleKey = new SimpleApiKey("simple-key");
+		OpenAiApi api1 = OpenAiApi.builder().apiKey(simpleKey).build();
+		assertThat(api1).isNotNull();
+
+		OpenAiApi api2 = OpenAiApi.builder().apiKey(() -> "supplier-key").build();
+		assertThat(api2).isNotNull();
+	}
+
 	@Nested
 	class MockRequests {
 

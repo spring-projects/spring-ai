@@ -102,7 +102,7 @@ The prefix `spring.ai.deepseek` is used as the property prefix that lets you con
 |====
 | Property | Description | Default
 
-| spring.ai.deepseek.base-url   | The URL to connect to |  https://api.deepseek.com
+| spring.ai.deepseek.base-url   | The URL to connect to |  `+https://api.deepseek.com+`
 | spring.ai.deepseek.api-key    | The API Key           |  -
 |====
 
@@ -115,10 +115,10 @@ The prefix `spring.ai.deepseek.chat` is the property prefix that lets you config
 | Property | Description | Default
 
 | spring.ai.deepseek.chat.enabled | Enables the DeepSeek chat model.  | true
-| spring.ai.deepseek.chat.base-url | Optionally overrides the spring.ai.deepseek.base-url to provide a chat-specific URL | https://api.deepseek.com/
+| spring.ai.deepseek.chat.base-url | Optionally overrides the spring.ai.deepseek.base-url to provide a chat-specific URL | `+https://api.deepseek.com/+`
 | spring.ai.deepseek.chat.api-key | Optionally overrides the spring.ai.deepseek.api-key to provide a chat-specific API key | -
-| spring.ai.deepseek.chat.completions-path | The path to the chat completions endpoint | /chat/completions
-| spring.ai.deepseek.chat.beta-prefix-path | The prefix path to the beta feature endpoint | /beta
+| spring.ai.deepseek.chat.completions-path | The path to the chat completions endpoint | `/chat/completions`
+| spring.ai.deepseek.chat.beta-prefix-path | The prefix path to the beta feature endpoint | `/beta`
 | spring.ai.deepseek.chat.options.model | ID of the model to use. You can use either deepseek-reasoner or deepseek-chat. | deepseek-chat
 | spring.ai.deepseek.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.deepseek.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
@@ -313,14 +313,18 @@ Next, create a `DeepSeekChatModel` and use it for text generation:
 
 [source,java]
 ----
-var deepSeekApi = new DeepSeekApi(System.getenv("DEEPSEEK_API_KEY"));
-
-var chatModel = new DeepSeekChatModel(deepSeekApi, DeepSeekChatOptions.builder()
-                .withModel(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
-                .withTemperature(0.4f)
-                .withMaxTokens(200)
-                .build());
-
+DeepSeekApi deepSeekApi = DeepSeekApi.builder()
+        .apiKey(System.getenv("DEEPSEEK_API_KEY"))
+        .build();
+DeepSeekChatOptions options = DeepSeekChatOptions.builder()
+        .model(DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue())
+        .temperature(0.4)
+        .maxTokens(200)
+        .build();
+DeepSeekChatModel chatModel = DeepSeekChatModel.builder()
+        .deepSeekApi(deepSeekApi)
+        .defaultOptions(options)
+        .build();
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 

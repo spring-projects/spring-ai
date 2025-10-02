@@ -20,9 +20,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
@@ -284,8 +284,8 @@ public class McpClientAutoConfigurationIT {
 		}
 
 		@Override
-		public <T> T unmarshalFrom(Object value, TypeReference<T> type) {
-			return null; // Test implementation
+		public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
+			return null;
 		}
 
 		@Override

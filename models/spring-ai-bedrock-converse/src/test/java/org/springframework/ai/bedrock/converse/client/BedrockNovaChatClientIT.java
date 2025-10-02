@@ -284,7 +284,7 @@ public class BedrockNovaChatClientIT {
 	public static class DummyWeatherForecastTools {
 
 		@Tool(description = "Get the current weather forecast in Amsterdam")
-		String getCurrentDateTime() {
+		String getCurrentWeather() {
 			return "Weather is hot and sunny with a temperature of 20 degrees";
 		}
 

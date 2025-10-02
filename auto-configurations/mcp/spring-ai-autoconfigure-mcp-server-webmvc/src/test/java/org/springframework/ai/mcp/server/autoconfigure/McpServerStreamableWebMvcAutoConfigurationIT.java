@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
 import org.junit.jupiter.api.Test;
 
@@ -117,7 +118,7 @@ class McpServerStreamableWebMvcAutoConfigurationIT {
 		this.contextRunner
 			.withBean("customWebFluxProvider", WebMvcStreamableServerTransportProvider.class,
 					() -> WebMvcStreamableServerTransportProvider.builder()
-						.objectMapper(new ObjectMapper())
+						.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
 						.mcpEndpoint("/custom")
 						.build())
 			.run(context -> {

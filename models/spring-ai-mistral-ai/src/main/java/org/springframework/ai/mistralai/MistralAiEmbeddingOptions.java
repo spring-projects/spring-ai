@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  *
  * @author Ricken Bazolo
  * @author Thomas Vitale
+ * @author Jason Smith
  * @since 0.8.1
  */
 @JsonInclude(Include.NON_NULL)
@@ -70,7 +71,7 @@ public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 		return null;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected MistralAiEmbeddingOptions options;
 

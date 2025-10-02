@@ -42,7 +42,7 @@ import org.springframework.util.MimeType;
 @AutoConfiguration
 @EnableConfigurationProperties(McpServerProperties.class)
 @Conditional({ ToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition.class,
-		McpServerAutoConfiguration.NonStatlessServerCondition.class })
+		McpServerAutoConfiguration.NonStatelessServerCondition.class })
 public class ToolCallbackConverterAutoConfiguration {
 
 	@Bean

@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServer;
@@ -29,10 +31,12 @@ import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -71,25 +75,28 @@ import org.springframework.web.context.support.StandardServletEnvironment;
  * @since 1.0.0
  * @see McpServerProperties
  */
-@AutoConfiguration(
-		afterName = { "org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration",
-				"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration",
-				"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration",
-				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
-				"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
+@AutoConfiguration(afterName = {
+		"org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration",
+		"org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration",
+		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration",
+		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration",
+		"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
+		"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
 @ConditionalOnClass({ McpSchema.class })
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerChangeNotificationProperties.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
-@Conditional(McpServerAutoConfiguration.NonStatlessServerCondition.class)
+@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
 public class McpServerAutoConfiguration {
 
 	private static final LogAccessor logger = new LogAccessor(McpServerAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
-	public McpServerTransportProviderBase stdioServerTransport() {
-		return new StdioServerTransportProvider();
+	public McpServerTransportProviderBase stdioServerTransport(ObjectProvider<ObjectMapper> objectMapperProvider) {
+		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+
+		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(objectMapper));
 	}
 
 	@Bean
@@ -106,6 +113,7 @@ public class McpServerAutoConfiguration {
 			McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<SyncToolSpecification>> tools,
 			ObjectProvider<List<SyncResourceSpecification>> resources,
+			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
@@ -149,6 +157,21 @@ public class McpServerAutoConfiguration {
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 				serverBuilder.resources(resourceSpecifications);
 				logger.info("Registered resources: " + resourceSpecifications.size());
+			}
+		}
+
+		// Resources Templates
+		if (serverProperties.getCapabilities().isResource()) {
+			logger.info("Enable resources templates capabilities, notification: "
+					+ changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+
+			List<SyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
+				.flatMap(List::stream)
+				.toList();
+			if (!CollectionUtils.isEmpty(resourceTemplateSpecifications)) {
+				serverBuilder.resourceTemplates(resourceTemplateSpecifications);
+				logger.info("Registered resource templates: " + resourceTemplateSpecifications.size());
 			}
 		}
 
@@ -205,6 +228,7 @@ public class McpServerAutoConfiguration {
 			McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<AsyncToolSpecification>> tools,
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
+			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer) {
@@ -247,6 +271,21 @@ public class McpServerAutoConfiguration {
 			if (!CollectionUtils.isEmpty(resourceSpecifications)) {
 				serverBuilder.resources(resourceSpecifications);
 				logger.info("Registered resources: " + resourceSpecifications.size());
+			}
+		}
+
+		// Resources Templates
+		if (serverProperties.getCapabilities().isResource()) {
+			logger.info("Enable resources templates capabilities, notification: "
+					+ changeNotificationProperties.isResourceChangeNotification());
+			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+
+			List<AsyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
+				.flatMap(List::stream)
+				.toList();
+			if (!CollectionUtils.isEmpty(resourceTemplateSpecifications)) {
+				serverBuilder.resourceTemplates(resourceTemplateSpecifications);
+				logger.info("Registered resources templates: " + resourceTemplateSpecifications.size());
 			}
 		}
 
@@ -295,9 +334,9 @@ public class McpServerAutoConfiguration {
 		return serverBuilder.build();
 	}
 
-	public static class NonStatlessServerCondition extends AnyNestedCondition {
+	public static class NonStatelessServerCondition extends AnyNestedCondition {
 
-		public NonStatlessServerCondition() {
+		public NonStatelessServerCondition() {
 			super(ConfigurationPhase.PARSE_CONFIGURATION);
 		}
 

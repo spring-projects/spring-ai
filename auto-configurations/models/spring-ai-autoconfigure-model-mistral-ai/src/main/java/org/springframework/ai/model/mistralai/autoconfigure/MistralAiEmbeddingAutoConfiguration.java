@@ -68,9 +68,13 @@ public class MistralAiEmbeddingAutoConfiguration {
 				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
-		var embeddingModel = new MistralAiEmbeddingModel(mistralAiApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var embeddingModel = MistralAiEmbeddingModel.builder()
+			.mistralAiApi(mistralAiApi)
+			.metadataMode(embeddingProperties.getMetadataMode())
+			.options(embeddingProperties.getOptions())
+			.retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
@@ -86,7 +90,12 @@ public class MistralAiEmbeddingAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
-		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
+		return MistralAiApi.builder()
+			.baseUrl(resoledBaseUrl)
+			.apiKey(resolvedApiKey)
+			.restClientBuilder(restClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

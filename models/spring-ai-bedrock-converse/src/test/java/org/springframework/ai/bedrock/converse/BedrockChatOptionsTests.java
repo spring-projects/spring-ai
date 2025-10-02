@@ -37,6 +37,7 @@ class BedrockChatOptionsTests {
 			.frequencyPenalty(0.0)
 			.maxTokens(100)
 			.presencePenalty(0.0)
+			.requestParameters(Map.of("requestId", "1234"))
 			.stopSequences(List.of("stop1", "stop2"))
 			.temperature(0.7)
 			.topP(0.8)
@@ -44,9 +45,10 @@ class BedrockChatOptionsTests {
 			.build();
 
 		assertThat(options)
-			.extracting("model", "frequencyPenalty", "maxTokens", "presencePenalty", "stopSequences", "temperature",
-					"topP", "topK")
-			.containsExactly("test-model", 0.0, 100, 0.0, List.of("stop1", "stop2"), 0.7, 0.8, 50);
+			.extracting("model", "frequencyPenalty", "maxTokens", "presencePenalty", "requestParameters",
+					"stopSequences", "temperature", "topP", "topK")
+			.containsExactly("test-model", 0.0, 100, 0.0, Map.of("requestId", "1234"), List.of("stop1", "stop2"), 0.7,
+					0.8, 50);
 	}
 
 	@Test
