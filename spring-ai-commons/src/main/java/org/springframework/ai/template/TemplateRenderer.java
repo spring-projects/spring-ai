@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import javax.naming.OperationNotSupportedException;
+
 /**
  * Renders a template using a given strategy.
  *
@@ -32,6 +34,8 @@ public interface TemplateRenderer extends BiFunction<String, Map<String, Object>
 	@Override
 	String apply(String template, Map<String, Object> variables);
 
-	Set<String> getRequiredVariables(String template);
+	default Set<String> getRequiredVariables(String template) throws OperationNotSupportedException {
+		throw new OperationNotSupportedException("getRequiredVariables is not supported");
+	}
 
 }

@@ -299,7 +299,6 @@ class StTemplateRendererTests {
 		assertThat(result).isEqualTo("Hello!");
 	}
 
-
 	/**
 	 * Tests that property access syntax like {test.name} is correctly handled. The
 	 * top-level variable 'test' should be identified as required, but 'name' should not.
@@ -351,11 +350,10 @@ class StTemplateRendererTests {
 		missingVariables.put("profile", Map.of("name", "John"));
 
 		assertThatThrownBy(() -> renderer.apply("Hello {user.profile.name}!", missingVariables))
-				.isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining(
-						"Not all variables were replaced in the template. Missing variable names are: [user]");
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining(
+					"Not all variables were replaced in the template. Missing variable names are: [user]");
 	}
-
 
 	/**
 	 * Test whether the required variables can be correctly extracted from the template.
