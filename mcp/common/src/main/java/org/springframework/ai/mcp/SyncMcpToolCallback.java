@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -32,6 +33,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
@@ -41,15 +43,20 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public class SyncMcpToolCallback implements ToolCallback {
 
 	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
 
+	private static final ToolMetadata DEFAULT_TOOL_METADATA = ToolMetadata.builder().build();
+
 	private final McpSyncClient mcpClient;
 
 	private final Tool tool;
+
+	private final ToolMetadata toolMetadata;
 
 	private final String prefixedToolName;
 
@@ -85,6 +92,14 @@ public class SyncMcpToolCallback implements ToolCallback {
 		this.tool = tool;
 		this.prefixedToolName = prefixedToolName;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+		McpSchema.ToolAnnotations annotations = tool.annotations();
+		Boolean returnDirect = (annotations != null) ? annotations.returnDirect() : null;
+		if (returnDirect != null) {
+			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
+		}
+		else {
+			this.toolMetadata = DEFAULT_TOOL_METADATA;
+		}
 	}
 
 	@Override
@@ -147,6 +162,11 @@ public class SyncMcpToolCallback implements ToolCallback {
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
 		return ModelOptionsUtils.toJsonString(response.content());
+	}
+
+	@Override
+	public ToolMetadata getToolMetadata() {
+		return this.toolMetadata;
 	}
 
 	/**
