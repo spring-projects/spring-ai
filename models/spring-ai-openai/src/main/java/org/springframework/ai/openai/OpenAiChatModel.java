@@ -724,7 +724,7 @@ public class OpenAiChatModel implements ChatModel {
 			var requiredFieldContainsEveryProperty = requiredSet.equals(propertyKeySet);
 
 			// set as 'strict' if possible
-			var canBeStrict = hasAdditionalPropertiesFieldSetNotSetToTrue && requiredFieldContainsEveryProperty;
+			var canBeStrict = !hasAdditionalPropertiesFieldSetNotSetToTrue && requiredFieldContainsEveryProperty;
 
 			function.setStrict(canBeStrict);
 			return new OpenAiApi.FunctionTool(function);
