@@ -685,10 +685,16 @@ public class OpenAiChatModel implements ChatModel {
 		}
 	}
 
+	// https://platform.openai.com/docs/guides/function-calling?api-mode=responses&strict-mode=enabled#strict-mode
 	private List<OpenAiApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			var function = new OpenAiApi.FunctionTool.Function(toolDefinition.description(), toolDefinition.name(),
 					toolDefinition.inputSchema());
+
+			var strictField = function.getParameters().getOrDefault("strict", false);
+			assert strictField instanceof Boolean;
+
+			function.setStrict((Boolean) strictField);
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
 	}
