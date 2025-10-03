@@ -166,6 +166,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	@Override
 	public T convert(@NonNull String text) {
 		try {
+			text = text.replaceAll("<think>[\\s\\s]*?</think>","")
 			// Remove leading and trailing whitespace
 			text = text.trim();
 
