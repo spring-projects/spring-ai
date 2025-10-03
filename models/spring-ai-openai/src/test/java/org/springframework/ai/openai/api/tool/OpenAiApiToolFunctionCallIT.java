@@ -74,7 +74,7 @@ public class OpenAiApiToolFunctionCallIT {
 
 		var functionTool = new OpenAiApi.FunctionTool(OpenAiApi.FunctionTool.Type.FUNCTION,
 				new OpenAiApi.FunctionTool.Function("Get the weather in location. Return temperature in Celsius.",
-						"getCurrentWeather", """
+						"getCurrentWeather", ModelOptionsUtils.jsonToMap("""
 								{
 									"type": "object",
 									"properties": {
@@ -96,13 +96,9 @@ public class OpenAiApiToolFunctionCallIT {
 										}
 									},
 									"required": ["location", "lat", "lon", "unit"],
-									"strict": true,
 									"additionalProperties": false
 								}
-								"""));
-
-		assertThat(functionTool.getFunction().getStrict() == true);
-
+								"""), true));
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(message));
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, "gpt-4o",
