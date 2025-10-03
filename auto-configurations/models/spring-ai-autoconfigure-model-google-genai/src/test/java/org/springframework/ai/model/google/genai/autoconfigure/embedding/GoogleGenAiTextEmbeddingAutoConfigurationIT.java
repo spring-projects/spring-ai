@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingModel;
+import org.springframework.ai.model.google.genai.autoconfigure.BaseGoogleGenAiIT;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -42,8 +43,7 @@ public class GoogleGenAiTextEmbeddingAutoConfigurationIT {
 	void embeddingWithApiKey() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.embedding.api-key=" + System.getenv("GOOGLE_API_KEY"))
-			.withConfiguration(AutoConfigurations.of(GoogleGenAiTextEmbeddingAutoConfiguration.class,
-					GoogleGenAiEmbeddingConnectionAutoConfiguration.class));
+			.withConfiguration(BaseGoogleGenAiIT.googleGenAiEmbeddingAutoConfig());
 
 		contextRunner.run(context -> {
 			GoogleGenAiTextEmbeddingModel embeddingModel = context.getBean(GoogleGenAiTextEmbeddingModel.class);
