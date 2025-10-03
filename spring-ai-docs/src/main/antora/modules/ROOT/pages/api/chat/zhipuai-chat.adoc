@@ -2,11 +2,13 @@
 
 Spring AI supports the various AI language models from ZhiPu AI. You can interact with ZhiPu AI language models and create a multilingual conversational assistant based on ZhiPuAI models.
 
+If you're not a Chinese speaker, you can visit ZhiPuAI's international site https://z.ai/model-api[Z.ai]
+
 == Prerequisites
 
 You will need to create an API with ZhiPuAI to access ZhiPu AI language models.
 
-Create an account at https://open.bigmodel.cn/login[ZhiPu AI registration page] and generate the token on the https://open.bigmodel.cn/usercenter/apikeys[API Keys page].
+Create an account at https://open.bigmodel.cn/login[ZhiPu AI registration page] (or https://chat.z.ai/auth[Z.ai registration page]) and generate the token on the https://open.bigmodel.cn/usercenter/apikeys[API Keys page] (or https://z.ai/manage-apikey/apikey-list[Z.ai API Keys page]).
 
 The Spring AI project defines a configuration property named `spring.ai.zhipuai.api-key` that you should set to the value of the `API Key` obtained from the API Keys page.
 
@@ -108,7 +110,8 @@ The prefix `spring.ai.zhipuai` is used as the property prefix that lets you conn
 |====
 | Property | Description | Default
 
-| spring.ai.zhipuai.base-url   | The URL to connect to |  https://open.bigmodel.cn/api/paas
+| spring.ai.zhipuai.base-url   | The URL to connect to ZhiPuAI API. +
+If you are using the Z.ai Platform, you need to set it to `https://api.z.ai/api/paas[https://api.z.ai/api/paas]`. |  `https://open.bigmodel.cn/api/paas[https://open.bigmodel.cn/api/paas]`
 | spring.ai.zhipuai.api-key    | The API Key           |  -
 |====
 
@@ -133,9 +136,10 @@ The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configu
 
 | spring.ai.zhipuai.chat.enabled (Removed and no longer valid) | Enable ZhiPuAI chat model.  | true
 | spring.ai.model.chat | Enable ZhiPuAI chat model.  | zhipuai
-| spring.ai.zhipuai.chat.base-url | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url. |  https://open.bigmodel.cn/api/paas
+| spring.ai.zhipuai.chat.base-url | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url. +
+If you are using the Z.ai Platform, you need to set it to `https://api.z.ai/api/paas[https://api.z.ai/api/paas]`. |  `https://open.bigmodel.cn/api/paas[https://open.bigmodel.cn/api/paas]`
 | spring.ai.zhipuai.chat.api-key | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key. |  -
-| spring.ai.zhipuai.chat.options.model | This is the ZhiPuAI Chat model to use. You can select between models such as: `glm-4.5`, `glm-4.5-air`, `glm-4-air`, and more. | `glm-4-air`
+| spring.ai.zhipuai.chat.options.model | This is the ZhiPuAI Chat model to use. You can select between models such as: `glm-4.6`, `glm-4.5`, `glm-4-air`, and more. | `glm-4-air`
 | spring.ai.zhipuai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.zhipuai.chat.options.temperature | What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend altering this or top_p but not both. | 0.7
 | spring.ai.zhipuai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both.. | 1.0
