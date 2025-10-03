@@ -215,9 +215,9 @@ Different models have different minimum token thresholds for cache effectiveness
 Spring AI provides strategic cache placement through the `AnthropicCacheStrategy` enum:
 
 * `NONE`: Disables prompt caching completely
-* `SYSTEM_ONLY`: Caches only the system message content  
+* `SYSTEM_ONLY`: Caches only the system message content
 * `SYSTEM_AND_TOOLS`: Caches system message and the last tool definition
-* `CONVERSATION_HISTORY`: Caches conversation history in chat memory scenarios
+* `CONVERSATION_HISTORY`: Caches the entire conversation history by placing cache breakpoints on tools (if present), system message, and the last user message. This enables incremental prefix caching for multi-turn conversations
 
 This strategic approach ensures optimal cache breakpoint placement while staying within Anthropic's 4-breakpoint limit.
 
@@ -274,7 +274,7 @@ ChatResponse response = chatModel.call(
 
 [source,java]
 ----
-// Cache conversation history with ChatClient and memory (latest user question is not cached)
+// Cache conversation history with ChatClient and memory (cache breakpoint on last user message)
 ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultSystem("You are a personalized career counselor...")
     .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
@@ -622,12 +622,17 @@ Even small changes will require a new cache entry.
 The prompt caching implementation in Spring AI follows these key design principles:
 
 1. **Strategic Cache Placement**: Cache breakpoints are automatically placed at optimal locations based on the chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
+   - `CONVERSATION_HISTORY` places cache breakpoints on: tools (if present), system message, and the last user message
+   - This enables Anthropic's prefix matching to incrementally cache the growing conversation history
+   - Each turn builds on the previous cached prefix, maximizing cache reuse
 
 2. **Provider Portability**: Cache configuration is done through `AnthropicChatOptions` rather than individual messages, preserving compatibility when switching between different AI providers.
 
 3. **Thread Safety**: The cache breakpoint tracking is implemented with thread-safe mechanisms to handle concurrent requests correctly.
 
 4. **Automatic Content Ordering**: The implementation ensures proper on-the-wire ordering of JSON content blocks and cache controls according to Anthropic's API requirements.
+
+5. **Aggregate Eligibility Checking**: For `CONVERSATION_HISTORY`, the implementation considers all message types (user, assistant, tool) within the last ~20 content blocks when determining if the combined content meets the minimum token threshold for caching.
 
 === Future Enhancements
 

@@ -617,16 +617,16 @@ public class AnthropicChatModel implements ChatModel {
 				List<ContentBlock> contentBlocks = new ArrayList<>();
 				String content = message.getText();
 				// For conversation history caching, apply cache control to the
-				// message immediately before the last user message.
-				boolean isPenultimateUserMessage = (lastUserIndex > 0) && (i == lastUserIndex - 1);
+				// last user message to cache the entire conversation up to that point.
+				boolean isLastUserMessage = (lastUserIndex >= 0) && (i == lastUserIndex);
 				ContentBlock contentBlock = new ContentBlock(content);
-				if (isPenultimateUserMessage && cacheEligibilityResolver.isCachingEnabled()) {
-					// Combine text from all user messages except the last one (current
-					// question)
-					// as the basis for cache eligibility checks
-					String combinedUserMessagesText = combineEligibleUserMessagesText(allMessages, lastUserIndex);
+				if (isLastUserMessage && cacheEligibilityResolver.isCachingEnabled()) {
+					// Combine text from all messages (user, assistant, tool) up to and
+					// including the last user message as the basis for cache eligibility
+					// checks
+					String combinedMessagesText = combineEligibleMessagesText(allMessages, lastUserIndex);
 					contentBlocks.add(cacheAwareContentBlock(contentBlock, messageType, cacheEligibilityResolver,
-							combinedUserMessagesText));
+							combinedMessagesText));
 				}
 				else {
 					contentBlocks.add(contentBlock);
@@ -675,19 +675,21 @@ public class AnthropicChatModel implements ChatModel {
 		return result;
 	}
 
-	private String combineEligibleUserMessagesText(List<Message> userMessages, int lastUserIndex) {
-		List<Message> userMessagesForEligibility = new ArrayList<>();
+	private String combineEligibleMessagesText(List<Message> allMessages, int lastUserIndex) {
 		// Only 20 content blocks are considered by anthropic, so limit the number of
-		// message content to consider
-		int startIndex = Math.max(0, lastUserIndex - 20);
-		for (int i = startIndex; i < lastUserIndex; i++) {
-			Message message = userMessages.get(i);
-			if (message.getMessageType() == MessageType.USER) {
-				userMessagesForEligibility.add(message);
+		// message content to consider. We include all message types (user, assistant,
+		// tool)
+		// up to and including the last user message for aggregate eligibility checking.
+		int startIndex = Math.max(0, lastUserIndex - 19);
+		int endIndex = Math.min(allMessages.size(), lastUserIndex + 1);
+		StringBuilder sb = new StringBuilder();
+		for (int i = startIndex; i < endIndex; i++) {
+			Message message = allMessages.get(i);
+			String text = message.getText();
+			if (StringUtils.hasText(text)) {
+				sb.append(text);
 			}
 		}
-		StringBuilder sb = new StringBuilder();
-		userMessagesForEligibility.stream().map(Message::getText).filter(StringUtils::hasText).forEach(sb::append);
 		return sb.toString();
 	}
 
