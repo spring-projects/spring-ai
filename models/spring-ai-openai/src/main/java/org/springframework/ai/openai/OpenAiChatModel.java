@@ -16,11 +16,7 @@
 
 package org.springframework.ai.openai;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -691,10 +687,46 @@ public class OpenAiChatModel implements ChatModel {
 			var function = new OpenAiApi.FunctionTool.Function(toolDefinition.description(), toolDefinition.name(),
 					toolDefinition.inputSchema());
 
-			var strictField = function.getParameters().getOrDefault("strict", false);
-			assert strictField instanceof Boolean;
+			// if user wants a strict mode, they must've supplied 'additionalProperties',
+			// otherwise they will get:
+			// 400 : 'additionalProperties' is required to be supplied and to be false.
+			var hasAdditionalPropertiesFieldSetNotSetToTrue = Boolean.TRUE
+				.equals(function.getParameters().get("additionalProperties"));
 
-			function.setStrict((Boolean) strictField);
+			var requiredField = function.getParameters().getOrDefault("required", Collections.emptyList());
+			var propertyField = function.getParameters().getOrDefault("properties", Collections.emptyMap());
+
+			// Compare the set of required property names with the set of keys in
+			// properties
+			Set<String> requiredSet;
+			if (requiredField instanceof List<?> list) {
+				requiredSet = list.stream()
+					.filter(String.class::isInstance)
+					.map(String.class::cast)
+					.collect(Collectors.toSet());
+			}
+			else {
+				requiredSet = Collections.emptySet();
+			}
+
+			Set<String> propertyKeySet;
+			if (propertyField instanceof Map<?, ?> map) {
+				propertyKeySet = map.keySet()
+					.stream()
+					.filter(String.class::isInstance)
+					.map(k -> (String) k)
+					.collect(Collectors.toSet());
+			}
+			else {
+				propertyKeySet = Collections.emptySet();
+			}
+
+			var requiredFieldContainsEveryProperty = requiredSet.equals(propertyKeySet);
+
+			// set as 'strict' if possible
+			var canBeStrict = hasAdditionalPropertiesFieldSetNotSetToTrue && requiredFieldContainsEveryProperty;
+
+			function.setStrict(canBeStrict);
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
 	}
