@@ -23,6 +23,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Candidate;
@@ -371,8 +372,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 			return structBuilder.build();
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (JsonProcessingException ex) {
+			return Struct.newBuilder().putFields("result", Value.newBuilder().setStringValue(json).build()).build();
+		}
+		catch (Exception ex) {
+			throw new RuntimeException(ex);
 		}
 	}
 
