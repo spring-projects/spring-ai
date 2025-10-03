@@ -104,6 +104,34 @@ class DefaultAroundAdvisorChainTests {
 	}
 
 	@Test
+	void hasNextCallAdvisor() {
+		// The first advisor
+		TestAdvisor advisor1 = new TestAdvisor("advisor1", 1) {
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest,
+					CallAdvisorChain callAdvisorChain) {
+				assertThat(callAdvisorChain.hasNextCallAdvisor()).isTrue();
+				return callAdvisorChain.nextCall(chatClientRequest);
+			}
+		};
+
+		// The last advisor
+		TestAdvisor advisor2 = new TestAdvisor("advisor2", 2) {
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest,
+					CallAdvisorChain callAdvisorChain) {
+				assertThat(callAdvisorChain.hasNextCallAdvisor()).isFalse();
+				return null;
+			}
+		};
+
+		List<CallAdvisor> advisors = List.of(advisor1, advisor2);
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP).pushAll(advisors).build();
+
+		chain.nextCall(mock(ChatClientRequest.class));
+	}
+
+	@Test
 	void getStreamAdvisors() {
 		StreamAdvisor mockAdvisor1 = mock(StreamAdvisor.class);
 		when(mockAdvisor1.getName()).thenReturn("advisor1");
@@ -123,6 +151,88 @@ class DefaultAroundAdvisorChainTests {
 
 		chain.nextStream(ChatClientRequest.builder().prompt(new Prompt("Hello")).build()).blockLast();
 		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new StreamAdvisor[0]));
+	}
+
+	@Test
+	void hasNextStreamAdvisor() {
+		// The first advisor
+		TestAdvisor advisor1 = new TestAdvisor("advisor1", 1) {
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+					StreamAdvisorChain streamAdvisorChain) {
+				assertThat(streamAdvisorChain.hasNextStreamAdvisor()).isTrue();
+				return streamAdvisorChain.nextStream(chatClientRequest);
+			}
+		};
+		// The last advisor
+		TestAdvisor advisor2 = new TestAdvisor("advisor2", 2) {
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+					StreamAdvisorChain streamAdvisorChain) {
+				assertThat(streamAdvisorChain.hasNextStreamAdvisor()).isFalse();
+				return Flux.empty();
+			}
+		};
+
+		List<StreamAdvisor> advisors = List.of(advisor1, advisor2);
+		StreamAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(advisors)
+			.build();
+
+		chain.nextStream(mock(ChatClientRequest.class)).blockLast();
+	}
+
+	@Test
+	void testOrder() {
+		TestAdvisor advisor1 = new TestAdvisor("advisor1", 1);
+		TestAdvisor advisor21 = new TestAdvisor("advisor2_1", 2);
+		TestAdvisor advisor22 = new TestAdvisor("advisor2_2", 2);
+		TestAdvisor advisor3 = new TestAdvisor("advisor3", 3);
+
+		var advisors = List.of(advisor3, advisor1, advisor21, advisor22);
+
+		DefaultAroundAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(advisors)
+			.build();
+
+		assertThat(chain.getStreamAdvisors()).containsExactly(advisor1, advisor21, advisor22, advisor3);
+		assertThat(chain.getCallAdvisors()).containsExactly(advisor1, advisor21, advisor22, advisor3);
+	}
+
+	private static class TestAdvisor implements CallAdvisor, StreamAdvisor {
+
+		private final String name;
+
+		private final int order;
+
+		private TestAdvisor(String name, int order) {
+			this.name = name;
+			this.order = order;
+		}
+
+		@Override
+		public String getName() {
+			return name;
+		}
+
+		@Override
+		public int getOrder() {
+			return order;
+		}
+
+		@Override
+		public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+			System.out.println(callAdvisorChain.hasNextCallAdvisor());
+			return callAdvisorChain.nextCall(chatClientRequest);
+		}
+
+		@Override
+		public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
+				StreamAdvisorChain streamAdvisorChain) {
+			System.out.println(streamAdvisorChain.hasNextStreamAdvisor());
+			return streamAdvisorChain.nextStream(chatClientRequest);
+		}
+
 	}
 
 }
