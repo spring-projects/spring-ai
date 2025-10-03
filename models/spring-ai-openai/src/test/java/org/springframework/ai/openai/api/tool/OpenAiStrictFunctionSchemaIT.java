@@ -46,7 +46,6 @@ public class OpenAiStrictFunctionSchemaIT {
 		var functionTool = new OpenAiApi.FunctionTool(OpenAiApi.FunctionTool.Type.FUNCTION,
 				new OpenAiApi.FunctionTool.Function("Test function with strict schema.", "getCurrentWeather",
 						ModelOptionsUtils.jsonToMap(schemaJson), true));
-		functionTool.getFunction().setStrict(true);
 
 		List<ChatCompletionMessage> messages = new ArrayList<>(List.of(userMsg));
 		ChatCompletionRequest req = new ChatCompletionRequest(messages, "gpt-4o", List.of(functionTool),
@@ -93,6 +92,17 @@ public class OpenAiStrictFunctionSchemaIT {
 				}
 				""";
 
+		// Invalid: missing required
+		String invalidMissingRequired = """
+				{
+				  "type": "object",
+				  "properties": {
+				    "location": {"type": "string"}
+				  },
+				  "additionalProperties": true
+				}
+				""";
+
 		// Invalid: additionalProperties true
 		String invalidAdditionalTrue = """
 				{
@@ -107,6 +117,7 @@ public class OpenAiStrictFunctionSchemaIT {
 
 		invokeOnce(validSchema, true);
 		invokeOnce(invalidMissingAdditional, false);
+		invokeOnce(invalidMissingRequired, false);
 		invokeOnce(invalidAdditionalTrue, false);
 	}
 
