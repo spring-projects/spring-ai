@@ -331,11 +331,11 @@ class AnthropicPromptCachingMockTest {
 		assertThat(messagesArray.isArray()).isTrue();
 		assertThat(messagesArray.size()).isGreaterThan(1);
 
-		// Verify the second-to-last message has cache control (conversation history)
-		if (messagesArray.size() >= 2) {
-			JsonNode secondToLastMessage = messagesArray.get(messagesArray.size() - 2);
-			assertThat(secondToLastMessage.has("content")).isTrue();
-			JsonNode contentArray = secondToLastMessage.get("content");
+		// Verify the last message has cache control (conversation history)
+		if (messagesArray.size() >= 1) {
+			JsonNode lastMessage = messagesArray.get(messagesArray.size() - 1);
+			assertThat(lastMessage.has("content")).isTrue();
+			JsonNode contentArray = lastMessage.get("content");
 			if (contentArray.isArray() && contentArray.size() > 0) {
 				JsonNode lastContentBlock = contentArray.get(contentArray.size() - 1);
 				assertThat(lastContentBlock.has("cache_control")).isTrue();

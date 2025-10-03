@@ -280,17 +280,20 @@ public class AnthropicPromptCachingIT {
 
 	@Test
 	void shouldRespectMinLengthForUserHistoryCaching() {
-		// Two-user-message prompt; only the first (history tail) is eligible.
+		// Two-user-message prompt; aggregate length check applies
 		String userMessage = loadPrompt("system-only-cache-prompt.txt");
-		List<Message> messages = List.of(new UserMessage(userMessage),
-				new UserMessage("Please answer this question succinctly"));
+		String secondUserMessage = "Please answer this question succinctly";
+		List<Message> messages = List.of(new UserMessage(userMessage), new UserMessage(secondUserMessage));
 
-		// Set USER min length high so caching should not apply
+		// Calculate combined length of both messages for aggregate checking
+		int combinedLength = userMessage.length() + secondUserMessage.length();
+
+		// Set USER min length higher than combined length so caching should not apply
 		AnthropicChatOptions noCacheOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
-				.messageTypeMinContentLength(MessageType.USER, userMessage.length() + 1)
+				.messageTypeMinContentLength(MessageType.USER, combinedLength + 1)
 				.build())
 			.maxTokens(80)
 			.temperature(0.2)
@@ -303,12 +306,12 @@ public class AnthropicPromptCachingIT {
 		assertThat(noCacheUsage.cacheCreationInputTokens()).isEqualTo(0);
 		assertThat(noCacheUsage.cacheReadInputTokens()).isEqualTo(0);
 
-		// Now allow caching by lowering the USER min length
+		// Now allow caching by lowering the USER min length below combined length
 		AnthropicChatOptions cacheOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
 				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
-				.messageTypeMinContentLength(MessageType.USER, userMessage.length() - 1)
+				.messageTypeMinContentLength(MessageType.USER, combinedLength - 1)
 				.build())
 			.maxTokens(80)
 			.temperature(0.2)
@@ -319,20 +322,20 @@ public class AnthropicPromptCachingIT {
 		AnthropicApi.Usage cacheUsage = getAnthropicUsage(cacheResponse);
 		assertThat(cacheUsage).isNotNull();
 		assertThat(cacheUsage.cacheCreationInputTokens())
-			.as("Expect some cache creation tokens when USER history tail is cached")
+			.as("Expect some cache creation tokens when aggregate content meets min length")
 			.isGreaterThan(0);
 	}
 
 	@Test
-	void shouldRespectAllButLastUserMessageForUserHistoryCaching() {
-		// Three-user-message prompt; only the first (history tail) is eligible.
+	void shouldApplyCacheControlToLastUserMessageForConversationHistory() {
+		// Three-user-message prompt; the last user message will have cache_control.
 		String userMessage = loadPrompt("system-only-cache-prompt.txt");
 		List<Message> messages = List.of(new UserMessage(userMessage),
 				new UserMessage("Additional content to exceed min length"),
 				new UserMessage("Please answer this question succinctly"));
 
-		// The combined length of the first two USER messages exceeds the min length,
-		// so caching should apply
+		// The combined length of all three USER messages (including the last) exceeds
+		// the min length, so caching should apply
 		AnthropicChatOptions cacheOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
 			.cacheOptions(AnthropicCacheOptions.builder()
@@ -447,6 +450,165 @@ public class AnthropicPromptCachingIT {
 			assertThat(response).isNotNull();
 			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
 			logger.info("Response {}: {}", i + 1, response.getResult().getOutput().getText());
+		}
+	}
+
+	@Test
+	void shouldDemonstrateIncrementalCachingAcrossMultipleTurns() {
+		// This test demonstrates how caching grows incrementally with each turn
+		// NOTE: Anthropic requires 1024+ tokens for caching to activate
+		// We use a large system message to ensure we cross this threshold
+
+		// Large system prompt to ensure we exceed 1024 token minimum for caching
+		String largeSystemPrompt = loadPrompt("system-only-cache-prompt.txt");
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+				// Disable min content length since we're using aggregate check
+				.messageTypeMinContentLength(MessageType.USER, 0)
+				.build())
+			.maxTokens(200)
+			.temperature(0.3)
+			.build();
+
+		List<Message> conversationHistory = new ArrayList<>();
+		// Add system message to provide enough tokens for caching
+		conversationHistory.add(new SystemMessage(largeSystemPrompt));
+
+		// Turn 1: Initial question
+		logger.info("\n=== TURN 1: Initial Question ===");
+		conversationHistory.add(new UserMessage("What is quantum computing? Please explain the basics."));
+
+		ChatResponse turn1 = this.chatModel.call(new Prompt(conversationHistory, options));
+		assertThat(turn1).isNotNull();
+		String assistant1Response = turn1.getResult().getOutput().getText();
+		conversationHistory.add(turn1.getResult().getOutput());
+
+		AnthropicApi.Usage usage1 = getAnthropicUsage(turn1);
+		assertThat(usage1).isNotNull();
+		logger.info("Turn 1 - User: '{}'", conversationHistory.get(0).getText().substring(0, 50) + "...");
+		logger.info("Turn 1 - Assistant: '{}'",
+				assistant1Response.substring(0, Math.min(100, assistant1Response.length())) + "...");
+		logger.info("Turn 1 - Input tokens: {}", usage1.inputTokens());
+		logger.info("Turn 1 - Cache creation tokens: {}", usage1.cacheCreationInputTokens());
+		logger.info("Turn 1 - Cache read tokens: {}", usage1.cacheReadInputTokens());
+
+		// Note: First turn may not create cache if total tokens < 1024 (Anthropic's
+		// minimum)
+		// We'll track whether caching starts in turn 1 or later
+		boolean cachingStarted = usage1.cacheCreationInputTokens() > 0;
+		logger.info("Turn 1 - Caching started: {}", cachingStarted);
+		assertThat(usage1.cacheReadInputTokens()).as("Turn 1 should not read cache (no previous cache)").isEqualTo(0);
+
+		// Turn 2: Follow-up question
+		logger.info("\n=== TURN 2: Follow-up Question ===");
+		conversationHistory.add(new UserMessage("How does quantum entanglement work in this context?"));
+
+		ChatResponse turn2 = this.chatModel.call(new Prompt(conversationHistory, options));
+		assertThat(turn2).isNotNull();
+		String assistant2Response = turn2.getResult().getOutput().getText();
+		conversationHistory.add(turn2.getResult().getOutput());
+
+		AnthropicApi.Usage usage2 = getAnthropicUsage(turn2);
+		assertThat(usage2).isNotNull();
+		logger.info("Turn 2 - User: '{}'", conversationHistory.get(2).getText());
+		logger.info("Turn 2 - Assistant: '{}'",
+				assistant2Response.substring(0, Math.min(100, assistant2Response.length())) + "...");
+		logger.info("Turn 2 - Input tokens: {}", usage2.inputTokens());
+		logger.info("Turn 2 - Cache creation tokens: {}", usage2.cacheCreationInputTokens());
+		logger.info("Turn 2 - Cache read tokens: {}", usage2.cacheReadInputTokens());
+
+		// Second turn: If caching started in turn 1, we should see cache reads
+		// Otherwise, caching might start here if we've accumulated enough tokens
+		if (cachingStarted) {
+			assertThat(usage2.cacheReadInputTokens()).as("Turn 2 should read cache from Turn 1").isGreaterThan(0);
+		}
+		// Update caching status
+		cachingStarted = cachingStarted || usage2.cacheCreationInputTokens() > 0;
+
+		// Turn 3: Another follow-up
+		logger.info("\n=== TURN 3: Deeper Question ===");
+		conversationHistory
+			.add(new UserMessage("Can you give me a practical example of quantum computing application?"));
+
+		ChatResponse turn3 = this.chatModel.call(new Prompt(conversationHistory, options));
+		assertThat(turn3).isNotNull();
+		String assistant3Response = turn3.getResult().getOutput().getText();
+		conversationHistory.add(turn3.getResult().getOutput());
+
+		AnthropicApi.Usage usage3 = getAnthropicUsage(turn3);
+		assertThat(usage3).isNotNull();
+		logger.info("Turn 3 - User: '{}'", conversationHistory.get(4).getText());
+		logger.info("Turn 3 - Assistant: '{}'",
+				assistant3Response.substring(0, Math.min(100, assistant3Response.length())) + "...");
+		logger.info("Turn 3 - Input tokens: {}", usage3.inputTokens());
+		logger.info("Turn 3 - Cache creation tokens: {}", usage3.cacheCreationInputTokens());
+		logger.info("Turn 3 - Cache read tokens: {}", usage3.cacheReadInputTokens());
+
+		// Third turn: Should read cache if caching has started
+		if (cachingStarted) {
+			assertThat(usage3.cacheReadInputTokens()).as("Turn 3 should read cache if caching has started")
+				.isGreaterThan(0);
+		}
+		// Update caching status
+		cachingStarted = cachingStarted || usage3.cacheCreationInputTokens() > 0;
+
+		// Turn 4: Final question
+		logger.info("\n=== TURN 4: Final Question ===");
+		conversationHistory.add(new UserMessage("What are the limitations of current quantum computers?"));
+
+		ChatResponse turn4 = this.chatModel.call(new Prompt(conversationHistory, options));
+		assertThat(turn4).isNotNull();
+		String assistant4Response = turn4.getResult().getOutput().getText();
+		conversationHistory.add(turn4.getResult().getOutput());
+
+		AnthropicApi.Usage usage4 = getAnthropicUsage(turn4);
+		assertThat(usage4).isNotNull();
+		logger.info("Turn 4 - User: '{}'", conversationHistory.get(6).getText());
+		logger.info("Turn 4 - Assistant: '{}'",
+				assistant4Response.substring(0, Math.min(100, assistant4Response.length())) + "...");
+		logger.info("Turn 4 - Input tokens: {}", usage4.inputTokens());
+		logger.info("Turn 4 - Cache creation tokens: {}", usage4.cacheCreationInputTokens());
+		logger.info("Turn 4 - Cache read tokens: {}", usage4.cacheReadInputTokens());
+
+		// Fourth turn: By now we should definitely have caching working
+		assertThat(cachingStarted).as("Caching should have started by turn 4").isTrue();
+		if (cachingStarted) {
+			assertThat(usage4.cacheReadInputTokens()).as("Turn 4 should read cache").isGreaterThan(0);
+		}
+
+		// Summary logging
+		logger.info("\n=== CACHING SUMMARY ===");
+		logger.info("Turn 1 - Created: {}, Read: {}", usage1.cacheCreationInputTokens(), usage1.cacheReadInputTokens());
+		logger.info("Turn 2 - Created: {}, Read: {}", usage2.cacheCreationInputTokens(), usage2.cacheReadInputTokens());
+		logger.info("Turn 3 - Created: {}, Read: {}", usage3.cacheCreationInputTokens(), usage3.cacheReadInputTokens());
+		logger.info("Turn 4 - Created: {}, Read: {}", usage4.cacheCreationInputTokens(), usage4.cacheReadInputTokens());
+
+		// Demonstrate incremental growth pattern
+		logger.info("\n=== CACHE GROWTH PATTERN ===");
+		logger.info("Cache read tokens grew from {} → {} → {} → {}", usage1.cacheReadInputTokens(),
+				usage2.cacheReadInputTokens(), usage3.cacheReadInputTokens(), usage4.cacheReadInputTokens());
+		logger.info("This demonstrates incremental prefix caching: each turn builds on the previous cache");
+
+		// Verify that once caching starts, cache reads continue to grow
+		List<Integer> cacheReads = List.of(usage1.cacheReadInputTokens(), usage2.cacheReadInputTokens(),
+				usage3.cacheReadInputTokens(), usage4.cacheReadInputTokens());
+		int firstNonZeroIndex = -1;
+		for (int i = 0; i < cacheReads.size(); i++) {
+			if (cacheReads.get(i) > 0) {
+				firstNonZeroIndex = i;
+				break;
+			}
+		}
+		if (firstNonZeroIndex >= 0 && firstNonZeroIndex < cacheReads.size() - 1) {
+			// Verify each subsequent turn has cache reads >= previous
+			for (int i = firstNonZeroIndex + 1; i < cacheReads.size(); i++) {
+				assertThat(cacheReads.get(i))
+					.as("Cache reads should grow or stay same once caching starts (turn %d vs turn %d)", i + 1, i)
+					.isGreaterThanOrEqualTo(cacheReads.get(i - 1));
+			}
 		}
 	}
 
