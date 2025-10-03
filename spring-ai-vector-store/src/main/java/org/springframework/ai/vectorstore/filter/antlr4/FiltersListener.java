@@ -177,6 +177,20 @@ public interface FiltersListener extends ParseTreeListener {
 	void exitIdentifier(FiltersParser.IdentifierContext ctx);
 
 	/**
+	 * Enter a parse tree produced by the {@code LongConstant} labeled alternative in
+	 * {@link FiltersParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void enterLongConstant(FiltersParser.LongConstantContext ctx);
+
+	/**
+	 * Exit a parse tree produced by the {@code LongConstant} labeled alternative in
+	 * {@link FiltersParser#constant}.
+	 * @param ctx the parse tree
+	 */
+	void exitLongConstant(FiltersParser.LongConstantContext ctx);
+
+	/**
 	 * Enter a parse tree produced by the {@code IntegerConstant} labeled alternative in
 	 * {@link FiltersParser#constant}.
 	 * @param ctx the parse tree
