@@ -212,14 +212,43 @@ Different models have different minimum token thresholds for cache effectiveness
 
 === Cache Strategies
 
-Spring AI provides strategic cache placement through the `AnthropicCacheStrategy` enum:
+Spring AI provides strategic cache placement through the `AnthropicCacheStrategy` enum.
+Each strategy automatically places cache breakpoints at optimal locations while staying within Anthropic's 4-breakpoint limit.
 
-* `NONE`: Disables prompt caching completely
-* `SYSTEM_ONLY`: Caches only the system message content  
-* `SYSTEM_AND_TOOLS`: Caches system message and the last tool definition
-* `CONVERSATION_HISTORY`: Caches conversation history in chat memory scenarios
+[cols="2,3,5", stripes=even]
+|====
+| Strategy | Breakpoints Used | Use Case
 
-This strategic approach ensures optimal cache breakpoint placement while staying within Anthropic's 4-breakpoint limit.
+| `NONE`
+| 0
+| Disables prompt caching completely.
+Use when requests are one-off or content is too small to benefit from caching.
+
+| `SYSTEM_ONLY`
+| 1
+| Caches system message content.
+Tools are cached implicitly via Anthropic's automatic ~20-block lookback mechanism.
+Use when system prompts are large and stable with fewer than 20 tools.
+
+| `TOOLS_ONLY`
+| 1
+| Caches tool definitions only. System messages remain uncached and are processed fresh on each request.
+Use when tool definitions are large and stable (5000+ tokens) but system prompts change frequently or vary per tenant/context.
+
+| `SYSTEM_AND_TOOLS`
+| 2
+| Caches both tool definitions (breakpoint 1) and system message (breakpoint 2) explicitly.
+Use when you have 20+ tools (beyond automatic lookback) or want deterministic caching of both components.
+System changes don't invalidate tool cache.
+
+| `CONVERSATION_HISTORY`
+| 1-4
+| Caches entire conversation history up to the current user question.
+Use for multi-turn conversations with chat memory where conversation history grows over time.
+|====
+
+IMPORTANT: Due to Anthropic's cascade invalidation, changing tool definitions will invalidate ALL downstream cache breakpoints (system, messages).
+Tool stability is critical when using `SYSTEM_AND_TOOLS` or `CONVERSATION_HISTORY` strategies.
 
 === Enabling Prompt Caching
 
@@ -227,9 +256,11 @@ Enable prompt caching by setting `cacheOptions` on `AnthropicChatOptions` and ch
 
 ==== System-Only Caching
 
+Best for: Stable system prompts with <20 tools (tools cached implicitly via automatic lookback).
+
 [source,java]
 ----
-// Cache system message content
+// Cache system message content (tools cached implicitly)
 ChatResponse response = chatModel.call(
     new Prompt(
         List.of(
@@ -247,11 +278,39 @@ ChatResponse response = chatModel.call(
 );
 ----
 
-==== System and Tools Caching
+==== Tools-Only Caching
+
+Best for: Large stable tool sets with dynamic system prompts (multi-tenant apps, A/B testing).
 
 [source,java]
 ----
-// Cache system message and the last tool definition
+// Cache tool definitions, system prompt processed fresh each time
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a " + persona + " assistant..."), // Dynamic per-tenant
+            new UserMessage("What's the weather like in San Francisco?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.TOOLS_ONLY)
+                .build())
+            .toolCallbacks(weatherToolCallback) // Large tool set cached
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+==== System and Tools Caching
+
+Best for: 20+ tools (beyond automatic lookback) or when both components should be cached independently.
+
+[source,java]
+----
+// Cache both tool definitions and system message with independent breakpoints
+// Changing system won't invalidate tool cache (but changing tools invalidates both)
 ChatResponse response = chatModel.call(
     new Prompt(
         List.of(
@@ -259,11 +318,11 @@ ChatResponse response = chatModel.call(
             new UserMessage("What's the weather like in San Francisco?")
         ),
         AnthropicChatOptions.builder()
-            .model("claude-sonnet-4") 
+            .model("claude-sonnet-4")
             .cacheOptions(AnthropicCacheOptions.builder()
                 .strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
                 .build())
-            .toolCallbacks(weatherToolCallback)
+            .toolCallbacks(weatherToolCallback) // 20+ tools
             .maxTokens(500)
             .build()
     )
@@ -317,7 +376,9 @@ String response = ChatClient.create(chatModel)
 
 ==== Per-Message TTL (5m or 1h)
 
-By default, cached content uses a 5-minute TTL. You can set a 1-hour TTL for specific message types. When 1-hour TTL is used, Spring AI automatically sets the required Anthropic beta header.
+By default, cached content uses a 5-minute TTL.
+You can set a 1-hour TTL for specific message types.
+When 1-hour TTL is used, Spring AI automatically sets the required Anthropic beta header.
 
 [source,java]
 ----
@@ -544,6 +605,62 @@ for (String filename : codeFiles) {
 // Guidelines cached after first request, subsequent reviews are faster and cheaper
 ----
 
+==== Multi-Tenant SaaS with Shared Tools
+
+Build a multi-tenant application where tools are shared but system prompts are customized per tenant:
+
+[source,java]
+----
+// Define large shared tool set (used by all tenants)
+List<FunctionCallback> sharedTools = Arrays.asList(
+    weatherToolCallback,    // ~500 tokens
+    calendarToolCallback,   // ~800 tokens
+    emailToolCallback,      // ~700 tokens
+    analyticsToolCallback,  // ~600 tokens
+    reportingToolCallback,  // ~900 tokens
+    // ... 20+ more tools, totaling 5000+ tokens
+);
+
+@Service
+public class MultiTenantAIService {
+
+    public String handleTenantRequest(String tenantId, String userQuery) {
+        // Get tenant-specific configuration
+        TenantConfig config = tenantRepository.findById(tenantId);
+
+        // Dynamic system prompt per tenant
+        String tenantSystemPrompt = String.format("""
+            You are %s's AI assistant. Company values: %s.
+            Brand voice: %s. Compliance requirements: %s.
+            """, config.companyName(), config.values(),
+                 config.brandVoice(), config.compliance());
+
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                List.of(
+                    new SystemMessage(tenantSystemPrompt), // Different per tenant, NOT cached
+                    new UserMessage(userQuery)
+                ),
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4")
+                    .cacheOptions(AnthropicCacheOptions.builder()
+                        .strategy(AnthropicCacheStrategy.TOOLS_ONLY) // Cache tools only
+                        .build())
+                    .toolCallbacks(sharedTools) // Cached once, shared across all tenants
+                    .maxTokens(800)
+                    .build()
+            )
+        );
+
+        return response.getResult().getOutput().getText();
+    }
+}
+
+// Tools cached once (5000 tokens @ 10% = 500 token cost for cache hits)
+// Each tenant's unique system prompt processed fresh (200-500 tokens @ 100%)
+// Total per request: ~700-1000 tokens vs 5500+ without TOOLS_ONLY
+----
+
 ==== Customer Support with Knowledge Base
 
 Create a customer support system that caches your product knowledge base for consistent, accurate responses:
@@ -562,7 +679,7 @@ String knowledgeBase = """
 
 @Service
 public class CustomerSupportService {
-    
+
     public String handleCustomerQuery(String customerQuery, String customerId) {
         ChatResponse response = chatModel.call(
             new Prompt(
@@ -580,7 +697,7 @@ public class CustomerSupportService {
                     .build()
             )
         );
-        
+
         return response.getResult().getOutput().getText();
     }
 }
@@ -591,18 +708,27 @@ public class CustomerSupportService {
 
 === Best Practices
 
-1. **Choose the Right Strategy**: 
-   - Use `SYSTEM_ONLY` for reusable system prompts and instructions
-   - Use `SYSTEM_AND_TOOLS` when you have both system content and tool definitions to cache (the last tool definition is cached)
+1. **Choose the Right Strategy**:
+   - Use `SYSTEM_ONLY` for stable system prompts with <20 tools (tools cached implicitly via automatic lookback)
+   - Use `TOOLS_ONLY` for large stable tool sets (5000+ tokens) with dynamic system prompts (multi-tenant, A/B testing)
+   - Use `SYSTEM_AND_TOOLS` when you have 20+ tools (beyond automatic lookback) or want both cached independently
    - Use `CONVERSATION_HISTORY` with ChatClient memory for multi-turn conversations
    - Use `NONE` to explicitly disable caching
 
-2. **Meet Token Requirements**: Focus on caching content that meets the minimum token requirements (1024+ tokens for Sonnet 4, 2048+ for Haiku models).
+2. **Understand Cascade Invalidation**: Anthropic's cache hierarchy (`tools → system → messages`) means changes flow downward:
+   - Changing **tools** invalidates: tools + system + messages (all caches) ❌❌❌
+   - Changing **system** invalidates: system + messages (tools cache remains valid) ✅❌❌
+   - Changing **messages** invalidates: messages only (tools and system caches remain valid) ✅✅❌
 
-3. **Reuse Identical Content**: Caching works best with exact matches of prompt content.
-Even small changes will require a new cache entry.
+   **Tool stability is critical** when using `SYSTEM_AND_TOOLS` or `CONVERSATION_HISTORY` strategies.
 
-4. **Monitor Token Usage**: Use the cache usage statistics to track cache effectiveness:
+3. **SYSTEM_AND_TOOLS Independence**: With `SYSTEM_AND_TOOLS`, changing the system message does NOT invalidate the tool cache, allowing efficient reuse of cached tools even when system prompts vary.
+
+4. **Meet Token Requirements**: Focus on caching content that meets the minimum token requirements (1024+ tokens for Sonnet 4, 2048+ for Haiku models).
+
+5. **Reuse Identical Content**: Caching works best with exact matches of prompt content. Even small changes will require a new cache entry.
+
+6. **Monitor Token Usage**: Use the cache usage statistics to track cache effectiveness:
    ```java
    AnthropicApi.Usage usage = (AnthropicApi.Usage) response.getMetadata().getUsage().getNativeUsage();
    if (usage != null) {
@@ -611,11 +737,11 @@ Even small changes will require a new cache entry.
    }
    ```
 
-5. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
+7. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
 
-6. **Cache Lifetime**: Default TTL is 5 minutes; set 1-hour TTL per message type via `messageTypeTtl(...)`. Each cache access resets the timer.
+8. **Cache Lifetime**: Default TTL is 5 minutes; set 1-hour TTL per message type via `messageTypeTtl(...)`. Each cache access resets the timer.
 
-7. **Tool Caching Limitations**: Be aware that tool-based interactions may not provide cache usage metadata in the response.
+9. **Tool Caching Limitations**: Be aware that tool-based interactions may not provide cache usage metadata in the response.
 
 === Implementation Details
 
