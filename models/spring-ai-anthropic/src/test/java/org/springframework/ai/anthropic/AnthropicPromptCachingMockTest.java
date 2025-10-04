@@ -104,9 +104,17 @@ class AnthropicPromptCachingMockTest {
 		this.mockWebServer
 			.enqueue(new MockResponse().setBody(mockResponse).setHeader("Content-Type", "application/json"));
 
+		// Create tool callback to test that tools are NOT cached with SYSTEM_ONLY
+		var toolMethod = ReflectionUtils.findMethod(TestTools.class, "getWeather", String.class);
+		MethodToolCallback toolCallback = MethodToolCallback.builder()
+			.toolDefinition(ToolDefinitions.builder(toolMethod).description("Get weather for a location").build())
+			.toolMethod(toolMethod)
+			.build();
+
 		// Test with SYSTEM_ONLY cache strategy
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
+			.toolCallbacks(List.of(toolCallback))
 			.build();
 
 		Prompt prompt = new Prompt(
@@ -128,6 +136,18 @@ class AnthropicPromptCachingMockTest {
 			JsonNode lastSystemBlock = systemNode.get(systemNode.size() - 1);
 			assertThat(lastSystemBlock.has("cache_control")).isTrue();
 			assertThat(lastSystemBlock.get("cache_control").get("type").asText()).isEqualTo("ephemeral");
+		}
+
+		// Verify tools exist but DO NOT have cache_control (key difference from
+		// SYSTEM_AND_TOOLS)
+		if (requestBody.has("tools")) {
+			JsonNode toolsArray = requestBody.get("tools");
+			assertThat(toolsArray.isArray()).isTrue();
+			// Verify NO tool has cache_control
+			for (int i = 0; i < toolsArray.size(); i++) {
+				JsonNode tool = toolsArray.get(i);
+				assertThat(tool.has("cache_control")).isFalse();
+			}
 		}
 
 		// Verify response
