@@ -77,7 +77,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 				.toolNames("paymentStatus")
 				.user("""
 				What is the status of my payment transactions 001, 002 and 003?
-				If requred invoke the function per transaction.
+				If required invoke the function per transaction.
 				""").call().content();
 		// @formatter:on
 		logger.info("" + content);
@@ -94,7 +94,7 @@ public class VertexAiGeminiPaymentTransactionIT {
 			.toolNames("paymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
-					If requred invoke the function per transaction.
+					If required invoke the function per transaction.
 					""")
 			.stream()
 			.content();
