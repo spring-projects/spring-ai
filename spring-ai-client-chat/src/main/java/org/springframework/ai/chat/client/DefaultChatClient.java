@@ -80,15 +80,19 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultChatClient implements ChatClient {
 
+	private final ChatModel chatModel;
+
 	private static final ChatClientObservationConvention DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION = new DefaultChatClientObservationConvention();
 
 	private static final TemplateRenderer DEFAULT_TEMPLATE_RENDERER = StTemplateRenderer.builder().build();
 
 	private final DefaultChatClientRequestSpec defaultChatClientRequest;
 
-	public DefaultChatClient(DefaultChatClientRequestSpec defaultChatClientRequest) {
+	public DefaultChatClient(DefaultChatClientRequestSpec defaultChatClientRequest, @Nullable ChatModel chatModel) {
 		Assert.notNull(defaultChatClientRequest, "defaultChatClientRequest cannot be null");
+		Assert.notNull(chatModel, "chatModel cannot be null");
 		this.defaultChatClientRequest = defaultChatClientRequest;
+		this.chatModel = chatModel;
 	}
 
 	@Override
@@ -119,6 +123,16 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		return spec;
+	}
+
+	/**
+	 * Returns the underlying {@link ChatModel} used by this client. This allows access to
+	 * model metadata such as the model name, temperature, etc.
+	 * @return the ChatModel
+	 */
+	@Override
+	public ChatModel getChatModel() {
+		return this.chatModel;
 	}
 
 	/**
