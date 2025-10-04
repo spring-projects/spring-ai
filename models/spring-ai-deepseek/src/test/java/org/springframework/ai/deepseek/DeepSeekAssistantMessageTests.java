@@ -170,8 +170,8 @@ class DeepSeekAssistantMessageTests {
 		List<ToolCall> toolCalls = List.of(new ToolCall("1", "function", "testFunction", "{}"));
 		List<Media> media = List.of();
 
-		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.builder()
-			.content("content")
+		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
+		DeepSeekAssistantMessage message = builder.content("content")
 			.reasoningContent("reasoning")
 			.prefix(true)
 			.properties(properties)

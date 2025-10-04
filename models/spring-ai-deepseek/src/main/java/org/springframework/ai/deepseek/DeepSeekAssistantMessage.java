@@ -119,35 +119,35 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
+	public static final class Builder {
 
-	public static final class Builder extends AssistantMessage.Builder {
+		private String content;
+
+		private Map<String, Object> properties = Map.of();
+
+		private List<ToolCall> toolCalls = List.of();
+
+		private List<Media> media = List.of();
 
 		private Boolean prefix;
 
 		private String reasoningContent;
 
-		@Override
 		public Builder content(String content) {
 			this.content = content;
 			return this;
 		}
 
-		@Override
 		public Builder properties(Map<String, Object> properties) {
 			this.properties = properties;
 			return this;
 		}
 
-		@Override
 		public Builder toolCalls(List<ToolCall> toolCalls) {
 			this.toolCalls = toolCalls;
 			return this;
 		}
 
-		@Override
 		public Builder media(List<Media> media) {
 			this.media = media;
 			return this;
