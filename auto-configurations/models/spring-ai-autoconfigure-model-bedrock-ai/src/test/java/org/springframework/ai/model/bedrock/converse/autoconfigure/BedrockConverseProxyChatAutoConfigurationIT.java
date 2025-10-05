@@ -45,7 +45,7 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withPropertyValues(
 				"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0",
-				"spring.ai.bedrock.converse.chat.options.temperature=0.5")
+				"spring.ai.bedrock.converse.chat.options.temperature=0.5", "spring.ai.bedrock.aws.region=us-east-1")
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
 
 	@Test

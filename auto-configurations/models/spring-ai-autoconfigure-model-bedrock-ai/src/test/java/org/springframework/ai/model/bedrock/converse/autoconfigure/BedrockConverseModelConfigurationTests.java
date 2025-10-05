@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockConverseModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withPropertyValues("spring.ai.bedrock.aws.region=us-east-1")
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
 
 	@Test

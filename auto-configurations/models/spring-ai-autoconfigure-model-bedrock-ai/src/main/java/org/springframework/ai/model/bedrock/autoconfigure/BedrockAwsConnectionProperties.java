@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Bedrock AWS connection.
  *
  * @author Christian Tzolov
+ * @author Andrey Litvitski
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockAwsConnectionProperties.CONFIG_PREFIX)
@@ -32,9 +33,10 @@ public class BedrockAwsConnectionProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.bedrock.aws";
 
 	/**
-	 * AWS region to use. Defaults to us-east-1.
+	 * AWS region to use. Otherwise the DefaultAwsRegionProviderChain will be used to
+	 * resolve the region.
 	 */
-	private String region = "us-east-1";
+	private String region;
 
 	/**
 	 * AWS access key.
