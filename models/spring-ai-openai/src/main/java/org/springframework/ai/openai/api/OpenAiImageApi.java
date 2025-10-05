@@ -18,15 +18,14 @@ package org.springframework.ai.openai.api;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +34,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * OpenAI Image API.
@@ -89,6 +92,50 @@ public class OpenAiImageApi {
 		return this.restClient.post()
 			.uri(this.imagesPath)
 			.body(openAiImageRequest)
+			.contentType(MediaType.APPLICATION_JSON)
+			.retrieve()
+			.toEntity(OpenAiImageResponse.class);
+	}
+
+	public ResponseEntity<OpenAiImageResponse> createImageEdit(OpenAiImageEditRequest openAiImageEditRequest) {
+		Assert.notNull(openAiImageEditRequest, "Image request cannot be null.");
+		Assert.hasLength(openAiImageEditRequest.prompt(), "Prompt cannot be empty.");
+		Assert.notEmpty(openAiImageEditRequest.image(), "Image cannot be empty.");
+
+		MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+		openAiImageEditRequest.image().forEach(image -> {
+			Resource imageResource = new ByteArrayResource(image.getDataAsByteArray()) {
+				@Override
+				public String getFilename() {
+					return image.getName();
+				}
+			};
+			multipartBody.add("image[]", imageResource);
+		});
+
+		multipartBody.add("model", openAiImageEditRequest.model());
+		multipartBody.add("prompt", openAiImageEditRequest.prompt());
+		multipartBody.add("response_format", openAiImageEditRequest.responseFormat());
+		multipartBody.add("n", openAiImageEditRequest.n());
+		multipartBody.add("quality", openAiImageEditRequest.quality());
+		multipartBody.add("size", openAiImageEditRequest.size());
+		multipartBody.add("user", openAiImageEditRequest.user());
+
+		Media mask = openAiImageEditRequest.mask();
+		if (mask != null) {
+			Resource imageResource = new ByteArrayResource(mask.getDataAsByteArray()) {
+				@Override
+				public String getFilename() {
+					return mask.getName();
+				}
+			};
+			multipartBody.add("mask", imageResource);
+		}
+
+		return this.restClient.post()
+			.uri("v1/images/edits")
+			.body(multipartBody)
+			.contentType(MediaType.MULTIPART_FORM_DATA)
 			.retrieve()
 			.toEntity(OpenAiImageResponse.class);
 	}
@@ -102,6 +149,13 @@ public class OpenAiImageApi {
 	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
 	 */
 	public enum ImageModel {
+
+		/**
+		 * GPT Image 1 is our new state-of-the-art image generation model. It is a
+		 * natively multimodal language model that accepts both text and image inputs, and
+		 * produces image outputs.
+		 */
+		GPT_IMAGE_1("gpt-image-1"),
 
 		/**
 		 * The latest DALL·E model released in Nov 2023.
@@ -141,6 +195,27 @@ public class OpenAiImageApi {
 
 		public OpenAiImageRequest(String prompt, String model) {
 			this(prompt, model, null, null, null, null, null, null);
+		}
+	}
+
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record OpenAiImageEditRequest(
+		@JsonProperty("image") List<Media> image,
+		@JsonProperty("prompt") String prompt,
+		@JsonProperty("model") String model,
+		@JsonProperty("mask") Media mask,
+		@JsonProperty("n") Integer n,
+		@JsonProperty("quality") String quality,
+		@JsonProperty("response_format") String responseFormat,
+		@JsonProperty("size") String size,
+		@JsonProperty("user") String user) {
+
+		public OpenAiImageEditRequest(List<Media> images, String prompt, String model) {
+			this(images, prompt, model, null, null, null, null, null, null);
+		}
+
+		public OpenAiImageEditRequest(Media image, String prompt, String model) {
+			this(List.of(image), prompt, model);
 		}
 	}
 
