@@ -124,8 +124,11 @@ public class OpenAiRetryTests {
 					.responseFormat(TranscriptResponseFormat.JSON)
 					.build(),
 				this.retryTemplate);
-		this.imageModel = new OpenAiImageModel(this.openAiImageApi, OpenAiImageOptions.builder().build(),
-				this.retryTemplate);
+		this.imageModel = OpenAiImageModel.builder()
+			.openAiImageApi(this.openAiImageApi)
+			.defaultOptions(OpenAiImageOptions.builder().build())
+			.retryTemplate(this.retryTemplate)
+			.build();
 	}
 
 	@Test
