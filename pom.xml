@@ -333,7 +333,7 @@
 
 		<!-- MCP-->
 		<mcp.sdk.version>0.14.0</mcp.sdk.version>
-		<mcp-annotations.version>0.5.1</mcp-annotations.version>
+		<mcp-annotations.version>0.6.0-SNAPSHOT</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
