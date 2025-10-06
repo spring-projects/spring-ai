@@ -222,7 +222,8 @@ class DefaultToolCallingManagerTest {
 			.toolCallbackResolver(toolName -> {
 				if ("tool1".equals(toolName)) {
 					return toolCallback1;
-				} if ("tool2".equals(toolName)) {
+				}
+				if ("tool2".equals(toolName)) {
 					return toolCallback2;
 				}
 				return null;
