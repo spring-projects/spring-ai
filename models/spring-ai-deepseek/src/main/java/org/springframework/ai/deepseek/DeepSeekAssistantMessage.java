@@ -19,7 +19,6 @@ package org.springframework.ai.deepseek;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.content.Media;
 
@@ -35,6 +34,11 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	public DeepSeekAssistantMessage(String content, String reasoningContent) {
 		super(content);
+		this.reasoningContent = reasoningContent;
+	}
+
+	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties) {
+		super(content, properties);
 		this.reasoningContent = reasoningContent;
 	}
 
