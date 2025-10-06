@@ -20,6 +20,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -682,62 +684,118 @@ public class OpenAiChatModel implements ChatModel {
 	}
 
 	// https://platform.openai.com/docs/guides/function-calling?api-mode=responses&strict-mode=enabled#strict-mode
+	private boolean qualifiesForStrict(Object schema) {
+		// Accept Map (from Jackson/ObjectMapper) or JsonNode; normalize to JsonNode for
+		// traversal
+		JsonNode root = normalizeToJsonNode(schema);
+		return isStrictObjectTree(root);
+	}
+
+	private JsonNode normalizeToJsonNode(Object schema) {
+		var mapper = new ObjectMapper();
+		if (schema instanceof JsonNode n)
+			return n;
+		if (schema instanceof Map<?, ?> m)
+			return mapper.valueToTree(m);
+		// If you store parameters as Object, convert generically
+		return mapper.valueToTree(schema);
+	}
+
+	private boolean isStrictObjectTree(JsonNode node) {
+		if (node == null || node.isNull())
+			return false;
+
+		// Resolve $ref / allOf merges if present (optional: implement full resolver; here
+		// we require already-resolved schemas)
+		// If you can’t guarantee resolved refs, treat as non-strict to be safe.
+
+		// Handle Object nodes
+		if (isType(node, "object")) {
+			// Must have additionalProperties === false
+			if (!node.has("additionalProperties") || !node.get("additionalProperties").isBoolean()
+					|| node.get("additionalProperties").asBoolean()) {
+				return false;
+			}
+			// properties must exist; required == properties.keySet()
+			var props = node.path("properties");
+			if (!props.isObject())
+				return false;
+
+			HashSet<String> propertyKeys = new HashSet<>();
+			props.fieldNames().forEachRemaining(propertyKeys::add);
+
+			HashSet<String> requiredKeys = new HashSet<>();
+			var req = node.path("required");
+			if (!req.isArray())
+				return false;
+			req.forEach(n -> {
+				if (n.isTextual())
+					requiredKeys.add(n.asText());
+			});
+
+			if (!requiredKeys.equals(propertyKeys))
+				return false;
+
+			// Recurse into each property schema
+			for (var it : props.properties()) {
+				if (!isStrictObjectTree(it.getValue()))
+					return false;
+			}
+		}
+
+		// Handle Array nodes: recurse into "items"
+		if (isType(node, "array")) {
+			var items = node.path("items");
+			if (items.isMissingNode())
+				return true; // arrays of scalars unknown; safe to ignore
+			if (!isStrictObjectTree(items))
+				return false;
+		}
+
+		// Handle supported combinator: oneOf
+		for (String key : new String[] { "anyOf" }) {
+			var comb = node.path(key);
+			if (comb.isArray()) {
+				for (var el : comb) {
+					if (!isStrictObjectTree(el))
+						return false;
+				}
+			}
+		}
+
+		// Handle unsupported combinators: fail if seen
+		for (String key : new String[] { "oneOf", "allOf" }) {
+			var comb = node.path(key);
+			if (comb.isArray()) {
+				return false;
+			}
+		}
+
+		// Primitive types or nodes without "type": pass-through
+		return true;
+	}
+
+	private boolean isType(JsonNode node, String type) {
+		var t = node.path("type");
+		if (t.isTextual())
+			return type.equals(t.asText());
+		if (t.isArray()) { // e.g., type: ["object","null"] — strict requires non-nullable
+							// objects be the same
+			for (var el : t)
+				if (el.isTextual() && type.equals(el.asText()))
+					return true;
+			return false;
+		}
+		return false;
+	}
+
 	private List<OpenAiApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			var function = new OpenAiApi.FunctionTool.Function(toolDefinition.description(), toolDefinition.name(),
 					toolDefinition.inputSchema());
 
-			var hasAdditionalPropertiesField = function.getParameters().containsKey("additionalProperties");
-
-			if (!hasAdditionalPropertiesField) {
-				// then cannot be strict
-				return new OpenAiApi.FunctionTool(function);
-			}
-
-			var additionalPropertiesValue = function.getParameters().get("additionalProperties");
-
-			if (!(additionalPropertiesValue instanceof Boolean)) {
-				// schema is not correct, do not do anything
-				return new OpenAiApi.FunctionTool(function);
-			}
-
-			if ((Boolean) additionalPropertiesValue) {
-				// then cannot be strict
-				return new OpenAiApi.FunctionTool(function);
-			}
-
-			var requiredField = function.getParameters().getOrDefault("required", Collections.emptyList());
-			var propertyField = function.getParameters().getOrDefault("properties", Collections.emptyMap());
-
-			// Compare the set of required property names with the set of keys in
-			// properties
-			Set<String> requiredSet;
-			if (requiredField instanceof List<?> list) {
-				requiredSet = list.stream()
-					.filter(String.class::isInstance)
-					.map(String.class::cast)
-					.collect(Collectors.toSet());
-			}
-			else {
-				requiredSet = Collections.emptySet();
-			}
-
-			Set<String> propertyKeySet;
-			if (propertyField instanceof Map<?, ?> map) {
-				propertyKeySet = map.keySet()
-					.stream()
-					.filter(String.class::isInstance)
-					.map(k -> (String) k)
-					.collect(Collectors.toSet());
-			}
-			else {
-				propertyKeySet = Collections.emptySet();
-			}
-
-			// set as 'strict' if every property key in required array
-			var canBeStrict = requiredSet.equals(propertyKeySet);
-
-			function.setStrict(canBeStrict);
+			boolean strict = qualifiesForStrict(function.getParameters());
+			function.setStrict(strict);
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
 	}
