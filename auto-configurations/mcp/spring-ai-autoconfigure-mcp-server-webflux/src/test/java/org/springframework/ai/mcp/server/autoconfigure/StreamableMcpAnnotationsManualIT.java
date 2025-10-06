@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
@@ -54,6 +53,7 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.annotation.McpArg;
@@ -68,29 +68,33 @@ import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification;
-import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
-import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
-import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
-import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
+import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
+import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ResolvableType;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.http.server.reactive.ReactorHttpHandlerAdapter;
+import org.springframework.stereotype.Service;
 import org.springframework.test.util.TestSocketUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
@@ -98,16 +102,22 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
+@EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class StreamableMcpAnnotationsManualIT {
 
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
-		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
+		.withConfiguration(AutoConfigurations.of(McpServerAnnotationScannerAutoConfiguration.class,
+				McpServerSpecificationFactoryAutoConfiguration.class, McpServerAutoConfiguration.class,
 				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
-				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class));
+				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class,
+				// MCP Annotations
+				McpClientAnnotationScannerAutoConfiguration.class, McpClientSpecificationFactoryAutoConfiguration.class,
+				// Anthropic ChatClient Builder
+				AnthropicChatAutoConfiguration.class, ChatClientAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {
@@ -141,6 +151,7 @@ public class StreamableMcpAnnotationsManualIT {
 
 				this.clientApplicationContext.withUserConfiguration(TestMcpClientConfiguration.class)
 					.withPropertyValues(// @formatter:off
+						"spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"),
 						"spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:" + serverPort,
 						// "spring.ai.mcp.client.request-timeout=20m",
 						"spring.ai.mcp.client.initialized=false") // @formatter:on
@@ -306,28 +317,6 @@ public class StreamableMcpAnnotationsManualIT {
 			return new McpServerHandlers();
 		}
 
-		@Bean
-		public List<McpServerFeatures.SyncToolSpecification> myTools(McpServerHandlers serverSideSpecProviders) {
-			return SyncMcpAnnotationProviders.toolSpecifications(List.of(serverSideSpecProviders));
-		}
-
-		@Bean
-		public List<McpServerFeatures.SyncResourceSpecification> myResources(
-				McpServerHandlers serverSideSpecProviders) {
-			return SyncMcpAnnotationProviders.resourceSpecifications(List.of(serverSideSpecProviders));
-		}
-
-		@Bean
-		public List<McpServerFeatures.SyncPromptSpecification> myPrompts(McpServerHandlers serverSideSpecProviders) {
-			return SyncMcpAnnotationProviders.promptSpecifications(List.of(serverSideSpecProviders));
-		}
-
-		@Bean
-		public List<McpServerFeatures.SyncCompletionSpecification> myCompletions(
-				McpServerHandlers serverSideSpecProviders) {
-			return SyncMcpAnnotationProviders.completeSpecifications(List.of(serverSideSpecProviders));
-		}
-
 		public static class McpServerHandlers {
 
 			@McpTool(description = "Test tool", name = "tool1")
@@ -449,28 +438,9 @@ public class StreamableMcpAnnotationsManualIT {
 		}
 
 		@Bean
-		public McpClientHandlers mcpClientHandlers(TestContext testContext) {
-			return new McpClientHandlers(testContext);
-		}
-
-		@Bean
-		List<SyncLoggingSpecification> loggingSpecs(McpClientHandlers clientMcpHandlers) {
-			return SyncMcpAnnotationProviders.loggingSpecifications(List.of(clientMcpHandlers));
-		}
-
-		@Bean
-		List<SyncSamplingSpecification> samplingSpecs(McpClientHandlers clientMcpHandlers) {
-			return SyncMcpAnnotationProviders.samplingSpecifications(List.of(clientMcpHandlers));
-		}
-
-		@Bean
-		List<SyncElicitationSpecification> elicitationSpecs(McpClientHandlers clientMcpHandlers) {
-			return SyncMcpAnnotationProviders.elicitationSpecifications(List.of(clientMcpHandlers));
-		}
-
-		@Bean
-		List<SyncProgressSpecification> progressSpecs(McpClientHandlers clientMcpHandlers) {
-			return SyncMcpAnnotationProviders.progressSpecifications(List.of(clientMcpHandlers));
+		public McpClientHandlers mcpClientHandlers(TestContext testContext,
+				ObjectProvider<ChatClient.Builder> chatClientBuilderProvider) {
+			return new McpClientHandlers(testContext, chatClientBuilderProvider);
 		}
 
 		public static class TestContext {
@@ -489,8 +459,21 @@ public class StreamableMcpAnnotationsManualIT {
 
 			private TestContext testContext;
 
-			public McpClientHandlers(TestContext testContext) {
+			private final ObjectProvider<ChatClient.Builder> chatClientBuilderProvider;
+
+			private AtomicReference<ChatClient> chatClientRef = new AtomicReference<>();
+
+			private ChatClient chatClient() {
+				if (this.chatClientRef.get() == null) {
+					this.chatClientRef.compareAndSet(null, this.chatClientBuilderProvider.getIfAvailable().build());
+				}
+				return this.chatClientRef.get();
+			}
+
+			public McpClientHandlers(TestContext testContext,
+					ObjectProvider<ChatClient.Builder> chatClientBuilderProvider) {
 				this.testContext = testContext;
+				this.chatClientBuilderProvider = chatClientBuilderProvider;
 			}
 
 			@McpProgress(clients = "server1")
@@ -515,6 +498,11 @@ public class StreamableMcpAnnotationsManualIT {
 				String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
 				String modelHint = llmRequest.modelPreferences().hints().get(0).name();
 
+				// String joke =
+				// this.chatClientBuilderProvider.getIfAvailable().build().prompt("Tell me
+				// a joke").call().content();
+				String joke = this.chatClient().prompt("Tell me a joke").call().content();
+				logger.info("Received joke from chat client: {}", joke);
 				return CreateMessageResult.builder()
 					.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
 					.build();
