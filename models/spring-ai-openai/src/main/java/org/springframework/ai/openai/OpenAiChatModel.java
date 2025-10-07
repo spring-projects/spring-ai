@@ -684,51 +684,57 @@ public class OpenAiChatModel implements ChatModel {
 		}
 	}
 
+	private final ObjectMapper schemaMapper = new ObjectMapper();
+
 	// https://platform.openai.com/docs/guides/function-calling?api-mode=responses&strict-mode=enabled#strict-mode
-	private boolean qualifiesForStrict(Object schema) {
-		// Accept Map (from Jackson/ObjectMapper) or JsonNode; normalize to JsonNode for
-		// traversal
-		JsonNode root = normalizeToJsonNode(schema);
+	private boolean qualifiesForStrict(Map<String, Object> schema) {
+		JsonNode root = schemaMapper.valueToTree(schema);
+		if (root == null || root.isNull())
+			return false;
+
+		// Top-level must be type object, no disallowed keywords
+		if (!isExactlyType(root, "object"))
+			return false;
+
 		return isStrictObjectTree(root);
 	}
 
-	private JsonNode normalizeToJsonNode(Object schema) {
-		var mapper = new ObjectMapper();
-		if (schema instanceof JsonNode n)
-			return n;
-		if (schema instanceof Map<?, ?> m)
-			return mapper.valueToTree(m);
-		// If you store parameters as Object, convert generically
-		return mapper.valueToTree(schema);
+	private boolean hasDisallowedKws(JsonNode root, List<String> disallowed) {
+		return disallowed.stream().anyMatch(root::has);
+	}
+
+	private boolean isExactlyType(JsonNode node, String type) {
+		JsonNode t = node.path("type");
+		return t.isTextual() && type.equals(t.asText());
 	}
 
 	private boolean isStrictObjectTree(JsonNode node) {
 		if (node == null || node.isNull())
 			return false;
 
-		// Resolve $ref / allOf merges if present (optional: implement full resolver; here
-		// we require already-resolved schemas)
-		// If you can’t guarantee resolved refs, treat as non-strict to be safe.
+		if (hasDisallowedKws(node, Arrays.asList("oneOf", "allOf", "not", "if", "then", "else", "$defs", "$ref"))) {
+			return false;
+		}
 
-		// Handle Object nodes
-		if (isType(node, "object")) {
-			// Must have additionalProperties === false
-			if (!node.has("additionalProperties") || !node.get("additionalProperties").isBoolean()
-					|| node.get("additionalProperties").asBoolean()) {
+		// Objects must enforce: additionalProperties == false, and required == properties
+		if (isExactlyType(node, "object")) {
+			JsonNode ap = node.get("additionalProperties");
+			if (ap == null || !ap.isBoolean() || ap.booleanValue())
 				return false;
-			}
-			// properties must exist; required == properties.keySet()
-			var props = node.path("properties");
+
+			JsonNode props = node.path("properties");
 			if (!props.isObject())
 				return false;
 
+			// Gather property keys
 			HashSet<String> propertyKeys = new HashSet<>();
 			props.fieldNames().forEachRemaining(propertyKeys::add);
 
-			HashSet<String> requiredKeys = new HashSet<>();
-			var req = node.path("required");
+			// required must be an array and equal to all property keys
+			JsonNode req = node.path("required");
 			if (!req.isArray())
 				return false;
+			HashSet<String> requiredKeys = new HashSet<>();
 			req.forEach(n -> {
 				if (n.isTextual())
 					requiredKeys.add(n.asText());
@@ -744,50 +750,35 @@ public class OpenAiChatModel implements ChatModel {
 			}
 		}
 
-		// Handle Array nodes: recurse into "items"
-		if (isType(node, "array")) {
-			var items = node.path("items");
-			if (items.isMissingNode())
-				return true; // arrays of scalars unknown; safe to ignore
-			if (!isStrictObjectTree(items))
-				return false;
-		}
-
-		// Handle supported combinator: oneOf
-		for (String key : new String[] { "anyOf" }) {
-			var comb = node.path(key);
-			if (comb.isArray()) {
-				for (var el : comb) {
-					if (!isStrictObjectTree(el))
+		// Arrays: handle both single schema and tuple validation (items as array)
+		if (isExactlyType(node, "array")) {
+			JsonNode items = node.path("items");
+			if (items.isMissingNode() || items.isNull())
+				return true; // unknown scalar arrays: ignore
+			if (items.isArray()) {
+				// Tuple validation: every slot must pass
+				for (JsonNode it : items) {
+					if (!isStrictObjectTree(it))
 						return false;
 				}
 			}
-		}
-
-		// Handle unsupported combinators: fail if seen
-		for (String key : new String[] { "oneOf", "allOf" }) {
-			var comb = node.path(key);
-			if (comb.isArray()) {
-				return false;
+			else {
+				if (!isStrictObjectTree(items))
+					return false;
 			}
 		}
 
-		// Primitive types or nodes without "type": pass-through
-		return true;
-	}
-
-	private boolean isType(JsonNode node, String type) {
-		var t = node.path("type");
-		if (t.isTextual())
-			return type.equals(t.asText());
-		if (t.isArray()) { // e.g., type: ["object","null"] — strict requires non-nullable
-							// objects be the same
-			for (var el : t)
-				if (el.isTextual() && type.equals(el.asText()))
-					return true;
-			return false;
+		// property-level anyOf: allowed; all branches must be strict-eligible
+		JsonNode anyOf = node.path("anyOf");
+		if (anyOf.isArray()) {
+			for (JsonNode branch : anyOf) {
+				if (!isStrictObjectTree(branch))
+					return false;
+			}
 		}
-		return false;
+
+		// Primitive types or nodes without "type": pass-through. Enum included
+		return true;
 	}
 
 	private List<OpenAiApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
@@ -795,8 +786,13 @@ public class OpenAiChatModel implements ChatModel {
 			var function = new OpenAiApi.FunctionTool.Function(toolDefinition.description(), toolDefinition.name(),
 					toolDefinition.inputSchema());
 
-			boolean strict = qualifiesForStrict(function.getParameters());
-			function.setStrict(strict);
+			try {
+				boolean strict = qualifiesForStrict(function.getParameters());
+				function.setStrict(strict);
+			}
+			catch (Throwable t) {
+				logger.warn("Failed to infer 'strict' for schema {}: {}", toolDefinition.inputSchema(), t.toString());
+			}
 			return new OpenAiApi.FunctionTool(function);
 		}).toList();
 	}
