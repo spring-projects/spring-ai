@@ -24,6 +24,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /*
@@ -129,6 +130,73 @@ class TextLineTest {
 		textLine.writeCharacterAtIndex(character);
 		textLine.writeCharacterAtIndex(anotherCharacter);
 		assertEquals(" AB" + " ".repeat(22), textLine.getLine());
+	}
+
+	@Test
+	void testZeroLineLength() {
+		TextLine textLine = new TextLine(0);
+		assertEquals(0, textLine.getLineLength());
+		assertEquals("", textLine.getLine());
+
+		// Writing to zero-length line should not cause issues
+		Character character = new Character('A', 0, false, false, false, false);
+		textLine.writeCharacterAtIndex(character);
+		assertEquals("", textLine.getLine());
+	}
+
+	@Test
+	void testLineLengthNotDivisibleByCharacterWidth() {
+		// Test with line length that doesn't divide evenly by
+		// OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT
+		TextLine textLine = new TextLine(103);
+		int expectedLength = 103 / ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT;
+		assertEquals(expectedLength, textLine.getLineLength());
+		assertEquals(" ".repeat(expectedLength), textLine.getLine());
+	}
+
+	@Test
+	void testBoundaryConditionsForLineLength() {
+		// Test minimum valid line length
+		TextLine textLine1 = new TextLine(1);
+		assertEquals(0, textLine1.getLineLength()); // 1/4 = 0 in integer division
+		assertEquals("", textLine1.getLine());
+
+		// Test line length just under OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT
+		TextLine textLine2 = new TextLine(3);
+		assertEquals(0, textLine2.getLineLength()); // 3/4 = 0 in integer division
+		assertEquals("", textLine2.getLine());
+
+		// Test line length exactly at OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT
+		TextLine textLine3 = new TextLine(ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT);
+		assertEquals(1, textLine3.getLineLength());
+		assertEquals(" ", textLine3.getLine());
+	}
+
+	@Test
+	void testWriteCharacterAtNegativeIndex() {
+		TextLine textLine = new TextLine(100);
+		Character character = new Character('A', -10, false, false, false, false);
+
+		textLine.writeCharacterAtIndex(character);
+		// Should handle negative index gracefully without throwing exception
+		assertEquals(" ".repeat(25), textLine.getLine());
+	}
+
+	@Test
+	void testWriteNonPrintableCharacters() {
+		TextLine textLine = new TextLine(100);
+		// Test control characters
+		Character tab = new Character('\t', 0, false, false, false, false);
+		Character newline = new Character('\n', 4, false, false, false, false);
+		Character nullChar = new Character('\0', 8, false, false, false, false);
+
+		textLine.writeCharacterAtIndex(tab);
+		textLine.writeCharacterAtIndex(newline);
+		textLine.writeCharacterAtIndex(nullChar);
+
+		// Verify how non-printable characters are handled
+		String line = textLine.getLine();
+		assertNotNull(line);
 	}
 
 }
