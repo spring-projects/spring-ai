@@ -117,6 +117,7 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.options.presence-penalty | Presence penalties for reducing repetition. | -
 | spring.ai.google.genai.chat.options.thinking-budget | Thinking budget for the thinking process. | -
 | spring.ai.google.genai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.google.genai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.google.genai.chat.options.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
 | spring.ai.google.genai.chat.options.safety-settings | List of safety settings to control safety filters, as defined by https://ai.google.dev/gemini-api/docs/safety-settings[Google GenAI Safety Settings]. Each safety setting can have a method, threshold, and category. | -
 
