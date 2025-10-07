@@ -23,3 +23,5 @@ jobs:
       - name: Run tests
         run: |
           ./mvnw --batch-mode test
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
