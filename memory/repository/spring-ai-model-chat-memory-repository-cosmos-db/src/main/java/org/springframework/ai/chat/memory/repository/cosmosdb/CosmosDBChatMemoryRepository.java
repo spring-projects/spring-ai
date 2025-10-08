@@ -235,7 +235,7 @@ public final class CosmosDBChatMemoryRepository implements ChatMemoryRepository 
 			case ASSISTANT -> new AssistantMessage(content, metadata);
 			case USER -> UserMessage.builder().text(content).metadata(metadata).build();
 			case SYSTEM -> SystemMessage.builder().text(content).metadata(metadata).build();
-			case TOOL -> new ToolResponseMessage(List.of(), metadata);
+			case TOOL -> ToolResponseMessage.builder().responses(List.of()).metadata(metadata).build();
 			default -> throw new IllegalStateException(String.format("Unknown message type: %s", messageTypeStr));
 		};
 	}

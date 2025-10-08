@@ -199,7 +199,9 @@ class MistralAiChatCompletionRequestTests {
 		var toolResponse1 = createToolResponse(1);
 		var toolResponse2 = createToolResponse(2);
 		var toolResponse3 = createToolResponse(3);
-		var toolResponseMessage = new ToolResponseMessage(List.of(toolResponse1, toolResponse2, toolResponse3));
+		var toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(toolResponse1, toolResponse2, toolResponse3))
+			.build();
 		var prompt = createPrompt(toolResponseMessage);
 		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
 		var chatCompletionMessages = chatCompletionRequest.messages();
@@ -212,7 +214,7 @@ class MistralAiChatCompletionRequestTests {
 	@Test
 	void createChatCompletionMessagesWithInvalidToolResponseMessage() {
 		var toolResponse = new ToolResponseMessage.ToolResponse(null, null, null);
-		var toolResponseMessage = new ToolResponseMessage(List.of(toolResponse));
+		var toolResponseMessage = ToolResponseMessage.builder().responses(List.of(toolResponse)).build();
 		var prompt = createPrompt(toolResponseMessage);
 		assertThatThrownBy(() -> this.chatModel.createRequest(prompt, false))
 			.isInstanceOf(IllegalArgumentException.class)
