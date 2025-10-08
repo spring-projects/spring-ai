@@ -26,7 +26,7 @@ import org.springframework.util.Assert;
  * Configuration for the CosmosDB Chat Memory store.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 public final class CosmosDBChatMemoryRepositoryConfig {
 
