@@ -23,7 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for CosmosDB chat memory.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 @ConfigurationProperties(CosmosDBChatMemoryRepositoryProperties.CONFIG_PREFIX)
 public class CosmosDBChatMemoryRepositoryProperties {

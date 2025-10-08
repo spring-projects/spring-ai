@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for {@link CosmosDBChatMemoryRepository}.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_COSMOSDB_ENDPOINT", matches = ".+")
 class CosmosDBChatMemoryRepositoryIT {

@@ -51,7 +51,7 @@ import org.springframework.util.Assert;
  * An implementation of {@link ChatMemoryRepository} for Azure Cosmos DB.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 public final class CosmosDBChatMemoryRepository implements ChatMemoryRepository {
 
