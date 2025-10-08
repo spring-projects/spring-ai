@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Bean;
  * {@link AutoConfiguration Auto-configuration} for {@link CosmosDBChatMemoryRepository}.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 @AutoConfiguration
 @ConditionalOnClass({ CosmosDBChatMemoryRepository.class, CosmosAsyncClient.class })

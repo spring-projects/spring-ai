@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link CosmosDBChatMemoryRepositoryProperties}.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 class CosmosDBChatMemoryRepositoryPropertiesTest {
 
