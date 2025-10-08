@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.UserMessage;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Issam El-atif
  */
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".*")
 public class MiniMaxAutoConfigurationIT {
@@ -51,9 +53,9 @@ public class MiniMaxAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		this.contextRunner
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
+						ToolCallingAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 				String response = chatModel.call("Hello");
@@ -64,9 +66,9 @@ public class MiniMaxAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
+						ToolCallingAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
@@ -84,8 +86,9 @@ public class MiniMaxAutoConfigurationIT {
 	@Test
 	void embedding() {
 		this.contextRunner
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
+							ToolCallingAutoConfiguration.class, MiniMaxEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxEmbeddingModel embeddingModel = context.getBean(MiniMaxEmbeddingModel.class);
 

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Issam El-atif
  */
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".*")
 class FunctionCallbackWithPlainFunctionBeanIT {
@@ -54,8 +56,9 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.minimax.apiKey=" + System.getenv("MINIMAX_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-				RestClientAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
+		.withConfiguration(
+				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
+						ToolCallingAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	// FIXME: multiple function calls may stop prematurely due to model performance
