@@ -216,7 +216,7 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 				return SystemMessage.builder().text(content).metadata(props).build();
 			case TOOL:
 				// todo – persist ToolResponse somehow
-				return new ToolResponseMessage(List.of(), props);
+				return ToolResponseMessage.builder().responses(List.of()).metadata(props).build();
 			default:
 				throw new IllegalStateException(
 						String.format("unknown message type %s", udt.getString(this.conf.messageUdtTypeColumn)));

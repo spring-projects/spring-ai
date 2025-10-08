@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
@@ -172,12 +173,12 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	private Message buildToolMessage(org.neo4j.driver.Record record) {
 		Message message;
-		message = new ToolResponseMessage(record.get("toolResponses").asList(v -> {
+		message = ToolResponseMessage.builder().responses(record.get("toolResponses").asList(v -> {
 			Map<String, Object> trMap = v.asMap();
-			return new ToolResponseMessage.ToolResponse((String) trMap.get(ToolResponseAttributes.ID.getValue()),
+			return new ToolResponse((String) trMap.get(ToolResponseAttributes.ID.getValue()),
 					(String) trMap.get(ToolResponseAttributes.NAME.getValue()),
 					(String) trMap.get(ToolResponseAttributes.RESPONSE_DATA.getValue()));
-		}), record.get("metadata").asMap());
+		})).metadata(record.get("metadata").asMap()).build();
 		return message;
 	}
 
