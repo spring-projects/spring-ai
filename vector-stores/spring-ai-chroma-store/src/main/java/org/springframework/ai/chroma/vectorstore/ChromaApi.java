@@ -62,6 +62,8 @@ public class ChromaApi {
 	// Regular expression pattern that looks for a message.
 	private static final Pattern MESSAGE_ERROR_PATTERN = Pattern.compile("\"message\":\"(.*?)\"");
 
+	private static final String X_CHROMA_TOKEN_NAME = "x-chroma-token";
+
 	private final ObjectMapper objectMapper;
 
 	private RestClient restClient;
@@ -320,7 +322,7 @@ public class ChromaApi {
 
 	private void httpHeaders(HttpHeaders headers) {
 		if (StringUtils.hasText(this.keyToken)) {
-			headers.setBearerAuth(this.keyToken);
+			headers.set(X_CHROMA_TOKEN_NAME, this.keyToken);
 		}
 	}
 
