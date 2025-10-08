@@ -189,7 +189,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 			Map<String, Object> whereClause = this.chromaApi.where(whereClauseStr);
 
-			logger.debug("Deleting with where clause: " + whereClause);
+			logger.debug("Deleting with where clause: {}", whereClause);
 
 			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
 			this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.collectionId, deleteRequest);
