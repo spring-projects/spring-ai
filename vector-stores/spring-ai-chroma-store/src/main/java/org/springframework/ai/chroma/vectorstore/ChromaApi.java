@@ -328,7 +328,7 @@ public class ChromaApi {
 
 	private void httpHeaders(HttpHeaders headers) {
 		if (StringUtils.hasText(this.keyToken)) {
-			headers.setBearerAuth(this.keyToken);
+			headers.set("x-chroma-token", this.keyToken);
 		}
 	}
 
