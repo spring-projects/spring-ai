@@ -673,7 +673,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		return "OpenAiChatOptions: " + ModelOptionsUtils.toJsonString(this);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected OpenAiChatOptions options;
 

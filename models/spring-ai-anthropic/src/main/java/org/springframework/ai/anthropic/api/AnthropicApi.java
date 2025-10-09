@@ -1542,7 +1542,7 @@ public final class AnthropicApi {
 	}
 	// @formatter:on
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 

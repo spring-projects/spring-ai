@@ -428,7 +428,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private VertexAiGeminiChatOptions options = new VertexAiGeminiChatOptions();
 

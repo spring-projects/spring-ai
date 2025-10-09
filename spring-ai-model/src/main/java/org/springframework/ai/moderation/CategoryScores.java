@@ -193,7 +193,7 @@ public final class CategoryScores {
 				+ ", financial=" + this.financial + ", law=" + this.law + ", pii=" + this.pii + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private double sexual;
 

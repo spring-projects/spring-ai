@@ -338,7 +338,7 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		return Objects.hash(this.model, this.keepAlive, this.truncate);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final OllamaEmbeddingOptions options = new OllamaEmbeddingOptions();
 

@@ -181,7 +181,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		return this.defaultOptions;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ElevenLabsApi elevenLabsApi;
 

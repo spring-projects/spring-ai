@@ -947,7 +947,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	@Deprecated
-	public static class Builder {
+	public static final class Builder {
 
 		private final OllamaOptions options = new OllamaOptions();
 

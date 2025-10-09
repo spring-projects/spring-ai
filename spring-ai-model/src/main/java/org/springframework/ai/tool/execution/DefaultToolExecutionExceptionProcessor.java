@@ -85,7 +85,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean alwaysThrow = DEFAULT_ALWAYS_THROW;
 

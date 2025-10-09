@@ -324,7 +324,7 @@ public class ElevenLabsTextToSpeechOptions implements TextToSpeechOptions {
 			.build();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final ElevenLabsTextToSpeechOptions options = new ElevenLabsTextToSpeechOptions();
 

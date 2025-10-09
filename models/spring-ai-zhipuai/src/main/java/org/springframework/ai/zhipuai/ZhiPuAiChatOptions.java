@@ -459,7 +459,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		return builder.build();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected ZhiPuAiChatOptions options;
 

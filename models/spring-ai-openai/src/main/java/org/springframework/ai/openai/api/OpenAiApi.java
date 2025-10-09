@@ -1957,7 +1957,7 @@ public class OpenAiApi {
 			@JsonProperty("usage") Usage usage) { // @formatter:on
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		public Builder() {
 		}

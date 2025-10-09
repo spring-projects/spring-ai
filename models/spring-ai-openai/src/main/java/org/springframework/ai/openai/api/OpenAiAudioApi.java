@@ -435,7 +435,7 @@ public class OpenAiAudioApi {
 		/**
 		 * Builder for the SpeechRequest.
 		 */
-		public static class Builder {
+		public static final class Builder {
 
 			private String model = TtsModel.TTS_1.getValue();
 
@@ -550,7 +550,7 @@ public class OpenAiAudioApi {
 
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private byte[] file;
 
@@ -653,7 +653,7 @@ public class OpenAiAudioApi {
 			return new Builder();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private byte[] file;
 
@@ -790,7 +790,7 @@ public class OpenAiAudioApi {
 	/**
 	 * Builder to construct {@link OpenAiAudioApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 

@@ -1207,7 +1207,7 @@ public class ZhiPuAiApi {
 			@JsonProperty("usage") Usage usage) { // @formatter:on
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private Builder() {
 		}

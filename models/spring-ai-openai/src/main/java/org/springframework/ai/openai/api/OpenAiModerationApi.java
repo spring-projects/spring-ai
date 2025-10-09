@@ -172,7 +172,7 @@ public class OpenAiModerationApi {
 	/**
 	 * Builder to construct {@link OpenAiModerationApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 

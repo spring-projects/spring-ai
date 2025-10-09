@@ -179,7 +179,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	/**
 	 * Builder for {@code SyncMcpToolCallbackProvider}.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private List<McpSyncClient> mcpClients = new ArrayList<>();
 

@@ -201,7 +201,7 @@ public class OpenAiFileApi {
 			return new Builder();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private byte[] file;
 
@@ -253,7 +253,7 @@ public class OpenAiFileApi {
 			return new Builder();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String after;
 
@@ -326,7 +326,7 @@ public class OpenAiFileApi {
 		// @formatter:on
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
