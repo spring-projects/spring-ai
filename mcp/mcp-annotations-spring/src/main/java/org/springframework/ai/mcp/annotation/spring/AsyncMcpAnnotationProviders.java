@@ -246,7 +246,7 @@ public final class AsyncMcpAnnotationProviders {
 			return AnnotationProviderUtil.beanMethods(bean);
 		}
 
-	};
+	}
 
 	private final static class SpringAiAsyncStatelessMcpCompleteProvider extends AsyncStatelessMcpCompleteProvider {
 
@@ -259,7 +259,7 @@ public final class AsyncMcpAnnotationProviders {
 			return AnnotationProviderUtil.beanMethods(bean);
 		}
 
-	};
+	}
 
 	// PROMPT
 	private final static class SpringAiAsyncPromptProvider extends AsyncMcpPromptProvider {

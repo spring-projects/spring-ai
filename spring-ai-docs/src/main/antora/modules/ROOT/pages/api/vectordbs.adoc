@@ -59,7 +59,7 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 
     void delete(Filter.Expression filterExpression);
 
-    default void delete(String filterExpression) { ... };
+    default void delete(String filterExpression) { ... }
 
     default <T> Optional<T> getNativeClient() {
 		return Optional.empty();
@@ -448,7 +448,7 @@ SearchRequest request = SearchRequest.builder()
     .topK(5)                       // Return top 5 results
     .similarityThreshold(0.7)      // Only return results with similarity score >= 0.7
     .build();
-    
+
 List<Document> filteredDocuments = retriever.similaritySearch(request);
 ```
 
@@ -463,11 +463,11 @@ Using the separate interfaces allows you to clearly define which components need
 @Service
 class DocumentIndexer {
     private final VectorStore vectorStore;
-    
+
     DocumentIndexer(VectorStore vectorStore) {
         this.vectorStore = vectorStore;
     }
-    
+
     public void indexDocuments(List<Document> documents) {
         vectorStore.add(documents);
     }
@@ -477,11 +477,11 @@ class DocumentIndexer {
 @Service
 class DocumentRetriever {
     private final VectorStoreRetriever retriever;
-    
+
     DocumentRetriever(VectorStoreRetriever retriever) {
         this.retriever = retriever;
     }
-    
+
     public List<Document> findSimilar(String query) {
         return retriever.similaritySearch(query);
     }
@@ -508,24 +508,24 @@ You can use `VectorStoreRetriever` directly when you only need to perform simila
 ```java
 @Service
 public class DocumentRetrievalService {
-    
+
     private final VectorStoreRetriever retriever;
-    
+
     public DocumentRetrievalService(VectorStoreRetriever retriever) {
         this.retriever = retriever;
     }
-    
+
     public List<Document> findSimilarDocuments(String query) {
         return retriever.similaritySearch(query);
     }
-    
+
     public List<Document> findSimilarDocumentsWithFilters(String query, String country) {
         SearchRequest request = SearchRequest.builder()
             .query(query)
             .topK(5)
             .filterExpression("country == '" + country + "'")
             .build();
-            
+
         return retriever.similaritySearch(request);
     }
 }
@@ -540,24 +540,24 @@ The `VectorStoreRetriever` interface is particularly useful in RAG applications,
 ```java
 @Service
 public class RagService {
-    
+
     private final VectorStoreRetriever retriever;
     private final ChatModel chatModel;
-    
+
     public RagService(VectorStoreRetriever retriever, ChatModel chatModel) {
         this.retriever = retriever;
         this.chatModel = chatModel;
     }
-    
+
     public String generateResponse(String userQuery) {
         // Retrieve relevant documents
         List<Document> relevantDocs = retriever.similaritySearch(userQuery);
-        
+
         // Extract content from documents to use as context
         String context = relevantDocs.stream()
             .map(Document::getContent)
             .collect(Collectors.joining("\n\n"));
-        
+
         // Generate response using the retrieved context
         String prompt = "Context information:\n" + context + "\n\nUser query: " + userQuery;
         return chatModel.generate(prompt);
