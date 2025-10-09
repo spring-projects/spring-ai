@@ -16,6 +16,10 @@
 
 package org.springframework.ai.template.jinja;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import com.hubspot.jinjava.Jinjava;
 import com.hubspot.jinjava.JinjavaConfig;
 import com.hubspot.jinjava.tree.parse.ExpressionToken;
@@ -23,13 +27,10 @@ import com.hubspot.jinjava.tree.parse.Token;
 import com.hubspot.jinjava.tree.parse.TokenScanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.ValidationMode;
 import org.springframework.util.Assert;
-
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Renders a template using the Jin-java library.
@@ -63,7 +64,7 @@ public class JinjaTemplateRenderer implements TemplateRenderer {
 	 * @param validationMode the mode to use for template variable validation; must not be
 	 * null
 	 */
-	public JinjaTemplateRenderer(ValidationMode validationMode) {
+	protected JinjaTemplateRenderer(ValidationMode validationMode) {
 		Assert.notNull(validationMode, "validationMode cannot be null");
 		this.validationMode = validationMode;
 	}
