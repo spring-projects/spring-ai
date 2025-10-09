@@ -45,7 +45,7 @@ import org.springframework.web.client.RestClient;
  */
 public class OpenAiImageApi {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.getValue();
 
 	private final RestClient restClient;
 
@@ -99,9 +99,21 @@ public class OpenAiImageApi {
 
 	/**
 	 * OpenAI Image API model.
-	 * <a href="https://platform.openai.com/docs/models/dall-e">DALL·E</a>
+	 * <a href="https://platform.openai.com/docs/models">Models</a>
 	 */
 	public enum ImageModel {
+
+		/**
+		 * Multimodal language model that accepts both text and image inputs, and produces
+		 * image outputs.
+		 */
+		GPT_IMAGE_1("gpt-image-1"),
+
+		/**
+		 * A cost-efficient version of GPT Image 1. It is a natively multimodal language
+		 * model that accepts both text and image inputs, and produces image outputs.
+		 */
+		GPT_IMAGE_1_MINI("gpt-image-1-mini"),
 
 		/**
 		 * The latest DALL·E model released in Nov 2023.
@@ -137,10 +149,16 @@ public class OpenAiImageApi {
 		@JsonProperty("response_format") String responseFormat,
 		@JsonProperty("size") String size,
 		@JsonProperty("style") String style,
-		@JsonProperty("user") String user) {
+		@JsonProperty("user") String user,
+		@JsonProperty("background") String background,
+		@JsonProperty("moderation") String moderation,
+		@JsonProperty("output_compression") Integer outputCompression,
+		@JsonProperty("output_format") String outputFormat,
+		@JsonProperty("partial_images") Integer partialImages,
+		@JsonProperty("stream") Boolean stream) {
 
 		public OpenAiImageRequest(String prompt, String model) {
-			this(prompt, model, null, null, null, null, null, null);
+			this(prompt, model, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 	}
 
