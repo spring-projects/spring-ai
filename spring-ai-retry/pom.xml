@@ -57,6 +57,12 @@
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
 
+		<!-- Spring Boot JSON starter for Jackson support -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-json</artifactId>
+		</dependency>
+
 		<!-- test dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
