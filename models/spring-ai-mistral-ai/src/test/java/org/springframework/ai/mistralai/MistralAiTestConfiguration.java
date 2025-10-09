@@ -52,7 +52,7 @@ public class MistralAiTestConfiguration {
 
 	@Bean
 	public EmbeddingModel mistralAiEmbeddingModel(MistralAiApi api) {
-		return MistralAiEmbeddingModel.builder().build();
+		return MistralAiEmbeddingModel.builder().mistralAiApi(api).build();
 	}
 
 	@Bean

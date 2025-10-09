@@ -25,6 +25,7 @@ import org.springframework.ai.content.Media;
 
 /**
  * @author YunKui Lu
+ * @author Sun Yuhan
  */
 public class ZhiPuAiAssistantMessage extends AssistantMessage {
 
@@ -33,10 +34,18 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 	 */
 	private String reasoningContent;
 
+	/**
+	 * @deprecated in favor of using {@link ZhiPuAiAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public ZhiPuAiAssistantMessage(String content) {
 		super(content);
 	}
 
+	/**
+	 * @deprecated in favor of using {@link ZhiPuAiAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public ZhiPuAiAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
 			List<ToolCall> toolCalls, List<Media> media) {
 		super(content, properties, toolCalls, media);
@@ -76,6 +85,50 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 		return "ZhiPuAiAssistantMessage{" + "media=" + this.media + ", messageType=" + this.messageType + ", metadata="
 				+ this.metadata + ", reasoningContent='" + this.reasoningContent + '\'' + ", textContent='"
 				+ this.textContent + '\'' + '}';
+	}
+
+	public static final class Builder {
+
+		private String content;
+
+		private Map<String, Object> properties = Map.of();
+
+		private List<ToolCall> toolCalls = List.of();
+
+		private List<Media> media = List.of();
+
+		private String reasoningContent;
+
+		public Builder content(String content) {
+			this.content = content;
+			return this;
+		}
+
+		public Builder properties(Map<String, Object> properties) {
+			this.properties = properties;
+			return this;
+		}
+
+		public Builder toolCalls(List<ToolCall> toolCalls) {
+			this.toolCalls = toolCalls;
+			return this;
+		}
+
+		public Builder media(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		public Builder reasoningContent(String reasoningContent) {
+			this.reasoningContent = reasoningContent;
+			return this;
+		}
+
+		public ZhiPuAiAssistantMessage build() {
+			return new ZhiPuAiAssistantMessage(this.content, this.reasoningContent, this.properties, this.toolCalls,
+					this.media);
+		}
+
 	}
 
 }
