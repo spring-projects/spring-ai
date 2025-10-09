@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.tool;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import org.springframework.util.Assert;
  * Default implementation of {@link ToolCallingChatOptions}.
  *
  * @author Thomas Vitale
+ * @author Hyunsang Han
  * @since 1.0.0
  */
 public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
@@ -69,6 +71,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	@Nullable
 	private Double topP;
+
+	@Nullable
+	private Duration timeout;
 
 	@Override
 	public List<ToolCallback> getToolCallbacks() {
@@ -199,6 +204,16 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(@Nullable Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends ChatOptions> T copy() {
 		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
@@ -214,6 +229,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		options.setTemperature(getTemperature());
 		options.setTopK(getTopK());
 		options.setTopP(getTopP());
+		options.setTimeout(getTimeout());
 		return (T) options;
 	}
 
@@ -322,6 +338,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		@Override
 		public ToolCallingChatOptions.Builder topP(@Nullable Double topP) {
 			this.options.setTopP(topP);
+			return this;
+		}
+
+		@Override
+		public ToolCallingChatOptions.Builder timeout(@Nullable Duration timeout) {
+			this.options.setTimeout(timeout);
 			return this;
 		}
 

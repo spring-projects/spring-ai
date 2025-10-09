@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,6 +53,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author lambochen
+ * @author Hyunsang Han
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -238,6 +240,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("service_tier") String serviceTier;
 
 	/**
+	 * The timeout duration for the chat request.
+	 */
+	@JsonIgnore
+	private Duration timeout;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
 	 */
 	@JsonIgnore
@@ -306,6 +314,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.webSearchOptions(fromOptions.getWebSearchOptions())
 			.verbosity(fromOptions.getVerbosity())
 			.serviceTier(fromOptions.getServiceTier())
+			.timeout(fromOptions.getTimeout())
 			.build();
 	}
 
@@ -619,6 +628,17 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
 	}
@@ -630,7 +650,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier, this.timeout);
 	}
 
 	@Override
@@ -665,7 +685,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
 				&& Objects.equals(this.verbosity, other.verbosity)
-				&& Objects.equals(this.serviceTier, other.serviceTier);
+				&& Objects.equals(this.serviceTier, other.serviceTier) && Objects.equals(this.timeout, other.timeout);
 	}
 
 	@Override
@@ -930,6 +950,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder serviceTier(OpenAiApi.ServiceTier serviceTier) {
 			this.options.serviceTier = serviceTier.getValue();
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

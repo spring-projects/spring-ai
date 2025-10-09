@@ -16,6 +16,7 @@
 
 package org.springframework.ai.azure.openai;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -50,6 +51,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
  * @author Andres da Silva Santos
+ * @author Hyunsang Han
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
@@ -223,6 +225,12 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
+	 * The timeout duration for the chat request.
+	 */
+	@JsonIgnore
+	private Duration timeout;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -328,6 +336,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.streamOptions(fromOptions.getStreamOptions())
+			.timeout(fromOptions.getTimeout())
 			.build();
 	}
 
@@ -522,6 +531,17 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
 	public ChatCompletionStreamOptions getStreamOptions() {
 		return this.streamOptions;
 	}
@@ -561,7 +581,8 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.maxCompletionTokens, that.maxCompletionTokens)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
-				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP);
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.timeout, that.timeout);
 	}
 
 	@Override
@@ -570,7 +591,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.seed, this.logprobs,
 				this.topLogProbs, this.enhancements, this.streamOptions, this.reasoningEffort, this.enableStreamUsage,
 				this.toolContext, this.maxTokens, this.maxCompletionTokens, this.frequencyPenalty, this.presencePenalty,
-				this.temperature, this.topP);
+				this.temperature, this.topP, this.timeout);
 	}
 
 	public static class Builder {
@@ -775,6 +796,11 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

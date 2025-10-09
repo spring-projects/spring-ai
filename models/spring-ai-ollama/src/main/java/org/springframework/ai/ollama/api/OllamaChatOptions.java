@@ -16,6 +16,7 @@
 
 package org.springframework.ai.ollama.api;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Hyunsang Han
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -343,6 +345,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+	@JsonIgnore
+	private Duration timeout;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -397,7 +402,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				.toolNames(fromOptions.getToolNames())
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolContext(fromOptions.getToolContext()).build();
+				.toolContext(fromOptions.getToolContext())
+				.timeout(fromOptions.getTimeout()).build();
 	}
 
 	public static OllamaChatOptions fromOptions(OllamaOptions fromOptions) {
@@ -439,7 +445,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				.toolNames(fromOptions.getToolNames())
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolContext(fromOptions.getToolContext()).build();
+				.toolContext(fromOptions.getToolContext())
+				.timeout(fromOptions.getTimeout()).build();
 	}
 
 	// -------------------
@@ -799,6 +806,17 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
 	/**
 	 * Convert the {@link OllamaChatOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -1071,6 +1089,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
  * @author Austin Dase
+ * @author Hyunsang Han
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -102,6 +104,12 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, String> httpHeaders = new HashMap<>();
 
+	/**
+	 * The timeout duration for the chat request.
+	 */
+	@JsonIgnore
+	private Duration timeout;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -125,6 +133,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.cacheOptions(fromOptions.getCacheOptions())
+			.timeout(fromOptions.getTimeout())
 			.build();
 	}
 
@@ -274,6 +283,17 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public AnthropicChatOptions copy() {
 		return fromOptions(this);
@@ -297,14 +317,14 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
-				&& Objects.equals(this.cacheOptions, that.cacheOptions);
+				&& Objects.equals(this.cacheOptions, that.cacheOptions) && Objects.equals(this.timeout, that.timeout);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext, this.httpHeaders, this.cacheOptions);
+				this.toolContext, this.httpHeaders, this.cacheOptions, this.timeout);
 	}
 
 	public static class Builder {
@@ -406,6 +426,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder cacheOptions(AnthropicCacheOptions cacheOptions) {
 			this.options.setCacheOptions(cacheOptions);
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

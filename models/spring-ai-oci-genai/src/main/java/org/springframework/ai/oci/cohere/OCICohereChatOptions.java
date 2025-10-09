@@ -16,6 +16,7 @@
 
 package org.springframework.ai.oci.cohere;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,6 +33,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
  * @author Alexnadros Pappas
+ * @author Hyunsang Han
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class OCICohereChatOptions implements ChatOptions {
@@ -118,6 +120,11 @@ public class OCICohereChatOptions implements ChatOptions {
 	@JsonProperty("tools")
 	private List<CohereTool> tools;
 
+	/**
+	 * The timeout duration for the chat request.
+	 */
+	private Duration timeout;
+
 	public static OCICohereChatOptions fromOptions(OCICohereChatOptions fromOptions) {
 		return builder().model(fromOptions.model)
 			.maxTokens(fromOptions.maxTokens)
@@ -132,6 +139,7 @@ public class OCICohereChatOptions implements ChatOptions {
 			.presencePenalty(fromOptions.presencePenalty)
 			.documents(fromOptions.documents != null ? new ArrayList<>(fromOptions.documents) : null)
 			.tools(fromOptions.tools != null ? new ArrayList<>(fromOptions.tools) : null)
+			.timeout(fromOptions.timeout)
 			.build();
 	}
 
@@ -260,6 +268,15 @@ public class OCICohereChatOptions implements ChatOptions {
 	}
 
 	@Override
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public ChatOptions copy() {
 		return fromOptions(this);
@@ -269,7 +286,7 @@ public class OCICohereChatOptions implements ChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.compartment, this.servingMode, this.preambleOverride,
 				this.temperature, this.topP, this.topK, this.stop, this.frequencyPenalty, this.presencePenalty,
-				this.documents, this.tools);
+				this.documents, this.tools, this.timeout);
 	}
 
 	@Override
@@ -291,7 +308,8 @@ public class OCICohereChatOptions implements ChatOptions {
 				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.stop, that.stop)
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
-				&& Objects.equals(this.documents, that.documents) && Objects.equals(this.tools, that.tools);
+				&& Objects.equals(this.documents, that.documents) && Objects.equals(this.tools, that.tools)
+				&& Objects.equals(this.timeout, that.timeout);
 	}
 
 	public static class Builder {
@@ -368,6 +386,11 @@ public class OCICohereChatOptions implements ChatOptions {
 
 		public Builder tools(List<CohereTool> tools) {
 			this.chatOptions.tools = tools;
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.chatOptions.timeout = timeout;
 			return this;
 		}
 

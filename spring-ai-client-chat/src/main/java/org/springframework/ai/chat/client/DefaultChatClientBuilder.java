@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -66,7 +67,7 @@ public class DefaultChatClientBuilder implements Builder {
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), Map.of(), null, Map.of(),
 				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
-				customObservationConvention, Map.of(), null);
+				customObservationConvention, Map.of(), null, null);
 	}
 
 	public ChatClient build() {
@@ -187,6 +188,12 @@ public class DefaultChatClientBuilder implements Builder {
 	public Builder defaultTemplateRenderer(TemplateRenderer templateRenderer) {
 		Assert.notNull(templateRenderer, "templateRenderer cannot be null");
 		this.defaultRequest.templateRenderer(templateRenderer);
+		return this;
+	}
+
+	public Builder defaultTimeout(Duration timeout) {
+		Assert.notNull(timeout, "timeout cannot be null");
+		this.defaultRequest.timeout(timeout);
 		return this;
 	}
 

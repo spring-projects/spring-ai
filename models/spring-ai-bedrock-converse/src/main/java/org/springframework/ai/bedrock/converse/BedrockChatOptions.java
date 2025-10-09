@@ -16,6 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +39,7 @@ import org.springframework.util.Assert;
  * The options to be used when sending a chat request to the Bedrock API.
  *
  * @author Sun Yuhan
+ * @author Hyunsang Han
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BedrockChatOptions implements ToolCallingChatOptions {
@@ -81,6 +83,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Duration timeout;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -101,6 +106,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 			.toolNames(new HashSet<>(fromOptions.getToolNames()))
 			.toolContext(new HashMap<>(fromOptions.getToolContext()))
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.timeout(fromOptions.getTimeout())
 			.build();
 	}
 
@@ -238,6 +244,17 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public BedrockChatOptions copy() {
 		return fromOptions(this);
@@ -259,14 +276,15 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled);
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.timeout, that.timeout);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.internalToolExecutionEnabled);
+				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.timeout);
 	}
 
 	public static class Builder {
@@ -353,6 +371,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

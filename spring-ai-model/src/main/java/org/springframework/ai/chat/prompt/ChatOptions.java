@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.springframework.ai.model.ModelOptions;
@@ -82,6 +83,13 @@ public interface ChatOptions extends ModelOptions {
 	 */
 	@Nullable
 	Double getTopP();
+
+	/**
+	 * Returns the timeout duration for the chat request.
+	 * @return the timeout duration for the chat request
+	 */
+	@Nullable
+	Duration getTimeout();
 
 	/**
 	 * Returns a copy of this {@link ChatOptions}.
@@ -157,6 +165,13 @@ public interface ChatOptions extends ModelOptions {
 		 * @return the builder.
 		 */
 		Builder topP(Double topP);
+
+		/**
+		 * Builds with the timeout duration for the chat request.
+		 * @param timeout
+		 * @return the builder.
+		 */
+		Builder timeout(Duration timeout);
 
 		/**
 		 * Build the {@link ChatOptions}.
