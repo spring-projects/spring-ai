@@ -135,6 +135,11 @@ public class AsyncMcpToolCallback implements ToolCallback {
 				logger.error("Exception while tool calling: ", exception);
 				return new ToolExecutionException(this.getToolDefinition(), exception);
 			}).contextWrite(ctx -> ctx.putAll(ToolCallReactiveContextHolder.getContext())).block();
+
+			if (response == null) {
+				throw new ToolExecutionException(this.getToolDefinition(),
+						new IllegalStateException("MCP tool call returned null response"));
+			}
 		}
 		catch (Exception ex) {
 			logger.error("Exception while tool calling: ", ex);
@@ -146,7 +151,14 @@ public class AsyncMcpToolCallback implements ToolCallback {
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
-		return ModelOptionsUtils.toJsonString(response.content());
+
+		var content = response.content();
+		if (content == null) {
+			logger.warn("MCP tool call returned null content for tool: {}", this.tool.name());
+			return "{}";
+		}
+
+		return ModelOptionsUtils.toJsonString(content);
 	}
 
 	/**
