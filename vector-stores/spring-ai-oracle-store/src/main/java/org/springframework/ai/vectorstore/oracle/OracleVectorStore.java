@@ -314,10 +314,10 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			String jsonPath = this.filterExpressionConverter.convertExpression(filterExpression);
 			String sql = String.format("DELETE FROM %s WHERE JSON_EXISTS(metadata, '%s')", this.tableName, jsonPath);
 
-			logger.debug("Executing delete with filter: " + sql);
+			logger.debug("Executing delete with filter: {}", sql);
 
 			int deletedCount = this.jdbcTemplate.update(sql);
-			logger.debug("Deleted " + deletedCount + " documents matching filter expression");
+			logger.debug("Deleted {} documents matching filter expression", deletedCount);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
@@ -378,7 +378,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 								this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? ")/2" : "",
 								this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy);
 
-				logger.debug("SQL query: " + sql);
+				logger.debug("SQL query: {}", sql);
 
 				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector);
 			}
@@ -397,7 +397,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 						this.distanceType == OracleVectorStore.OracleVectorStoreDistanceType.DOT ? ")/2" : "",
 						this.tableName, jsonPathFilter, request.getTopK());
 
-				logger.debug("SQL query: " + sql);
+				logger.debug("SQL query: {}", sql);
 
 				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector);
 			}
@@ -453,7 +453,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 												fetch APPROXIMATE first %d rows only WITH TARGET ACCURACY %d""",
 										this.tableName, jsonPathFilter, request.getTopK(), this.searchAccuracy));
 
-				logger.debug("SQL query: " + sql);
+				logger.debug("SQL query: {}", sql);
 
 				return this.jdbcTemplate.query(sql, new DocumentRowMapper(), embeddingVector, embeddingVector,
 						distance);

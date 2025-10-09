@@ -72,7 +72,7 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 [cols="3,6,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
+| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `+http://localhost:11434+`
 |====
 
 Here are the properties for initializing the Ollama integration and xref:auto-pulling-models[auto-pulling models].
@@ -150,8 +150,9 @@ The remaining `options` properties are based on the link:https://github.com/olla
 | spring.ai.ollama.chat.options.mirostat-eta      | Influences how quickly the algorithm responds to feedback from the generated text. A lower learning rate will result in slower adjustments, while a higher learning rate will make the algorithm more responsive. | 0.1
 | spring.ai.ollama.chat.options.penalize-newline  | -                                                             | true
 | spring.ai.ollama.chat.options.stop              | Sets the stop sequences to use. When this pattern is encountered the LLM will stop generating text and return. Multiple stop patterns may be set by specifying multiple separate stop parameters in a modelfile. | -
-| spring.ai.ollama.chat.options.functions         | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
-| spring.ai.ollama.chat.options.proxy-tool-calls  | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
+| spring.ai.ollama.chat.options.tool-names         | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.ollama.chat.options.tool-callbacks     | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.ollama.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 |====
 
 TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.

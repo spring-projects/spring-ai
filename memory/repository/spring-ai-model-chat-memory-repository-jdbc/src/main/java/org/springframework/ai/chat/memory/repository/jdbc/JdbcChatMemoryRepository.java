@@ -148,7 +148,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
 				// AddBatchPreparedStatement to support it.
-				case TOOL -> new ToolResponseMessage(List.of());
+				case TOOL -> ToolResponseMessage.builder().responses(List.of()).build();
 			};
 		}
 

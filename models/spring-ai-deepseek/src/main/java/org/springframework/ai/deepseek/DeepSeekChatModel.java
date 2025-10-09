@@ -340,8 +340,13 @@ public class DeepSeekChatModel implements ChatModel {
 		String textContent = choice.message().content();
 		String reasoningContent = choice.message().reasoningContent();
 
-		DeepSeekAssistantMessage assistantMessage = new DeepSeekAssistantMessage(textContent, reasoningContent,
-				metadata, toolCalls);
+		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
+		DeepSeekAssistantMessage assistantMessage = builder.content(textContent)
+			.reasoningContent(reasoningContent)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
+
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 

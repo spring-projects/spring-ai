@@ -292,7 +292,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		long deleteCount = status.getData().getDeleteCnt();
 		if (deleteCount != idList.size()) {
-			logger.warn(String.format("Deleted only %s entries from requested %s ", deleteCount, idList.size()));
+			logger.warn("Deleted only {} entries from requested {} ", deleteCount, idList.size());
 		}
 	}
 
@@ -544,8 +544,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ this.embeddingDimension, e);
+			logger.warn(
+					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
+					this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

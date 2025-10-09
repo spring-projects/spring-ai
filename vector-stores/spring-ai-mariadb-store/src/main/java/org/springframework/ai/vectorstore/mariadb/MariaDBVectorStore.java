@@ -364,7 +364,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 				this.idFieldName, this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
 				getFullyQualifiedTableName(), jsonPathFilter);
 
-		logger.debug("SQL query: " + sql);
+		logger.debug("SQL query: {}", sql);
 
 		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), embedding, distance,
 				request.getTopK());

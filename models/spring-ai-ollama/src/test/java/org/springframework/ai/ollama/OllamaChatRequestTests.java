@@ -25,6 +25,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -256,11 +257,10 @@ class OllamaChatRequestTests {
 		var systemMessage = new SystemMessage("Test system message");
 		var userMessage = new UserMessage("Test user message");
 		// @formatter:off
-		var toolResponseMessage = new ToolResponseMessage(List.of(
-				new ToolResponseMessage.ToolResponse("tool1", "Tool 1", "Test tool response 1"),
-				new ToolResponseMessage.ToolResponse("tool2", "Tool 2", "Test tool response 2"),
-				new ToolResponseMessage.ToolResponse("tool3", "Tool 3", "Test tool response 3"))
-		);
+		var toolResponseMessage = ToolResponseMessage.builder().responses(List.of(
+				new ToolResponse("tool1", "Tool 1", "Test tool response 1"),
+				new ToolResponse("tool2", "Tool 2", "Test tool response 2"),
+				new ToolResponse("tool3", "Tool 3", "Test tool response 3"))).build();
 		// @formatter:on
 		var assistantMessage = new AssistantMessage("Test assistant message");
 

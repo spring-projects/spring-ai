@@ -123,9 +123,14 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	@Override
 	public String render(Map<String, Object> additionalVariables) {
-		Map<String, Object> combinedVariables = new HashMap<>(this.variables);
+		Map<String, Object> combinedVariables = new HashMap<>();
+		Map<String, Object> mergedVariables = new HashMap<>(this.variables);
+		// variables + additionalVariables => mergedVariables
+		if (additionalVariables != null && !additionalVariables.isEmpty()) {
+			mergedVariables.putAll(additionalVariables);
+		}
 
-		for (Entry<String, Object> entry : additionalVariables.entrySet()) {
+		for (Entry<String, Object> entry : mergedVariables.entrySet()) {
 			if (entry.getValue() instanceof Resource resource) {
 				combinedVariables.put(entry.getKey(), renderResource(resource));
 			}

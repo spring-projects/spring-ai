@@ -48,6 +48,7 @@
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>
 	<suppress files="CassandraVectorStore.java" checks="FinalClass"/>
 	<suppress files="CoherenceVectorStore.java" checks="FinalClass"/>
+	<suppress files="CosmosDBChatMemoryRepository.java" checks="FinalClass"/>
 	<suppress files="CosmosDBVectorStore.java" checks="FinalClass"/>
 	<suppress files="CouchbaseSearchVectorStore.java" checks="FinalClass"/>
 	<suppress files="GemFireVectorStore.java" checks="FinalClass"/>

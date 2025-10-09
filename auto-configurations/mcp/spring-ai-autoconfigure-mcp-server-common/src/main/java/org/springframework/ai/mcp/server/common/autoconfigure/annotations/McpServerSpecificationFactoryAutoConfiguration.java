@@ -61,6 +61,15 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 		}
 
 		@Bean
+		public List<McpServerFeatures.SyncResourceTemplateSpecification> resourceTemplateSpecs(
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+
+			List<McpServerFeatures.SyncResourceTemplateSpecification> syncResourceTemplateSpecifications = SyncMcpAnnotationProviders
+				.resourceTemplateSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+			return syncResourceTemplateSpecifications;
+		}
+
+		@Bean
 		public List<McpServerFeatures.SyncPromptSpecification> promptSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 			return SyncMcpAnnotationProviders
@@ -78,9 +87,7 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 		public List<McpServerFeatures.SyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
-			List<McpServerFeatures.SyncToolSpecification> syncToolSpecifications = SyncMcpAnnotationProviders
-				.toolSpecifications(beansByAnnotation);
-			return syncToolSpecifications;
+			return SyncMcpAnnotationProviders.toolSpecifications(beansByAnnotation);
 		}
 
 	}
@@ -94,6 +101,14 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 			return AsyncMcpAnnotationProviders
 				.resourceSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+		}
+
+		@Bean
+		public List<McpServerFeatures.AsyncResourceTemplateSpecification> resourceTemplateSpecs(
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+
+			return AsyncMcpAnnotationProviders
+				.resourceTemplateSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
 		}
 
 		@Bean

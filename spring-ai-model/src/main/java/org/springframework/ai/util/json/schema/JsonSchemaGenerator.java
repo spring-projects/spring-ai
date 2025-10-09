@@ -140,6 +140,8 @@ public final class JsonSchemaGenerator {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
+			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
 			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);

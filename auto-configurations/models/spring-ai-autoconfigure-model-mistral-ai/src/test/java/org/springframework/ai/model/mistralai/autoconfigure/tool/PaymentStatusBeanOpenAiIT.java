@@ -31,8 +31,10 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -42,8 +44,8 @@ import org.springframework.context.annotation.Description;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Same test as {@link PaymentStatusBeanIT.java} but using {@link OpenAiChatModel} for
- * Mistral AI Function Calling implementation.
+ * Same test as {@link PaymentStatusBeanIT} but using {@link OpenAiChatModel} for Mistral
+ * AI Function Calling implementation.
  *
  * @author Christian Tzolov
  */
@@ -60,7 +62,8 @@ class PaymentStatusBeanOpenAiIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"),
 				"spring.ai.openai.chat.base-url=https://api.mistral.ai")
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

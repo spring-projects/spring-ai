@@ -33,7 +33,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
 import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyChatAutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyITUtil;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,7 +47,8 @@ class FunctionCallWithFunctionBeanIT {
 	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithFunctionBeanIT.class);
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class))
+		.withConfiguration(BedrockConverseProxyITUtil
+			.bedrockConverseProxyAutoConfig(BedrockConverseProxyChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

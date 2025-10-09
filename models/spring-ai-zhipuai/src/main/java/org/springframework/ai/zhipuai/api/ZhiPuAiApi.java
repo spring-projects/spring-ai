@@ -367,6 +367,8 @@ public class ZhiPuAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		GLM_4_6("glm-4.6"),
+
 		GLM_4_5("glm-4.5"),
 
 		GLM_4_5_X("glm-4.5-x"),

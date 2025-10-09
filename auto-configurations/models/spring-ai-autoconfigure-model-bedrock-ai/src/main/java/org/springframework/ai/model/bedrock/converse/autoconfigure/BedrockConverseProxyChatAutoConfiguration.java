@@ -34,7 +34,6 @@ import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -50,6 +49,7 @@ import org.springframework.context.annotation.Import;
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Pawel Potaczala
  */
 @AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
@@ -57,7 +57,6 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.BEDROCK_CONVERSE,
 		matchIfMissing = true)
 @Import(BedrockAwsConnectionConfiguration.class)
-@ImportAutoConfiguration({ ToolCallingAutoConfiguration.class })
 public class BedrockConverseProxyChatAutoConfiguration {
 
 	@Bean
