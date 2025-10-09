@@ -303,7 +303,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
 
-		logger.info("Created search index: " + index.getName());
+		logger.info("Created search index: {}", index.getName());
 
 		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 	}

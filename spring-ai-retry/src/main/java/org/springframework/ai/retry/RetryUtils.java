@@ -88,7 +88,7 @@ public abstract class RetryUtils {
 			@Override
 			public <T extends Object, E extends Throwable> void onError(RetryContext context,
 					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:" + context.getRetryCount(), throwable);
+				logger.warn("Retry error. Retry count:{}", context.getRetryCount(), throwable);
 			}
 		})
 		.build();
@@ -107,7 +107,7 @@ public abstract class RetryUtils {
 			@Override
 			public <T extends Object, E extends Throwable> void onError(RetryContext context,
 					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:" + context.getRetryCount());
+				logger.warn("Retry error. Retry count:{}", context.getRetryCount());
 			}
 		})
 		.build();
