@@ -294,7 +294,7 @@ public class OCICohereChatOptions implements ChatOptions {
 				&& Objects.equals(this.documents, that.documents) && Objects.equals(this.tools, that.tools);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected OCICohereChatOptions chatOptions;
 

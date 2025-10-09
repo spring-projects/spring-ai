@@ -272,7 +272,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		@Nullable
 		private String content;

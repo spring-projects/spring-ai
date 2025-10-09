@@ -116,7 +116,7 @@ public class AzureOpenAiEmbeddingOptions implements EmbeddingOptions {
 		return azureOptions;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final AzureOpenAiEmbeddingOptions options = new AzureOpenAiEmbeddingOptions();
 

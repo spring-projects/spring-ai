@@ -83,7 +83,7 @@ public final class Moderation {
 		return Objects.hash(this.id, this.model, this.results);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String id;
 

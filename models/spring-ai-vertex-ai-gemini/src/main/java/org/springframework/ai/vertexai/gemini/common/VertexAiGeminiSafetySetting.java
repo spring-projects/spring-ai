@@ -139,7 +139,7 @@ public final class VertexAiGeminiSafetySetting {
 		return result;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private HarmCategory category = HarmCategory.HARM_CATEGORY_UNSPECIFIED;
 

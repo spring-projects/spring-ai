@@ -488,7 +488,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
 

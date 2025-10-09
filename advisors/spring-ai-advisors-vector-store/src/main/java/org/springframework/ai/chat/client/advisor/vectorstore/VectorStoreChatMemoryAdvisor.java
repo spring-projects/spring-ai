@@ -209,7 +209,7 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 	/**
 	 * Builder for VectorStoreChatMemoryAdvisor.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private PromptTemplate systemPromptTemplate = DEFAULT_SYSTEM_PROMPT_TEMPLATE;
 

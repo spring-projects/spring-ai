@@ -307,7 +307,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				this.toolContext, this.httpHeaders, this.cacheOptions);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final AnthropicChatOptions options = new AnthropicChatOptions();
 

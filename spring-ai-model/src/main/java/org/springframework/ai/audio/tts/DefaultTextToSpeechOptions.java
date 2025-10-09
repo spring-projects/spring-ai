@@ -96,7 +96,7 @@ public final class DefaultTextToSpeechOptions implements TextToSpeechOptions {
 		return new Builder(this).build();
 	}
 
-	public static class Builder implements TextToSpeechOptions.Builder {
+	public static final class Builder implements TextToSpeechOptions.Builder {
 
 		private String model;
 

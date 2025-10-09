@@ -858,7 +858,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				this.toolContext);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final OllamaChatOptions options = new OllamaChatOptions();
 

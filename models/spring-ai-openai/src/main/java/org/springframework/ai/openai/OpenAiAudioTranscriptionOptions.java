@@ -170,7 +170,7 @@ public class OpenAiAudioTranscriptionOptions implements AudioTranscriptionOption
 		return true;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected OpenAiAudioTranscriptionOptions options;
 

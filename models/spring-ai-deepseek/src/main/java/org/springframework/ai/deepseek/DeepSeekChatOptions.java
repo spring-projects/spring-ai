@@ -382,7 +382,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				.build();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected DeepSeekChatOptions options;
 

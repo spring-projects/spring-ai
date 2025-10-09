@@ -186,7 +186,7 @@ public final class Categories {
 				+ ", financial=" + this.financial + ", law=" + this.law + ", pii=" + this.pii + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean sexual;
 

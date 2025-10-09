@@ -92,7 +92,7 @@ public final class ModerationResult {
 				+ this.categoryScores + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean flagged;
 

@@ -160,7 +160,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 	/**
 	 * Builder for {@code SyncMcpToolCallback} instances.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private McpSyncClient mcpClient;
 

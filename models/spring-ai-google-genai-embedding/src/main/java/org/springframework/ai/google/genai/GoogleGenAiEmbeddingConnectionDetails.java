@@ -101,7 +101,7 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 		return modelName;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		/**
 		 * Your project ID.

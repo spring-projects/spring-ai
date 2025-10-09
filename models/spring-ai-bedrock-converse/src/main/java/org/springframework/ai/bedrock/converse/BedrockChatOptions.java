@@ -269,7 +269,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 				this.toolNames, this.toolContext, this.internalToolExecutionEnabled);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final BedrockChatOptions options = new BedrockChatOptions();
 
