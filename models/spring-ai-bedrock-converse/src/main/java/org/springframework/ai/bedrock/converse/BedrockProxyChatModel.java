@@ -332,8 +332,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.map(message -> {
 				if (message.getMessageType() == MessageType.USER) {
 					List<ContentBlock> contents = new ArrayList<>();
-					if (message instanceof UserMessage) {
-						var userMessage = (UserMessage) message;
+					if (message instanceof UserMessage userMessage) {
 						contents.add(ContentBlock.fromText(userMessage.getText()));
 
 						if (!CollectionUtils.isEmpty(userMessage.getMedia())) {

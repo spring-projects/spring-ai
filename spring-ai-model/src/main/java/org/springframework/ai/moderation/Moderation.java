@@ -70,10 +70,9 @@ public final class Moderation {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof Moderation)) {
+		if (!(o instanceof Moderation that)) {
 			return false;
 		}
-		Moderation that = (Moderation) o;
 		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.results, that.results);
 	}

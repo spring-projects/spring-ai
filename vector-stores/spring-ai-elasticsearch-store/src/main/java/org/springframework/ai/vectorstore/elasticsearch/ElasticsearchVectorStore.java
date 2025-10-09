@@ -301,17 +301,16 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	// more info on score/distance calculation
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html#knn-similarity-search
 	private double normalizeSimilarityScore(double score) {
-		switch (this.options.getSimilarity()) {
-			case l2_norm:
+		return switch (this.options.getSimilarity()) {
+			case l2_norm ->
 				// the returned value of l2_norm is the opposite of the other functions
 				// (closest to zero means more accurate), so to make it consistent
 				// with the other functions the reverse is returned applying a "1-"
 				// to the standard transformation
-				return (1 - (java.lang.Math.sqrt((1 / score) - 1)));
+				(1 - (Math.sqrt((1 / score) - 1)));
 			// cosine and dot_product
-			default:
-				return (2 * score) - 1;
-		}
+			default -> (2 * score) - 1;
+		};
 	}
 
 	public boolean indexExists() {

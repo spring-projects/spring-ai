@@ -155,10 +155,9 @@ public final class CategoryScores {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof CategoryScores)) {
+		if (!(o instanceof CategoryScores that)) {
 			return false;
 		}
-		CategoryScores that = (CategoryScores) o;
 		return Double.compare(that.sexual, this.sexual) == 0 && Double.compare(that.hate, this.hate) == 0
 				&& Double.compare(that.harassment, this.harassment) == 0
 				&& Double.compare(that.selfHarm, this.selfHarm) == 0
