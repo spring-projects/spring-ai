@@ -614,9 +614,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setChatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
 		this.chatTemplateKwargs = chatTemplateKwargs;
-  }
-  
-  public String getVerbosity() {
+	}
+
+	public String getVerbosity() {
 		return this.verbosity;
 	}
 
@@ -644,7 +644,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.chatTemplateKwargs, this.serviceTier);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.chatTemplateKwargs,
+				this.serviceTier);
 	}
 
 	@Override
@@ -935,9 +936,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder chatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
 			this.options.chatTemplateKwargs = chatTemplateKwargs;
-      return this;
-    }
-    
+			return this;
+		}
+
 		public Builder verbosity(String verbosity) {
 			this.options.verbosity = verbosity;
 			return this;
