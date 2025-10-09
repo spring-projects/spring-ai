@@ -35,8 +35,6 @@ import org.springframework.ai.chat.client.advisor.observation.AdvisorObservation
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
 import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
-import org.springframework.ai.template.TemplateRenderer;
-import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.core.OrderComparator;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -54,8 +52,6 @@ import org.springframework.util.CollectionUtils;
 public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
-
-	private static final TemplateRenderer DEFAULT_TEMPLATE_RENDERER = StTemplateRenderer.builder().build();
 
 	private final List<CallAdvisor> originalCallAdvisors;
 

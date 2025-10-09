@@ -23,46 +23,81 @@ import java.util.Objects;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.content.Media;
 
+/**
+ * @author Mark Pollack
+ * @author Soby Chacko
+ * @author Sun Yuhan
+ */
 public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	private Boolean prefix;
 
 	private String reasoningContent;
 
+	/**
+	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public DeepSeekAssistantMessage(String content) {
 		super(content);
 	}
 
+	/**
+	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public DeepSeekAssistantMessage(String content, String reasoningContent) {
 		super(content);
 		this.reasoningContent = reasoningContent;
 	}
 
+	/**
+	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public DeepSeekAssistantMessage(String content, Map<String, Object> properties) {
 		super(content, properties);
 	}
 
+	/**
+	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public DeepSeekAssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
 		super(content, properties, toolCalls);
 	}
 
+	/**
+	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
 			List<ToolCall> toolCalls) {
 		this(content, reasoningContent, properties, toolCalls, List.of());
 	}
 
+	/**
+	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
+	 */
+	@Deprecated
 	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
 			List<ToolCall> toolCalls, List<Media> media) {
+		this(content, reasoningContent, null, properties, toolCalls, media);
+	}
+
+	protected DeepSeekAssistantMessage(String content, String reasoningContent, Boolean prefix,
+			Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
 		super(content, properties, toolCalls, media);
 		this.reasoningContent = reasoningContent;
+		this.prefix = prefix;
 	}
 
-	public static DeepSeekAssistantMessage prefixAssistantMessage(String context) {
-		return prefixAssistantMessage(context, null);
+	public static DeepSeekAssistantMessage prefixAssistantMessage(String content) {
+		return prefixAssistantMessage(content, null);
 	}
 
-	public static DeepSeekAssistantMessage prefixAssistantMessage(String context, String reasoningContent) {
-		return new DeepSeekAssistantMessage(context, reasoningContent);
+	public static DeepSeekAssistantMessage prefixAssistantMessage(String content, String reasoningContent) {
+		return new DeepSeekAssistantMessage.Builder().content(content).reasoningContent(reasoningContent).build();
 	}
 
 	public Boolean getPrefix() {
@@ -102,9 +137,60 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	@Override
 	public String toString() {
-		return "AssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
+		return "DeepSeekAssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
 				+ ", textContent=" + this.textContent + ", reasoningContent=" + this.reasoningContent + ", prefix="
 				+ this.prefix + ", metadata=" + this.metadata + "]";
+	}
+
+	public static final class Builder {
+
+		private String content;
+
+		private Map<String, Object> properties = Map.of();
+
+		private List<ToolCall> toolCalls = List.of();
+
+		private List<Media> media = List.of();
+
+		private Boolean prefix;
+
+		private String reasoningContent;
+
+		public Builder content(String content) {
+			this.content = content;
+			return this;
+		}
+
+		public Builder properties(Map<String, Object> properties) {
+			this.properties = properties;
+			return this;
+		}
+
+		public Builder toolCalls(List<ToolCall> toolCalls) {
+			this.toolCalls = toolCalls;
+			return this;
+		}
+
+		public Builder media(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		public Builder prefix(Boolean prefix) {
+			this.prefix = prefix;
+			return this;
+		}
+
+		public Builder reasoningContent(String reasoningContent) {
+			this.reasoningContent = reasoningContent;
+			return this;
+		}
+
+		public DeepSeekAssistantMessage build() {
+			return new DeepSeekAssistantMessage(this.content, this.reasoningContent, this.prefix, this.properties,
+					this.toolCalls, this.media);
+		}
+
 	}
 
 }

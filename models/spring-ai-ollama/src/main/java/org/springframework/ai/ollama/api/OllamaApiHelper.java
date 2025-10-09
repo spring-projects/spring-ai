@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public final class OllamaApiHelper {
@@ -81,12 +82,20 @@ public final class OllamaApiHelper {
 	private static OllamaApi.Message merge(OllamaApi.Message previous, OllamaApi.Message current) {
 
 		String content = mergeContent(previous, current);
+		String thinking = mergeThinking(previous, current);
 		OllamaApi.Message.Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : OllamaApi.Message.Role.ASSISTANT);
 		List<String> images = mergeImages(previous, current);
 		List<OllamaApi.Message.ToolCall> toolCalls = mergeToolCall(previous, current);
+		String toolName = mergeToolName(previous, current);
 
-		return OllamaApi.Message.builder(role).content(content).images(images).toolCalls(toolCalls).build();
+		return OllamaApi.Message.builder(role)
+			.content(content)
+			.thinking(thinking)
+			.images(images)
+			.toolCalls(toolCalls)
+			.toolName(toolName)
+			.build();
 	}
 
 	private static Instant merge(Instant previous, Instant current) {
@@ -143,6 +152,28 @@ public final class OllamaApiHelper {
 			return previous.toolCalls();
 		}
 		return merge(previous.toolCalls(), current.toolCalls());
+	}
+
+	private static String mergeThinking(OllamaApi.Message previous, OllamaApi.Message current) {
+		if (previous == null || previous.thinking() == null) {
+			return (current != null ? current.thinking() : null);
+		}
+		if (current == null || current.thinking() == null) {
+			return (previous.thinking());
+		}
+
+		return previous.thinking() + current.thinking();
+	}
+
+	private static String mergeToolName(OllamaApi.Message previous, OllamaApi.Message current) {
+		if (previous == null || previous.toolName() == null) {
+			return (current != null ? current.toolName() : null);
+		}
+		if (current == null || current.toolName() == null) {
+			return (previous.toolName());
+		}
+
+		return previous.toolName() + current.toolName();
 	}
 
 	private static List<String> mergeImages(OllamaApi.Message previous, OllamaApi.Message current) {

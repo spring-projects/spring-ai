@@ -184,8 +184,10 @@ public class Prompt implements ModelRequest<List<Message>> {
 					.build());
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
-				messagesCopy.add(new ToolResponseMessage(new ArrayList<>(toolResponseMessage.getResponses()),
-						new HashMap<>(toolResponseMessage.getMetadata())));
+				messagesCopy.add(ToolResponseMessage.builder()
+					.responses(new ArrayList<>(toolResponseMessage.getResponses()))
+					.metadata(new HashMap<>(toolResponseMessage.getMetadata()))
+					.build());
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getClass().getName());

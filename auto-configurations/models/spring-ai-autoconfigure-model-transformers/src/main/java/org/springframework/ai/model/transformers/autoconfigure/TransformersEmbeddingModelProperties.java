@@ -103,7 +103,7 @@ public class TransformersEmbeddingModelProperties {
 		 * empty to fall back to the defaults.
 		 */
 		@NestedConfigurationProperty
-		private Map<String, String> options = new HashMap<>();
+		private final Map<String, String> options = new HashMap<>();
 
 		public String getUri() {
 			return this.uri;
@@ -115,10 +115,6 @@ public class TransformersEmbeddingModelProperties {
 
 		public Map<String, String> getOptions() {
 			return this.options;
-		}
-
-		public void setOptions(Map<String, String> options) {
-			this.options = options;
 		}
 
 	}

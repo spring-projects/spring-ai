@@ -35,7 +35,7 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 	public static final String DEFAULT_OCR_MODEL = MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue();
 
 	@NestedConfigurationProperty
-	private MistralAiOcrOptions options = MistralAiOcrOptions.builder().model(DEFAULT_OCR_MODEL).build();
+	private final MistralAiOcrOptions options = MistralAiOcrOptions.builder().model(DEFAULT_OCR_MODEL).build();
 
 	public MistralAiOcrProperties() {
 		super.setBaseUrl(MistralAiCommonProperties.DEFAULT_BASE_URL);
@@ -43,10 +43,6 @@ public class MistralAiOcrProperties extends MistralAiParentProperties {
 
 	public MistralAiOcrOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(MistralAiOcrOptions options) {
-		this.options = options;
 	}
 
 }

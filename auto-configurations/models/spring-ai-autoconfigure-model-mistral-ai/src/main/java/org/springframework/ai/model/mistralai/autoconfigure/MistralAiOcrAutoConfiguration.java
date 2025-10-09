@@ -21,7 +21,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -43,7 +42,6 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(MistralOcrApi.class)
 @ConditionalOnProperty(name = "spring.ai.model.ocr", havingValue = SpringAIModels.MISTRAL, matchIfMissing = true)
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiOcrProperties.class })
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class })
 public class MistralAiOcrAutoConfiguration {
 
 	@Bean

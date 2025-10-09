@@ -23,10 +23,14 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.util.Assert;
 
 @Testcontainers
@@ -110,6 +114,17 @@ public abstract class BaseOllamaIT {
 			.build();
 		final var ollamaModelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
+	}
+
+	public static AutoConfigurations ollamaAutoConfig(Class<?>... additionalAutoConfigurations) {
+		Class<?>[] dependencies = new Class[] { OllamaApiAutoConfiguration.class, RestClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class };
+		Class<?>[] allAutoConfigurations = new Class[dependencies.length + additionalAutoConfigurations.length];
+		System.arraycopy(dependencies, 0, allAutoConfigurations, 0, dependencies.length);
+		System.arraycopy(additionalAutoConfigurations, 0, allAutoConfigurations, dependencies.length,
+				additionalAutoConfigurations.length);
+
+		return AutoConfigurations.of(allAutoConfigurations);
 	}
 
 }

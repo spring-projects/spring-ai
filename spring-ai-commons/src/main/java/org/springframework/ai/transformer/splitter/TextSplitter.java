@@ -91,7 +91,7 @@ public abstract class TextSplitter implements DocumentTransformer {
 
 			List<String> chunks = splitText(text);
 			if (chunks.size() > 1) {
-				logger.info("Splitting up document into " + chunks.size() + " chunks.");
+				logger.info("Splitting up document into {} chunks.", chunks.size());
 			}
 
 			for (int chunkIndex = 0; chunkIndex < chunks.size(); chunkIndex++) {

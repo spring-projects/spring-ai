@@ -41,9 +41,10 @@ For most of the multimodal LLMs, the Spring AI code would look something like th
 ----
 var imageResource = new ClassPathResource("/multimodal.test.png");
 
-var userMessage = new UserMessage(
-	"Explain what do you see in this picture?", // content
-	new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource)); // media
+var userMessage = UserMessage.builder()
+    .text("Explain what do you see in this picture?") // content
+    .media(new Media(MimeTypeUtils.IMAGE_PNG, this.imageResource)) // media
+    .build();
 
 ChatResponse response = chatModel.call(new Prompt(this.userMessage));
 ----

@@ -17,50 +17,34 @@
 package org.springframework.ai.mcp.annotation.spring.scan;
 
 import java.lang.annotation.Annotation;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * @author Christian Tzolov
+ * @author Josh Long
  */
-public abstract class AbstractAnnotatedMethodBeanPostProcessor implements BeanPostProcessor {
+public abstract class AbstractAnnotatedMethodBeanPostProcessor extends AnnotatedMethodDiscovery
+		implements BeanPostProcessor {
 
 	private final AbstractMcpAnnotatedBeans registry;
 
-	// Define the annotations to scan for
-	private final Set<Class<? extends Annotation>> targetAnnotations;
-
 	public AbstractAnnotatedMethodBeanPostProcessor(AbstractMcpAnnotatedBeans registry,
 			Set<Class<? extends Annotation>> targetAnnotations) {
+		super(targetAnnotations);
 		Assert.notNull(registry, "AnnotatedBeanRegistry must not be null");
 		Assert.notEmpty(targetAnnotations, "Target annotations must not be empty");
-
 		this.registry = registry;
-		this.targetAnnotations = targetAnnotations;
 	}
 
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 		Class<?> beanClass = AopUtils.getTargetClass(bean); // Handle proxied beans
-
-		Set<Class<? extends Annotation>> foundAnnotations = new HashSet<>();
-
-		// Scan all methods in the bean class
-		ReflectionUtils.doWithMethods(beanClass, method -> {
-			this.targetAnnotations.forEach(annotationType -> {
-				if (AnnotationUtils.findAnnotation(method, annotationType) != null) {
-					foundAnnotations.add(annotationType);
-				}
-			});
-		});
-
+		Set<Class<? extends Annotation>> foundAnnotations = scan(beanClass);
 		// Register the bean if it has any of our target annotations
 		if (!foundAnnotations.isEmpty()) {
 			this.registry.addMcpAnnotatedBean(bean, foundAnnotations);

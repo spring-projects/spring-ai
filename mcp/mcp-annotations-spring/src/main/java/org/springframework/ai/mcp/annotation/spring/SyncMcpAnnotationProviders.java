@@ -22,6 +22,7 @@ import java.util.List;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
@@ -37,7 +38,7 @@ import org.springaicommunity.mcp.provider.changed.tool.SyncMcpToolListChangedPro
 import org.springaicommunity.mcp.provider.complete.SyncMcpCompleteProvider;
 import org.springaicommunity.mcp.provider.complete.SyncStatelessMcpCompleteProvider;
 import org.springaicommunity.mcp.provider.elicitation.SyncMcpElicitationProvider;
-import org.springaicommunity.mcp.provider.logging.SyncMcpLogginProvider;
+import org.springaicommunity.mcp.provider.logging.SyncMcpLoggingProvider;
 import org.springaicommunity.mcp.provider.progress.SyncMcpProgressProvider;
 import org.springaicommunity.mcp.provider.prompt.SyncMcpPromptProvider;
 import org.springaicommunity.mcp.provider.prompt.SyncStatelessMcpPromptProvider;
@@ -97,6 +98,16 @@ public final class SyncMcpAnnotationProviders {
 	public static List<McpStatelessServerFeatures.SyncResourceSpecification> statelessResourceSpecifications(
 			List<Object> resourceObjects) {
 		return new SpringAiSyncStatelessResourceProvider(resourceObjects).getResourceSpecifications();
+	}
+
+	// RESOURCE TEMPLATE
+	public static List<SyncResourceTemplateSpecification> resourceTemplateSpecifications(List<Object> resourceObjects) {
+		return new SpringAiSyncMcpResourceProvider(resourceObjects).getResourceTemplateSpecifications();
+	}
+
+	public static List<McpStatelessServerFeatures.SyncResourceTemplateSpecification> statelessResourceTemplateSpecifications(
+			List<Object> resourceObjects) {
+		return new SpringAiSyncStatelessResourceProvider(resourceObjects).getResourceTemplateSpecifications();
 	}
 
 	// LOGGING (CLIENT)
@@ -248,7 +259,7 @@ public final class SyncMcpAnnotationProviders {
 	}
 
 	// LOGGING (CLIENT)
-	private final static class SpringAiSyncMcpLoggingProvider extends SyncMcpLogginProvider {
+	private final static class SpringAiSyncMcpLoggingProvider extends SyncMcpLoggingProvider {
 
 		private SpringAiSyncMcpLoggingProvider(List<Object> loggingObjects) {
 			super(loggingObjects);

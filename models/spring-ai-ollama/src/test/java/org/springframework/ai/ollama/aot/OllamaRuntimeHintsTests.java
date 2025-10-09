@@ -194,4 +194,95 @@ class OllamaRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(OllamaChatOptions.class))).isTrue();
 	}
 
+	@Test
+	void verifyNoProxyHintsAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		// Ollama should only register reflection hints, not proxy hints
+		assertThat(runtimeHints.proxies().jdkProxyHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void verifyNoSerializationHintsAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		// Ollama should only register reflection hints, not serialization hints
+		assertThat(runtimeHints.serialization().javaSerializationHints().count()).isEqualTo(0);
+	}
+
+	@Test
+	void verifyConstructorHintsAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		// Verify that reflection hints include constructor access for JSON
+		// deserialization
+		boolean hasConstructorHints = runtimeHints.reflection()
+			.typeHints()
+			.anyMatch(typeHint -> typeHint.constructors().findAny().isPresent() || typeHint.getMemberCategories()
+				.contains(org.springframework.aot.hint.MemberCategory.INVOKE_DECLARED_CONSTRUCTORS));
+
+		assertThat(hasConstructorHints).as("Should register constructor hints for JSON deserialization").isTrue();
+	}
+
+	@Test
+	void verifyEnumTypesAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify enum types are registered (critical for JSON deserialization)
+		boolean hasEnumTypes = registeredTypes.stream()
+			.anyMatch(tr -> tr.getName().contains("$") || tr.getName().toLowerCase().contains("role")
+					|| tr.getName().toLowerCase().contains("type"));
+
+		assertThat(hasEnumTypes).as("Enum types should be registered for native image compatibility").isTrue();
+	}
+
+	@Test
+	void verifyResponseTypesAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify response wrapper types are registered
+		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("Response")))
+			.as("Response types should be registered")
+			.isTrue();
+
+		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("ChatResponse")))
+			.as("ChatResponse type should be registered")
+			.isTrue();
+	}
+
+	@Test
+	void verifyToolRelatedClassesAreRegistered() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify tool-related classes are registered
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.Tool.class))).isTrue();
+
+		// Count tool-related classes
+		long toolClassCount = registeredTypes.stream()
+			.filter(typeRef -> typeRef.getName().toLowerCase().contains("tool"))
+			.count();
+		assertThat(toolClassCount).isGreaterThan(0);
+	}
+
 }

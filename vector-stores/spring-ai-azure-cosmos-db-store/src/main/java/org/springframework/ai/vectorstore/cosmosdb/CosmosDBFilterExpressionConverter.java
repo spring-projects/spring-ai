@@ -34,7 +34,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
  * Cosmos DB NoSQL API where clauses.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverter {
 

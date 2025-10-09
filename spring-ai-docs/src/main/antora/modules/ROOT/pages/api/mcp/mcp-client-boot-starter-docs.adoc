@@ -26,7 +26,7 @@ The MCP Client Boot Starter provides:
 </dependency>
 ----
 
-The standard starter connects simultaneously to one or more MCP servers over `STDIO` (in-process), `SSE`, `Streamable Http` and `Stateless Streamable Http` transports.
+The standard starter connects simultaneously to one or more MCP servers over `STDIO` (in-process), `SSE`, `Streamable-HTTP` and `Stateless Streamable-HTTP` transports.
 The SSE and Streamable-Http transports use the JDK HttpClient-based transport implementation.
 Each connection to an MCP server creates a new MCP client instance.
 You can choose either `SYNC` or `ASYNC` MCP clients (note: you cannot mix sync and async clients).
@@ -181,18 +181,18 @@ The Claude Desktop format looks like this:
 }
 ----
 
-=== Streamable Http Transport Properties
+=== Streamable-HTTP Transport Properties
 
 Used for connecting to Streamable-HTTP and Stateless Streamable-HTTP MCP servers.
 
-Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client.streamable-http`:
+Properties for Streamable-HTTP transport are prefixed with `spring.ai.mcp.client.streamable-http`:
 
 [cols="3,4,3"]
 |===
 |Property |Description | Default Value
 
 |`connections`
-|Map of named Streamable Http connection configurations
+|Map of named Streamable-HTTP connection configurations
 |-
 
 |`connections.[name].url`
@@ -264,8 +264,13 @@ spring:
 
 The starter supports two types of clients:
 
-* Synchronous - default client type, suitable for traditional request-response patterns with blocking operations
+* Synchronous - default client type (`spring.ai.mcp.client.type=SYNC`), suitable for traditional request-response patterns with blocking operations
+
+**NOTE:** The SYNC client will register only synchronous MCP annotated methods. Asynchronous methods will be ignored.
+
 * Asynchronous - suitable for reactive applications with non-blocking operations, configured using `spring.ai.mcp.client.type=ASYNC`
+
+**NOTE:** The ASYNC client will register only asynchronous MCP annotated methods. Synchronous methods will be ignored.
 
 === Client Customization
 
@@ -320,10 +325,10 @@ public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
         });
 
         // Sets a custom elicitation handler for processing elicitation requests.
-				spec.elicitation((ElicitRequest request) -> {
+        spec.elicitation((ElicitRequest request) -> {
           // handle elicitation
-					return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));
-				});
+          return new ElicitResult(ElicitResult.Action.ACCEPT, Map.of("message", request.message()));
+        });
 
         // Adds a consumer to be notified when progress notifications are received.
         spec.progressConsumer((ProgressNotification progress) -> {
@@ -379,8 +384,8 @@ The MCP client auto-configuration automatically detects and applies any customiz
 The auto-configuration supports multiple transport types:
 
 * Standard I/O (Stdio) (activated by the `spring-ai-starter-mcp-client` and `spring-ai-starter-mcp-client-webflux`)
-* (HttpClient) HTTP/SSE and StreamableHTTP (activated by the `spring-ai-starter-mcp-client`)
-* (WebFlux) HTTP/SSE and StreamableHTTP (activated by the `spring-ai-starter-mcp-client-webflux`)
+* (HttpClient) HTTP/SSE and Streamable-HTTP (activated by the `spring-ai-starter-mcp-client`)
+* (WebFlux) HTTP/SSE and Streamable-HTTP (activated by the `spring-ai-starter-mcp-client-webflux`)
 
 === Tool Filtering
 
@@ -587,8 +592,7 @@ If no custom converter bean is provided, the default converter is used automatic
 The MCP ToolCallback auto-configuration is enabled by default, but can be disabled with the `spring.ai.mcp.client.toolcallback.enabled=false` property.
 
 When disabled, no `ToolCallbackProvider` bean is created from the available MCP tools.
-If you need a fine grained control for selecting the which MCP tools to use, consider using the xref:/api/mcp/mcp-client-boot-starter-docs.adoc#_tool_filtering[Tool Filtering].
-
+bsafdsa
 == MCP Client Annotations
 
 The MCP Client Boot Starter automatically detects and registers annotated methods for handling various MCP client operations:

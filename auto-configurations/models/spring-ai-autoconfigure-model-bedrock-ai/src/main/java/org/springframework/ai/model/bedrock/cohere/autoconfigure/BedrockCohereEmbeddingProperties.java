@@ -46,7 +46,7 @@ public class BedrockCohereEmbeddingProperties {
 	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id();
 
 	@NestedConfigurationProperty
-	private BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
+	private final BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
 		.inputType(InputType.SEARCH_DOCUMENT)
 		.truncate(CohereEmbeddingRequest.Truncate.NONE)
 		.build();
@@ -61,10 +61,6 @@ public class BedrockCohereEmbeddingProperties {
 
 	public BedrockCohereEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(BedrockCohereEmbeddingOptions options) {
-		this.options = options;
 	}
 
 	public boolean isEnabled() {

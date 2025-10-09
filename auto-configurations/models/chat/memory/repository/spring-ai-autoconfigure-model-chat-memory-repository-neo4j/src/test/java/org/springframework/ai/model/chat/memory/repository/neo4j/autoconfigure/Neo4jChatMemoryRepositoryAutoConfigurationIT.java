@@ -115,10 +115,11 @@ class Neo4jChatMemoryRepositoryAutoConfigurationIT {
 			assertThat(((UserMessage) messages.get(0)).getMedia()).usingRecursiveFieldByFieldElementComparator()
 				.isEqualTo(media);
 			memory.deleteByConversationId(sessionId);
-			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(
-					List.of(new ToolResponse("id", "name", "responseData"),
-							new ToolResponse("id2", "name2", "responseData2")),
-					Map.of("id", "id", "metadataKey", "metadata"));
+			ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+				.responses(List.of(new ToolResponse("id", "name", "responseData"),
+						new ToolResponse("id2", "name2", "responseData2")))
+				.metadata(Map.of("id", "id", "metadataKey", "metadata"))
+				.build();
 			memory.saveAll(sessionId, List.of(toolResponseMessage));
 			messages = memory.findByConversationId(sessionId);
 			assertThat(messages.size()).isEqualTo(1);

@@ -54,8 +54,19 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 		@Bean
 		public List<McpServerFeatures.SyncResourceSpecification> resourceSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
+
+			List<McpServerFeatures.SyncResourceSpecification> syncResourceSpecifications = SyncMcpAnnotationProviders
 				.resourceSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+			return syncResourceSpecifications;
+		}
+
+		@Bean
+		public List<McpServerFeatures.SyncResourceTemplateSpecification> resourceTemplateSpecs(
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+
+			List<McpServerFeatures.SyncResourceTemplateSpecification> syncResourceTemplateSpecifications = SyncMcpAnnotationProviders
+				.resourceTemplateSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+			return syncResourceTemplateSpecifications;
 		}
 
 		@Bean
@@ -75,8 +86,8 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 		@Bean
 		public List<McpServerFeatures.SyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.toolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+			return SyncMcpAnnotationProviders.toolSpecifications(beansByAnnotation);
 		}
 
 	}
@@ -90,6 +101,14 @@ public class McpServerSpecificationFactoryAutoConfiguration {
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 			return AsyncMcpAnnotationProviders
 				.resourceSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+		}
+
+		@Bean
+		public List<McpServerFeatures.AsyncResourceTemplateSpecification> resourceTemplateSpecs(
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+
+			return AsyncMcpAnnotationProviders
+				.resourceTemplateSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
 		}
 
 		@Bean
