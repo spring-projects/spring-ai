@@ -78,26 +78,17 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	}
 
 	private String getOperationSymbol(Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " && ";
-			case OR:
-				return " || ";
-			case EQ:
-				return " == ";
-			case NE:
-				return " != ";
-			case LT:
-				return " < ";
-			case LTE:
-				return " <= ";
-			case GT:
-				return " > ";
-			case GTE:
-				return " >= ";
-			default:
-				throw new RuntimeException("Not supported expression type: " + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> " && ";
+			case OR -> " || ";
+			case EQ -> " == ";
+			case NE -> " != ";
+			case LT -> " < ";
+			case LTE -> " <= ";
+			case GT -> " > ";
+			case GTE -> " >= ";
+			default -> throw new RuntimeException("Not supported expression type: " + exp.type());
+		};
 	}
 
 	@Override

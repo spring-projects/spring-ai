@@ -244,16 +244,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 		Assert.notNull(type, "Message type must not be null");
 
-		switch (type) {
-			case SYSTEM:
-			case USER:
-			case TOOL:
-				return GeminiMessageType.USER;
-			case ASSISTANT:
-				return GeminiMessageType.MODEL;
-			default:
-				throw new IllegalArgumentException("Unsupported message type: " + type);
-		}
+		return switch (type) {
+			case SYSTEM, USER, TOOL -> GeminiMessageType.USER;
+			case ASSISTANT -> GeminiMessageType.MODEL;
+			default -> throw new IllegalArgumentException("Unsupported message type: " + type);
+		};
 	}
 
 	static List<Part> messageToGeminiParts(Message message) {

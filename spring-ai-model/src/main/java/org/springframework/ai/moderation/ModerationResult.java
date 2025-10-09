@@ -73,10 +73,9 @@ public final class ModerationResult {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ModerationResult)) {
+		if (!(o instanceof ModerationResult that)) {
 			return false;
 		}
-		ModerationResult that = (ModerationResult) o;
 		return this.flagged == that.flagged && Objects.equals(this.categories, that.categories)
 				&& Objects.equals(this.categoryScores, that.categoryScores);
 	}

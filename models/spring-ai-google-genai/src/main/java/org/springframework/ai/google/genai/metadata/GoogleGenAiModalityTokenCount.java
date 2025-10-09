@@ -70,19 +70,11 @@ public class GoogleGenAiModalityTokenCount {
 		String modalityStr = modality.toString().toUpperCase();
 
 		// Map SDK values to cleaner names
-		switch (modalityStr) {
-			case "TEXT":
-			case "IMAGE":
-			case "VIDEO":
-			case "AUDIO":
-			case "DOCUMENT":
-				return modalityStr;
-			case "MODALITY_UNSPECIFIED":
-			case "MEDIA_MODALITY_UNSPECIFIED":
-				return "UNKNOWN";
-			default:
-				return modalityStr;
-		}
+		return switch (modalityStr) {
+			case "TEXT", "IMAGE", "VIDEO", "AUDIO", "DOCUMENT" -> modalityStr;
+			case "MODALITY_UNSPECIFIED", "MEDIA_MODALITY_UNSPECIFIED" -> "UNKNOWN";
+			default -> modalityStr;
+		};
 	}
 
 	/**

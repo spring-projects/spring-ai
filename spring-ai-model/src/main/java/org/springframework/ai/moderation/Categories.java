@@ -154,10 +154,9 @@ public final class Categories {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof Categories)) {
+		if (!(o instanceof Categories that)) {
 			return false;
 		}
-		Categories that = (Categories) o;
 		return this.sexual == that.sexual && this.hate == that.hate && this.harassment == that.harassment
 				&& this.selfHarm == that.selfHarm && this.sexualMinors == that.sexualMinors
 				&& this.hateThreatening == that.hateThreatening && this.violenceGraphic == that.violenceGraphic
