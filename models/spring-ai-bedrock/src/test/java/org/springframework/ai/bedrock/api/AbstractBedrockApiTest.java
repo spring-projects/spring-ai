@@ -16,6 +16,8 @@
 
 package org.springframework.ai.bedrock.api;
 
+import java.time.Duration;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,11 +30,11 @@ import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
-import java.time.Duration;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractBedrockApiTest {
@@ -49,10 +51,10 @@ class AbstractBedrockApiTest {
 	@Test
 	void shouldLoadRegionFromAwsDefaults() {
 		try (MockedStatic<DefaultAwsRegionProviderChain> mocked = mockStatic(DefaultAwsRegionProviderChain.class)) {
-			when(awsRegionProviderBuilder.build().getRegion()).thenReturn(Region.AF_SOUTH_1);
-			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(awsRegionProviderBuilder);
+			when(this.awsRegionProviderBuilder.build().getRegion()).thenReturn(Region.AF_SOUTH_1);
+			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
 			AbstractBedrockApi<Object, Object, Object> testBedrockApi = new TestBedrockApi("modelId",
-					awsCredentialsProvider, null, objectMapper, Duration.ofMinutes(5));
+					this.awsCredentialsProvider, null, this.objectMapper, Duration.ofMinutes(5));
 			assertThat(testBedrockApi.getRegion()).isEqualTo(Region.AF_SOUTH_1);
 		}
 	}
@@ -60,10 +62,10 @@ class AbstractBedrockApiTest {
 	@Test
 	void shouldThrowIllegalArgumentIfAwsDefaultsFailed() {
 		try (MockedStatic<DefaultAwsRegionProviderChain> mocked = mockStatic(DefaultAwsRegionProviderChain.class)) {
-			when(awsRegionProviderBuilder.build().getRegion())
+			when(this.awsRegionProviderBuilder.build().getRegion())
 				.thenThrow(SdkClientException.builder().message("failed load").build());
-			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(awsRegionProviderBuilder);
-			assertThatThrownBy(() -> new TestBedrockApi("modelId", awsCredentialsProvider, null, objectMapper,
+			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
+			assertThatThrownBy(() -> new TestBedrockApi("modelId", this.awsCredentialsProvider, null, this.objectMapper,
 					Duration.ofMinutes(5)))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("failed load");

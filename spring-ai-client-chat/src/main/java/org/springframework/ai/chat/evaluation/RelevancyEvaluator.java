@@ -16,6 +16,9 @@
 
 package org.springframework.ai.chat.evaluation;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.evaluation.EvaluationRequest;
@@ -23,9 +26,6 @@ import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.Evaluator;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * Evaluates the relevancy of a response to a query based on the context provided.
@@ -79,7 +79,7 @@ public class RelevancyEvaluator implements Evaluator {
 
 		boolean passing = false;
 		float score = 0;
-		if (evaluationResponse != null && evaluationResponse.toLowerCase().contains("yes")) {
+		if ("yes".equalsIgnoreCase(evaluationResponse)) {
 			passing = true;
 			score = 1;
 		}
@@ -91,7 +91,7 @@ public class RelevancyEvaluator implements Evaluator {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ChatClient.Builder chatClientBuilder;
 

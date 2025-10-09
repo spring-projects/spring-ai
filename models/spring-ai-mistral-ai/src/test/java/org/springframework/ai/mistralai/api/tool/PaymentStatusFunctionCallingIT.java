@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * AI Function Calling</a> guide.
  *
  * @author Christian Tzolov
+ * @author Jason Smith
  * @since 0.8.1
  */
 // @Disabled("See https://github.com/spring-projects/spring-ai/issues/1853")
@@ -106,7 +107,7 @@ public class PaymentStatusFunctionCallingIT {
 		List<ChatCompletionMessage> messages = new ArrayList<>(
 				List.of(new ChatCompletionMessage("What's the status of my transaction with id T1001?", Role.USER)));
 
-		MistralAiApi mistralApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+		MistralAiApi mistralApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 
 		ResponseEntity<ChatCompletion> response = mistralApi.chatCompletionEntity(new ChatCompletionRequest(messages,
 				MistralAiApi.ChatModel.LARGE.getValue(), List.of(paymentStatusTool, paymentDateTool), ToolChoice.AUTO));

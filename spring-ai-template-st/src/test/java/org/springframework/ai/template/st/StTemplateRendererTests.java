@@ -94,7 +94,7 @@ class StTemplateRendererTests {
 	void shouldNotAcceptVariablesWithNullKeySet() {
 		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 		String template = "Hello!";
-		Map<String, Object> variables = new HashMap<String, Object>();
+		Map<String, Object> variables = new HashMap<>();
 		variables.put(null, "Spring AI");
 
 		assertThatThrownBy(() -> renderer.apply(template, variables)).isInstanceOf(IllegalArgumentException.class)
@@ -295,6 +295,62 @@ class StTemplateRendererTests {
 		String result = renderer.apply(template, variables);
 
 		assertThat(result).isEqualTo("Hello!");
+	}
+
+	/**
+	 * Tests that property access syntax like {test.name} is correctly handled. The
+	 * top-level variable 'test' should be identified as required, but 'name' should not.
+	 */
+	@Test
+	void shouldHandlePropertyAccessSyntax() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("test", Map.of("name", "Spring AI"));
+
+		String result = renderer.apply("Hello {test.name}!", variables);
+
+		assertThat(result).isEqualTo("Hello Spring AI!");
+	}
+
+	/**
+	 * Tests that deep property access syntax like {test.tom.name} is correctly handled.
+	 * Only the top-level variable 'test' should be identified as required.
+	 */
+	@Test
+	void shouldHandleDeepPropertyAccessSyntax() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("test", Map.of("tom", Map.of("name", "Spring AI")));
+
+		String result = renderer.apply("Hello {test.tom.name}!", variables);
+
+		assertThat(result).isEqualTo("Hello Spring AI!");
+	}
+
+	/**
+	 * Tests validation behavior with property access syntax. Should only require the
+	 * top-level variable, not the property names.
+	 */
+	@Test
+	void shouldValidatePropertyAccessCorrectly() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		// Only provide the top-level variable, not the properties
+		variables.put("user", Map.of("profile", Map.of("name", "John")));
+
+		// This should work fine since we provide the required top-level variable
+		String result = renderer.apply("Hello {user.profile.name}!", variables);
+		assertThat(result).isEqualTo("Hello John!");
+
+		// Test with missing top-level variable - should throw exception
+		Map<String, Object> missingVariables = new HashMap<>();
+		// Wrong: providing nested variable instead of top-level
+		missingVariables.put("profile", Map.of("name", "John"));
+
+		assertThatThrownBy(() -> renderer.apply("Hello {user.profile.name}!", missingVariables))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining(
+					"Not all variables were replaced in the template. Missing variable names are: [user]");
 	}
 
 }

@@ -5,7 +5,7 @@ This section offers jumping off points for how to get started using Spring AI.
 
 You should follow the steps in each of the following sections according to your needs.
 
-NOTE: Spring AI supports Spring Boot 3.4.x.  When Spring Boot 3.5.x is released, we will support that as well.
+NOTE: Spring AI supports Spring Boot 3.4.x and 3.5.x.
 
 [[spring-initializr]]
 == Spring Initializr
@@ -15,15 +15,42 @@ Head on over to https://start.spring.io/[start.spring.io] and select the AI Mode
 [[artifact-repositories]]
 == Artifact Repositories
 
-=== Milestones - Use Maven Central
+=== Releases - Use Maven Central
 
-As of 1.0.0-M6, releases are available in Maven Central.
-No changes to your build file are required.
+Spring AI 1.0.0 and later versions are available in Maven Central. 
+No additional repository configuration is required. Just make sure you have Maven Central enabled in your build file.
+
+[tabs]
+======
+Maven::
++
+[source,xml,indent=0,subs="verbatim,quotes"]
+----
+<!-- Maven Central is included by default in Maven builds.
+     You usually don’t need to configure it explicitly,
+     but it's shown here for clarity. -->
+<repositories>
+    <repository>
+        <id>central</id>
+        <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+</repositories>
+----
+
+Gradle::
++
+[source,groovy,indent=0,subs="verbatim,quotes"]
+----
+repositories {
+    mavenCentral()
+}
+----
+======
 
 
 === Snapshots - Add Snapshot Repositories
 
-To use the Snapshot (and pre 1.0.0-M6 milestone) versions, you need to add the following snapshot repositories in your build file.
+To use the latest development versions (e.g. `1.1.0-SNAPSHOT`) or older milestone versions before 1.0.0, you need to add the following snapshot repositories in your build file.
 
 Add the following repository definitions to your Maven or Gradle build file:
 
@@ -117,7 +144,7 @@ Maven::
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-bom</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.0.0</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -130,8 +157,8 @@ Gradle::
 [source,groovy,indent=0,subs="verbatim,quotes"]
 ----
 dependencies {
-  implementation platform("org.springframework.ai:spring-ai-bom:1.0.0-SNAPSHOT")
-  // Replace the following with the starter dependencies of specific modules you wish to use
+  implementation platform("org.springframework.ai:spring-ai-bom:1.0.0")
+  // Replace the following with the specific module dependencies (e.g., spring-ai-openai) or starter modules (e.g., spring-ai-starter-model-openai) that you wish to use
   implementation 'org.springframework.ai:spring-ai-openai'
 }
 ----
@@ -153,4 +180,4 @@ Each of the following sections in the documentation shows which dependencies you
 
 == Spring AI samples
 
-Please refer to https://github.com/danvega/awesome-spring-ai[this page] for more resources and samples related to Spring AI.
+Please refer to https://github.com/spring-ai-community/awesome-spring-ai[this page] for more resources and samples related to Spring AI.

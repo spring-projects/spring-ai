@@ -21,7 +21,7 @@ Visit https://docs.perplexity.ai/guides/getting-started[here] to create an API K
 Configure it using the `spring.ai.openai.api-key` property in your Spring AI project.
 
 * **Set the Perplexity Base URL**:
-Set the `spring.ai.openai.base-url` property to `https://api.perplexity.ai`.
+Set the `spring.ai.openai.base-url` property to `+https://api.perplexity.ai+`.
 
 * **Select a Perplexity Model**:
 Use the `spring.ai.openai.chat.model=<model name>` property to specify the model.
@@ -146,7 +146,7 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 |====
 | Property | Description | Default
 
-| spring.ai.openai.base-url   | The URL to connect to. Must be set to `https://api.perplexity.ai` | -
+| spring.ai.openai.base-url   | The URL to connect to. Must be set to `+https://api.perplexity.ai+` | -
 | spring.ai.openai.chat.api-key    | Your Perplexity API Key | -
 |====
 
@@ -171,7 +171,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 
 | spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.model      | One of the supported https://docs.perplexity.ai/guides/model-cards[Perplexity models]. Example: `llama-3.1-sonar-small-128k-online`. | -
-| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `https://api.perplexity.ai` |  -
+| spring.ai.openai.chat.base-url   | Optional overrides the spring.ai.openai.base-url to provide chat specific url. Must be set to `+https://api.perplexity.ai+` |  -
 | spring.ai.openai.chat.completions-path | Must be set to `/chat/completions` | `/v1/chat/completions`
 | spring.ai.openai.chat.options.temperature | The amount of randomness in the response, valued between 0 inclusive and 2 exclusive. Higher values are more random, and lower values are more deterministic. Required range: `0 < x < 2`. | 0.2
 | spring.ai.openai.chat.options.frequencyPenalty | A multiplicative penalty greater than 0. Values greater than 1.0 penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. A value of 1.0 means no penalty. Incompatible with presence_penalty. Required range: `x > 0`. | 1
@@ -204,7 +204,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions#builder()].
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 
 == Function Calling

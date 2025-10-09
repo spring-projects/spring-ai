@@ -43,14 +43,10 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 	 * Options for OpenAI Image API.
 	 */
 	@NestedConfigurationProperty
-	private OpenAiImageOptions options = OpenAiImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build();
+	private final OpenAiImageOptions options = OpenAiImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build();
 
 	public OpenAiImageOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiImageOptions options) {
-		this.options = options;
 	}
 
 	public String getImagesPath() {

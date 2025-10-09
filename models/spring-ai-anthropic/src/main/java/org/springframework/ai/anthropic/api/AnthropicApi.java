@@ -30,12 +30,17 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
+import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -60,9 +65,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Alexandros Pappas
  * @author Jonghoon Park
  * @author Claudio Silva Junior
+ * @author Filip Hrisafov
+ * @author Soby Chacko
+ * @author Austin Dase
  * @since 1.0.0
  */
 public final class AnthropicApi {
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
 
 	public static Builder builder() {
 		return new Builder();
@@ -80,6 +90,8 @@ public final class AnthropicApi {
 
 	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
 
+	public static final String BETA_EXTENDED_CACHE_TTL = "extended-cache-ttl-2025-04-11";
+
 	private static final String HEADER_X_API_KEY = "x-api-key";
 
 	private static final String HEADER_ANTHROPIC_VERSION = "anthropic-version";
@@ -96,6 +108,8 @@ public final class AnthropicApi {
 
 	private final WebClient webClient;
 
+	private final ApiKey apiKey;
+
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
@@ -107,18 +121,18 @@ public final class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	private AnthropicApi(String baseUrl, String completionsPath, String anthropicApiKey, String anthropicVersion,
+	private AnthropicApi(String baseUrl, String completionsPath, ApiKey anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.add(HEADER_X_API_KEY, anthropicApiKey);
 			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
 			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
 		this.completionsPath = completionsPath;
+		this.apiKey = anthropicApiKey;
 
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
@@ -160,12 +174,17 @@ public final class AnthropicApi {
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
 
+		// @formatter:off
 		return this.restClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			})
 			.body(chatRequest)
 			.retrieve()
 			.toEntity(ChatCompletionResponse.class);
+		// @formatter:on
 	}
 
 	/**
@@ -196,9 +215,13 @@ public final class AnthropicApi {
 
 		AtomicReference<ChatCompletionResponseBuilder> chatCompletionReference = new AtomicReference<>();
 
+		// @formatter:off
 		return this.webClient.post()
 			.uri(this.completionsPath)
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			}) // @formatter:off
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -208,6 +231,8 @@ public final class AnthropicApi {
 			.filter(event -> event.type() != EventType.PING)
 			// Detect if the chunk is part of a streaming function call.
 			.map(event -> {
+				logger.debug("Received event: {}", event);
+
 				if (this.streamHelper.isToolUseStart(event)) {
 					isInsideTool.set(true);
 				}
@@ -232,6 +257,15 @@ public final class AnthropicApi {
 			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
 	}
 
+	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
+		if (!headers.containsKey(HEADER_X_API_KEY)) {
+			String apiKeyValue = this.apiKey.getValue();
+			if (StringUtils.hasText(apiKeyValue)) {
+				headers.add(HEADER_X_API_KEY, apiKeyValue);
+			}
+		}
+	}
+
 	/**
 	 * Check the <a href="https://docs.anthropic.com/claude/docs/models-overview">Models
 	 * overview</a> and <a href=
@@ -241,6 +275,26 @@ public final class AnthropicApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		/**
+		 * The claude-sonnet-4-5 model.
+		 */
+		CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
+
+		/**
+		 * The claude-opus-4-1 model.
+		 */
+		CLAUDE_OPUS_4_1("claude-opus-4-1"),
+
+		/**
+		 * The claude-opus-4-0 model.
+		 */
+		CLAUDE_OPUS_4_0("claude-opus-4-0"),
+
+		/**
+		 * The claude-sonnet-4-0 model.
+		 */
+		CLAUDE_SONNET_4_0("claude-sonnet-4-0"),
+
 		/**
 		 * The claude-3-7-sonnet-latest model.
 		 */
@@ -269,18 +323,7 @@ public final class AnthropicApi {
 		/**
 		 * The CLAUDE_3_HAIKU
 		 */
-		CLAUDE_3_HAIKU("claude-3-haiku-20240307"),
-
-		// Legacy models
-		/**
-		 * The CLAUDE_2_1 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2_1("claude-2.1"),
-
-		/**
-		 * The CLAUDE_2_0 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2("claude-2.0");
+		CLAUDE_3_HAIKU("claude-3-haiku-20240307");
 
 		// @formatter:on
 
@@ -433,8 +476,10 @@ public final class AnthropicApi {
 	 * <a href="https://docs.anthropic.com/claude/docs/models-overview">models</a> for
 	 * additional details and options.
 	 * @param messages Input messages.
-	 * @param system System prompt. A system prompt is a way of providing context and
-	 * instructions to Claude, such as specifying a particular goal or role. See our
+	 * @param system System prompt. Can be a String (for compatibility) or a
+	 * List&lt;ContentBlock&gt; (for caching support). A system prompt is a way of
+	 * providing context and instructions to Claude, such as specifying a particular goal
+	 * or role. See our
 	 * <a href="https://docs.anthropic.com/claude/docs/system-prompts">guide</a> to system
 	 * prompts.
 	 * @param maxTokens The maximum number of tokens to generate before stopping. Note
@@ -475,7 +520,7 @@ public final class AnthropicApi {
 	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("messages") List<AnthropicMessage> messages,
-		@JsonProperty("system") String system,
+		@JsonProperty("system") Object system,
 		@JsonProperty("max_tokens") Integer maxTokens,
 		@JsonProperty("metadata") Metadata metadata,
 		@JsonProperty("stop_sequences") List<String> stopSequences,
@@ -487,12 +532,12 @@ public final class AnthropicApi {
 		@JsonProperty("thinking") ThinkingConfig thinking) {
 		// @formatter:on
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null);
 		}
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				List<String> stopSequences, Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null);
 		}
@@ -519,6 +564,18 @@ public final class AnthropicApi {
 		}
 
 		/**
+		 * @param type is the cache type supported by anthropic. <a href=
+		 * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record CacheControl(@JsonProperty("type") String type, @JsonProperty("ttl") String ttl) {
+
+			public CacheControl(String type) {
+				this(type, "5m");
+			}
+		}
+
+		/**
 		 * Configuration for the model's thinking mode.
 		 *
 		 * @param type The type of thinking mode. Currently, "enabled" is supported.
@@ -538,7 +595,7 @@ public final class AnthropicApi {
 
 		private List<AnthropicMessage> messages;
 
-		private String system;
+		private Object system;
 
 		private Integer maxTokens;
 
@@ -591,7 +648,7 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder system(String system) {
+		public ChatCompletionRequestBuilder system(Object system) {
 			this.system = system;
 			return this;
 		}
@@ -724,8 +781,11 @@ public final class AnthropicApi {
 		@JsonProperty("thinking") String thinking,
 
 		// Redacted Thinking only
-		@JsonProperty("data") String data
-		) {
+		@JsonProperty("data") String data,
+
+		// cache object
+		@JsonProperty("cache_control") CacheControl cacheControl
+	) {
 		// @formatter:on
 
 		/**
@@ -743,7 +803,7 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Type type, Source source) {
-			this(type, source, null, null, null, null, null, null, null, null, null, null);
+			this(type, source, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -751,7 +811,7 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Source source) {
-			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -759,7 +819,11 @@ public final class AnthropicApi {
 		 * @param text The text of the content.
 		 */
 		public ContentBlock(String text) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, null);
+		}
+
+		public ContentBlock(String text, CacheControl cache) {
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, cache);
 		}
 
 		// Tool result
@@ -770,7 +834,7 @@ public final class AnthropicApi {
 		 * @param content The content of the tool result.
 		 */
 		public ContentBlock(Type type, String toolUseId, String content) {
-			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null);
+			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null, null);
 		}
 
 		/**
@@ -781,7 +845,7 @@ public final class AnthropicApi {
 		 * @param index The index of the content block.
 		 */
 		public ContentBlock(Type type, Source source, String text, Integer index) {
-			this(type, source, text, index, null, null, null, null, null, null, null, null);
+			this(type, source, text, index, null, null, null, null, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
@@ -793,7 +857,11 @@ public final class AnthropicApi {
 		 * @param input The input of the tool use.
 		 */
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
-			this(type, null, null, null, id, name, input, null, null, null, null, null);
+			this(type, null, null, null, id, name, input, null, null, null, null, null, null);
+		}
+
+		public static ContentBlockBuilder from(ContentBlock contentBlock) {
+			return new ContentBlockBuilder(contentBlock);
 		}
 
 		/**
@@ -920,6 +988,121 @@ public final class AnthropicApi {
 
 		}
 
+		public static class ContentBlockBuilder {
+
+			private Type type;
+
+			private Source source;
+
+			private String text;
+
+			private Integer index;
+
+			private String id;
+
+			private String name;
+
+			private Map<String, Object> input;
+
+			private String toolUseId;
+
+			private String content;
+
+			private String signature;
+
+			private String thinking;
+
+			private String data;
+
+			private CacheControl cacheControl;
+
+			public ContentBlockBuilder(ContentBlock contentBlock) {
+				this.type = contentBlock.type;
+				this.source = contentBlock.source;
+				this.text = contentBlock.text;
+				this.index = contentBlock.index;
+				this.id = contentBlock.id;
+				this.name = contentBlock.name;
+				this.input = contentBlock.input;
+				this.toolUseId = contentBlock.toolUseId;
+				this.content = contentBlock.content;
+				this.signature = contentBlock.signature;
+				this.thinking = contentBlock.thinking;
+				this.data = contentBlock.data;
+				this.cacheControl = contentBlock.cacheControl;
+			}
+
+			public ContentBlockBuilder type(Type type) {
+				this.type = type;
+				return this;
+			}
+
+			public ContentBlockBuilder source(Source source) {
+				this.source = source;
+				return this;
+			}
+
+			public ContentBlockBuilder text(String text) {
+				this.text = text;
+				return this;
+			}
+
+			public ContentBlockBuilder index(Integer index) {
+				this.index = index;
+				return this;
+			}
+
+			public ContentBlockBuilder id(String id) {
+				this.id = id;
+				return this;
+			}
+
+			public ContentBlockBuilder name(String name) {
+				this.name = name;
+				return this;
+			}
+
+			public ContentBlockBuilder input(Map<String, Object> input) {
+				this.input = input;
+				return this;
+			}
+
+			public ContentBlockBuilder toolUseId(String toolUseId) {
+				this.toolUseId = toolUseId;
+				return this;
+			}
+
+			public ContentBlockBuilder content(String content) {
+				this.content = content;
+				return this;
+			}
+
+			public ContentBlockBuilder signature(String signature) {
+				this.signature = signature;
+				return this;
+			}
+
+			public ContentBlockBuilder thinking(String thinking) {
+				this.thinking = thinking;
+				return this;
+			}
+
+			public ContentBlockBuilder data(String data) {
+				this.data = data;
+				return this;
+			}
+
+			public ContentBlockBuilder cacheControl(CacheControl cacheControl) {
+				this.cacheControl = cacheControl;
+				return this;
+			}
+
+			public ContentBlock build() {
+				return new ContentBlock(this.type, this.source, this.text, this.index, this.id, this.name, this.input,
+						this.toolUseId, this.content, this.signature, this.thinking, this.data, this.cacheControl);
+			}
+
+		}
 	}
 
 	///////////////////////////////////////
@@ -932,14 +1115,24 @@ public final class AnthropicApi {
 	 * @param name The name of the tool.
 	 * @param description A description of the tool.
 	 * @param inputSchema The input schema of the tool.
+	 * @param cacheControl Optional cache control for this tool.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(
 	// @formatter:off
 		@JsonProperty("name") String name,
 		@JsonProperty("description") String description,
-		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
+		@JsonProperty("input_schema") Map<String, Object> inputSchema,
+		@JsonProperty("cache_control") CacheControl cacheControl) {
 		// @formatter:on
+
+		/**
+		 * Constructor for backward compatibility without cache control.
+		 */
+		public Tool(String name, String description, Map<String, Object> inputSchema) {
+			this(name, description, inputSchema, null);
+		}
+
 	}
 
 	// CB START EVENT
@@ -987,7 +1180,9 @@ public final class AnthropicApi {
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens) {
+		@JsonProperty("output_tokens") Integer outputTokens,
+		@JsonProperty("cache_creation_input_tokens") Integer cacheCreationInputTokens,
+		@JsonProperty("cache_read_input_tokens") Integer cacheReadInputTokens) {
 		// @formatter:off
 	}
 
@@ -1027,8 +1222,7 @@ public final class AnthropicApi {
 		  * @return True if the event is empty, false otherwise.
 		*/
 		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
+			return (this.index == null || this.id == null || this.name == null);
 		}
 
 		ToolUseAggregationEvent withIndex(Integer index) {
@@ -1091,8 +1285,11 @@ public final class AnthropicApi {
 
 		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
 				visible = true)
-		@JsonSubTypes({ @JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
-				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text") })
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = ContentBlockToolUse.class, name = "tool_use"),
+				@JsonSubTypes.Type(value = ContentBlockText.class, name = "text"),
+				@JsonSubTypes.Type(value = ContentBlockThinking.class, name = "thinking")
+		})
 		public interface ContentBlockBody {
 			String type();
 		}
@@ -1123,6 +1320,18 @@ public final class AnthropicApi {
 		public record ContentBlockText(
 			@JsonProperty("type") String type,
 			@JsonProperty("text") String text) implements ContentBlockBody {
+		}
+
+		/**
+		 * Thinking content block.
+		 * @param type The content block type.
+		 * @param thinking The thinking content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ContentBlockThinking(
+			@JsonProperty("type") String type,
+			@JsonProperty("thinking") String thinking,
+			@JsonProperty("signature") String signature) implements ContentBlockBody {
 		}
 	}
 	// @formatter:on
@@ -1339,7 +1548,7 @@ public final class AnthropicApi {
 
 		private String completionsPath = DEFAULT_MESSAGE_COMPLETIONS_PATH;
 
-		private String apiKey;
+		private ApiKey apiKey;
 
 		private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
 
@@ -1363,9 +1572,15 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public Builder apiKey(String apiKey) {
+		public Builder apiKey(ApiKey apiKey) {
 			Assert.notNull(apiKey, "apiKey cannot be null");
 			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder apiKey(String simpleApiKey) {
+			Assert.notNull(simpleApiKey, "simpleApiKey cannot be null");
+			this.apiKey = new SimpleApiKey(simpleApiKey);
 			return this;
 		}
 

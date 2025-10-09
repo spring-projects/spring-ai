@@ -92,6 +92,7 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 
 | spring.ai.vertex.ai.gemini.chat.options.model | Supported https://cloud.google.com/vertex-ai/generative-ai/docs/models#gemini-models[Vertex AI Gemini Chat model] to use include the `gemini-2.0-flash`, `gemini-2.0-flash-lite` and the new `gemini-2.5-pro-preview-03-25`, `gemini-2.5-flash-preview-04-17` models. | gemini-2.0-flash
 | spring.ai.vertex.ai.gemini.chat.options.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
+| spring.ai.vertex.ai.gemini.chat.options.response-schema | String, containing the output response schema in OpenAPI format, as described in https://ai.google.dev/gemini-api/docs/structured-output#json-schemas. |  -
 | spring.ai.vertex.ai.gemini.chat.options.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
 | spring.ai.vertex.ai.gemini.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.7
 | spring.ai.vertex.ai.gemini.chat.options.top-k | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
@@ -99,9 +100,8 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 | spring.ai.vertex.ai.gemini.chat.options.candidate-count | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | 1
 | spring.ai.vertex.ai.gemini.chat.options.max-output-tokens | The maximum number of tokens to generate. | -
 | spring.ai.vertex.ai.gemini.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
-| (**deprecated** by `tool-names`) spring.ai.vertex.ai.gemini.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt request. Functions with those names must exist in the functionCallbacks registry. | -
+| spring.ai.vertex.ai.gemini.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.vertex.ai.gemini.chat.options.internal-tool-execution-enabled | If true, the tool execution should be performed, otherwise the response from the model is returned back to the user. Default is null, but if it's null, `ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_ENABLED` which is true will take into account | -
-| (**deprecated** by `internal-tool-execution-enabled`) spring.ai.vertex.ai.gemini.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 | spring.ai.vertex.ai.gemini.chat.options.safety-settings | List of safety settings to control safety filters, as defined by https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters[Vertex AI Safety Filters]. Each safety setting can have a method, threshold, and category. | -
 
 |====
@@ -128,8 +128,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the
-https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific `VertexAiGeminiChatOptions` you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 == Tool Calling
 
@@ -166,7 +165,7 @@ public Function<Request, Response> weatherFunction() {
 
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
-        .tools("weatherFunction")
+        .toolNames("weatherFunction")
         .inputType(Request.class)
         .call()
         .content();

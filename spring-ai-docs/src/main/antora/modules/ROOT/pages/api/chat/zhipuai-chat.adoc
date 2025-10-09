@@ -2,11 +2,13 @@
 
 Spring AI supports the various AI language models from ZhiPu AI. You can interact with ZhiPu AI language models and create a multilingual conversational assistant based on ZhiPuAI models.
 
+If you're not a Chinese speaker, you can visit ZhiPuAI's international site https://z.ai/model-api[Z.ai]
+
 == Prerequisites
 
 You will need to create an API with ZhiPuAI to access ZhiPu AI language models.
 
-Create an account at https://open.bigmodel.cn/login[ZhiPu AI registration page] and generate the token on the https://open.bigmodel.cn/usercenter/apikeys[API Keys page].
+Create an account at https://open.bigmodel.cn/login[ZhiPu AI registration page] (or https://chat.z.ai/auth[Z.ai registration page]) and generate the token on the https://open.bigmodel.cn/usercenter/apikeys[API Keys page] (or https://z.ai/manage-apikey/apikey-list[Z.ai API Keys page]).
 
 The Spring AI project defines a configuration property named `spring.ai.zhipuai.api-key` that you should set to the value of the `API Key` obtained from the API Keys page.
 
@@ -102,13 +104,14 @@ The prefix `spring.ai.retry` is used as the property prefix that lets you config
 
 ==== Connection Properties
 
-The prefix `spring.ai.zhiPu` is used as the property prefix that lets you connect to ZhiPuAI.
+The prefix `spring.ai.zhipuai` is used as the property prefix that lets you connect to ZhiPuAI.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.zhipuai.base-url   | The URL to connect to |  https://open.bigmodel.cn/api/paas
+| spring.ai.zhipuai.base-url   | The URL to connect to ZhiPuAI API. +
+If you are using the Z.ai Platform, you need to set it to `https://api.z.ai/api/paas[https://api.z.ai/api/paas]`. |  `https://open.bigmodel.cn/api/paas[https://open.bigmodel.cn/api/paas]`
 | spring.ai.zhipuai.api-key    | The API Key           |  -
 |====
 
@@ -133,9 +136,10 @@ The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configu
 
 | spring.ai.zhipuai.chat.enabled (Removed and no longer valid) | Enable ZhiPuAI chat model.  | true
 | spring.ai.model.chat | Enable ZhiPuAI chat model.  | zhipuai
-| spring.ai.zhipuai.chat.base-url | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url |  https://open.bigmodel.cn/api/paas
-| spring.ai.zhipuai.chat.api-key | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key |  -
-| spring.ai.zhipuai.chat.options.model | This is the ZhiPuAI Chat model to use | `GLM-3-Turbo` (the `GLM-3-Turbo`, `GLM-4`, `GLM-4-Air`, `GLM-4-AirX`, `GLM-4-Flash`, and `GLM-4V` point to the latest model versions)
+| spring.ai.zhipuai.chat.base-url | Optional overrides the spring.ai.zhipuai.base-url to provide chat specific url. +
+If you are using the Z.ai Platform, you need to set it to `https://api.z.ai/api/paas[https://api.z.ai/api/paas]`. |  `https://open.bigmodel.cn/api/paas[https://open.bigmodel.cn/api/paas]`
+| spring.ai.zhipuai.chat.api-key | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key. |  -
+| spring.ai.zhipuai.chat.options.model | This is the ZhiPuAI Chat model to use. You can select between models such as: `glm-4.6`, `glm-4.5`, `glm-4-air`, and more. | `glm-4-air`
 | spring.ai.zhipuai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
 | spring.ai.zhipuai.chat.options.temperature | What sampling temperature to use, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. We generally recommend altering this or top_p but not both. | 0.7
 | spring.ai.zhipuai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature but not both.. | 1.0
@@ -143,7 +147,11 @@ The prefix `spring.ai.zhipuai.chat` is the property prefix that lets you configu
 | spring.ai.zhipuai.chat.options.user | A unique identifier representing your end-user, which can help ZhiPuAI to monitor and detect abuse. | -
 | spring.ai.zhipuai.chat.options.requestId | The parameter is passed by the client and must ensure uniqueness. It is used to distinguish the unique identifier for each request. If the client does not provide it, the platform will generate it by default. | -
 | spring.ai.zhipuai.chat.options.doSample | When do_sample is set to true, the sampling strategy is enabled. If do_sample is false, the sampling strategy parameters temperature and top_p will not take effect. | true
-| spring.ai.zhipuai.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
+| spring.ai.zhipuai.chat.options.response-format.type | Control the format of the model output. Set to `json_object` to ensure the message is a valid JSON object. Available options: `text` or `json_object`. | -
+| spring.ai.zhipuai.chat.options.thinking.type | Control whether to enable the large model's chain of thought. Available options: `enabled` or `disabled`. | -
+| spring.ai.zhipuai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.zhipuai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.zhipuai.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 |====
 
 NOTE: You can override the common `spring.ai.zhipuai.base-url` and `spring.ai.zhipuai.api-key` for the `ChatModel` implementations.
@@ -167,13 +175,13 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         ZhiPuAiChatOptions.builder()
-            .model(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
+            .model(ZhiPuAiApi.ChatModel.GLM_4_Air.getValue())
             .temperature(0.5)
         .build()
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiChatOptions.java[ZhiPuAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/ChatOptions.java[ChatOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/ZhiPuAiChatOptions.java[ZhiPuAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 == Sample Controller
 
@@ -210,7 +218,7 @@ public class ChatController {
         return Map.of("generation", this.chatModel.call(message));
     }
 
-    @GetMapping("/ai/generateStream")
+    @GetMapping(value = "/ai/generateStream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
 	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
         var prompt = new Prompt(new UserMessage(message));
         return this.chatModel.stream(prompt);
@@ -250,7 +258,7 @@ Next, create a `ZhiPuAiChatModel` and use it for text generations:
 var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
 
 var chatModel = new ZhiPuAiChatModel(this.zhiPuAiApi, ZhiPuAiChatOptions.builder()
-                .model(ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue())
+                .model(ZhiPuAiApi.ChatModel.GLM_4_Air.getValue())
                 .temperature(0.4)
                 .maxTokens(200)
                 .build());
@@ -282,11 +290,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = this.zhiPuAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(this.chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, false));
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_4_Air.getValue(), 0.7, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = this.zhiPuAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(this.chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_3_Turbo.getValue(), 0.7, true));
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), ZhiPuAiApi.ChatModel.GLM_4_Air.getValue(), 0.7, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-zhipuai/src/main/java/org/springframework/ai/zhipuai/api/ZhiPuAiApi.java[ZhiPuAiApi.java]'s JavaDoc for further information.

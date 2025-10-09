@@ -30,7 +30,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.ObjectUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
@@ -50,6 +49,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 
 /**
  * Abstract class for the Bedrock API. It provides the basic functionality to invoke the chat completion model and
@@ -287,7 +287,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.builder()
 				.onChunk(chunk -> {
 					try {
-						logger.debug("Received chunk: " + chunk.bytes().asString(StandardCharsets.UTF_8));
+						logger.debug("Received chunk: {}", chunk.bytes().asString(StandardCharsets.UTF_8));
 						SO response = this.objectMapper.readValue(chunk.bytes().asByteArray(), clazz);
 						eventSink.emitNext(response, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
@@ -297,7 +297,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 					}
 				})
 				.onDefault(event -> {
-					logger.error("Unknown or unhandled event: " + event.toString());
+					logger.error("Unknown or unhandled event: {}", event.toString());
 					eventSink.emitError(new Throwable("Unknown or unhandled event: " + event.toString()), DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.build();
@@ -310,7 +310,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 							logger.info("Completed streaming response.");
 						})
 				.onError(error -> {
-					logger.error("\n\nError streaming response: " + error.getMessage());
+					logger.error("\n\nError streaming response: {}", error.getMessage());
 					eventSink.emitError(error, DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.onEventStream(stream -> stream.subscribe(
@@ -320,6 +320,20 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		this.clientStreaming.invokeModelWithResponseStream(invokeRequest, responseHandler);
 
 		return eventSink.asFlux();
+	}
+
+	private Region getRegion(Region region) {
+		if (ObjectUtils.isEmpty(region)) {
+			try {
+				return DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				throw new IllegalArgumentException("Region is empty and cannot be loaded from DefaultAwsRegionProviderChain: " + e.getMessage(), e);
+			}
+		}
+		else {
+			return region;
+		}
 	}
 
 	/**
@@ -341,16 +355,5 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 			@JsonProperty("invocationLatency") Long invocationLatency) {
 	}
 
-	private Region getRegion(Region region) {
-		if (ObjectUtils.isEmpty(region)) {
-			try {
-				return DefaultAwsRegionProviderChain.builder().build().getRegion();
-			} catch (SdkClientException e) {
-				throw new IllegalArgumentException("Region is empty and cannot be loaded from DefaultAwsRegionProviderChain: " + e.getMessage(), e);
-			}
-		} else {
-			return region;
-		}
-	}
 }
 // @formatter:on

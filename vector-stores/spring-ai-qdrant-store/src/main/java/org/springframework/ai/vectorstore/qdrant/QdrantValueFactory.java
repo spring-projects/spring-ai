@@ -75,6 +75,9 @@ final class QdrantValueFactory {
 				return ValueFactory.value((String) value);
 			case "Integer":
 				return ValueFactory.value((Integer) value);
+			case "Long":
+				// use String representation
+				return ValueFactory.value(String.valueOf(value));
 			case "Double":
 				return ValueFactory.value((Double) value);
 			case "Float":
@@ -87,7 +90,7 @@ final class QdrantValueFactory {
 	}
 
 	private static Value value(List<Object> elements) {
-		List<Value> values = new ArrayList<Value>(elements.size());
+		List<Value> values = new ArrayList<>(elements.size());
 
 		for (Object element : elements) {
 			values.add(value(element));
@@ -97,7 +100,7 @@ final class QdrantValueFactory {
 	}
 
 	private static Value value(Object[] elements) {
-		List<Value> values = new ArrayList<Value>(elements.length);
+		List<Value> values = new ArrayList<>(elements.length);
 
 		for (Object element : elements) {
 			values.add(value(element));

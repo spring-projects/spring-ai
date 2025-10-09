@@ -62,6 +62,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -286,10 +287,17 @@ public class DeepSeekChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-					return Flux.defer(() -> {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+					// FIXME: bounded elastic needs to be used since tool calling
+					//  is currently only synchronous
+					return Flux.deferContextual(ctx -> {
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
 							return Flux.just(ChatResponse.builder().from(response)
@@ -332,8 +340,13 @@ public class DeepSeekChatModel implements ChatModel {
 		String textContent = choice.message().content();
 		String reasoningContent = choice.message().reasoningContent();
 
-		DeepSeekAssistantMessage assistantMessage = new DeepSeekAssistantMessage(textContent, reasoningContent,
-				metadata, toolCalls);
+		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
+		DeepSeekAssistantMessage assistantMessage = builder.content(textContent)
+			.reasoningContent(reasoningContent)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
+
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 

@@ -130,7 +130,9 @@ class Neo4jChatMemoryRepositoryIT {
 		List<Message> messages = List.of(new AssistantMessage("Message from assistant - " + conversationId),
 				new UserMessage("Message from user - " + conversationId),
 				new SystemMessage("Message from system - " + conversationId),
-				new ToolResponseMessage(List.of(new ToolResponse("id", "name", "responseData"))));
+				ToolResponseMessage.builder()
+					.responses(List.of(new ToolResponse("id", "name", "responseData")))
+					.build());
 
 		this.chatMemoryRepository.saveAll(conversationId, messages);
 		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
@@ -263,9 +265,12 @@ class Neo4jChatMemoryRepositoryIT {
 	void handleAssistantMessageWithToolCalls() {
 		var conversationId = UUID.randomUUID().toString();
 
-		AssistantMessage assistantMessage = new AssistantMessage("Message with tool calls", Map.of(),
-				List.of(new AssistantMessage.ToolCall("id1", "type1", "name1", "arguments1"),
-						new AssistantMessage.ToolCall("id2", "type2", "name2", "arguments2")));
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("Message with tool calls")
+			.properties(Map.of())
+			.toolCalls(List.of(new AssistantMessage.ToolCall("id1", "type1", "name1", "arguments1"),
+					new AssistantMessage.ToolCall("id2", "type2", "name2", "arguments2")))
+			.build();
 
 		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(assistantMessage));
 
@@ -282,9 +287,11 @@ class Neo4jChatMemoryRepositoryIT {
 	void handleToolResponseMessage() {
 		var conversationId = UUID.randomUUID().toString();
 
-		ToolResponseMessage toolResponseMessage = new ToolResponseMessage(List
-			.of(new ToolResponse("id1", "name1", "responseData1"), new ToolResponse("id2", "name2", "responseData2")),
-				Map.of("metadataKey", "metadataValue"));
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("id1", "name1", "responseData1"),
+					new ToolResponse("id2", "name2", "responseData2")))
+			.metadata(Map.of("metadataKey", "metadataValue"))
+			.build();
 
 		this.chatMemoryRepository.saveAll(conversationId, List.<Message>of(toolResponseMessage));
 
@@ -389,7 +396,8 @@ class Neo4jChatMemoryRepositoryIT {
 		assertThat(retrievedEmptyContentMsg.getMetadata().keySet()).hasSize(1); // Only
 																				// messageType
 
-		// Verify second message (empty metadata from input, should only have messageType
+		// Verify second message (empty metadata from input, should only have
+		// messageType
 		// after retrieval)
 		Message retrievedEmptyMetadataMsg = retrievedMessages.get(1);
 		assertThat(retrievedEmptyMetadataMsg).isInstanceOf(UserMessage.class);
@@ -404,7 +412,9 @@ class Neo4jChatMemoryRepositoryIT {
 			case ASSISTANT -> new AssistantMessage(content);
 			case USER -> new UserMessage(content);
 			case SYSTEM -> new SystemMessage(content);
-			case TOOL -> new ToolResponseMessage(List.of(new ToolResponse("id", "name", "responseData")));
+			case TOOL -> ToolResponseMessage.builder()
+				.responses(List.of(new ToolResponse("id", "name", "responseData")))
+				.build();
 		};
 	}
 

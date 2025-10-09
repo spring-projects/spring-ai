@@ -62,7 +62,9 @@ There are several scenarios where you might need to work with multiple chat mode
 * Providing users with a choice of models based on their preferences
 * Combining specialized models (one for code generation, another for creative content, etc.)
 
-By default, Spring AI autoconfigures a single `ChatClient.Builder` bean. However, you may need to work with multiple chat models in your application. Here's how to handle this scenario:
+By default, Spring AI autoconfigures a single `ChatClient.Builder` bean.
+However, you may need to work with multiple chat models in your application.
+Here's how to handle this scenario:
 
 In all cases, you need to disable the `ChatClient.Builder` autoconfiguration by setting the property `spring.ai.chat.client.enabled=false`.
 
@@ -157,7 +159,8 @@ public class ChatClientExample {
 
 ==== Multiple OpenAI-Compatible API Endpoints
 
-The `OpenAiApi` and `OpenAiChatModel` classes provide a `mutate()` method that allows you to create variations of existing instances with different properties. This is particularly useful when you need to work with multiple OpenAI-compatible APIs.
+The `OpenAiApi` and `OpenAiChatModel` classes provide a `mutate()` method that allows you to create variations of existing instances with different properties.
+This is particularly useful when you need to work with multiple OpenAI-compatible APIs.
 
 [source,java]
 ----
@@ -296,7 +299,7 @@ Flux<String> output = chatClient.prompt()
 You can also stream the `ChatResponse` using the method `Flux<ChatResponse> chatResponse()`.
 
 In the future, we will offer a convenience method that will let you return a Java entity with the reactive `stream()` method.
-In the meantime, you should use the xref:api/structured-output-converter.adoc#StructuredOutputConverter[Structured Output Converter] to convert the aggregated response explicity as shown below.
+In the meantime, you should use the xref:api/structured-output-converter.adoc#StructuredOutputConverter[Structured Output Converter] to convert the aggregated response explicitly as shown below.
 This also demonstrates the use of parameters in the fluent API that will be discussed in more detail in a later section of the documentation.
 
 [source,java]
@@ -314,7 +317,7 @@ Flux<String> flux = this.chatClient.prompt()
 
 String content = this.flux.collectList().block().stream().collect(Collectors.joining());
 
-List<ActorFilms> actorFilms = this.converter.convert(this.content);
+List<ActorsFilms> actorFilms = this.converter.convert(this.content);
 ----
 
 == Prompt Templates
@@ -336,14 +339,13 @@ By default, Spring AI uses the `StTemplateRenderer` implementation, which is bas
 
 Spring AI also provides a `NoOpTemplateRenderer` for cases where no template processing is desired.
 
-Spring AI also provides a `NoOpTemplateRenderer`.
-
 NOTE: The `TemplateRenderer` configured directly on the `ChatClient` (via `.templateRenderer()`) applies only to the prompt content defined directly in the `ChatClient` builder chain (e.g., via `.user()`, `.system()`).
 It does *not* affect templates used internally by xref:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Advisors] like `QuestionAnswerAdvisor`, which have their own template customization mechanisms (see xref:api/retrieval-augmented-generation.adoc#_custom_template[Custom Advisor Templates]).
 
 If you'd rather use a different template engine, you can provide a custom implementation of the `TemplateRenderer` interface directly to the ChatClient. You can also keep using the default `StTemplateRenderer`, but with a custom configuration.
 
-For example, by default, template variables are identified by the `{}` syntax. If you're planning to include JSON in your prompt, you might want to use a different syntax to avoid conflicts with JSON syntax. For example, you can use the `<` and `>` delimiters.
+For example, by default, template variables are identified by the `{}` syntax.
+If you're planning to include JSON in your prompt, you might want to use a different syntax to avoid conflicts with JSON syntax. For example, you can use the `<` and `>` delimiters.
 
 [source,java]
 ----
@@ -367,8 +369,15 @@ After specifying the `call()` method on `ChatClient`, there are a few different 
 ** `entity(ParameterizedTypeReference<T> type)`: used to return a `Collection` of entity types.
 ** `entity(Class<T> type)`:  used to return a specific entity type.
 ** `entity(StructuredOutputConverter<T> structuredOutputConverter)`: used to specify an instance of a `StructuredOutputConverter` to convert a `String` to an entity type.
+* `responseEntity()` to return both the `ChatResponse` and a Java type. This is useful when you need access to both the complete AI model response (with metadata and generations) and the structured output entity in a single call.
+** `responseEntity(Class<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a specific entity type.
+** `responseEntity(ParameterizedTypeReference<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a `Collection` of entity types.
+** `responseEntity(StructuredOutputConverter<T> structuredOutputConverter)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and an entity converted using a specified `StructuredOutputConverter`.
 
 You can also invoke the `stream()` method instead of `call()`.
+
+NOTE: Calling the `call()` method does not actually trigger the AI model execution. Instead, it only instructs Spring AI whether to use synchronous or streaming calls.
+The actual AI model invocation occurs when methods such as `content()`, `chatResponse()`, and `responseEntity()` are called.
 
 == stream() return values
 
@@ -377,6 +386,107 @@ After specifying the `stream()` method on `ChatClient`, there are a few options 
 * `Flux<String> content()`: Returns a `Flux` of the string being generated by the AI model.
 * `Flux<ChatResponse> chatResponse()`: Returns a `Flux` of the `ChatResponse` object, which contains additional metadata about the response.
 * `Flux<ChatClientResponse> chatClientResponse()`: returns a `Flux` of the `ChatClientResponse` object that contains the `ChatResponse` object and the ChatClient execution context, giving you access to additional data used during the execution of advisors (e.g. the relevant documents retrieved in a RAG flow).
+
+== Message Metadata
+
+The ChatClient supports adding metadata to both user and system messages.
+Metadata provides additional context and information about messages that can be used by the AI model or downstream processing.
+
+=== Adding Metadata to User Messages
+
+You can add metadata to user messages using the `metadata()` methods:
+
+[source,java]
+----
+// Adding individual metadata key-value pairs
+String response = chatClient.prompt()
+    .user(u -> u.text("What's the weather like?")
+        .metadata("messageId", "msg-123")
+        .metadata("userId", "user-456")
+        .metadata("priority", "high"))
+    .call()
+    .content();
+
+// Adding multiple metadata entries at once
+Map<String, Object> userMetadata = Map.of(
+    "messageId", "msg-123",
+    "userId", "user-456",
+    "timestamp", System.currentTimeMillis()
+);
+
+String response = chatClient.prompt()
+    .user(u -> u.text("What's the weather like?")
+        .metadata(userMetadata))
+    .call()
+    .content();
+----
+
+=== Adding Metadata to System Messages
+
+Similarly, you can add metadata to system messages:
+
+[source,java]
+----
+// Adding metadata to system messages
+String response = chatClient.prompt()
+    .system(s -> s.text("You are a helpful assistant.")
+        .metadata("version", "1.0")
+        .metadata("model", "gpt-4"))
+    .user("Tell me a joke")
+    .call()
+    .content();
+----
+
+=== Default Metadata Support
+
+You can also configure default metadata at the ChatClient builder level:
+
+[source,java]
+----
+@Configuration
+class Config {
+    @Bean
+    ChatClient chatClient(ChatClient.Builder builder) {
+        return builder
+            .defaultSystem(s -> s.text("You are a helpful assistant")
+                .metadata("assistantType", "general")
+                .metadata("version", "1.0"))
+            .defaultUser(u -> u.text("Default user context")
+                .metadata("sessionId", "default-session"))
+            .build();
+    }
+}
+----
+
+=== Metadata Validation
+
+The ChatClient validates metadata to ensure data integrity:
+
+* Metadata keys cannot be null or empty
+* Metadata values cannot be null
+* When passing a Map, neither keys nor values can contain null elements
+
+[source,java]
+----
+// This will throw an IllegalArgumentException
+chatClient.prompt()
+    .user(u -> u.text("Hello")
+        .metadata(null, "value"))  // Invalid: null key
+    .call()
+    .content();
+
+// This will also throw an IllegalArgumentException
+chatClient.prompt()
+    .user(u -> u.text("Hello")
+        .metadata("key", null))    // Invalid: null value
+    .call()
+    .content();
+----
+
+=== Accessing Metadata
+
+The metadata is included in the generated UserMessage and SystemMessage objects and can be accessed through the message's `getMetadata()` method.
+This is particularly useful when processing messages in advisors or when examining the conversation history.
 
 == Using Defaults
 
@@ -485,17 +595,23 @@ http localhost:8080/ai voice=='Robert DeNiro'
 
 At the `ChatClient.Builder` level, you can specify the default prompt configuration.
 
-* `defaultOptions(ChatOptions chatOptions)`: Pass in either portable options defined in the `ChatOptions` class or model-specific options such as those in `OpenAiChatOptions`. For more information on model-specific `ChatOptions` implementations, refer to the JavaDocs.
+* `defaultOptions(ChatOptions chatOptions)`: Pass in either portable options defined in the `ChatOptions` class or model-specific options such as those in `OpenAiChatOptions`.
+For more information on model-specific `ChatOptions` implementations, refer to the JavaDocs.
 
-* `defaultFunction(String name, String description, java.util.function.Function<I, O> function)`: The `name` is used to refer to the function in user text. The `description` explains the function's purpose and helps the AI model choose the correct function for an accurate response. The `function` argument is a Java function instance that the model will execute when necessary.
+* `defaultFunction(String name, String description, java.util.function.Function<I, O> function)`: The `name` is used to refer to the function in user text.
+The `description` explains the function's purpose and helps the AI model choose the correct function for an accurate response.
+The `function` argument is a Java function instance that the model will execute when necessary.
 
 * `defaultFunctions(String... functionNames)`: The bean names of `java.util.Function`s defined in the application context.
 
-* `defaultUser(String text)`, `defaultUser(Resource text)`, `defaultUser(Consumer<UserSpec> userSpecConsumer)`: These methods let you define the user text. The `Consumer<UserSpec>` allows you to use a lambda to specify the user text and any default parameters.
+* `defaultUser(String text)`, `defaultUser(Resource text)`, `defaultUser(Consumer<UserSpec> userSpecConsumer)`: These methods let you define the user text.
+The `Consumer<UserSpec>` allows you to use a lambda to specify the user text and any default parameters.
 
-* `defaultAdvisors(Advisor... advisor)`: Advisors allow modification of the data used to create the `Prompt`. The `QuestionAnswerAdvisor` implementation enables the pattern of `Retrieval Augmented Generation` by appending the prompt with context information related to the user text.
+* `defaultAdvisors(Advisor... advisor)`: Advisors allow modification of the data used to create the `Prompt`.
+The `QuestionAnswerAdvisor` implementation enables the pattern of `Retrieval Augmented Generation` by appending the prompt with context information related to the user text.
 
-* `defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer)`: This method allows you to define a `Consumer` to configure multiple advisors using the `AdvisorSpec`. Advisors can modify the data used to create the final `Prompt`. The `Consumer<AdvisorSpec>` lets you specify a lambda to add advisors, such as `QuestionAnswerAdvisor`, which supports `Retrieval Augmented Generation` by appending the prompt with relevant context information based on the user text.
+* `defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer)`: This method allows you to define a `Consumer` to configure multiple advisors using the `AdvisorSpec`. Advisors can modify the data used to create the final `Prompt`.
+The `Consumer<AdvisorSpec>` lets you specify a lambda to add advisors, such as `QuestionAnswerAdvisor`, which supports `Retrieval Augmented Generation` by appending the prompt with relevant context information based on the user text.
 
 You can override these defaults at runtime using the corresponding methods without the `default` prefix.
 
@@ -520,14 +636,18 @@ A common pattern when calling an AI model with user text is to append or augment
 
 This contextual data can be of different types. Common types include:
 
-* **Your own data**: This is data the AI model hasn't been trained on. Even if the model has seen similar data, the appended contextual data takes precedence in generating the response.
+* **Your own data**: This is data the AI model hasn't been trained on.
+Even if the model has seen similar data, the appended contextual data takes precedence in generating the response.
 
-* **Conversational history**: The chat model's API is stateless. If you tell the AI model your name, it won't remember it in subsequent interactions. Conversational history must be sent with each request to ensure previous interactions are considered when generating a response.
+* **Conversational history**: The chat model's API is stateless.
+If you tell the AI model your name, it won't remember it in subsequent interactions.
+Conversational history must be sent with each request to ensure previous interactions are considered when generating a response.
 
 
 === Advisor Configuration in ChatClient
 
-The ChatClient fluent API provides an `AdvisorSpec` interface for configuring advisors. This interface offers methods to add parameters, set multiple parameters at once, and add one or more advisors to the chain.
+The ChatClient fluent API provides an `AdvisorSpec` interface for configuring advisors.
+This interface offers methods to add parameters, set multiple parameters at once, and add one or more advisors to the chain.
 
 [source,java]
 ----
@@ -539,7 +659,8 @@ interface AdvisorSpec {
 }
 ----
 
-IMPORTANT: The order in which advisors are added to the chain is crucial, as it determines the sequence of their execution. Each advisor modifies the prompt or the context in some way, and the changes made by one advisor are passed on to the next in the chain.
+IMPORTANT: The order in which advisors are added to the chain is crucial, as it determines the sequence of their execution.
+Each advisor modifies the prompt or the context in some way, and the changes made by one advisor are passed on to the next in the chain.
 
 [source,java]
 ----
@@ -555,7 +676,8 @@ ChatClient.builder(chatModel)
     .content();
 ----
 
-In this configuration, the `MessageChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt. Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
+In this configuration, the `MessageChatMemoryAdvisor` will be executed first, adding the conversation history to the prompt.
+Then, the `QuestionAnswerAdvisor` will perform its search based on the user's question and the added conversation history, potentially providing more relevant results.
 
 xref:ROOT:api/retrieval-augmented-generation.adoc#_questionansweradvisor[Learn about Question Answer Advisor]
 
@@ -568,7 +690,8 @@ Refer to the xref:ROOT:api/retrieval-augmented-generation.adoc[Retrieval Augment
 The `SimpleLoggerAdvisor` is an advisor that logs the `request` and `response` data of the `ChatClient`.
 This can be useful for debugging and monitoring your AI interactions.
 
-TIP: Spring AI supports observability for LLM and vector store interactions. Refer to the xref:observability/index.adoc[Observability] guide for more information.
+TIP: Spring AI supports observability for LLM and vector store interactions.
+Refer to the xref:observability/index.adoc[Observability] guide for more information.
 
 To enable logging, add the `SimpleLoggerAdvisor` to the advisor chain when creating your ChatClient.
 It's recommended to add it toward the end of the chain:
@@ -595,8 +718,9 @@ You can customize what data from `AdvisedRequest` and `ChatResponse` is logged b
 [source,java]
 ----
 SimpleLoggerAdvisor(
-    Function<AdvisedRequest, String> requestToString,
-    Function<ChatResponse, String> responseToString
+    Function<ChatClientRequest, String> requestToString,
+    Function<ChatResponse, String> responseToString,
+    int order
 )
 ----
 
@@ -605,8 +729,9 @@ Example usage:
 [source,java]
 ----
 SimpleLoggerAdvisor customLogger = new SimpleLoggerAdvisor(
-    request -> "Custom request: " + request.userText,
-    response -> "Custom response: " + response.getResult()
+    request -> "Custom request: " + request.prompt().getUserMessage(),
+    response -> "Custom response: " + response.getResult(),
+    0
 );
 ----
 
@@ -616,13 +741,18 @@ TIP: Be cautious about logging sensitive information in production environments.
 
 == Chat Memory
 
-The interface `ChatMemory` represents a storage for chat conversation memory. It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
+The interface `ChatMemory` represents a storage for chat conversation memory.
+It provides methods to add messages to a conversation, retrieve messages from a conversation, and clear the conversation history.
 
 There is currently one built-in implementation: `MessageWindowChatMemory`.
 
-`MessageWindowChatMemory` is a chat memory implementation that maintains a window of messages up to a specified maximum size (default: 20 messages). When the number of messages exceeds this limit, older messages are evicted, but system messages are preserved. If a new system message is added, all previous system messages are removed from memory. This ensures that the most recent context is always available for the conversation while keeping memory usage bounded.
+`MessageWindowChatMemory` is a chat memory implementation that maintains a window of messages up to a specified maximum size (default: 20 messages).
+When the number of messages exceeds this limit, older messages are evicted, but system messages are preserved.
+If a new system message is added, all previous system messages are removed from memory.
+This ensures that the most recent context is always available for the conversation while keeping memory usage bounded.
 
-The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation memory. There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository` and `Neo4jChatMemoryRepository`.
+The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation memory.
+There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository` and `Neo4jChatMemoryRepository`.
 
 For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] documentation.
 
@@ -636,10 +766,15 @@ Often an application will be either reactive or imperative, but not both.
 
 [IMPORTANT]
 ====
-Due to a bug in Spring Boot 3.4, the "spring.http.client.factory=jdk" property must be set. Otherwise, it's set to "reactor" by default, which breaks certain AI workflows like the ImageModel.
+Due to a bug in Spring Boot 3.4, the "spring.http.client.factory=jdk" property must be set.
+Otherwise, it's set to "reactor" by default, which breaks certain AI workflows like the ImageModel.
 ====
 
-* Streaming is only supported via the Reactive stack. Imperative applications must include the Reactive stack for this reason (e.g. spring-boot-starter-webflux).
-* Non-streaming is only supportive via the Servlet stack. Reactive applications must include the Servlet stack for this reason (e.g. spring-boot-starter-web) and expect some calls to be blocking.
-* Tool calling is imperative, leading to blocking workflows. This also results in partial/interrupted Micrometer observations (e.g. the ChatClient spans and the tool calling spans are not connected, with the first one remaining incomplete for that reason).
-* The built-in advisors perform blocking operations for standards calls, and non-blocking operations for streaming calls. The Reactor Scheduler used for the advisor streaming calls can be configured via the Builder on each Advisor class.
+* Streaming is only supported via the Reactive stack.
+Imperative applications must include the Reactive stack for this reason (e.g. spring-boot-starter-webflux).
+* Non-streaming is only supportive via the Servlet stack.
+Reactive applications must include the Servlet stack for this reason (e.g. spring-boot-starter-web) and expect some calls to be blocking.
+* Tool calling is imperative, leading to blocking workflows.
+This also results in partial/interrupted Micrometer observations (e.g. the ChatClient spans and the tool calling spans are not connected, with the first one remaining incomplete for that reason).
+* The built-in advisors perform blocking operations for standards calls, and non-blocking operations for streaming calls.
+The Reactor Scheduler used for the advisor streaming calls can be configured via the Builder on each Advisor class.

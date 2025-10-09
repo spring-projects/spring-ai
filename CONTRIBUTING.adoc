@@ -7,7 +7,7 @@ what kind of changes are likely to be accepted; and what to expect from the Spri
 Please refer back to this document as a checklist before issuing any pull request; this will save time for everyone!
 
 == Code of Conduct
-This project adheres to the Contributor Covenant link:CODE_OF_CONDUCT.adoc[code of conduct].
+This project adheres to the Contributor Covenant https://github.com/spring-projects/spring-ai#coc-ov-file[code of conduct].
 By participating, you  are expected to uphold this code. Please report unacceptable behavior to
 spring-code-of-conduct@pivotal.io.
 
@@ -32,7 +32,7 @@ For additional details, please refer to the blog post https://spring.io/blog/202
 
 1. Go to https://github.com/spring-projects/spring-ai[https://github.com/spring-projects/spring-ai]
 2. Hit the "fork" button and choose your own GitHub account as the target
-3. For more detail see https://help.github.com/fork-a-repo/[Fork A Repo].
+3. For more detail see https://help.github.com/articles/fork-a-repo/[Fork A Repo].
 
 == Setup your Local Development Environment
 
@@ -77,17 +77,17 @@ project to which you’re trying to contribute but that you don’t maintain."_
 
 == Keeping your Local Code in Sync
 * As mentioned above, you should always work on topic branches (since 'main' is a moving target). However, you do want
-to always keep your own 'origin' main branch in synch with the 'upstream' main.
+to always keep your own 'origin' main branch in sync with the 'upstream' main.
 * Within your local working directory, you can sync up all remotes' branches with: `git fetch --all`
 * While on your own local main branch: `git pull upstream main` (which is the equivalent of fetching upstream/main
 and merging that into the branch you are in currently)
-* Now that you're in synch, switch to the topic branch where you plan to work, e.g.: `git checkout -b GH-123`
+* Now that you're in sync, switch to the topic branch where you plan to work, e.g.: `git checkout -b GH-123`
 * When you get to a stopping point: `git commit`
-* If changes have occurred on the upstream/main while you were working you can synch again:
+* If changes have occurred on the upstream/main while you were working you can sync again:
 - Switch back to main: `git checkout main`
 - Then: `git pull upstream main`
 - Switch back to the topic branch: `git checkout GH-123` (no -b needed since the branch already exists)
-- Rebase the topic branch to minimize the distance between it and your recently synched main branch: `git rebase main`
+- Rebase the topic branch to minimize the distance between it and your recently synced main branch: `git rebase main`
 (Again, for more detail see https://git-scm.com/book/en/Git-Branching-Rebasing[the Pro Git section on rebasing]).
 * **Note** You cannot rebase if you have already pushed your branch to your remote because you'd be rewriting history
 (see **'The Perils of Rebasing'** in the article).
@@ -110,7 +110,7 @@ When issuing pull requests, please ensure that your commit history is linear.
 From the command line you can check this using:
 
 ----
-log --graph --pretty=oneline
+git log --graph --pretty=oneline
 ----
 
 As this may cause lots of typing, we recommend creating a global alias, e.g. `git logg` for this:
@@ -132,6 +132,26 @@ This command, will provide the following output, which in this case shows a nice
 
 If you see intersecting lines, that usually means that you forgot to rebase you branch.
 As mentioned earlier, **please rebase against main** before issuing a pull request.
+
+== Enabling Checkstyle
+
+Checkstyles are currently disabled in the project.
+However, we encourage all PR contributors to run checkstyles by enabling them before submitting a PR.
+
+You can enable them by doing the following:
+
+[source,shell]
+----
+./mvnw clean package -DskipTests -Ddisable.checks=false
+----
+
+=== Source Code Style
+
+Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
+The wiki pages
+https://github.com/spring-projects/spring-framework/wiki/Code-Style[Code Style] and
+https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings[IntelliJ IDEA Editor Settings]
+define the source file coding standards we use along with some IDEA editor settings we customize.
 
 == Mind the whitespace
 

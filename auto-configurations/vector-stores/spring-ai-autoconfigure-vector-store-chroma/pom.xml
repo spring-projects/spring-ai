@@ -94,12 +94,18 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>chromadb</artifactId>
-			<version>1.21.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-transformers</artifactId>
+			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-advisors-vector-store</artifactId>
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>

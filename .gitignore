@@ -1,3 +1,4 @@
+.checkstyle
 target
 .classpath
 .project
@@ -43,5 +44,15 @@ shell.log
 /spring-ai-spring-boot-autoconfigure/nbproject/
 /vector-stores/spring-ai-cassandra-store/nbproject/
 
+CLAUDE.md
 **/.claude/settings.local.json
 .devcontainer
+
+qodana.yaml
+__pycache__/
+*.pyc
+tmp
+
+
+plans
+

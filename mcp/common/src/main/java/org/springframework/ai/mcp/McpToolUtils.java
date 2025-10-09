@@ -19,6 +19,8 @@ package org.springframework.ai.mcp;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -26,9 +28,10 @@ import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -70,26 +73,62 @@ public final class McpToolUtils {
 	private McpToolUtils() {
 	}
 
-	public static String prefixedToolName(String prefix, String toolName) {
+	/**
+	 * @param prefix Client name, combination of client info name and the 'server'
+	 * connection name.
+	 * @param title Server connection name
+	 * @param toolName original MCP server tool name.
+	 * @return the prefix to use for the tool to avoid name collisions.
+	 */
+	public static String prefixedToolName(String prefix, String title, String toolName) {
 
 		if (StringUtils.isEmpty(prefix) || StringUtils.isEmpty(toolName)) {
 			throw new IllegalArgumentException("Prefix or toolName cannot be null or empty");
 		}
 
-		String input = prefix + "_" + toolName;
-
-		// Replace any character that isn't alphanumeric, underscore, or hyphen with
-		// concatenation
-		String formatted = input.replaceAll("[^a-zA-Z0-9_-]", "");
-
-		formatted = formatted.replaceAll("-", "_");
-
-		// If the string is longer than 64 characters, keep the last 64 characters
-		if (formatted.length() > 64) {
-			formatted = formatted.substring(formatted.length() - 64);
+		String input = shorten(format(prefix));
+		if (!StringUtils.isEmpty(title)) {
+			input = input + "_" + format(title); // Do not shorten the title.
 		}
 
-		return formatted;
+		input = input + "_" + format(toolName);
+
+		// If the string is longer than 64 characters, keep the last 64 characters
+		if (input.length() > 64) {
+			input = input.substring(input.length() - 64);
+		}
+
+		return input;
+	}
+
+	public static String prefixedToolName(String prefix, String toolName) {
+		return prefixedToolName(prefix, null, toolName);
+	}
+
+	public static String format(String input) {
+		// Replace any character that isn't alphanumeric, underscore, or hyphen with
+		// concatenation. Support Han script + CJK blocks for complete Chinese character
+		// coverage
+		String formatted = input
+			.replaceAll("[^\\p{IsHan}\\p{InCJK_Unified_Ideographs}\\p{InCJK_Compatibility_Ideographs}a-zA-Z0-9_-]", "");
+
+		return formatted.replaceAll("-", "_");
+	}
+
+	/**
+	 * Shortens a string by taking the first letter of each word separated by underscores
+	 * @param input String in format "Word1_Word2_Word3_server"
+	 * @return Shortened string with first letters in lowercase "w_w_w_s"
+	 */
+	private static String shorten(String input) {
+		if (input == null || input.isEmpty()) {
+			return "";
+		}
+
+		return Stream.of(input.toLowerCase().split("_"))
+			.filter(word -> !word.isEmpty())
+			.map(word -> String.valueOf(word.charAt(0)))
+			.collect(java.util.stream.Collectors.joining("_"));
 	}
 
 	/**
@@ -149,16 +188,6 @@ public final class McpToolUtils {
 	 * Converts a Spring AI ToolCallback to an MCP SyncToolSpecification. This enables
 	 * Spring AI functions to be exposed as MCP tools that can be discovered and invoked
 	 * by language models.
-	 *
-	 * <p>
-	 * The conversion process:
-	 * <ul>
-	 * <li>Creates an MCP Tool with the function's name and input schema</li>
-	 * <li>Wraps the function's execution in a SyncToolSpecification that handles the MCP
-	 * protocol</li>
-	 * <li>Provides error handling and result formatting according to MCP
-	 * specifications</li>
-	 * </ul>
 	 * @param toolCallback the Spring AI function callback to convert
 	 * @param mimeType the MIME type of the output content
 	 * @return an MCP SyncToolSpecification that wraps the function callback
@@ -167,17 +196,55 @@ public final class McpToolUtils {
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
 
-		var tool = new McpSchema.Tool(toolCallback.getToolDefinition().name(),
-				toolCallback.getToolDefinition().description(), toolCallback.getToolDefinition().inputSchema());
+		SharedSyncToolSpecification sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
 
-		return new McpServerFeatures.SyncToolSpecification(tool, (exchange, request) -> {
+		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(),
+				(exchange, map) -> sharedSpec.sharedHandler()
+					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map)),
+				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
+	}
+
+	/**
+	 * Converts a Spring AI ToolCallback to an MCP StatelessSyncToolSpecification. This
+	 * enables Spring AI functions to be exposed as MCP tools that can be discovered and
+	 * invoked by language models.
+	 *
+	 * You can use the ToolCallback builder to create a new instance of ToolCallback using
+	 * either java.util.function.Function or Method reference.
+	 * @param toolCallback the Spring AI function callback to convert
+	 * @param mimeType the MIME type of the output content
+	 * @return an MCP StatelessSyncToolSpecification that wraps the function callback
+	 * @throws RuntimeException if there's an error during the function execution
+	 */
+	public static McpStatelessServerFeatures.SyncToolSpecification toStatelessSyncToolSpecification(
+			ToolCallback toolCallback, MimeType mimeType) {
+
+		var sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
+
+		return McpStatelessServerFeatures.SyncToolSpecification.builder()
+			.tool(sharedSpec.tool())
+			.callHandler((exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request))
+			.build();
+	}
+
+	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
+			MimeType mimeType) {
+
+		var tool = McpSchema.Tool.builder()
+			.name(toolCallback.getToolDefinition().name())
+			.description(toolCallback.getToolDefinition().description())
+			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
+					McpSchema.JsonSchema.class))
+			.build();
+
+		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request),
-						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchange)));
+				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
+						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					return new McpSchema.CallToolResult(List
-						.of(new McpSchema.ImageContent(List.of(Role.ASSISTANT), null, callResult, mimeType.toString())),
-							false);
+					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
+					return new McpSchema.CallToolResult(
+							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
 				}
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
 			}
@@ -278,7 +345,7 @@ public final class McpToolUtils {
 	 * </ul>
 	 * @param toolCallback the Spring AI tool callback to convert
 	 * @param mimeType the MIME type of the output content
-	 * @return an MCP asynchronous tool specificaiotn that wraps the tool callback
+	 * @return an MCP asynchronous tool specification that wraps the tool callback
 	 * @see McpServerFeatures.AsyncToolSpecification
 	 * @see Schedulers#boundedElastic()
 	 */
@@ -287,9 +354,24 @@ public final class McpToolUtils {
 
 		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
 
-		return new AsyncToolSpecification(syncToolSpecification.tool(),
-				(exchange, map) -> Mono
-					.fromCallable(() -> syncToolSpecification.call().apply(new McpSyncServerExchange(exchange), map))
+		return McpServerFeatures.AsyncToolSpecification.builder()
+			.tool(syncToolSpecification.tool())
+			.callHandler((exchange, request) -> Mono
+				.fromCallable(
+						() -> syncToolSpecification.callHandler().apply(new McpSyncServerExchange(exchange), request))
+				.subscribeOn(Schedulers.boundedElastic()))
+			.build();
+	}
+
+	public static McpStatelessServerFeatures.AsyncToolSpecification toStatelessAsyncToolSpecification(
+			ToolCallback toolCallback, MimeType mimeType) {
+
+		McpStatelessServerFeatures.SyncToolSpecification statelessSyncToolSpecification = toStatelessSyncToolSpecification(
+				toolCallback, mimeType);
+
+		return new McpStatelessServerFeatures.AsyncToolSpecification(statelessSyncToolSpecification.tool(),
+				(context, request) -> Mono
+					.fromCallable(() -> statelessSyncToolSpecification.callHandler().apply(context, request))
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -356,7 +438,7 @@ public final class McpToolUtils {
 		if (CollectionUtils.isEmpty(asyncMcpClients)) {
 			return List.of();
 		}
-		return List.of((new AsyncMcpToolCallbackProvider(asyncMcpClients).getToolCallbacks()));
+		return List.of((AsyncMcpToolCallbackProvider.builder().mcpClients(asyncMcpClients).build().getToolCallbacks()));
 	}
 
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -365,4 +447,7 @@ public final class McpToolUtils {
 			"base64", "b64", "imageData" }) @Nullable String data) {
 	}
 
+	private record SharedSyncToolSpecification(McpSchema.Tool tool,
+											BiFunction<Object, CallToolRequest, McpSchema.CallToolResult> sharedHandler) {
+	}
 }

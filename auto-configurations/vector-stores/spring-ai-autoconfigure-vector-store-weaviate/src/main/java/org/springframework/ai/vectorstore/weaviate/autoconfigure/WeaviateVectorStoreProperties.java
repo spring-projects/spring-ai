@@ -27,6 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Weaviate Vector Store.
  *
  * @author Christian Tzolov
+ * @author Jonghoon Park
  */
 @ConfigurationProperties(WeaviateVectorStoreProperties.CONFIG_PREFIX)
 public class WeaviateVectorStoreProperties {
@@ -40,6 +41,10 @@ public class WeaviateVectorStoreProperties {
 	private String apiKey = "";
 
 	private String objectClass = "SpringAiWeaviate";
+
+	private String contentFieldName = "content";
+
+	private String metaFieldPrefix = "meta_";
 
 	private ConsistentLevel consistencyLevel = WeaviateVectorStore.ConsistentLevel.ONE;
 
@@ -80,6 +85,34 @@ public class WeaviateVectorStoreProperties {
 
 	public void setObjectClass(String indexName) {
 		this.objectClass = indexName;
+	}
+
+	/**
+	 * @since 1.1.0
+	 */
+	public String getContentFieldName() {
+		return this.contentFieldName;
+	}
+
+	/**
+	 * @since 1.1.0
+	 */
+	public void setContentFieldName(String contentFieldName) {
+		this.contentFieldName = contentFieldName;
+	}
+
+	/**
+	 * @since 1.1.0
+	 */
+	public String getMetaFieldPrefix() {
+		return this.metaFieldPrefix;
+	}
+
+	/**
+	 * @since 1.1.0
+	 */
+	public void setMetaFieldPrefix(String metaFieldPrefix) {
+		this.metaFieldPrefix = metaFieldPrefix;
 	}
 
 	public ConsistentLevel getConsistencyLevel() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ public enum AiProvider {
 
 	// @formatter:off
 
-	// Please, keep the alphabetical sorting.
 	/**
 	 * AI system provided by Anthropic.
 	 */
@@ -45,6 +44,21 @@ public enum AiProvider {
 	 * AI system provided by Bedrock Converse.
 	 */
 	BEDROCK_CONVERSE("bedrock_converse"),
+
+	/**
+	 * AI system provided by DeepSeek.
+	 */
+	DEEPSEEK("deepseek"),
+
+	/**
+	 * AI system provided by Vertex AI.
+	 */
+	GOOGLE_GENAI_AI("google_genai"),
+
+	/**
+	 * AI system provided by Minimax.
+	 */
+	MINIMAX("minimax"),
 
 	/**
 	 * AI system provided by Mistral.
@@ -62,26 +76,14 @@ public enum AiProvider {
 	OLLAMA("ollama"),
 
 	/**
+	 * AI system provided by ONNX.
+	 */
+	ONNX("onnx"),
+
+	/**
 	 * AI system provided by OpenAI.
 	 */
 	OPENAI("openai"),
-
-	/**
-	 * AI system provided by Minimax.
-	 */
-	MINIMAX("minimax"),
-
-
-
-	/**
-	 * AI system provided by Zhipuai.
-	 */
-	ZHIPUAI("zhipuai"),
-
-	/**
-	 * AI system provided by DeepSeek.
-	 */
-	DEEPSEEK("deepseek"),
 
 	/**
 	 * AI system provided by Spring AI.
@@ -94,9 +96,9 @@ public enum AiProvider {
 	VERTEX_AI("vertex_ai"),
 
 	/**
-	 * AI system provided by ONNX.
+	 * AI system provided by Zhipuai.
 	 */
-	ONNX("onnx");
+	ZHIPUAI("zhipuai");
 
 	private final String value;
 

@@ -21,8 +21,12 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for {@link ChatClientResponse}.
@@ -80,6 +84,104 @@ class ChatClientResponseTests {
 		copy.context().put("key", "newValue");
 		assertThat(copy.context()).containsEntry("key", "newValue");
 		assertThat(response.context()).containsEntry("key", "value");
+	}
+
+	@Test
+	void whenValidChatResponseThenCreateSuccessfully() {
+		ChatResponse chatResponse = mock(ChatResponse.class);
+		Map<String, Object> context = Map.of("key", "value");
+
+		ChatClientResponse response = new ChatClientResponse(chatResponse, context);
+
+		assertThat(response.chatResponse()).isEqualTo(chatResponse);
+		assertThat(response.context()).containsExactlyInAnyOrderEntriesOf(context);
+	}
+
+	@Test
+	void whenBuilderWithValidDataThenCreateSuccessfully() {
+		ChatResponse chatResponse = mock(ChatResponse.class);
+		Map<String, Object> context = Map.of("key1", "value1", "key2", 42);
+
+		ChatClientResponse response = ChatClientResponse.builder().chatResponse(chatResponse).context(context).build();
+
+		assertThat(response.chatResponse()).isEqualTo(chatResponse);
+		assertThat(response.context()).containsExactlyInAnyOrderEntriesOf(context);
+	}
+
+	@Test
+	void whenEmptyContextThenCreateSuccessfully() {
+		ChatResponse chatResponse = mock(ChatResponse.class);
+		Map<String, Object> emptyContext = Map.of();
+
+		ChatClientResponse response = new ChatClientResponse(chatResponse, emptyContext);
+
+		assertThat(response.chatResponse()).isEqualTo(chatResponse);
+		assertThat(response.context()).isEmpty();
+	}
+
+	@Test
+	void whenContextWithNullValuesThenCreateSuccessfully() {
+		ChatResponse chatResponse = mock(ChatResponse.class);
+		Map<String, Object> context = new HashMap<>();
+		context.put("key1", "value1");
+		context.put("key2", null);
+
+		ChatClientResponse response = new ChatClientResponse(chatResponse, context);
+
+		assertThat(response.context()).containsEntry("key1", "value1");
+		assertThat(response.context()).containsEntry("key2", null);
+	}
+
+	@Test
+	void whenCopyWithNullChatResponseThenPreserveNull() {
+		Map<String, Object> context = Map.of("key", "value");
+		ChatClientResponse response = new ChatClientResponse(null, context);
+
+		ChatClientResponse copy = response.copy();
+
+		assertThat(copy.chatResponse()).isNull();
+		assertThat(copy.context()).containsExactlyInAnyOrderEntriesOf(context);
+	}
+
+	@Test
+	void whenMutateWithNewChatResponseThenUpdate() {
+		ChatResponse originalResponse = mock(ChatResponse.class);
+		ChatResponse newResponse = mock(ChatResponse.class);
+		Map<String, Object> context = Map.of("key", "value");
+
+		ChatClientResponse response = new ChatClientResponse(originalResponse, context);
+		ChatClientResponse mutated = response.mutate().chatResponse(newResponse).build();
+
+		assertThat(response.chatResponse()).isEqualTo(originalResponse);
+		assertThat(mutated.chatResponse()).isEqualTo(newResponse);
+		assertThat(mutated.context()).containsExactlyInAnyOrderEntriesOf(context);
+	}
+
+	@Test
+	void whenBuilderWithoutChatResponseThenCreateWithNull() {
+		Map<String, Object> context = Map.of("key", "value");
+
+		ChatClientResponse response = ChatClientResponse.builder().context(context).build();
+
+		assertThat(response.chatResponse()).isNull();
+	}
+
+	@Test
+	void whenComplexObjectsInContextThenPreserveCorrectly() {
+		ChatResponse chatResponse = mock(ChatResponse.class);
+		Generation generation = mock(Generation.class);
+		Map<String, Object> nestedMap = Map.of("nested", "value");
+
+		Map<String, Object> context = Map.of("string", "value", "number", 1, "boolean", true, "generation", generation,
+				"map", nestedMap);
+
+		ChatClientResponse response = new ChatClientResponse(chatResponse, context);
+
+		assertThat(response.context()).containsEntry("string", "value");
+		assertThat(response.context()).containsEntry("number", 1);
+		assertThat(response.context()).containsEntry("boolean", true);
+		assertThat(response.context()).containsEntry("generation", generation);
+		assertThat(response.context()).containsEntry("map", nestedMap);
 	}
 
 }

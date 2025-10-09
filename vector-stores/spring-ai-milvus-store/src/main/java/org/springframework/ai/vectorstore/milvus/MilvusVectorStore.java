@@ -38,6 +38,7 @@ import io.milvus.param.MetricType;
 import io.milvus.param.R;
 import io.milvus.param.R.Status;
 import io.milvus.param.RpcStatus;
+import io.milvus.param.collection.CollectionSchemaParam;
 import io.milvus.param.collection.CreateCollectionParam;
 import io.milvus.param.collection.DropCollectionParam;
 import io.milvus.param.collection.FieldType;
@@ -291,7 +292,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		long deleteCount = status.getData().getDeleteCnt();
 		if (deleteCount != idList.size()) {
-			logger.warn(String.format("Deleted only %s entries from requested %s ", deleteCount, idList.size()));
+			logger.warn("Deleted only {} entries from requested {} ", deleteCount, idList.size());
 		}
 	}
 
@@ -378,8 +379,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				JsonObject metadata = new JsonObject();
 				try {
 					metadata = (JsonObject) rowRecord.get(this.metadataFieldName);
-					// inject the distance into the metadata.
-					metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					if (metadata != null) {
+						// inject the distance into the metadata.
+						metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					}
 				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
@@ -443,6 +446,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		if (!isDatabaseCollectionExists()) {
 			createCollection(this.databaseName, this.collectionName, this.idFieldName, this.isAutoId,
 					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName);
+			createIndex(this.databaseName, this.collectionName, this.embeddingFieldName, this.indexType,
+					this.metricType, this.indexParameters);
 		}
 
 		R<DescribeIndexResponse> indexDescriptionResponse = this.milvusClient
@@ -452,19 +457,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				.build());
 
 		if (indexDescriptionResponse.getData() == null) {
-			R<RpcStatus> indexStatus = this.milvusClient.createIndex(CreateIndexParam.newBuilder()
-				.withDatabaseName(this.databaseName)
-				.withCollectionName(this.collectionName)
-				.withFieldName(this.embeddingFieldName)
-				.withIndexType(this.indexType)
-				.withMetricType(this.metricType)
-				.withExtraParam(this.indexParameters)
-				.withSyncMode(Boolean.FALSE)
-				.build());
-
-			if (indexStatus.getException() != null) {
-				throw new RuntimeException("Failed to create Index", indexStatus.getException());
-			}
+			createIndex(this.databaseName, this.collectionName, this.embeddingFieldName, this.indexType,
+					this.metricType, this.indexParameters);
 		}
 
 		R<RpcStatus> loadCollectionStatus = this.milvusClient.loadCollection(LoadCollectionParam.newBuilder()
@@ -507,10 +501,12 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.withDescription("Spring AI Vector Store")
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withShardsNum(2)
-			.addFieldType(docIdFieldType)
-			.addFieldType(contentFieldType)
-			.addFieldType(metadataFieldType)
-			.addFieldType(embeddingFieldType)
+			.withSchema(CollectionSchemaParam.newBuilder()
+				.addFieldType(docIdFieldType)
+				.addFieldType(contentFieldType)
+				.addFieldType(metadataFieldType)
+				.addFieldType(embeddingFieldType)
+				.build())
 			.build();
 
 		R<RpcStatus> collectionStatus = this.milvusClient.createCollection(createCollectionReq);
@@ -518,6 +514,23 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			throw new RuntimeException("Failed to create collection", collectionStatus.getException());
 		}
 
+	}
+
+	void createIndex(String databaseName, String collectionName, String embeddingFieldName, IndexType indexType,
+			MetricType metricType, String indexParameters) {
+		R<RpcStatus> indexStatus = this.milvusClient.createIndex(CreateIndexParam.newBuilder()
+			.withDatabaseName(databaseName)
+			.withCollectionName(collectionName)
+			.withFieldName(embeddingFieldName)
+			.withIndexType(indexType)
+			.withMetricType(metricType)
+			.withExtraParam(indexParameters)
+			.withSyncMode(Boolean.FALSE)
+			.build());
+
+		if (indexStatus.getException() != null) {
+			throw new RuntimeException("Failed to create Index", indexStatus.getException());
+		}
 	}
 
 	int embeddingDimensions() {
@@ -531,8 +544,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ this.embeddingDimension, e);
+			logger.warn(
+					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
+					this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

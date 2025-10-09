@@ -48,48 +48,71 @@
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-ollama</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-opensearch</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-chroma</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-mongodb-atlas</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-milvus</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-qdrant</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-weaviate</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-vector-store-typesense</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java</artifactId>
 			<version>${protobuf-java.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-client-webflux</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<!-- production dependencies -->
@@ -162,7 +185,6 @@
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
-			<version>5.1.0</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -231,6 +253,7 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
+			<version>1.21.3</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -249,7 +272,6 @@
 		<dependency>
 			<groupId>com.redis</groupId>
 			<artifactId>testcontainers-redis</artifactId>
-			<version>2.2.0</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -295,7 +317,6 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>chromadb</artifactId>
-			<version>1.21.0</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -314,7 +335,6 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>mongodb</artifactId>
-			<version>1.20.2</version>
 			<optional>true</optional>
 		</dependency>
 
@@ -327,7 +347,6 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>typesense</artifactId>
-			<version>1.20.4</version>
 			<optional>true</optional>
 		</dependency>
 

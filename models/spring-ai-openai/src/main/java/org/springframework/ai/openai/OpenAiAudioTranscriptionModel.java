@@ -22,8 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
+import org.springframework.ai.audio.transcription.TranscriptionModel;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.ai.model.Model;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
@@ -45,7 +45,7 @@ import org.springframework.util.Assert;
  * @see OpenAiAudioApi
  * @since 0.8.1
  */
-public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPrompt, AudioTranscriptionResponse> {
+public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -167,8 +167,10 @@ public class OpenAiAudioTranscriptionModel implements Model<AudioTranscriptionPr
 			}
 		}
 
+		Resource instructions = transcriptionPrompt.getInstructions();
 		return OpenAiAudioApi.TranscriptionRequest.builder()
-			.file(toBytes(transcriptionPrompt.getInstructions()))
+			.file(toBytes(instructions))
+			.fileName(instructions.getFilename())
 			.responseFormat(options.getResponseFormat())
 			.prompt(options.getPrompt())
 			.temperature(options.getTemperature())

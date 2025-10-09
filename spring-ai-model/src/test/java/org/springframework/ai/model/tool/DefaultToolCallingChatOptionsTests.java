@@ -235,4 +235,38 @@ class DefaultToolCallingChatOptionsTests {
 		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
 	}
 
+	@Test
+	void defaultConstructorShouldInitializeWithEmptyCollections() {
+		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+
+		assertThat(options.getToolCallbacks()).isEmpty();
+		assertThat(options.getToolNames()).isEmpty();
+		assertThat(options.getToolContext()).isEmpty();
+		assertThat(options.getInternalToolExecutionEnabled()).isNull();
+	}
+
+	@Test
+	void builderShouldHandleEmptyCollections() {
+		ToolCallingChatOptions options = DefaultToolCallingChatOptions.builder()
+			.toolCallbacks(List.of())
+			.toolNames(Set.of())
+			.toolContext(Map.of())
+			.build();
+
+		assertThat(options.getToolCallbacks()).isEmpty();
+		assertThat(options.getToolNames()).isEmpty();
+		assertThat(options.getToolContext()).isEmpty();
+	}
+
+	@Test
+	void setInternalToolExecutionEnabledShouldAcceptNullValue() {
+		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		options.setInternalToolExecutionEnabled(true);
+		assertThat(options.getInternalToolExecutionEnabled()).isTrue();
+
+		// Should be able to set back to null
+		options.setInternalToolExecutionEnabled(null);
+		assertThat(options.getInternalToolExecutionEnabled()).isNull();
+	}
+
 }

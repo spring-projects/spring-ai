@@ -39,13 +39,13 @@ import org.apache.pdfbox.text.TextPosition;
  */
 public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 
-	private final List<String> regions = new ArrayList<String>();
+	private final List<String> regions = new ArrayList<>();
 
-	private final Map<String, Rectangle2D> regionArea = new HashMap<String, Rectangle2D>();
+	private final Map<String, Rectangle2D> regionArea = new HashMap<>();
 
-	private final Map<String, ArrayList<List<TextPosition>>> regionCharacterList = new HashMap<String, ArrayList<List<TextPosition>>>();
+	private final Map<String, ArrayList<List<TextPosition>>> regionCharacterList = new HashMap<>();
 
-	private final Map<String, StringWriter> regionText = new HashMap<String, StringWriter>();
+	private final Map<String, StringWriter> regionText = new HashMap<>();
 
 	/**
 	 * Constructor.
@@ -113,8 +113,8 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 			setStartPage(getCurrentPageNo());
 			setEndPage(getCurrentPageNo());
 			// reset the stored text for the region so this class can be reused.
-			ArrayList<List<TextPosition>> regionCharactersByArticle = new ArrayList<List<TextPosition>>();
-			regionCharactersByArticle.add(new ArrayList<TextPosition>());
+			ArrayList<List<TextPosition>> regionCharactersByArticle = new ArrayList<>();
+			regionCharactersByArticle.add(new ArrayList<>());
 			this.regionCharacterList.put(regionName, regionCharactersByArticle);
 			this.regionText.put(regionName, new StringWriter());
 		}

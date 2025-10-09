@@ -45,12 +45,11 @@ public class MariaDBSchemaValidator {
 
 	private boolean isTableExists(String schemaName, String tableName) {
 		// schema and table are expected to be escaped
-		String sql = String.format(
-				"SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = %s AND TABLE_NAME = %s",
-				(schemaName == null) ? "SCHEMA()" : schemaName, tableName);
+		String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
-			this.jdbcTemplate.queryForObject(sql, Integer.class);
+			this.jdbcTemplate.queryForObject(sql, Integer.class, (schemaName == null) ? "SCHEMA()" : schemaName,
+					tableName);
 			return true;
 		}
 		catch (DataAccessException e) {
@@ -73,7 +72,7 @@ public class MariaDBSchemaValidator {
 					schemaName, tableName);
 		}
 		catch (DataAccessException e) {
-			logger.error("Error while validating database vector support " + e.getMessage());
+			logger.error("Error while validating database vector support {}", e.getMessage());
 			logger.error("Failed to validate that database supports VECTOR.\n" + "Run the following SQL commands:\n"
 					+ "   SELECT @@version; \nAnd ensure that version is >= 11.7.1");
 			throw new IllegalStateException(e);
@@ -119,7 +118,7 @@ public class MariaDBSchemaValidator {
 
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema" + e.getMessage());
+			logger.error("Error while validating table schema{}", e.getMessage());
 			logger.error("Failed to operate with the specified table in the database. To resolve this issue,"
 					+ " please ensure the following steps are completed:\n"
 					+ "1. Verify that the table exists with the appropriate structure. If it does not"

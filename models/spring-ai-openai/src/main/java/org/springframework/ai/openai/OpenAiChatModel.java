@@ -61,6 +61,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion.Choice;
@@ -216,10 +217,10 @@ public class OpenAiChatModel implements ChatModel {
 					Map<String, Object> metadata = Map.of(
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
-							"index", choice.index(),
-							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+							"index", choice.index() != null ? choice.index() : 0,
+							"finishReason", getFinishReasonJson(choice.finishReason()),
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
-							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
+							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 				// @formatter:on
@@ -271,12 +272,12 @@ public class OpenAiChatModel implements ChatModel {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
-			if (request.outputModalities() != null) {
-				if (request.outputModalities().stream().anyMatch(m -> m.equals("audio"))) {
-					logger.warn("Audio output is not supported for streaming requests. Removing audio output.");
-					throw new IllegalArgumentException("Audio output is not supported for streaming requests.");
-				}
+			if (request.outputModalities() != null
+					&& request.outputModalities().contains(OpenAiApi.OutputModality.AUDIO)) {
+				logger.warn("Audio output is not supported for streaming requests. Removing audio output.");
+				throw new IllegalArgumentException("Audio output is not supported for streaming requests.");
 			}
+
 			if (request.audioParameters() != null) {
 				logger.warn("Audio parameters are not supported for streaming requests. Removing audio parameters.");
 				throw new IllegalArgumentException("Audio parameters are not supported for streaming requests.");
@@ -315,8 +316,8 @@ public class OpenAiChatModel implements ChatModel {
 							Map<String, Object> metadata = Map.of(
 									"id", id,
 									"role", roleMap.getOrDefault(id, ""),
-									"index", choice.index(),
-									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+									"index", choice.index() != null ? choice.index() : 0,
+									"finishReason", getFinishReasonJson(choice.finishReason()),
 									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
 									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
 							return buildGeneration(choice, metadata, request);
@@ -363,10 +364,17 @@ public class OpenAiChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-					return Flux.defer(() -> {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
-						var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+					// FIXME: bounded elastic needs to be used since tool calling
+					//  is currently only synchronous
+					return Flux.deferContextual(ctx -> {
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
 							return Flux.just(ChatResponse.builder().from(response)
@@ -413,8 +421,8 @@ public class OpenAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
+		var generationMetadataBuilder = ChatGenerationMetadata.builder()
+			.finishReason(getFinishReasonJson(choice.finishReason()));
 
 		List<Media> media = new ArrayList<>();
 		String textContent = choice.message().content();
@@ -440,8 +448,21 @@ public class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("logprobs", choice.logprobs());
 		}
 
-		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
+		var assistantMessage = AssistantMessage.builder()
+			.content(textContent)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.media(media)
+			.build();
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
+	}
+
+	private String getFinishReasonJson(OpenAiApi.ChatCompletionFinishReason finishReason) {
+		if (finishReason == null) {
+			return "";
+		}
+		// Return enum name for backward compatibility
+		return finishReason.name();
 	}
 
 	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit, Usage usage) {
@@ -634,6 +655,10 @@ public class OpenAiChatModel implements ChatModel {
 		if (MimeTypeUtils.parseMimeType("audio/wav").equals(mimeType)) {
 			return new MediaContent(
 					new MediaContent.InputAudio(fromAudioData(media.getData()), MediaContent.InputAudio.Format.WAV));
+		}
+		if (MimeTypeUtils.parseMimeType("application/pdf").equals(mimeType)) {
+			return new MediaContent(new MediaContent.InputFile(media.getName(),
+					this.fromMediaData(media.getMimeType(), media.getData())));
 		}
 		else {
 			return new MediaContent(

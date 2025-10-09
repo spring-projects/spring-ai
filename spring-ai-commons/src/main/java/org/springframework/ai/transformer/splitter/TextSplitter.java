@@ -84,7 +84,7 @@ public abstract class TextSplitter implements DocumentTransformer {
 			Map<String, Object> metadata = metadataList.get(i);
 			List<String> chunks = splitText(text);
 			if (chunks.size() > 1) {
-				logger.info("Splitting up document into " + chunks.size() + " chunks.");
+				logger.info("Splitting up document into {} chunks.", chunks.size());
 			}
 			for (String chunk : chunks) {
 				// only primitive values are in here -

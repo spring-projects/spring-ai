@@ -129,7 +129,7 @@ public final class JsonSchemaGenerator {
 			String parameterName = method.getParameters()[i].getName();
 			Type parameterType = method.getGenericParameterTypes()[i];
 			if (parameterType instanceof Class<?> parameterClass
-					&& ClassUtils.isAssignable(parameterClass, ToolContext.class)) {
+					&& ClassUtils.isAssignable(ToolContext.class, parameterClass)) {
 				// A ToolContext method parameter is not included in the JSON Schema
 				// generation.
 				// It's a special type used by Spring AI to pass contextual data to tools
@@ -140,6 +140,8 @@ public final class JsonSchemaGenerator {
 				required.add(parameterName);
 			}
 			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
+			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
 			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);

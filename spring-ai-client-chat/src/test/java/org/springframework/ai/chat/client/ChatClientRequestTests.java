@@ -86,4 +86,105 @@ class ChatClientRequestTests {
 		assertThat(copy.context()).isEqualTo(Map.of("key", "newValue"));
 	}
 
+	@Test
+	void whenBuilderWithMultipleContextEntriesThenSuccess() {
+		Prompt prompt = new Prompt("test message");
+		Map<String, Object> context = Map.of("key1", "value1", "key2", 42, "key3", true, "key4",
+				Map.of("nested", "value"));
+
+		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).context(context).build();
+
+		assertThat(request.context()).hasSize(4);
+		assertThat(request.context().get("key1")).isEqualTo("value1");
+		assertThat(request.context().get("key2")).isEqualTo(42);
+		assertThat(request.context().get("key3")).isEqualTo(true);
+		assertThat(request.context().get("key4")).isEqualTo(Map.of("nested", "value"));
+	}
+
+	@Test
+	void whenMutateWithNewContextKeysThenMerged() {
+		Prompt prompt = new Prompt("test message");
+		ChatClientRequest original = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(Map.of("existing", "value"))
+			.build();
+
+		ChatClientRequest mutated = original.mutate().context("new1", "newValue1").context("new2", "newValue2").build();
+
+		assertThat(original.context()).hasSize(1);
+		assertThat(mutated.context()).hasSize(3);
+		assertThat(mutated.context().get("existing")).isEqualTo("value");
+		assertThat(mutated.context().get("new1")).isEqualTo("newValue1");
+		assertThat(mutated.context().get("new2")).isEqualTo("newValue2");
+	}
+
+	@Test
+	void whenMutateWithOverridingContextKeysThenOverridden() {
+		Prompt prompt = new Prompt("test message");
+		ChatClientRequest original = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(Map.of("key", "originalValue", "other", "untouched"))
+			.build();
+
+		ChatClientRequest mutated = original.mutate().context("key", "newValue").build();
+
+		assertThat(original.context().get("key")).isEqualTo("originalValue");
+		assertThat(mutated.context().get("key")).isEqualTo("newValue");
+		assertThat(mutated.context().get("other")).isEqualTo("untouched");
+	}
+
+	@Test
+	void whenMutatePromptThenPromptChanged() {
+		Prompt originalPrompt = new Prompt("original message");
+		Prompt newPrompt = new Prompt("new message");
+
+		ChatClientRequest original = ChatClientRequest.builder()
+			.prompt(originalPrompt)
+			.context(Map.of("key", "value"))
+			.build();
+
+		ChatClientRequest mutated = original.mutate().prompt(newPrompt).build();
+
+		assertThat(original.prompt()).isEqualTo(originalPrompt);
+		assertThat(mutated.prompt()).isEqualTo(newPrompt);
+		assertThat(mutated.context()).isEqualTo(original.context());
+	}
+
+	@Test
+	void whenMutateContextWithMapThenMerged() {
+		Prompt prompt = new Prompt("test message");
+		ChatClientRequest original = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(Map.of("existing", "value"))
+			.build();
+
+		Map<String, Object> newContext = Map.of("new1", "value1", "new2", "value2");
+		ChatClientRequest mutated = original.mutate().context(newContext).build();
+
+		assertThat(mutated.context()).hasSize(3);
+		assertThat(mutated.context().get("existing")).isEqualTo("value");
+		assertThat(mutated.context().get("new1")).isEqualTo("value1");
+		assertThat(mutated.context().get("new2")).isEqualTo("value2");
+	}
+
+	@Test
+	void whenContextContainsComplexObjectsThenPreserved() {
+		Prompt prompt = new Prompt("test message");
+
+		// Test with various object types
+		Map<String, Object> nestedMap = Map.of("nested", "value");
+		java.util.List<String> list = java.util.List.of("item1", "item2");
+
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(prompt)
+			.context(Map.of("map", nestedMap, "list", list, "string", "value", "number", 123, "boolean", true))
+			.build();
+
+		assertThat(request.context().get("map")).isEqualTo(nestedMap);
+		assertThat(request.context().get("list")).isEqualTo(list);
+		assertThat(request.context().get("string")).isEqualTo("value");
+		assertThat(request.context().get("number")).isEqualTo(123);
+		assertThat(request.context().get("boolean")).isEqualTo(true);
+	}
+
 }

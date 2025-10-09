@@ -249,7 +249,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				.build();
 
 			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
-			logger.debug("Deleted " + response.deleted() + " documents matching filter expression");
+			logger.debug("Deleted {} documents matching filter expression", response.deleted());
 
 			if (!response.failures().isEmpty()) {
 				throw new IllegalStateException("Failed to delete some documents: " + response.failures());

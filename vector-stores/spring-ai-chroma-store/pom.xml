@@ -66,7 +66,6 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>chromadb</artifactId>
-			<version>1.21.0</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -95,6 +94,14 @@
 			<version>${project.parent.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>net.javacrumbs.json-unit</groupId>
+			<artifactId>json-unit-assertj</artifactId>
+			<version>${json-unit-assertj.version}</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 </project>

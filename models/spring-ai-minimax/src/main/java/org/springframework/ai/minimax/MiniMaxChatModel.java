@@ -65,6 +65,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.http.ResponseEntity;
@@ -225,7 +226,11 @@ public class MiniMaxChatModel implements ChatModel {
 						acc1.addAll(acc2);
 						return acc1;
 					});
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		var assistantMessage = AssistantMessage.builder()
+			.content(choice.message().content())
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
@@ -370,10 +375,17 @@ public class MiniMaxChatModel implements ChatModel {
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
-							return Flux.defer(() -> {
-								// FIXME: bounded elastic needs to be used since tool calling
-								//  is currently only synchronous
-								var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
+							// FIXME: bounded elastic needs to be used since tool calling
+							//  is currently only synchronous
+							return Flux.deferContextual(ctx -> {
+								ToolExecutionResult toolExecutionResult;
+								try {
+									ToolCallReactiveContextHolder.setContext(ctx);
+									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+								}
+								finally {
+									ToolCallReactiveContextHolder.clearContext();
+								}
 								if (toolExecutionResult.returnDirect()) {
 									// Return tool execution result directly to the client.
 									return Flux.just(ChatResponse.builder().from(response)
@@ -424,7 +436,11 @@ public class MiniMaxChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = new AssistantMessage(message.content(), metadata, toolCalls);
+		var assistantMessage = AssistantMessage.builder()
+			.content(message.content())
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
 		String finishReason = (completionFinishReason != null ? completionFinishReason.name() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);

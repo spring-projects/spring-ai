@@ -1,34 +1,50 @@
 = Model Context Protocol (MCP)
 
-The link:https://modelcontextprotocol.org/docs/concepts/architecture[Model Context Protocol] (MCP) is a standardized protocol that enables AI models to interact with external tools and resources in a structured way. 
+TIP: **New to MCP?** Start with our xref:guides/getting-started-mcp.adoc[Getting Started with MCP] guide for a quick introduction and hands-on examples.
+
+The link:https://modelcontextprotocol.org/docs/concepts/architecture[Model Context Protocol] (MCP) is a standardized protocol that enables AI models to interact with external tools and resources in a structured way.
+Think of it as a bridge between your AI models and the real world - allowing them to access databases, APIs, file systems, and other external services through a consistent interface.
 It supports multiple transport mechanisms to provide flexibility across different environments.
 
-The link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK] provides a Java implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication patterns.
+The link:https://modelcontextprotocol.io/sdk/java/mcp-overview[MCP Java SDK] provides a Java implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication patterns.
 
-`**Spring AI MCP**` extends the MCP Java SDK with Spring Boot integration, providing both xref:api/mcp/mcp-client-boot-starter-docs.adoc[client] and xref:api/mcp/mcp-server-boot-starter-docs.adoc[server] starters. 
+Spring AI embraces MCP with comprehensive support through dedicated Boot Starters and MCP Java Annotations, making it easier than ever to build sophisticated AI-powered applications that can seamlessly connect to external systems.
+This means Spring developers can participate in both sides of the MCP ecosystem - building AI applications that consume MCP servers and creating MCP servers that expose Spring-based services to the wider AI community.
 Bootstrap your AI applications with MCP support using link:https://start.spring.io[Spring Initializer].
-
-[NOTE]
-====
-Breaking Changes in MCP Java SDK 0.8.0 ⚠️
-
-MCP Java SDK version 0.8.0 introduces several breaking changes including a new session-based architecture. If you're upgrading from Java SDK 0.7.0, please refer to the https://github.com/modelcontextprotocol/java-sdk/blob/main/migration-0.8.0.md[Migration Guide] for detailed instructions.
-====
 
 == MCP Java SDK Architecture
 
-TIP: This section provides an overview for the link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK architecture]. 
+TIP: This section provides an overview for the link:https://modelcontextprotocol.io/sdk/java/mcp-overview[MCP Java SDK architecture]. 
 For the Spring AI MCP integration, refer to the xref:#_spring_ai_mcp_integration[Spring AI MCP Boot Starters] documentation.
 
-The Java MCP implementation follows a three-layer architecture:
+The Java MCP implementation follows a three-layer architecture that separates concerns for maintainability and flexibility:
 
-|===
-|  |
-^a| image::mcp/mcp-stack.svg[MCP Stack Architecture]
-a| * *Client/Server Layer*: The McpClient handles client-side operations while the McpServer manages server-side protocol operations. Both utilize McpSession for communication management.
-* *Session Layer (McpSession)*: Manages communication patterns and state through the DefaultMcpSession implementation.
-* *Transport Layer (McpTransport)*: Handles JSON-RPC message serialization and deserialization with support for multiple transport implementations.
-|===
+.MCP Stack Architecture
+image::mcp/mcp-stack.svg[MCP Stack Architecture, align=center]
+
+=== Client/Server Layer (Top)
+
+The top layer handles the main application logic and protocol operations:
+
+* *McpClient* - Manages client-side operations and server connections
+* *McpServer* - Handles server-side protocol operations and client requests
+* Both components utilize the session layer below for communication management
+
+=== Session Layer (Middle)
+
+The middle layer manages communication patterns and maintains connection state:
+
+* *McpSession* - Core session management interface
+* *McpClientSession* - Client-specific session implementation
+* *McpServerSession* - Server-specific session implementation
+
+=== Transport Layer (Bottom)
+
+The bottom layer handles the actual message transport and serialization:
+
+* *McpTransport* - Manages JSON-RPC message serialization and deserialization
+* Supports multiple transport implementations (STDIO, HTTP/SSE, Streamable-HTTP, etc.)
+* Provides the foundation for all higher-level communication
 
 |===
 | link:https://modelcontextprotocol.io/sdk/java/mcp-client[MCP Client] |
@@ -67,10 +83,7 @@ a| The MCP Server is a foundational component in the Model Context Protocol (MCP
 * Concurrent client connection management
 * Synchronous and Asynchronous API support
 * Transport implementations:
-** Stdio-based transport for process-based communication
-** Servlet-based SSE server transport
-** WebFlux SSE server transport for reactive HTTP streaming
-** WebMVC SSE server transport for servlet-based HTTP streaming
+** Stdio, Streamable-HTTP, Stateless Streamable-HTTP, SSE
 
 ^a| image::mcp/java-mcp-server-architecture.jpg[Java MCP Server Architecture, width=600]
 |===
@@ -83,16 +96,61 @@ For simplified setup using Spring Boot, use the MCP Boot Starters described belo
 Spring AI provides MCP integration through the following Spring Boot starters:
 
 === link:mcp-client-boot-starter-docs.html[Client Starters]
-* `spring-ai-starter-mcp-client` - Core starter providing STDIO and HTTP-based SSE support
-* `spring-ai-starter-mcp-client-webflux` - WebFlux-based SSE transport implementation
+
+* `spring-ai-starter-mcp-client` - Core starter providing `STDIO`, Servlet-based `Streamable-HTTP`, `Stateless Streamable-HTTP` and `SSE` support
+* `spring-ai-starter-mcp-client-webflux` - WebFlux-based  `Streamable-HTTP`, `Stateless Streamable-HTTP` and `SSE` transport implementation
 
 === link:mcp-server-boot-starter-docs.html[Server Starters]
-* `spring-ai-starter-mcp-server` - Core server with STDIO transport support
-* `spring-ai-starter-mcp-server-webmvc` - Spring MVC-based SSE transport implementation
-* `spring-ai-starter-mcp-server-webflux` - WebFlux-based SSE transport implementation
+
+==== STDIO
+
+[options="header"]
+|===
+|Server Type | Dependency | Property
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[Standard Input/Output (STDIO)] | `spring-ai-starter-mcp-server` | `spring.ai.mcp.server.stdio=true`
+|===
+
+==== WebMVC
+
+|===
+|Server Type | Dependency | Property
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webmvc_serve[SSE WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webmvc_server[Streamable-HTTP WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STREAMABLE`
+| xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webmvc_server[Stateless Streamable-HTTP WebMVC] | `spring-ai-starter-mcp-server-webmvc` | `spring.ai.mcp.server.protocol=STATELESS`
+|===
+
+==== WebMVC (Reactive)
+|===
+|Server Type | Dependency | Property
+| xref:api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc#_sse_webflux_serve[SSE WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=SSE` or empty
+| xref:api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc#_streamable_http_webflux_server[Streamable-HTTP WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STREAMABLE`
+| xref:api/mcp/mcp-stateless-server-boot-starter-docs.adoc#_stateless_webflux_server[Stateless Streamable-HTTP WebFlux] | `spring-ai-starter-mcp-server-webflux` | `spring.ai.mcp.server.protocol=STATELESS`
+|===
+
+== xref:api/mcp/mcp-annotations-overview.adoc[Spring AI MCP Annotations]
+
+In addition to the programmatic MCP client & server configuration, Spring AI provides annotation-based method handling for MCP servers and clients through the xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations] module. 
+This approach simplifies the creation and registration of MCP operations using a clean, declarative programming model with Java annotations.
+
+The MCP Annotations module enables developers to:
+
+* Create MCP tools, resources, and prompts using simple annotations
+* Handle client-side notifications and requests declaratively
+* Reduce boilerplate code and improve maintainability
+* Automatically generate JSON schemas for tool parameters
+* Access special parameters and context information
+
+Key features include:   
+
+* xref:api/mcp/mcp-annotations-server.adoc[Server Annotations]: `@McpTool`, `@McpResource`, `@McpPrompt`, `@McpComplete`
+* xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]: `@McpLogging`, `@McpSampling`, `@McpElicitation`, `@McpProgress`
+* xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters]: `McpSyncServerExchange`, `McpAsyncServerExchange`, `McpTransportContext`, `McpMeta`
+* *Automatic Discovery*: Annotation scanning with configurable package inclusion/exclusion
+* *Spring Boot Integration*: Seamless integration with MCP Boot Starters
 
 == Additional Resources
 
+* xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations Documentation]
 * link:mcp-client-boot-starter-docs.html[MCP Client Boot Starters Documentation]
 * link:mcp-server-boot-starter-docs.html[MCP Server Boot Starters Documentation]
 * link:mcp-helpers.html[MCP Utilities Documentation]

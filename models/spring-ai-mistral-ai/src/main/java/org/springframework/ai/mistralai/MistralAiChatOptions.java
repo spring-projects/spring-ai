@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author Jason Smith
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -171,16 +172,17 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.responseFormat(fromOptions.getResponseFormat())
-			.stop(fromOptions.getStop())
+			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
 			.frequencyPenalty(fromOptions.getFrequencyPenalty())
 			.presencePenalty(fromOptions.getPresencePenalty())
 			.n(fromOptions.getN())
-			.tools(fromOptions.getTools())
+			.tools(fromOptions.getTools() != null ? new ArrayList<>(fromOptions.getTools()) : null)
 			.toolChoice(fromOptions.getToolChoice())
-			.toolCallbacks(fromOptions.getToolCallbacks())
-			.toolNames(fromOptions.getToolNames())
+			.toolCallbacks(
+					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
+			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
+			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.build();
 	}
 
@@ -366,6 +368,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public MistralAiChatOptions copy() {
 		return fromOptions(this);
 	}
@@ -403,7 +406,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final MistralAiChatOptions options = new MistralAiChatOptions();
 

@@ -272,7 +272,23 @@ public class ChromaApiIT {
 			.hasMessage("Failed to initialize ChromaVectorStore")
 			.hasCauseInstanceOf(RuntimeException.class)
 			.hasRootCauseMessage(
-					"Collection non-existent doesn't exist and won't be created as the initializeSchema is set to false.");
+					"Collection non-existent with the tenant: SpringAiTenant and the database: SpringAiDatabase doesn't exist and won't be created as the initializeSchema is set to false.");
+	}
+
+	@Test
+	public void testAddEmbeddingsRequestMetadataConversion() {
+		Map<String, Object> metadata = Map.of("intVal", 42, "boolVal", true, "strVal", "hello", "doubleVal", 3.14,
+				"listVal", List.of(1, 2, 3), "mapVal", Map.of("a", 1, "b", 2));
+		AddEmbeddingsRequest req = new AddEmbeddingsRequest("id", new float[] { 1f, 2f, 3f }, metadata, "doc");
+		Map<String, Object> processed = req.metadata().get(0);
+
+		assertThat(processed.get("intVal")).isInstanceOf(Integer.class);
+		assertThat(processed.get("boolVal")).isInstanceOf(Boolean.class);
+		assertThat(processed.get("strVal")).isInstanceOf(String.class);
+		assertThat(processed.get("doubleVal")).isInstanceOf(Number.class).isEqualTo(3.14);
+		assertThat(processed.get("listVal")).isInstanceOf(String.class).isEqualTo("[1,2,3]");
+		assertThat(processed.get("mapVal")).isInstanceOf(String.class);
+		net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson(processed.get("mapVal")).isEqualTo("{a:1,b:2}");
 	}
 
 	@SpringBootConfiguration

@@ -21,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -78,7 +77,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public List<String> findConversationIds() {
-		return this.jdbcTemplate.queryForList(dialect.getSelectConversationIdsSql(), String.class);
+		return this.jdbcTemplate.queryForList(this.dialect.getSelectConversationIdsSql(), String.class);
 	}
 
 	@Override
@@ -149,7 +148,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
 				// AddBatchPreparedStatement to support it.
-				case TOOL -> new ToolResponseMessage(List.of());
+				case TOOL -> ToolResponseMessage.builder().responses(List.of()).build();
 			};
 		}
 
@@ -219,12 +218,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcChatMemoryRepositoryDialect resolveDialect(DataSource dataSource) {
 			if (this.dialect == null) {
-				try {
-					return JdbcChatMemoryRepositoryDialect.from(dataSource);
-				}
-				catch (Exception ex) {
-					throw new IllegalStateException("Could not detect dialect from datasource", ex);
-				}
+				return JdbcChatMemoryRepositoryDialect.from(dataSource);
 			}
 			else {
 				warnIfDialectMismatch(dataSource, this.dialect);
@@ -237,15 +231,10 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		 * from the DataSource.
 		 */
 		private void warnIfDialectMismatch(DataSource dataSource, JdbcChatMemoryRepositoryDialect explicitDialect) {
-			try {
-				JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
-				if (!detected.getClass().equals(explicitDialect.getClass())) {
-					logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
-							explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
-				}
-			}
-			catch (Exception ex) {
-				logger.debug("Could not detect dialect from datasource", ex);
+			JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
+			if (!detected.getClass().equals(explicitDialect.getClass())) {
+				logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
+						explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
 			}
 		}
 

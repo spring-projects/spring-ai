@@ -239,4 +239,70 @@ class PromptTests {
 		assertThat(prompt.getSystemMessage().getText()).isEqualTo("");
 	}
 
+	@Test
+	void augmentSystemMessageWhenNotFirst() {
+		Message[] messages = { new UserMessage("Hi"), new SystemMessage("Hello") };
+		Prompt prompt = Prompt.builder().messages(messages).build();
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getUserMessage()).isNotNull();
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("Hi");
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+
+		Prompt copy = prompt.augmentSystemMessage(message -> message.mutate().text("How are you?").build());
+
+		assertThat(copy.getSystemMessage()).isNotNull();
+		assertThat(copy.getInstructions().size()).isEqualTo(messages.length);
+		assertThat(copy.getSystemMessage().getText()).isEqualTo("How are you?");
+
+		assertThat(prompt.getSystemMessage()).isNotNull();
+		assertThat(prompt.getUserMessage()).isNotNull();
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("Hi");
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void shouldPreserveMessageOrder() {
+		SystemMessage system = new SystemMessage("You are helpful");
+		UserMessage user1 = new UserMessage("First question");
+		UserMessage user2 = new UserMessage("Second question");
+
+		Prompt prompt = Prompt.builder().messages(system, user1, user2).build();
+
+		assertThat(prompt.getInstructions()).hasSize(3);
+		assertThat(prompt.getInstructions().get(0)).isEqualTo(system);
+		assertThat(prompt.getInstructions().get(1)).isEqualTo(user1);
+		assertThat(prompt.getInstructions().get(2)).isEqualTo(user2);
+	}
+
+	@Test
+	void shouldHandleEmptyMessageList() {
+		Prompt prompt = Prompt.builder().messages(List.of()).build();
+
+		assertThat(prompt.getInstructions()).isEmpty();
+		assertThat(prompt.getUserMessage().getText()).isEmpty();
+		assertThat(prompt.getSystemMessage().getText()).isEmpty();
+	}
+
+	@Test
+	void shouldCreatePromptWithOptions() {
+		ChatOptions options = ChatOptions.builder().model("test-model").temperature(0.5).build();
+		Prompt prompt = new Prompt("Test content", options);
+
+		assertThat(prompt.getOptions()).isEqualTo(options);
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("Test content");
+	}
+
+	@Test
+	void shouldHandleMixedMessageTypes() {
+		SystemMessage system = new SystemMessage("System message");
+		UserMessage user = new UserMessage("User message");
+
+		Prompt prompt = Prompt.builder().messages(user, system).build();
+
+		assertThat(prompt.getInstructions()).hasSize(2);
+		assertThat(prompt.getUserMessage().getText()).isEqualTo("User message");
+		assertThat(prompt.getSystemMessage().getText()).isEqualTo("System message");
+	}
+
 }

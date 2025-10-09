@@ -18,18 +18,24 @@ package org.springframework.ai.anthropic.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.AnthropicMessage;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
+import org.springframework.ai.anthropic.api.AnthropicApi.EventType;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -38,9 +44,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Christian Tzolov
  * @author Jihoon Kim
  * @author Alexandros Pappas
+ * @author Claudio Silva Junior
+ * @author Soby Chacko
  */
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class AnthropicApiIT {
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApiIT.class);
 
 	AnthropicApi anthropicApi = AnthropicApi.builder().apiKey(System.getenv("ANTHROPIC_API_KEY")).build();
 
@@ -63,22 +73,64 @@ public class AnthropicApiIT {
 					""")));
 
 	@Test
+	void chatWithPromptCache() {
+		String userMessageText = "It could be either a contraction of the full title Quenta Silmarillion (\"Tale of the Silmarils\") or also a plain Genitive which "
+				+ "(as in Ancient Greek) signifies reference. This genitive is translated in English with \"about\" or \"of\" "
+				+ "constructions; the titles of the chapters in The Silmarillion are examples of this genitive in poetic English "
+				+ "(Of the Sindar, Of Men, Of the Darkening of Valinor etc), where \"of\" means \"about\" or \"concerning\". "
+				+ "In the same way, Silmarillion can be taken to mean \"Of/About the Silmarils\"";
+
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+				List.of(new ContentBlock(userMessageText.repeat(20), AnthropicCacheType.EPHEMERAL.cacheControl())),
+				Role.USER);
+
+		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
+				AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue(), List.of(chatCompletionMessage), null, 100, 0.8,
+				false);
+
+		// First request - creates cache
+		AnthropicApi.Usage createdCacheToken = this.anthropicApi.chatCompletionEntity(chatCompletionRequest)
+			.getBody()
+			.usage();
+
+		assertThat(createdCacheToken.cacheCreationInputTokens()).isGreaterThan(0);
+		assertThat(createdCacheToken.cacheReadInputTokens()).isEqualTo(0);
+
+		// Second request - reads from cache (same request)
+		AnthropicApi.Usage readCacheToken = this.anthropicApi.chatCompletionEntity(chatCompletionRequest)
+			.getBody()
+			.usage();
+
+		assertThat(readCacheToken.cacheCreationInputTokens()).isEqualTo(0);
+		assertThat(readCacheToken.cacheReadInputTokens()).isGreaterThan(0);
+	}
+
+	@Test
 	void chatCompletionEntity() {
 
 		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?")),
 				Role.USER);
 		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi
-			.chatCompletionEntity(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
-					List.of(chatCompletionMessage), null, 100, 0.8, false));
+			.chatCompletionEntity(ChatCompletionRequest.builder()
+				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+				.messages(List.of(chatCompletionMessage))
+				.maxTokens(100)
+				.temperature(0.8)
+				.stream(false)
+				.build());
 
-		System.out.println(response);
+		logger.info("Non-Streaming Response: {}", response.getBody());
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().content()).isNotEmpty();
+		assertThat(response.getBody().content().get(0).text()).isNotBlank();
+		assertThat(response.getBody().stopReason()).isEqualTo("end_turn");
 	}
 
 	@Test
 	void chatCompletionWithThinking() {
-		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?")),
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+				List.of(new ContentBlock("Are there an infinite number of prime numbers such that n mod 4 == 3?")),
 				Role.USER);
 
 		ChatCompletionRequest request = ChatCompletionRequest.builder()
@@ -93,20 +145,31 @@ public class AnthropicApiIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().content()).isNotEmpty();
+
+		boolean foundThinkingBlock = false;
+		boolean foundTextBlock = false;
 
 		List<ContentBlock> content = response.getBody().content();
 		for (ContentBlock block : content) {
 			if (block.type() == ContentBlock.Type.THINKING) {
 				assertThat(block.thinking()).isNotBlank();
 				assertThat(block.signature()).isNotBlank();
+				foundThinkingBlock = true;
 			}
+			// Note: Redacted thinking might occur if budget is exceeded or other reasons.
 			if (block.type() == ContentBlock.Type.REDACTED_THINKING) {
 				assertThat(block.data()).isNotBlank();
 			}
 			if (block.type() == ContentBlock.Type.TEXT) {
 				assertThat(block.text()).isNotBlank();
+				foundTextBlock = true;
 			}
 		}
+
+		assertThat(foundThinkingBlock).isTrue();
+		assertThat(foundTextBlock).isTrue();
+		assertThat(response.getBody().stopReason()).isEqualTo("end_turn");
 	}
 
 	@Test
@@ -115,15 +178,125 @@ public class AnthropicApiIT {
 		AnthropicMessage chatCompletionMessage = new AnthropicMessage(List.of(new ContentBlock("Tell me a Joke?")),
 				Role.USER);
 
-		Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(new ChatCompletionRequest(
-				AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(), List.of(chatCompletionMessage), null, 100, 0.8, true));
+		Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(ChatCompletionRequest.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+			.messages(List.of(chatCompletionMessage))
+			.maxTokens(100)
+			.temperature(0.8)
+			.stream(true)
+			.build());
 
 		assertThat(response).isNotNull();
 
-		List<ChatCompletionResponse> bla = response.collectList().block();
-		assertThat(bla).isNotNull();
+		List<ChatCompletionResponse> results = response.collectList().block();
+		assertThat(results).isNotNull().isNotEmpty();
 
-		bla.stream().forEach(r -> System.out.println(r));
+		results.forEach(chunk -> logger.info("Streaming Chunk: {}", chunk));
+
+		// Verify the stream contains actual text content deltas
+		String aggregatedText = results.stream()
+			.filter(r -> !CollectionUtils.isEmpty(r.content()))
+			.flatMap(r -> r.content().stream())
+			.filter(cb -> cb.type() == ContentBlock.Type.TEXT_DELTA)
+			.map(ContentBlock::text)
+			.collect(Collectors.joining());
+		assertThat(aggregatedText).isNotBlank();
+
+		// Verify the final state
+		ChatCompletionResponse lastMeaningfulResponse = results.stream()
+			.filter(r -> StringUtils.hasText(r.stopReason()))
+			.reduce((first, second) -> second)
+			.orElse(results.get(results.size() - 1)); // Fallback to very last if no stop
+
+		// StopReason found earlier
+		assertThat(lastMeaningfulResponse.stopReason()).isEqualTo("end_turn");
+		assertThat(lastMeaningfulResponse.usage()).isNotNull();
+		assertThat(lastMeaningfulResponse.usage().outputTokens()).isPositive();
+	}
+
+	@Test
+	void chatCompletionStreamWithThinking() {
+		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
+				List.of(new ContentBlock("Are there an infinite number of prime numbers such that n mod 4 == 3?")),
+				Role.USER);
+
+		ChatCompletionRequest request = ChatCompletionRequest.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue())
+			.messages(List.of(chatCompletionMessage))
+			.maxTokens(2048)
+			.temperature(1.0)
+			.stream(true)
+			.thinking(new ChatCompletionRequest.ThinkingConfig(AnthropicApi.ThinkingType.ENABLED, 1024))
+			.build();
+
+		Flux<ChatCompletionResponse> responseFlux = this.anthropicApi.chatCompletionStream(request);
+
+		assertThat(responseFlux).isNotNull();
+
+		List<ChatCompletionResponse> results = responseFlux.collectList().block();
+		assertThat(results).isNotNull().isNotEmpty();
+
+		results.forEach(chunk -> logger.info("Streaming Thinking Chunk: {}", chunk));
+
+		// Verify MESSAGE_START event exists
+		assertThat(results.stream().anyMatch(r -> EventType.MESSAGE_START.name().equals(r.type()))).isTrue();
+		assertThat(results.get(0).id()).isNotBlank();
+		assertThat(results.get(0).role()).isEqualTo(Role.ASSISTANT);
+
+		// Verify presence of THINKING_DELTA content
+		boolean foundThinkingDelta = results.stream()
+			.filter(r -> !CollectionUtils.isEmpty(r.content()))
+			.flatMap(r -> r.content().stream())
+			.anyMatch(cb -> cb.type() == ContentBlock.Type.THINKING_DELTA && StringUtils.hasText(cb.thinking()));
+		assertThat(foundThinkingDelta).as("Should find THINKING_DELTA content").isTrue();
+
+		// Verify presence of SIGNATURE_DELTA content
+		boolean foundSignatureDelta = results.stream()
+			.filter(r -> !CollectionUtils.isEmpty(r.content()))
+			.flatMap(r -> r.content().stream())
+			.anyMatch(cb -> cb.type() == ContentBlock.Type.SIGNATURE_DELTA && StringUtils.hasText(cb.signature()));
+		assertThat(foundSignatureDelta).as("Should find SIGNATURE_DELTA content").isTrue();
+
+		// Verify presence of TEXT_DELTA content (the actual answer)
+		boolean foundTextDelta = results.stream()
+			.filter(r -> !CollectionUtils.isEmpty(r.content()))
+			.flatMap(r -> r.content().stream())
+			.anyMatch(cb -> cb.type() == ContentBlock.Type.TEXT_DELTA && StringUtils.hasText(cb.text()));
+		assertThat(foundTextDelta).as("Should find TEXT_DELTA content").isTrue();
+
+		// Combine text deltas to check final answer structure
+		String aggregatedText = results.stream()
+			.filter(r -> !CollectionUtils.isEmpty(r.content()))
+			.flatMap(r -> r.content().stream())
+			.filter(cb -> cb.type() == ContentBlock.Type.TEXT_DELTA)
+			.map(ContentBlock::text)
+			.collect(Collectors.joining());
+		assertThat(aggregatedText).as("Aggregated text response should not be blank").isNotBlank();
+		logger.info("Aggregated Text from Stream: {}", aggregatedText);
+
+		// Verify the final state (stop reason and usage)
+		ChatCompletionResponse finalStateEvent = results.stream()
+			.filter(r -> StringUtils.hasText(r.stopReason()))
+			.reduce((first, second) -> second)
+			.orElse(null);
+
+		assertThat(finalStateEvent).as("Should find an event with stopReason").isNotNull();
+		assertThat(finalStateEvent.stopReason()).isEqualTo("end_turn");
+		assertThat(finalStateEvent.usage()).isNotNull();
+		assertThat(finalStateEvent.usage().outputTokens()).isPositive();
+		assertThat(finalStateEvent.usage().inputTokens()).isPositive();
+
+		// Verify presence of key event types
+		assertThat(results.stream().anyMatch(r -> EventType.CONTENT_BLOCK_START.name().equals(r.type())))
+			.as("Should find CONTENT_BLOCK_START event")
+			.isTrue();
+		assertThat(results.stream().anyMatch(r -> EventType.CONTENT_BLOCK_STOP.name().equals(r.type())))
+			.as("Should find CONTENT_BLOCK_STOP event")
+			.isTrue();
+		assertThat(results.stream()
+			.anyMatch(r -> EventType.MESSAGE_STOP.name().equals(r.type()) || StringUtils.hasText(r.stopReason())))
+			.as("Should find MESSAGE_STOP or MESSAGE_DELTA with stopReason")
+			.isTrue();
 	}
 
 	@Test
@@ -173,15 +346,21 @@ public class AnthropicApiIT {
 				Role.USER);
 		AnthropicApi api = AnthropicApi.builder().apiKey("FAKE_KEY_FOR_ERROR_RESPONSE").build();
 
-		Flux<ChatCompletionResponse> response = api.chatCompletionStream(new ChatCompletionRequest(
-				AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(), List.of(chatCompletionMessage), null, 100, 0.8, true));
+		Flux<ChatCompletionResponse> response = api.chatCompletionStream(ChatCompletionRequest.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+			.messages(List.of(chatCompletionMessage))
+			.maxTokens(100)
+			.temperature(0.8)
+			.stream(true)
+			.build());
 
 		assertThat(response).isNotNull();
 
 		assertThatThrownBy(() -> response.collectList().block()).isInstanceOf(RuntimeException.class)
 			.hasMessageStartingWith("Response exception, Status: [")
-			.hasMessageContaining(
-					"{\"type\":\"error\",\"error\":{\"type\":\"authentication_error\",\"message\":\"invalid x-api-key\"}}");
+			.hasMessageContaining("\"type\":\"error\"")
+			.hasMessageContaining("\"type\":\"authentication_error\"")
+			.hasMessageContaining("\"message\":\"invalid x-api-key\"");
 	}
 
 }

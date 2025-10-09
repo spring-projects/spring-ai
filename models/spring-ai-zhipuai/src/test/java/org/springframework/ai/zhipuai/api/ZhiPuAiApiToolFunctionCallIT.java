@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public class ZhiPuAiApiToolFunctionCallIT {
 
 	MockWeatherService weatherService = new MockWeatherService();
 
-	ZhiPuAiApi zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
+	ZhiPuAiApi zhiPuAiApi = ZhiPuAiApi.builder().apiKey(System.getenv("ZHIPU_AI_API_KEY")).build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
 		try {
@@ -124,7 +124,7 @@ public class ZhiPuAiApiToolFunctionCallIT {
 
 				// extend conversation with function response.
 				messages.add(new ChatCompletionMessage("" + weatherResponse.temp() + weatherRequest.unit(), Role.TOOL,
-						functionName, toolCall.id(), null));
+						functionName, toolCall.id(), null, null));
 			}
 		}
 

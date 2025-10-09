@@ -146,9 +146,9 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.options.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.| -
 | spring.ai.mistralai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
 | spring.ai.mistralai.chat.options.toolChoice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
-| spring.ai.mistralai.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
-| spring.ai.mistralai.chat.options.functionCallbacks | Mistral AI Tool Function Callbacks to register with the ChatModel. | -
-| spring.ai.mistralai.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
+| spring.ai.mistralai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.mistralai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.mistralai.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 |====
 
 NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
@@ -178,7 +178,7 @@ ChatResponse response = chatModel.call(
     ));
 ----
 
-TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/prompt/ChatOptionsBuilder.java[ChatOptionsBuilder#builder()].
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiChatOptions.java[MistralAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 == Function Calling
 
@@ -197,7 +197,7 @@ Mistral AI models that offer vision multimodal support include `pixtral-large-la
 Refer to the link:https://docs.mistral.ai/capabilities/vision/[Vision] guide for more information.
 
 The Mistral AI link:https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post[User Message API] can incorporate a list of base64-encoded images or image urls with the message.
-Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/model/Media.java[Media] type.
+Spring AI’s link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-commons/src/main/java/org/springframework/ai/content/Media.java[Media] type.
 This type encompasses data and details regarding media attachments in messages, utilizing Spring’s `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
 
 Below is a code example excerpted from `MistralAiChatModelIT.java`, illustrating the fusion of user text with an image.
@@ -370,3 +370,58 @@ Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-
 
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/tool/PaymentStatusFunctionCallingIT.java[PaymentStatusFunctionCallingIT.java] tests show how to use the low-level API to call tool functions.
 Based on the link:https://docs.mistral.ai/guides/function-calling/[Mistral AI Function Calling] tutorial.
+
+== Mistral AI OCR
+
+Spring AI supports Optical Character Recognition (OCR) with Mistral AI. This allows you to extract text and image data from documents.
+
+== Prerequisites
+
+You will need to create an API with Mistral AI to access Mistral AI language models.
+Create an account at https://auth.mistral.ai/ui/registration[Mistral AI registration page] and generate the token on the https://console.mistral.ai/api-keys/[API Keys page].
+
+
+=== Add Dependencies
+
+To use the Mistral AI OCR API, you will need to add the `spring-ai-mistral-ai` dependency to your project.
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mistral-ai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-mistral-ai'
+}
+----
+
+=== Low-level MistralOcrApi Client
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralOcrApi.java[MistralOcrApi] provides a lightweight Java client for link:https://docs.mistral.ai/api/#tag/OCR[Mistral AI OCR API].
+
+Here is a simple snippet showing how to use the API programmatically:
+
+[source,java]
+----
+MistralOcrApi mistralAiApi = new MistralOcrApi(System.getenv("MISTRAL_AI_API_KEY"));
+
+String documentUrl = "https://arxiv.org/pdf/2201.04234";
+MistralOcrApi.OCRRequest request = new MistralOcrApi.OCRRequest(
+        MistralOcrApi.OCRModel.MISTRAL_OCR_LATEST.getValue(), "test_id",
+        new MistralOcrApi.OCRRequest.DocumentURLChunk(documentUrl), List.of(0, 1, 2), true, 5, 50);
+
+ResponseEntity<MistralOcrApi.OCRResponse> response = mistralAiApi.ocr(request);
+----
+
+Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralOcrApi.java[MistralOcrApi.java]'s JavaDoc for further information.
+
+==== MistralOcrApi Sample
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/api/MistralOcrApiIT.java[MistralOcrApiIT.java] tests provide some general examples of how to use the lightweight library.

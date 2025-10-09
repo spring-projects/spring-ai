@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 
