@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
@@ -76,10 +77,10 @@ public class SpringAiRetryAutoConfiguration {
 				}
 			});
 
-		// Optionally add WebFlux pre-response network errors if present without hard dependency
+		// Optionally add WebFlux pre-response network errors if present
 		try {
 			Class<?> webClientRequestEx = Class
-					.forName("org.springframework.web.reactive.function.client.WebClientRequestException");
+				.forName("org.springframework.web.reactive.function.client.WebClientRequestException");
 			@SuppressWarnings("unchecked")
 			Class<? extends Throwable> exClass = (Class<? extends Throwable>) webClientRequestEx;
 			builder.retryOn(exClass);
