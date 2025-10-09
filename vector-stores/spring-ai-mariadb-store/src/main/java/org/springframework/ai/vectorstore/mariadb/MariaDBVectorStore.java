@@ -332,11 +332,11 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		try {
 			String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
 
-			String sql = String.format("DELETE FROM %s WHERE %s", getFullyQualifiedTableName(), nativeFilterExpression);
+			String sql = "DELETE FROM ? WHERE ?";
 
 			logger.debug("Executing delete with filter: {}", sql);
 
-			this.jdbcTemplate.update(sql);
+			this.jdbcTemplate.update(sql, getFullyQualifiedTableName(), nativeFilterExpression);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
@@ -353,21 +353,19 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		String jsonPathFilter = "";
 
 		if (StringUtils.hasText(nativeFilterExpression)) {
-			jsonPathFilter = "and " + nativeFilterExpression + " ";
+			jsonPathFilter = "and ? ";
 		}
 		String distanceType = this.distanceType.name().toLowerCase(Locale.ROOT);
 
 		double distance = 1 - request.getSimilarityThreshold();
-		final String sql = String.format(
-				"SELECT * FROM (select %s, %s, %s, vec_distance_%s(%s, ?) as distance "
-						+ "from %s) as t where distance < ? %sorder by distance asc LIMIT ?",
-				this.idFieldName, this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
-				getFullyQualifiedTableName(), jsonPathFilter);
+		final String sql = "SELECT * FROM (select ?, ?, ?, vec_distance_?(?, ?) as distance "
+				+ "from ?) as t where distance < ? ?order by distance asc LIMIT ?";
 
 		logger.debug("SQL query: {}", sql);
 
-		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), embedding, distance,
-				request.getTopK());
+		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), this.idFieldName,
+				this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
+				getFullyQualifiedTableName(), jsonPathFilter, embedding, distance, request.getTopK());
 	}
 
 	// ---------------------------------------------------------------------------------

@@ -312,11 +312,11 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 
 		try {
 			String jsonPath = this.filterExpressionConverter.convertExpression(filterExpression);
-			String sql = String.format("DELETE FROM %s WHERE JSON_EXISTS(metadata, '%s')", this.tableName, jsonPath);
+			String sql = "DELETE FROM ? WHERE JSON_EXISTS(metadata, '?')";
 
-			logger.debug("Executing delete with filter: {}", sql);
+			logger.debug("Executing delete with filter: {} with params: {} {}", sql, this.tableName, jsonPath);
 
-			int deletedCount = this.jdbcTemplate.update(sql);
+			int deletedCount = this.jdbcTemplate.update(sql, this.tableName, jsonPath);
 			logger.debug("Deleted {} documents matching filter expression", deletedCount);
 		}
 		catch (Exception e) {
