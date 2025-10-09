@@ -678,7 +678,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.metadata, other.metadata)
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
-				&& Objects.equals(this.chatTemplateKwargs, other.chatTemplateKwargs);
+				&& Objects.equals(this.chatTemplateKwargs, other.chatTemplateKwargs)
 				&& Objects.equals(this.verbosity, other.verbosity)
 				&& Objects.equals(this.serviceTier, other.serviceTier);
 	}
