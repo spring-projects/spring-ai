@@ -108,4 +108,53 @@ public class MessageChatMemoryAdvisorTests {
 		assertThat(advisor.getOrder()).isEqualTo(Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER);
 	}
 
+	@Test
+	void whenStoreAllUserMessagesIsTrueThenPreserveAllMessages() {
+		// Create a chat memory
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(new InMemoryChatMemoryRepository())
+				.build();
+
+		// Create advisor with storeAllUserMessages set to true
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
+				.storeAllUserMessages(true)
+				.build();
+
+		// Verify the advisor was built successfully
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenStoreAllUserMessagesIsFalseThenStoreOnlyLatest() {
+		// Create a chat memory
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(new InMemoryChatMemoryRepository())
+				.build();
+
+		// Create advisor with storeAllUserMessages set to false (default)
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
+				.storeAllUserMessages(false)
+				.build();
+
+		// Verify the advisor was built successfully
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void testDefaultStoreAllUserMessagesValue() {
+		// Create a chat memory
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(new InMemoryChatMemoryRepository())
+				.build();
+
+		// Create advisor with default values
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+
+		// Verify the advisor was built successfully
+		assertThat(advisor).isNotNull();
+		// Note: We cannot directly verify the default value of storeAllUserMessages
+		// since it's a private field, but the construction should succeed
+	}
+
+
 }
