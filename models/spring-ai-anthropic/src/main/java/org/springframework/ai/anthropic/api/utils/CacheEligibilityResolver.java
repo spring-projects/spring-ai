@@ -39,6 +39,7 @@ import org.springframework.ai.chat.messages.MessageType;
  * definition messages.
  *
  * @author Austin Dase
+ * @author Soby Chacko
  * @since 1.1.0
  **/
 public class CacheEligibilityResolver {
@@ -84,6 +85,7 @@ public class CacheEligibilityResolver {
 		return switch (anthropicCacheStrategy) {
 			case NONE -> Set.of();
 			case SYSTEM_ONLY, SYSTEM_AND_TOOLS -> Set.of(MessageType.SYSTEM);
+			case TOOLS_ONLY -> Set.of(); // No message types cached, only tool definitions
 			case CONVERSATION_HISTORY -> Set.of(MessageType.values());
 		};
 	}
@@ -108,11 +110,17 @@ public class CacheEligibilityResolver {
 	}
 
 	public AnthropicApi.ChatCompletionRequest.CacheControl resolveToolCacheControl() {
-		// Tool definitions are only cache-eligible when caching is enabled and
-		// the strategy includes SYSTEM messages (SYSTEM_ONLY, SYSTEM_AND_TOOLS, or
-		// CONVERSATION_HISTORY). When NONE, tools must not be cached.
-		if (!isCachingEnabled() || !this.cacheEligibleMessageTypes.contains(TOOL_DEFINITION_MESSAGE_TYPE)
-				|| this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
+		// Tool definitions are cache-eligible for TOOLS_ONLY, SYSTEM_AND_TOOLS, and
+		// CONVERSATION_HISTORY strategies. SYSTEM_ONLY caches only system messages,
+		// relying on Anthropic's cache hierarchy to implicitly cache tools.
+		if (this.cacheStrategy != AnthropicCacheStrategy.TOOLS_ONLY
+				&& this.cacheStrategy != AnthropicCacheStrategy.SYSTEM_AND_TOOLS
+				&& this.cacheStrategy != AnthropicCacheStrategy.CONVERSATION_HISTORY) {
+			logger.debug("Caching not enabled for tool definition, cacheStrategy={}", this.cacheStrategy);
+			return null;
+		}
+
+		if (this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
 			logger.debug("Caching not enabled for tool definition, usedBreakpoints={}",
 					this.cacheBreakpointTracker.getCount());
 			return null;
