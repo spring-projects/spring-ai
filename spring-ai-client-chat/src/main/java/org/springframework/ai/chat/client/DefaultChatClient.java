@@ -76,6 +76,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -83,6 +84,8 @@ public class DefaultChatClient implements ChatClient {
 	private static final ChatClientObservationConvention DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION = new DefaultChatClientObservationConvention();
 
 	private static final TemplateRenderer DEFAULT_TEMPLATE_RENDERER = StTemplateRenderer.builder().build();
+
+	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
 	private final DefaultChatClientRequestSpec defaultChatClientRequest;
 
@@ -513,7 +516,9 @@ public class DefaultChatClient implements ChatClient {
 			// CHECKSTYLE:OFF
 			var chatClientResponse = observation.observe(() -> {
 				// Apply the advisor chain that terminates with the ChatModelCallAdvisor.
-				return this.advisorChain.nextCall(chatClientRequest);
+				var response = this.advisorChain.nextCall(chatClientRequest);
+				observationContext.setResponse(response);
+				return response;
 			});
 			// CHECKSTYLE:ON
 			return chatClientResponse != null ? chatClientResponse : ChatClientResponse.builder().build();
@@ -571,11 +576,13 @@ public class DefaultChatClient implements ChatClient {
 
 				// @formatter:off
 				// Apply the advisor chain that terminates with the ChatModelStreamAdvisor.
-				return this.advisorChain.nextStream(chatClientRequest)
+				Flux<ChatClientResponse> chatClientResponse = this.advisorChain.nextStream(chatClientRequest)
 						.doOnError(observation::error)
 						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 				// @formatter:on
+				return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,
+						observationContext::setResponse);
 			});
 		}
 
