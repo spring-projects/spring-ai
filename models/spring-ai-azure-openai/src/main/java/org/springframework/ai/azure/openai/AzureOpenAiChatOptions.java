@@ -50,6 +50,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
  * @author Andres da Silva Santos
+ * @author lambochen
  */
 @JsonInclude(Include.NON_NULL)
 public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
@@ -242,6 +243,9 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
 	/**
 	 * Whether to include token usage information in streaming chat completion responses.
 	 * Only applies to streaming responses.
@@ -299,6 +303,16 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
+	@Override
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -327,6 +341,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 			.enhancements(fromOptions.getEnhancements())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations())
 			.streamOptions(fromOptions.getStreamOptions())
 			.build();
 	}
@@ -552,6 +567,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolExecutionMaxIterations, that.toolExecutionMaxIterations)
 				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.topLogProbs, that.topLogProbs)
 				&& Objects.equals(this.enhancements, that.enhancements)
 				&& Objects.equals(this.streamOptions, that.streamOptions)
@@ -567,10 +583,10 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.logitBias, this.user, this.n, this.stop, this.deploymentName, this.responseFormat,
-				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.seed, this.logprobs,
-				this.topLogProbs, this.enhancements, this.streamOptions, this.reasoningEffort, this.enableStreamUsage,
-				this.toolContext, this.maxTokens, this.maxCompletionTokens, this.frequencyPenalty, this.presencePenalty,
-				this.temperature, this.topP);
+				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolExecutionMaxIterations,
+				this.seed, this.logprobs, this.topLogProbs, this.enhancements, this.streamOptions, this.reasoningEffort,
+				this.enableStreamUsage, this.toolContext, this.maxTokens, this.maxCompletionTokens,
+				this.frequencyPenalty, this.presencePenalty, this.temperature, this.topP);
 	}
 
 	public static final class Builder {
@@ -775,6 +791,11 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

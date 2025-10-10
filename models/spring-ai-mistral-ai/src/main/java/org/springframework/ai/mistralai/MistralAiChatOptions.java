@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Jason Smith
+ * @author lambochen
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -158,6 +159,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
+	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
@@ -182,6 +186,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.build();
 	}
@@ -350,6 +355,16 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
 	@JsonIgnore
 	public Integer getTopK() {
 		return null;
@@ -377,7 +392,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
 				this.responseFormat, this.stop, this.frequencyPenalty, this.presencePenalty, this.n, this.tools,
-				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled,
+				this.toolExecutionMaxIterations, this.toolContext);
 	}
 
 	@Override
@@ -403,6 +419,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolExecutionMaxIterations, other.toolExecutionMaxIterations)
 				&& Objects.equals(this.toolContext, other.toolContext);
 	}
 
@@ -505,6 +522,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

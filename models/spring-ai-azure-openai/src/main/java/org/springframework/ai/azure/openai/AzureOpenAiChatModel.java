@@ -62,6 +62,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -123,8 +124,10 @@ import org.springframework.util.StringUtils;
  * @author Berjan Jonker
  * @author Andres da Silva Santos
  * @author Bart Veenstra
+ * @author lambochen
  * @see ChatModel
  * @see com.azure.ai.openai.OpenAIClient
+ * @see ToolCallingChatOptions
  * @since 1.0.0
  */
 public class AzureOpenAiChatModel implements ChatModel {
@@ -252,6 +255,10 @@ public class AzureOpenAiChatModel implements ChatModel {
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalCall(prompt, previousChatResponse, 1);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -271,7 +278,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -283,8 +290,11 @@ public class AzureOpenAiChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, iterations + 1);
 			}
+		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
 		}
 
 		return response;
@@ -299,6 +309,10 @@ public class AzureOpenAiChatModel implements ChatModel {
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalStream(prompt, previousChatResponse, 1);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);
@@ -378,7 +392,8 @@ public class AzureOpenAiChatModel implements ChatModel {
 			});
 
 			return chatResponseFlux.flatMapSequential(chatResponse -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse,
+						iterations)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
 					return Flux.deferContextual(ctx -> {
@@ -401,9 +416,12 @@ public class AzureOpenAiChatModel implements ChatModel {
 							// Send the tool execution result back to the model.
 							return this.internalStream(
 									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse);
+									chatResponse, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
+				}
+				else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+					throw new ToolExecutionLimitExceededException(iterations);
 				}
 
 				Flux<ChatResponse> flux = Flux.just(chatResponse)
@@ -678,6 +696,9 @@ public class AzureOpenAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			runtimeOptions.setToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getToolExecutionMaxIterations(),
+							this.defaultOptions.getToolExecutionMaxIterations()));
 			requestOptions.setStreamUsage(ModelOptionsUtils.mergeOption(runtimeOptions.getStreamUsage(),
 					this.defaultOptions.getStreamUsage()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
@@ -689,6 +710,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setToolExecutionMaxIterations(this.defaultOptions.getToolExecutionMaxIterations());
 			requestOptions.setStreamUsage(this.defaultOptions.getStreamUsage());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());

@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link ToolCallingChatOptions}.
  *
  * @author Thomas Vitale
+ * @author lambochen
  */
 class ToolCallingChatOptionsTests {
 
@@ -48,6 +49,20 @@ class ToolCallingChatOptionsTests {
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 		options.setInternalToolExecutionEnabled(false);
 		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options)).isFalse();
+	}
+
+	@Test
+	void whenToolCallingChatOptionsAndMaxIterationsOver() {
+		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		options.setToolExecutionMaxIterations(1);
+		// 3 > 1
+		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options, 3)).isFalse();
+	}
+
+	@Test
+	void whenToolCallingChatOptionsAndMaxIterationsDefault() {
+		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		assertThat(ToolCallingChatOptions.isInternalToolExecutionEnabled(options, 1)).isTrue();
 	}
 
 	@Test

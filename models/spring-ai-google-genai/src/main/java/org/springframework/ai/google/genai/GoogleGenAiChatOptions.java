@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
  * @author Dan Dobrin
+ * @author lambochen
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -167,6 +168,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
+	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
@@ -204,6 +208,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
+		options.setToolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations());
 		options.setToolContext(fromOptions.getToolContext());
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
 		options.setLabels(fromOptions.getLabels());
@@ -332,6 +337,17 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
 	public Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
@@ -454,6 +470,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolExecutionMaxIterations, that.toolExecutionMaxIterations)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
 	}
 
@@ -462,7 +479,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
 				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
-				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels);
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolExecutionMaxIterations,
+				this.toolContext, this.labels);
 	}
 
 	@Override
@@ -584,6 +602,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(boolean internalToolExecutionEnabled) {
 			this.options.internalToolExecutionEnabled = internalToolExecutionEnabled;
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+			this.options.toolExecutionMaxIterations = toolExecutionMaxIterations;
 			return this;
 		}
 

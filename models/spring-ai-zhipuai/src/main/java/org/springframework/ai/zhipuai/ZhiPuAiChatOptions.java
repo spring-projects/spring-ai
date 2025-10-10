@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author YunKui Lu
+ * @author lambochen
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -137,6 +138,9 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
+	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 	// @formatter:on
 
@@ -159,6 +163,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations())
 			.toolContext(fromOptions.getToolContext())
 			.responseFormat(fromOptions.getResponseFormat())
 			.thinking(fromOptions.getThinking())
@@ -339,6 +344,16 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -385,6 +400,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		result = 31 * result + Objects.hashCode(this.toolCallbacks);
 		result = 31 * result + Objects.hashCode(this.toolNames);
 		result = 31 * result + Objects.hashCode(this.internalToolExecutionEnabled);
+		result = 31 * result + Objects.hashCode(this.toolExecutionMaxIterations);
 		result = 31 * result + Objects.hashCode(this.toolContext);
 		return result;
 	}
@@ -414,6 +430,8 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			builder.internalToolExecutionEnabled(toolCallingChatOptions.getInternalToolExecutionEnabled() != null
 					? (toolCallingChatOptions).getInternalToolExecutionEnabled()
 					: this.getInternalToolExecutionEnabled());
+			builder.toolExecutionMaxIterations(toolCallingChatOptions.getToolExecutionMaxIterations() != null
+					? toolCallingChatOptions.getToolExecutionMaxIterations() : this.getToolExecutionMaxIterations());
 
 			Set<String> toolNames = new HashSet<>();
 			if (this.toolNames != null) {
@@ -444,6 +462,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		}
 		else {
 			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
+			builder.toolExecutionMaxIterations(this.toolExecutionMaxIterations);
 			builder.toolNames(this.toolNames != null ? new HashSet<>(this.toolNames) : null);
 			builder.toolCallbacks(this.toolCallbacks != null ? new ArrayList<>(this.toolCallbacks) : null);
 			builder.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null);
@@ -546,6 +565,11 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

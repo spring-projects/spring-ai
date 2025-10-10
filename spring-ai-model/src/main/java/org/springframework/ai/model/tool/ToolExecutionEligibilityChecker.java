@@ -27,6 +27,7 @@ import org.springframework.util.Assert;
  * responses.
  *
  * @author Christian Tzolov
+ * @author lambochen
  */
 public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, Boolean> {
 
@@ -41,6 +42,23 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 		Assert.notNull(promptOptions, "promptOptions cannot be null");
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 		return this.isInternalToolExecutionEnabled(promptOptions) && this.isToolCallResponse(chatResponse);
+	}
+
+	/**
+	 * Determines if tool execution should be performed based on the prompt options and
+	 * chat response and toolExecutionIterations.
+	 * @param promptOptions The options from the prompt
+	 * @param chatResponse The response from the chat model
+	 * @param toolExecutionIterations The number of toolExecutionIterations to execute the
+	 * tool
+	 * @return true if tool execution should be performed, false otherwise
+	 */
+	default boolean isToolExecutionRequired(ChatOptions promptOptions, ChatResponse chatResponse,
+			int toolExecutionIterations) {
+		Assert.notNull(promptOptions, "promptOptions cannot be null");
+		Assert.notNull(chatResponse, "chatResponse cannot be null");
+		return this.isInternalToolExecutionEnabled(promptOptions, toolExecutionIterations)
+				&& this.isToolCallResponse(chatResponse);
 	}
 
 	/**
@@ -72,6 +90,38 @@ public interface ToolExecutionEligibilityChecker extends Function<ChatResponse, 
 			internalToolExecutionEnabled = true;
 		}
 		return internalToolExecutionEnabled;
+	}
+
+	/**
+	 * Determines if tool execution should be performed by the Spring AI or by the client.
+	 * @param chatOptions The options from the chat
+	 * @param toolExecutionIterations The number of toolExecutionIterations to execute the
+	 * tool
+	 * @return true if tool execution should be performed by Spring AI, false if it should
+	 * be performed by the client
+	 */
+	default boolean isInternalToolExecutionEnabled(ChatOptions chatOptions, int toolExecutionIterations) {
+		boolean internalToolExecutionEnabled = isInternalToolExecutionEnabled(chatOptions);
+		if (!internalToolExecutionEnabled) {
+			return false;
+		}
+
+		return !isLimitExceeded(chatOptions, toolExecutionIterations);
+	}
+
+	/**
+	 * Determines if the tool execution limit has been exceeded.
+	 * @param promptOptions The options from the prompt
+	 * @param toolExecutionIterations The number of toolExecutionIterations
+	 * @return true if the tool execution limit has been exceeded, false otherwise
+	 */
+	default boolean isLimitExceeded(ChatOptions promptOptions, int toolExecutionIterations) {
+		if (promptOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			return toolCallingChatOptions.getToolExecutionMaxIterations() != null
+					&& toolExecutionIterations > toolCallingChatOptions.getToolExecutionMaxIterations();
+		}
+
+		return false;
 	}
 
 }

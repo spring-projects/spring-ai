@@ -47,7 +47,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -60,6 +59,7 @@ import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicat
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -106,9 +106,10 @@ import org.springframework.util.StringUtils;
  * @author Alexandros Pappas
  * @author Soby Chacko
  * @author Jonghoon Park
+ * @author lambochen
  * @see ChatModel
- * @see StreamingChatModel
  * @see OpenAiApi
+ * @see ToolCallingChatOptions
  */
 public class OpenAiChatModel implements ChatModel {
 
@@ -183,6 +184,10 @@ public class OpenAiChatModel implements ChatModel {
 	}
 
 	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalCall(prompt, previousChatResponse, 1);
+	}
+
+	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
@@ -241,7 +246,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -253,8 +258,11 @@ public class OpenAiChatModel implements ChatModel {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, iterations + 1);
 			}
+		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
 		}
 
 		return response;
@@ -269,6 +277,10 @@ public class OpenAiChatModel implements ChatModel {
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return internalStream(prompt, previousChatResponse, 1);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -363,7 +375,7 @@ public class OpenAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.deferContextual(ctx -> {
@@ -384,9 +396,12 @@ public class OpenAiChatModel implements ChatModel {
 						else {
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									response);
+									response, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
+				}
+				else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+					throw new ToolExecutionLimitExceededException(iterations);
 				}
 				else {
 					return Flux.just(response);
@@ -541,6 +556,9 @@ public class OpenAiChatModel implements ChatModel {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getToolExecutionMaxIterations(),
+							this.defaultOptions.getToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -551,6 +569,7 @@ public class OpenAiChatModel implements ChatModel {
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setToolExecutionMaxIterations(this.defaultOptions.getToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());

@@ -48,6 +48,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -138,10 +139,12 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author Alexandros Pappas
  * @author Ilayaperumal Gopinathan
+ * @author lambochen
  * @since 0.8.1
  * @see VertexAiGeminiChatOptions
  * @see ToolCallingManager
  * @see ChatModel
+ * @see ToolCallingChatOptions
  */
 public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
@@ -379,6 +382,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	}
 
 	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalCall(prompt, previousChatResponse, 1);
+	}
+
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -411,7 +418,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				return chatResponse;
 			}));
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -423,8 +430,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			else {
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+						response, iterations + 1);
 			}
+		}
+		else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
+			throw new ToolExecutionLimitExceededException(iterations);
 		}
 
 		return response;
@@ -455,6 +465,9 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setToolExecutionMaxIterations(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getToolExecutionMaxIterations(),
+							this.defaultOptions.getToolExecutionMaxIterations()));
 			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
 					this.defaultOptions.getToolNames()));
 			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
@@ -469,6 +482,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
+			requestOptions.setToolExecutionMaxIterations(this.defaultOptions.getToolExecutionMaxIterations());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
@@ -489,6 +503,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return this.internalStream(prompt, previousChatResponse, 1);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse, int iterations) {
 		return Flux.deferContextual(contextView -> {
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -524,7 +542,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 
 				// @formatter:off
 				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
-					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
 						return Flux.deferContextual(ctx -> {
@@ -544,9 +562,14 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 							}
 							else {
 								// Send the tool execution result back to the model.
-								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()), response);
+								return this.internalStream(
+										new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+										response,
+										iterations + 1);
 							}
 						}).subscribeOn(Schedulers.boundedElastic());
+					} else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)){
+						throw new ToolExecutionLimitExceededException(iterations);
 					}
 					else {
 						return Flux.just(response);

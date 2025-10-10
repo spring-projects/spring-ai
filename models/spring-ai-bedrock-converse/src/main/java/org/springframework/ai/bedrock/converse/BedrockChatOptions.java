@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * The options to be used when sending a chat request to the Bedrock API.
  *
  * @author Sun Yuhan
+ * @author lambochen
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BedrockChatOptions implements ToolCallingChatOptions {
@@ -81,6 +82,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -101,6 +105,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 			.toolNames(new HashSet<>(fromOptions.getToolNames()))
 			.toolContext(new HashMap<>(fromOptions.getToolContext()))
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations())
 			.build();
 	}
 
@@ -238,6 +243,18 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public BedrockChatOptions copy() {
 		return fromOptions(this);
@@ -259,14 +276,15 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled);
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolExecutionMaxIterations, that.toolExecutionMaxIterations);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.internalToolExecutionEnabled);
+				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.toolExecutionMaxIterations);
 	}
 
 	public static final class Builder {
@@ -353,6 +371,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

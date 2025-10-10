@@ -47,6 +47,20 @@ class ToolExecutionEligibilityPredicateTests {
 	}
 
 	@Test
+	void whenIsToolExecutionRequiredWithAttempts() {
+		ToolExecutionEligibilityPredicate predicate = new TestToolExecutionEligibilityPredicate();
+		ToolCallingChatOptions promptOptions = ToolCallingChatOptions.builder().build();
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("test"))));
+		promptOptions.setToolExecutionMaxIterations(2);
+
+		assertThat(predicate.isToolExecutionRequired(promptOptions, chatResponse, 1)).isTrue();
+		assertThat(predicate.isToolExecutionRequired(promptOptions, chatResponse, 2)).isTrue();
+
+		// attempts value is oversize
+		assertThat(predicate.isToolExecutionRequired(promptOptions, chatResponse, 3)).isFalse();
+	}
+
+	@Test
 	void whenIsToolExecutionRequiredWithNullChatResponse() {
 		ToolExecutionEligibilityPredicate predicate = new TestToolExecutionEligibilityPredicate();
 		ChatOptions promptOptions = ChatOptions.builder().build();

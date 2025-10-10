@@ -47,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
  * @author Austin Dase
+ * @author lambochen
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -93,6 +94,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	private Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
+	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 
@@ -122,6 +126,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.cacheOptions(fromOptions.getCacheOptions())
@@ -241,6 +246,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
 	@JsonIgnore
 	public Double getFrequencyPenalty() {
 		return null;
@@ -295,6 +310,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolExecutionMaxIterations, that.toolExecutionMaxIterations)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions);
@@ -304,7 +320,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext, this.httpHeaders, this.cacheOptions);
+				this.toolExecutionMaxIterations, this.toolContext, this.httpHeaders, this.cacheOptions);
 	}
 
 	public static final class Builder {
@@ -386,6 +402,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

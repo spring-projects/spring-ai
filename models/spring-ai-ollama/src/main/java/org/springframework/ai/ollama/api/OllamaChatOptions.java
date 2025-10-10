@@ -320,6 +320,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Integer toolExecutionMaxIterations;
+
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
 	 * For Prompt Options the toolCallbacks are automatically enabled for the duration of the prompt execution.
@@ -789,6 +792,18 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@JsonIgnore
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setToolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
+	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
@@ -1061,6 +1076,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

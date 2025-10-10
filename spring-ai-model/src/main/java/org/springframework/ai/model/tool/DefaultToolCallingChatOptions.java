@@ -33,6 +33,7 @@ import org.springframework.util.Assert;
  * Default implementation of {@link ToolCallingChatOptions}.
  *
  * @author Thomas Vitale
+ * @author lambochen
  * @since 1.0.0
  */
 public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
@@ -45,6 +46,9 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	@Nullable
 	private Boolean internalToolExecutionEnabled;
+
+	@Nullable
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
 
 	@Nullable
 	private String model;
@@ -116,6 +120,16 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	@Override
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
 	}
 
 	@Override
@@ -206,6 +220,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		options.setToolNames(getToolNames());
 		options.setToolContext(getToolContext());
 		options.setInternalToolExecutionEnabled(getInternalToolExecutionEnabled());
+		options.setToolExecutionMaxIterations(getToolExecutionMaxIterations());
 		options.setModel(getModel());
 		options.setFrequencyPenalty(getFrequencyPenalty());
 		options.setMaxTokens(getMaxTokens());
@@ -274,6 +289,12 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		public ToolCallingChatOptions.Builder internalToolExecutionEnabled(
 				@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		@Override
+		public ToolCallingChatOptions.Builder toolExecutionMaxIterations(@Nullable Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 

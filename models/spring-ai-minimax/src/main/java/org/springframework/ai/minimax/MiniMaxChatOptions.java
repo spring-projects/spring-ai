@@ -48,6 +48,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author lambochen
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -156,6 +157,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private Integer toolExecutionMaxIterations = ToolCallingChatOptions.DEFAULT_TOOL_EXECUTION_MAX_ITERATIONS;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -179,6 +183,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations())
 			.toolContext(fromOptions.getToolContext())
 			.build();
 	}
@@ -353,6 +358,16 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public Integer getToolExecutionMaxIterations() {
+		return this.toolExecutionMaxIterations;
+	}
+
+	@Override
+	public void setToolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+		this.toolExecutionMaxIterations = toolExecutionMaxIterations;
+	}
+
+	@Override
 	public Map<String, Object> getToolContext() {
 		return (this.toolContext != null) ? Collections.unmodifiableMap(this.toolContext) : null;
 	}
@@ -367,7 +382,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.n, this.presencePenalty,
 				this.responseFormat, this.seed, this.stop, this.temperature, this.topP, this.maskSensitiveInfo,
 				this.tools, this.toolChoice, this.toolCallbacks, this.toolNames, this.toolContext,
-				this.internalToolExecutionEnabled);
+				this.internalToolExecutionEnabled, toolExecutionMaxIterations);
 	}
 
 	@Override
@@ -389,7 +404,8 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.tools, that.tools) && Objects.equals(this.toolChoice, that.toolChoice)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled);
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(toolExecutionMaxIterations, that.toolExecutionMaxIterations);
 	}
 
 	@Override
@@ -499,6 +515,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolExecutionMaxIterations(Integer toolExecutionMaxIterations) {
+			this.options.setToolExecutionMaxIterations(toolExecutionMaxIterations);
 			return this;
 		}
 
