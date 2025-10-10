@@ -235,9 +235,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	/**
 	 * This extra body for support thinking outside the context of the conversation.
 	 */
-	private @JsonProperty("chat_template_kwargs")  Map<String,Object> chatTemplateKwargs;
+	private @JsonProperty("chat_template_kwargs") Map<String, Object> chatTemplateKwargs;
 
-  /**
+	/**
 	 * Specifies the <a href="https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier">processing type</a> used for serving the request.
 	 */
 	private @JsonProperty("service_tier") String serviceTier;
@@ -609,7 +609,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public Map<String, Object> getChatTemplateKwargs() {
-		return chatTemplateKwargs;
+		return this.chatTemplateKwargs;
 	}
 
 	public void setChatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
