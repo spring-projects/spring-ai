@@ -54,8 +54,10 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private final Scheduler scheduler;
 
+	private final boolean storeAllUserMessages;
+
 	private MessageChatMemoryAdvisor(ChatMemory chatMemory, String defaultConversationId, int order,
-			Scheduler scheduler) {
+			Scheduler scheduler, boolean storeAllUserMessages) {
 		Assert.notNull(chatMemory, "chatMemory cannot be null");
 		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");
 		Assert.notNull(scheduler, "scheduler cannot be null");
@@ -63,6 +65,7 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		this.defaultConversationId = defaultConversationId;
 		this.order = order;
 		this.scheduler = scheduler;
+		this.storeAllUserMessages = storeAllUserMessages;
 	}
 
 	@Override
@@ -92,8 +95,15 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.build();
 
 		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.chatMemory.add(conversationId, userMessage);
+		if (this.storeAllUserMessages) {
+			// Store all user messages: add the new message to the existing message list
+			List allUserMessages = processedChatClientRequest.prompt().getUserMessages();
+			this.chatMemory.add(conversationId, allUserMessages);
+		} else {
+			// Store only the latest user message
+			UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+			this.chatMemory.add(conversationId, userMessage);
+		}
 
 		return processedChatClientRequest;
 	}
@@ -142,6 +152,8 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private ChatMemory chatMemory;
 
+		private boolean storeAllUserMessages = false;
+
 		private Builder(ChatMemory chatMemory) {
 			this.chatMemory = chatMemory;
 		}
@@ -172,11 +184,21 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		}
 
 		/**
+		 * Configure whether to store all user messages or only the latest one.
+		 * @param storeAllUserMessages true to store all user messages, false to store only the latest
+		 * @return the builder
+		 */
+		public Builder storeAllUserMessages(boolean storeAllUserMessages) {
+			this.storeAllUserMessages = storeAllUserMessages;
+			return this;
+		}
+
+		/**
 		 * Build the advisor.
 		 * @return the advisor
 		 */
 		public MessageChatMemoryAdvisor build() {
-			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order, this.scheduler);
+			return new MessageChatMemoryAdvisor(this.chatMemory, this.conversationId, this.order, this.scheduler, this.storeAllUserMessages);
 		}
 
 	}
