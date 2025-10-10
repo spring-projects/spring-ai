@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.genai.types.ImageConfig;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
@@ -120,6 +121,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("responseModalities") List<String> responseModalities = new ArrayList<>();
 
 	/**
+	 * Optional. imageConfig
+	 */
+	private @JsonProperty("imageConfig") ImageConfig imageConfig;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -181,6 +187,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
 		options.setLabels(fromOptions.getLabels());
 		options.setResponseModalities(fromOptions.getResponseModalities());
+		options.setImageConfig(fromOptions.getImageConfig());
 		return options;
 	}
 
@@ -371,6 +378,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.responseModalities = responseModalities;
 	}
 
+	public ImageConfig getImageConfig() {
+		return this.imageConfig;
+	}
+
+	public void setImageConfig(ImageConfig imageConfig) {
+		this.imageConfig = imageConfig;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -393,7 +408,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
-				&& Objects.equals(this.responseModalities, that.responseModalities);
+				&& Objects.equals(this.responseModalities, that.responseModalities)
+				&& Objects.equals(this.imageConfig, that.imageConfig);
 	}
 
 	@Override
@@ -402,7 +418,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
 				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
 				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels,
-				this.responseModalities);
+				this.responseModalities, this.imageConfig);
 	}
 
 	@Override
@@ -414,7 +430,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
 				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
-				+ ", responseModalities=" + this.responseModalities + '}';
+				+ ", responseModalities=" + this.responseModalities + ", imageConfig=" + this.imageConfig + '}';
 	}
 
 	@Override
@@ -557,6 +573,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		public Builder responseModalitie(String responseModalitie) {
 			Assert.hasText(responseModalitie, "responseModalitie must not be empty");
 			this.options.responseModalities.add(responseModalitie);
+			return this;
+		}
+
+		public Builder imageConfig(ImageConfig imageConfig) {
+			this.options.setImageConfig(imageConfig);
 			return this;
 		}
 
