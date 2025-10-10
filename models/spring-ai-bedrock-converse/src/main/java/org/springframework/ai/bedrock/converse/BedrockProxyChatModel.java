@@ -102,6 +102,11 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -283,6 +288,10 @@ public class BedrockProxyChatModel implements ChatModel {
 			if (prompt.getOptions() instanceof BedrockChatOptions bedrockChatOptions) {
 				runtimeOptions = bedrockChatOptions.copy();
 			}
+			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						BedrockChatOptions.class);
+			}
 			else {
 				runtimeOptions = from(prompt.getOptions());
 			}
@@ -438,6 +447,9 @@ public class BedrockProxyChatModel implements ChatModel {
 		Document additionalModelRequestFields = ConverseApiUtils
 			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
 
+		Map<String, String> requestMetadata = ConverseApiUtils
+			.getRequestMetadata(prompt.getUserMessage().getMetadata());
+
 		return ConverseRequest.builder()
 			.modelId(updatedRuntimeOptions.getModel())
 			.inferenceConfig(inferenceConfiguration)
@@ -445,6 +457,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.system(systemMessages)
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
+			.requestMetadata(requestMetadata)
 			.build();
 	}
 
@@ -581,14 +594,15 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<Generation> generations = message.content()
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.map(content -> new Generation(new AssistantMessage(content.text(), Map.of()),
+			.map(content -> new Generation(
+					AssistantMessage.builder().content(content.text()).properties(Map.of()).build(),
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()))
 			.toList();
 
 		List<Generation> allGenerations = new ArrayList<>(generations);
 
 		if (response.stopReasonAsString() != null && generations.isEmpty()) {
-			Generation generation = new Generation(new AssistantMessage(null, Map.of()),
+			Generation generation = new Generation(AssistantMessage.builder().properties(Map.of()).build(),
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(generation);
 		}
@@ -612,7 +626,11 @@ public class BedrockProxyChatModel implements ChatModel {
 					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
 			}
 
-			AssistantMessage assistantMessage = new AssistantMessage("", Map.of(), toolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(toolCalls)
+				.build();
 			Generation toolCallGeneration = new Generation(assistantMessage,
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(toolCallGeneration);
@@ -700,7 +718,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 					// FIXME: bounded elastic needs to be used since tool calling
 					// is currently only synchronous
-					return Flux.deferContextual((ctx) -> {
+					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);

@@ -36,7 +36,7 @@ public class ToolExecutionLimitExceededException extends RuntimeException {
 	}
 
 	public Integer getMaxIterations() {
-		return maxIterations;
+		return this.maxIterations;
 	}
 
 }

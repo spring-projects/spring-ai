@@ -114,6 +114,10 @@ public interface ChatClient {
 
 		PromptUserSpec media(MimeType mimeType, Resource resource);
 
+		PromptUserSpec metadata(Map<String, Object> metadata);
+
+		PromptUserSpec metadata(String k, Object v);
+
 	}
 
 	/**
@@ -130,6 +134,10 @@ public interface ChatClient {
 		PromptSystemSpec params(Map<String, Object> p);
 
 		PromptSystemSpec param(String k, Object v);
+
+		PromptSystemSpec metadata(Map<String, Object> metadata);
+
+		PromptSystemSpec metadata(String k, Object v);
 
 	}
 
@@ -261,7 +269,7 @@ public interface ChatClient {
 	 */
 	interface Builder {
 
-		Builder defaultAdvisors(Advisor... advisor);
+		Builder defaultAdvisors(Advisor... advisors);
 
 		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);
 

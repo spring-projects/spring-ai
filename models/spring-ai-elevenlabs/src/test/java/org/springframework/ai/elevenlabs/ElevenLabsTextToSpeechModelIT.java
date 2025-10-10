@@ -26,9 +26,9 @@ import org.springframework.ai.audio.tts.Speech;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
+import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.ai.retry.NonTransientAiException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -55,7 +55,7 @@ public class ElevenLabsTextToSpeechModelIT {
 	void textToSpeechWithVoiceTest() {
 		ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder().voice(VOICE_ID).build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Hello, world!", options);
-		TextToSpeechResponse response = textToSpeechModel.call(prompt);
+		TextToSpeechResponse response = this.textToSpeechModel.call(prompt);
 
 		assertThat(response).isNotNull();
 		List<Speech> results = response.getResults();
@@ -69,7 +69,7 @@ public class ElevenLabsTextToSpeechModelIT {
 		ElevenLabsTextToSpeechOptions options = ElevenLabsTextToSpeechOptions.builder().voice(VOICE_ID).build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt(
 				"Hello, world! This is a test of streaming speech synthesis.", options);
-		Flux<TextToSpeechResponse> responseFlux = textToSpeechModel.stream(prompt);
+		Flux<TextToSpeechResponse> responseFlux = this.textToSpeechModel.stream(prompt);
 
 		List<TextToSpeechResponse> responses = responseFlux.collectList().block();
 		assertThat(responses).isNotNull().isNotEmpty();
@@ -91,18 +91,14 @@ public class ElevenLabsTextToSpeechModelIT {
 
 		TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt("Hello, this is a text-to-speech example.", options);
 
-		assertThatThrownBy(() -> {
-			textToSpeechModel.call(speechPrompt);
-		}).isInstanceOf(NonTransientAiException.class)
+		assertThatThrownBy(() -> this.textToSpeechModel.call(speechPrompt)).isInstanceOf(NonTransientAiException.class)
 			.hasMessageContaining("An invalid ID has been received: 'invalid-voice-id'");
 	}
 
 	@Test
 	void emptyInputText() {
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("");
-		assertThatThrownBy(() -> {
-			textToSpeechModel.call(prompt);
-		}).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.textToSpeechModel.call(prompt)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("A voiceId must be specified in the ElevenLabsSpeechOptions.");
 	}
 

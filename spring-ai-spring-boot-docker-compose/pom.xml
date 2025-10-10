@@ -81,6 +81,20 @@
 			<optional>true</optional>
         </dependency>
 
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-mcp-client-webflux</artifactId>
+			<version>${project.version}</version>
+			<optional>true</optional>
+		</dependency>
+
         <!-- production dependencies -->
 
         <dependency>
@@ -158,7 +172,6 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>5.1.0</version>
             <scope>test</scope>
         </dependency>
 

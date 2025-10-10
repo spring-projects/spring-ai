@@ -29,7 +29,6 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -48,7 +47,6 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -61,6 +59,7 @@ import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicat
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolExecutionLimitExceededException;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -109,7 +108,6 @@ import org.springframework.util.StringUtils;
  * @author Jonghoon Park
  * @author lambochen
  * @see ChatModel
- * @see StreamingChatModel
  * @see OpenAiApi
  * @see ToolCallingChatOptions
  */
@@ -225,7 +223,7 @@ public class OpenAiChatModel implements ChatModel {
 							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
 							"role", choice.message().role() != null ? choice.message().role().name() : "",
 							"index", choice.index() != null ? choice.index() : 0,
-							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+							"finishReason", getFinishReasonJson(choice.finishReason()),
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
 							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
 					return buildGeneration(choice, metadata, request);
@@ -331,7 +329,7 @@ public class OpenAiChatModel implements ChatModel {
 									"id", id,
 									"role", roleMap.getOrDefault(id, ""),
 									"index", choice.index() != null ? choice.index() : 0,
-									"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "",
+									"finishReason", getFinishReasonJson(choice.finishReason()),
 									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
 									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
 							return buildGeneration(choice, metadata, request);
@@ -380,12 +378,13 @@ public class OpenAiChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
-					return Flux.deferContextual((ctx) -> {
+					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
 							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-						} finally {
+						}
+						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
 						if (toolExecutionResult.returnDirect()) {
@@ -400,7 +399,8 @@ public class OpenAiChatModel implements ChatModel {
 									response, iterations + 1);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
-				} else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)){
+				}
+				else if (this.toolExecutionEligibilityPredicate.isLimitExceeded(prompt.getOptions(), iterations)) {
 					throw new ToolExecutionLimitExceededException(iterations);
 				}
 				else {
@@ -436,8 +436,8 @@ public class OpenAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
-		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
+		var generationMetadataBuilder = ChatGenerationMetadata.builder()
+			.finishReason(getFinishReasonJson(choice.finishReason()));
 
 		List<Media> media = new ArrayList<>();
 		String textContent = choice.message().content();
@@ -463,8 +463,21 @@ public class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("logprobs", choice.logprobs());
 		}
 
-		var assistantMessage = new AssistantMessage(textContent, metadata, toolCalls, media);
+		var assistantMessage = AssistantMessage.builder()
+			.content(textContent)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.media(media)
+			.build();
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
+	}
+
+	private String getFinishReasonJson(OpenAiApi.ChatCompletionFinishReason finishReason) {
+		if (finishReason == null) {
+			return "";
+		}
+		// Return enum name for backward compatibility
+		return finishReason.name();
 	}
 
 	private ChatResponseMetadata from(OpenAiApi.ChatCompletion result, RateLimit rateLimit, Usage usage) {

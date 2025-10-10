@@ -27,11 +27,11 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamOptions;
+import org.springframework.ai.openai.api.OpenAiApi.ServiceTier;
 import org.springframework.ai.openai.api.ResponseFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice.ALLOY;
-import static org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM;
 
 /**
  * Tests for {@link OpenAiChatOptions}.
@@ -85,6 +85,7 @@ class OpenAiChatOptionsTests {
 			.toolExecutionMaxIterations(10)
 			.httpHeaders(Map.of("header1", "value1"))
 			.toolContext(toolContext)
+			.serviceTier(ServiceTier.PRIORITY)
 			.build();
 
 		assertThat(options)
@@ -92,10 +93,11 @@ class OpenAiChatOptionsTests {
 					"maxCompletionTokens", "n", "outputModalities", "outputAudio", "presencePenalty", "responseFormat",
 					"streamOptions", "seed", "stop", "temperature", "topP", "tools", "toolChoice", "user",
 					"parallelToolCalls", "store", "metadata", "reasoningEffort", "internalToolExecutionEnabled",
-					"toolExecutionMaxIterations", "httpHeaders", "toolContext")
-			.containsExactly("test-model", 0.5, logitBias, true, 5, 100, 50, 2, outputModalities, outputAudio, 0.8,
+					"toolExecutionMaxIterations", "httpHeaders", "toolContext", "serviceTier")
+			.containsExactly("test-model", 0.5, logitBias, true, 5, null, 50, 2, outputModalities, outputAudio, 0.8,
 					responseFormat, streamOptions, 12345, stopSequences, 0.7, 0.9, tools, toolChoice, "test-user", true,
-					false, metadata, "medium", false, 10, Map.of("header1", "value1"), toolContext);
+					false, metadata, "medium", false, 10, Map.of("header1", "value1"), toolContext,
+					ServiceTier.PRIORITY.getValue());
 
 		assertThat(options.getStreamUsage()).isTrue();
 		assertThat(options.getStreamOptions()).isEqualTo(StreamOptions.INCLUDE_USAGE);
@@ -122,8 +124,8 @@ class OpenAiChatOptionsTests {
 			.logitBias(logitBias)
 			.logprobs(true)
 			.topLogprobs(5)
-			.maxTokens(100)
-			.maxCompletionTokens(50)
+			.maxCompletionTokens(50) // Only set maxCompletionTokens to avoid validation
+										// conflict
 			.N(2)
 			.outputModalities(outputModalities)
 			.outputAudio(outputAudio)
@@ -144,6 +146,7 @@ class OpenAiChatOptionsTests {
 			.internalToolExecutionEnabled(true)
 			.toolExecutionMaxIterations(3)
 			.httpHeaders(Map.of("header1", "value1"))
+			.serviceTier(ServiceTier.DEFAULT)
 			.build();
 
 		OpenAiChatOptions copiedOptions = originalOptions.copy();
@@ -193,6 +196,7 @@ class OpenAiChatOptionsTests {
 		options.setInternalToolExecutionEnabled(false);
 		options.setToolExecutionMaxIterations(3);
 		options.setHttpHeaders(Map.of("header2", "value2"));
+		options.setServiceTier(ServiceTier.DEFAULT.getValue());
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
@@ -228,6 +232,7 @@ class OpenAiChatOptionsTests {
 		options.setStopSequences(List.of("s1", "s2"));
 		assertThat(options.getStopSequences()).isEqualTo(List.of("s1", "s2"));
 		assertThat(options.getStop()).isEqualTo(List.of("s1", "s2"));
+		assertThat(options.getServiceTier()).isEqualTo("default");
 	}
 
 	@Test
@@ -265,19 +270,22 @@ class OpenAiChatOptionsTests {
 		assertThat(options.getToolContext()).isEqualTo(new HashMap<>());
 		assertThat(options.getStreamUsage()).isFalse();
 		assertThat(options.getStopSequences()).isNull();
+		assertThat(options.getServiceTier()).isNull();
 	}
 
 	@Test
 	void testFromOptions_webSearchOptions() {
 		var chatOptions = OpenAiChatOptions.builder()
-			.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(MEDIUM,
+			.webSearchOptions(new OpenAiApi.ChatCompletionRequest.WebSearchOptions(
+					org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM,
 					new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation("type",
 							new OpenAiApi.ChatCompletionRequest.WebSearchOptions.UserLocation.Approximate("beijing",
 									"china", "region", "UTC+8"))))
 			.build();
 		var target = OpenAiChatOptions.fromOptions(chatOptions);
 		assertThat(target.getWebSearchOptions()).isNotNull();
-		assertThat(target.getWebSearchOptions().searchContextSize()).isEqualTo(MEDIUM);
+		assertThat(target.getWebSearchOptions().searchContextSize()).isEqualTo(
+				org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions.SearchContextSize.MEDIUM);
 		assertThat(target.getWebSearchOptions().userLocation()).isNotNull();
 		assertThat(target.getWebSearchOptions().userLocation().type()).isEqualTo("type");
 		assertThat(target.getWebSearchOptions().userLocation().approximate()).isNotNull();
@@ -454,6 +462,84 @@ class OpenAiChatOptionsTests {
 		// Verify copy is unchanged
 		assertThat(copied.getModel()).isEqualTo("original-model");
 		assertThat(copied.getTemperature()).isEqualTo(0.5);
+	}
+
+	@Test
+	void testMaxTokensMutualExclusivityValidation() {
+		// Test that setting maxTokens clears maxCompletionTokens
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxCompletionTokens(100)
+			.maxTokens(50) // This should clear maxCompletionTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(50);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+	}
+
+	@Test
+	void testMaxCompletionTokensMutualExclusivityValidation() {
+		// Test that setting maxCompletionTokens clears maxTokens
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxTokens(50)
+			.maxCompletionTokens(100) // This should clear maxTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void testMaxTokensWithNullDoesNotClearMaxCompletionTokens() {
+		// Test that setting maxTokens to null doesn't trigger validation
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxCompletionTokens(100)
+			.maxTokens(null) // This should not clear maxCompletionTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void testMaxCompletionTokensWithNullDoesNotClearMaxTokens() {
+		// Test that setting maxCompletionTokens to null doesn't trigger validation
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.maxTokens(50)
+			.maxCompletionTokens(null) // This should not clear maxTokens
+			.build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(50);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+	}
+
+	@Test
+	void testBuilderCanSetOnlyMaxTokens() {
+		// Test that we can set only maxTokens without issues
+		OpenAiChatOptions options = OpenAiChatOptions.builder().maxTokens(100).build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(100);
+		assertThat(options.getMaxCompletionTokens()).isNull();
+	}
+
+	@Test
+	void testBuilderCanSetOnlyMaxCompletionTokens() {
+		// Test that we can set only maxCompletionTokens without issues
+		OpenAiChatOptions options = OpenAiChatOptions.builder().maxCompletionTokens(150).build();
+
+		assertThat(options.getMaxTokens()).isNull();
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(150);
+	}
+
+	@Test
+	void testSettersMutualExclusivityNotEnforced() {
+		// Test that direct setters do NOT enforce mutual exclusivity (only builder does)
+		OpenAiChatOptions options = new OpenAiChatOptions();
+		options.setMaxTokens(50);
+		options.setMaxCompletionTokens(100);
+
+		// Both should be set when using setters directly
+		assertThat(options.getMaxTokens()).isEqualTo(50);
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
 	}
 
 }

@@ -110,7 +110,7 @@ When issuing pull requests, please ensure that your commit history is linear.
 From the command line you can check this using:
 
 ----
-log --graph --pretty=oneline
+git log --graph --pretty=oneline
 ----
 
 As this may cause lots of typing, we recommend creating a global alias, e.g. `git logg` for this:

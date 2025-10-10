@@ -35,7 +35,6 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.SafetySetting;
-import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
 import com.google.cloud.vertexai.api.Tool.GoogleSearch;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
@@ -89,6 +88,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
+import org.springframework.ai.vertexai.gemini.schema.VertexAiSchemaConverter;
 import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
@@ -379,17 +379,6 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 	}
 
-	private static Schema jsonToSchema(String json) {
-		try {
-			var schemaBuilder = Schema.newBuilder();
-			JsonFormat.parser().ignoringUnknownFields().merge(json, schemaBuilder);
-			return schemaBuilder.build();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	// https://cloud.google.com/vertex-ai/docs/generative-ai/model-reference/gemini
 	@Override
 	public ChatResponse call(Prompt prompt) {
@@ -561,12 +550,13 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
-						return Flux.deferContextual((ctx) -> {
+						return Flux.deferContextual(ctx -> {
 							ToolExecutionResult toolExecutionResult;
 							try {
 								ToolCallReactiveContextHolder.setContext(ctx);
 								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-							} finally {
+							}
+							finally {
 								ToolCallReactiveContextHolder.clearContext();
 							}
 							if (toolExecutionResult.returnDirect()) {
@@ -653,7 +643,11 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				})
 				.toList();
 
-			AssistantMessage assistantMessage = new AssistantMessage("", messageMetadata, assistantToolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("")
+				.properties(messageMetadata)
+				.toolCalls(assistantToolCalls)
+				.build();
 
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
@@ -661,7 +655,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			List<Generation> generations = candidate.getContent()
 				.getPartsList()
 				.stream()
-				.map(part -> new AssistantMessage(part.getText(), messageMetadata))
+				.map(part -> AssistantMessage.builder().content(part.getText()).properties(messageMetadata).build())
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
 
@@ -720,7 +714,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 				.map(toolDefinition -> FunctionDeclaration.newBuilder()
 					.setName(toolDefinition.name())
 					.setDescription(toolDefinition.description())
-					.setParameters(jsonToSchema(toolDefinition.inputSchema()))
+					.setParameters(VertexAiSchemaConverter.fromOpenApiSchema(toolDefinition.inputSchema()))
 					.build())
 				.toList();
 			tools.add(Tool.newBuilder().addAllFunctionDeclarations(functionDeclarations).build());
@@ -781,6 +775,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 		if (options.getResponseMimeType() != null) {
 			generationConfigBuilder.setResponseMimeType(options.getResponseMimeType());
+		}
+		if (options.getResponseSchema() != null) {
+			generationConfigBuilder
+				.setResponseSchema(VertexAiSchemaConverter.fromOpenApiSchema(options.getResponseSchema()));
 		}
 		if (options.getFrequencyPenalty() != null) {
 			generationConfigBuilder.setFrequencyPenalty(options.getFrequencyPenalty().floatValue());

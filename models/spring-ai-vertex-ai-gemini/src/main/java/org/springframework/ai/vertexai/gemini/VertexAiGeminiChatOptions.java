@@ -112,6 +112,11 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
+	 * Optional. OpenAPI response schema.
+	 */
+	private @JsonProperty("responseSchema") String responseSchema;
+
+	/**
 	 * Optional. Frequency penalties.
 	 */
 	private @JsonProperty("frequencyPenalty") Double frequencyPenalty;
@@ -174,8 +179,8 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setModel(fromOptions.getModel());
 		options.setToolCallbacks(fromOptions.getToolCallbacks());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
+		options.setResponseSchema(fromOptions.getResponseSchema());
 		options.setToolNames(fromOptions.getToolNames());
-		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
@@ -270,6 +275,14 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		this.responseMimeType = mimeType;
 	}
 
+	public String getResponseSchema() {
+		return this.responseSchema;
+	}
+
+	public void setResponseSchema(String responseSchema) {
+		this.responseSchema = responseSchema;
+	}
+
 	@Override
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
@@ -362,7 +375,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public Integer getLogprobs() {
-		return logprobs;
+		return this.logprobs;
 	}
 
 	public void setLogprobs(Integer logprobs) {
@@ -370,7 +383,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	public boolean getResponseLogprobs() {
-		return responseLogprobs;
+		return this.responseLogprobs;
 	}
 
 	@Override
@@ -389,6 +402,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.maxOutputTokens, that.maxOutputTokens) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
+				&& Objects.equals(this.responseSchema, that.responseSchema)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
@@ -402,9 +416,9 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
-				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolExecutionMaxIterations, this.toolContext, this.logprobs,
-				this.responseLogprobs);
+				this.responseSchema, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolExecutionMaxIterations,
+				this.toolContext, this.logprobs, this.responseLogprobs);
 	}
 
 	@Override
@@ -413,10 +427,10 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				+ this.temperature + ", topP=" + this.topP + ", topK=" + this.topK + ", frequencyPenalty="
 				+ this.frequencyPenalty + ", presencePenalty=" + this.presencePenalty + ", candidateCount="
 				+ this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='" + this.model + '\''
-				+ ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks=" + this.toolCallbacks
-				+ ", toolNames=" + this.toolNames + ", googleSearchRetrieval=" + this.googleSearchRetrieval
-				+ ", safetySettings=" + this.safetySettings + ", logProbs=" + this.logprobs + ", responseLogprobs="
-				+ this.responseLogprobs + '}';
+				+ ", responseMimeType='" + this.responseMimeType + '\'' + ", responseSchema='" + this.responseSchema
+				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", logProbs=" + this.logprobs
+				+ ", responseLogprobs=" + this.responseLogprobs + '}';
 	}
 
 	@Override
@@ -487,6 +501,11 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		public Builder responseMimeType(String mimeType) {
 			Assert.notNull(mimeType, "mimeType must not be null");
 			this.options.setResponseMimeType(mimeType);
+			return this;
+		}
+
+		public Builder responseSchema(String responseSchema) {
+			this.options.setResponseSchema(responseSchema);
 			return this;
 		}
 

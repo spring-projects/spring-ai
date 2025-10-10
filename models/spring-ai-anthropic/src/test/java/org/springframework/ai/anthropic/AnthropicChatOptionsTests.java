@@ -23,6 +23,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
+import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
+import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,6 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link AnthropicChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Soby Chacko
+ * @author Austin Dase
  * @author lambochen
  */
 class AnthropicChatOptionsTests {
@@ -328,6 +334,283 @@ class AnthropicChatOptionsTests {
 		// Ensure deep copy for collections
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
+	}
+
+	@Test
+	void testBoundaryValues() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.maxTokens(Integer.MAX_VALUE)
+			.temperature(1.0)
+			.topP(1.0)
+			.topK(Integer.MAX_VALUE)
+			.build();
+
+		assertThat(options.getMaxTokens()).isEqualTo(Integer.MAX_VALUE);
+		assertThat(options.getTemperature()).isEqualTo(1.0);
+		assertThat(options.getTopP()).isEqualTo(1.0);
+		assertThat(options.getTopK()).isEqualTo(Integer.MAX_VALUE);
+	}
+
+	@Test
+	void testToolContextWithVariousValueTypes() {
+		Map<String, Object> mixedMap = Map.of("string", "value", "number", 42, "boolean", true, "null_value", "null",
+				"nested_list", List.of("a", "b", "c"), "nested_map", Map.of("inner", "value"));
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().toolContext(mixedMap).build();
+
+		assertThat(options.getToolContext()).containsAllEntriesOf(mixedMap);
+		assertThat(options.getToolContext().get("string")).isEqualTo("value");
+		assertThat(options.getToolContext().get("number")).isEqualTo(42);
+		assertThat(options.getToolContext().get("boolean")).isEqualTo(true);
+	}
+
+	@Test
+	void testCopyWithMutableCollections() {
+		List<String> mutableStops = new java.util.ArrayList<>(List.of("stop1", "stop2"));
+		Map<String, Object> mutableContext = new java.util.HashMap<>(Map.of("key", "value"));
+
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.stopSequences(mutableStops)
+			.toolContext(mutableContext)
+			.build();
+
+		AnthropicChatOptions copied = original.copy();
+
+		// Modify original collections
+		mutableStops.add("stop3");
+		mutableContext.put("new_key", "new_value");
+
+		// Copied instance should not be affected
+		assertThat(copied.getStopSequences()).hasSize(2);
+		assertThat(copied.getToolContext()).hasSize(1);
+		assertThat(copied.getStopSequences()).doesNotContain("stop3");
+		assertThat(copied.getToolContext()).doesNotContainKey("new_key");
+	}
+
+	@Test
+	void testEqualsWithNullFields() {
+		AnthropicChatOptions options1 = new AnthropicChatOptions();
+		AnthropicChatOptions options2 = new AnthropicChatOptions();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+	}
+
+	@Test
+	void testEqualsWithMixedNullAndNonNullFields() {
+		AnthropicChatOptions options1 = AnthropicChatOptions.builder()
+			.model("test")
+			.maxTokens(null)
+			.temperature(0.5)
+			.build();
+
+		AnthropicChatOptions options2 = AnthropicChatOptions.builder()
+			.model("test")
+			.maxTokens(null)
+			.temperature(0.5)
+			.build();
+
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder()
+			.model("test")
+			.maxTokens(100)
+			.temperature(0.5)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	void testCopyDoesNotShareMetadataReference() {
+		Metadata originalMetadata = new Metadata("user_123");
+		AnthropicChatOptions original = AnthropicChatOptions.builder().metadata(originalMetadata).build();
+
+		AnthropicChatOptions copied = original.copy();
+
+		// Metadata should be the same value but potentially different reference
+		assertThat(copied.getMetadata()).isEqualTo(original.getMetadata());
+
+		// Verify changing original doesn't affect copy
+		original.setMetadata(new Metadata("different_user"));
+		assertThat(copied.getMetadata()).isEqualTo(originalMetadata);
+	}
+
+	@Test
+	void testEqualsWithSelf() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test").build();
+
+		assertThat(options).isEqualTo(options);
+		assertThat(options.hashCode()).isEqualTo(options.hashCode());
+	}
+
+	@Test
+	void testEqualsWithNull() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test").build();
+
+		assertThat(options).isNotEqualTo(null);
+	}
+
+	@Test
+	void testEqualsWithDifferentClass() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test").build();
+
+		assertThat(options).isNotEqualTo("not an AnthropicChatOptions");
+		assertThat(options).isNotEqualTo(1);
+	}
+
+	@Test
+	void testBuilderPartialConfiguration() {
+		// Test builder with only some fields set
+		AnthropicChatOptions onlyModel = AnthropicChatOptions.builder().model("model-only").build();
+
+		AnthropicChatOptions onlyTokens = AnthropicChatOptions.builder().maxTokens(10).build();
+
+		AnthropicChatOptions onlyTemperature = AnthropicChatOptions.builder().temperature(0.8).build();
+
+		assertThat(onlyModel.getModel()).isEqualTo("model-only");
+		assertThat(onlyModel.getMaxTokens()).isNull();
+
+		assertThat(onlyTokens.getModel()).isNull();
+		assertThat(onlyTokens.getMaxTokens()).isEqualTo(10);
+
+		assertThat(onlyTemperature.getModel()).isNull();
+		assertThat(onlyTemperature.getTemperature()).isEqualTo(0.8);
+	}
+
+	@Test
+	void testSetterOverwriteBehavior() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("initial-model").maxTokens(100).build();
+
+		// Overwrite with setters
+		options.setModel("updated-model");
+		options.setMaxTokens(10);
+
+		assertThat(options.getModel()).isEqualTo("updated-model");
+		assertThat(options.getMaxTokens()).isEqualTo(10);
+	}
+
+	@Test
+	void testCacheStrategyBuilder() {
+		var cacheOptions = AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS).build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheOptions(cacheOptions)
+			.build();
+		assertThat(options.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_AND_TOOLS);
+	}
+
+	@Test
+	void testCacheStrategyDefaultValue() {
+		AnthropicChatOptions options = new AnthropicChatOptions();
+		assertThat(options.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(options.getCacheOptions().getMessageTypeTtl().values())
+			.allMatch(ttl -> ttl == AnthropicCacheTtl.FIVE_MINUTES);
+	}
+
+	@Test
+	void testCacheStrategyEqualsAndHashCode() {
+		var sharedCacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+			.build();
+		AnthropicChatOptions options1 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheOptions(sharedCacheOptions)
+			.build();
+		AnthropicChatOptions options2 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheOptions(sharedCacheOptions)
+			.build();
+		var differentCacheOptions = AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build();
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheOptions(differentCacheOptions)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+	}
+
+	@Test
+	void testCacheStrategyCopy() {
+		var cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+			.build();
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("test-model")
+			.cacheOptions(cacheOptions)
+			.build();
+
+		AnthropicChatOptions copied = original.copy();
+
+		assertThat(copied).isNotSameAs(original).isEqualTo(original);
+		assertThat(copied.getCacheOptions().getStrategy()).isEqualTo(original.getCacheOptions().getStrategy());
+		assertThat(copied.getCacheOptions().getMessageTypeTtl())
+			.isEqualTo(original.getCacheOptions().getMessageTypeTtl());
+	}
+
+	@Test
+	void testCacheStrategyWithDefaultValues() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test-model").build();
+		assertThat(options.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(options.getCacheOptions().getMessageTypeTtl().values())
+			.allMatch(ttl -> ttl == AnthropicCacheTtl.FIVE_MINUTES);
+	}
+
+	@Test
+	void testBuilderWithAllFieldsIncludingCacheStrategy() {
+		var cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model("test-model")
+			.maxTokens(100)
+			.stopSequences(List.of("stop1", "stop2"))
+			.temperature(0.7)
+			.topP(0.8)
+			.topK(50)
+			.metadata(new Metadata("userId_123"))
+			.cacheOptions(cacheOptions)
+			.build();
+
+		assertThat(options).extracting("model", "maxTokens", "stopSequences", "temperature", "topP", "topK", "metadata")
+			.containsExactly("test-model", 100, List.of("stop1", "stop2"), 0.7, 0.8, 50, new Metadata("userId_123"));
+		assertThat(options.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_ONLY);
+		assertThat(options.getCacheOptions().getMessageTypeTtl().get(MessageType.SYSTEM))
+			.isEqualTo(AnthropicCacheTtl.ONE_HOUR);
+	}
+
+	@Test
+	void testCacheStrategyMutationDoesNotAffectOriginal() {
+		var originalCacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+			.build();
+		AnthropicChatOptions original = AnthropicChatOptions.builder()
+			.model("original-model")
+			.cacheOptions(originalCacheOptions)
+			.build();
+
+		AnthropicChatOptions copy = original.copy();
+		var modifiedCacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.NONE)
+			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.FIVE_MINUTES)
+			.build();
+		copy.setCacheOptions(modifiedCacheOptions);
+
+		// Original should remain unchanged
+		assertThat(original.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.SYSTEM_AND_TOOLS);
+		assertThat(original.getCacheOptions().getMessageTypeTtl().get(MessageType.SYSTEM))
+			.isEqualTo(AnthropicCacheTtl.ONE_HOUR);
+
+		// Copy should have modified values
+		assertThat(copy.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
+		assertThat(copy.getCacheOptions().getMessageTypeTtl().get(MessageType.SYSTEM))
+			.isEqualTo(AnthropicCacheTtl.FIVE_MINUTES);
 	}
 
 }

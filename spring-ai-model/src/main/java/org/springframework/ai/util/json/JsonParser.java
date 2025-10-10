@@ -168,8 +168,22 @@ public final class JsonParser {
 			return Enum.valueOf((Class<Enum>) javaType, value.toString());
 		}
 
-		String json = JsonParser.toJson(value);
-		return JsonParser.fromJson(json, javaType);
+		Object result = null;
+		if (value instanceof String jsonString) {
+			try {
+				result = JsonParser.fromJson(jsonString, javaType);
+			}
+			catch (Exception e) {
+				// ignore
+			}
+		}
+
+		if (result == null) {
+			String json = JsonParser.toJson(value);
+			result = JsonParser.fromJson(json, javaType);
+		}
+
+		return result;
 	}
 
 }

@@ -29,6 +29,7 @@ import com.google.genai.Client;
 import com.google.genai.ResponseStream;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.FinishReason;
 import com.google.genai.types.FunctionCall;
 import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.FunctionResponse;
@@ -40,7 +41,6 @@ import com.google.genai.types.SafetySetting;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.Tool;
-import com.google.genai.types.FinishReason;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -60,7 +60,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -73,6 +72,11 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
+import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
+import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
+import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
@@ -84,8 +88,6 @@ import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
-import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.support.RetryTemplate;
@@ -158,6 +160,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 */
 	private final RetryTemplate retryTemplate;
 
+	/**
+	 * The cached content service for managing cached content.
+	 */
+	private final GoogleGenAiCachedContentService cachedContentService;
+
 	// GenerationConfig is now built dynamically per request
 
 	/**
@@ -226,6 +233,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+		// Initialize cached content service only if the client supports it
+		this.cachedContentService = (genAiClient != null && genAiClient.caches != null && genAiClient.async != null
+				&& genAiClient.async.caches != null) ? new GoogleGenAiCachedContentService(genAiClient) : null;
 
 		// Wrap the provided tool calling manager in a GoogleGenAiToolCallingManager to
 		// ensure
@@ -419,10 +429,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					.toList();
 
 				var usage = generateContentResponse.usageMetadata();
-				Usage currentUsage = (usage.isPresent()) ? new DefaultUsage(usage.get().promptTokenCount().orElse(0),
-						usage.get().candidatesTokenCount().orElse(0)) : new EmptyUsage();
+				GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+				Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
+						: getDefaultUsage(null, options);
 				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
+				ChatResponse chatResponse = new ChatResponse(generations,
+						toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
 
 				observationContext.setResponse(chatResponse);
 				return chatResponse;
@@ -486,6 +498,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					runtimeOptions.getGoogleSearchRetrieval(), this.defaultOptions.getGoogleSearchRetrieval()));
 			requestOptions.setSafetySettings(ModelOptionsUtils.mergeOption(runtimeOptions.getSafetySettings(),
 					this.defaultOptions.getSafetySettings()));
+			requestOptions
+				.setLabels(ModelOptionsUtils.mergeOption(runtimeOptions.getLabels(), this.defaultOptions.getLabels()));
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
@@ -495,6 +509,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 			requestOptions.setGoogleSearchRetrieval(this.defaultOptions.getGoogleSearchRetrieval());
 			requestOptions.setSafetySettings(this.defaultOptions.getSafetySettings());
+			requestOptions.setLabels(this.defaultOptions.getLabels());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -541,9 +556,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					var usage = response.usageMetadata();
-					Usage currentUsage = usage.isPresent() ? getDefaultUsage(usage.get()) : new EmptyUsage();
+					GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+					Usage currentUsage = usage.isPresent() ? getDefaultUsage(usage.get(), options)
+							: getDefaultUsage(null, options);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
+					ChatResponse chatResponse = new ChatResponse(generations,
+							toChatResponseMetadata(cumulativeUsage, response.modelVersion().get()));
 					return Flux.just(chatResponse);
 				});
 
@@ -552,12 +570,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response, iterations)) {
 						// FIXME: bounded elastic needs to be used since tool calling
 						//  is currently only synchronous
-						return Flux.deferContextual((ctx) -> {
+						return Flux.deferContextual(ctx -> {
 							ToolExecutionResult toolExecutionResult;
 							try {
 								ToolCallReactiveContextHolder.setContext(ctx);
 								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-							} finally {
+							}
+							finally {
 								ToolCallReactiveContextHolder.clearContext();
 							}
 							if (toolExecutionResult.returnDirect()) {
@@ -625,7 +644,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				})
 				.toList();
 
-			AssistantMessage assistantMessage = new AssistantMessage("", messageMetadata, assistantToolCalls);
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("")
+				.properties(messageMetadata)
+				.toolCalls(assistantToolCalls)
+				.build();
 
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
@@ -635,19 +658,39 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.parts()
 				.orElse(List.of())
 				.stream()
-				.map(part -> new AssistantMessage(part.text().orElse(""), messageMetadata))
+				.map(part -> AssistantMessage.builder()
+					.content(part.text().orElse(""))
+					.properties(messageMetadata)
+					.build())
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
 				.toList();
 		}
 	}
 
-	private ChatResponseMetadata toChatResponseMetadata(Usage usage) {
-		return ChatResponseMetadata.builder().usage(usage).build();
+	private ChatResponseMetadata toChatResponseMetadata(Usage usage, String modelVersion) {
+		return ChatResponseMetadata.builder().usage(usage).model(modelVersion).build();
 	}
 
-	private DefaultUsage getDefaultUsage(com.google.genai.types.GenerateContentResponseUsageMetadata usageMetadata) {
-		return new DefaultUsage(usageMetadata.promptTokenCount().orElse(0),
-				usageMetadata.candidatesTokenCount().orElse(0), usageMetadata.totalTokenCount().orElse(0));
+	private Usage getDefaultUsage(com.google.genai.types.GenerateContentResponseUsageMetadata usageMetadata,
+			GoogleGenAiChatOptions options) {
+		// Check if extended metadata should be included (default to true if not
+		// configured)
+		boolean includeExtended = true;
+		if (options != null && options.getIncludeExtendedUsageMetadata() != null) {
+			includeExtended = options.getIncludeExtendedUsageMetadata();
+		}
+		else if (this.defaultOptions.getIncludeExtendedUsageMetadata() != null) {
+			includeExtended = this.defaultOptions.getIncludeExtendedUsageMetadata();
+		}
+
+		if (includeExtended) {
+			return GoogleGenAiUsage.from(usageMetadata);
+		}
+		else {
+			// Fall back to basic usage for backward compatibility
+			return new DefaultUsage(usageMetadata.promptTokenCount().orElse(0),
+					usageMetadata.candidatesTokenCount().orElse(0), usageMetadata.totalTokenCount().orElse(0));
+		}
 	}
 
 	GeminiRequest createGeminiRequest(Prompt prompt) {
@@ -692,6 +735,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			configBuilder
 				.thinkingConfig(ThinkingConfig.builder().thinkingBudget(requestOptions.getThinkingBudget()).build());
 		}
+		if (requestOptions.getLabels() != null && !requestOptions.getLabels().isEmpty()) {
+			configBuilder.labels(requestOptions.getLabels());
+		}
 
 		// Add safety settings
 		if (!CollectionUtils.isEmpty(requestOptions.getSafetySettings())) {
@@ -720,6 +766,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		if (!CollectionUtils.isEmpty(tools)) {
 			configBuilder.tools(tools);
+		}
+
+		// Handle cached content
+		if (requestOptions.getUseCachedContent() != null && requestOptions.getUseCachedContent()
+				&& requestOptions.getCachedContentName() != null) {
+			// Set the cached content name in the config
+			configBuilder.cachedContent(requestOptions.getCachedContentName());
+			logger.debug("Using cached content: {}", requestOptions.getCachedContentName());
 		}
 
 		// Handle system instruction
@@ -829,6 +883,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return GoogleGenAiChatOptions.fromOptions(this.defaultOptions);
+	}
+
+	/**
+	 * Gets the cached content service for managing cached content.
+	 * @return the cached content service
+	 */
+	public GoogleGenAiCachedContentService getCachedContentService() {
+		return this.cachedContentService;
 	}
 
 	@Override

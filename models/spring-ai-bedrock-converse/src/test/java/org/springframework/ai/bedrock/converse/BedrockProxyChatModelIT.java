@@ -46,6 +46,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -265,6 +266,29 @@ class BedrockProxyChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = BedrockChatOptions.builder()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return in 36°C format")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		Generation generation = response.getResult();
+		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallTestWithToolCallingOptions() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location. Return in 36°C format")
 				.inputType(MockWeatherService.Request.class)

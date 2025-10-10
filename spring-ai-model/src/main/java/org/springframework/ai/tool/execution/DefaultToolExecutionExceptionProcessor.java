@@ -18,6 +18,7 @@ package org.springframework.ai.tool.execution;
 
 import java.util.Collections;
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,11 +31,12 @@ import org.springframework.util.Assert;
  *
  * @author Thomas Vitale
  * @author Daniel Garnier-Moiroux
+ * @author YunKui Lu
  * @since 1.0.0
  */
 public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExceptionProcessor {
 
-	private final static Logger logger = LoggerFactory.getLogger(DefaultToolExecutionExceptionProcessor.class);
+	private static final Logger logger = LoggerFactory.getLogger(DefaultToolExecutionExceptionProcessor.class);
 
 	private static final boolean DEFAULT_ALWAYS_THROW = false;
 
@@ -56,16 +58,27 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 	public String process(ToolExecutionException exception) {
 		Assert.notNull(exception, "exception cannot be null");
 		Throwable cause = exception.getCause();
-		if (cause instanceof RuntimeException runtimeException
-				&& this.rethrownExceptions.stream().anyMatch(rethrown -> rethrown.isAssignableFrom(cause.getClass()))) {
-			throw runtimeException;
+		if (cause instanceof RuntimeException runtimeException) {
+			if (this.rethrownExceptions.stream().anyMatch(rethrown -> rethrown.isAssignableFrom(cause.getClass()))) {
+				throw runtimeException;
+			}
 		}
+		else {
+			// If the cause is not a RuntimeException (e.g., IOException,
+			// OutOfMemoryError), rethrow the tool exception.
+			throw exception;
+		}
+
 		if (this.alwaysThrow) {
 			throw exception;
 		}
-		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(),
-				exception.getMessage());
-		return exception.getMessage();
+		String message = exception.getMessage();
+		if (message == null || message.isBlank()) {
+			message = "Exception occurred in tool: " + exception.getToolDefinition().name() + " ("
+					+ cause.getClass().getSimpleName() + ")";
+		}
+		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message);
+		return message;
 	}
 
 	public static Builder builder() {
@@ -100,7 +113,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		}
 
 		public DefaultToolExecutionExceptionProcessor build() {
-			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, exceptions);
+			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, this.exceptions);
 		}
 
 	}

@@ -19,7 +19,6 @@ package org.springframework.ai.google.genai.schema;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.google.genai.schema.JsonSchemaConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +52,26 @@ class JsonSchemaConverterTests {
 		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("JSON Schema node must not be null");
+	}
+
+	@Test
+	void fromJsonShouldHandleEmptyObject() {
+		String json = "{}";
+		ObjectNode result = JsonSchemaConverter.fromJson(json);
+
+		assertThat(result).isNotNull();
+		assertThat(result.size()).isEqualTo(0);
+	}
+
+	@Test
+	void fromJsonShouldHandleEmptyString() {
+		assertThatThrownBy(() -> JsonSchemaConverter.fromJson("")).isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Failed to parse JSON");
+	}
+
+	@Test
+	void fromJsonShouldHandleNullInput() {
+		assertThatThrownBy(() -> JsonSchemaConverter.fromJson(null)).isInstanceOf(RuntimeException.class);
 	}
 
 	@Nested

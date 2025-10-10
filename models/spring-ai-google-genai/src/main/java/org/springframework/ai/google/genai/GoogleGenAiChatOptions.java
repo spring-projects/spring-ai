@@ -30,10 +30,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -115,6 +115,39 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("thinkingBudget") Integer thinkingBudget;
 
 	/**
+	 * Optional. Whether to include extended usage metadata in responses.
+	 * When true, includes thinking tokens, cached content, tool-use tokens, and modality details.
+	 * Defaults to true for full metadata access.
+	 */
+	private @JsonProperty("includeExtendedUsageMetadata") Boolean includeExtendedUsageMetadata;
+
+	/**
+	 * Optional. The name of cached content to use for this request.
+	 * When set, the cached content will be used as context for the request.
+	 */
+	private @JsonProperty("cachedContentName") String cachedContentName;
+
+	/**
+	 * Optional. Whether to use cached content if available.
+	 * When true and cachedContentName is set, the system will use the cached content.
+	 */
+	private @JsonProperty("useCachedContent") Boolean useCachedContent;
+
+	/**
+	 * Optional. Automatically cache prompts that exceed this token threshold.
+	 * When set, prompts larger than this value will be automatically cached for reuse.
+	 * Set to null to disable auto-caching.
+	 */
+	private @JsonProperty("autoCacheThreshold") Integer autoCacheThreshold;
+
+	/**
+	 * Optional. Time-to-live for auto-cached content.
+	 * Used when auto-caching is enabled. Defaults to 1 hour if not specified.
+	 */
+	@JsonIgnore
+	private java.time.Duration autoCacheTtl;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -148,6 +181,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
+
+	@JsonIgnore
+	private Map<String, String> labels = new HashMap<>();
 	// @formatter:on
 
 	public static Builder builder() {
@@ -175,6 +211,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setToolExecutionMaxIterations(fromOptions.getToolExecutionMaxIterations());
 		options.setToolContext(fromOptions.getToolContext());
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
+		options.setLabels(fromOptions.getLabels());
+		options.setIncludeExtendedUsageMetadata(fromOptions.getIncludeExtendedUsageMetadata());
+		options.setCachedContentName(fromOptions.getCachedContentName());
+		options.setUseCachedContent(fromOptions.getUseCachedContent());
+		options.setAutoCacheThreshold(fromOptions.getAutoCacheThreshold());
+		options.setAutoCacheTtl(fromOptions.getAutoCacheTtl());
 		return options;
 	}
 
@@ -331,6 +373,46 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.thinkingBudget = thinkingBudget;
 	}
 
+	public Boolean getIncludeExtendedUsageMetadata() {
+		return this.includeExtendedUsageMetadata;
+	}
+
+	public void setIncludeExtendedUsageMetadata(Boolean includeExtendedUsageMetadata) {
+		this.includeExtendedUsageMetadata = includeExtendedUsageMetadata;
+	}
+
+	public String getCachedContentName() {
+		return this.cachedContentName;
+	}
+
+	public void setCachedContentName(String cachedContentName) {
+		this.cachedContentName = cachedContentName;
+	}
+
+	public Boolean getUseCachedContent() {
+		return this.useCachedContent;
+	}
+
+	public void setUseCachedContent(Boolean useCachedContent) {
+		this.useCachedContent = useCachedContent;
+	}
+
+	public Integer getAutoCacheThreshold() {
+		return this.autoCacheThreshold;
+	}
+
+	public void setAutoCacheThreshold(Integer autoCacheThreshold) {
+		this.autoCacheThreshold = autoCacheThreshold;
+	}
+
+	public java.time.Duration getAutoCacheTtl() {
+		return this.autoCacheTtl;
+	}
+
+	public void setAutoCacheTtl(java.time.Duration autoCacheTtl) {
+		this.autoCacheTtl = autoCacheTtl;
+	}
+
 	public Boolean getGoogleSearchRetrieval() {
 		return this.googleSearchRetrieval;
 	}
@@ -346,6 +428,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	public void setSafetySettings(List<GoogleGenAiSafetySetting> safetySettings) {
 		Assert.notNull(safetySettings, "safetySettings must not be null");
 		this.safetySettings = safetySettings;
+	}
+
+	public Map<String, String> getLabels() {
+		return this.labels;
+	}
+
+	public void setLabels(Map<String, String> labels) {
+		Assert.notNull(labels, "labels must not be null");
+		this.labels = labels;
 	}
 
 	@Override
@@ -380,7 +471,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolExecutionMaxIterations, that.toolExecutionMaxIterations)
-				&& Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
 	}
 
 	@Override
@@ -389,7 +480,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
 				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
 				this.safetySettings, this.internalToolExecutionEnabled, this.toolExecutionMaxIterations,
-				this.toolContext);
+				this.toolContext, this.labels);
 	}
 
 	@Override
@@ -400,7 +491,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
-				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + '}';
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
+				+ '}';
 	}
 
 	@Override
@@ -530,6 +622,37 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder thinkingBudget(Integer thinkingBudget) {
 			this.options.setThinkingBudget(thinkingBudget);
+			return this;
+		}
+
+		public Builder includeExtendedUsageMetadata(Boolean includeExtendedUsageMetadata) {
+			this.options.setIncludeExtendedUsageMetadata(includeExtendedUsageMetadata);
+			return this;
+		}
+
+		public Builder labels(Map<String, String> labels) {
+			Assert.notNull(labels, "labels must not be null");
+			this.options.labels = labels;
+			return this;
+		}
+
+		public Builder cachedContentName(String cachedContentName) {
+			this.options.setCachedContentName(cachedContentName);
+			return this;
+		}
+
+		public Builder useCachedContent(Boolean useCachedContent) {
+			this.options.setUseCachedContent(useCachedContent);
+			return this;
+		}
+
+		public Builder autoCacheThreshold(Integer autoCacheThreshold) {
+			this.options.setAutoCacheThreshold(autoCacheThreshold);
+			return this;
+		}
+
+		public Builder autoCacheTtl(java.time.Duration autoCacheTtl) {
+			this.options.setAutoCacheTtl(autoCacheTtl);
 			return this;
 		}
 

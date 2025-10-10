@@ -282,7 +282,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			BasicQuery query = new BasicQuery(nativeFilterExpression);
 			DeleteResult deleteResult = this.mongoTemplate.remove(query, this.collectionName);
 
-			logger.debug("Deleted " + deleteResult.getDeletedCount() + " documents matching filter expression");
+			logger.debug("Deleted {} documents matching filter expression", deleteResult.getDeletedCount());
 		}
 		catch (Exception e) {
 			throw new IllegalStateException("Failed to delete documents by filter", e);

@@ -20,6 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
@@ -31,10 +35,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
 
 /**
  * Auto-configuration for WebFlux-based Streamable HTTP client transport in the Model
@@ -83,7 +83,7 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 	 * @return list of named MCP transports
 	 */
 	@Bean
-	public List<NamedClientMcpTransport> streamableHttpwebFluxClientTransports(
+	public List<NamedClientMcpTransport> streamableHttpWebFluxClientTransports(
 			McpStreamableHttpClientProperties streamableProperties,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
 			ObjectProvider<ObjectMapper> objectMapperProvider) {
@@ -101,7 +101,7 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 
 			var transport = WebClientStreamableHttpTransport.builder(webClientBuilder)
 				.endpoint(streamableHttpEndpoint)
-				.objectMapper(objectMapper)
+				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 				.build();
 
 			streamableHttpTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));

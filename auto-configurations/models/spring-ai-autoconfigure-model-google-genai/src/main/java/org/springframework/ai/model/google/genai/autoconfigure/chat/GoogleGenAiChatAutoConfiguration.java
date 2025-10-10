@@ -24,6 +24,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
@@ -33,13 +34,14 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -58,7 +60,6 @@ import org.springframework.util.StringUtils;
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.GOOGLE_GEN_AI,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ GoogleGenAiChatProperties.class, GoogleGenAiConnectionProperties.class })
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 public class GoogleGenAiChatAutoConfiguration {
 
 	@Bean
@@ -112,6 +113,18 @@ public class GoogleGenAiChatAutoConfiguration {
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
+	}
+
+	@Bean
+	@ConditionalOnBean(GoogleGenAiChatModel.class)
+	@ConditionalOnMissingBean
+	@Conditional(CachedContentServiceCondition.class)
+	@ConditionalOnProperty(prefix = "spring.ai.google.genai.chat", name = "enable-cached-content", havingValue = "true",
+			matchIfMissing = true)
+	public GoogleGenAiCachedContentService googleGenAiCachedContentService(GoogleGenAiChatModel chatModel) {
+		// Extract the cached content service from the chat model
+		// The CachedContentServiceCondition ensures this is not null
+		return chatModel.getCachedContentService();
 	}
 
 }
