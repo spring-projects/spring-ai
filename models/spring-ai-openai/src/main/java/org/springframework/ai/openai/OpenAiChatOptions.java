@@ -197,15 +197,18 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("reasoning_effort") String reasoningEffort;
 
 	/**
+	 * verbosity: string or null
+	 * Optional - Defaults to medium
+	 * Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses.
+	 * Currently supported values are low, medium, and high.
+	 * If specified, the model will use web search to find relevant information to answer the user's question.
+	 */
+	private @JsonProperty("verbosity") String verbosity;
+
+	/**
 	 * This tool searches the web for relevant results to use in a response.
 	 */
 	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
-
-	/**
-	 * This extra body for support thinking outside the context of the conversation.
-	 */
-	private @JsonProperty("chat_template_kwargs")  Map<String,Object> chatTemplateKwargs;
-
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
@@ -274,7 +277,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.metadata(fromOptions.getMetadata())
 			.reasoningEffort(fromOptions.getReasoningEffort())
 			.webSearchOptions(fromOptions.getWebSearchOptions())
-			.chatTemplateKwargs(fromOptions.chatTemplateKwargs)
+			.verbosity(fromOptions.getVerbosity())
 			.build();
 	}
 
@@ -571,12 +574,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.webSearchOptions = webSearchOptions;
 	}
 
-	public Map<String, Object> getChatTemplateKwargs() {
-		return chatTemplateKwargs;
+	public String getVerbosity() {
+		return this.verbosity;
 	}
 
-	public void setChatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
-		this.chatTemplateKwargs = chatTemplateKwargs;
+	public void setVerbosity(String verbosity) {
+		this.verbosity = verbosity;
 	}
 
 	@Override
@@ -591,7 +594,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.chatTemplateKwargs);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions);
 	}
 
 	@Override
@@ -625,7 +628,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.metadata, other.metadata)
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
-				&& Objects.equals(this.chatTemplateKwargs, other.chatTemplateKwargs);
+				&& Objects.equals(this.verbosity, other.verbosity);
 	}
 
 	@Override
@@ -818,8 +821,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder chatTemplateKwargs(Map<String, Object> chatTemplateKwargs) {
-			this.options.chatTemplateKwargs = chatTemplateKwargs;
+		public Builder verbosity(String verbosity) {
+			this.options.verbosity = verbosity;
 			return this;
 		}
 
