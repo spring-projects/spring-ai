@@ -17,6 +17,7 @@
 package org.springframework.ai.model.tool;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,15 +129,15 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 
 		Optional<Generation> toolCallGeneration = chatResponse.getResults()
-			.stream()
-			.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
-			.findFirst();
+				.stream()
+				.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
+				.findFirst();
 
 		if (toolCallGeneration.isEmpty()) {
 			throw new IllegalStateException("No tool call requested by the chat model");
 		}
 
-		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
+		AssistantMessage assistantMessage = safelyMergeAssistantMessageIfEmptyToolCallPresent(toolCallGeneration);
 
 		ToolContext toolContext = buildToolContext(prompt, assistantMessage);
 
@@ -147,9 +148,37 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				assistantMessage, internalToolExecutionResult.toolResponseMessage());
 
 		return ToolExecutionResult.builder()
-			.conversationHistory(conversationHistory)
-			.returnDirect(internalToolExecutionResult.returnDirect())
-			.build();
+				.conversationHistory(conversationHistory)
+				.returnDirect(internalToolExecutionResult.returnDirect())
+				.build();
+	}
+
+	private AssistantMessage safelyMergeAssistantMessageIfEmptyToolCallPresent(Optional<Generation> toolCallGeneration) {
+		if (toolCallGeneration.isEmpty()) {
+			throw new IllegalStateException("No tool call requested by the chat model");
+		}
+		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+		List<AssistantMessage.ToolCall> reversedToolCalls = new ArrayList<>(toolCalls);
+		Collections.reverse(reversedToolCalls);
+		List<AssistantMessage.ToolCall> newToolCalls = new ArrayList<>();
+		StringBuilder args = new StringBuilder();
+		for (AssistantMessage.ToolCall toolCall : reversedToolCalls) {
+			args.append(toolCall.arguments());
+			if (StringUtils.hasText(toolCall.name())) {
+				AssistantMessage.ToolCall newToolCall = new AssistantMessage.ToolCall(
+						toolCall.id(), toolCall.type(), toolCall.name(), args.toString());
+				newToolCalls.add(newToolCall);
+				args = new StringBuilder();
+			}
+		}
+		Collections.reverse(newToolCalls);
+		return AssistantMessage.builder()
+				.content(assistantMessage.getText())
+				.toolCalls(newToolCalls)
+				.media(assistantMessage.getMedia())
+				.properties(assistantMessage.getMetadata())
+				.build();
 	}
 
 	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
