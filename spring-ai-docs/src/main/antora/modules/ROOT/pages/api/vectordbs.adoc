@@ -28,7 +28,8 @@ Spring AI offers an abstracted API for interacting with vector databases through
 
 Spring AI provides a read-only interface called `VectorStoreRetriever` that exposes only the document retrieval functionality:
 
-```java
+[source,java]
+----
 @FunctionalInterface
 public interface VectorStoreRetriever {
 
@@ -38,7 +39,7 @@ public interface VectorStoreRetriever {
         return this.similaritySearch(SearchRequest.builder().query(query).build());
     }
 }
-```
+----
 
 This functional interface is designed for use cases where you only need to retrieve documents from a vector store without performing any mutation operations. It follows the principle of least privilege by exposing only the necessary functionality for document retrieval.
 
@@ -46,7 +47,8 @@ This functional interface is designed for use cases where you only need to retri
 
 The `VectorStore` interface extends `VectorStoreRetriever` and adds mutation capabilities:
 
-```java
+[source,java]
+----
 public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 
     default String getName() {
@@ -59,19 +61,20 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 
     void delete(Filter.Expression filterExpression);
 
-    default void delete(String filterExpression) { ... };
+    default void delete(String filterExpression) { ... }
 
     default <T> Optional<T> getNativeClient() {
 		return Optional.empty();
 	}
 }
-```
+----
 
 The `VectorStore` interface combines both read and write operations, allowing you to add, delete, and search for documents in a vector database.
 
 === SearchRequest Builder
 
-```java
+[source,java]
+----
 public class SearchRequest {
 
 	public static final double SIMILARITY_THRESHOLD_ACCEPT_ALL = 0.0;
@@ -144,7 +147,7 @@ public class SearchRequest {
 	public Filter.Expression getFilterExpression() {...}
 }
 
-```
+----
 
 To insert data into the vector database, encapsulate it within a `Document` object.
 The `Document` class encapsulates content from a data source, such as a PDF or Word document, and includes text represented as a string.
@@ -417,7 +420,8 @@ The general usage of loading data into a vector store is something you would do 
 Given a `String` reference to a source file that represents a JSON file with data we want to load into the vector database, we use Spring AI's `JsonReader` to load specific fields in the JSON, which splits them up into small pieces and then passes those small pieces to the vector store implementation.
 The `VectorStore` implementation computes the embeddings and stores the JSON and the embedding in the vector database:
 
-```java
+[source,java]
+----
 @Autowired
 VectorStore vectorStore;
 
@@ -427,7 +431,7 @@ void load(String sourceFile) {
     List<Document> documents = jsonReader.get();
     this.vectorStore.add(documents);
 }
-```
+----
 
 === Reading from a Vector Store
 
@@ -435,7 +439,8 @@ Later, when a user question is passed into the AI model, a similarity search is 
 
 For read-only operations, you can use either the `VectorStore` interface or the more focused `VectorStoreRetriever` interface:
 
-```java
+[source,java]
+----
 @Autowired
 VectorStoreRetriever retriever; // Could also use VectorStore here
 
@@ -448,9 +453,9 @@ SearchRequest request = SearchRequest.builder()
     .topK(5)                       // Return top 5 results
     .similarityThreshold(0.7)      // Only return results with similarity score >= 0.7
     .build();
-    
+
 List<Document> filteredDocuments = retriever.similaritySearch(request);
-```
+----
 
 Additional options can be passed into the `similaritySearch` method to define how many documents to retrieve and a threshold of the similarity search.
 
@@ -458,16 +463,17 @@ Additional options can be passed into the `similaritySearch` method to define ho
 
 Using the separate interfaces allows you to clearly define which components need write access and which only need read access:
 
-```java
+[source,java]
+----
 // Write operations in a service that needs full access
 @Service
 class DocumentIndexer {
     private final VectorStore vectorStore;
-    
+
     DocumentIndexer(VectorStore vectorStore) {
         this.vectorStore = vectorStore;
     }
-    
+
     public void indexDocuments(List<Document> documents) {
         vectorStore.add(documents);
     }
@@ -477,16 +483,16 @@ class DocumentIndexer {
 @Service
 class DocumentRetriever {
     private final VectorStoreRetriever retriever;
-    
+
     DocumentRetriever(VectorStoreRetriever retriever) {
         this.retriever = retriever;
     }
-    
+
     public List<Document> findSimilar(String query) {
         return retriever.similaritySearch(query);
     }
 }
-```
+----
 
 This separation of concerns helps create more maintainable and secure applications by limiting access to mutation operations only to components that truly need them.
 
@@ -505,31 +511,32 @@ The `VectorStoreRetriever` interface provides a read-only view of a vector store
 
 You can use `VectorStoreRetriever` directly when you only need to perform similarity searches:
 
-```java
+[source,java]
+----
 @Service
 public class DocumentRetrievalService {
-    
+
     private final VectorStoreRetriever retriever;
-    
+
     public DocumentRetrievalService(VectorStoreRetriever retriever) {
         this.retriever = retriever;
     }
-    
+
     public List<Document> findSimilarDocuments(String query) {
         return retriever.similaritySearch(query);
     }
-    
+
     public List<Document> findSimilarDocumentsWithFilters(String query, String country) {
         SearchRequest request = SearchRequest.builder()
             .query(query)
             .topK(5)
             .filterExpression("country == '" + country + "'")
             .build();
-            
+
         return retriever.similaritySearch(request);
     }
 }
-```
+----
 
 In this example, the service only depends on the `VectorStoreRetriever` interface, making it clear that it only performs retrieval operations and doesn't modify the vector store.
 
@@ -537,33 +544,34 @@ In this example, the service only depends on the `VectorStoreRetriever` interfac
 
 The `VectorStoreRetriever` interface is particularly useful in RAG applications, where you need to retrieve relevant documents to provide context for an AI model:
 
-```java
+[source,java]
+----
 @Service
 public class RagService {
-    
+
     private final VectorStoreRetriever retriever;
     private final ChatModel chatModel;
-    
+
     public RagService(VectorStoreRetriever retriever, ChatModel chatModel) {
         this.retriever = retriever;
         this.chatModel = chatModel;
     }
-    
+
     public String generateResponse(String userQuery) {
         // Retrieve relevant documents
         List<Document> relevantDocs = retriever.similaritySearch(userQuery);
-        
+
         // Extract content from documents to use as context
         String context = relevantDocs.stream()
             .map(Document::getContent)
             .collect(Collectors.joining("\n\n"));
-        
+
         // Generate response using the retrieved context
         String prompt = "Context information:\n" + context + "\n\nUser query: " + userQuery;
         return chatModel.generate(prompt);
     }
 }
-```
+----
 
 This pattern allows for a clean separation between the retrieval component and the generation component in RAG applications.
 

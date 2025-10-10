@@ -162,7 +162,7 @@ public final class SyncMcpAnnotationProviders {
 			return AnnotationProviderUtil.beanMethods(bean);
 		}
 
-	};
+	}
 
 	private final static class SpringAiSyncStatelessMcpCompleteProvider extends SyncStatelessMcpCompleteProvider {
 
@@ -175,7 +175,7 @@ public final class SyncMcpAnnotationProviders {
 			return AnnotationProviderUtil.beanMethods(bean);
 		}
 
-	};
+	}
 
 	// TOOL
 	private final static class SpringAiSyncToolProvider extends SyncMcpToolProvider {
@@ -216,7 +216,7 @@ public final class SyncMcpAnnotationProviders {
 			return AnnotationProviderUtil.beanMethods(bean);
 		}
 
-	};
+	}
 
 	private final static class SpringAiSyncStatelessPromptProvider extends SyncStatelessMcpPromptProvider {
 
