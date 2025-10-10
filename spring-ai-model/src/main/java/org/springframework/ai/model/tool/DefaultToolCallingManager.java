@@ -129,9 +129,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 
 		Optional<Generation> toolCallGeneration = chatResponse.getResults()
-				.stream()
-				.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
-				.findFirst();
+			.stream()
+			.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
+			.findFirst();
 
 		if (toolCallGeneration.isEmpty()) {
 			throw new IllegalStateException("No tool call requested by the chat model");
@@ -148,12 +148,13 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				assistantMessage, internalToolExecutionResult.toolResponseMessage());
 
 		return ToolExecutionResult.builder()
-				.conversationHistory(conversationHistory)
-				.returnDirect(internalToolExecutionResult.returnDirect())
-				.build();
+			.conversationHistory(conversationHistory)
+			.returnDirect(internalToolExecutionResult.returnDirect())
+			.build();
 	}
 
-	private AssistantMessage safelyMergeAssistantMessageIfEmptyToolCallPresent(Optional<Generation> toolCallGeneration) {
+	private AssistantMessage safelyMergeAssistantMessageIfEmptyToolCallPresent(
+			Optional<Generation> toolCallGeneration) {
 		if (toolCallGeneration.isEmpty()) {
 			throw new IllegalStateException("No tool call requested by the chat model");
 		}
@@ -166,19 +167,19 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		for (AssistantMessage.ToolCall toolCall : reversedToolCalls) {
 			args.append(toolCall.arguments());
 			if (StringUtils.hasText(toolCall.name())) {
-				AssistantMessage.ToolCall newToolCall = new AssistantMessage.ToolCall(
-						toolCall.id(), toolCall.type(), toolCall.name(), args.toString());
+				AssistantMessage.ToolCall newToolCall = new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(),
+						toolCall.name(), args.toString());
 				newToolCalls.add(newToolCall);
 				args = new StringBuilder();
 			}
 		}
 		Collections.reverse(newToolCalls);
 		return AssistantMessage.builder()
-				.content(assistantMessage.getText())
-				.toolCalls(newToolCalls)
-				.media(assistantMessage.getMedia())
-				.properties(assistantMessage.getMetadata())
-				.build();
+			.content(assistantMessage.getText())
+			.toolCalls(newToolCalls)
+			.media(assistantMessage.getMedia())
+			.properties(assistantMessage.getMetadata())
+			.build();
 	}
 
 	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
