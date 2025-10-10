@@ -50,7 +50,7 @@ import org.springframework.context.annotation.Bean;
 public class Neo4jVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
