@@ -37,7 +37,7 @@ public class OpenAiImageProperties extends OpenAiParentProperties {
 
 	private String imagesPath = DEFAULT_IMAGES_PATH;
 
-	public static final String DEFAULT_IMAGE_MODEL = OpenAiImageApi.ImageModel.DALL_E_3.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = OpenAiImageApi.ImageModel.GPT_IMAGE_1_MINI.getValue();
 
 	/**
 	 * Options for OpenAI Image API.

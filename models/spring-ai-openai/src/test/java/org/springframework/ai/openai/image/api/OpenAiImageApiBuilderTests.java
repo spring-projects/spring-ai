@@ -158,7 +158,7 @@ class OpenAiImageApiBuilderTests {
 			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiImageApi.OpenAiImageRequest request = new OpenAiImageApi.OpenAiImageRequest("Test",
-					OpenAiImageApi.ImageModel.DALL_E_3.getValue());
+					OpenAiImageApi.ImageModel.GPT_IMAGE_1_MINI.getValue());
 			ResponseEntity<OpenAiImageApi.OpenAiImageResponse> response = api.createImage(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
