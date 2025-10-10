@@ -47,7 +47,7 @@ public class OllamaApiAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(OllamaConnectionDetails.class)
-	public PropertiesOllamaConnectionDetails ollamaConnectionDetails(OllamaConnectionProperties properties) {
+	PropertiesOllamaConnectionDetails ollamaConnectionDetails(OllamaConnectionProperties properties) {
 		return new PropertiesOllamaConnectionDetails(properties);
 	}
 
