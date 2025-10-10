@@ -666,6 +666,46 @@ Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] tests show how to use the low-level API to call tool functions.
 Based on the link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling] tutorial.
 
+== Low-level OpenAiFileApi Client [[low-level-file-api]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiFileApi.java[OpenAiFileApi] provides a lightweight Java client for the OpenAI Files API, enabling file management operations such as uploading, listing, retrieving, deleting files, and accessing file contents. link:https://platform.openai.com/docs/api-reference/files[OpenAI File API]
+
+Here is a simple snippet showing how to use the API programmatically:
+
+[source,java]
+----
+OpenAiFileApi openAiFileApi = OpenAiFileApi.builder()
+			.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
+			.build();
+
+// Upload a file
+byte[] fileBytes = Files.readAllBytes(Paths.get("evals.jsonl")); 
+OpenAiFileApi.UploadFileRequest uploadRequest = OpenAiFileApi.UploadFileRequest.builder()
+			.file(fileBytes)
+			.fileName("evals-data.jsonl")
+			.purpose(OpenAiFileApi.Purpose.EVALS)
+			.build();
+ResponseEntity<OpenAiFileApi.FileObject> uploadResponse = openAiFileApi.uploadFile(uploadRequest);
+
+// List files
+OpenAiFileApi.ListFileRequest listRequest = OpenAiFileApi.ListFileRequest.builder()
+			.purpose(OpenAiFileApi.Purpose.EVALS)
+			.build();
+ResponseEntity<OpenAiFileApi.FileObjectResponse> listResponse = openAiFileApi.listFiles(listRequest);
+
+// Retrieve file information
+ResponseEntity<OpenAiFileApi.FileObject> fileInfo = openAiFileApi.retrieveFile("file-id");
+
+// Delete a file
+ResponseEntity<OpenAiFileApi.DeleteFileResponse> deleteResponse = openAiFileApi.deleteFile("file-id");
+
+// Retrieve file content
+ResponseEntity<String> fileContent = openAiFileApi.retrieveFileContent("file-id");
+----
+
+=== Low-level File API Examples
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/OpenAiFileApiIT.java[OpenAiFileApiIT.java] tests provide some general examples of how to use the lightweight file api library.
+
 == API Key Management
 
 Spring AI provides flexible API key management through the `ApiKey` interface and its implementations. The default implementation, `SimpleApiKey`, is suitable for most use cases, but you can also create custom implementations for more complex scenarios.
