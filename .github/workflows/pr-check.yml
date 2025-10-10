@@ -24,3 +24,9 @@ jobs:
       - name: Run tests
         run: |
           ./mvnw --batch-mode test
+
+      - name: Run OpenAI Image API integration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw -pl models/spring-ai-openai -Pintegration-tests -Dit.test=OpenAiImageApiIT verify
