@@ -29,7 +29,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.genai.types.ImageConfig;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
@@ -123,7 +122,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	/**
 	 * Optional. imageConfig
 	 */
-	private @JsonProperty("imageConfig") ImageConfig imageConfig;
+	private @JsonProperty("imageConfig") GoogleGenAiChatOptionsImageConfig imageConfig;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
@@ -378,11 +377,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.responseModalities = responseModalities;
 	}
 
-	public ImageConfig getImageConfig() {
+	public GoogleGenAiChatOptionsImageConfig getImageConfig() {
 		return this.imageConfig;
 	}
 
-	public void setImageConfig(ImageConfig imageConfig) {
+	public void setImageConfig(GoogleGenAiChatOptionsImageConfig imageConfig) {
 		this.imageConfig = imageConfig;
 	}
 
@@ -576,7 +575,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder imageConfig(ImageConfig imageConfig) {
+		public Builder imageConfig(GoogleGenAiChatOptionsImageConfig imageConfig) {
 			this.options.setImageConfig(imageConfig);
 			return this;
 		}

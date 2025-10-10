@@ -19,7 +19,6 @@ package org.springframework.ai.google.genai;
 import java.util.List;
 import java.util.Map;
 
-import com.google.genai.types.ImageConfig;
 import com.google.genai.types.Modality;
 import org.junit.jupiter.api.Test;
 
@@ -168,10 +167,10 @@ public class GoogleGenAiChatOptionsTest {
 	@Test
 	public void testImageConfig() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.imageConfig(ImageConfig.builder().aspectRatio("1:1").build())
+			.imageConfig(GoogleGenAiChatOptionsImageConfig.builder().aspectRatio("1:1").build())
 			.build();
 		String toString = options.toString();
-		assertThat(toString).contains("imageConfig=ImageConfig{aspectRatio=Optional[1:1]}");
+		assertThat(toString).contains("imageConfig=GoogleGenAiChatOptionsImageConfig{aspectRatio='1:1'}");
 	}
 
 }

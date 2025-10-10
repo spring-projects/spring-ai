@@ -734,6 +734,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			configBuilder.responseModalities(requestOptions.getResponseModalities());
 		}
 
+		if (requestOptions.getImageConfig() != null) {
+			configBuilder.imageConfig(requestOptions.getImageConfig().convert());
+		}
+
 		GenerateContentConfig config = configBuilder.build();
 
 		// Create message contents
