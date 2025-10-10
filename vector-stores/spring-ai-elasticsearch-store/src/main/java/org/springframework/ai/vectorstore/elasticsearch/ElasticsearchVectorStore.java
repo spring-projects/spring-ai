@@ -335,16 +335,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	public void afterPropertiesSet() {
 		// For the index to be present, either it must be pre-created or set the
 		// initializeSchema to true.
-		if (!this.initializeSchema) {
-			boolean exists = indexExists();
-			if(!exists){
-				throw new IllegalArgumentException("Index not found");
-			}
+		if (indexExists()) {
 			return;
 		}
-		if (!indexExists()) {
-			createIndexMapping();
+		if (!this.initializeSchema) {
+			throw new IllegalArgumentException("Index not found");
 		}
+		createIndexMapping();
 	}
 
 	@Override
