@@ -40,7 +40,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 
 	@BeforeEach
 	void setUp() {
-		helper = new DeepSeekStreamFunctionCallingHelper();
+		this.helper = new DeepSeekStreamFunctionCallingHelper();
 	}
 
 	@Test
@@ -49,7 +49,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 		ChatCompletionChunk current = new ChatCompletionChunk("id1", List.of(), 123L, "model1", null, null, null, null);
 
 		// When
-		ChatCompletionChunk result = helper.merge(null, current);
+		ChatCompletionChunk result = this.helper.merge(null, current);
 
 		// Then
 		assertThat(result).isEqualTo(current);
@@ -63,7 +63,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 		ChatCompletionChunk current = new ChatCompletionChunk("id2", List.of(), null, null, null, null, null, null);
 
 		// When
-		ChatCompletionChunk result = helper.merge(previous, current);
+		ChatCompletionChunk result = this.helper.merge(previous, current);
 
 		// Then
 		assertThat(result.id()).isEqualTo("id2"); // from current
@@ -86,7 +86,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 				null, null);
 
 		// When
-		ChatCompletionChunk result = helper.merge(previous, current);
+		ChatCompletionChunk result = this.helper.merge(previous, current);
 
 		// Then
 		assertThat(result.choices().get(0).delta().content()).isEqualTo("Hello World!");
@@ -115,7 +115,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 				null, null);
 
 		// When
-		ChatCompletionChunk result = helper.merge(previous, current);
+		ChatCompletionChunk result = this.helper.merge(previous, current);
 
 		// Then
 		assertThat(result.choices()).hasSize(1);
@@ -138,7 +138,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 				null);
 
 		// When
-		ChatCompletionChunk result = helper.merge(previous, current);
+		ChatCompletionChunk result = this.helper.merge(previous, current);
 
 		// Then
 		assertThat(result).isNotNull();
@@ -148,7 +148,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 	@Test
 	void isStreamingToolFunctionCallWhenNullChunkShouldReturnFalse() {
 		// When & Then
-		assertThat(helper.isStreamingToolFunctionCall(null)).isFalse();
+		assertThat(this.helper.isStreamingToolFunctionCall(null)).isFalse();
 	}
 
 	@Test
@@ -157,7 +157,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 		ChatCompletionChunk chunk = new ChatCompletionChunk("id", List.of(), 123L, "model", null, null, null, null);
 
 		// When & Then
-		assertThat(helper.isStreamingToolFunctionCall(chunk)).isFalse();
+		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
 
 	@Test
@@ -170,7 +170,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 				null);
 
 		// When & Then
-		assertThat(helper.isStreamingToolFunctionCall(chunk)).isTrue();
+		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isTrue();
 	}
 
 	@Test
@@ -183,7 +183,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 				null);
 
 		// When & Then
-		assertThat(helper.isStreamingToolFunctionCallFinish(chunk)).isTrue();
+		assertThat(this.helper.isStreamingToolFunctionCallFinish(chunk)).isTrue();
 	}
 
 	@Test
@@ -205,7 +205,7 @@ class DeepSeekStreamFunctionCallingHelperTest {
 				null, null);
 
 		// When
-		ChatCompletionChunk result = helper.merge(previous, current);
+		ChatCompletionChunk result = this.helper.merge(previous, current);
 
 		// Then
 		assertThat(result).isNotNull();
