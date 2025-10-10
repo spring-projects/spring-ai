@@ -176,11 +176,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
@@ -214,11 +209,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public void doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
@@ -229,12 +219,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doDelete(Filter.Expression filterExpression) {
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
-
 		try {
 			this.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())
 				.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));
@@ -348,12 +332,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void afterPropertiesSet() {
-		if (!this.initializeSchema) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (indexExists()) {
 			return;
 		}
-		if (!indexExists()) {
-			createIndexMapping();
+		if (!this.initializeSchema) {
+			throw new IllegalArgumentException("Index not found");
 		}
+		createIndexMapping();
 	}
 
 	@Override
