@@ -36,7 +36,7 @@ import org.springframework.web.client.RestClient;
  * OCR {@link AutoConfiguration Auto-configuration} for Mistral AI OCR.
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(MistralOcrApi.class)

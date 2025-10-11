@@ -30,7 +30,7 @@ import org.springframework.ai.model.ModelOptions;
  * OCR call.
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 @JsonInclude(Include.NON_NULL)
 public class MistralAiOcrOptions implements ModelOptions {
