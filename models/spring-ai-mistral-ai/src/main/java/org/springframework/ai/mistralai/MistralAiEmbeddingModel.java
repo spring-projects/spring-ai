@@ -17,6 +17,7 @@
 package org.springframework.ai.mistralai;
 
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
@@ -48,11 +49,16 @@ import org.springframework.util.Assert;
  * @author Ricken Bazolo
  * @author Thomas Vitale
  * @author Jason Smith
+ * @author Nicolas Krier
  * @since 1.0.0
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(MistralAiEmbeddingModel.class);
+
+	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Map.of(
+			MistralAiApi.EmbeddingModel.EMBED.getValue(), 1024, MistralAiApi.EmbeddingModel.CODESTRAL_EMBED.getValue(),
+			1536);
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
@@ -182,6 +188,11 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent(this.metadataMode));
+	}
+
+	@Override
+	public int dimensions() {
+		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), super.dimensions());
 	}
 
 	/**
