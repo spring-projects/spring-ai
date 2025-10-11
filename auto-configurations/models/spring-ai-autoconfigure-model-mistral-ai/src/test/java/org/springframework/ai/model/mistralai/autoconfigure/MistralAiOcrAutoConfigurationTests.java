@@ -37,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </p>
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 @EnabledIfEnvironmentVariable(named = MistralAiOcrAutoConfigurationTests.ENV_VAR_NAME, matches = ".*")
 class MistralAiOcrAutoConfigurationTests {

@@ -40,7 +40,7 @@ import org.springframework.web.client.RestClient;
  * along with information about extracted images.
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 public class MistralOcrApi {
 

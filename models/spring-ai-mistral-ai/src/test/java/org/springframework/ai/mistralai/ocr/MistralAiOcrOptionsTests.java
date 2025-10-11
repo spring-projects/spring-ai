@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link MistralAiOcrOptions}.
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 class MistralAiOcrOptionsTests {
 

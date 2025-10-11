@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link MistralAiCommonProperties}.
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 class MistralAiOcrPropertiesTests {
 

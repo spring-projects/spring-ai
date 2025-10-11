@@ -25,7 +25,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * Configuration properties for Mistral AI OCR.
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 @ConfigurationProperties(MistralAiOcrProperties.CONFIG_PREFIX)
 public class MistralAiOcrProperties extends MistralAiParentProperties {

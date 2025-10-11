@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for the Mistral OCR API.
  *
  * @author Alexandros Pappas
- * @since 1.0.0
+ * @since 1.1.0
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralOcrApiIT {
