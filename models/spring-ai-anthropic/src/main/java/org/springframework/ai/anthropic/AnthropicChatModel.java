@@ -229,8 +229,9 @@ public class AnthropicChatModel implements ChatModel {
 	}
 
 	private DefaultUsage getDefaultUsage(AnthropicApi.Usage usage) {
-		return new DefaultUsage(usage.inputTokens(), usage.outputTokens(), usage.inputTokens() + usage.outputTokens(),
-				usage);
+		Integer inputTokens = usage.inputTokens() != null ? usage.inputTokens() : 0;
+		Integer outputTokens = usage.outputTokens() != null ? usage.outputTokens() : 0;
+		return new DefaultUsage(inputTokens, outputTokens, inputTokens + outputTokens, usage);
 	}
 
 	@Override
