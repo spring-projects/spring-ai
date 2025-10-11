@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -645,12 +646,15 @@ public class DefaultChatClient implements ChatClient {
 		@Nullable
 		private ChatOptions chatOptions;
 
+		@Nullable
+		private Duration timeout;
+
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
 					ccr.systemMetadata, ccr.toolCallbacks, ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions,
 					ccr.advisors, ccr.advisorParams, ccr.observationRegistry, ccr.observationConvention,
-					ccr.toolContext, ccr.templateRenderer);
+					ccr.toolContext, ccr.templateRenderer, ccr.timeout);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
@@ -659,7 +663,7 @@ public class DefaultChatClient implements ChatClient {
 				List<Message> messages, List<String> toolNames, List<Media> media, @Nullable ChatOptions chatOptions,
 				List<Advisor> advisors, Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext,
-				@Nullable TemplateRenderer templateRenderer) {
+				@Nullable TemplateRenderer templateRenderer, @Nullable Duration timeout) {
 
 			Assert.notNull(chatModel, "chatModel cannot be null");
 			Assert.notNull(userParams, "userParams cannot be null");
@@ -698,6 +702,7 @@ public class DefaultChatClient implements ChatClient {
 					: DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION;
 			this.toolContext.putAll(toolContext);
 			this.templateRenderer = templateRenderer != null ? templateRenderer : DEFAULT_TEMPLATE_RENDERER;
+			this.timeout = timeout;
 		}
 
 		@Nullable
@@ -761,6 +766,11 @@ public class DefaultChatClient implements ChatClient {
 
 		public TemplateRenderer getTemplateRenderer() {
 			return this.templateRenderer;
+		}
+
+		@Nullable
+		public Duration getTimeout() {
+			return this.timeout;
 		}
 
 		/**
@@ -983,6 +993,13 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec templateRenderer(TemplateRenderer templateRenderer) {
 			Assert.notNull(templateRenderer, "templateRenderer cannot be null");
 			this.templateRenderer = templateRenderer;
+			return this;
+		}
+
+		@Override
+		public ChatClientRequestSpec timeout(Duration timeout) {
+			Assert.notNull(timeout, "timeout cannot be null");
+			this.timeout = timeout;
 			return this;
 		}
 

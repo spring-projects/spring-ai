@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -106,6 +107,12 @@ final class DefaultChatClientUtils {
 
 		ChatOptions processedChatOptions = inputRequest.getChatOptions();
 
+		// Handle timeout from request or ChatOptions
+		Duration timeout = inputRequest.getTimeout();
+		if (timeout == null && processedChatOptions != null) {
+			timeout = processedChatOptions.getTimeout();
+		}
+
 		if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
 			if (!inputRequest.getToolNames().isEmpty() || !inputRequest.getToolCallbacks().isEmpty()
 					|| !CollectionUtils.isEmpty(inputRequest.getToolContext())) {
@@ -137,9 +144,14 @@ final class DefaultChatClientUtils {
 		 * ==========* REQUEST * ==========
 		 */
 
+		Map<String, Object> context = new ConcurrentHashMap<>(inputRequest.getAdvisorParams());
+		if (timeout != null) {
+			context.put(ChatClientAttributes.TIMEOUT.getKey(), timeout);
+		}
+
 		return ChatClientRequest.builder()
 			.prompt(Prompt.builder().messages(processedMessages).chatOptions(processedChatOptions).build())
-			.context(new ConcurrentHashMap<>(inputRequest.getAdvisorParams()))
+			.context(context)
 			.build();
 	}
 

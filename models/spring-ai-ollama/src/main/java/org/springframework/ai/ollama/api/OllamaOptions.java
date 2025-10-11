@@ -16,6 +16,7 @@
 
 package org.springframework.ai.ollama.api;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -378,6 +379,12 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
+
+	/**
+	 * The timeout duration for the chat request.
+	 */
+	@JsonIgnore
+	private Duration timeout;
 
 	public static Builder builder() {
 		return new Builder();
@@ -887,6 +894,17 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 		this.toolContext = toolContext;
 	}
 
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
 	/**
 	 * Convert the {@link OllamaOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -1204,6 +1222,11 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

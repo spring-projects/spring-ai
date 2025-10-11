@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.minimax;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,6 +49,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Alexandros Pappas
+ * @author Hyunsang Han
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -155,6 +157,9 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	 */
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
+
+	@JsonIgnore
+	private Duration timeout;
 
 	// @formatter:on
 
@@ -353,6 +358,17 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	public Map<String, Object> getToolContext() {
 		return (this.toolContext != null) ? Collections.unmodifiableMap(this.toolContext) : null;
 	}
@@ -509,6 +525,11 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

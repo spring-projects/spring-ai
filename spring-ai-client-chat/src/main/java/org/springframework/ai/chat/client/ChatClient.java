@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -258,6 +259,8 @@ public interface ChatClient {
 
 		ChatClientRequestSpec templateRenderer(TemplateRenderer templateRenderer);
 
+		ChatClientRequestSpec timeout(Duration timeout);
+
 		CallResponseSpec call();
 
 		StreamResponseSpec stream();
@@ -306,6 +309,8 @@ public interface ChatClient {
 		Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);
+
+		Builder defaultTimeout(Duration timeout);
 
 		Builder clone();
 

@@ -26,7 +26,9 @@ public enum ChatClientAttributes {
 
 	//@formatter:off
 
-	OUTPUT_FORMAT("spring.ai.chat.client.output.format");
+	OUTPUT_FORMAT("spring.ai.chat.client.output.format"),
+
+	TIMEOUT("spring.ai.chat.client.timeout");
 
 	//@formatter:on
 

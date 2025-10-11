@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Jason Smith
+ * @author Hyunsang Han
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -160,6 +162,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
+	@JsonIgnore
+	private Duration timeout;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -183,6 +188,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+			.timeout(fromOptions.getTimeout())
 			.build();
 	}
 
@@ -368,6 +374,17 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public MistralAiChatOptions copy() {
 		return fromOptions(this);
@@ -377,7 +394,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
 				this.responseFormat, this.stop, this.frequencyPenalty, this.presencePenalty, this.n, this.tools,
-				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled, this.toolContext,
+				this.timeout);
 	}
 
 	@Override
@@ -403,7 +421,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, other.toolContext);
+				&& Objects.equals(this.toolContext, other.toolContext) && Objects.equals(this.timeout, other.timeout);
 	}
 
 	public static final class Builder {
@@ -515,6 +533,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

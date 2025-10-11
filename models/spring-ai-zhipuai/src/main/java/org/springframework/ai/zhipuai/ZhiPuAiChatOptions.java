@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.zhipuai;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author YunKui Lu
+ * @author Hyunsang Han
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -138,6 +140,9 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
+
+	@JsonIgnore
+	private Duration timeout;
 	// @formatter:on
 
 	public static Builder builder() {
@@ -336,6 +341,17 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
 	}
 
 	@Override
@@ -566,6 +582,11 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder thinking(ChatCompletionRequest.Thinking thinking) {
 			this.options.thinking = thinking;
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

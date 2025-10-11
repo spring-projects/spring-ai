@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2024-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +41,8 @@ public class DefaultChatOptions implements ChatOptions {
 	private Integer topK;
 
 	private Double topP;
+
+	private Duration timeout;
 
 	@Override
 	public String getModel() {
@@ -114,6 +117,15 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends ChatOptions> T copy() {
 		DefaultChatOptions copy = new DefaultChatOptions();
@@ -125,6 +137,7 @@ public class DefaultChatOptions implements ChatOptions {
 		copy.setTemperature(this.getTemperature());
 		copy.setTopK(this.getTopK());
 		copy.setTopP(this.getTopP());
+		copy.setTimeout(this.getTimeout());
 		return (T) copy;
 	}
 

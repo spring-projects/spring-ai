@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import org.springframework.util.Assert;
  * chat completion</a>
  *
  * @author Geng Rong
+ * @author Hyunsang Han
  */
 @JsonInclude(Include.NON_NULL)
 public class DeepSeekChatOptions implements ToolCallingChatOptions {
@@ -143,7 +145,10 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Map<String, Object> toolContext = new HashMap<>();;
+	private Map<String, Object> toolContext = new HashMap<>();
+
+	@JsonIgnore
+	private Duration timeout;
 
 	public static Builder builder() {
 		return new Builder();
@@ -289,6 +294,17 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
 	public Boolean getLogprobs() {
 		return this.logprobs;
 	}
@@ -332,7 +348,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.frequencyPenalty, this.logprobs, this.topLogprobs,
 				this.maxTokens,  this.presencePenalty, this.responseFormat,
 				this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
-				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.timeout);
 	}
 
 
@@ -357,7 +373,8 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
 				&& Objects.equals(this.toolNames, other.toolNames)
 				&& Objects.equals(this.toolContext, other.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled);
+				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
+				&& Objects.equals(this.timeout, other.timeout);
 	}
 
 	public static DeepSeekChatOptions fromOptions(DeepSeekChatOptions fromOptions) {
@@ -379,6 +396,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+				.timeout(fromOptions.getTimeout())
 				.build();
 	}
 
@@ -494,6 +512,11 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 
