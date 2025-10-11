@@ -58,13 +58,14 @@ public class ZhiPuAiStreamFunctionCallingHelper {
 		String systemFingerprint = (current.systemFingerprint() != null ? current.systemFingerprint()
 				: previous.systemFingerprint());
 		String object = (current.object() != null ? current.object() : previous.object());
+		ZhiPuAiApi.Usage usage = (current.usage() != null ? current.usage() : previous.usage());
 
 		ChunkChoice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object);
+		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object, usage);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {

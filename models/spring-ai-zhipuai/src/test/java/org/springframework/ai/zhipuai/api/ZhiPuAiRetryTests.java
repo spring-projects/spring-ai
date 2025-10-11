@@ -133,7 +133,7 @@ public class ZhiPuAiRetryTests {
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
 				new ChatCompletionMessage("Response", Role.ASSISTANT), null);
 		ChatCompletionChunk expectedChatCompletion = new ChatCompletionChunk("id", List.of(choice), 666L, "model", null,
-				null);
+				null, null);
 
 		given(this.zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
