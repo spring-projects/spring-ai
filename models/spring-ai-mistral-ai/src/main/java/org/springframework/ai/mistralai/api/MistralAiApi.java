@@ -62,6 +62,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Jason Smith
+ * @author Nicolas Krier
  * @since 1.0.0
  */
 public class MistralAiApi {
@@ -330,7 +331,20 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		EMBED("mistral-embed");
+		/**
+		 * Mistral Embed model for general text embeddings.
+		 * Produces 1024-dimensional embeddings suitable for semantic search,
+		 * clustering, and other text similarity tasks.
+		 */
+		EMBED("mistral-embed"),
+
+		/**
+		 * Codestral Embed model optimized for code embeddings.
+		 * Produces 1536-dimensional embeddings specifically designed for
+		 * code similarity, code search, and retrieval-augmented generation (RAG)
+		 * with code repositories.
+		 */
+		CODESTRAL_EMBED("codestral-embed");
 		 // @formatter:on
 
 		private final String value;
