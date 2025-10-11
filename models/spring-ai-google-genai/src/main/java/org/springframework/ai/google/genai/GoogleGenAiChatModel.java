@@ -847,7 +847,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public GoogleGenAiChatOptions getDefaultOptions() {
 		return GoogleGenAiChatOptions.fromOptions(this.defaultOptions);
 	}
 

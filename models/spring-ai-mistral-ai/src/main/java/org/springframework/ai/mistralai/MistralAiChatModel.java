@@ -553,7 +553,7 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public MistralAiChatOptions getDefaultOptions() {
 		return MistralAiChatOptions.fromOptions(this.defaultOptions);
 	}
 
