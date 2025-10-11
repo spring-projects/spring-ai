@@ -377,7 +377,7 @@ public class OpenAiPropertiesTests {
 				"spring.ai.openai.chat.options.topP=0.56",
 
 				// "spring.ai.openai.chat.options.toolChoice.functionName=toolChoiceFunctionName",
-				"spring.ai.openai.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(ToolChoiceBuilder.FUNCTION("toolChoiceFunctionName")),
+				"spring.ai.openai.chat.options.toolChoice=" + ModelOptionsUtils.toJsonString(ToolChoiceBuilder.function("toolChoiceFunctionName")),
 
 				"spring.ai.openai.chat.options.tools[0].function.name=myFunction1",
 				"spring.ai.openai.chat.options.tools[0].function.description=function description",
