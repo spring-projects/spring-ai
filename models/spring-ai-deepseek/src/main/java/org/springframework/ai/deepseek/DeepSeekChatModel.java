@@ -508,7 +508,7 @@ public class DeepSeekChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public DeepSeekChatOptions getDefaultOptions() {
 		return DeepSeekChatOptions.fromOptions(this.defaultOptions);
 	}
 
