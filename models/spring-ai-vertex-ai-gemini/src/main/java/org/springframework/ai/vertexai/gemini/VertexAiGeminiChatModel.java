@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -600,39 +601,27 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.name())
 			.build();
 
-		boolean isFunctionCall = candidate.getContent().getPartsList().stream().allMatch(Part::hasFunctionCall);
+		List<Part> parts = candidate.getContent().getPartsList();
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.getContent()
-				.getPartsList()
-				.stream()
-				.filter(part -> part.hasFunctionCall())
-				.map(part -> {
-					FunctionCall functionCall = part.getFunctionCall();
-					var functionName = functionCall.getName();
-					String functionArguments = structToJson(functionCall.getArgs());
-					return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
-				})
-				.toList();
+		List<AssistantMessage.ToolCall> assistantToolCalls = parts.stream().filter(Part::hasFunctionCall).map(part -> {
+			FunctionCall functionCall = part.getFunctionCall();
+			var functionName = functionCall.getName();
+			String functionArguments = structToJson(functionCall.getArgs());
+			return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
+		}).toList();
 
-			AssistantMessage assistantMessage = AssistantMessage.builder()
-				.content("")
-				.properties(messageMetadata)
-				.toolCalls(assistantToolCalls)
-				.build();
+		String text = parts.stream()
+			.filter(part -> part.hasText() && !part.getText().isEmpty())
+			.map(Part::getText)
+			.collect(Collectors.joining(" "));
 
-			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
-		}
-		else {
-			List<Generation> generations = candidate.getContent()
-				.getPartsList()
-				.stream()
-				.map(part -> AssistantMessage.builder().content(part.getText()).properties(messageMetadata).build())
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content(text)
+			.properties(messageMetadata)
+			.toolCalls(assistantToolCalls)
+			.build();
 
-			return generations;
-		}
+		return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(Usage usage) {
