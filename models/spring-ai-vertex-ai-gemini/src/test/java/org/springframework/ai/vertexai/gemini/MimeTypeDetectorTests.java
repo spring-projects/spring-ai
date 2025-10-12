@@ -22,6 +22,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -30,6 +31,7 @@ import org.springframework.core.io.PathResource;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * @author YunKui Lu
@@ -88,6 +90,31 @@ class MimeTypeDetectorTests {
 		String path = "test." + extension;
 		MimeType mimeType = MimeTypeDetector.getMimeType(path);
 		assertThat(mimeType).isEqualTo(expectedMimeType);
+	}
+
+	@Test
+	void getMimeTypeWithEmptyString() {
+		assertThatThrownBy(() -> MimeTypeDetector.getMimeType("")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Unable to detect the MIME type");
+	}
+
+	@Test
+	void getMimeTypeWithMultipleDots() {
+		// Should use the last extension
+		MimeType expectedPng = MimeTypeDetector.GEMINI_MIME_TYPES.get("png");
+		assertThat(MimeTypeDetector.getMimeType("test.backup.png")).isEqualTo(expectedPng);
+		assertThat(MimeTypeDetector.getMimeType(new File("archive.tar.gz.png"))).isEqualTo(expectedPng);
+	}
+
+	@Test
+	void getMimeTypeWithQueryParameters() {
+		URI uri = URI.create("https://example.com/styles.css?version=1.2&cache=false");
+
+		assertThatThrownBy(() -> MimeTypeDetector.getMimeType(uri)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Unable to detect the MIME type");
+
+		assertThatThrownBy(() -> MimeTypeDetector.getMimeType(uri.toURL())).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Unable to detect the MIME type");
 	}
 
 }
