@@ -107,14 +107,12 @@ class MimeTypeDetectorTests {
 	}
 
 	@Test
-	void getMimeTypeWithQueryParameters() {
-		URI uri = URI.create("https://example.com/styles.css?version=1.2&cache=false");
+	void getMimeTypeWithQueryParameters() throws MalformedURLException {
+		MimeType expectedJpg = MimeTypeDetector.GEMINI_MIME_TYPES.get("jpg");
+		URI uri = URI.create("https://example.com/image.jpg?version=1.2&cache=false");
 
-		assertThatThrownBy(() -> MimeTypeDetector.getMimeType(uri)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Unable to detect the MIME type");
-
-		assertThatThrownBy(() -> MimeTypeDetector.getMimeType(uri.toURL())).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Unable to detect the MIME type");
+		assertThat(MimeTypeDetector.getMimeType(uri)).isEqualTo(expectedJpg);
+		assertThat(MimeTypeDetector.getMimeType(uri.toURL())).isEqualTo(expectedJpg);
 	}
 
 }
