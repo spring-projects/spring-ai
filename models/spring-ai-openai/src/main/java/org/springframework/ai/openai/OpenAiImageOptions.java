@@ -452,6 +452,11 @@ public class OpenAiImageOptions implements ImageOptions {
 			return this;
 		}
 
+		public Builder size(String size) {
+			this.options.setSize(size);
+			return this;
+		}
+
 		public Builder style(String style) {
 			this.options.setStyle(style);
 			return this;

@@ -169,7 +169,7 @@ public class OpenAiImageApiIT {
 		// Test GPT-Image-1 with all supported parameters
 		OpenAiImageRequest request = new OpenAiImageRequest("A red apple floating in space",
 				ImageModel.GPT_IMAGE_1.getValue(), 1, "high", null, "1024x1024", null, "test-user", "transparent",
-				"auto", 85, "png", 5, false);
+				"auto", 85, "png", 3, false);
 
 		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
 
@@ -199,7 +199,7 @@ public class OpenAiImageApiIT {
 		// Test GPT-Image-1-Mini with all supported parameters and stream enabled
 		OpenAiImageRequest request = new OpenAiImageRequest("A colorful abstract pattern",
 				ImageModel.GPT_IMAGE_1_MINI.getValue(), 1, "auto", null, "1024x1024", null, "test-user", "auto", "auto",
-				90, "png", 4, true);
+				90, "png", 3, true);
 
 		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
 

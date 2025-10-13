@@ -21,6 +21,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
@@ -35,6 +38,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * OpenAI Image API.
@@ -49,6 +53,10 @@ public class OpenAiImageApi {
 
 	private final RestClient restClient;
 
+	private final WebClient webClient;
+
+	private final ObjectMapper objectMapper = new ObjectMapper();
+
 	private final String imagesPath;
 
 	/**
@@ -58,10 +66,12 @@ public class OpenAiImageApi {
 	 * @param headers the http headers to use.
 	 * @param imagesPath the images path to use.
 	 * @param restClientBuilder the rest client builder to use.
+	 * @param webClientBuilder the web client builder to use for streaming.
 	 * @param responseErrorHandler the response error handler to use.
 	 */
 	public OpenAiImageApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String imagesPath,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()
@@ -74,6 +84,17 @@ public class OpenAiImageApi {
 			.defaultRequest(requestHeadersSpec -> {
 				if (!(apiKey instanceof NoopApiKey)) {
 					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
+				}
+			})
+			.build();
+
+		this.webClient = webClientBuilder.clone()
+			.baseUrl(baseUrl)
+			.defaultHeaders(h -> {
+				h.setContentType(MediaType.APPLICATION_JSON);
+				h.addAll(headers);
+				if (!(apiKey instanceof NoopApiKey)) {
+					h.setBearerAuth(apiKey.getValue());
 				}
 			})
 			.build();
@@ -91,6 +112,48 @@ public class OpenAiImageApi {
 			.body(openAiImageRequest)
 			.retrieve()
 			.toEntity(OpenAiImageResponse.class);
+	}
+
+	/**
+	 * Creates a streaming image generation response for the given image request.
+	 * @param imageRequest The image generation request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream of image generation events including partial
+	 * images (type: "image_generation.partial_image") and the final complete image (type:
+	 * "image_generation.completed").
+	 */
+	public Flux<OpenAiImageStreamEvent> streamImage(OpenAiImageRequest imageRequest) {
+		Assert.notNull(imageRequest, "Image request cannot be null.");
+		Assert.hasLength(imageRequest.prompt(), "Prompt cannot be empty.");
+		Assert.isTrue(imageRequest.stream() != null && imageRequest.stream(),
+				"Request must set the stream property to true.");
+
+		// @formatter:off
+		return this.webClient.post()
+			.uri(this.imagesPath)
+			.bodyValue(imageRequest)
+			.retrieve()
+			.bodyToFlux(String.class)
+			// Parse the JSON event data
+			.mapNotNull(content -> {
+				try {
+					// SSE format: "event: image_generation.partial_image\ndata: {json}"
+					// or "event: image_generation.completed\ndata: {json}"
+					// We only care about the data line
+					if (content.startsWith("data:")) {
+						String jsonData = content.substring(5).trim();
+						return this.objectMapper.readValue(jsonData, OpenAiImageStreamEvent.class);
+					}
+					// Skip event type lines and empty lines
+					return null;
+				}
+				catch (JsonProcessingException ex) {
+					throw new RuntimeException("Failed to parse streaming image event", ex);
+				}
+			})
+			// Complete the stream after receiving the "image_generation.completed" event
+			.takeUntil(event -> "image_generation.completed".equals(event.type()));
+		// @formatter:on
 	}
 
 	public static Builder builder() {
@@ -178,6 +241,38 @@ public class OpenAiImageApi {
 	}
 
 	/**
+	 * Represents a Server-Sent Event (SSE) for streaming image generation. This event is
+	 * emitted during streaming image generation when partial images become available
+	 * (type: "image_generation.partial_image") or when generation completes (type:
+	 * "image_generation.completed").
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record OpenAiImageStreamEvent(@JsonProperty("type") String type, @JsonProperty("b64_json") String b64Json,
+			@JsonProperty("created_at") Long createdAt, @JsonProperty("size") String size,
+			@JsonProperty("quality") String quality, @JsonProperty("background") String background,
+			@JsonProperty("output_format") String outputFormat,
+			@JsonProperty("partial_image_index") Integer partialImageIndex, @JsonProperty("usage") Usage usage) {
+
+		/**
+		 * Token usage information for image generation (only present in
+		 * image_generation.completed event).
+		 */
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record Usage(@JsonProperty("total_tokens") Integer totalTokens,
+				@JsonProperty("input_tokens") Integer inputTokens, @JsonProperty("output_tokens") Integer outputTokens,
+				@JsonProperty("input_tokens_details") InputTokensDetails inputTokensDetails) {
+
+			@JsonInclude(JsonInclude.Include.NON_NULL)
+			@JsonIgnoreProperties(ignoreUnknown = true)
+			public record InputTokensDetails(@JsonProperty("text_tokens") Integer textTokens,
+					@JsonProperty("image_tokens") Integer imageTokens) {
+			}
+		}
+	}
+
+	/**
 	 * Builder to construct {@link OpenAiImageApi} instance.
 	 */
 	public static final class Builder {
@@ -189,6 +284,8 @@ public class OpenAiImageApi {
 		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
 
 		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
 
@@ -230,6 +327,12 @@ public class OpenAiImageApi {
 			return this;
 		}
 
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
 		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
 			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
 			this.responseErrorHandler = responseErrorHandler;
@@ -239,7 +342,7 @@ public class OpenAiImageApi {
 		public OpenAiImageApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
 			return new OpenAiImageApi(this.baseUrl, this.apiKey, this.headers, this.imagesPath, this.restClientBuilder,
-					this.responseErrorHandler);
+					this.webClientBuilder, this.responseErrorHandler);
 		}
 
 	}
