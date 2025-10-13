@@ -178,8 +178,8 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
-				DurationParser.parse(requestOptions.getKeepAlive()),
-				OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()), requestOptions.getTruncate());
+				requestOptions.getKeepAlive(), OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()),
+				requestOptions.getTruncate());
 	}
 
 	/**
