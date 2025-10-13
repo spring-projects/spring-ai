@@ -620,7 +620,7 @@ public final class OllamaApi {
 	public record EmbeddingsRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("input") List<String> input,
-			@JsonProperty("keep_alive") Duration keepAlive,
+			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("options") Map<String, Object> options,
 			@JsonProperty("truncate") Boolean truncate) {
 
