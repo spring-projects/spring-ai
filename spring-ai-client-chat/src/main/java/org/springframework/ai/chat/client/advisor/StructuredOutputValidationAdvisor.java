@@ -37,6 +37,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
@@ -128,20 +129,68 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		ChatClientResponse chatClientResponse = null;
 
-		var counter = new AtomicInteger(this.repeatAttempts);
+		var repeatCounter = new AtomicInteger(0);
+
+		boolean isValidationSuccess = true;
+
+		var processedChatClientRequest = chatClientRequest;
 
 		do {
 			// Before Call
-			counter.decrementAndGet();
+			repeatCounter.incrementAndGet();
 
 			// Next Call
-			chatClientResponse = AdvisorUtils.copyChainAfterAdvisor(callAdvisorChain, this).nextCall(chatClientRequest);
+			chatClientResponse = AdvisorUtils.copyChainAfterAdvisor(callAdvisorChain, this)
+				.nextCall(processedChatClientRequest);
 
 			// After Call
+			ValidationResponse validationResponse = validateOutputSchema(chatClientResponse);
+
+			isValidationSuccess = validationResponse.valid();
+
+			if (!isValidationSuccess) {
+
+				// Add the validation error message to the next user message
+				// to let the LLM fix its output.
+				// Note: We could also consider adding the previous invalid output.
+				// However, this might lead to confusion and more complex prompts.
+				// Instead, we rely on the LLM to generate a new output based on the
+				// validation error.
+				logger.warn("JSON validation failed: " + validationResponse);
+
+				String validationErrorMessage = "Output JSON validation failed because of: "
+						+ validationResponse.errorMessage();
+
+				Prompt augmentedPrompt = chatClientRequest.prompt()
+					.augmentUserMessage(userMessage -> userMessage.mutate()
+						.text(userMessage.getText() + System.lineSeparator() + validationErrorMessage)
+						.build());
+
+				processedChatClientRequest = chatClientRequest.mutate().prompt(augmentedPrompt).build();
+			}
 		}
-		while (!isOutputSchemaValid(chatClientResponse) && counter.get() >= 0);
+		while (!isValidationSuccess && repeatCounter.get() <= this.repeatAttempts);
 
 		return chatClientResponse;
+	}
+
+	@SuppressWarnings("null")
+	private ValidationResponse validateOutputSchema(ChatClientResponse chatClientResponse) {
+
+		if (chatClientResponse.chatResponse() == null || chatClientResponse.chatResponse().getResult() == null
+				|| chatClientResponse.chatResponse().getResult().getOutput() == null
+				|| chatClientResponse.chatResponse().getResult().getOutput().getText() == null) {
+
+			logger.warn("ChatClientResponse is missing required json output for validation.");
+			return ValidationResponse.asInvalid("Missing required json output for validation.");
+		}
+
+		// TODO: should we consider validation for multiple results?
+		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
+
+		logger.debug("Validating JSON output against schema. Attempts left: " + this.repeatAttempts);
+
+		return this.jsonvalidator.validate(this.jsonSchema, json);
 	}
 
 	@SuppressWarnings("null")
@@ -155,9 +204,10 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			return false;
 		}
 
+		// TODO: should we consider validation for multiple results?
 		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
 
-		logger.info("Validating JSON output against schema. Attempts left: " + this.repeatAttempts);
+		logger.debug("Validating JSON output against schema. Attempts left: " + this.repeatAttempts);
 
 		ValidationResponse validationResponse = this.jsonvalidator.validate(this.jsonSchema, json);
 

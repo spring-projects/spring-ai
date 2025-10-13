@@ -562,6 +562,472 @@ public class StructuredOutputValidationAdvisorTests {
 		assertThat(callCount[0]).isEqualTo(4);
 	}
 
+	@Test
+	void testPromptAugmentationWithValidationError() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<Person>() {
+			})
+			.repeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		String invalidJson = "{\"name\":\"John\"}"; // Missing age
+		String validJson = "{\"name\":\"John Doe\",\"age\":30}";
+
+		ChatClientResponse invalidResponse = createMockResponse(invalidJson);
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		// Track the requests to verify prompt augmentation
+		ChatClientRequest[] capturedRequests = new ChatClientRequest[2];
+		int[] callCount = { 0 };
+
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				capturedRequests[callCount[0]] = req;
+				callCount[0]++;
+				return callCount[0] == 1 ? invalidResponse : validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+		assertThat(callCount[0]).isEqualTo(2);
+
+		// Verify that the second request has augmented prompt with validation error
+		assertThat(capturedRequests[0]).isNotNull();
+		assertThat(capturedRequests[1]).isNotNull();
+
+		String firstPromptText = capturedRequests[0].prompt().getInstructions().get(0).getText();
+		String secondPromptText = capturedRequests[1].prompt().getInstructions().get(0).getText();
+
+		assertThat(secondPromptText).contains(firstPromptText);
+		assertThat(secondPromptText).contains("Output JSON validation failed because of:");
+	}
+
+	@Test
+	void testValidationWithEmptyJsonString() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<Person>() {
+			})
+			.repeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		String emptyJson = "";
+		String validJson = "{\"name\":\"John Doe\",\"age\":30}";
+
+		ChatClientResponse emptyResponse = createMockResponse(emptyJson);
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				callCount[0]++;
+				return callCount[0] == 1 ? emptyResponse : validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+		assertThat(callCount[0]).isEqualTo(2);
+	}
+
+	@Test
+	void testValidationWithMalformedJson() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<Person>() {
+			})
+			.repeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		String malformedJson = "{\"name\":\"John\", age:30}"; // Missing quotes around age
+																// key
+		String validJson = "{\"name\":\"John Doe\",\"age\":30}";
+
+		ChatClientResponse malformedResponse = createMockResponse(malformedJson);
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				callCount[0]++;
+				return callCount[0] == 1 ? malformedResponse : validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+		assertThat(callCount[0]).isEqualTo(2);
+	}
+
+	@Test
+	void testValidationWithExtraFields() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<Person>() {
+			})
+			.repeatAttempts(0)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		// JSON with extra fields that aren't in the Person class
+		String jsonWithExtraFields = "{\"name\":\"John Doe\",\"age\":30,\"extraField\":\"value\"}";
+		ChatClientResponse response = createMockResponse(jsonWithExtraFields);
+
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				return response;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		// Should still be valid as extra fields are typically allowed
+		assertThat(result).isEqualTo(response);
+	}
+
+	@Test
+	void testValidationWithNestedObject() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<PersonWithAddress>() {
+			})
+			.repeatAttempts(2)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		String validJson = "{\"name\":\"John Doe\",\"age\":30,\"address\":{\"street\":\"123 Main St\",\"city\":\"Springfield\",\"zipCode\":\"12345\"}}";
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				return validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+	}
+
+	@Test
+	void testValidationWithInvalidNestedObject() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<PersonWithAddress>() {
+			})
+			.repeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		// Missing required fields in nested address object
+		String invalidJson = "{\"name\":\"John Doe\",\"age\":30,\"address\":{\"street\":\"123 Main St\"}}";
+		String validJson = "{\"name\":\"John Doe\",\"age\":30,\"address\":{\"street\":\"123 Main St\",\"city\":\"Springfield\",\"zipCode\":\"12345\"}}";
+
+		ChatClientResponse invalidResponse = createMockResponse(invalidJson);
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				callCount[0]++;
+				return callCount[0] == 1 ? invalidResponse : validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+		assertThat(callCount[0]).isEqualTo(2);
+	}
+
+	@Test
+	void testValidationWithListType() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<List<Person>>() {
+			})
+			.repeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		String validJson = "[{\"name\":\"John Doe\",\"age\":30},{\"name\":\"Jane Doe\",\"age\":25}]";
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				return validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+	}
+
+	@Test
+	void testValidationWithInvalidListType() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<List<Person>>() {
+			})
+			.repeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		// One person in the list is missing the age field
+		String invalidJson = "[{\"name\":\"John Doe\",\"age\":30},{\"name\":\"Jane Doe\"}]";
+		String validJson = "[{\"name\":\"John Doe\",\"age\":30},{\"name\":\"Jane Doe\",\"age\":25}]";
+
+		ChatClientResponse invalidResponse = createMockResponse(invalidJson);
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				callCount[0]++;
+				return callCount[0] == 1 ? invalidResponse : validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+		assertThat(callCount[0]).isEqualTo(2);
+	}
+
+	@Test
+	void testValidationWithWrongTypeInField() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<Person>() {
+			})
+			.repeatAttempts(1)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		// Age is a string instead of an integer
+		String invalidJson = "{\"name\":\"John Doe\",\"age\":\"thirty\"}";
+		String validJson = "{\"name\":\"John Doe\",\"age\":30}";
+
+		ChatClientResponse invalidResponse = createMockResponse(invalidJson);
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				callCount[0]++;
+				return callCount[0] == 1 ? invalidResponse : validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+		assertThat(callCount[0]).isEqualTo(2);
+	}
+
+	@Test
+	void testAdvisorOrderingInChain() {
+		int customOrder = Ordered.HIGHEST_PRECEDENCE + 1000;
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeRef<Person>() {
+			})
+			.advisorOrder(customOrder)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		String validJson = "{\"name\":\"John Doe\",\"age\":30}";
+		ChatClientResponse validResponse = createMockResponse(validJson);
+
+		// Create another advisor with different order
+		CallAdvisor otherAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "other";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.HIGHEST_PRECEDENCE + 500;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				return chain.nextCall(req);
+			}
+		};
+
+		CallAdvisor terminalAdvisor = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+				return validResponse;
+			}
+		};
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(otherAdvisor, advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(validResponse);
+	}
+
+	@Test
+	void testBuilderWithTypeOnly() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(Person.class)
+			.build();
+
+		assertThat(advisor).isNotNull();
+		assertThat(advisor.getOrder()).isEqualTo(Ordered.LOWEST_PRECEDENCE - 2000);
+		assertThat(advisor.getName()).isEqualTo("Structured Output Validation Advisor");
+	}
+
 	// Helper methods
 
 	private ChatClientRequest createMockRequest() {
@@ -635,6 +1101,40 @@ public class StructuredOutputValidationAdvisorTests {
 
 		public void setZipCode(String zipCode) {
 			this.zipCode = zipCode;
+		}
+
+	}
+
+	public static class PersonWithAddress {
+
+		private String name;
+
+		private int age;
+
+		private Address address;
+
+		public String getName() {
+			return this.name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public int getAge() {
+			return this.age;
+		}
+
+		public void setAge(int age) {
+			this.age = age;
+		}
+
+		public Address getAddress() {
+			return this.address;
+		}
+
+		public void setAddress(Address address) {
+			this.address = address;
 		}
 
 	}

@@ -60,6 +60,7 @@ Key features:
 * Automatically generates a JSON schema from the expected output type
 * Validates the LLM response against the schema
 * Retries the call if validation fails, up to a configurable number of attempts
+* Augments the prompt with validation error messages on retry attempts to help the LLM correct its output
 * Uses `AdvisorUtils.copyChainAfterAdvisor()` to create a sub-chain for recursive calls
 
 Example usage:
