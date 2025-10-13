@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
@@ -131,6 +132,24 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation)));
 			// @formatter:on
 		});
+	}
+
+	@Override
+	public CallAdvisorChain copy(CallAdvisor after) {
+
+		Assert.notNull(after, "The after call advisor must not be null");
+
+		List<CallAdvisor> callAdvisors = this.getCallAdvisors();
+
+		int afterAdvisorIndex = callAdvisors.indexOf(after);
+
+		if (afterAdvisorIndex < 0) {
+			throw new IllegalArgumentException("The specified advisor is not part of the chain: " + after.getName());
+		}
+
+		var remainingCallAdvisors = callAdvisors.subList(afterAdvisorIndex + 1, callAdvisors.size());
+
+		return DefaultAroundAdvisorChain.builder(this.getObservationRegistry()).pushAll(remainingCallAdvisors).build();
 	}
 
 	@Override
