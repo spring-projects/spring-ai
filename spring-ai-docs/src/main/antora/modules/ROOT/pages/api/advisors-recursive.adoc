@@ -1,0 +1,78 @@
+[[Advisors-Recursive]]
+
+= Recursive Advisors
+
+== What is a Recursive Advisor
+
+image:advisors-recursive.png[Advisors Recursive, width=230, float="right", align="center", alt="Advisors Recursive"]
+Recursive advisors are a special type of advisor that can loop through the downstream advisor chain multiple times. 
+This pattern is useful when you need to repeatedly call the LLM until a certain condition is met, such as:
+
+* Executing tool calls in a loop until no more tools need to be called
+* Validating structured output and retrying if validation fails
+* Implementing Evaluation logic with modifications to the request
+* Implementing retry logic with modifications to the request
+
+The `AdvisorUtils.copyChainAfterAdvisor()` method is the key utility that enables recursive advisor patterns. 
+It creates a new advisor chain that contains only the advisors that come after the current advisor in the original chain
+and allows the recursive advisor to call this sub-chain as needed.
+This approach ensures that:
+
+* The recursive advisor can loop through the remaining advisors in the chain
+* Other advisors in the chain can observe and intercept each iteration
+* The advisor chain maintains proper ordering and observability
+* The recursive advisor doesn't re-execute advisors that came before it
+
+== Built-in Recursive Advisors
+
+Spring AI provides two built-in recursive advisors that demonstrate this pattern:
+
+=== ToolCallAdvisor
+
+The `ToolCallAdvisor` implements the tool calling loop as part of the advisor chain, rather than relying on the model's internal tool execution. This enables other advisors in the chain to intercept and observe the tool calling process.
+
+Key features:
+
+* Disables the model's internal tool execution by setting `setInternalToolExecutionEnabled(false)`
+* Loops through the advisor chain until no more tool calls are present
+* Uses `AdvisorUtils.copyChainAfterAdvisor()` to create a sub-chain for recursive calls
+
+Example usage:
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(toolCallAdvisor)
+    .build();
+----
+
+=== StructuredOutputValidationAdvisor
+
+The `StructuredOutputValidationAdvisor` validates the structured JSON output against a generated JSON schema and retries the call if validation fails, up to a specified number of attempts.
+
+Key features:
+
+* Automatically generates a JSON schema from the expected output type
+* Validates the LLM response against the schema
+* Retries the call if validation fails, up to a configurable number of attempts
+* Uses `AdvisorUtils.copyChainAfterAdvisor()` to create a sub-chain for recursive calls
+
+Example usage:
+
+[source,java]
+----
+var validationAdvisor = StructuredOutputValidationAdvisor.builder()
+    .outputType(MyResponseType.class)
+    .repeatAttempts(3)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 1000)
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(validationAdvisor)
+    .build();
+----
