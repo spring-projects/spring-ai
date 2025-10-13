@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.api;
+package org.springframework.ai.openai.image.api;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -22,6 +22,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import org.springframework.ai.model.SimpleApiKey;
+import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.openai.api.OpenAiImageApi.ImageModel;
 import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageRequest;
 import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageResponse;
@@ -159,6 +160,70 @@ public class OpenAiImageApiIT {
 		assertThat(response.getBody().data()).hasSize(2);
 		assertThat(response.getBody().data().get(0).url()).isNotEmpty();
 		assertThat(response.getBody().data().get(1).url()).isNotEmpty();
+	}
+
+	// Comprehensive model-specific tests with all parameters
+
+	@Test
+	void gptImage1WithAllParameters() {
+		// Test GPT-Image-1 with all supported parameters
+		OpenAiImageRequest request = new OpenAiImageRequest("A red apple floating in space",
+				ImageModel.GPT_IMAGE_1.getValue(), 1, "high", "b64_json", "1024x1024", null, "test-user", "transparent",
+				"auto", 85, "png", null, false);
+
+		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().data()).hasSize(1);
+		assertThat(response.getBody().data().get(0).b64Json()).isNotEmpty();
+	}
+
+	@Test
+	void gptImage1MiniWithAllParameters() {
+		// Test GPT-Image-1-Mini with all supported parameters
+		OpenAiImageRequest request = new OpenAiImageRequest("A sunset over the ocean",
+				ImageModel.GPT_IMAGE_1_MINI.getValue(), 1, "medium", "b64_json", "1024x1024", null, "test-user",
+				"opaque", "low", 70, "jpeg", null, false);
+
+		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().data()).hasSize(1);
+		assertThat(response.getBody().data().get(0).b64Json()).isNotEmpty();
+	}
+
+	@Test
+	void dallE3WithAllParameters() {
+		// Test DALL-E 3 with all supported parameters
+		OpenAiImageRequest request = new OpenAiImageRequest("A hyper-realistic portrait of a wise old wizard",
+				ImageModel.DALL_E_3.getValue(), 1, "hd", "url", "1024x1024", "vivid", "test-user", null, null, null,
+				null, null, null);
+
+		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().data()).hasSize(1);
+		assertThat(response.getBody().data().get(0).url()).isNotEmpty();
+		assertThat(response.getBody().data().get(0).revisedPrompt()).isNotEmpty();
+	}
+
+	@Test
+	void dallE2WithAllParameters() {
+		// Test DALL-E 2 with all supported parameters
+		OpenAiImageRequest request = new OpenAiImageRequest("A simple geometric pattern",
+				ImageModel.DALL_E_2.getValue(), 2, null, "b64_json", "512x512", null, "test-user", null, null, null,
+				null, null, null);
+
+		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().data()).hasSize(2);
+		assertThat(response.getBody().data().get(0).b64Json()).isNotEmpty();
+		assertThat(response.getBody().data().get(1).b64Json()).isNotEmpty();
 	}
 
 }

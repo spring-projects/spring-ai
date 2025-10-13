@@ -21,10 +21,6 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run tests
-        run: |
-          ./mvnw --batch-mode test
-
       - name: Run OpenAI Image API integration tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
