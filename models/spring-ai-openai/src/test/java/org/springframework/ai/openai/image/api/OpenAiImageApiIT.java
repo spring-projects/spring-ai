@@ -168,8 +168,8 @@ public class OpenAiImageApiIT {
 	void gptImage1WithAllParameters() {
 		// Test GPT-Image-1 with all supported parameters
 		OpenAiImageRequest request = new OpenAiImageRequest("A red apple floating in space",
-				ImageModel.GPT_IMAGE_1.getValue(), 1, "high", "b64_json", "1024x1024", null, "test-user", "transparent",
-				"auto", 85, "png", null, false);
+				ImageModel.GPT_IMAGE_1.getValue(), 1, "high", null, "1024x1024", null, "test-user", "transparent",
+				"auto", 85, "png", 5, false);
 
 		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
 
@@ -183,8 +183,23 @@ public class OpenAiImageApiIT {
 	void gptImage1MiniWithAllParameters() {
 		// Test GPT-Image-1-Mini with all supported parameters
 		OpenAiImageRequest request = new OpenAiImageRequest("A sunset over the ocean",
-				ImageModel.GPT_IMAGE_1_MINI.getValue(), 1, "medium", "b64_json", "1024x1024", null, "test-user",
-				"opaque", "low", 70, "jpeg", null, false);
+				ImageModel.GPT_IMAGE_1_MINI.getValue(), 1, "medium", null, "1024x1024", null, "test-user", "opaque",
+				"low", 70, "jpeg", 3, false);
+
+		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().data()).hasSize(1);
+		assertThat(response.getBody().data().get(0).b64Json()).isNotEmpty();
+	}
+
+	@Test
+	void gptImage1MiniWithAllParametersAndStreamTrue() {
+		// Test GPT-Image-1-Mini with all supported parameters and stream enabled
+		OpenAiImageRequest request = new OpenAiImageRequest("A colorful abstract pattern",
+				ImageModel.GPT_IMAGE_1_MINI.getValue(), 1, "auto", null, "1024x1024", null, "test-user", "auto", "auto",
+				90, "png", 4, true);
 
 		ResponseEntity<OpenAiImageResponse> response = this.openAiImageApi.createImage(request);
 
