@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alexandros Pappas
  * @since 1.1.0
  */
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiImageAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(OpenAiImageAutoConfigurationIT.class);
