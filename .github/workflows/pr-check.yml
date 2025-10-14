@@ -25,14 +25,18 @@ jobs:
         run: |
           ./mvnw clean install -pl spring-ai-model -DskipTests
 
-      - name: Run OpenAI Image API integration tests
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          ./mvnw -pl models/spring-ai-openai -Pintegration-tests -Dit.test=OpenAiImageApiIT,OpenAiImageApiStreamingIT verify
-
       - name: Run OpenAI Image Model integration tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          ./mvnw -pl models/spring-ai-openai -Pintegration-tests -Dit.test=OpenAiImageModelObservationIT,OpenAiImageModelStreamingIT verify
+          ./mvnw -pl models/spring-ai-openai -Pintegration-tests -Dit.test=OpenAiImageModelIT,OpenAiImageModelNoOpApiKeysIT,OpenAiImageModelObservationIT,OpenAiImageModelStreamingIT,OpenAiImageModelWithImageResponseMetadataTests,OpenAiImageApiBuilderTests,OpenAiImageApiIT,OpenAiImageApiStreamingIT verify
+
+      - name: Run OpenAI Image AutoConfiguration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw -pl auto-configurations/models/spring-ai-autoconfigure-model-openai -Pintegration-tests -Dit.test=OpenAiImageAutoConfigurationIT verify
+
+      - name: Run OpenAI Image Properties tests
+        run: |
+          ./mvnw test -pl auto-configurations/models/spring-ai-autoconfigure-model-openai -Dtest=OpenAiPropertiesTests#imageOptionsTest,OpenAiPropertiesTests#imageGptImageOptionsTest
