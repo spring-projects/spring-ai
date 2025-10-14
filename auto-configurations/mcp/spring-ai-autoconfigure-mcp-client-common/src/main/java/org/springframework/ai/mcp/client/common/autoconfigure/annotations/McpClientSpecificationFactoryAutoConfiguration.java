@@ -57,26 +57,26 @@ public class McpClientSpecificationFactoryAutoConfiguration {
 
 		@Bean
 		List<SyncLoggingSpecification> loggingSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.loggingSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpLogging.class));
+			return new SupplierBackedList<>(() -> SyncMcpAnnotationProviders
+				.loggingSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpLogging.class)));
 		}
 
 		@Bean
 		List<SyncSamplingSpecification> samplingSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.samplingSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpSampling.class));
+			return new SupplierBackedList<>(() -> SyncMcpAnnotationProviders
+				.samplingSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpSampling.class)));
 		}
 
 		@Bean
 		List<SyncElicitationSpecification> elicitationSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.elicitationSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpElicitation.class));
+			return new SupplierBackedList<>(() -> SyncMcpAnnotationProviders
+				.elicitationSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpElicitation.class)));
 		}
 
 		@Bean
 		List<SyncProgressSpecification> progressSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.progressSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpProgress.class));
+			return new SupplierBackedList<>(() -> SyncMcpAnnotationProviders
+				.progressSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpProgress.class)));
 		}
 
 	}
@@ -87,22 +87,26 @@ public class McpClientSpecificationFactoryAutoConfiguration {
 
 		@Bean
 		List<AsyncLoggingSpecification> loggingSpecs(ClientMcpAnnotatedBeans beanRegistry) {
-			return AsyncMcpAnnotationProviders.loggingSpecifications(beanRegistry.getAllAnnotatedBeans());
+			return new SupplierBackedList<>(
+					() -> AsyncMcpAnnotationProviders.loggingSpecifications(beanRegistry.getAllAnnotatedBeans()));
 		}
 
 		@Bean
 		List<AsyncSamplingSpecification> samplingSpecs(ClientMcpAnnotatedBeans beanRegistry) {
-			return AsyncMcpAnnotationProviders.samplingSpecifications(beanRegistry.getAllAnnotatedBeans());
+			return new SupplierBackedList<>(
+					() -> AsyncMcpAnnotationProviders.samplingSpecifications(beanRegistry.getAllAnnotatedBeans()));
 		}
 
 		@Bean
 		List<AsyncElicitationSpecification> elicitationSpecs(ClientMcpAnnotatedBeans beanRegistry) {
-			return AsyncMcpAnnotationProviders.elicitationSpecifications(beanRegistry.getAllAnnotatedBeans());
+			return new SupplierBackedList<>(
+					() -> AsyncMcpAnnotationProviders.elicitationSpecifications(beanRegistry.getAllAnnotatedBeans()));
 		}
 
 		@Bean
 		List<AsyncProgressSpecification> progressSpecs(ClientMcpAnnotatedBeans beanRegistry) {
-			return AsyncMcpAnnotationProviders.progressSpecifications(beanRegistry.getAllAnnotatedBeans());
+			return new SupplierBackedList<>(
+					() -> AsyncMcpAnnotationProviders.progressSpecifications(beanRegistry.getAllAnnotatedBeans()));
 		}
 
 	}
