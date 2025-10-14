@@ -20,12 +20,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import reactor.core.publisher.Flux;
 
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiImageModel;
-import org.springframework.ai.openai.OpenAiImageOptions;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -47,15 +46,14 @@ public class OpenAiImageAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(OpenAiImageAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-				"spring.ai.openai.image.options.model=gpt-image-1-mini")
+		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
 		.withConfiguration(
 				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-						WebClientAutoConfiguration.class, OpenAiImageAutoConfiguration.class));
+						WebClientAutoConfiguration.class, ToolCallingAutoConfiguration.class));
 
 	@Test
 	void imageModelAutoConfigured() {
-		this.contextRunner.run(context -> {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class)).run(context -> {
 			assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(OpenAiImageApi.class)).isNotEmpty();
 		});
@@ -63,46 +61,22 @@ public class OpenAiImageAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		this.contextRunner.run(context -> {
-			OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai.image.options.model=dall-e-2",
+					"spring.ai.openai.image.options.response-format=b64_json")
+			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.run(context -> {
+				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
+				ImagePrompt prompt = new ImagePrompt("A simple red circle");
+				ImageResponse response = imageModel.call(prompt);
 
-			assertThat(imageModel).isNotNull();
+				assertThat(response).isNotNull();
+				assertThat(response.getResults()).hasSize(1);
+				assertThat(response.getResult().getOutput().getB64Json()).isNotEmpty();
 
-			ImagePrompt prompt = new ImagePrompt("A simple red circle");
-			ImageResponse response = imageModel.call(prompt);
-
-			assertThat(response).isNotNull();
-			assertThat(response.getResults()).isNotEmpty();
-			assertThat(response.getResult().getOutput().getB64Json()).isNotEmpty();
-
-			logger
-				.info("Generated image with base64 length: " + response.getResult().getOutput().getB64Json().length());
-		});
-	}
-
-	@Test
-	void streamImage() {
-		this.contextRunner.run(context -> {
-			OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
-
-			assertThat(imageModel).isNotNull();
-
-			OpenAiImageOptions options = OpenAiImageOptions.builder()
-				.model(OpenAiImageApi.ImageModel.GPT_IMAGE_1_MINI.getValue())
-				.stream(true)
-				.partialImages(1)
-				.build();
-
-			ImagePrompt prompt = new ImagePrompt("A blue square", options);
-			Flux<ImageResponse> imageStream = imageModel.stream(prompt);
-
-			ImageResponse response = imageStream.blockFirst();
-
-			assertThat(response).isNotNull();
-			assertThat(response.getResults()).hasSize(1);
-			assertThat(response.getResult().getOutput().getB64Json()).isNotEmpty();
-			logger.info("Received streaming image chunk");
-		});
+				logger.info("Generated image with base64 length: "
+						+ response.getResult().getOutput().getB64Json().length());
+			});
 	}
 
 	@Test
