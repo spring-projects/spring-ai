@@ -80,7 +80,7 @@ public class StructuredOutputValidationAdvisorTests {
 	@Test
 	void whenRepeatAttemptsIsNegativeThenThrow() {
 		assertThatThrownBy(() -> StructuredOutputValidationAdvisor.builder().outputType(new TypeRef<Person>() {
-		}).repeatAttempts(-1).build()).isInstanceOf(IllegalArgumentException.class)
+		}).maxRepeatAttempts(-1).build()).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("repeatAttempts must be greater than or equal to 0");
 	}
 
@@ -94,7 +94,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(typeRef)
 			.advisorOrder(customOrder)
-			.repeatAttempts(customAttempts)
+			.maxRepeatAttempts(customAttempts)
 			.build();
 
 		assertThat(advisor).isNotNull();
@@ -175,7 +175,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(3)
+			.maxRepeatAttempts(3)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -217,7 +217,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(2)
+			.maxRepeatAttempts(2)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -261,7 +261,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(2)
+			.maxRepeatAttempts(2)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -304,7 +304,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(0)
+			.maxRepeatAttempts(0)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -347,7 +347,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -392,7 +392,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -439,7 +439,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Address>() {
 			})
-			.repeatAttempts(2)
+			.maxRepeatAttempts(2)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -513,7 +513,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(3)
+			.maxRepeatAttempts(3)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -567,7 +567,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -625,7 +625,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -669,7 +669,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -714,7 +714,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(0)
+			.maxRepeatAttempts(0)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -754,7 +754,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<PersonWithAddress>() {
 			})
-			.repeatAttempts(2)
+			.maxRepeatAttempts(2)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -792,7 +792,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<PersonWithAddress>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -837,7 +837,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<List<Person>>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -875,7 +875,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<List<Person>>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -920,7 +920,7 @@ public class StructuredOutputValidationAdvisorTests {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeRef<Person>() {
 			})
-			.repeatAttempts(1)
+			.maxRepeatAttempts(1)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
