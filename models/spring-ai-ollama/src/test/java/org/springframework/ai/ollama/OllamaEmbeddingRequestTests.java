@@ -16,7 +16,6 @@
 
 package org.springframework.ai.ollama;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -35,12 +34,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Jonghoon Park
  */
-public class OllamaEmbeddingRequestTests {
+class OllamaEmbeddingRequestTests {
 
 	private OllamaEmbeddingModel embeddingModel;
 
 	@BeforeEach
-	public void setUp() {
+	void setUp() {
 		this.embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
 			.defaultOptions(
@@ -49,7 +48,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestDefaultOptions() {
+	void ollamaEmbeddingRequestDefaultOptions() {
 		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(List.of("Hello"), null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
@@ -58,7 +57,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestRequestOptions() {
+	void ollamaEmbeddingRequestRequestOptions() {
 		var promptOptions = OllamaEmbeddingOptions.builder()//
 			.model("PROMPT_MODEL")//
 			.build();
@@ -72,18 +71,18 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithNegativeKeepAlive() {
+	void ollamaEmbeddingRequestWithNegativeKeepAlive() {
 		var promptOptions = OllamaEmbeddingOptions.builder().model("PROMPT_MODEL").keepAlive("-1m").build();
 
 		var embeddingRequest = this.embeddingModel
 			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Hello"), promptOptions));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
-		assertThat(ollamaRequest.keepAlive()).isEqualTo(Duration.ofMinutes(-1));
+		assertThat(ollamaRequest.keepAlive()).isEqualTo("-1m");
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithEmptyInput() {
+	void ollamaEmbeddingRequestWithEmptyInput() {
 		var embeddingRequest = this.embeddingModel
 			.buildEmbeddingRequest(new EmbeddingRequest(Collections.emptyList(), null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
@@ -93,7 +92,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithMultipleInputs() {
+	void ollamaEmbeddingRequestWithMultipleInputs() {
 		List<String> inputs = Arrays.asList("Hello", "World", "How are you?");
 		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(inputs, null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
@@ -103,7 +102,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestOptionsOverrideDefaults() {
+	void ollamaEmbeddingRequestOptionsOverrideDefaults() {
 		var requestOptions = OllamaEmbeddingOptions.builder().model("OVERRIDE_MODEL").build();
 
 		var embeddingRequest = this.embeddingModel
@@ -115,24 +114,24 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithDifferentKeepAliveFormats() {
+	void ollamaEmbeddingRequestWithDifferentKeepAliveFormats() {
 		// Test seconds format
 		var optionsSeconds = OllamaEmbeddingOptions.builder().keepAlive("30s").build();
 		var requestSeconds = this.embeddingModel
 			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Test"), optionsSeconds));
 		var ollamaRequestSeconds = this.embeddingModel.ollamaEmbeddingRequest(requestSeconds);
-		assertThat(ollamaRequestSeconds.keepAlive()).isEqualTo(Duration.ofSeconds(30));
+		assertThat(ollamaRequestSeconds.keepAlive()).isEqualTo("30s");
 
 		// Test hours format
 		var optionsHours = OllamaEmbeddingOptions.builder().keepAlive("2h").build();
 		var requestHours = this.embeddingModel
 			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Test"), optionsHours));
 		var ollamaRequestHours = this.embeddingModel.ollamaEmbeddingRequest(requestHours);
-		assertThat(ollamaRequestHours.keepAlive()).isEqualTo(Duration.ofHours(2));
+		assertThat(ollamaRequestHours.keepAlive()).isEqualTo("2h");
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithMinimalDefaults() {
+	void ollamaEmbeddingRequestWithMinimalDefaults() {
 		// Create model with minimal defaults
 		var minimalModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
@@ -151,7 +150,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestPreservesInputOrder() {
+	void ollamaEmbeddingRequestPreservesInputOrder() {
 		List<String> orderedInputs = Arrays.asList("First", "Second", "Third", "Fourth");
 		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(orderedInputs, null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
@@ -160,7 +159,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithWhitespaceInputs() {
+	void ollamaEmbeddingRequestWithWhitespaceInputs() {
 		List<String> inputs = Arrays.asList("", "   ", "\t\n", "normal text", "  spaced  ");
 		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(inputs, null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
@@ -170,7 +169,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithNullInput() {
+	void ollamaEmbeddingRequestWithNullInput() {
 		// Test behavior when input list contains null values
 		List<String> inputsWithNull = Arrays.asList("Hello", null, "World");
 		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(inputsWithNull, null));
@@ -181,7 +180,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestPartialOptionsOverride() {
+	void ollamaEmbeddingRequestPartialOptionsOverride() {
 		// Test that only specified options are overridden, others remain default
 		var requestOptions = OllamaEmbeddingOptions.builder()
 			.model("PARTIAL_OVERRIDE_MODEL")
@@ -199,7 +198,7 @@ public class OllamaEmbeddingRequestTests {
 	}
 
 	@Test
-	public void ollamaEmbeddingRequestWithEmptyStringInput() {
+	void ollamaEmbeddingRequestWithEmptyStringInput() {
 		// Test with list containing only empty string
 		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(List.of(""), null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);

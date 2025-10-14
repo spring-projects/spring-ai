@@ -16,7 +16,6 @@
 
 package org.springframework.ai.ollama;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +45,7 @@ import static org.mockito.BDDMockito.given;
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
-public class OllamaEmbeddingModelTests {
+class OllamaEmbeddingModelTests {
 
 	@Mock
 	OllamaApi ollamaApi;
@@ -55,7 +54,7 @@ public class OllamaEmbeddingModelTests {
 	ArgumentCaptor<EmbeddingsRequest> embeddingsRequestCaptor;
 
 	@Test
-	public void options() {
+	void options() {
 
 		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
 			.willReturn(new EmbeddingsResponse("RESPONSE_MODEL_NAME",
@@ -109,7 +108,7 @@ public class OllamaEmbeddingModelTests {
 	}
 
 	@Test
-	public void singleInputEmbedding() {
+	void singleInputEmbedding() {
 		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
 			.willReturn(new EmbeddingsResponse("TEST_MODEL", List.of(new float[] { 0.1f, 0.2f, 0.3f }), 10L, 5L, 1));
 
@@ -131,7 +130,7 @@ public class OllamaEmbeddingModelTests {
 	}
 
 	@Test
-	public void embeddingWithNullOptions() {
+	void embeddingWithNullOptions() {
 		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
 			.willReturn(new EmbeddingsResponse("NULL_OPTIONS_MODEL", List.of(new float[] { 0.5f }), 5L, 2L, 1));
 
@@ -150,7 +149,7 @@ public class OllamaEmbeddingModelTests {
 	}
 
 	@Test
-	public void embeddingWithMultipleLargeInputs() {
+	void embeddingWithMultipleLargeInputs() {
 		List<String> largeInputs = List.of(
 				"This is a very long text input that might be used for document embedding scenarios",
 				"Another substantial piece of text content that could represent a paragraph or section",
@@ -179,7 +178,7 @@ public class OllamaEmbeddingModelTests {
 	}
 
 	@Test
-	public void embeddingWithCustomKeepAliveFormats() {
+	void embeddingWithCustomKeepAliveFormats() {
 		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
 			.willReturn(new EmbeddingsResponse("KEEPALIVE_MODEL", List.of(new float[] { 1.0f }), 5L, 2L, 1));
 
@@ -192,17 +191,17 @@ public class OllamaEmbeddingModelTests {
 		var secondsOptions = OllamaEmbeddingOptions.builder().model("KEEPALIVE_MODEL").keepAlive("300s").build();
 
 		embeddingModel.call(new EmbeddingRequest(List.of("Keep alive seconds"), secondsOptions));
-		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo(Duration.ofSeconds(300));
+		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo("300s");
 
 		// Test with hours format
 		var hoursOptions = OllamaEmbeddingOptions.builder().model("KEEPALIVE_MODEL").keepAlive("2h").build();
 
 		embeddingModel.call(new EmbeddingRequest(List.of("Keep alive hours"), hoursOptions));
-		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo(Duration.ofHours(2));
+		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo("2h");
 	}
 
 	@Test
-	public void embeddingResponseMetadata() {
+	void embeddingResponseMetadata() {
 		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
 			.willReturn(new EmbeddingsResponse("METADATA_MODEL", List.of(new float[] { 0.1f, 0.2f }), 100L, 50L, 25));
 
@@ -220,7 +219,7 @@ public class OllamaEmbeddingModelTests {
 	}
 
 	@Test
-	public void embeddingWithZeroLengthVectors() {
+	void embeddingWithZeroLengthVectors() {
 		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
 			.willReturn(new EmbeddingsResponse("ZERO_MODEL", List.of(new float[] {}), 0L, 0L, 1));
 
@@ -237,7 +236,7 @@ public class OllamaEmbeddingModelTests {
 	}
 
 	@Test
-	public void builderValidation() {
+	void builderValidation() {
 		// Test that builder requires ollamaApi
 		assertThatThrownBy(() -> OllamaEmbeddingModel.builder().build()).isInstanceOf(IllegalArgumentException.class);
 

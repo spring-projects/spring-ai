@@ -16,12 +16,9 @@
 
 package org.springframework.ai.ollama;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import io.micrometer.observation.ObservationRegistry;
 
@@ -198,37 +195,6 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
-	}
-
-	public static class DurationParser {
-
-		private static final Pattern PATTERN = Pattern.compile("(-?\\d+)(ms|s|m|h)");
-
-		public static Duration parse(String input) {
-
-			if (!StringUtils.hasText(input)) {
-				return null;
-			}
-
-			Matcher matcher = PATTERN.matcher(input);
-
-			if (matcher.matches()) {
-				long value = Long.parseLong(matcher.group(1));
-				String unit = matcher.group(2);
-
-				return switch (unit) {
-					case "ms" -> Duration.ofMillis(value);
-					case "s" -> Duration.ofSeconds(value);
-					case "m" -> Duration.ofMinutes(value);
-					case "h" -> Duration.ofHours(value);
-					default -> throw new IllegalArgumentException("Unsupported time unit: " + unit);
-				};
-			}
-			else {
-				throw new IllegalArgumentException("Invalid duration format: " + input);
-			}
-		}
-
 	}
 
 	public static final class Builder {
