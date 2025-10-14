@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.api;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -55,6 +56,8 @@ public class OpenAiImageApi {
 
 	private final WebClient webClient;
 
+	private final ApiKey apiKey;
+
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	private final String imagesPath;
@@ -73,30 +76,23 @@ public class OpenAiImageApi {
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
+		this.apiKey = apiKey;
+
 		// @formatter:off
+		Consumer<HttpHeaders> defaultHeaders = h -> {
+			h.setContentType(MediaType.APPLICATION_JSON);
+			h.addAll(headers);
+		};
+
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
-			.defaultHeaders(h -> {
-				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
-			})
+			.defaultHeaders(defaultHeaders)
 			.defaultStatusHandler(responseErrorHandler)
-			.defaultRequest(requestHeadersSpec -> {
-				if (!(apiKey instanceof NoopApiKey)) {
-					requestHeadersSpec.header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey.getValue());
-				}
-			})
 			.build();
 
 		this.webClient = webClientBuilder.clone()
 			.baseUrl(baseUrl)
-			.defaultHeaders(h -> {
-				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
-				if (!(apiKey instanceof NoopApiKey)) {
-					h.setBearerAuth(apiKey.getValue());
-				}
-			})
+			.defaultHeaders(defaultHeaders)
 			.build();
 		// @formatter:on
 
@@ -107,11 +103,14 @@ public class OpenAiImageApi {
 		Assert.notNull(openAiImageRequest, "Image request cannot be null.");
 		Assert.hasLength(openAiImageRequest.prompt(), "Prompt cannot be empty.");
 
+		// @formatter:off
 		return this.restClient.post()
 			.uri(this.imagesPath)
+			.headers(this::addDefaultHeadersIfMissing)
 			.body(openAiImageRequest)
 			.retrieve()
 			.toEntity(OpenAiImageResponse.class);
+		// @formatter:on
 	}
 
 	/**
@@ -131,6 +130,7 @@ public class OpenAiImageApi {
 		// @formatter:off
 		return this.webClient.post()
 			.uri(this.imagesPath)
+			.headers(this::addDefaultHeadersIfMissing)
 			.bodyValue(imageRequest)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -154,6 +154,12 @@ public class OpenAiImageApi {
 			// Complete the stream after receiving the "image_generation.completed" event
 			.takeUntil(event -> "image_generation.completed".equals(event.type()));
 		// @formatter:on
+	}
+
+	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
+		if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+			headers.setBearerAuth(this.apiKey.getValue());
+		}
 	}
 
 	public static Builder builder() {
