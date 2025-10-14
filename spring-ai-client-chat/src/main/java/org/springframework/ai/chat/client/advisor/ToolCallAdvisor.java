@@ -25,6 +25,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -112,13 +113,29 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			// After Call
 
 			// TODO: check that this is tool call is sufficiant for all chat models
-			// that support tool calls.
-			isToolCall = chatClientResponse.chatResponse().hasToolCalls();
+			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
+			// finish status as well)
+			isToolCall = chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().hasToolCalls();
 
 			if (isToolCall) {
 
 				ToolExecutionResult toolExecutionResult = this.toolCallingManager
 					.executeToolCalls(processedChatClientRequest.prompt(), chatClientResponse.chatResponse());
+
+				if (toolExecutionResult.returnDirect()) {
+					// Interupt the tool calling loop and return the tool execution result
+					// directly to the client application instead of returning it tothe
+					// LLM.
+					isToolCall = false;
+
+					// Return tool execution result directly to the application client.
+					chatClientResponse = chatClientResponse.mutate()
+						.chatResponse(ChatResponse.builder()
+							.from(chatClientResponse.chatResponse())
+							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+							.build())
+						.build();
+				}
 
 				instructions = toolExecutionResult.conversationHistory();
 			}

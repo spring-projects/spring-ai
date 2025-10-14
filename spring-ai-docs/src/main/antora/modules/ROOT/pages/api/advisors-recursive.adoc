@@ -35,7 +35,9 @@ Key features:
 
 * Disables the model's internal tool execution by setting `setInternalToolExecutionEnabled(false)`
 * Loops through the advisor chain until no more tool calls are present
+* Supports "return direct" functionality - when a tool execution has `returnDirect=true`, it interrupts the tool calling loop and returns the tool execution result directly to the client application instead of sending it back to the LLM
 * Uses `AdvisorUtils.copyChainAfterAdvisor()` to create a sub-chain for recursive calls
+* Includes null safety checks to handle cases where the chat response might be null
 
 Example usage:
 
@@ -50,6 +52,21 @@ var chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(toolCallAdvisor)
     .build();
 ----
+
+==== Return Direct Functionality
+
+The "return direct" feature allows tools to bypass the LLM and return their results directly to the client application. This is useful when:
+
+* The tool's output is the final answer and doesn't need LLM processing
+* You want to reduce latency by avoiding an additional LLM call
+* The tool result should be returned as-is without interpretation
+
+When a tool execution has `returnDirect=true`, the `ToolCallAdvisor` will:
+
+1. Execute the tool call as normal
+2. Detect the `returnDirect` flag in the `ToolExecutionResult`
+3. Interrupt the tool calling loop
+4. Return the tool execution result directly to the client application as a `ChatResponse` with the tool's output as the generation content
 
 === StructuredOutputValidationAdvisor
 

@@ -18,12 +18,15 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -36,6 +39,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -162,22 +166,7 @@ public class ToolCallAdvisorTests {
 		ChatClientResponse response = createMockResponse(false);
 
 		// Create a terminal advisor that returns the response
-		CallAdvisor terminalAdvisor = new CallAdvisor() {
-			@Override
-			public String getName() {
-				return "terminal";
-			}
-
-			@Override
-			public int getOrder() {
-				return 0;
-			}
-
-			@Override
-			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
-				return response;
-			}
-		};
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> response);
 
 		// Create a real chain with both advisors
 		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
@@ -191,6 +180,27 @@ public class ToolCallAdvisorTests {
 	}
 
 	@Test
+	void testAdviseCallWithNullChatResponse() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithNullChatResponse = ChatClientResponse.builder().build();
+
+		// Create a terminal advisor that returns the response with null chatResponse
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> responseWithNullChatResponse);
+
+		// Create a real chain with both advisors
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertThat(result).isEqualTo(responseWithNullChatResponse);
+		verify(this.toolCallingManager, times(0)).executeToolCalls(any(), any());
+	}
+
+	@Test
 	void testAdviseCallWithSingleToolCallIteration() {
 		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
@@ -200,23 +210,11 @@ public class ToolCallAdvisorTests {
 
 		// Create a terminal advisor that returns responses in sequence
 		int[] callCount = { 0 };
-		CallAdvisor terminalAdvisor = new CallAdvisor() {
-			@Override
-			public String getName() {
-				return "terminal";
-			}
 
-			@Override
-			public int getOrder() {
-				return 0;
-			}
-
-			@Override
-			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
-				callCount[0]++;
-				return callCount[0] == 1 ? responseWithToolCall : finalResponse;
-			}
-		};
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
 
 		// Create a real chain with both advisors
 		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
@@ -225,7 +223,7 @@ public class ToolCallAdvisorTests {
 
 		// Mock tool execution result
 		List<Message> conversationHistory = List.of(new UserMessage("test"),
-				new AssistantMessage("", Map.of(), List.of()), new ToolResponseMessage(List.of()));
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
 		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
 			.conversationHistory(conversationHistory)
 			.build();
@@ -250,31 +248,18 @@ public class ToolCallAdvisorTests {
 
 		// Create a terminal advisor that returns responses in sequence
 		int[] callCount = { 0 };
-		CallAdvisor terminalAdvisor = new CallAdvisor() {
-			@Override
-			public String getName() {
-				return "terminal";
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return firstToolCallResponse;
 			}
-
-			@Override
-			public int getOrder() {
-				return 0;
+			else if (callCount[0] == 2) {
+				return secondToolCallResponse;
 			}
-
-			@Override
-			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
-				callCount[0]++;
-				if (callCount[0] == 1) {
-					return firstToolCallResponse;
-				}
-				else if (callCount[0] == 2) {
-					return secondToolCallResponse;
-				}
-				else {
-					return finalResponse;
-				}
+			else {
+				return finalResponse;
 			}
-		};
+		});
 
 		// Create a real chain with both advisors
 		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
@@ -284,7 +269,7 @@ public class ToolCallAdvisorTests {
 		// Mock tool execution results
 		AssistantMessage.builder().build();
 		List<Message> conversationHistory = List.of(new UserMessage("test"),
-				new AssistantMessage("", Map.of(), List.of()), new ToolResponseMessage(List.of()));
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
 		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
 			.conversationHistory(conversationHistory)
 			.build();
@@ -299,6 +284,49 @@ public class ToolCallAdvisorTests {
 	}
 
 	@Test
+	void testAdviseCallWithReturnDirectToolExecution() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		// Create a terminal advisor that returns the response
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> responseWithToolCall);
+
+		// Create a real chain with both advisors
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result with returnDirect = true
+		ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+				"Tool result data");
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(toolResponse))
+			.build();
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), toolResponseMessage);
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.returnDirect(true)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		// Verify that the tool execution was called only once (no loop continuation)
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+
+		// Verify that the result contains the tool execution result as generations
+		assertThat(result.chatResponse()).isNotNull();
+		assertThat(result.chatResponse().getResults()).hasSize(1);
+		assertThat(result.chatResponse().getResults().get(0).getOutput().getText()).isEqualTo("Tool result data");
+		assertThat(result.chatResponse().getResults().get(0).getMetadata().getFinishReason())
+			.isEqualTo(ToolExecutionResult.FINISH_REASON);
+	}
+
+	@Test
 	void testInternalToolExecutionIsDisabled() {
 		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
 
@@ -307,23 +335,11 @@ public class ToolCallAdvisorTests {
 
 		// Use a simple holder to capture the request
 		ChatClientRequest[] capturedRequest = new ChatClientRequest[1];
-		CallAdvisor capturingAdvisor = new CallAdvisor() {
-			@Override
-			public String getName() {
-				return "capturing";
-			}
 
-			@Override
-			public int getOrder() {
-				return 0;
-			}
-
-			@Override
-			public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
-				capturedRequest[0] = req;
-				return response;
-			}
-		};
+		CallAdvisor capturingAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			capturedRequest[0] = req;
+			return response;
+		});
 
 		CallAdvisorChain capturingChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
 			.pushAll(List.of(advisor, capturingAdvisor))
@@ -369,10 +385,10 @@ public class ToolCallAdvisorTests {
 		ChatOptions options = null;
 		if (withToolCallingOptions) {
 			ToolCallingChatOptions toolOptions = mock(ToolCallingChatOptions.class,
-					org.mockito.Mockito.withSettings().lenient());
+					Mockito.withSettings().strictness(Strictness.LENIENT));
 			// Create a separate mock for the copy that tracks the internal state
 			ToolCallingChatOptions copiedOptions = mock(ToolCallingChatOptions.class,
-					org.mockito.Mockito.withSettings().lenient());
+					Mockito.withSettings().strictness(Strictness.LENIENT));
 
 			// Use a holder to track the state
 			boolean[] internalToolExecutionEnabled = { true };
@@ -387,7 +403,7 @@ public class ToolCallAdvisorTests {
 
 			// When setInternalToolExecutionEnabled is called on the copy, update the
 			// state
-			org.mockito.Mockito.doAnswer(invocation -> {
+			Mockito.doAnswer(invocation -> {
 				internalToolExecutionEnabled[0] = invocation.getArgument(0);
 				return null;
 			}).when(copiedOptions).setInternalToolExecutionEnabled(org.mockito.ArgumentMatchers.anyBoolean());
@@ -401,17 +417,61 @@ public class ToolCallAdvisorTests {
 	}
 
 	private ChatClientResponse createMockResponse(boolean hasToolCalls) {
-		ChatResponse chatResponse = mock(ChatResponse.class, org.mockito.Mockito.withSettings().lenient());
-		when(chatResponse.hasToolCalls()).thenReturn(hasToolCalls);
-
-		Generation generation = mock(Generation.class, org.mockito.Mockito.withSettings().lenient());
+		Generation generation = mock(Generation.class, Mockito.withSettings().strictness(Strictness.LENIENT));
 		when(generation.getOutput()).thenReturn(new AssistantMessage("response"));
-		when(chatResponse.getResults()).thenReturn(List.of(generation));
 
-		ChatClientResponse response = mock(ChatClientResponse.class, org.mockito.Mockito.withSettings().lenient());
-		when(response.chatResponse()).thenReturn(chatResponse);
+		// Mock metadata to avoid NullPointerException in ChatResponse.Builder.from()
+		ChatResponseMetadata metadata = mock(ChatResponseMetadata.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(metadata.getModel()).thenReturn("");
+		when(metadata.getId()).thenReturn("");
+		when(metadata.getRateLimit()).thenReturn(null);
+		when(metadata.getUsage()).thenReturn(null);
+		when(metadata.getPromptMetadata()).thenReturn(null);
+		when(metadata.entrySet()).thenReturn(java.util.Collections.emptySet());
+
+		// Create a real ChatResponse instead of mocking it to avoid issues with
+		// ChatResponse.Builder.from()
+		ChatResponse chatResponse = ChatResponse.builder().generations(List.of(generation)).metadata(metadata).build();
+
+		// Mock hasToolCalls since it's not part of the builder
+		ChatResponse spyChatResponse = Mockito.spy(chatResponse);
+		when(spyChatResponse.hasToolCalls()).thenReturn(hasToolCalls);
+
+		ChatClientResponse response = mock(ChatClientResponse.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(response.chatResponse()).thenReturn(spyChatResponse);
+
+		// Mock mutate() to return a real builder that can handle the mutation
+		when(response.mutate())
+			.thenAnswer(invocation -> ChatClientResponse.builder().chatResponse(spyChatResponse).context(Map.of()));
 
 		return response;
 	}
+
+	private static class TerminalCallAdvisor implements CallAdvisor {
+
+		private final BiFunction<ChatClientRequest, CallAdvisorChain, ChatClientResponse> responseFunction;
+
+		TerminalCallAdvisor(BiFunction<ChatClientRequest, CallAdvisorChain, ChatClientResponse> responseFunction) {
+			this.responseFunction = responseFunction;
+		}
+
+		@Override
+		public String getName() {
+			return "terminal";
+		}
+
+		@Override
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
+		public ChatClientResponse adviseCall(ChatClientRequest req, CallAdvisorChain chain) {
+			return this.responseFunction.apply(req, chain);
+		}
+
+	};
 
 }
