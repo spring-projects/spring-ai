@@ -134,7 +134,7 @@ The prefix `spring.ai.openai.image` is the property prefix that lets you configu
 | spring.ai.openai.image.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.image.project-id      | Optionally, you can specify which project is used for an API request. |  -
 | spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3 and gpt-image models, only n=1 is supported.  | -
-| spring.ai.openai.image.options.model        | The model to use for image generation. Available models: `gpt-image-1-mini` (default), `gpt-image-1`, `dall-e-3`, `dall-e-2`.  | gpt-image-1-mini
+| spring.ai.openai.image.options.model        | The model to use for image generation. Available models: `dall-e-3` (default), `dall-e-2`, `gpt-image-1`, `gpt-image-1-mini`.  | dall-e-3
 | spring.ai.openai.image.options.quality      | The quality of the image. For gpt-image-1: `high`, `medium`, `low`, or `auto` (default). For dall-e-3: `hd` or `standard`. | -
 | spring.ai.openai.image.options.response_format | The format in which the generated images are returned. Must be one of `url` or `b64_json`. Only supported for dall-e-2 and dall-e-3. GPT-Image models always return base64-encoded images. | -
 | `spring.ai.openai.image.options.size`       | The size of the generated images. For gpt-image-1: `1024x1024`, `1536x1024`, `1024x1536`, or `auto` (default). For dall-e-2: `256x256`, `512x512`, or `1024x1024`. For dall-e-3: `1024x1024`, `1792x1024`, or `1024x1792`. | -

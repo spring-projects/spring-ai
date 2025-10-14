@@ -253,20 +253,11 @@ public class OpenAiImageModel implements ImageModel, StreamingImageModel {
 
 		// Convert streaming events to ImageResponse
 		return eventStream.map(event -> {
-			// Create an Image from the event
 			Image image = new Image(null, event.b64Json());
-
-			// Create metadata
 			OpenAiImageGenerationMetadata metadata = new OpenAiImageGenerationMetadata(null);
-
-			// Create ImageGeneration
 			ImageGeneration generation = new ImageGeneration(image, metadata);
-
-			// Create ImageResponseMetadata with created timestamp and usage info
 			ImageResponseMetadata responseMetadata = event.createdAt() != null
 					? new ImageResponseMetadata(event.createdAt()) : new ImageResponseMetadata(null);
-
-			// Return ImageResponse with single generation
 			return new ImageResponse(List.of(generation), responseMetadata);
 		});
 	}
