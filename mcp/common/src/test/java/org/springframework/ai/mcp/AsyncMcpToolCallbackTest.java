@@ -204,6 +204,8 @@ class AsyncMcpToolCallbackTest {
 		when(this.tool.description()).thenReturn("Test tool description");
 		var jsonSchema = mock(McpSchema.JsonSchema.class);
 		when(this.tool.inputSchema()).thenReturn(jsonSchema);
+		var toolAnnotations = new McpSchema.ToolAnnotations(null, false, false, false, false, true);
+		when(this.tool.annotations()).thenReturn(toolAnnotations);
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder()
@@ -213,11 +215,13 @@ class AsyncMcpToolCallbackTest {
 			.build();
 
 		ToolDefinition definition = callback.getToolDefinition();
+		var toolMetadata = callback.getToolMetadata();
 
 		// Assert
 		assertThat(definition.name()).isEqualTo("prefix_testTool");
 		assertThat(definition.description()).isEqualTo("Test tool description");
 		assertThat(definition.inputSchema()).isNotNull();
+		assertThat(toolMetadata.returnDirect()).isEqualTo(true);
 	}
 
 	@Test
