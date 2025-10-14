@@ -50,7 +50,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class OpenAiImageApi {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
 
 	private final RestClient restClient;
 
