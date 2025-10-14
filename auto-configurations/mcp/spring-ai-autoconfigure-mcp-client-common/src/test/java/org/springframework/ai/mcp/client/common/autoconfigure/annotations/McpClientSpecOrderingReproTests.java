@@ -22,6 +22,7 @@ import io.modelcontextprotocol.spec.McpSchema.ProgressNotification;
 import org.junit.jupiter.api.Test;
 import org.springaicommunity.mcp.annotation.McpProgress;
 import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
+
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration.ClientMcpAnnotatedBeans;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -44,25 +45,9 @@ class McpClientSpecOrderingReproTests {
 				McpClientSpecificationFactoryAutoConfiguration.class))
 		.withUserConfiguration(ScanConfig.class);
 
-	@Configuration
-	@ComponentScan(basePackageClasses = ScannedClientHandlers.class)
-	static class ScanConfig {
-
-	}
-
-	@Component
-	@Lazy
-	static class ScannedClientHandlers {
-
-		@McpProgress(clients = "server1")
-		public void onProgress(ProgressNotification pn) {
-		}
-
-	}
-
 	@Test
 	void progressSpecsIncludeScannedComponent_evenWhenCreatedAfterSpecsBean() {
-		runner.run(ctx -> {
+		this.runner.run(ctx -> {
 			// 1) Trigger spec list bean creation early
 			@SuppressWarnings("unchecked")
 			List<SyncProgressSpecification> specs = (List<SyncProgressSpecification>) ctx.getBean("progressSpecs");
@@ -78,6 +63,22 @@ class McpClientSpecOrderingReproTests {
 			// Under the bug, this assertion fails (list stays empty)
 			assertThat(specs).hasSize(1);
 		});
+	}
+
+	@Configuration
+	@ComponentScan(basePackageClasses = ScannedClientHandlers.class)
+	static class ScanConfig {
+
+	}
+
+	@Component
+	@Lazy
+	static class ScannedClientHandlers {
+
+		@McpProgress(clients = "server1")
+		public void onProgress(ProgressNotification pn) {
+		}
+
 	}
 
 }
