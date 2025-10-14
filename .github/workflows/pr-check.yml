@@ -25,6 +25,10 @@ jobs:
         run: |
           ./mvnw clean install -pl spring-ai-model -DskipTests
 
+      - name: Build spring-ai-openai module
+        run: |
+          ./mvnw clean install -pl models/spring-ai-openai -DskipTests
+
       - name: Run OpenAI Image Model integration tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
