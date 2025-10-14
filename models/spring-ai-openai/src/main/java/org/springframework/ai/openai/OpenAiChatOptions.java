@@ -211,6 +211,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
 
 	/**
+	 * Key used by OpenAI for caching prompt prefixes. OpenAI claims
+	 * they do caching even without this key, but testing shows that without this key
+	 * OpenAI doesn't do prompt prefix caching. OpenAI says this should be an end-user
+	 * identifier, so in plugin we can use random UUID, while in server we can use
+	 * deviceId hash.
+	 */
+	private @JsonProperty("prompt_cache_key") String promptCacheKey;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
 	 */
 	@JsonIgnore
@@ -278,6 +287,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.reasoningEffort(fromOptions.getReasoningEffort())
 			.webSearchOptions(fromOptions.getWebSearchOptions())
 			.verbosity(fromOptions.getVerbosity())
+			.promptCacheKey(fromOptions.getPromptCacheKey())
 			.build();
 	}
 
@@ -582,6 +592,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.verbosity = verbosity;
 	}
 
+	public String getPromptCacheKey() {
+		return this.promptCacheKey;
+	}
+
+	public void setPromptCacheKey(String promptCacheKey) {
+		this.promptCacheKey = promptCacheKey;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -594,7 +612,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.promptCacheKey);
 	}
 
 	@Override
@@ -628,7 +646,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.metadata, other.metadata)
 				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.webSearchOptions, other.webSearchOptions)
-				&& Objects.equals(this.verbosity, other.verbosity);
+				&& Objects.equals(this.verbosity, other.verbosity)
+				&& Objects.equals(this.promptCacheKey, other.promptCacheKey);
 	}
 
 	@Override
@@ -823,6 +842,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder verbosity(String verbosity) {
 			this.options.verbosity = verbosity;
+			return this;
+		}
+
+		public Builder promptCacheKey(String promptCacheKey) {
+			this.options.promptCacheKey = promptCacheKey;
 			return this;
 		}
 
