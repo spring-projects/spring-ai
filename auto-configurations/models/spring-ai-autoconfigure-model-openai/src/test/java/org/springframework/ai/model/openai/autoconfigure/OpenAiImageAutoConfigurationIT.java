@@ -81,23 +81,15 @@ public class OpenAiImageAutoConfigurationIT {
 
 	@Test
 	void imageModelDisabled() {
-		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-					"spring.ai.model.image=none")
-			.withConfiguration(
-					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, OpenAiImageAutoConfiguration.class))
+		this.contextRunner.withPropertyValues("spring.ai.model.image=none")
+			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty());
 	}
 
 	@Test
 	void imageModelExplicitlyEnabled() {
-		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"),
-					"spring.ai.model.image=openai")
-			.withConfiguration(
-					AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-							WebClientAutoConfiguration.class, OpenAiImageAutoConfiguration.class))
+		this.contextRunner.withPropertyValues("spring.ai.model.image=openai")
+			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty());
 	}
 
