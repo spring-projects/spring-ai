@@ -51,9 +51,11 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Yanming Zhou
  * @since 1.0.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class },
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatModel.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.VERTEX_AI,
 		matchIfMissing = true)
