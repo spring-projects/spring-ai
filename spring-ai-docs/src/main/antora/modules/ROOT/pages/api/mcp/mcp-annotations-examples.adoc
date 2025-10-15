@@ -55,15 +55,13 @@ public class CalculatorTools {
              description = "Calculate a complex mathematical expression")
     public CallToolResult calculateExpression(
             CallToolRequest request,
-            McpSyncServerExchange exchange) {
+            McpSyncRequestContext context) {
         
         Map<String, Object> args = request.arguments();
         String expression = (String) args.get("expression");
         
-        exchange.loggingNotification(LoggingMessageNotification.builder()
-            .level(LoggingLevel.INFO)
-            .data("Calculating: " + expression)
-            .build());
+        // Use convenient logging method
+        context.info("Calculating: " + expression);
         
         try {
             double result = evaluateExpression(expression);
@@ -141,19 +139,20 @@ public class DocumentServer {
     @McpTool(name = "analyze-document", 
              description = "Analyze document content")
     public String analyzeDocument(
-            @McpProgressToken String progressToken,
+            McpSyncRequestContext context,
             @McpToolParam(description = "Document ID", required = true) String docId,
-            @McpToolParam(description = "Analysis type", required = false) String type,
-            McpSyncServerExchange exchange) {
+            @McpToolParam(description = "Analysis type", required = false) String type) {
         
         Document doc = documents.get(docId);
         if (doc == null) {
             return "Document not found";
         }
         
+        // Access progress token from context
+        String progressToken = context.request().progressToken();
+        
         if (progressToken != null) {
-            exchange.progressNotification(new ProgressNotification(
-                progressToken, 0.0, 1.0, "Starting analysis"));
+            context.progress(p -> p.progress(0.0).total(1.0).message("Starting analysis"));
         }
         
         // Perform analysis
@@ -161,8 +160,7 @@ public class DocumentServer {
         String result = performAnalysis(doc, analysisType);
         
         if (progressToken != null) {
-            exchange.progressNotification(new ProgressNotification(
-                progressToken, 1.0, 1.0, "Analysis complete"));
+            context.progress(p -> p.progress(1.0).total(1.0).message("Analysis complete"));
         }
         
         return result;
@@ -381,21 +379,22 @@ public class AsyncDataProcessor {
 
     @McpTool(name = "process-stream", description = "Process data stream")
     public Flux<String> processStream(
-            @McpToolParam(description = "Item count", required = true) int count,
-            @McpProgressToken String progressToken,
-            McpAsyncServerExchange exchange) {
+            McpAsyncRequestContext context,
+            @McpToolParam(description = "Item count", required = true) int count) {
+        
+        // Access progress token from context
+        String progressToken = context.request().progressToken();
         
         return Flux.range(1, count)
             .delayElements(Duration.ofMillis(100))
-            .doOnNext(i -> {
+            .flatMap(i -> {
                 if (progressToken != null) {
                     double progress = (double) i / count;
-                    exchange.progressNotification(new ProgressNotification(
-                        progressToken, progress, 1.0, 
-                        "Processing item " + i));
+                    return context.progress(p -> p.progress(progress).total(1.0).message("Processing item " + i))
+                        .thenReturn("Processed item " + i);
                 }
-            })
-            .map(i -> "Processed item " + i);
+                return Mono.just("Processed item " + i);
+            });
     }
 
     @McpResource(uri = "async-data://{id}", name = "Async Data")
