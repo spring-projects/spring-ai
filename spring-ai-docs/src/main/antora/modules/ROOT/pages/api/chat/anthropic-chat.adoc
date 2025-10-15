@@ -803,6 +803,135 @@ You can register custom Java Tools with the `AnthropicChatModel` and have the An
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/tools.adoc[Tool Calling].
 
+=== Tool Choice
+
+The `tool_choice` parameter allows you to control how the model uses the provided tools. This feature gives you fine-grained control over tool execution behavior.
+
+For complete API details, see the https://docs.anthropic.com/en/api/messages#body-tool-choice[Anthropic tool_choice documentation].
+
+==== Tool Choice Options
+
+Spring AI provides four tool choice strategies through the `AnthropicApi.ToolChoice` interface:
+
+* **`ToolChoiceAuto`** (default): The model automatically decides whether to use tools or respond with text
+* **`ToolChoiceAny`**: The model must use at least one of the available tools
+* **`ToolChoiceTool`**: The model must use a specific tool by name
+* **`ToolChoiceNone`**: The model cannot use any tools
+
+==== Disabling Parallel Tool Use
+
+All tool choice options (except `ToolChoiceNone`) support a `disableParallelToolUse` parameter. When set to `true`, the model will output at most one tool use.
+
+==== Usage Examples
+
+===== Auto Mode (Default Behavior)
+
+Let the model decide whether to use tools:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceAuto())
+            .toolCallbacks(weatherToolCallback)
+            .build()
+    )
+);
+----
+
+===== Force Tool Use (Any)
+
+Require the model to use at least one tool:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceAny())
+            .toolCallbacks(weatherToolCallback, calculatorToolCallback)
+            .build()
+    )
+);
+----
+
+===== Force Specific Tool
+
+Require the model to use a specific tool by name:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceTool("get_weather"))
+            .toolCallbacks(weatherToolCallback, calculatorToolCallback)
+            .build()
+    )
+);
+----
+
+===== Disable Tool Use
+
+Prevent the model from using any tools:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceNone())
+            .toolCallbacks(weatherToolCallback)
+            .build()
+    )
+);
+----
+
+===== Disable Parallel Tool Use
+
+Force the model to use only one tool at a time:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco and what's 2+2?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceAuto(true)) // disableParallelToolUse = true
+            .toolCallbacks(weatherToolCallback, calculatorToolCallback)
+            .build()
+    )
+);
+----
+
+==== Using ChatClient API
+
+You can also use tool choice with the fluent ChatClient API:
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in San Francisco?")
+    .options(AnthropicChatOptions.builder()
+        .toolChoice(new AnthropicApi.ToolChoiceTool("get_weather"))
+        .build())
+    .call()
+    .content();
+----
+
+==== Use Cases
+
+* **Validation**: Use `ToolChoiceTool` to ensure a specific tool is called for critical operations
+* **Efficiency**: Use `ToolChoiceAny` when you know a tool must be used to avoid unnecessary text generation
+* **Control**: Use `ToolChoiceNone` to temporarily disable tool access while keeping tool definitions registered
+* **Sequential Processing**: Use `disableParallelToolUse` to force sequential tool execution for dependent operations
+
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, pdf, images, data formats. 
