@@ -161,87 +161,95 @@ public ReadResourceResult getLargeFile(
 }
 ----
 
-=== McpSyncServerExchange / McpAsyncServerExchange
+=== McpSyncRequestContext / McpAsyncRequestContext
 
-Server exchange objects provide full access to server-side MCP operations.
+Request context objects provide unified access to MCP request information and server-side operations.
 
 ==== Overview
 
-* Provides stateful context for server operations
+* Provides unified interface for both stateful and stateless operations
 * Automatically injected when used as a parameter
 * Excluded from JSON schema generation
-* Enables advanced features like logging, progress notifications, and client calls
+* Enables advanced features like logging, progress notifications, sampling, and elicitation
+* Works with both stateful (server exchange) and stateless (transport context) modes
 
-==== McpSyncServerExchange Features
+==== McpSyncRequestContext Features
 
 [source,java]
 ----
+public record UserInfo(String name, String email, int age) {}
+
 @McpTool(name = "advanced-tool", description = "Tool with full server capabilities")
 public String advancedTool(
-        McpSyncServerExchange exchange,
+        McpSyncRequestContext context,
         @McpToolParam(description = "Input", required = true) String input) {
     
     // Send logging notification
-    exchange.loggingNotification(LoggingMessageNotification.builder()
-        .level(LoggingLevel.INFO)
-        .logger("advanced-tool")
-        .data("Processing: " + input)
-        .build());
+    context.info("Processing: " + input);
     
     // Ping the client
-    exchange.ping();
+    context.ping();
     
-    // Request additional information from user
-    ElicitRequest elicitRequest = ElicitRequest.builder()
-        .message("Need additional information")
-        .requestedSchema(Map.of(
-            "type", "object",
-            "properties", Map.of(
-                "confirmation", Map.of("type", "boolean")
-            )
-        ))
-        .build();
+    // Send progress updates
+    context.progress(50); // 50% complete
     
-    ElicitResult elicitResult = exchange.createElicitation(elicitRequest);
+    // Check if elicitation is supported before using it
+    if (context.elicitEnabled()) {
+        // Request additional information from user
+        StructuredElicitResult<UserInfo> elicitResult = context.elicit(
+            e -> e.message("Need additional information"),
+            UserInfo.class
+        );
+        
+        if (elicitResult.action() == ElicitResult.Action.ACCEPT) {
+            UserInfo userInfo = elicitResult.structuredContent();
+            // Use the user information
+        }
+    }
     
-    // Request LLM sampling
-    CreateMessageRequest messageRequest = CreateMessageRequest.builder()
-        .messages(List.of(new SamplingMessage(Role.USER, 
-            new TextContent("Process: " + input))))
-        .modelPreferences(ModelPreferences.builder()
-            .hints(List.of(ModelHint.of("gpt-4")))
-            .build())
-        .build();
-    
-    CreateMessageResult samplingResult = exchange.createMessage(messageRequest);
+    // Check if sampling is supported before using it
+    if (context.sampleEnabled()) {
+        // Request LLM sampling
+        CreateMessageResult samplingResult = context.sample(
+            s -> s.message("Process: " + input)
+                .modelPreferences(pref -> pref.modelHints("gpt-4"))
+        );
+    }
     
     return "Processed with advanced features";
 }
 ----
 
-==== McpAsyncServerExchange Features
+==== McpAsyncRequestContext Features
 
 [source,java]
 ----
+public record UserInfo(String name, String email, int age) {}
+
 @McpTool(name = "async-advanced-tool", description = "Async tool with server capabilities")
 public Mono<String> asyncAdvancedTool(
-        McpAsyncServerExchange exchange,
+        McpAsyncRequestContext context,
         @McpToolParam(description = "Input", required = true) String input) {
     
-    return Mono.fromCallable(() -> {
-        // Send async logging
-        exchange.loggingNotification(LoggingMessageNotification.builder()
-            .level(LoggingLevel.INFO)
-            .data("Async processing: " + input)
-            .build());
-        
-        return "Started processing";
-    })
-    .flatMap(msg -> {
-        // Chain async operations
-        return exchange.createMessage(/* request */)
-            .map(result -> "Completed: " + result);
-    });
+    return context.info("Async processing: " + input)
+        .then(context.progress(25))
+        .then(context.ping())
+        .flatMap(v -> {
+            // Perform elicitation if supported
+            if (context.elicitEnabled()) {
+                return context.elicitation(UserInfo.class)
+                    .map(userInfo -> "Processing for user: " + userInfo.name());
+            }
+            return Mono.just("Processing...");
+        })
+        .flatMap(msg -> {
+            // Perform sampling if supported
+            if (context.sampleEnabled()) {
+                return context.sampling("Process: " + input)
+                    .map(result -> "Completed: " + result);
+            }
+            return Mono.just("Completed: " + msg);
+        });
 }
 ----
 
@@ -458,9 +466,41 @@ public String safeProgress(
 
 === Choose the Right Context
 
-* Use `McpSyncServerExchange` / `McpAsyncServerExchange` for stateful operations
-* Use `McpTransportContext` for simple stateless operations
+* Use `McpSyncRequestContext` / `McpAsyncRequestContext` for unified access to request context, supporting both stateful and stateless operations with convenient helper methods
+* Use `McpTransportContext` for simple stateless operations when you only need transport-level context
 * Omit context parameters entirely for the simplest cases
+
+=== Capability Checking
+
+Always check capability support before using client features:
+
+[source,java]
+----
+@McpTool(name = "capability-aware", description = "Tool that checks capabilities")
+public String capabilityAware(
+        McpSyncRequestContext context,
+        @McpToolParam(description = "Data", required = true) String data) {
+    
+    // Check if elicitation is supported before using it
+    if (context.elicitEnabled()) {
+        // Safe to use elicitation
+        var result = context.elicit(UserInfo.class);
+        // Process result...
+    }
+    
+    // Check if sampling is supported before using it
+    if (context.sampleEnabled()) {
+        // Safe to use sampling
+        var samplingResult = context.sample("Process: " + data);
+        // Process result...
+    }
+    
+    // Note: Stateless servers do not support bidirectional operations
+    // (roots, elicitation, sampling) and will return false for these checks
+    
+    return "Processed with capability awareness";
+}
+----
 
 == Additional Resources
 
