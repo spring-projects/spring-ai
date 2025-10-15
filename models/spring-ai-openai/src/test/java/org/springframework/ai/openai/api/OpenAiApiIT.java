@@ -19,6 +19,7 @@ package org.springframework.ai.openai.api;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -77,7 +78,7 @@ public class OpenAiApiIT {
 				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
-				null, null, null, "low", null, null, ChatCompletionRequest.DEFAULT_PROMPT_CACHE_KEY);
+				null, null, null, "low", null, null, UUID.randomUUID().toString());
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();
@@ -181,7 +182,7 @@ public class OpenAiApiIT {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
 				modelName.getValue(), null, null, null, null, null, null, null, null, null, null, null, null, null,
 				null, null, null, false, null, 1.0, null, null, null, null, null, null, null, "low",
-				ChatCompletionRequest.DEFAULT_PROMPT_CACHE_KEY);
+				UUID.randomUUID().toString());
 
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
