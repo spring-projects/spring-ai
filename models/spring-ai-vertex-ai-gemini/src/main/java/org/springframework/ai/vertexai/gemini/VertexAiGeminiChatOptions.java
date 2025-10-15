@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vertexai.gemini;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ import org.springframework.util.Assert;
  * @author Grogdunn
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
+ * @author Hyunsang Han
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -149,6 +151,12 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
+	 * The timeout duration for the chat request.
+	 */
+	@JsonIgnore
+	private Duration timeout;
+
+	/**
 	 * Use Google search Grounding feature
 	 */
 	@JsonIgnore
@@ -183,6 +191,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setToolContext(fromOptions.getToolContext());
 		options.setLogprobs(fromOptions.getLogprobs());
 		options.setResponseLogprobs(fromOptions.getResponseLogprobs());
+		options.setTimeout(fromOptions.getTimeout());
 		return options;
 	}
 
@@ -359,6 +368,17 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
 	public Integer getLogprobs() {
 		return this.logprobs;
 	}
@@ -393,7 +413,8 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.logprobs, that.logprobs)
-				&& Objects.equals(this.responseLogprobs, that.responseLogprobs);
+				&& Objects.equals(this.responseLogprobs, that.responseLogprobs)
+				&& Objects.equals(this.timeout, that.timeout);
 	}
 
 	@Override
@@ -402,7 +423,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
 				this.responseSchema, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
 				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.logprobs,
-				this.responseLogprobs);
+				this.responseLogprobs, this.timeout);
 	}
 
 	@Override
@@ -549,6 +570,11 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 		public Builder responseLogprobs(Boolean responseLogprobs) {
 			this.options.setResponseLogprobs(responseLogprobs);
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 

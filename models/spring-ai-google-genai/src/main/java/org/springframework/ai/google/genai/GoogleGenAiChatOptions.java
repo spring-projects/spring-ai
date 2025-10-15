@@ -16,6 +16,7 @@
 
 package org.springframework.ai.google.genai;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
  * @author Dan Dobrin
+ * @author Hyunsang Han
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
@@ -170,6 +172,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
+	 * The timeout duration for the chat request.
+	 */
+	@JsonIgnore
+	private Duration timeout;
+
+	/**
 	 * Use Google search Grounding feature
 	 */
 	@JsonIgnore
@@ -212,6 +220,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setUseCachedContent(fromOptions.getUseCachedContent());
 		options.setAutoCacheThreshold(fromOptions.getAutoCacheThreshold());
 		options.setAutoCacheTtl(fromOptions.getAutoCacheTtl());
+		options.setTimeout(fromOptions.getTimeout());
 		return options;
 	}
 
@@ -434,6 +443,17 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@Nullable
+	@JsonIgnore
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -454,7 +474,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
+				&& Objects.equals(this.timeout, that.timeout);
 	}
 
 	@Override
@@ -462,7 +483,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
 				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
-				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels);
+				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels, this.timeout);
 	}
 
 	@Override
@@ -630,6 +651,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder autoCacheTtl(java.time.Duration autoCacheTtl) {
 			this.options.setAutoCacheTtl(autoCacheTtl);
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			this.options.timeout = timeout;
 			return this;
 		}
 
