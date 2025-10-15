@@ -31,6 +31,7 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.resource;
 
@@ -207,6 +208,13 @@ class AzureOpenAiRuntimeHintsTests {
 					&& tr.getName().toLowerCase().contains("choice"));
 
 		assertThat(hasEnumTypes).as("Azure OpenAI enum types should be registered").isTrue();
+	}
+
+	@Test
+	void registerHintsWithNullRuntimeHints() {
+		// Should throw when RuntimeHints is null
+		assertThatThrownBy(() -> this.azureOpenAiRuntimeHints.registerHints(null, null))
+			.isInstanceOf(NullPointerException.class);
 	}
 
 }
