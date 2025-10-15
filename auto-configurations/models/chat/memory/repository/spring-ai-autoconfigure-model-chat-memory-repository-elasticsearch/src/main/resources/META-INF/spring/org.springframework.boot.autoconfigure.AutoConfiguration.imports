@@ -1,0 +1,2 @@
+org.springframework.ai.model.chat.memory.repository.elasticsearch.autoconfigure.ElasticSearchChatMemoryRepositoryAutoConfiguration
+
