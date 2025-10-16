@@ -89,7 +89,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		Assert.notNull(outputType, "outputType must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
-		Assert.isTrue(maxRepeatAttempts > 0, "repeatAttempts must be greater than or equal to 0");
+		Assert.isTrue(maxRepeatAttempts >= 0, "repeatAttempts must be greater than or equal to 0");
 		Assert.notNull(objectMapper, "objectMapper must not be null");
 
 		this.advisorOrder = advisorOrder;
