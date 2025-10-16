@@ -31,8 +31,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -61,8 +59,8 @@ public class OpenAiModerationApi {
 	 * @param apiKey OpenAI apiKey.
 	 * @param restClientBuilder the rest client builder to use.
 	 */
-	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -178,7 +176,7 @@ public class OpenAiModerationApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -202,7 +200,7 @@ public class OpenAiModerationApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

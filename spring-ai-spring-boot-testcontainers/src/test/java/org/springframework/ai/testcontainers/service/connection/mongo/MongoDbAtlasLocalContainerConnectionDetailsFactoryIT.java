@@ -35,8 +35,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.mongodb.autoconfigure.MongoDBAtlasVectorStoreAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,10 +46,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringJUnitConfig
 @Testcontainers
-@TestPropertySource(properties = { "spring.data.mongodb.database=simpleaidb",
-		"spring.ai.vectorstore.mongodb.initialize-schema=true",
-		"spring.ai.vectorstore.mongodb.collection-name=test_collection",
-		"spring.ai.vectorstore.mongodb.index-name=text_index" })
+@TestPropertySource(
+		properties = { "spring.mongodb.database=simpleaidb", "spring.ai.vectorstore.mongodb.initialize-schema=true",
+				"spring.ai.vectorstore.mongodb.collection-name=test_collection",
+				"spring.ai.vectorstore.mongodb.index-name=text_index" })
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 
@@ -94,8 +93,7 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactoryIT {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ImportAutoConfiguration({ MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-			MongoDBAtlasVectorStoreAutoConfiguration.class })
+	@ImportAutoConfiguration({ MongoAutoConfiguration.class, MongoDBAtlasVectorStoreAutoConfiguration.class })
 	static class Config {
 
 		@Bean

@@ -33,7 +33,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -62,9 +61,8 @@ public final class ElevenLabsApi {
 	 * @param webClientBuilder A builder for the Spring WebClient.
 	 * @param responseErrorHandler A custom error handler for API responses.
 	 */
-	private ElevenLabsApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	private ElevenLabsApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = h -> {
 			if (!(apiKey instanceof NoopApiKey)) {
@@ -331,7 +329,7 @@ public final class ElevenLabsApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -357,7 +355,7 @@ public final class ElevenLabsApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

@@ -29,7 +29,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
@@ -52,9 +51,8 @@ import static org.assertj.core.api.Assertions.fail;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ImportAutoConfiguration({ org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration.class,
 		JdbcChatMemoryRepositoryAutoConfiguration.class,
-		org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration.class,
-		org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
-		SqlInitializationAutoConfiguration.class })
+		org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration.class,
+		org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration.class })
 public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 	@Autowired

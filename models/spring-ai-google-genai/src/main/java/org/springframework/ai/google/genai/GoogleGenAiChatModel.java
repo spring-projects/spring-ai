@@ -46,6 +46,7 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.retry.RetryException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -88,7 +89,7 @@ import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.lang.NonNull;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -404,30 +405,41 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
-			.observe(() -> this.retryTemplate.execute(context -> {
+			.observe(() -> {
+				try {
+					return this.retryTemplate.execute(() -> {
 
-				var geminiRequest = createGeminiRequest(prompt);
+						var geminiRequest = createGeminiRequest(prompt);
 
-				GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
+						GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
 
-				List<Generation> generations = generateContentResponse.candidates()
-					.orElse(List.of())
-					.stream()
-					.map(this::responseCandidateToGeneration)
-					.flatMap(List::stream)
-					.toList();
+						List<Generation> generations = generateContentResponse.candidates()
+							.orElse(List.of())
+							.stream()
+							.map(this::responseCandidateToGeneration)
+							.flatMap(List::stream)
+							.toList();
 
-				var usage = generateContentResponse.usageMetadata();
-				GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
-				Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
-						: getDefaultUsage(null, options);
-				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations,
-						toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
+						var usage = generateContentResponse.usageMetadata();
+						GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+						Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
+								: getDefaultUsage(null, options);
+						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+						ChatResponse chatResponse = new ChatResponse(generations,
+								toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
 
-				observationContext.setResponse(chatResponse);
-				return chatResponse;
-			}));
+						observationContext.setResponse(chatResponse);
+						return chatResponse;
+					});
+				}
+				catch (RetryException e) {
+					if (e.getCause() instanceof RuntimeException r) {
+						throw r;
+					}
+
+					throw new RuntimeException(e);
+				}
+			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);

@@ -21,6 +21,7 @@ import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.retry.RetryException;
 
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -35,7 +36,7 @@ import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 import static org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationRequest;
@@ -81,27 +82,39 @@ public class MistralAiModerationModel implements ModerationModel {
 
 	@Override
 	public ModerationResponse call(ModerationPrompt moderationPrompt) {
-		return this.retryTemplate.execute(ctx -> {
+		try {
+			return this.retryTemplate.execute(() -> {
 
-			var instructions = moderationPrompt.getInstructions().getText();
+				var instructions = moderationPrompt.getInstructions().getText();
 
-			var moderationRequest = new MistralAiModerationRequest(instructions);
+				var moderationRequest = new MistralAiModerationRequest(instructions);
 
-			if (this.defaultOptions != null) {
-				moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
-						MistralAiModerationRequest.class);
+				if (this.defaultOptions != null) {
+					moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
+							MistralAiModerationRequest.class);
+				}
+				else {
+					// moderationPrompt.getOptions() never null but model can be empty,
+					// cause
+					// by ModerationPrompt constructor
+					moderationRequest = ModelOptionsUtils.merge(
+							toMistralAiModerationOptions(moderationPrompt.getOptions()), moderationRequest,
+							MistralAiModerationRequest.class);
+				}
+
+				var moderationResponseEntity = this.mistralAiModerationApi.moderate(moderationRequest);
+
+				return convertResponse(moderationResponseEntity, moderationRequest);
+			});
+		}
+		catch (RetryException e) {
+			if (e.getCause() instanceof RuntimeException r) {
+				throw r;
 			}
 			else {
-				// moderationPrompt.getOptions() never null but model can be empty, cause
-				// by ModerationPrompt constructor
-				moderationRequest = ModelOptionsUtils.merge(toMistralAiModerationOptions(moderationPrompt.getOptions()),
-						moderationRequest, MistralAiModerationRequest.class);
+				throw new RuntimeException(e.getCause());
 			}
-
-			var moderationResponseEntity = this.mistralAiModerationApi.moderate(moderationRequest);
-
-			return convertResponse(moderationResponseEntity, moderationRequest);
-		});
+		}
 	}
 
 	private ModerationResponse convertResponse(ResponseEntity<MistralAiModerationResponse> moderationResponseEntity,

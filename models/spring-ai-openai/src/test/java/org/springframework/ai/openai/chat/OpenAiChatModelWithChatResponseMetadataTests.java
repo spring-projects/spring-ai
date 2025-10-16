@@ -35,7 +35,10 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureWebClient;
 import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -55,7 +58,11 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * @author Christian Tzolov
  * @since 0.7.0
  */
-@RestClientTest(OpenAiChatModelWithChatResponseMetadataTests.Config.class)
+@RestClientTest(value = OpenAiChatModelWithChatResponseMetadataTests.Config.class, properties = "debug=true")
+@AutoConfigureWebClient
+
+// TODO: Remove after Spring Boot 4 RC1
+@ImportAutoConfiguration(WebClientAutoConfiguration.class)
 public class OpenAiChatModelWithChatResponseMetadataTests {
 
 	private static String TEST_API_KEY = "sk-1234567890";

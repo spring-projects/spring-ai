@@ -48,8 +48,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -157,7 +155,7 @@ public final class AnthropicApi {
 	 * status code and headers.
 	 */
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionEntity(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -168,7 +166,7 @@ public final class AnthropicApi {
 	 * status code and headers.
 	 */
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
@@ -194,7 +192,7 @@ public final class AnthropicApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionStream(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -205,7 +203,7 @@ public final class AnthropicApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
@@ -258,7 +256,7 @@ public final class AnthropicApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HEADER_X_API_KEY)) {
+		if (!headers.containsHeader(HEADER_X_API_KEY)) {
 			String apiKeyValue = this.apiKey.getValue();
 			if (StringUtils.hasText(apiKeyValue)) {
 				headers.add(HEADER_X_API_KEY, apiKeyValue);

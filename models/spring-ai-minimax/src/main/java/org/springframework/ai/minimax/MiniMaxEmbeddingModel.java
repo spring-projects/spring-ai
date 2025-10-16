@@ -22,6 +22,7 @@ import java.util.List;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.retry.RetryException;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -40,7 +41,7 @@ import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -165,8 +166,19 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				MiniMaxApi.EmbeddingList apiEmbeddingResponse = this.retryTemplate
-					.execute(ctx -> this.miniMaxApi.embeddings(apiRequest).getBody());
+				MiniMaxApi.EmbeddingList apiEmbeddingResponse = null;
+				try {
+					apiEmbeddingResponse = this.retryTemplate
+						.execute(() -> this.miniMaxApi.embeddings(apiRequest).getBody());
+				}
+				catch (RetryException e) {
+					if (e.getCause() instanceof RuntimeException r) {
+						throw r;
+					}
+					else {
+						throw new RuntimeException(e.getCause());
+					}
+				}
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);

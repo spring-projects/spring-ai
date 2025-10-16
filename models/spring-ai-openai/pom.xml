@@ -88,6 +88,28 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jackson</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- TODO: switch to correct starter with Spring Boot 4 RC1-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient</artifactId>
+			<version>${spring-boot.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- TODO: switch to correct starter with Spring Boot 4 RC1-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webclient</artifactId>
+			<version>${spring-boot.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-observation-test</artifactId>
 			<scope>test</scope>
