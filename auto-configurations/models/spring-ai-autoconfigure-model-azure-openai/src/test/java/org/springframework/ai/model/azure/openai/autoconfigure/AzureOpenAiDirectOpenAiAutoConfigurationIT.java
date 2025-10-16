@@ -26,6 +26,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.azure.openai.AzureOpenAiChatModel;
 import org.springframework.ai.azure.openai.AzureOpenAiEmbeddingModel;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -60,7 +61,8 @@ public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 			"spring.ai.azure.openai.embedding.options.deployment-name=" + EMBEDDING_MODEL_NAME
 			// @formatter:on
 	)
-		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
+		.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class,
+		        AzureOpenAiChatAutoConfiguration.class,
 				AzureOpenAiEmbeddingAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
