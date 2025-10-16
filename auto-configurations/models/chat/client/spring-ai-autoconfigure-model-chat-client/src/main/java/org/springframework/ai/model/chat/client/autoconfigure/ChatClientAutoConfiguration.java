@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientPromptContentObservationHandler;
@@ -84,11 +85,12 @@ public class ChatClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatClientObservationConvention> observationConvention) {
-
+			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,
+			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				observationConvention.getIfUnique(() -> null));
+				chatClientObservationConvention.getIfUnique(() -> null),
+				advisorObservationConvention.getIfUnique(() -> null));
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 
