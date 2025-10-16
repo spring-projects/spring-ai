@@ -27,7 +27,7 @@ import org.springframework.web.servlet.function.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class McpServerStreamableWebMvcAutoConfigurationIT {
+class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
