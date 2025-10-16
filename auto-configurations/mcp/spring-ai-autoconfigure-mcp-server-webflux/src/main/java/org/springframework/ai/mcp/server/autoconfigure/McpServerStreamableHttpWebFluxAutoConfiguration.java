@@ -36,6 +36,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 
 /**
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
 @ConditionalOnClass({ McpSchema.class })
@@ -62,6 +63,7 @@ public class McpServerStreamableHttpWebFluxAutoConfiguration {
 	// Router function for streamable http transport used by Spring WebFlux to start an
 	// HTTP server.
 	@Bean
+	@ConditionalOnMissingBean(name = "webFluxStreamableServerRouterFunction")
 	public RouterFunction<?> webFluxStreamableServerRouterFunction(
 			WebFluxStreamableServerTransportProvider webFluxProvider) {
 		return webFluxProvider.getRouterFunction();

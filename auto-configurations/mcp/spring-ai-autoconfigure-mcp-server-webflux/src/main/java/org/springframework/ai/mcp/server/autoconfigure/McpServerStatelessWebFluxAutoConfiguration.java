@@ -35,6 +35,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 
 /**
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 @AutoConfiguration(before = McpServerStatelessAutoConfiguration.class)
 @ConditionalOnClass({ McpSchema.class })
@@ -60,6 +61,7 @@ public class McpServerStatelessWebFluxAutoConfiguration {
 	// Router function for stateless http transport used by Spring WebFlux to start an
 	// HTTP server.
 	@Bean
+	@ConditionalOnMissingBean(name = "webFluxStatelessServerRouterFunction")
 	public RouterFunction<?> webFluxStatelessServerRouterFunction(
 			WebFluxStatelessServerTransport webFluxStatelessTransport) {
 		return webFluxStatelessTransport.getRouterFunction();
