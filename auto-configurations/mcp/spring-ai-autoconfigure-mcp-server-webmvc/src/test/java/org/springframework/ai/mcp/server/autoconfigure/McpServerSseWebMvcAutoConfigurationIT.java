@@ -32,6 +32,8 @@ import org.springframework.web.context.support.StandardServletEnvironment;
 import org.springframework.web.servlet.function.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 
 class McpServerSseWebMvcAutoConfigurationIT {
 
@@ -114,6 +116,31 @@ class McpServerSseWebMvcAutoConfigurationIT {
 				var field = ReflectionUtils.findField(McpSyncServer.class, "immediateExecution");
 				field.setAccessible(true);
 				assertThat(field.getBoolean(mcpSyncServer)).isTrue();
+			});
+	}
+
+	@Test
+	void routerFunctionIsCreatedFromProvider() {
+		this.contextRunner.run(context -> {
+			assertThat(context).hasSingleBean(RouterFunction.class);
+			assertThat(context).hasSingleBean(WebMvcSseServerTransportProvider.class);
+
+			// Verify that the RouterFunction is created from the provider
+			WebMvcSseServerTransportProvider serverTransport = context.getBean(WebMvcSseServerTransportProvider.class);
+			RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+			assertThat(routerFunction).isNotNull().isEqualTo(serverTransport.getRouterFunction());
+		});
+	}
+
+	@Test
+	void routerFunctionIsCustom() {
+		this.contextRunner
+			.withBean("webMvcSseServerRouterFunction", RouterFunction.class, () -> mock(RouterFunction.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(RouterFunction.class);
+
+				RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+				assertThat(mockingDetails(routerFunction).isMock()).isTrue();
 			});
 	}
 

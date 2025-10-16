@@ -32,9 +32,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerResponse;
 
 /**
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 @AutoConfiguration(before = McpServerStatelessAutoConfiguration.class)
 @ConditionalOnClass({ McpSchema.class })
@@ -60,7 +62,8 @@ public class McpServerStatelessWebMvcAutoConfiguration {
 	// Router function for stateless http transport used by Spring WebFlux to start an
 	// HTTP server.
 	@Bean
-	public RouterFunction<?> webMvcStatelessServerRouterFunction(
+	@ConditionalOnMissingBean(name = "webMvcStatelessServerRouterFunction")
+	public RouterFunction<ServerResponse> webMvcStatelessServerRouterFunction(
 			WebMvcStatelessServerTransport webMvcStatelessTransport) {
 		return webMvcStatelessTransport.getRouterFunction();
 	}

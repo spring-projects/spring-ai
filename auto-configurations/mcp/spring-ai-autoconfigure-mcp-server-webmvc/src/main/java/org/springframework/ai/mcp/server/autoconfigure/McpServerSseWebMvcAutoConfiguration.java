@@ -90,7 +90,9 @@ public class McpServerSseWebMvcAutoConfiguration {
 	}
 
 	@Bean
-	public RouterFunction<ServerResponse> mvcMcpRouterFunction(WebMvcSseServerTransportProvider transportProvider) {
+	@ConditionalOnMissingBean(name = "webMvcSseServerRouterFunction")
+	public RouterFunction<ServerResponse> webMvcSseServerRouterFunction(
+			WebMvcSseServerTransportProvider transportProvider) {
 		return transportProvider.getRouterFunction();
 	}
 

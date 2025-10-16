@@ -26,6 +26,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.servlet.function.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 
 class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 
@@ -137,9 +139,23 @@ class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 
 			// Verify that the RouterFunction is created from the provider
+			WebMvcStreamableServerTransportProvider serverTransportProvider = context
+				.getBean(WebMvcStreamableServerTransportProvider.class);
 			RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
-			assertThat(routerFunction).isNotNull();
+			assertThat(routerFunction).isNotNull().isEqualTo(serverTransportProvider.getRouterFunction());
 		});
+	}
+
+	@Test
+	void routerFunctionIsCustom() {
+		this.contextRunner
+			.withBean("webMvcStreamableServerRouterFunction", RouterFunction.class, () -> mock(RouterFunction.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(RouterFunction.class);
+
+				RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+				assertThat(mockingDetails(routerFunction).isMock()).isTrue();
+			});
 	}
 
 	@Test
