@@ -19,9 +19,9 @@ package org.springframework.ai.chat.client.advisor;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse;
@@ -83,16 +83,18 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 	private final int maxRepeatAttempts;
 
-	private StructuredOutputValidationAdvisor(int advisorOrder, Type outputType, int repeatAttempts) {
+	private StructuredOutputValidationAdvisor(int advisorOrder, Type outputType, int maxRepeatAttempts,
+			ObjectMapper objectMapper) {
 		Assert.notNull(advisorOrder, "advisorOrder must not be null");
 		Assert.notNull(outputType, "outputType must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
-		Assert.isTrue(repeatAttempts >= 0, "repeatAttempts must be greater than or equal to 0");
+		Assert.isTrue(maxRepeatAttempts > 0, "repeatAttempts must be greater than or equal to 0");
+		Assert.notNull(objectMapper, "objectMapper must not be null");
 
 		this.advisorOrder = advisorOrder;
 
-		this.jsonvalidator = new DefaultJsonSchemaValidator();
+		this.jsonvalidator = new DefaultJsonSchemaValidator(objectMapper);
 
 		String jsonSchemaText = JsonSchemaGenerator.generateForType(outputType);
 
@@ -107,7 +109,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			throw new IllegalArgumentException("Failed to parse JSON schema", e);
 		}
 
-		this.maxRepeatAttempts = repeatAttempts;
+		this.maxRepeatAttempts = maxRepeatAttempts;
 	}
 
 	@SuppressWarnings("null")
@@ -129,7 +131,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		ChatClientResponse chatClientResponse = null;
 
-		var repeatCounter = new AtomicInteger(0);
+		var repeatCounter = 0;
 
 		boolean isValidationSuccess = true;
 
@@ -137,11 +139,10 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		do {
 			// Before Call
-			repeatCounter.incrementAndGet();
+			repeatCounter++;
 
 			// Next Call
-			chatClientResponse = AdvisorUtils.copyChainAfterAdvisor(callAdvisorChain, this)
-				.nextCall(processedChatClientRequest);
+			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
 
 			// After Call
 
@@ -175,7 +176,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 				}
 			}
 		}
-		while (!isValidationSuccess && repeatCounter.get() <= this.maxRepeatAttempts);
+		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
 
 		return chatClientResponse;
 	}
@@ -233,6 +234,8 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		private Type outputType;
 
 		private int maxRepeatAttempts = 3;
+
+		private ObjectMapper objectMapper = JsonParser.getObjectMapper();
 
 		private Builder() {
 		}
@@ -301,6 +304,16 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		/**
+		 * Sets the ObjectMapper to be used for JSON processing.
+		 * @param objectMapper the ObjectMapper
+		 * @return this builder
+		 */
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		/**
 		 * Builds the StructuredOutputValidationAdvisor.
 		 * @return a new StructuredOutputValidationAdvisor instance
 		 * @throws IllegalArgumentException if outputType is not set
@@ -309,7 +322,8 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			if (this.outputType == null) {
 				throw new IllegalArgumentException("outputType must be set");
 			}
-			return new StructuredOutputValidationAdvisor(this.advisorOrder, this.outputType, this.maxRepeatAttempts);
+			return new StructuredOutputValidationAdvisor(this.advisorOrder, this.outputType, this.maxRepeatAttempts,
+					this.objectMapper);
 		}
 
 	}

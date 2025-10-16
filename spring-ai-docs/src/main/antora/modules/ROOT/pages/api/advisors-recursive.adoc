@@ -2,7 +2,7 @@
 
 = Recursive Advisors
 
-== What is a Recursive Advisor
+== What is a Recursive Advisor?
 
 image:advisors-recursive.png[Advisors Recursive, width=230, float="right", align="center", alt="Advisors Recursive"]
 Recursive advisors are a special type of advisor that can loop through the downstream advisor chain multiple times. 
@@ -13,8 +13,8 @@ This pattern is useful when you need to repeatedly call the LLM until a certain 
 * Implementing Evaluation logic with modifications to the request
 * Implementing retry logic with modifications to the request
 
-The `AdvisorUtils.copyChainAfterAdvisor()` method is the key utility that enables recursive advisor patterns. 
-It creates a new advisor chain that contains only the advisors that come after the current advisor in the original chain
+The `CallAdvisorChain.copy(CallAdvisor after)` method is the key utility that enables recursive advisor patterns. 
+It creates a new advisor chain that contains only the advisors that come after the specified advisor in the original chain
 and allows the recursive advisor to call this sub-chain as needed.
 This approach ensures that:
 
@@ -36,7 +36,7 @@ Key features:
 * Disables the model's internal tool execution by setting `setInternalToolExecutionEnabled(false)`
 * Loops through the advisor chain until no more tool calls are present
 * Supports "return direct" functionality - when a tool execution has `returnDirect=true`, it interrupts the tool calling loop and returns the tool execution result directly to the client application instead of sending it back to the LLM
-* Uses `AdvisorUtils.copyChainAfterAdvisor()` to create a sub-chain for recursive calls
+* Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
 * Includes null safety checks to handle cases where the chat response might be null
 
 Example usage:
@@ -65,7 +65,7 @@ When a tool execution has `returnDirect=true`, the `ToolCallAdvisor` will:
 
 1. Execute the tool call as normal
 2. Detect the `returnDirect` flag in the `ToolExecutionResult`
-3. Interrupt the tool calling loop
+3. Break out of the tool calling loop
 4. Return the tool execution result directly to the client application as a `ChatResponse` with the tool's output as the generation content
 
 === StructuredOutputValidationAdvisor
@@ -78,7 +78,8 @@ Key features:
 * Validates the LLM response against the schema
 * Retries the call if validation fails, up to a configurable number of attempts
 * Augments the prompt with validation error messages on retry attempts to help the LLM correct its output
-* Uses `AdvisorUtils.copyChainAfterAdvisor()` to create a sub-chain for recursive calls
+* Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
+* Optionally supports a custom `ObjectMapper` for JSON processing
 
 Example usage:
 
@@ -86,7 +87,7 @@ Example usage:
 ----
 var validationAdvisor = StructuredOutputValidationAdvisor.builder()
     .outputType(MyResponseType.class)
-    .repeatAttempts(3)
+    .maxRepeatAttempts(3)
     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 1000)
     .build();
 

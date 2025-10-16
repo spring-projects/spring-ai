@@ -52,31 +52,4 @@ public final class AdvisorUtils {
 		};
 	}
 
-	/**
-	 * Creates a new CallAdvisorChain copy that contains all advisors after the specified
-	 * advisor.
-	 * @param callAdvisorChain the original CallAdvisorChain
-	 * @param after the CallAdvisor after which to copy the chain
-	 * @return a new CallAdvisorChain containing all advisors after the specified advisor
-	 * @throws IllegalArgumentException if the specified advisor is not part of the chain
-	 */
-	public static CallAdvisorChain copyChainAfterAdvisor(CallAdvisorChain callAdvisorChain, CallAdvisor after) {
-
-		Assert.notNull(callAdvisorChain, "callAdvisorChain must not be null");
-		Assert.notNull(after, "The after call advisor must not be null");
-
-		List<CallAdvisor> callAdvisors = callAdvisorChain.getCallAdvisors();
-		int afterAdvisorIndex = callAdvisors.indexOf(after);
-
-		if (afterAdvisorIndex < 0) {
-			throw new IllegalArgumentException("The specified advisor is not part of the chain: " + after.getName());
-		}
-
-		var remainingCallAdvisors = callAdvisors.subList(afterAdvisorIndex + 1, callAdvisors.size());
-
-		return DefaultAroundAdvisorChain.builder(callAdvisorChain.getObservationRegistry())
-			.pushAll(remainingCallAdvisors)
-			.build();
-	}
-
 }

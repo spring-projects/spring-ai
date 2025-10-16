@@ -107,8 +107,7 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 				.build();
 
 			// Next Call
-			chatClientResponse = AdvisorUtils.copyChainAfterAdvisor(callAdvisorChain, this)
-				.nextCall(processedChatClientRequest);
+			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
 
 			// After Call
 
@@ -123,10 +122,6 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 					.executeToolCalls(processedChatClientRequest.prompt(), chatClientResponse.chatResponse());
 
 				if (toolExecutionResult.returnDirect()) {
-					// Interupt the tool calling loop and return the tool execution result
-					// directly to the client application instead of returning it tothe
-					// LLM.
-					isToolCall = false;
 
 					// Return tool execution result directly to the application client.
 					chatClientResponse = chatClientResponse.mutate()
@@ -135,6 +130,11 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 							.build())
 						.build();
+
+					// Interupt the tool calling loop and return the tool execution result
+					// directly to the client application instead of returning it to the
+					// LLM.
+					break;
 				}
 
 				instructions = toolExecutionResult.conversationHistory();
