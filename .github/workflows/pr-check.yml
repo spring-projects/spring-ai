@@ -21,6 +21,26 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run tests
+      - name: Build spring-ai-model module
         run: |
-          ./mvnw --batch-mode test
+          ./mvnw clean install -pl spring-ai-model -DskipTests
+
+      - name: Build spring-ai-openai module
+        run: |
+          ./mvnw clean install -pl models/spring-ai-openai -DskipTests
+
+      - name: Run OpenAI Image Model integration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw -pl models/spring-ai-openai -Pintegration-tests -Dit.test=OpenAiImageModelIT,OpenAiImageModelNoOpApiKeysIT,OpenAiImageModelObservationIT,OpenAiImageModelStreamingIT,OpenAiImageModelWithImageResponseMetadataTests,OpenAiImageApiBuilderTests,OpenAiImageApiIT,OpenAiImageApiStreamingIT verify
+
+      - name: Run OpenAI Image AutoConfiguration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw -pl auto-configurations/models/spring-ai-autoconfigure-model-openai -Pintegration-tests -Dit.test=OpenAiImageAutoConfigurationIT verify
+
+      - name: Run OpenAI Image Properties tests
+        run: |
+          ./mvnw test -pl auto-configurations/models/spring-ai-autoconfigure-model-openai -Dtest=OpenAiPropertiesTests#imageOptionsTest,OpenAiPropertiesTests#imageGptImageOptionsTest

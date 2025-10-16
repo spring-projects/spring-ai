@@ -28,6 +28,23 @@ public interface ImageModel extends Model<ImagePrompt, ImageResponse> {
 }
 ----
 
+=== Streaming Image Model
+
+For models that support streaming image generation, Spring AI provides the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/StreamingImageModel.java[StreamingImageModel] interface:
+
+[source,java]
+----
+public interface StreamingImageModel extends StreamingModel<ImagePrompt, ImageResponse> {
+
+	Flux<ImageResponse> stream(ImagePrompt prompt);
+
+}
+----
+
+The `StreamingImageModel` interface allows AI models to generate images progressively, emitting partial images as they are being created. This provides a better user experience by showing incremental progress rather than waiting for the final image.
+
+NOTE: Streaming image generation is currently only supported by certain models like OpenAI's GPT-Image models (gpt-image-1 and gpt-image-1-mini). Traditional models like DALL-E do not support streaming.
+
 === ImagePrompt
 
 The https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImagePrompt.java[ImagePrompt] is a `ModelRequest` that encapsulates a list of https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageMessage.java[ImageMessage] objects and optional model request options.
