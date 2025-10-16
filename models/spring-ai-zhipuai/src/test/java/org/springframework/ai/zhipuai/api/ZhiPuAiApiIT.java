@@ -57,21 +57,24 @@ public class ZhiPuAiApiIT {
 	void chatCompletionEntityWithMoreParams() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = this.zhiPuAiApi
-			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 1024, null,
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-4-flash", 1024, null,
 					false, 0.95, 0.7, null, null, null, "test_request_id", false, null, null));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().usage()).isNotNull();
 	}
 
 	@Test
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		Flux<ChatCompletionChunk> response = this.zhiPuAiApi
-			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7, true));
+			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-4-flash", 0.7, true));
 
 		assertThat(response).isNotNull();
-		assertThat(response.collectList().block()).isNotNull();
+		List<ChatCompletionChunk> chunks = response.collectList().block();
+		assertThat(chunks).isNotNull();
+		assertThat(chunks.get(chunks.size() - 1).usage()).isNotNull();
 	}
 
 	@Test
