@@ -37,8 +37,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 			.withPropertyValues("spring.ai.azure.openai.api-key=TEST_API_KEY",
 					"spring.ai.azure.openai.endpoint=TEST_ENDPOINT",
 					"spring.ai.azure.openai.embedding.options.deployment-name=MODEL_XYZ")
-			.withConfiguration(AutoConfigurations.of(
-					ToolCallingAutoConfiguration.class,
+			.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class,
 					AzureOpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiEmbeddingProperties.class);
@@ -54,9 +53,8 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 	@Test
 	public void chatPropertiesTest() {
 
-		new ApplicationContextRunner()
-			.withPropertyValues(
-				// @formatter:off
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
 				"spring.ai.azure.openai.api-key=API_KEY",
 				"spring.ai.azure.openai.endpoint=ENDPOINT",
 
@@ -72,10 +70,8 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				"spring.ai.azure.openai.chat.options.user=userXYZ"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(
-					ToolCallingAutoConfiguration.class,
-					AzureOpenAiChatAutoConfiguration.class,
-					AzureOpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class,
+					AzureOpenAiChatAutoConfiguration.class, AzureOpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiChatProperties.class);
 				var connectionProperties = context.getBean(AzureOpenAiConnectionProperties.class);

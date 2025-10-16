@@ -62,8 +62,7 @@ public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 			// @formatter:on
 	)
 		.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class,
-		        AzureOpenAiChatAutoConfiguration.class,
-				AzureOpenAiEmbeddingAutoConfiguration.class));
+				AzureOpenAiChatAutoConfiguration.class, AzureOpenAiEmbeddingAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.
