@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
+import org.springframework.ai.tool.resolution.InitToolCallbackResolverErrorHandler;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -42,6 +45,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Description;
+import org.springframework.core.Ordered;
+import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -185,6 +190,14 @@ class ToolCallingAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void testInitToolCallbackResolverErrorHandler() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(InitToolCallbackResolverErrorHandlerTestConf.class)
+			.run(context -> assertThat(context.getBeansOfType(InitToolCallbackResolverErrorHandler.class))
+				.isNotEmpty());
+	}
+
 	static class WeatherService {
 
 		@Tool(description = "Get the weather in location. Return temperature in 36°F or 36°C format.")
@@ -271,6 +284,41 @@ class ToolCallingAutoConfigurationTests {
 		}
 
 		public record Response(String temperature) {
+		}
+
+	}
+
+	@Configuration
+	static class InitToolCallbackResolverErrorHandlerTestConf {
+
+		private static final String ERROR_MSG = "TestError";
+
+		@Bean
+		public ToolCallbackProvider errorToolCallbackProvider() {
+			return () -> {
+				throw new RuntimeException(ERROR_MSG);
+			};
+		}
+
+		@Bean
+		public InitToolCallbackResolverErrorHandler testErrorHandler() {
+			return new InitToolCallbackResolverErrorHandler() {
+				@Override
+				public boolean support(ToolCallbackProvider provider, Throwable t) {
+					return true;
+				}
+
+				@Override
+				public List<ToolCallback> handle(ToolCallbackProvider provider, Throwable t) {
+					Assert.isTrue(ERROR_MSG.equals(t.getMessage()), "error");
+					return Collections.emptyList();
+				}
+
+				@Override
+				public int getOrder() {
+					return Ordered.LOWEST_PRECEDENCE;
+				}
+			};
 		}
 
 	}
