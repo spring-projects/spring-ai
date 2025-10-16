@@ -16,14 +16,10 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.List;
 import java.util.function.Predicate;
 
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
-import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
