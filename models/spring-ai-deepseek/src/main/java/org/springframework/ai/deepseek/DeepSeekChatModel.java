@@ -76,6 +76,7 @@ import org.springframework.util.CollectionUtils;
  * backed by {@link DeepSeekApi}.
  *
  * @author Geng Rong
+ * @last Updated By : @kuntal1461
  */
 public class DeepSeekChatModel implements ChatModel {
 
@@ -193,7 +194,10 @@ public class DeepSeekChatModel implements ChatModel {
 				}).toList();
 
 				// Current usage
-				DeepSeekApi.Usage usage = completionEntity.getBody().usage();
+				DeepSeekApi.Usage usage = null;
+				if (completionEntity != null && completionEntity.getBody() != null) {
+					usage = chatCompletion.usage();
+				}
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 						previousChatResponse);
@@ -216,6 +220,10 @@ public class DeepSeekChatModel implements ChatModel {
 					.build();
 			}
 			else {
+				// Reset tool choice to AUTO to prevent forcing repeated tool calls.
+				if (prompt.getOptions() instanceof DeepSeekChatOptions options) {
+					options.setToolChoice(ChatCompletionRequest.ToolChoiceBuilder.AUTO);
+				}
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 						response);
@@ -305,6 +313,10 @@ public class DeepSeekChatModel implements ChatModel {
 									.build());
 						}
 						else {
+							// Reset tool choice to AUTO to prevent forcing repeated tool calls.
+							if (prompt.getOptions() instanceof DeepSeekChatOptions options) {
+								options.setToolChoice(ChatCompletionRequest.ToolChoiceBuilder.AUTO);
+							}
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									response);
