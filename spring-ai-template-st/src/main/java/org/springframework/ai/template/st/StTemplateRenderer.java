@@ -112,6 +112,11 @@ public class StTemplateRenderer implements TemplateRenderer {
 		return st.render();
 	}
 
+	@Override
+	public Set<String> getRequiredVariables(String template) {
+		return getInputVariables(createST(template));
+	}
+
 	private ST createST(String template) {
 		try {
 			STGroup group = new STGroup(this.startDelimiterToken, this.endDelimiterToken);
