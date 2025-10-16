@@ -321,10 +321,9 @@ public String unifiedTool(
     // Logging with convenient methods
     context.info("Processing: " + input);
     
-    // Progress notifications
-    if (progressToken != null) {
-        context.progress(50); // Simple percentage
-    }
+    // Progress notifications (Note client should set a progress token 
+    // with its request to be able to receive progress updates)
+    context.progress(50); // Simple percentage    
     
     // Ping client
     context.ping();
@@ -381,17 +380,7 @@ public String statelessTool(
 [IMPORTANT]
 **Stateless servers do not support bidirectional operations:**
 
-* `roots()` - Not available
-* `elicit()` - Not available  
-* `sample()` - Not available
-
-When using `McpSyncRequestContext` or `McpAsyncRequestContext` in stateless mode, these capability check methods will return `false`:
-
-* `rootsEnabled()` returns `false`
-* `elicitEnabled()` returns `false`
-* `sampleEnabled()` returns `false`
-
-Always check capability support before calling these methods to avoid exceptions.
+Therefore methods using `McpSyncRequestContext` or `McpAsyncRequestContext` in stateless mode are ignored. 
 
 == Method Filtering by Server Type
 
