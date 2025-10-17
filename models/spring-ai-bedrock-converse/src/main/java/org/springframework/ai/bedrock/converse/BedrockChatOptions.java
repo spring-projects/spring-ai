@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -81,6 +82,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
+	@JsonIgnore
+	private BedrockCacheOptions cacheOptions;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -101,6 +105,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 			.toolNames(new HashSet<>(fromOptions.getToolNames()))
 			.toolContext(new HashMap<>(fromOptions.getToolContext()))
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.cacheOptions(fromOptions.getCacheOptions())
 			.build();
 	}
 
@@ -237,6 +242,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
+	@JsonIgnore
+	public BedrockCacheOptions getCacheOptions() {
+		return this.cacheOptions;
+	}
+
+	@JsonIgnore
+	public void setCacheOptions(BedrockCacheOptions cacheOptions) {
+		this.cacheOptions = cacheOptions;
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public BedrockChatOptions copy() {
@@ -259,14 +274,15 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled);
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.cacheOptions, that.cacheOptions);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.internalToolExecutionEnabled);
+				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
 	}
 
 	public static final class Builder {
@@ -353,6 +369,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder cacheOptions(BedrockCacheOptions cacheOptions) {
+			this.options.setCacheOptions(cacheOptions);
 			return this;
 		}
 
