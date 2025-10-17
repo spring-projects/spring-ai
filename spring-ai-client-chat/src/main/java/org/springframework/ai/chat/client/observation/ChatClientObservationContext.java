@@ -22,6 +22,7 @@ import io.micrometer.observation.Observation;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
@@ -35,11 +36,15 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 public class ChatClientObservationContext extends Observation.Context {
 
 	private final ChatClientRequest request;
+
+	@Nullable
+	private ChatClientResponse response;
 
 	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(AiOperationType.FRAMEWORK.value(),
 			AiProvider.SPRING_AI.value());
@@ -84,6 +89,23 @@ public class ChatClientObservationContext extends Observation.Context {
 			return format;
 		}
 		return null;
+	}
+
+	/**
+	 * @return Chat client response
+	 * @since 1.1.0
+	 */
+	@Nullable
+	public ChatClientResponse getResponse() {
+		return this.response;
+	}
+
+	/**
+	 * @param response Chat client response to record.
+	 * @since 1.1.0
+	 */
+	public void setResponse(ChatClientResponse response) {
+		this.response = response;
 	}
 
 	public static final class Builder {
