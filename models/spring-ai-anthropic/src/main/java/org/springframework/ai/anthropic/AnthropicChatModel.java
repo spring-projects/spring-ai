@@ -44,6 +44,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
+import org.springframework.ai.anthropic.api.CitationDocument;
 import org.springframework.ai.anthropic.api.utils.CacheEligibilityResolver;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -322,12 +323,13 @@ public class AnthropicChatModel implements ChatModel {
 
 		List<Generation> generations = new ArrayList<>();
 		List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
+		CitationContext citationContext = new CitationContext();
 		for (ContentBlock content : chatCompletion.content()) {
 			switch (content.type()) {
 				case TEXT, TEXT_DELTA:
-					generations.add(new Generation(
-							AssistantMessage.builder().content(content.text()).properties(Map.of()).build(),
-							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
+					Generation textGeneration = processTextContent(content, chatCompletion.stopReason(),
+							citationContext);
+					generations.add(textGeneration);
 					break;
 				case THINKING, THINKING_DELTA:
 					Map<String, Object> thinkingProperties = new HashMap<>();
@@ -371,7 +373,101 @@ public class AnthropicChatModel implements ChatModel {
 					ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build());
 			generations.add(toolCallGeneration);
 		}
-		return new ChatResponse(generations, this.from(chatCompletion, usage));
+
+		// Create response metadata with citation information if present
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
+			.id(chatCompletion.id())
+			.model(chatCompletion.model())
+			.usage(usage)
+			.keyValue("stop-reason", chatCompletion.stopReason())
+			.keyValue("stop-sequence", chatCompletion.stopSequence())
+			.keyValue("type", chatCompletion.type());
+
+		// Add citation metadata if citations were found
+		if (citationContext.hasCitations()) {
+			metadataBuilder.keyValue("citations", citationContext.getAllCitations())
+				.keyValue("citationCount", citationContext.getTotalCitationCount());
+		}
+
+		ChatResponseMetadata responseMetadata = metadataBuilder.build();
+
+		return new ChatResponse(generations, responseMetadata);
+	}
+
+	private Generation processTextContent(ContentBlock content, String stopReason, CitationContext citationContext) {
+		// Extract citations if present in the content block
+		if (content.citations() instanceof List) {
+			try {
+				@SuppressWarnings("unchecked")
+				List<Object> citationObjects = (List<Object>) content.citations();
+
+				List<Citation> citations = new ArrayList<>();
+				for (Object citationObj : citationObjects) {
+					if (citationObj instanceof Map) {
+						// Convert Map to CitationResponse using manual parsing
+						AnthropicApi.CitationResponse citationResponse = parseCitationFromMap((Map<?, ?>) citationObj);
+						citations.add(convertToCitation(citationResponse));
+					}
+					else {
+						logger.warn("Unexpected citation object type: {}. Expected Map but got: {}. Skipping citation.",
+								citationObj.getClass().getName(), citationObj);
+					}
+				}
+
+				if (!citations.isEmpty()) {
+					citationContext.addCitations(citations);
+				}
+
+			}
+			catch (Exception e) {
+				logger.warn("Failed to parse citations from content block", e);
+			}
+		}
+
+		return new Generation(new AssistantMessage(content.text()),
+				ChatGenerationMetadata.builder().finishReason(stopReason).build());
+	}
+
+	/**
+	 * Parse citation data from Map (typically from JSON deserialization). Assumes all
+	 * required fields are present and of correct types.
+	 * @param citationMap the map containing citation data from API response
+	 * @return parsed CitationResponse
+	 */
+	private AnthropicApi.CitationResponse parseCitationFromMap(Map<?, ?> citationMap) {
+		String type = (String) citationMap.get("type");
+		String citedText = (String) citationMap.get("cited_text");
+		Integer documentIndex = (Integer) citationMap.get("document_index");
+		String documentTitle = (String) citationMap.get("document_title");
+
+		Integer startCharIndex = (Integer) citationMap.get("start_char_index");
+		Integer endCharIndex = (Integer) citationMap.get("end_char_index");
+		Integer startPageNumber = (Integer) citationMap.get("start_page_number");
+		Integer endPageNumber = (Integer) citationMap.get("end_page_number");
+		Integer startBlockIndex = (Integer) citationMap.get("start_block_index");
+		Integer endBlockIndex = (Integer) citationMap.get("end_block_index");
+
+		return new AnthropicApi.CitationResponse(type, citedText, documentIndex, documentTitle, startCharIndex,
+				endCharIndex, startPageNumber, endPageNumber, startBlockIndex, endBlockIndex);
+	}
+
+	/**
+	 * Convert CitationResponse to Citation object. This method handles the conversion to
+	 * avoid circular dependencies.
+	 */
+	private Citation convertToCitation(AnthropicApi.CitationResponse citationResponse) {
+		return switch (citationResponse.type()) {
+			case "char_location" -> Citation.ofCharLocation(citationResponse.citedText(),
+					citationResponse.documentIndex(), citationResponse.documentTitle(),
+					citationResponse.startCharIndex(), citationResponse.endCharIndex());
+			case "page_location" -> Citation.ofPageLocation(citationResponse.citedText(),
+					citationResponse.documentIndex(), citationResponse.documentTitle(),
+					citationResponse.startPageNumber(), citationResponse.endPageNumber());
+			case "content_block_location" -> Citation.ofContentBlockLocation(citationResponse.citedText(),
+					citationResponse.documentIndex(), citationResponse.documentTitle(),
+					citationResponse.startBlockIndex(), citationResponse.endBlockIndex());
+			default -> throw new IllegalArgumentException("Unknown citation type: " + citationResponse.type());
+		};
 	}
 
 	private ChatResponseMetadata from(AnthropicApi.ChatCompletionResponse result) {
@@ -479,6 +575,14 @@ public class AnthropicChatModel implements ChatModel {
 			// Merge cache options that are Json-ignored
 			requestOptions.setCacheOptions(runtimeOptions.getCacheOptions() != null ? runtimeOptions.getCacheOptions()
 					: this.defaultOptions.getCacheOptions());
+
+			// Merge citation documents that are Json-ignored
+			if (runtimeOptions.getCitationDocuments() != null && !runtimeOptions.getCitationDocuments().isEmpty()) {
+				requestOptions.setCitationDocuments(runtimeOptions.getCitationDocuments());
+			}
+			else if (this.defaultOptions.getCitationDocuments() != null) {
+				requestOptions.setCitationDocuments(this.defaultOptions.getCitationDocuments());
+			}
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -486,6 +590,7 @@ public class AnthropicChatModel implements ChatModel {
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+			requestOptions.setCitationDocuments(this.defaultOptions.getCitationDocuments());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -610,12 +715,24 @@ public class AnthropicChatModel implements ChatModel {
 			}
 		}
 
+		// Get citation documents from options
+		List<CitationDocument> citationDocuments = null;
+		if (prompt.getOptions() instanceof AnthropicChatOptions anthropicOptions) {
+			citationDocuments = anthropicOptions.getCitationDocuments();
+		}
+
 		List<AnthropicMessage> result = new ArrayList<>();
 		for (int i = 0; i < allMessages.size(); i++) {
 			Message message = allMessages.get(i);
 			MessageType messageType = message.getMessageType();
 			if (messageType == MessageType.USER) {
 				List<ContentBlock> contentBlocks = new ArrayList<>();
+				// Add citation documents to the FIRST user message only
+				if (i == 0 && citationDocuments != null && !citationDocuments.isEmpty()) {
+					for (CitationDocument doc : citationDocuments) {
+						contentBlocks.add(doc.toContentBlock());
+					}
+				}
 				String content = message.getText();
 				// For conversation history caching, apply cache control to the
 				// message immediately before the last user message.
@@ -819,6 +936,32 @@ public class AnthropicChatModel implements ChatModel {
 			}
 			return new AnthropicChatModel(this.anthropicApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+		}
+
+	}
+
+	/**
+	 * Context object for tracking citations during response processing. Aggregates
+	 * citations from multiple content blocks in a single response.
+	 */
+	class CitationContext {
+
+		private final List<Citation> allCitations = new ArrayList<>();
+
+		public void addCitations(List<Citation> citations) {
+			this.allCitations.addAll(citations);
+		}
+
+		public boolean hasCitations() {
+			return !this.allCitations.isEmpty();
+		}
+
+		public List<Citation> getAllCitations() {
+			return new ArrayList<>(this.allCitations);
+		}
+
+		public int getTotalCitationCount() {
+			return this.allCitations.size();
 		}
 
 	}
