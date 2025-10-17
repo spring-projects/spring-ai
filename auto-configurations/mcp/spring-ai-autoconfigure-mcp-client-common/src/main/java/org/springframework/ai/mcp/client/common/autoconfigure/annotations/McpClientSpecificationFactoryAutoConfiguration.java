@@ -21,7 +21,16 @@ import java.util.List;
 import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpLogging;
 import org.springaicommunity.mcp.annotation.McpProgress;
+import org.springaicommunity.mcp.annotation.McpPromptListChanged;
+import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
+import org.springaicommunity.mcp.annotation.McpToolListChanged;
+import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.resource.SyncResourceListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
+import org.springaicommunity.mcp.method.changed.tool.SyncToolListChangedSpecification;
 import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification;
 import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification;
 import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
@@ -43,6 +52,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @author Christian Tzolov
+ * @author Fu Jian
  */
 @AutoConfiguration(after = McpClientAnnotationScannerAutoConfiguration.class)
 @ConditionalOnClass(McpLogging.class)
@@ -79,6 +89,27 @@ public class McpClientSpecificationFactoryAutoConfiguration {
 				.progressSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpProgress.class));
 		}
 
+		@Bean
+		List<SyncToolListChangedSpecification> syncToolListChangedSpecs(
+				ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+			return SyncMcpAnnotationProviders.toolListChangedSpecifications(
+					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpToolListChanged.class));
+		}
+
+		@Bean
+		List<SyncResourceListChangedSpecification> syncResourceListChangedSpecs(
+				ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+			return SyncMcpAnnotationProviders.resourceListChangedSpecifications(
+					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResourceListChanged.class));
+		}
+
+		@Bean
+		List<SyncPromptListChangedSpecification> syncPromptListChangedSpecs(
+				ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+			return SyncMcpAnnotationProviders.promptListChangedSpecifications(
+					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpPromptListChanged.class));
+		}
+
 	}
 
 	@Configuration(proxyBeanMethods = false)
@@ -103,6 +134,22 @@ public class McpClientSpecificationFactoryAutoConfiguration {
 		@Bean
 		List<AsyncProgressSpecification> progressSpecs(ClientMcpAnnotatedBeans beanRegistry) {
 			return AsyncMcpAnnotationProviders.progressSpecifications(beanRegistry.getAllAnnotatedBeans());
+		}
+
+		@Bean
+		List<AsyncToolListChangedSpecification> asyncToolListChangedSpecs(ClientMcpAnnotatedBeans beanRegistry) {
+			return AsyncMcpAnnotationProviders.toolListChangedSpecifications(beanRegistry.getAllAnnotatedBeans());
+		}
+
+		@Bean
+		List<AsyncResourceListChangedSpecification> asyncResourceListChangedSpecs(
+				ClientMcpAnnotatedBeans beanRegistry) {
+			return AsyncMcpAnnotationProviders.resourceListChangedSpecifications(beanRegistry.getAllAnnotatedBeans());
+		}
+
+		@Bean
+		List<AsyncPromptListChangedSpecification> asyncPromptListChangedSpecs(ClientMcpAnnotatedBeans beanRegistry) {
+			return AsyncMcpAnnotationProviders.promptListChangedSpecifications(beanRegistry.getAllAnnotatedBeans());
 		}
 
 	}
