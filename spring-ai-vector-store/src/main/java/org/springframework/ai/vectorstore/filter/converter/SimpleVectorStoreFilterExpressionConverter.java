@@ -26,6 +26,7 @@ import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.FilterStringEscapeUtils;
 
 /**
  * Converts {@link Expression} into SpEL metadata filter expression format.
@@ -128,7 +129,7 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 				}
 			}
 			else {
-				context.append(text);
+				context.append(FilterStringEscapeUtils.escapeForSingleQuotes(text));
 			}
 			context.append("'");
 		}

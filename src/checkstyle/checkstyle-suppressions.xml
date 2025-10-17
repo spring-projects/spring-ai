@@ -62,5 +62,7 @@
 	<suppress files="QdrantVectorStore.java" checks="FinalClass"/>
 	<suppress files="RedisVectorStore.java" checks="FinalClass"/>
 
+	<suppress files="FilterStringEscapeUtilsTests.java" checks="ImportOrder"/>
+	<suppress files="FilterExpressionConverterSecurityTests.java" checks="ImportOrder"/>
 
 </suppressions>

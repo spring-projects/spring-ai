@@ -24,7 +24,6 @@ import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.FilterHelper;
 
 /**
  * AbstractFilterExpressionConverter is an abstract class that implements the
@@ -99,7 +98,7 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		// equivalent negation expression.
 		// Effectively removing the NOT types form the boolean expression tree before
 		// passing it to the doExpression.
-		this.convertOperand(FilterHelper.negate(expression), context);
+		this.convertOperand(org.springframework.ai.vectorstore.filter.FilterHelper.negate(expression), context);
 	}
 
 	/**
@@ -145,7 +144,8 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 	 */
 	protected void doSingleValue(Object value, StringBuilder context) {
 		if (value instanceof String) {
-			context.append(String.format("\"%s\"", value));
+			context.append(String.format("\"%s\"", org.springframework.ai.vectorstore.filter.FilterStringEscapeUtils
+				.escapeForDoubleQuotes((String) value)));
 		}
 		else {
 			context.append(value);

@@ -29,7 +29,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
-import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.ai.vectorstore.filter.FilterStringEscapeUtils;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 import org.springframework.util.Assert;
 
@@ -96,7 +96,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 	}
 
 	@Override
-	public void doKey(Key key, StringBuilder context) {
+	protected void doKey(Filter.Key key, StringBuilder context) {
 		var hasOuterQuotes = hasOuterQuotes(key.key());
 		var identifier = (hasOuterQuotes) ? removeOuterQuotes(key.key()) : key.key();
 		var prefixedIdentifier = withMetaPrefix(identifier);
@@ -150,7 +150,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 				}
 			}
 			else {
-				context.append(String.format("'%s'", text));
+				context.append(String.format("'%s'", FilterStringEscapeUtils.escapeForSql(text)));
 			}
 		}
 		else {

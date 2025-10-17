@@ -19,7 +19,7 @@ package org.springframework.ai.vectorstore.mariadb;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
-import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.ai.vectorstore.filter.FilterStringEscapeUtils;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
@@ -44,9 +44,14 @@ public class MariaDBFilterExpressionConverter extends AbstractFilterExpressionCo
 	}
 
 	@Override
+	protected void doKey(Filter.Key key, StringBuilder context) {
+		context.append(String.format("JSON_EXTRACT(%s, '$.%s')", this.metadataFieldName, key.key()));
+	}
+
+	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
 		if (value instanceof String) {
-			context.append(String.format("\'%s\'", value));
+			context.append(String.format("\'%s\'", FilterStringEscapeUtils.escapeForSql((String) value)));
 		}
 		else {
 			context.append(value);
@@ -68,11 +73,6 @@ public class MariaDBFilterExpressionConverter extends AbstractFilterExpressionCo
 			// you never know what the future might bring
 			default -> throw new RuntimeException("Not supported expression type: " + exp.type());
 		};
-	}
-
-	@Override
-	protected void doKey(Key key, StringBuilder context) {
-		context.append("JSON_VALUE(" + this.metadataFieldName + ", '$." + key.key() + "')");
 	}
 
 	protected void doStartValueRange(Filter.Value listValue, StringBuilder context) {

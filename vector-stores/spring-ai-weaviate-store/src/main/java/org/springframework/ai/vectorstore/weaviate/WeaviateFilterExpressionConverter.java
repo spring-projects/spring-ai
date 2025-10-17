@@ -27,6 +27,7 @@ import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.FilterHelper;
+import org.springframework.ai.vectorstore.filter.FilterStringEscapeUtils;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 import org.springframework.util.Assert;
 
@@ -182,7 +183,7 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 			context.append(String.format("valueBoolean:%s ", b));
 		}
 		else if (value instanceof String s) {
-			context.append(String.format("valueText:\"%s\" ", s));
+			context.append(String.format("valueText:\"%s\" ", FilterStringEscapeUtils.escapeForGraphQL(s)));
 		}
 		else if (value instanceof Date date) {
 			String dateString = DateFormatUtils.format(date, "yyyy-MM-dd\'T\'HH:mm:ssZZZZZ");
