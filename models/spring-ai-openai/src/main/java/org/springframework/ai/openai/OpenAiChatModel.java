@@ -319,7 +319,8 @@ public class OpenAiChatModel implements ChatModel {
 									"index", choice.index() != null ? choice.index() : 0,
 									"finishReason", getFinishReasonJson(choice.finishReason()),
 									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
-									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
+									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(),
+									"reasoningContent", choice.message().reasoningContent() != null ? choice.message().reasoningContent() : "");
 							return buildGeneration(choice, metadata, request);
 						}).toList();
 						// @formatter:on
@@ -606,7 +607,7 @@ public class OpenAiChatModel implements ChatModel {
 
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null, audioOutput, null, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -616,7 +617,7 @@ public class OpenAiChatModel implements ChatModel {
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null, null, null, null))
+							tr.id(), null, null, null, null, null))
 					.toList();
 			}
 			else {

@@ -31,7 +31,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -195,6 +198,7 @@ public class OpenAiApi {
 		Assert.isTrue(!chatRequest.stream(), STREAM_FALSE_MESSAGE);
 		Assert.notNull(additionalHttpHeader, ADDITIONAL_HEADERS_NULL_MESSAGE);
 
+		Object dynamicRequestBody = createDynamicRequestBody(chatRequest);
 		// @formatter:off
 		return this.restClient.post()
 			.uri(this.completionsPath)
@@ -202,7 +206,7 @@ public class OpenAiApi {
 				headers.addAll(additionalHttpHeader);
 				addDefaultHeadersIfMissing(headers);
 			})
-			.body(chatRequest)
+			.body(dynamicRequestBody)
 			.retrieve()
 			.toEntity(ChatCompletion.class);
 		// @formatter:on
@@ -216,6 +220,29 @@ public class OpenAiApi {
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+	}
+
+	private Object createDynamicRequestBody(ChatCompletionRequest baseRequest) {
+		ObjectMapper mapper = new ObjectMapper();
+		ObjectNode requestNode = mapper.valueToTree(baseRequest);
+		if (null == baseRequest.extraBody) {
+			return requestNode;
+		}
+
+		// 添加额外字段
+		baseRequest.extraBody().forEach((key, value) -> {
+			if (value instanceof Map) {
+				requestNode.set(key, mapper.valueToTree(value));
+			}
+			else if (value instanceof List) {
+				requestNode.set(key, mapper.valueToTree(value));
+			}
+			else {
+				requestNode.putPOJO(key, value);
+			}
+		});
+
+		return requestNode;
 	}
 
 	/**
@@ -234,6 +261,15 @@ public class OpenAiApi {
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
+		ObjectMapper objectMapper = new ObjectMapper();
+		try {
+			var s = objectMapper.writeValueAsString(chatRequest);
+			System.out.println("aaaaaaaa:" + s);
+		}
+		catch (JsonProcessingException e) {
+			throw new RuntimeException(e);
+		}
+		Object dynamicBody = createDynamicRequestBody(chatRequest);
 		// @formatter:off
 		return this.webClient.post()
 			.uri(this.completionsPath)
@@ -241,7 +277,7 @@ public class OpenAiApi {
 				headers.addAll(additionalHttpHeader);
 				addDefaultHeadersIfMissing(headers);
 			}) // @formatter:on
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.bodyValue(dynamicBody)
 			.retrieve()
 			.bodyToFlux(String.class)
 			// cancels the flux stream after the "[DONE]" is received.
@@ -1124,7 +1160,8 @@ public class OpenAiApi {
 			@JsonProperty("user") String user,
 			@JsonProperty("reasoning_effort") String reasoningEffort,
 			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions,
-			@JsonProperty("verbosity") String verbosity)  {
+			@JsonProperty("verbosity") String verbosity,
+			@JsonProperty("extra_body") Map<String, Object> extraBody) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -1136,7 +1173,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1150,7 +1187,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1165,7 +1202,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1181,7 +1218,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null, null, null, null);
+					tools, toolChoice, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1192,9 +1229,9 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(messages, null, null, null, null, null, null, null, null, null, null,
-					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null, null, null, null);
+			this(messages, null, null, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, null, stream, null, null, null, null, null, null, null, null, null,
+				null, null);
 		}
 
 		/**
@@ -1205,9 +1242,9 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest streamOptions(StreamOptions streamOptions) {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
-			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
-			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions, this.verbosity);
+					this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
+					this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
+					this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions, this.verbosity, this.extraBody);
 		}
 
 		/**
@@ -1419,7 +1456,8 @@ public class OpenAiApi {
 			@JsonProperty("tool_calls") @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("refusal") String refusal,
 			@JsonProperty("audio") AudioOutput audioOutput,
-			@JsonProperty("annotations") List<Annotation> annotations
+			@JsonProperty("annotations") List<Annotation> annotations,
+			@JsonProperty("reasoning_content") String reasoningContent
 	) { // @formatter:on
 
 		/**
@@ -1429,7 +1467,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null, null, null);
+			this(content, role, null, null, null, null, null, null, null);
 		}
 
 		/**
