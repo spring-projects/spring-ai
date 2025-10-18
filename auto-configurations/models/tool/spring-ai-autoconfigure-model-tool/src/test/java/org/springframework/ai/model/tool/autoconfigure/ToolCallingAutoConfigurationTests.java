@@ -45,12 +45,17 @@ import org.springframework.context.annotation.Description;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link ToolCallingAutoConfiguration}.
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 class ToolCallingAutoConfigurationTests {
 
@@ -66,6 +71,19 @@ class ToolCallingAutoConfigurationTests {
 
 				var toolCallingManager = context.getBean(ToolCallingManager.class);
 				assertThat(toolCallingManager).isInstanceOf(DefaultToolCallingManager.class);
+			});
+	}
+
+	@Test
+	void deferGetToolCallbacks() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				var toolCallbackProvider = context.getBean("toolCallbacks", ToolCallbackProvider.class);
+				verify(toolCallbackProvider, never()).getToolCallbacks();
+				assertThat(toolCallbackResolver.resolve("getForecast")).isNotNull();
+				verify(toolCallbackProvider, times(1)).getToolCallbacks();
 			});
 	}
 
@@ -212,7 +230,10 @@ class ToolCallingAutoConfigurationTests {
 		// ToolCallbacks.from(...) utility method.
 		@Bean
 		public ToolCallbackProvider toolCallbacks() {
-			return MethodToolCallbackProvider.builder().toolObjects(new WeatherService()).build();
+			ToolCallbackProvider toolCallbackProvider = MethodToolCallbackProvider.builder()
+				.toolObjects(new WeatherService())
+				.build();
+			return spy(toolCallbackProvider);
 		}
 
 		@Bean
