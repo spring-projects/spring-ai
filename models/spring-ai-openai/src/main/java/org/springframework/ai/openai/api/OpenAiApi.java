@@ -140,6 +140,7 @@ public class OpenAiApi {
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
 			h.setContentType(MediaType.APPLICATION_JSON);
+			h.set("User-Agent", "spring-ai");
 			h.addAll(headers);
 		};
 		this.restClient = restClientBuilder.clone()
