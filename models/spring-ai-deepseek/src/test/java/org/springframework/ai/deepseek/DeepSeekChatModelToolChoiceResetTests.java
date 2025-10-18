@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
  * Verifies that DeepSeekChatModel resets tool_choice to AUTO when resubmitting tool
  * results (returnDirect=false) to avoid infinite tool call loops.
  *
- * @author @kuntal1461
+ * @author : kuntal maity
  */
 class DeepSeekChatModelToolChoiceResetTests {
 
