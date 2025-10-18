@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.Observation;
@@ -47,6 +48,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -521,8 +523,33 @@ public class DefaultChatClient implements ChatClient {
 
 		@Nullable
 		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
-			return Optional.ofNullable(chatResponse)
-				.map(ChatResponse::getResult)
+			if (chatResponse == null) {
+				return null;
+			}
+			var results = chatResponse.getResults();
+			if (results == null || results.isEmpty()) {
+				return null;
+			}
+			if (results.size() == 1) {
+				return Optional.ofNullable(results.get(0))
+					.map(Generation::getOutput)
+					.map(AbstractMessage::getText)
+					.orElse(null);
+			}
+			boolean allReturnDirect = results.stream().allMatch(g -> {
+				var finish = g.getMetadata() != null ? g.getMetadata().getFinishReason() : null;
+				return finish != null && finish.equalsIgnoreCase(ToolExecutionResult.FINISH_REASON);
+			});
+			if (allReturnDirect) {
+				return results.stream()
+					.map(Generation::getOutput)
+					.map(AbstractMessage::getText)
+					.filter(Objects::nonNull)
+					.filter(StringUtils::hasText)
+					.reduce((a, b) -> a + "\n" + b)
+					.orElse(null);
+			}
+			return Optional.ofNullable(results.get(0))
 				.map(Generation::getOutput)
 				.map(AbstractMessage::getText)
 				.orElse(null);
@@ -594,10 +621,35 @@ public class DefaultChatClient implements ChatClient {
 			// @formatter:off
 			return doGetObservableFluxChatResponse(this.request)
 					.mapNotNull(ChatClientResponse::chatResponse)
-					.map(r -> Optional.ofNullable(r.getResult())
+					.map(r -> {
+						var results = r.getResults();
+						if (results == null || results.isEmpty()) {
+							return "";
+						}
+						if (results.size() == 1) {
+							return Optional.ofNullable(results.get(0))
+								.map(Generation::getOutput)
+								.map(AbstractMessage::getText)
+								.orElse("");
+						}
+						boolean allReturnDirect = results.stream().allMatch(g -> {
+							var finish = g.getMetadata() != null ? g.getMetadata().getFinishReason() : null;
+							return finish != null && finish.equalsIgnoreCase(org.springframework.ai.model.tool.ToolExecutionResult.FINISH_REASON);
+						});
+						if (allReturnDirect) {
+							return results.stream()
+								.map(Generation::getOutput)
+								.map(AbstractMessage::getText)
+								.filter(java.util.Objects::nonNull)
+								.filter(StringUtils::hasText)
+								.reduce((a, b) -> a + "\n" + b)
+								.orElse("");
+						}
+						return Optional.ofNullable(results.get(0))
 							.map(Generation::getOutput)
 							.map(AbstractMessage::getText)
-							.orElse(""))
+							.orElse("");
+					})
 					.filter(StringUtils::hasLength);
 			// @formatter:on
 		}
