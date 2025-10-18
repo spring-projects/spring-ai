@@ -62,6 +62,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Jason Smith
+ * @author Nicolas Krier
  * @since 1.0.0
  */
 public class MistralAiApi {
@@ -330,7 +331,8 @@ public class MistralAiApi {
 	public enum EmbeddingModel {
 
 		// @formatter:off
-		EMBED("mistral-embed");
+		EMBED("mistral-embed"),
+		CODESTRAL_EMBED("codestral-embed");
 		 // @formatter:on
 
 		private final String value;
