@@ -147,6 +147,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author inpink
+ * @author Sanghun Lee
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -443,7 +444,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 		private String similarityFunction = COSINE_SIMILARITY_FUNCTION;
 
-		private boolean manageDocumentIds = false;
+		private boolean manageDocumentIds = true;
 
 		/**
 		 * Sets the OpenSearch client.
