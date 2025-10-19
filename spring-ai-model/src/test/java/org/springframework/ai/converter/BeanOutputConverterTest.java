@@ -238,6 +238,49 @@ class BeanOutputConverterTest {
 			assertThat(testClass.get(0).getSomeString()).isEqualTo("some value");
 		}
 
+		@Test
+		void convertWithThinkingTags() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = "<thinking>This is my reasoning process...</thinking>{ \"someString\": \"some value\" }";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertWithThinkingTagsMultiline() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = """
+				<thinking>
+				This is my reasoning process
+				spanning multiple lines
+				</thinking>
+				{ "someString": "some value" }
+				""";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertWithThinkingTagsAndMarkdownCodeBlock() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = """
+				<thinking>This is my reasoning process...</thinking>
+				```json
+				{ "someString": "some value" }
+				```
+				""";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertWithMultipleThinkingTags() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = "<thinking>First thought</thinking><thinking>Second thought</thinking>{ \"someString\": \"some value\" }";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
 	}
 
 	// @checkstyle:off RegexpSinglelineJavaCheck

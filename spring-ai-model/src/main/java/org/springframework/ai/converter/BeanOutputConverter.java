@@ -169,6 +169,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			// Remove leading and trailing whitespace
 			text = text.trim();
 
+			// Remove thinking tags (e.g., from Amazon Nova models)
+			// These tags can appear at the beginning of the response
+			text = text.replaceAll("(?s)<thinking>.*?</thinking>\\s*", "");
+
 			// Check for and remove triple backticks and "json" identifier
 			if (text.startsWith("```") && text.endsWith("```")) {
 				// Remove the first line if it contains "```json"
