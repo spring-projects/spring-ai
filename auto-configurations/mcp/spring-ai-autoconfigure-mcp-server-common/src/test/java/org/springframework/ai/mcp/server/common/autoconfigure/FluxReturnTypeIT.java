@@ -54,8 +54,8 @@ public class FluxReturnTypeIT {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
-	 * This test verifies that @McpTool methods returning Flux<T> now properly return
-	 * all elements after the fix.
+	 * This test verifies that @McpTool methods returning Flux<T> now properly return all
+	 * elements after the fix.
 	 */
 	@Test
 	void testFluxReturnTypeReturnsAllElements() {
@@ -66,8 +66,8 @@ public class FluxReturnTypeIT {
 				assertThat(context).hasBean("fluxTestTools");
 
 				// Get the tool specifications
-				List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs = context
-					.getBean("toolSpecs", List.class);
+				List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs = context.getBean("toolSpecs",
+						List.class);
 				assertThat(toolSpecs).isNotEmpty();
 
 				// Find the flux-test tool
@@ -110,8 +110,8 @@ public class FluxReturnTypeIT {
 			.run(context -> {
 				assertThat(context).hasBean("fluxTestTools");
 
-				List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs = context
-					.getBean("toolSpecs", List.class);
+				List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs = context.getBean("toolSpecs",
+						List.class);
 
 				McpStatelessServerFeatures.AsyncToolSpecification fluxDataTool = toolSpecs.stream()
 					.filter(spec -> spec.tool().name().equals("flux-data-stream"))
@@ -141,8 +141,8 @@ public class FluxReturnTypeIT {
 	}
 
 	/**
-	 * This test demonstrates that the workaround using Mono<List<T>> continues to
-	 * work properly.
+	 * This test demonstrates that the workaround using Mono<List<T>> continues to work
+	 * properly.
 	 */
 	@Test
 	void testMonoListWorkaround() {
@@ -152,8 +152,8 @@ public class FluxReturnTypeIT {
 			.run(context -> {
 				assertThat(context).hasBean("monoListTestTools");
 
-				List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs = context
-					.getBean("toolSpecs", List.class);
+				List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs = context.getBean("toolSpecs",
+						List.class);
 
 				McpStatelessServerFeatures.AsyncToolSpecification monoListTool = toolSpecs.stream()
 					.filter(spec -> spec.tool().name().equals("mono-list-test"))
@@ -194,8 +194,8 @@ public class FluxReturnTypeIT {
 	static class FluxTestTools {
 
 		/**
-		 * This method demonstrates the bug: it returns Flux<String> but only the
-		 * first element is returned to the client.
+		 * This method demonstrates the bug: it returns Flux<String> but only the first
+		 * element is returned to the client.
 		 */
 		@McpTool(name = "flux-test", description = "Test Flux return type - BUGGY")
 		public Flux<String> getMultipleItems(
@@ -209,11 +209,8 @@ public class FluxReturnTypeIT {
 		@McpTool(name = "flux-data-stream", description = "Stream data items - BUGGY")
 		public Flux<DataItem> streamDataItems(
 				@McpToolParam(description = "Category to filter", required = false) String category) {
-			return Flux.just(
-					new DataItem("id1", "Item 1", category),
-					new DataItem("id2", "Item 2", category),
-					new DataItem("id3", "Item 3", category)
-			);
+			return Flux.just(new DataItem("id1", "Item 1", category), new DataItem("id2", "Item 2", category),
+					new DataItem("id3", "Item 3", category));
 		}
 
 	}
@@ -246,11 +243,10 @@ public class FluxReturnTypeIT {
 		@McpTool(name = "mono-list-data-stream", description = "Get data items as list")
 		public Mono<List<DataItem>> getDataItems(
 				@McpToolParam(description = "Category to filter", required = false) String category) {
-			return Flux.just(
-					new DataItem("id1", "Item 1", category),
-					new DataItem("id2", "Item 2", category),
-					new DataItem("id3", "Item 3", category)
-			).collectList();
+			return Flux
+				.just(new DataItem("id1", "Item 1", category), new DataItem("id2", "Item 2", category),
+						new DataItem("id3", "Item 3", category))
+				.collectList();
 		}
 
 	}
@@ -259,4 +255,3 @@ public class FluxReturnTypeIT {
 	}
 
 }
-

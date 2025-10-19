@@ -160,9 +160,8 @@ public final class FluxToolSpecificationPostProcessor {
 			}
 			catch (Exception e) {
 				logger.error("Failed to invoke tool method '{}'", original.tool().name(), e);
-				return Mono.just(
-						new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
-								true));
+				return Mono.just(new McpSchema.CallToolResult(
+						List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
 			}
 		};
 
