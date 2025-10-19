@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 class AbstractAnnotatedMethodBeanFactoryInitializationAotProcessorTests {
 
 	@Test
-	void processAheadOfTime() {
+	void testProcessAheadOfTime() {
 		// register bean(AnnotatedBean,PlainBean)
 		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
 		beanFactory.registerBeanDefinition(AnnotatedBean.class.getName(), new RootBeanDefinition(AnnotatedBean.class));
