@@ -51,13 +51,33 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
+ * Auto-configuration for MCP client specification factory.
+ *
+ * <p>
+ * <strong>Note:</strong> This configuration is now obsolete and disabled by default.
+ * Specification creation has been moved to
+ * {@link org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration.McpSyncClientInitializer}
+ * and
+ * {@link org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration.McpAsyncClientInitializer}
+ * which use {@link org.springframework.beans.factory.SmartInitializingSingleton} to defer
+ * client creation until after all singleton beans have been initialized. This ensures
+ * that all beans with MCP-annotated methods are scanned before specifications are
+ * created.
+ *
+ * <p>
+ * This class is kept for backwards compatibility but can be safely removed in future
+ * versions.
+ *
  * @author Christian Tzolov
  * @author Fu Jian
+ * @deprecated Since 1.1.0, specifications are now created dynamically after all singleton
+ * beans are initialized. This class will be removed in a future release.
  */
+@Deprecated(since = "1.1.0", forRemoval = true)
 @AutoConfiguration(after = McpClientAnnotationScannerAutoConfiguration.class)
 @ConditionalOnClass(McpLogging.class)
 @ConditionalOnProperty(prefix = McpClientAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
-		havingValue = "true", matchIfMissing = true)
+		havingValue = "false") // Disabled by default - changed from "true" to "false"
 public class McpClientSpecificationFactoryAutoConfiguration {
 
 	@Configuration(proxyBeanMethods = false)

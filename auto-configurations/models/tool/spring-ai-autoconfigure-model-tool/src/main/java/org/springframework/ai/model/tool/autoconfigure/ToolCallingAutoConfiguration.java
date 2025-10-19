@@ -66,7 +66,11 @@ public class ToolCallingAutoConfiguration {
 			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
 
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
-		tcbProviders.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionAndToolCallbacks::addAll);
+		tcbProviders.stream()
+			.filter(pr -> !pr.getClass().getSimpleName().equals("SyncMcpToolCallbackProvider"))
+			.filter(pr -> !pr.getClass().getSimpleName().equals("AsyncMcpToolCallbackProvider"))
+			.map(pr -> List.of(pr.getToolCallbacks()))
+			.forEach(allFunctionAndToolCallbacks::addAll);
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
 

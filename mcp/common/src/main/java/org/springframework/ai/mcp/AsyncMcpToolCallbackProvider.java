@@ -223,7 +223,25 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		}
 
 		/**
-		 * Sets MCP clients.
+		 * Sets MCP clients by reference - the list reference will be shared.
+		 * <p>
+		 * Use this method when the list will be populated later (e.g., by
+		 * {@code SmartInitializingSingleton}). The provider will see any clients added to
+		 * the list after construction.
+		 * @param mcpClients list of MCP clients (reference will be stored)
+		 * @return this builder
+		 */
+		public Builder mcpClientsReference(List<McpAsyncClient> mcpClients) {
+			Assert.notNull(mcpClients, "MCP clients list must not be null");
+			this.mcpClients = mcpClients;
+			return this;
+		}
+
+		/**
+		 * Sets MCP clients for tool discovery (stores reference directly).
+		 * <p>
+		 * Note: Unlike the sync version, this method does not create a defensive copy.
+		 * Use {@link #mcpClientsReference(List)} for clarity when sharing references.
 		 * @param mcpClients list of MCP clients
 		 * @return this builder
 		 */
@@ -237,7 +255,9 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		 * Sets MCP clients.
 		 * @param mcpClients MCP clients as varargs
 		 * @return this builder
+		 * @deprecated Plese use the mcpClientsReference instead!
 		 */
+		@Deprecated
 		public Builder mcpClients(McpAsyncClient... mcpClients) {
 			Assert.notNull(mcpClients, "MCP clients must not be null");
 			this.mcpClients = List.of(mcpClients);

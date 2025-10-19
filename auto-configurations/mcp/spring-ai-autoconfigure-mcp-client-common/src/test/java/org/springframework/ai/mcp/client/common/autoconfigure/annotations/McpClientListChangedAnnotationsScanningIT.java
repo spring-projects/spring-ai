@@ -45,45 +45,42 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class McpClientListChangedAnnotationsScanningIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class,
-				McpClientSpecificationFactoryAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class));
 
 	@ParameterizedTest
 	@ValueSource(strings = { "SYNC", "ASYNC" })
 	void shouldScanAllThreeListChangedAnnotations(String clientType) {
-		String prefix = clientType.toLowerCase();
-
 		this.contextRunner.withUserConfiguration(AllListChangedConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.type=" + clientType)
 			.run(context -> {
-				// Verify all three annotations were scanned
+				// Verify all three annotations were scanned and registered
 				McpClientAnnotationScannerAutoConfiguration.ClientMcpAnnotatedBeans annotatedBeans = context
 					.getBean(McpClientAnnotationScannerAutoConfiguration.ClientMcpAnnotatedBeans.class);
 				assertThat(annotatedBeans.getBeansByAnnotation(McpToolListChanged.class)).hasSize(1);
 				assertThat(annotatedBeans.getBeansByAnnotation(McpResourceListChanged.class)).hasSize(1);
 				assertThat(annotatedBeans.getBeansByAnnotation(McpPromptListChanged.class)).hasSize(1);
 
-				// Verify all three specification beans were created
-				assertThat(context).hasBean(prefix + "ToolListChangedSpecs");
-				assertThat(context).hasBean(prefix + "ResourceListChangedSpecs");
-				assertThat(context).hasBean(prefix + "PromptListChangedSpecs");
+				// Verify the annotation scanner configuration is present
+				assertThat(context).hasSingleBean(McpClientAnnotationScannerAutoConfiguration.class);
+
+				// Note: Specification beans are no longer created as separate beans.
+				// They are now created dynamically in McpClientAutoConfiguration
+				// initializers
+				// after all singleton beans have been instantiated.
 			});
 	}
 
 	@ParameterizedTest
 	@ValueSource(strings = { "SYNC", "ASYNC" })
 	void shouldNotScanAnnotationsWhenScannerDisabled(String clientType) {
-		String prefix = clientType.toLowerCase();
-
 		this.contextRunner.withUserConfiguration(AllListChangedConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.type=" + clientType,
 					"spring.ai.mcp.client.annotation-scanner.enabled=false")
 			.run(context -> {
-				// Verify scanner beans were not created
+				// Verify scanner configuration was not created when disabled
 				assertThat(context).doesNotHaveBean(McpClientAnnotationScannerAutoConfiguration.class);
-				assertThat(context).doesNotHaveBean(prefix + "ToolListChangedSpecs");
-				assertThat(context).doesNotHaveBean(prefix + "ResourceListChangedSpecs");
-				assertThat(context).doesNotHaveBean(prefix + "PromptListChangedSpecs");
+				assertThat(context)
+					.doesNotHaveBean(McpClientAnnotationScannerAutoConfiguration.ClientMcpAnnotatedBeans.class);
 			});
 	}
 

@@ -30,6 +30,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -50,6 +51,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -61,12 +63,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link DefaultChatClient}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class DefaultChatClientTests {
 
@@ -1474,15 +1480,15 @@ class DefaultChatClientTests {
 		ChatModel chatModel = mock(ChatModel.class);
 		DefaultChatClient.DefaultChatClientRequestSpec spec = new DefaultChatClient.DefaultChatClientRequestSpec(
 				chatModel, null, Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(),
-				List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null);
+				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null);
 		assertThat(spec).isNotNull();
 	}
 
 	@Test
 	void whenChatModelIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), Map.of(),
-				null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
-				ObservationRegistry.NOOP, null, Map.of(), null))
+				null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
+				Map.of(), ObservationRegistry.NOOP, null, Map.of(), null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
 	}
@@ -1490,8 +1496,8 @@ class DefaultChatClientTests {
 	@Test
 	void whenObservationRegistryIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mock(ChatModel.class), null,
-				Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null,
-				List.of(), Map.of(), null, null, Map.of(), null))
+				Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+				null, List.of(), Map.of(), null, null, Map.of(), null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}
@@ -2195,6 +2201,135 @@ class DefaultChatClientTests {
 		assertThatThrownBy(() -> spec.user(user -> user.param("key", null)))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("value cannot be null");
+	}
+
+	@Test
+	void whenToolCallbackProvidersAddedThenStored() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
+
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().toolCallbacks(provider);
+
+		// Verify provider was stored (not resolved yet)
+		assertThat(spec).isInstanceOf(DefaultChatClient.DefaultChatClientRequestSpec.class);
+	}
+
+	@Test
+	void whenToolCallbackProvidersResolvedLazily() {
+		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.call(ArgumentMatchers.any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		ToolCallback mockToolCallback = mock(ToolCallback.class);
+		ToolCallbackProvider mockProvider = mock(ToolCallbackProvider.class);
+		when(mockProvider.getToolCallbacks()).thenReturn(new ToolCallback[] { mockToolCallback });
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+
+		// Add provider during configuration
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt("question").toolCallbacks(mockProvider);
+
+		// Provider should NOT be resolved yet (getToolCallbacks not called during
+		// configuration)
+		verify(mockProvider, never()).getToolCallbacks();
+
+		// Execute call - this should trigger lazy resolution
+		spec.call().content();
+
+		// NOW provider should be resolved (getToolCallbacks called during execution)
+		verify(mockProvider, times(1)).getToolCallbacks();
+	}
+
+	@Test
+	void whenMultipleToolCallbackProvidersResolvedLazily() {
+		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.call(org.mockito.ArgumentMatchers.any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		ToolCallback mockToolCallback1 = mock(ToolCallback.class);
+		ToolCallback mockToolCallback2 = mock(ToolCallback.class);
+
+		ToolCallbackProvider mockProvider1 = mock(ToolCallbackProvider.class);
+		when(mockProvider1.getToolCallbacks()).thenReturn(new ToolCallback[] { mockToolCallback1 });
+
+		ToolCallbackProvider mockProvider2 = mock(ToolCallbackProvider.class);
+		when(mockProvider2.getToolCallbacks()).thenReturn(new ToolCallback[] { mockToolCallback2 });
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+
+		// Add multiple providers
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt("question")
+			.toolCallbacks(mockProvider1, mockProvider2);
+
+		// Execute call
+		spec.call().content();
+
+		// Both providers should be resolved
+		verify(mockProvider1, times(1)).getToolCallbacks();
+		verify(mockProvider2, times(1)).getToolCallbacks();
+	}
+
+	@Test
+	void whenToolCallbackProvidersResolvedLazilyInStream() {
+		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.stream(org.mockito.ArgumentMatchers.any(Prompt.class)))
+			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
+
+		ToolCallback mockToolCallback = mock(ToolCallback.class);
+		ToolCallbackProvider mockProvider = mock(ToolCallbackProvider.class);
+		when(mockProvider.getToolCallbacks()).thenReturn(new ToolCallback[] { mockToolCallback });
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+
+		// Add provider during configuration
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt("question").toolCallbacks(mockProvider);
+
+		// Provider should NOT be resolved yet
+		verify(mockProvider, never()).getToolCallbacks();
+
+		// Execute stream - this should trigger lazy resolution
+		spec.stream().content().blockLast();
+
+		// NOW provider should be resolved
+		verify(mockProvider, times(1)).getToolCallbacks();
+	}
+
+	@Test
+	void whenToolCallbackProviderIsNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+
+		assertThatThrownBy(() -> spec.toolCallbacks((ToolCallbackProvider) null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("toolCallbackProviders cannot contain null elements");
+	}
+
+	@Test
+	void whenToolCallbackProvidersWithMixedCallbacksAndProviders() {
+		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.call(org.mockito.ArgumentMatchers.any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		// Direct callback
+		ToolCallback directCallback = mock(ToolCallback.class);
+
+		// Provider callback
+		ToolCallback providerCallback = mock(ToolCallback.class);
+		ToolCallbackProvider mockProvider = mock(ToolCallbackProvider.class);
+		when(mockProvider.getToolCallbacks()).thenReturn(new ToolCallback[] { providerCallback });
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+
+		// Add both direct callbacks and providers
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt("question")
+			.toolCallbacks(directCallback)
+			.toolCallbacks(mockProvider);
+
+		// Execute call
+		spec.call().content();
+
+		// Provider should be resolved
+		verify(mockProvider, times(1)).getToolCallbacks();
 	}
 
 	record Person(String name) {

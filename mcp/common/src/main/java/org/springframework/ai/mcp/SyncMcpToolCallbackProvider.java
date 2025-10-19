@@ -191,10 +191,30 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 			.defaultConverter();
 
 		/**
-		 * Sets MCP clients for tool discovery (replaces existing).
-		 * @param mcpClients list of MCP clients
+		 * Sets MCP clients by reference - the list reference will be shared.
+		 * <p>
+		 * Use this method when the list will be populated later (e.g., by
+		 * {@code SmartInitializingSingleton}). The provider will see any clients added to
+		 * the list after construction.
+		 * @param mcpClients list of MCP clients (reference will be stored)
 		 * @return this builder
 		 */
+		public Builder mcpClientsReference(List<McpSyncClient> mcpClients) {
+			Assert.notNull(mcpClients, "MCP clients list must not be null");
+			this.mcpClients = mcpClients;
+			return this;
+		}
+
+		/**
+		 * Sets MCP clients for tool discovery (creates defensive copy).
+		 * <p>
+		 * Use this method when passing a fully populated, immutable list. A defensive
+		 * copy will be created to prevent external modifications.
+		 * @param mcpClients list of MCP clients
+		 * @return this builder
+		 * @deprecated Plese use the mcpClientsReference instead!
+		 */
+		@Deprecated
 		public Builder mcpClients(List<McpSyncClient> mcpClients) {
 			Assert.notNull(mcpClients, "MCP clients list must not be null");
 			this.mcpClients = new ArrayList<>(mcpClients);
@@ -205,7 +225,9 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 		 * Sets MCP clients for tool discovery (replaces existing).
 		 * @param mcpClients MCP clients array
 		 * @return this builder
+		 * @deprecated Plese use the mcpClientsReference instead!
 		 */
+		@Deprecated
 		public Builder mcpClients(McpSyncClient... mcpClients) {
 			Assert.notNull(mcpClients, "MCP clients array must not be null");
 			this.mcpClients = new java.util.ArrayList<>(List.of(mcpClients));
