@@ -250,12 +250,12 @@ class BeanOutputConverterTest {
 		void convertWithThinkingTagsMultiline() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			String textWithThinkingTags = """
-				<thinking>
-				This is my reasoning process
-				spanning multiple lines
-				</thinking>
-				{ "someString": "some value" }
-				""";
+					<thinking>
+					This is my reasoning process
+					spanning multiple lines
+					</thinking>
+					{ "someString": "some value" }
+					""";
 			var testClass = converter.convert(textWithThinkingTags);
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
 		}
@@ -264,11 +264,11 @@ class BeanOutputConverterTest {
 		void convertWithThinkingTagsAndMarkdownCodeBlock() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			String textWithThinkingTags = """
-				<thinking>This is my reasoning process...</thinking>
-				```json
-				{ "someString": "some value" }
-				```
-				""";
+					<thinking>This is my reasoning process...</thinking>
+					```json
+					{ "someString": "some value" }
+					```
+					""";
 			var testClass = converter.convert(textWithThinkingTags);
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
 		}
