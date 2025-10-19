@@ -127,8 +127,12 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 		@Bean
 		public List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return AsyncMcpAnnotationProviders
-				.statelessToolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+			List<Object> toolBeans = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+			List<McpStatelessServerFeatures.AsyncToolSpecification> originalSpecs = AsyncMcpAnnotationProviders
+				.statelessToolSpecifications(toolBeans);
+
+			// Apply post-processing to handle Flux return types (Issue #4542)
+			return FluxToolSpecificationPostProcessor.processToolSpecifications(originalSpecs, toolBeans);
 		}
 
 	}
