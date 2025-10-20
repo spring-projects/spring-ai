@@ -83,8 +83,8 @@ class BedrockProxyChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-sonnet-20240229-v1:0",
-			"anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@ValueSource(strings = { "us.anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-sonnet-20240229-v1:0",
+			"us.anthropic.claude-3-5-sonnet-20240620-v1:0" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -315,7 +315,7 @@ class BedrockProxyChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = BedrockChatOptions.builder()
-			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -349,7 +349,7 @@ class BedrockProxyChatModelIT {
 
 		var promptOptions = BedrockChatOptions.builder()
 			.maxTokens(maxTokens)
-			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -367,7 +367,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(BedrockChatOptions.builder().model(model).build())
@@ -382,7 +382,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(BedrockChatOptions.builder().model(model).build())

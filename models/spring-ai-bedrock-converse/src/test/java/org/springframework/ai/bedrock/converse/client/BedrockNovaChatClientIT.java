@@ -191,7 +191,7 @@ public class BedrockNovaChatClientIT {
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@ParameterizedTest
-	@ValueSource(strings = { "amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
 	void toolAnnotationWeatherForecastStreaming(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
@@ -262,7 +262,7 @@ public class BedrockNovaChatClientIT {
 		@Bean
 		public BedrockProxyChatModel bedrockConverseChatModel() {
 
-			String modelId = "amazon.nova-pro-v1:0";
+			String modelId = "us.amazon.nova-pro-v1:0";
 			// String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 			return BedrockProxyChatModel.builder()
