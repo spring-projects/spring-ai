@@ -29,27 +29,28 @@ import static org.mockito.Mockito.mock;
  * Unit tests for {@link FactCheckingEvaluator}.
  *
  * @author guan xu
+ * @author Yanming Zhou
  */
 class FactCheckingEvaluatorTests {
 
+	@SuppressWarnings("deprecation")
 	@Test
 	void whenChatClientBuilderIsNullThenThrow() {
 		assertThatThrownBy(() -> new FactCheckingEvaluator(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 
-		assertThatThrownBy(() -> FactCheckingEvaluator.builder().chatClientBuilder(null).build())
+		assertThatThrownBy(() -> FactCheckingEvaluator.builder(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	void whenEvaluationPromptIsNullThenUseDefaultEvaluationPromptText() {
 		FactCheckingEvaluator evaluator = new FactCheckingEvaluator(ChatClient.builder(mock(ChatModel.class)));
 		assertThat(evaluator).isNotNull();
 
-		evaluator = FactCheckingEvaluator.builder()
-			.chatClientBuilder(ChatClient.builder(mock(ChatModel.class)))
-			.build();
+		evaluator = FactCheckingEvaluator.builder(ChatClient.builder(mock(ChatModel.class))).build();
 		assertThat(evaluator).isNotNull();
 	}
 
