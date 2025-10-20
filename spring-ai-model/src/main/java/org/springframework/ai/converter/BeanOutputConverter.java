@@ -76,12 +76,15 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/** Holds the generated JSON schema for the target type. */
 	private String jsonSchema;
 
+	/** The text cleaner used to preprocess LLM responses before parsing. */
+	private final ResponseTextCleaner textCleaner;
+
 	/**
 	 * Constructor to initialize with the target type's class.
 	 * @param clazz The target type's class.
 	 */
 	public BeanOutputConverter(Class<T> clazz) {
-		this(ParameterizedTypeReference.forType(clazz));
+		this(clazz, null, null);
 	}
 
 	/**
@@ -91,7 +94,18 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
 	public BeanOutputConverter(Class<T> clazz, ObjectMapper objectMapper) {
-		this(ParameterizedTypeReference.forType(clazz), objectMapper);
+		this(clazz, objectMapper, null);
+	}
+
+	/**
+	 * Constructor to initialize with the target type's class, a custom object mapper, and
+	 * a custom text cleaner.
+	 * @param clazz The target type's class.
+	 * @param objectMapper Custom object mapper for JSON operations.
+	 * @param textCleaner Custom text cleaner for preprocessing responses.
+	 */
+	public BeanOutputConverter(Class<T> clazz, ObjectMapper objectMapper, ResponseTextCleaner textCleaner) {
+		this(ParameterizedTypeReference.forType(clazz), objectMapper, textCleaner);
 	}
 
 	/**
@@ -99,7 +113,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param typeRef The target class type reference.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef) {
-		this(typeRef.getType(), null);
+		this(typeRef, null, null);
 	}
 
 	/**
@@ -110,7 +124,19 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
 	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, ObjectMapper objectMapper) {
-		this(typeRef.getType(), objectMapper);
+		this(typeRef, objectMapper, null);
+	}
+
+	/**
+	 * Constructor to initialize with the target class type reference, a custom object
+	 * mapper, and a custom text cleaner.
+	 * @param typeRef The target class type reference.
+	 * @param objectMapper Custom object mapper for JSON operations.
+	 * @param textCleaner Custom text cleaner for preprocessing responses.
+	 */
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, ObjectMapper objectMapper,
+			ResponseTextCleaner textCleaner) {
+		this(typeRef.getType(), objectMapper, textCleaner);
 	}
 
 	/**
@@ -119,12 +145,28 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * platform.
 	 * @param type The target class type.
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
+	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	private BeanOutputConverter(Type type, ObjectMapper objectMapper) {
+	private BeanOutputConverter(Type type, ObjectMapper objectMapper, ResponseTextCleaner textCleaner) {
 		Objects.requireNonNull(type, "Type cannot be null;");
 		this.type = type;
 		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
+		this.textCleaner = textCleaner != null ? textCleaner : createDefaultTextCleaner();
 		generateSchema();
+	}
+
+	/**
+	 * Creates the default text cleaner that handles common response formats from various
+	 * AI models.
+	 * @return a composite text cleaner with default cleaning strategies
+	 */
+	private static ResponseTextCleaner createDefaultTextCleaner() {
+		return CompositeResponseTextCleaner.builder()
+			.addCleaner(new WhitespaceCleaner())
+			.addCleaner(new ThinkingTagCleaner())
+			.addCleaner(new MarkdownCodeBlockCleaner())
+			.addCleaner(new WhitespaceCleaner()) // Final trim after all cleanups
+			.build();
 	}
 
 	/**
@@ -166,30 +208,9 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	@Override
 	public T convert(@NonNull String text) {
 		try {
-			// Remove leading and trailing whitespace
-			text = text.trim();
+			// Clean the text using the configured text cleaner
+			text = this.textCleaner.clean(text);
 
-			// Remove thinking tags (e.g., from Amazon Nova models)
-			// These tags can appear at the beginning of the response
-			text = text.replaceAll("(?s)<thinking>.*?</thinking>\\s*", "");
-
-			// Check for and remove triple backticks and "json" identifier
-			if (text.startsWith("```") && text.endsWith("```")) {
-				// Remove the first line if it contains "```json"
-				String[] lines = text.split("\n", 2);
-				if (lines[0].trim().equalsIgnoreCase("```json")) {
-					text = lines.length > 1 ? lines[1] : "";
-				}
-				else {
-					text = text.substring(3); // Remove leading ```
-				}
-
-				// Remove trailing ```
-				text = text.substring(0, text.length() - 3);
-
-				// Trim again to remove any potential whitespace
-				text = text.trim();
-			}
 			return (T) this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
 		}
 		catch (JsonProcessingException e) {
