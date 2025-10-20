@@ -139,17 +139,14 @@ class ThinkingTagCleanerTest {
 
 	@Test
 	void shouldThrowExceptionWhenPatternsAreNull() {
-		assertThatThrownBy(() -> new ThinkingTagCleaner((String[]) null))
-			.isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> new ThinkingTagCleaner((String[]) null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("patternStrings cannot be null");
 	}
 
 	@Test
 	void shouldThrowExceptionWhenPatternsAreEmpty() {
-		assertThatThrownBy(() -> new ThinkingTagCleaner(new String[0]))
-			.isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> new ThinkingTagCleaner(new String[0])).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("patternStrings cannot be empty");
 	}
 
 }
-

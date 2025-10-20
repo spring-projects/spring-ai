@@ -52,11 +52,11 @@ class CompositeResponseTextCleanerTest {
 				new MarkdownCodeBlockCleaner());
 
 		String input = """
-					<thinking>Reasoning</thinking>
-					```json
-					{"key": "value"}
-					```
-					""";
+				<thinking>Reasoning</thinking>
+				```json
+				{"key": "value"}
+				```
+				""";
 		String result = cleaner.clean(input);
 		assertThat(result).isEqualTo("{\"key\": \"value\"}");
 	}
@@ -103,4 +103,3 @@ class CompositeResponseTextCleanerTest {
 	}
 
 }
-

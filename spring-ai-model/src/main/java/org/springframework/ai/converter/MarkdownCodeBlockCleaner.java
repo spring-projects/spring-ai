@@ -71,4 +71,3 @@ public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 	}
 
 }
-

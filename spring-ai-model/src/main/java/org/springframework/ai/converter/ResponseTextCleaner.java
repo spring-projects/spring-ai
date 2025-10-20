@@ -35,4 +35,3 @@ public interface ResponseTextCleaner {
 	String clean(String text);
 
 }
-
