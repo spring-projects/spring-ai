@@ -22,8 +22,6 @@ import com.github.dockerjava.api.model.Ports;
 import com.vmware.gemfire.testcontainers.GemFireCluster;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -32,16 +30,9 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
 /**
- * @author Geet Rawat
- * @author Soby Chacko
- * @author Thomas Vitale
  * @author Jason Huynh
- * @author Nabarun Nag
- * @since 1.0.0
  */
-@Disabled
-@Testcontainers
-public class GemFireVectorStoreIT extends GemFireVectorStoreBaseIT {
+public class GemFireWithBasicAuthenticationVectorStoreIT extends GemFireVectorStoreBaseIT {
 
 	@AfterAll
 	public static void stopGemFireCluster() {
@@ -59,6 +50,11 @@ public class GemFireVectorStoreIT extends GemFireVectorStoreBaseIT {
 					.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withPortBindings(mappedPort)));
 		gemFireCluster.withGemFireProperty(GemFireCluster.SERVER_GLOB, "http-service-port",
 				Integer.toString(HTTP_SERVICE_PORT));
+		gemFireCluster.withGemFireProperty(GemFireCluster.ALL_GLOB, "security-manager",
+				"org.apache.geode.examples.SimpleSecurityManager");
+
+		gemFireCluster.withGemFireProperty(GemFireCluster.ALL_GLOB, "security-username", "clusterManage");
+		gemFireCluster.withGemFireProperty(GemFireCluster.ALL_GLOB, "security-password", "clusterManage");
 		gemFireCluster.acceptLicense().start();
 
 		System.setProperty("spring.data.gemfire.pool.locators",
@@ -79,6 +75,8 @@ public class GemFireVectorStoreIT extends GemFireVectorStoreBaseIT {
 			return GemFireVectorStore.builder(embeddingModel)
 				.host("localhost")
 				.port(HTTP_SERVICE_PORT)
+				.username("cluster,data")
+				.password("cluster,data")
 				.indexName(INDEX_NAME)
 				.fields(new String[] { "year", "country", "activationDate" })
 				.initializeSchema(true)

@@ -36,7 +36,6 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
-import org.springframework.ai.vectorstore.GemFireAiSearchFilterExpressionConverter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -47,6 +46,8 @@ import org.springframework.http.MediaType;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -137,7 +138,23 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
 			.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
 			.toString();
-		this.client = WebClient.create(base);
+		WebClient.Builder webClientBuilder = WebClient.builder().baseUrl(base);
+
+		ExchangeFilterFunction authenticationFilterFunction = null;
+
+		if (builder.isUsingTokenAuthentication()) {
+			authenticationFilterFunction = new BearerTokenAuthenticationFilterFunction(builder.token);
+		}
+		else if (builder.isUsingBasicAuthentication()) {
+			authenticationFilterFunction = ExchangeFilterFunctions.basicAuthentication(builder.username,
+					builder.password);
+		}
+
+		if (authenticationFilterFunction != null) {
+			webClientBuilder.filter(authenticationFilterFunction);
+		}
+
+		this.client = webClientBuilder.build();
 		this.filterExpressionConverter = new GemFireAiSearchFilterExpressionConverter();
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
@@ -594,6 +611,12 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		private boolean initializeSchema = false;
 
+		private String username;
+
+		private String password;
+
+		private String token;
+
 		private Builder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 		}
@@ -714,6 +737,50 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
+		}
+
+		/**
+		 * Sets the username to authenticate requests with
+		 * @param username the username to authenticate or unauthenticated if not set
+		 * @return the builder instance
+		 */
+		public Builder username(String username) {
+			this.username = username;
+			return this;
+		}
+
+		/**
+		 * Sets the password to authenticate requests with
+		 * @param password the password to authenticate if username is also provided
+		 * @return the builder instance
+		 */
+		public Builder password(String password) {
+			this.password = password;
+			return this;
+		}
+
+		/**
+		 * Sets the token to authenticate requests with
+		 * @param token the token to use for authentication
+		 * @return the builder instance
+		 */
+		public Builder token(String token) {
+			this.token = token;
+			return this;
+		}
+
+		/**
+		 * @return true if a token has been provided
+		 */
+		public boolean isUsingTokenAuthentication() {
+			return this.token != null;
+		}
+
+		/**
+		 * @return true if a username and password have been provided
+		 */
+		public boolean isUsingBasicAuthentication() {
+			return this.username != null && this.password != null;
 		}
 
 		@Override
