@@ -63,7 +63,7 @@ public class McpStreamableHttpClientProperties {
 	}
 
 	/**
-	 * Parameters for configuring an Streamable Http connection to an MCP server.
+	 * Parameters for configuring a Streamable Http connection to an MCP server.
 	 *
 	 * @param url the URL endpoint for Streamable Http communication with the MCP server
 	 * @param endpoint the endpoint for the MCP server

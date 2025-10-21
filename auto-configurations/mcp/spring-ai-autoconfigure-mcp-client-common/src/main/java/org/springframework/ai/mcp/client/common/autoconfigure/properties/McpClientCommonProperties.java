@@ -103,7 +103,7 @@ public class McpClientCommonProperties {
 	 * <p>
 	 * This configuration is used to enable or disable tool callbacks in the MCP client.
 	 */
-	private Toolcallback toolcallback = new Toolcallback();
+	private ToolCallback toolCallback = new ToolCallback();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -161,22 +161,22 @@ public class McpClientCommonProperties {
 		this.rootChangeNotification = rootChangeNotification;
 	}
 
-	public Toolcallback getToolcallback() {
-		return this.toolcallback;
+	public ToolCallback getToolCallback() {
+		return this.toolCallback;
 	}
 
-	public void setToolcallback(Toolcallback toolcallback) {
-		this.toolcallback = toolcallback;
+	public void setToolCallback(ToolCallback toolCallback) {
+		this.toolCallback = toolCallback;
 	}
 
 	/**
 	 * Represents a callback configuration for tools.
 	 * <p>
-	 * This record is used to encapsulate the configuration for enabling or disabling tool
+	 * This class is used to encapsulate the configuration for enabling or disabling tool
 	 * callbacks in the MCP client.
 	 *
 	 */
-	public static class Toolcallback {
+	public static class ToolCallback {
 
 		/**
 		 * A boolean flag indicating whether the tool callback is enabled. If true, the
