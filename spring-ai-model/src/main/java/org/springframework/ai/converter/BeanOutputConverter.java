@@ -161,11 +161,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * <p>
 	 * The default cleaner includes:
 	 * <ul>
-	 * <li>{@link ThinkingTagCleaner} - Removes thinking tags from models like Amazon
-	 * Nova and Qwen. For models that don't generate thinking tags, this has minimal
+	 * <li>{@link ThinkingTagCleaner} - Removes thinking tags from models like Amazon Nova
+	 * and Qwen. For models that don't generate thinking tags, this has minimal
 	 * performance impact due to fast-path optimization.</li>
-	 * <li>{@link MarkdownCodeBlockCleaner} - Removes markdown code block
-	 * formatting.</li>
+	 * <li>{@link MarkdownCodeBlockCleaner} - Removes markdown code block formatting.</li>
 	 * <li>{@link WhitespaceCleaner} - Trims whitespace.</li>
 	 * </ul>
 	 * <p>

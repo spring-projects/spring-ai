@@ -33,8 +33,8 @@ import org.springframework.util.Assert;
  * <li>Claude models: thinking blocks in different formats</li>
  * </ul>
  * <p>
- * <b>Performance:</b> This cleaner includes fast-path optimization. For responses
- * without thinking tags (most models), it performs a quick character check and returns
+ * <b>Performance:</b> This cleaner includes fast-path optimization. For responses without
+ * thinking tags (most models), it performs a quick character check and returns
  * immediately, making it safe to use as a default cleaner even for non-thinking models.
  *
  * @author liugddx
