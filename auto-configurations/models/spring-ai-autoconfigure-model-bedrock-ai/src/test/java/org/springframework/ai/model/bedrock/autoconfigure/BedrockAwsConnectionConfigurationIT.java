@@ -80,7 +80,7 @@ public class BedrockAwsConnectionConfigurationIT {
 			});
 	}
 
-	@EnableConfigurationProperties({ BedrockAwsConnectionProperties.class })
+	@EnableConfigurationProperties(BedrockAwsConnectionProperties.class)
 	@Import(BedrockAwsConnectionConfiguration.class)
 	static class TestAutoConfiguration {
 

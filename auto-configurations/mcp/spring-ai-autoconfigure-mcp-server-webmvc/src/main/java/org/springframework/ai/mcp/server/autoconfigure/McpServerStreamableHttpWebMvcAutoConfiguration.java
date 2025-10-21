@@ -40,7 +40,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @author Yanming Zhou
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@ConditionalOnClass({ McpSchema.class })
+@ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerStreamableHttpProperties.class })
 @Conditional({ McpServerStdioDisabledCondition.class,
 		McpServerAutoConfiguration.EnabledStreamableServerCondition.class })

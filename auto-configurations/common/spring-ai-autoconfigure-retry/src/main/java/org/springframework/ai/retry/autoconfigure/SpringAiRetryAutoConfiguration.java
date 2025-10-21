@@ -50,7 +50,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  */
 @AutoConfiguration
 @ConditionalOnClass(RetryUtils.class)
-@EnableConfigurationProperties({ SpringAiRetryProperties.class })
+@EnableConfigurationProperties(SpringAiRetryProperties.class)
 public class SpringAiRetryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringAiRetryAutoConfiguration.class);
