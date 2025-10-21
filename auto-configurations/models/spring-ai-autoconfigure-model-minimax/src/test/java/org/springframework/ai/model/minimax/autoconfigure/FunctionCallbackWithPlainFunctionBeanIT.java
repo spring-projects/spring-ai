@@ -34,10 +34,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,9 +53,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.minimax.apiKey=" + System.getenv("MINIMAX_API_KEY"))
-		.withConfiguration(
-				AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-						ToolCallingAutoConfiguration.class, MiniMaxChatAutoConfiguration.class))
+		.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	// FIXME: multiple function calls may stop prematurely due to model performance
