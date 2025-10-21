@@ -158,6 +158,19 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	/**
 	 * Creates the default text cleaner that handles common response formats from various
 	 * AI models.
+	 * <p>
+	 * The default cleaner includes:
+	 * <ul>
+	 * <li>{@link ThinkingTagCleaner} - Removes thinking tags from models like Amazon
+	 * Nova and Qwen. For models that don't generate thinking tags, this has minimal
+	 * performance impact due to fast-path optimization.</li>
+	 * <li>{@link MarkdownCodeBlockCleaner} - Removes markdown code block
+	 * formatting.</li>
+	 * <li>{@link WhitespaceCleaner} - Trims whitespace.</li>
+	 * </ul>
+	 * <p>
+	 * To customize the cleaning behavior, provide a custom {@link ResponseTextCleaner}
+	 * via the constructor.
 	 * @return a composite text cleaner with default cleaning strategies
 	 */
 	private static ResponseTextCleaner createDefaultTextCleaner() {

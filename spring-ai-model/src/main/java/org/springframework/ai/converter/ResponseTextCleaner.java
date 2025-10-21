@@ -22,7 +22,7 @@ package org.springframework.ai.converter;
  * models.
  *
  * @author liugddx
- * @since 1.0.0
+ * @since 1.1.0
  */
 @FunctionalInterface
 public interface ResponseTextCleaner {

@@ -20,7 +20,7 @@ package org.springframework.ai.converter;
  * A {@link ResponseTextCleaner} that trims leading and trailing whitespace from text.
  *
  * @author liugddx
- * @since 1.0.0
+ * @since 1.1.0
  */
 public class WhitespaceCleaner implements ResponseTextCleaner {
 

@@ -27,7 +27,7 @@ import org.springframework.util.Assert;
  * This allows for a flexible pipeline of text cleaning operations.
  *
  * @author liugddx
- * @since 1.0.0
+ * @since 1.1.0
  */
 public class CompositeResponseTextCleaner implements ResponseTextCleaner {
 

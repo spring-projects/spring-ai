@@ -32,9 +32,13 @@ import org.springframework.util.Assert;
  * <li>DeepSeek models: various thinking patterns</li>
  * <li>Claude models: thinking blocks in different formats</li>
  * </ul>
+ * <p>
+ * <b>Performance:</b> This cleaner includes fast-path optimization. For responses
+ * without thinking tags (most models), it performs a quick character check and returns
+ * immediately, making it safe to use as a default cleaner even for non-thinking models.
  *
  * @author liugddx
- * @since 1.0.0
+ * @since 1.1.0
  */
 public class ThinkingTagCleaner implements ResponseTextCleaner {
 
@@ -91,9 +95,19 @@ public class ThinkingTagCleaner implements ResponseTextCleaner {
 			return text;
 		}
 
+		// Fast path: if text doesn't contain '<' character, no tags to remove
+		if (!text.contains("<") && !text.contains("`")) {
+			return text;
+		}
+
 		String result = text;
 		for (Pattern pattern : this.patterns) {
-			result = pattern.matcher(result).replaceAll("");
+			String afterReplacement = pattern.matcher(result).replaceAll("");
+			// If replacement occurred, update result and continue checking other patterns
+			// (since multiple tag types might coexist)
+			if (!afterReplacement.equals(result)) {
+				result = afterReplacement;
+			}
 		}
 		return result;
 	}
