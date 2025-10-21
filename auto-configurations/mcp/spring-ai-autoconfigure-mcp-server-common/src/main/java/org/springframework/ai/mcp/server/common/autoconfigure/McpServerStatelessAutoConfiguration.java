@@ -61,7 +61,7 @@ import org.springframework.web.context.support.StandardServletEnvironment;
 		"org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration",
 		"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebFluxAutoConfiguration",
 		"org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebMvcAutoConfiguration" })
-@ConditionalOnClass({ McpSchema.class })
+@ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties(McpServerProperties.class)
 @Conditional({ McpServerStdioDisabledCondition.class,
 		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class })

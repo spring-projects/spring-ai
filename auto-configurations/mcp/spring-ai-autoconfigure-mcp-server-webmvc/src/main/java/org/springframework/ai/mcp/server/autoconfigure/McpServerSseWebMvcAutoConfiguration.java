@@ -67,8 +67,8 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @see WebMvcSseServerTransportProvider
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@EnableConfigurationProperties({ McpServerSseProperties.class })
-@ConditionalOnClass({ WebMvcSseServerTransportProvider.class })
+@EnableConfigurationProperties(McpServerSseProperties.class)
+@ConditionalOnClass(WebMvcSseServerTransportProvider.class)
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
 public class McpServerSseWebMvcAutoConfiguration {

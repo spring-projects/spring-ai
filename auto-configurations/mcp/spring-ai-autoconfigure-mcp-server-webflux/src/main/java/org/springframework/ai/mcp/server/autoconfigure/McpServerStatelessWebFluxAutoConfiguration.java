@@ -38,7 +38,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * @author Yanming Zhou
  */
 @AutoConfiguration(before = McpServerStatelessAutoConfiguration.class)
-@ConditionalOnClass({ McpSchema.class })
+@ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties(McpServerStreamableHttpProperties.class)
 @Conditional({ McpServerStdioDisabledCondition.class,
 		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class })
