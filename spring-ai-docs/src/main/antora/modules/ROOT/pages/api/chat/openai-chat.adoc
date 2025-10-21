@@ -150,8 +150,8 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.openai.chat.options.logitBias | Modify the likelihood of specified tokens appearing in the completion. | -
-| spring.ai.openai.chat.options.maxTokens | (Deprecated in favour of `maxCompletionTokens`) The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
-| spring.ai.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. | -
+| spring.ai.openai.chat.options.maxTokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. *Use for non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Cannot be used with reasoning models* (e.g., o1, o3, o4-mini series). *Mutually exclusive with maxCompletionTokens* - setting both will result in an API error. | -
+| spring.ai.openai.chat.options.maxCompletionTokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. *Required for reasoning models* (e.g., o1, o3, o4-mini series). *Cannot be used with non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Mutually exclusive with maxTokens* - setting both will result in an API error. | -
 | spring.ai.openai.chat.options.n | How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as 1 to minimize costs. | 1
 | spring.ai.openai.chat.options.store | Whether to store the output of this chat completion request for use in our model | false
 | spring.ai.openai.chat.options.metadata | Developer-defined tags and values used for filtering completions in the chat completion dashboard | empty map
@@ -172,18 +172,84 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
 | spring.ai.openai.chat.options.toolChoice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
 | spring.ai.openai.chat.options.user | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
-| spring.ai.openai.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the `functionCallbacks` registry. | -
 | spring.ai.openai.chat.options.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
 | spring.ai.openai.chat.options.parallel-tool-calls | Whether to enable link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[parallel function calling] during tool use. | true
 | spring.ai.openai.chat.options.http-headers | Optional HTTP headers to be added to the chat completion request. To override the `api-key` you need to use an `Authorization` header key, and you have to prefix the key value with the `Bearer` prefix. | -
-| spring.ai.openai.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
+| spring.ai.openai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.openai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.openai.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
+| spring.ai.openai.chat.options.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
 |====
+
+[NOTE]
+====
+When using GPT-5 models such as `gpt-5`, `gpt-5-mini`, and `gpt-5-nano`, the `temperature` parameter is not supported.
+These models are optimized for reasoning and do not use temperature.
+Specifying a temperature value will result in an error.
+In contrast, conversational models like `gpt-5-chat` do support the `temperature` parameter.
+====
 
 NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
 The `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties, if set, take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.openai.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
+
+=== Token Limit Parameters: Model-Specific Usage
+
+OpenAI provides two mutually exclusive parameters for controlling token generation limits:
+
+[cols="2,3,3", stripes=even]
+|====
+| Parameter | Use Case | Compatible Models
+
+| `maxTokens` | Non-reasoning models | gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo
+| `maxCompletionTokens` | Reasoning models | o1, o1-mini, o1-preview, o3, o4-mini series
+|====
+
+IMPORTANT: These parameters are **mutually exclusive**. Setting both will result in an API error from OpenAI.
+
+==== Usage Examples
+
+**For non-reasoning models (gpt-4o, gpt-3.5-turbo):**
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Explain quantum computing in simple terms.",
+        OpenAiChatOptions.builder()
+            .model("gpt-4o")
+            .maxTokens(150)  // Use maxTokens for non-reasoning models
+        .build()
+    ));
+----
+
+**For reasoning models (o1, o3 series):**
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Solve this complex math problem step by step: ...",
+        OpenAiChatOptions.builder()
+            .model("o1-preview")
+            .maxCompletionTokens(1000)  // Use maxCompletionTokens for reasoning models
+        .build()
+    ));
+----
+
+**Builder Pattern Validation:**
+The OpenAI ChatOptions builder automatically enforces mutual exclusivity with a "last-set-wins" approach:
+
+[source,java]
+----
+// This will automatically clear maxTokens and use maxCompletionTokens
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .maxTokens(100)           // Set first
+    .maxCompletionTokens(200) // This clears maxTokens and logs a warning
+    .build();
+
+// Result: maxTokens = null, maxCompletionTokens = 200
+----
 
 == Runtime Options [[chat-options]]
 
@@ -600,6 +666,46 @@ Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-
 * The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/tool/OpenAiApiToolFunctionCallIT.java[OpenAiApiToolFunctionCallIT.java] tests show how to use the low-level API to call tool functions.
 Based on the link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[OpenAI Function Calling] tutorial.
 
+== Low-level OpenAiFileApi Client [[low-level-file-api]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/api/OpenAiFileApi.java[OpenAiFileApi] provides a lightweight Java client for the OpenAI Files API, enabling file management operations such as uploading, listing, retrieving, deleting files, and accessing file contents. link:https://platform.openai.com/docs/api-reference/files[OpenAI File API]
+
+Here is a simple snippet showing how to use the API programmatically:
+
+[source,java]
+----
+OpenAiFileApi openAiFileApi = OpenAiFileApi.builder()
+			.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
+			.build();
+
+// Upload a file
+byte[] fileBytes = Files.readAllBytes(Paths.get("evals.jsonl")); 
+OpenAiFileApi.UploadFileRequest uploadRequest = OpenAiFileApi.UploadFileRequest.builder()
+			.file(fileBytes)
+			.fileName("evals-data.jsonl")
+			.purpose(OpenAiFileApi.Purpose.EVALS)
+			.build();
+ResponseEntity<OpenAiFileApi.FileObject> uploadResponse = openAiFileApi.uploadFile(uploadRequest);
+
+// List files
+OpenAiFileApi.ListFileRequest listRequest = OpenAiFileApi.ListFileRequest.builder()
+			.purpose(OpenAiFileApi.Purpose.EVALS)
+			.build();
+ResponseEntity<OpenAiFileApi.FileObjectResponse> listResponse = openAiFileApi.listFiles(listRequest);
+
+// Retrieve file information
+ResponseEntity<OpenAiFileApi.FileObject> fileInfo = openAiFileApi.retrieveFile("file-id");
+
+// Delete a file
+ResponseEntity<OpenAiFileApi.DeleteFileResponse> deleteResponse = openAiFileApi.deleteFile("file-id");
+
+// Retrieve file content
+ResponseEntity<String> fileContent = openAiFileApi.retrieveFileContent("file-id");
+----
+
+=== Low-level File API Examples
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/api/OpenAiFileApiIT.java[OpenAiFileApiIT.java] tests provide some general examples of how to use the lightweight file api library.
+
 == API Key Management
 
 Spring AI provides flexible API key management through the `ApiKey` interface and its implementations. The default implementation, `SimpleApiKey`, is suitable for most use cases, but you can also create custom implementations for more complex scenarios.
@@ -644,4 +750,3 @@ This is useful when you need to:
 * Retrieve the API key from a secure key store
 * Rotate API keys dynamically
 * Implement custom API key selection logic
-

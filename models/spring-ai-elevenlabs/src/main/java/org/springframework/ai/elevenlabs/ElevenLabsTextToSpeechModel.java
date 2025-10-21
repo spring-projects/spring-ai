@@ -73,8 +73,8 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		byte[] audioData = retryTemplate.execute(context -> {
-			var response = elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
+		byte[] audioData = this.retryTemplate.execute(context -> {
+			var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
 					requestContext.queryParameters);
 			if (response.getBody() == null) {
 				logger.warn("No speech response returned for request: {}", requestContext.request);
@@ -90,7 +90,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		return retryTemplate.execute(context -> elevenLabsApi
+		return this.retryTemplate.execute(context -> this.elevenLabsApi
 			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
 			.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
 	}
@@ -102,10 +102,6 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		MultiValueMap<String, String> queryParameters = buildQueryParameters(options);
 
 		return new RequestContext(request, voiceId, queryParameters);
-	}
-
-	private record RequestContext(ElevenLabsApi.SpeechRequest request, String voiceId,
-			MultiValueMap<String, String> queryParameters) {
 	}
 
 	private MultiValueMap<String, String> buildQueryParameters(ElevenLabsTextToSpeechOptions options) {
@@ -185,7 +181,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		return this.defaultOptions;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ElevenLabsApi elevenLabsApi;
 
@@ -209,11 +205,15 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		}
 
 		public ElevenLabsTextToSpeechModel build() {
-			Assert.notNull(elevenLabsApi, "ElevenLabsApi must not be null");
-			Assert.notNull(defaultOptions, "ElevenLabsSpeechOptions must not be null");
-			return new ElevenLabsTextToSpeechModel(elevenLabsApi, defaultOptions, retryTemplate);
+			Assert.notNull(this.elevenLabsApi, "ElevenLabsApi must not be null");
+			Assert.notNull(this.defaultOptions, "ElevenLabsSpeechOptions must not be null");
+			return new ElevenLabsTextToSpeechModel(this.elevenLabsApi, this.defaultOptions, this.retryTemplate);
 		}
 
+	}
+
+	private record RequestContext(ElevenLabsApi.SpeechRequest request, String voiceId,
+			MultiValueMap<String, String> queryParameters) {
 	}
 
 }

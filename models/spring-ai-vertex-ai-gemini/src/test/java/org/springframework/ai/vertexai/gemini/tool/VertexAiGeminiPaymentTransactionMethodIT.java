@@ -59,8 +59,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
 public class VertexAiGeminiPaymentTransactionMethodIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(VertexAiGeminiPaymentTransactionMethodIT.class);
@@ -76,14 +76,14 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 
 		String content = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("paymentStatus")
+			.toolNames("getPaymentStatus")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
-					If requred invoke the function per transaction.
+					If required invoke the function per transaction.
 					""")
 			.call()
 			.content();
-		logger.info("" + content);
+		logger.info(content);
 
 		assertThat(content).contains("001", "002", "003");
 		assertThat(content).contains("pending", "approved", "rejected");
@@ -94,10 +94,10 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 
 		Flux<String> streamContent = this.chatClient.prompt()
 			.advisors(new SimpleLoggerAdvisor())
-			.toolNames("paymentStatus")
+			.toolNames("getPaymentStatuses")
 			.user("""
 					What is the status of my payment transactions 001, 002 and 003?
-					If requred invoke the function per transaction.
+					If required invoke the function per transaction.
 					""")
 			.stream()
 			.content();
@@ -130,13 +130,13 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 	public static class PaymentService {
 
 		@Tool(description = "Get the status of a single payment transaction")
-		public Status paymentStatus(Transaction transaction) {
+		public Status getPaymentStatus(Transaction transaction) {
 			logger.info("Single Transaction: " + transaction);
 			return DATASET.get(transaction);
 		}
 
 		@Tool(description = "Get the list statuses of a list of payment transactions")
-		public List<Status> statusespaymentStatuses(List<Transaction> transactions) {
+		public List<Status> getPaymentStatuses(List<Transaction> transactions) {
 			logger.info("Transactions: " + transactions);
 			return transactions.stream().map(t -> DATASET.get(t)).toList();
 		}
@@ -159,8 +159,8 @@ public class VertexAiGeminiPaymentTransactionMethodIT {
 		@Bean
 		public VertexAI vertexAiApi() {
 
-			String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
-			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 
 			return new VertexAI.Builder().setLocation(location)
 				.setProjectId(projectId)

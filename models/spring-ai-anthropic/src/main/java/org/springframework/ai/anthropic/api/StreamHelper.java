@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,18 +20,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock.Type;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent.ContentBlockDeltaJson;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent.ContentBlockDeltaSignature;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent.ContentBlockDeltaText;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent.ContentBlockDeltaThinking;
-import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockDeltaEvent.ContentBlockDeltaSignature;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent.ContentBlockText;
-import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent.ContentBlockToolUse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent.ContentBlockThinking;
+import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlockStartEvent.ContentBlockToolUse;
 import org.springframework.ai.anthropic.api.AnthropicApi.EventType;
 import org.springframework.ai.anthropic.api.AnthropicApi.MessageDeltaEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.MessageStartEvent;
@@ -52,9 +55,14 @@ import org.springframework.util.StringUtils;
  * @author Christian Tzolov
  * @author Jihoon Kim
  * @author Alexandros Pappas
+ * @author Claudio Silva Junior
+ * @author Soby Chacko
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public class StreamHelper {
+
+	private static final Logger logger = LoggerFactory.getLogger(StreamHelper.class);
 
 	public boolean isToolUseStart(StreamEvent event) {
 		if (event == null || event.type() == null || event.type() != EventType.CONTENT_BLOCK_START) {
@@ -76,7 +84,9 @@ public class StreamHelper {
 	 */
 	public StreamEvent mergeToolUseEvents(StreamEvent previousEvent, StreamEvent event) {
 
-		ToolUseAggregationEvent eventAggregator = (ToolUseAggregationEvent) previousEvent;
+		if (!(previousEvent instanceof ToolUseAggregationEvent eventAggregator)) {
+			return event;
+		}
 
 		if (event.type() == EventType.CONTENT_BLOCK_START) {
 			ContentBlockStartEvent contentBlockStart = (ContentBlockStartEvent) event;
@@ -154,7 +164,7 @@ public class StreamHelper {
 			}
 			else if (contentBlockStartEvent.contentBlock() instanceof ContentBlockThinking thinkingBlock) {
 				ContentBlock cb = new ContentBlock(Type.THINKING, null, null, contentBlockStartEvent.index(), null,
-						null, null, null, null, null, thinkingBlock.thinking(), null);
+						null, null, null, null, thinkingBlock.signature(), thinkingBlock.thinking(), null, null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else {
@@ -171,12 +181,12 @@ public class StreamHelper {
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaThinking thinking) {
 				ContentBlock cb = new ContentBlock(Type.THINKING_DELTA, null, null, contentBlockDeltaEvent.index(),
-						null, null, null, null, null, null, thinking.thinking(), null);
+						null, null, null, null, null, null, thinking.thinking(), null, null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaSignature sig) {
 				ContentBlock cb = new ContentBlock(Type.SIGNATURE_DELTA, null, null, contentBlockDeltaEvent.index(),
-						null, null, null, null, null, sig.signature(), null, null);
+						null, null, null, null, null, sig.signature(), null, null, null);
 				contentBlockReference.get().withType(event.type().name()).withContent(List.of(cb));
 			}
 			else {
@@ -200,7 +210,9 @@ public class StreamHelper {
 
 			if (messageDeltaEvent.usage() != null) {
 				Usage totalUsage = new Usage(contentBlockReference.get().usage.inputTokens(),
-						messageDeltaEvent.usage().outputTokens());
+						messageDeltaEvent.usage().outputTokens(),
+						contentBlockReference.get().usage.cacheCreationInputTokens(),
+						contentBlockReference.get().usage.cacheReadInputTokens());
 				contentBlockReference.get().withUsage(totalUsage);
 			}
 		}
@@ -216,7 +228,11 @@ public class StreamHelper {
 		}
 		else {
 			// Any other event types that should propagate upwards without content
+			if (contentBlockReference.get() == null) {
+				contentBlockReference.set(new ChatCompletionResponseBuilder());
+			}
 			contentBlockReference.get().withType(event.type().name()).withContent(List.of());
+			logger.warn("Unhandled event type: {}", event.type().name());
 		}
 
 		return contentBlockReference.get().build();

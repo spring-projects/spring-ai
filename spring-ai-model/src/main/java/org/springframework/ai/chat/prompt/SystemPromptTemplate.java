@@ -20,7 +20,9 @@ import java.util.Map;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 
 public class SystemPromptTemplate extends PromptTemplate {
 
@@ -30,6 +32,14 @@ public class SystemPromptTemplate extends PromptTemplate {
 
 	public SystemPromptTemplate(Resource resource) {
 		super(resource);
+	}
+
+	private SystemPromptTemplate(String template, Map<String, Object> variables, TemplateRenderer renderer) {
+		super(template, variables, renderer);
+	}
+
+	private SystemPromptTemplate(Resource resource, Map<String, Object> variables, TemplateRenderer renderer) {
+		super(resource, variables, renderer);
 	}
 
 	@Override
@@ -50,6 +60,52 @@ public class SystemPromptTemplate extends PromptTemplate {
 	@Override
 	public Prompt create(Map<String, Object> model) {
 		return new Prompt(new SystemMessage(render(model)));
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder extends PromptTemplate.Builder {
+
+		public Builder template(String template) {
+			Assert.hasText(template, "template cannot be null or empty");
+			this.template = template;
+			return this;
+		}
+
+		public Builder resource(Resource resource) {
+			Assert.notNull(resource, "resource cannot be null");
+			this.resource = resource;
+			return this;
+		}
+
+		public Builder variables(Map<String, Object> variables) {
+			Assert.notNull(variables, "variables cannot be null");
+			Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
+			this.variables = variables;
+			return this;
+		}
+
+		public Builder renderer(TemplateRenderer renderer) {
+			Assert.notNull(renderer, "renderer cannot be null");
+			this.renderer = renderer;
+			return this;
+		}
+
+		@Override
+		public SystemPromptTemplate build() {
+			if (this.template != null && this.resource != null) {
+				throw new IllegalArgumentException("Only one of template or resource can be set");
+			}
+			else if (this.resource != null) {
+				return new SystemPromptTemplate(this.resource, this.variables, this.renderer);
+			}
+			else {
+				return new SystemPromptTemplate(this.template, this.variables, this.renderer);
+			}
+		}
+
 	}
 
 }

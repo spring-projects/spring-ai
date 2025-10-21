@@ -27,6 +27,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
@@ -107,6 +108,14 @@ public class ResourceCacheServiceTests {
 		assertThat(cachedResource1).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri1));
 		assertThat(Files.list(this.tempDir.toPath()).count()).isEqualTo(1);
 		assertThat(Files.list(Files.list(this.tempDir.toPath()).iterator().next()).count()).isEqualTo(1);
+	}
+
+	@Test
+	public void shouldHandleNullUri() {
+		var cache = new ResourceCacheService(this.tempDir);
+
+		assertThatThrownBy(() -> cache.getCachedResource((String) null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Location must not be null");
 	}
 
 }

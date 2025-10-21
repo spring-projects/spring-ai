@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,9 +48,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Single-class, Java Client library for Mistral AI platform. Provides implementation for
- * the <a href="https://docs.mistral.ai/api/#operation/createEmbedding">MistralAI
- * Embedding API</a> and the
- * <a href="https://docs.mistral.ai/api/#operation/createChatCompletion">Chat
+ * the <a href=
+ * "https://docs.mistral.ai/api/#tag/embeddings/operation/embeddings_v1_embeddings_post">Embeddings</a>
+ * and the <a href=
+ * "https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post">Chat
  * Completion</a> APIs.
  * <p>
  * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion and supports latest
@@ -60,9 +61,14 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Ricken Bazolo
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jason Smith
  * @since 1.0.0
  */
 public class MistralAiApi {
+
+	public static Builder builder() {
+		return new Builder();
+	}
 
 	public static final String PROVIDER_NAME = AiProvider.MISTRAL_AI.value();
 
@@ -78,45 +84,48 @@ public class MistralAiApi {
 
 	/**
 	 * Create a new client api with DEFAULT_BASE_URL
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 */
-	public MistralAiApi(String mistralAiApiKey) {
-		this(DEFAULT_BASE_URL, mistralAiApiKey);
+	@Deprecated
+	public MistralAiApi(String apiKey) {
+		this(DEFAULT_BASE_URL, apiKey);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey) {
-		this(baseUrl, mistralAiApiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+	@Deprecated
+	public MistralAiApi(String baseUrl, String apiKey) {
+		this(baseUrl, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+	@Deprecated
+	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, mistralAiApiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
+		this(baseUrl, apiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
 	}
 
 	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
-	 * @param mistralAiApiKey Mistral api Key.
+	 * @param apiKey Mistral api Key.
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public MistralAiApi(String baseUrl, String mistralAiApiKey, RestClient.Builder restClientBuilder,
+	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.setBearerAuth(mistralAiApiKey);
+			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -269,12 +278,10 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral chat models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-generative-models
 	 *
-	 * <p>
-	 * Mistral AI provides two types of models: open-weights models (Mistral 7B, Mixtral
-	 * 8x7B, Mixtral 8x22B) and optimized commercial models (Mistral Small, Mistral
-	 * Medium, Mistral Large, and Mistral Embeddings).
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
@@ -293,8 +300,7 @@ public class MistralAiApi {
 		SMALL("mistral-small-latest"),
 		PIXTRAL("pixtral-12b-2409"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
-		OPEN_CODESTRAL_MAMBA("open-codestral-mamba");
+		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
 		private final String value;
@@ -316,7 +322,10 @@ public class MistralAiApi {
 
 	/**
 	 * List of well-known Mistral embedding models.
-	 * https://docs.mistral.ai/platform/endpoints/#mistral-ai-embedding-model
+	 *
+	 * @see <a href=
+	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
+	 * Overview</a>
 	 */
 	public enum EmbeddingModel {
 
@@ -829,9 +838,10 @@ public class MistralAiApi {
 
 		/**
 		 * The role of the author of this message.
-		 *
+		 * <p>
 		 * NOTE: Mistral expects the system message to be before the user message or will
 		 * fail with 400 error.
+		 * </p>
 		 */
 		public enum Role {
 
@@ -1078,6 +1088,55 @@ public class MistralAiApi {
 			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 			@JsonProperty("logprobs") LogProbs logprobs) {
 			 // @formatter:on
+		}
+
+	}
+
+	public static final class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			Assert.hasText(apiKey, "apiKey cannot be null or empty");
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			Assert.notNull(webClientBuilder, "webClientBuilder cannot be null");
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			Assert.notNull(responseErrorHandler, "responseErrorHandler cannot be null");
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public MistralAiApi build() {
+			return new MistralAiApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.webClientBuilder,
+					this.responseErrorHandler);
 		}
 
 	}

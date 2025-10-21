@@ -188,7 +188,7 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 				+ this.speed + '}';
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final OpenAiAudioSpeechOptions options = new OpenAiAudioSpeechOptions();
 

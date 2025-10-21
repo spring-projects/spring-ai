@@ -6,7 +6,9 @@ link:https://docs.trychroma.com/[Chroma] is the open-source embedding database. 
 
 == Prerequisites
 
-1. Access to ChromeDB. The <<Run Chroma Locally, setup local ChromaDB>> appendix shows how to set up a DB locally with a Docker container.
+1. Access to ChromaDB. Compatible with link:https://trychroma.com/signup[Chroma Cloud], or  <<run Chroma Locally, setup local ChromaDB>> in the appendix shows how to set up a DB locally with a Docker container.
+   - For Chroma Cloud: You'll need your API key, tenant name, and database name from your Chroma Cloud dashboard.
+   - For local ChromaDB: No additional configuration required beyond starting the container.
 
 2. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
 - If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `ChromaVectorStore`.
@@ -72,11 +74,15 @@ A simple configuration can either be provided via Spring Boot's _application.pro
 [source,properties]
 ----
 # Chroma Vector Store connection properties
-spring.ai.vectorstore.chroma.client.host=<your Chroma instance host>
-spring.ai.vectorstore.chroma.client.port=<your Chroma instance port>
-spring.ai.vectorstore.chroma.client.key-token=<your access token (if configure)>
+spring.ai.vectorstore.chroma.client.host=<your Chroma instance host>  // for Chroma Cloud: api.trychroma.com
+spring.ai.vectorstore.chroma.client.port=<your Chroma instance port> // for Chroma Cloud: 443
+spring.ai.vectorstore.chroma.client.key-token=<your access token (if configure)> // for Chroma Cloud: use the API key
 spring.ai.vectorstore.chroma.client.username=<your username (if configure)>
 spring.ai.vectorstore.chroma.client.password=<your password (if configure)>
+
+# Chroma Vector Store tenant and database properties (required for Chroma Cloud)
+spring.ai.vectorstore.chroma.tenant-name=<your tenant name> // default: SpringAiTenant
+spring.ai.vectorstore.chroma.database-name=<your database name> // default: SpringAiDatabase
 
 # Chroma Vector Store collection properties
 spring.ai.vectorstore.chroma.initialize-schema=<true or false>
@@ -123,8 +129,10 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.chroma.client.key-token`| Access token (if configured) | -
 |`spring.ai.vectorstore.chroma.client.username`| Access username (if configured) | -
 |`spring.ai.vectorstore.chroma.client.password`| Access password (if configured) | -
+|`spring.ai.vectorstore.chroma.tenant-name`| Tenant (required for Chroma Cloud) | `SpringAiTenant`
+|`spring.ai.vectorstore.chroma.database-name`| Database name (required for Chroma Cloud) | `SpringAiDatabase`
 |`spring.ai.vectorstore.chroma.collection-name`| Collection name | `SpringAiCollection`
-|`spring.ai.vectorstore.chroma.initialize-schema`| Whether to initialize the required schema  | `false`
+|`spring.ai.vectorstore.chroma.initialize-schema`| Whether to initialize the required schema (creates tenant/database/collection if they don't exist)  | `false`
 |===
 
 [NOTE]
@@ -132,6 +140,36 @@ You can use the following properties in your Spring Boot configuration to custom
 For ChromaDB secured with link:https://docs.trychroma.com/usage-guide#static-api-token-authentication[Static API Token Authentication] use the `ChromaApi#withKeyToken(<Your Token Credentials>)` method to set your credentials. Check the `ChromaWhereIT` for an example.
 
 For ChromaDB secured with link:https://docs.trychroma.com/usage-guide#basic-authentication[Basic Authentication] use the `ChromaApi#withBasicAuth(<your user>, <your password>)` method to set your credentials. Check the `BasicAuthChromaWhereIT` for an example.
+====
+
+=== Chroma Cloud Configuration
+
+For Chroma Cloud, you need to provide the tenant and database names from your Chroma Cloud instance. Here's an example configuration:
+
+[source,properties]
+----
+# Chroma Cloud connection
+spring.ai.vectorstore.chroma.client.host=api.trychroma.com
+spring.ai.vectorstore.chroma.client.port=443
+spring.ai.vectorstore.chroma.client.key-token=<your-chroma-cloud-api-key>
+
+# Chroma Cloud tenant and database (required)
+spring.ai.vectorstore.chroma.tenant-name=<your-tenant-id>
+spring.ai.vectorstore.chroma.database-name=<your-database-name>
+
+# Collection configuration
+spring.ai.vectorstore.chroma.collection-name=my-collection
+spring.ai.vectorstore.chroma.initialize-schema=true
+----
+
+[NOTE]
+====
+For Chroma Cloud:
+- The host should be `api.trychroma.com`
+- The port should be `443` (HTTPS)
+- You must provide your API key via `key-token`
+- The tenant and database names must match your Chroma Cloud configuration
+- Set `initialize-schema=true` to automatically create the collection if it doesn't exist (it won't recreate existing tenant/database)
 ====
 
 == Metadata filtering
@@ -238,6 +276,8 @@ Integrate with OpenAI's embeddings by adding the Spring Boot OpenAI starter to y
 @Bean
 public VectorStore chromaVectorStore(EmbeddingModel embeddingModel, ChromaApi chromaApi) {
  return ChromaVectorStore.builder(chromaApi, embeddingModel)
+    .tenantName("your-tenant-name") // default: SpringAiTenant
+    .databaseName("your-database-name") // default: SpringAiDatabase
     .collectionName("TestCollection")
     .initializeSchema(true)
     .build();

@@ -76,7 +76,7 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 [cols="3,6,1"]
 |====
 | Property | Description | Default
-| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `http://localhost:11434`
+| spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `+http://localhost:11434+`
 |====
 
 Here are the properties for initializing the Ollama integration and xref:auto-pulling-models[auto-pulling models].
@@ -115,7 +115,7 @@ Here are the advanced request parameter for the Ollama embedding model:
 | spring.ai.ollama.embedding.enabled (Removed and no longer valid)     | Enables the Ollama embedding model auto-configuration. | true
 | spring.ai.model.embedding      | Enables the Ollama embedding model auto-configuration. | ollama
 | spring.ai.ollama.embedding.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use.
-You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mistral
+You can use dedicated https://ollama.com/search?c=embedding[Embedding Model] types | mxbai-embed-large
 | spring.ai.ollama.embedding.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 | spring.ai.ollama.embedding.options.truncate  | Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.  | true
 |====
@@ -162,12 +162,12 @@ TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be ov
 
 == Runtime Options [[embedding-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaOptions.java[OllamaOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaEmbeddingOptions.java[OllamaEmbeddingOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
 
 The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
 
-At start-time use the `OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaOptions defaultOptions)` to configure the  default options used for all embedding requests.
-At run-time you can override the default options, using a `OllamaOptions` instance as part of your `EmbeddingRequest`.
+At start-time use the `OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions)` to configure the  default options used for all embedding requests.
+At run-time you can override the default options, using a `OllamaEmbeddingOptions` instance as part of your `EmbeddingRequest`.
 
 For example to override the default model name for a specific request:
 
@@ -175,7 +175,7 @@ For example to override the default model name for a specific request:
 ----
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-        OllamaOptions.builder()
+        OllamaEmbeddingOptions.builder()
             .model("Different-Embedding-Model-Deployment-Name"))
             .truncates(false)
             .build());
@@ -322,16 +322,16 @@ Next, create an `OllamaEmbeddingModel` instance and use it to compute the embedd
 var ollamaApi = OllamaApi.builder().build();
 
 var embeddingModel = new OllamaEmbeddingModel(this.ollamaApi,
-        OllamaOptions.builder()
+        OllamaEmbeddingOptions.builder()
 			.model(OllamaModel.MISTRAL.id())
             .build());
 
 EmbeddingResponse embeddingResponse = this.embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
-        OllamaOptions.builder()
+        OllamaEmbeddingOptions.builder()
             .model("chroma/all-minilm-l6-v2-f32"))
             .truncate(false)
             .build());
 ----
 
-The `OllamaOptions` provides the configuration information for all embedding requests.
+The `OllamaEmbeddingOptions` provides the configuration information for all embedding requests.

@@ -32,7 +32,7 @@ For additional details, please refer to the blog post https://spring.io/blog/202
 
 1. Go to https://github.com/spring-projects/spring-ai[https://github.com/spring-projects/spring-ai]
 2. Hit the "fork" button and choose your own GitHub account as the target
-3. For more detail see https://help.github.com/fork-a-repo/[Fork A Repo].
+3. For more detail see https://help.github.com/articles/fork-a-repo/[Fork A Repo].
 
 == Setup your Local Development Environment
 
@@ -110,7 +110,7 @@ When issuing pull requests, please ensure that your commit history is linear.
 From the command line you can check this using:
 
 ----
-log --graph --pretty=oneline
+git log --graph --pretty=oneline
 ----
 
 As this may cause lots of typing, we recommend creating a global alias, e.g. `git logg` for this:
@@ -140,16 +140,17 @@ However, we encourage all PR contributors to run checkstyles by enabling them be
 
 You can enable them by doing the following:
 
-```shell
+[source,shell]
+----
 ./mvnw clean package -DskipTests -Ddisable.checks=false
-```
+----
 
 === Source Code Style
 
 Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
 The wiki pages
-[Code Style](https://github.com/spring-projects/spring-framework/wiki/Code-Style) and
-[IntelliJ IDEA Editor Settings](https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings)
+https://github.com/spring-projects/spring-framework/wiki/Code-Style[Code Style] and
+https://github.com/spring-projects/spring-framework/wiki/IntelliJ-IDEA-Editor-Settings[IntelliJ IDEA Editor Settings]
 define the source file coding standards we use along with some IDEA editor settings we customize.
 
 == Mind the whitespace

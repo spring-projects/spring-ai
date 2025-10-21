@@ -36,11 +36,12 @@
             <password>${env.ARTIFACTORY_PASSWORD}</password>
         </server>
 
-		<server>
-			<id>sonatype-new</id>
-			<username>${env.SONATYPE_USER}</username>
-			<password>${env.SONATYPE_PASSWORD}</password>
-		</server>
+      <server>
+        <id>central</id>
+        <username>${env.CENTRAL_TOKEN_USERNAME}</username>
+  			<password>${env.CENTRAL_TOKEN_PASSWORD}</password>
+      </server>
+
     </servers>
 
 </settings>

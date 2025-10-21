@@ -58,7 +58,7 @@ import org.springframework.util.MimeType;
 public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -91,7 +91,7 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean
 	public Converter<MimeType, String> mimeTypeToStringConverter() {
-		return new Converter<MimeType, String>() {
+		return new Converter<>() {
 
 			@Override
 			public String convert(MimeType source) {
@@ -102,7 +102,7 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean
 	public Converter<String, MimeType> stringToMimeTypeConverter() {
-		return new Converter<String, MimeType>() {
+		return new Converter<>() {
 
 			@Override
 			public MimeType convert(String source) {

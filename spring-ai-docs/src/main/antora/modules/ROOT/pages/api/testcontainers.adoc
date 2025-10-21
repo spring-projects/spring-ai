@@ -38,6 +38,9 @@ The following service connection factories are provided in the `spring-ai-spring
 | `ChromaConnectionDetails`
 | Containers of type `ChromaDBContainer`
 
+| `McpSseClientConnectionDetails`
+| Containers of type `DockerMcpGatewayContainer`
+
 | `MilvusServiceClientConnectionDetails`
 | Containers of type `MilvusContainer`
 
@@ -59,3 +62,5 @@ The following service connection factories are provided in the `spring-ai-spring
 | `WeaviateConnectionDetails`
 | Containers of type `WeaviateContainer`
 |====
+
+More service connections are provided by the spring boot module `spring-boot-testcontainers`. Refer to the https://docs.spring.io/spring-boot/reference/testing/testcontainers.html#testing.testcontainers.service-connections[Testcontainers Service Connections] documentation page for the full list.

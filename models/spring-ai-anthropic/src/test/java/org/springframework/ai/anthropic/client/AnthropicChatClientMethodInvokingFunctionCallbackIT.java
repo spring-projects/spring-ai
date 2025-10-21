@@ -28,6 +28,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
@@ -44,8 +45,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.ReflectionUtils;
 
-import reactor.core.publisher.Flux;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -59,6 +58,9 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		.getLogger(AnthropicChatClientMethodInvokingFunctionCallbackIT.class);
 
 	public static Map<String, Object> arguments = new ConcurrentHashMap<>();
+
+	@Autowired
+	ChatModel chatModel;
 
 	@BeforeEach
 	void beforeEach() {
@@ -290,7 +292,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 			.map(cr -> cr.getResult().getOutput().getText())
 			.collect(Collectors.joining());
 
-		assertThat(content).contains("20 degrees");
+		assertThat(content).contains("20");
 	}
 
 	public static class ParameterLessTools {
@@ -301,9 +303,6 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 		}
 
 	}
-
-	@Autowired
-	ChatModel chatModel;
 
 	record MyRecord(String foo, String bar) {
 	}

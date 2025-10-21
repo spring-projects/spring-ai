@@ -94,7 +94,7 @@ public class VertexAiEmbeddingConnectionDetails {
 		return this.predictionServiceSettings;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		/**
 		 * The Vertex AI embedding endpoint.

@@ -66,9 +66,6 @@ public final class OllamaApi {
 
 	private static final Log logger = LogFactory.getLog(OllamaApi.class);
 
-
-	private static final String DEFAULT_BASE_URL = "http://localhost:11434";
-
 	private final RestClient restClient;
 
 	private final WebClient webClient;
@@ -81,13 +78,10 @@ public final class OllamaApi {
 	 * @param responseErrorHandler Response error handler.
 	 */
 	private OllamaApi(String baseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
-
 		Consumer<HttpHeaders> defaultHeaders = headers -> {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 			headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 		};
-
 
 		this.restClient = restClientBuilder
 				.clone()
@@ -95,7 +89,6 @@ public final class OllamaApi {
 				.defaultHeaders(defaultHeaders)
 				.defaultStatusHandler(responseErrorHandler)
 				.build();
-
 
 		this.webClient = webClientBuilder
 				.clone()
@@ -259,19 +252,22 @@ public final class OllamaApi {
 	 *
 	 * @param role The role of the message of type {@link Role}.
 	 * @param content The content of the message.
-	 * @param thinking The thinking of the model.
 	 * @param images The list of base64-encoded images to send with the message.
 	 * 				 Requires multimodal models such as llava or bakllava.
-	 * @param toolCalls The relevant tool call.
+	 * @param toolCalls The list of tools that the model wants to use.
+	 * @param toolName The name of the tool that was executed to inform the model of the result.
+	 * @param thinking The model's thinking process. Requires thinking models such as qwen3.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Message(
 			@JsonProperty("role") Role role,
 			@JsonProperty("content") String content,
-			@JsonProperty("thinking") String thinking,
 			@JsonProperty("images") List<String> images,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls) {
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("tool_name") String toolName,
+			@JsonProperty("thinking") String thinking
+	) {
 
 		public static Builder builder(Role role) {
 			return new Builder(role);
@@ -320,20 +316,29 @@ public final class OllamaApi {
 		 *
 		 * @param name The name of the function.
 		 * @param arguments The arguments that the model expects you to pass to the function.
+		 * @param index The index of the function call in the list of tool calls.
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ToolCallFunction(
 			@JsonProperty("name") String name,
-			@JsonProperty("arguments") Map<String, Object> arguments) {
+			@JsonProperty("arguments") Map<String, Object> arguments,
+			@JsonProperty("index") Integer index
+		) {
+
+			public ToolCallFunction(String name, Map<String, Object> arguments) {
+				this(name, arguments, null);
+			}
+
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private final Role role;
 			private String content;
-			private String thinking;
 			private List<String> images;
 			private List<ToolCall> toolCalls;
+			private String toolName;
+			private String thinking;
 
 			public Builder(Role role) {
 				this.role = role;
@@ -341,11 +346,6 @@ public final class OllamaApi {
 
 			public Builder content(String content) {
 				this.content = content;
-				return this;
-			}
-
-			public Builder thinking(String thinking) {
-				this.thinking = thinking;
 				return this;
 			}
 
@@ -359,8 +359,18 @@ public final class OllamaApi {
 				return this;
 			}
 
+			public Builder toolName(String toolName) {
+				this.toolName = toolName;
+				return this;
+			}
+
+			public Builder thinking(String thinking) {
+				this.thinking = thinking;
+				return this;
+			}
+
 			public Message build() {
-				return new Message(this.role, this.content, this.thinking, this.images, this.toolCalls);
+				return new Message(this.role, this.content, this.images, this.toolCalls, this.toolName, this.thinking);
 			}
 		}
 	}
@@ -375,8 +385,8 @@ public final class OllamaApi {
 	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
 	 * @param tools List of tools the model has access to.
 	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
-	 * @param think The model should think before responding, if the model supports it.
-	 * You can use the {@link OllamaOptions} builder to create the options then {@link OllamaOptions#toMap()} to convert the options into a map.
+	 * @param think Think controls whether thinking/reasoning models will think before responding.
+	 * You can use the {@link OllamaChatOptions} builder to create the options then {@link OllamaChatOptions#toMap()} to convert the options into a map.
 	 *
 	 * @see <a href=
 	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
@@ -457,7 +467,7 @@ public final class OllamaApi {
 			}
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private final String model;
 			private List<Message> messages = List.of();
@@ -505,14 +515,21 @@ public final class OllamaApi {
 				return this;
 			}
 
+			public Builder think(Boolean think) {
+				this.think = think;
+				return this;
+			}
+
+			@Deprecated
 			public Builder options(OllamaOptions options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 
-			public Builder think(Boolean think) {
-				this.think = think;
+			public Builder options(OllamaChatOptions options) {
+				Objects.requireNonNull(options, "The options can not be null.");
+				this.options = OllamaChatOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 
@@ -604,7 +621,7 @@ public final class OllamaApi {
 	public record EmbeddingsRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("input") List<String> input,
-			@JsonProperty("keep_alive") Duration keepAlive,
+			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("options") Map<String, Object> options,
 			@JsonProperty("truncate") Boolean truncate) {
 
@@ -734,7 +751,7 @@ public final class OllamaApi {
 			@JsonProperty("completed") Long completed
 	) { }
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OllamaApiConstants.DEFAULT_BASE_URL;
 

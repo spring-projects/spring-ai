@@ -56,26 +56,19 @@ final class QdrantObjectFactory {
 
 	private static Object object(Value value) {
 
-		switch (value.getKindCase()) {
-			case INTEGER_VALUE:
-				return value.getIntegerValue();
-			case STRING_VALUE:
-				return value.getStringValue();
-			case DOUBLE_VALUE:
-				return value.getDoubleValue();
-			case BOOL_VALUE:
-				return value.getBoolValue();
-			case LIST_VALUE:
-				return object(value.getListValue());
-			case STRUCT_VALUE:
-				return toObjectMap(value.getStructValue().getFieldsMap());
-			case NULL_VALUE:
-				return null;
-			case KIND_NOT_SET:
-			default:
+		return switch (value.getKindCase()) {
+			case INTEGER_VALUE -> value.getIntegerValue();
+			case STRING_VALUE -> value.getStringValue();
+			case DOUBLE_VALUE -> value.getDoubleValue();
+			case BOOL_VALUE -> value.getBoolValue();
+			case LIST_VALUE -> object(value.getListValue());
+			case STRUCT_VALUE -> toObjectMap(value.getStructValue().getFieldsMap());
+			case NULL_VALUE -> null;
+			default -> {
 				logger.warn("Unsupported value type: " + value.getKindCase());
-				return null;
-		}
+				yield null;
+			}
+		};
 
 	}
 

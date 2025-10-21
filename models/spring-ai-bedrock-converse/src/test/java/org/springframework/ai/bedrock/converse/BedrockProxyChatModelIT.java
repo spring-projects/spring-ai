@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,21 +76,22 @@ class BedrockProxyChatModelIT {
 	private static void validateChatResponseMetadata(ChatResponse response, String model) {
 		// assertThat(response.getMetadata().getId()).isNotEmpty();
 		// assertThat(response.getMetadata().getModel()).containsIgnoringCase(model);
+		assertThat(response.getMetadata().getId()).isNotEqualTo("Unknown").isNotBlank();
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-sonnet-20240229-v1:0",
-			"anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@ValueSource(strings = { "us.anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-sonnet-20240229-v1:0",
+			"us.anthropic.claude-3-5-sonnet-20240620-v1:0" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				ToolCallingChatOptions.builder().model(modelName).build());
+				BedrockChatOptions.builder().model(modelName).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isGreaterThan(0);
@@ -126,7 +127,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = ToolCallingChatOptions.builder().temperature(0.0).build();
+		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
@@ -265,6 +266,29 @@ class BedrockProxyChatModelIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
+		var promptOptions = BedrockChatOptions.builder()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return in 36°C format")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		Generation generation = response.getResult();
+		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	void functionCallTestWithToolCallingOptions() {
+
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
 		var promptOptions = ToolCallingChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location. Return in 36°C format")
@@ -290,8 +314,8 @@ class BedrockProxyChatModelIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = ToolCallingChatOptions.builder()
-			.model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+		var promptOptions = BedrockChatOptions.builder()
+			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -312,12 +336,41 @@ class BedrockProxyChatModelIT {
 		assertThat(content).contains("30", "10", "15");
 	}
 
+	@ParameterizedTest(name = "{displayName} - {0} ")
+	@ValueSource(ints = { 50, 200 })
+	void streamFunctionCallTestWithMaxTokens(int maxTokens) {
+
+		UserMessage userMessage = new UserMessage(
+				// "What's the weather like in San Francisco? Return the result in
+				// Celsius.");
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = BedrockChatOptions.builder()
+			.maxTokens(maxTokens)
+			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
+		ChatResponse lastResponse = response.blockLast();
+		String finishReason = lastResponse.getResult().getMetadata().getFinishReason();
+
+		logger.info("Finish reason: {}", finishReason);
+		assertThat(finishReason).isEqualTo("max_tokens");
+	}
+
 	@Test
 	void validateCallResponseMetadata() {
-		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(ToolCallingChatOptions.builder().model(model).build())
+				.options(BedrockChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -329,10 +382,10 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(ToolCallingChatOptions.builder().model(model).build())
+				.options(BedrockChatOptions.builder().model(model).build())
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.stream()
 				.chatResponse()
