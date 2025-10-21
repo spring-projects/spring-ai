@@ -180,6 +180,7 @@
 		<module>models/spring-ai-oci-genai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
+		<module>models/spring-ai-openai-official</module>
 		<module>models/spring-ai-postgresml</module>
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
@@ -277,6 +278,7 @@
 		<spring-boot.version>4.0.0</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
+		<openai-official.version>4.5.0</openai-official.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.2.21</kotlin.version>
 
@@ -836,6 +838,7 @@
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
+								<exclude>org.springframework.ai.openaiofficial/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.stabilityai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
