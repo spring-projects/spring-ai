@@ -43,7 +43,7 @@ public enum OllamaModel implements ChatModelDescription {
 
 	/**
 	 * Qwen3 is the latest generation of large language models in Qwen series, offering a
-	 * comprehensive suite of dense and mixture-of-experts (MoE) models. Qwen3 1.7b
+	 * comprehensive suite of dense and mixture-of-experts (MoE) models.
 	 */
 	QWEN3_7B("qwen3:7b"),
 

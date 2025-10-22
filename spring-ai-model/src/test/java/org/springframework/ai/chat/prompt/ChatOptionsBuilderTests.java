@@ -61,7 +61,7 @@ public class ChatOptionsBuilderTests {
 		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isEqualTo(1.0);
 		assertThat(options.getTopK()).isEqualTo(40);
-		assertThat(options.isThink()).isEqualTo(true);
+		assertThat(options.getThink()).isEqualTo(true);
 		assertThat(options.getStopSequences()).containsExactly("stop1", "stop2");
 	}
 
@@ -125,7 +125,7 @@ public class ChatOptionsBuilderTests {
 		assertThat(chatOptions.getTemperature()).isEqualTo(0.7);
 		assertThat(chatOptions.getTopP()).isEqualTo(1.0);
 		assertThat(chatOptions.getTopK()).isEqualTo(40);
-		assertThat(chatOptions.isThink()).isEqualTo(true);
+		assertThat(chatOptions.getThink()).isEqualTo(true);
 		assertThat(chatOptions.getStopSequences()).containsExactly("stop1", "stop2");
 	}
 

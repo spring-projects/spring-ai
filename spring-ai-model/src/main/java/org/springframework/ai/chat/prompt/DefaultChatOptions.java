@@ -116,7 +116,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Boolean isThink() {
+	public Boolean getThink() {
 		return this.think;
 	}
 
@@ -136,7 +136,7 @@ public class DefaultChatOptions implements ChatOptions {
 		copy.setTemperature(this.getTemperature());
 		copy.setTopK(this.getTopK());
 		copy.setTopP(this.getTopP());
-		copy.setThink(this.isThink());
+		copy.setThink(this.getThink());
 		return (T) copy;
 	}
 

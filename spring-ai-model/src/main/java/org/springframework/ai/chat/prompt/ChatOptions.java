@@ -88,7 +88,7 @@ public interface ChatOptions extends ModelOptions {
 	 * @return the think flag to use for the chat
 	 */
 	@Nullable
-	default Boolean isThink() {
+	default Boolean getThink() {
 		return false;
 	}
 

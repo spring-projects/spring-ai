@@ -409,7 +409,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 				.format(fromOptions.getFormat())
 				.keepAlive(fromOptions.getKeepAlive())
 				.truncate(fromOptions.getTruncate())
-				.think(fromOptions.isThink())
+				.think(fromOptions.getThink())
 				.useNUMA(fromOptions.getUseNUMA())
 				.numCtx(fromOptions.getNumCtx())
 				.numBatch(fromOptions.getNumBatch())
@@ -838,7 +838,7 @@ public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 	}
 
 	@Override
-	public Boolean isThink() {
+	public Boolean getThink() {
 		return this.think;
 	}
 

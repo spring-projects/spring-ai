@@ -52,7 +52,6 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author Jonghoon Park
  * @author Alexandros Pappas
- * @author Sun Yuhan
  * @since 0.8.0
  */
 // @formatter:off

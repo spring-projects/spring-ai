@@ -203,7 +203,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	@Nullable
-	public Boolean isThink() {
+	public Boolean getThink() {
 		return this.think;
 	}
 
