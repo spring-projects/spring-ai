@@ -84,6 +84,16 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-restclient</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-webclient</artifactId>
+		</dependency>
+
 		<!-- Test dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

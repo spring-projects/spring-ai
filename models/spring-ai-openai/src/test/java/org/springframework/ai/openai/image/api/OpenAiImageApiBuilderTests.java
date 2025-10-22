@@ -37,8 +37,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -64,7 +62,7 @@ class OpenAiImageApiBuilderTests {
 
 	@Test
 	void testFullBuilder() {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		HttpHeaders headers = new HttpHeaders();
 		headers.add("Custom-Header", "test-value");
 		RestClient.Builder restClientBuilder = RestClient.builder();
 		ResponseErrorHandler errorHandler = mock(ResponseErrorHandler.class);

@@ -31,7 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -70,7 +71,7 @@ public class OpenAiImageModelNoOpApiKeysIT {
 		@Bean
 		public OpenAiImageModel openAiImageModel(OpenAiImageApi openAiImageApi) {
 			return new OpenAiImageModel(openAiImageApi, OpenAiImageOptions.builder().build(),
-					RetryTemplate.defaultInstance(), TestObservationRegistry.create());
+					new RetryTemplate(RetryPolicy.withDefaults()), TestObservationRegistry.create());
 		}
 
 	}

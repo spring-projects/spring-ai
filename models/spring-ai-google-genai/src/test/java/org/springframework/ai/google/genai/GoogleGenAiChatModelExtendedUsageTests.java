@@ -41,7 +41,7 @@ import org.springframework.ai.google.genai.metadata.GoogleGenAiModalityTokenCoun
 import org.springframework.ai.google.genai.metadata.GoogleGenAiTrafficType;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

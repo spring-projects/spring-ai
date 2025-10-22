@@ -20,6 +20,7 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 
@@ -30,7 +31,6 @@ import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.util.Assert;
 
 @Testcontainers

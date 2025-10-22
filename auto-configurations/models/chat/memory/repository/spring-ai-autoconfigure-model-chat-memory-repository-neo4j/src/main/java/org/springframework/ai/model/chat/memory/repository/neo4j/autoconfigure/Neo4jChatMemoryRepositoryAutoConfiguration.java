@@ -24,7 +24,7 @@ import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConf
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
+import org.springframework.boot.neo4j.autoconfigure.Neo4jAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 

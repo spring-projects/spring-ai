@@ -22,6 +22,7 @@ import java.util.Map;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.retry.RetryException;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -39,7 +40,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -140,8 +141,19 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				var apiEmbeddingResponse = this.retryTemplate
-					.execute(ctx -> this.mistralAiApi.embeddings(apiRequest).getBody());
+				MistralAiApi.EmbeddingList<MistralAiApi.Embedding> apiEmbeddingResponse = null;
+				try {
+					apiEmbeddingResponse = this.retryTemplate
+						.execute(() -> this.mistralAiApi.embeddings(apiRequest).getBody());
+				}
+				catch (RetryException e) {
+					if (e.getCause() instanceof RuntimeException r) {
+						throw r;
+					}
+					else {
+						throw new RuntimeException(e.getCause());
+					}
+				}
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);

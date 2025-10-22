@@ -95,6 +95,11 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<scope>test</scope>
+		</dependency>
     </dependencies>
 
 </project>

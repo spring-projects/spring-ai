@@ -41,10 +41,10 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionChunk;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
-import org.springframework.util.MultiValueMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
@@ -66,7 +66,7 @@ public class MessageTypeContentTests {
 	ArgumentCaptor<ChatCompletionRequest> pomptCaptor;
 
 	@Captor
-	ArgumentCaptor<MultiValueMap<String, String>> headersCaptor;
+	ArgumentCaptor<HttpHeaders> headersCaptor;
 
 	Flux<ChatCompletionChunk> fluxResponse = Flux.generate(
 			() -> new ChatCompletionChunk("id", List.of(), 0L, "model", null, "fp", "object", null), (state, sink) -> {
@@ -89,7 +89,7 @@ public class MessageTypeContentTests {
 		this.chatModel.call(new Prompt(List.of(new SystemMessage("test message"))));
 
 		validateStringContent(this.pomptCaptor.getValue());
-		assertThat(this.headersCaptor.getValue()).isEmpty();
+		assertThat(this.headersCaptor.getValue().isEmpty()).isTrue();
 	}
 
 	@Test
@@ -112,7 +112,7 @@ public class MessageTypeContentTests {
 		this.chatModel.stream(new Prompt(List.of(new UserMessage("test message")))).subscribe();
 
 		validateStringContent(this.pomptCaptor.getValue());
-		assertThat(this.headersCaptor.getValue()).isEmpty();
+		assertThat(this.headersCaptor.getValue().isEmpty()).isTrue();
 	}
 
 	private void validateStringContent(ChatCompletionRequest chatCompletionRequest) {
@@ -207,7 +207,7 @@ public class MessageTypeContentTests {
 			.build())));
 
 		validateStringContent(this.pomptCaptor.getValue());
-		assertThat(this.headersCaptor.getValue()).isEmpty();
+		assertThat(this.headersCaptor.getValue().isEmpty()).isTrue();
 	}
 
 	@Test
@@ -308,7 +308,7 @@ public class MessageTypeContentTests {
 
 		// User message should be complex
 		assertThat(request.messages().get(1).rawContent()).isInstanceOf(List.class);
-		assertThat(this.headersCaptor.getValue()).isEmpty();
+		assertThat(this.headersCaptor.getValue().isEmpty()).isTrue();
 	}
 
 	// Helper method for testing different image formats

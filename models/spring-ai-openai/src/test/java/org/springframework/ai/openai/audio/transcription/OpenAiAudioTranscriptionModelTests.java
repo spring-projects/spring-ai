@@ -32,10 +32,10 @@ import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -123,9 +123,8 @@ class OpenAiAudioTranscriptionModelTests {
 
 		@Bean
 		public OpenAiAudioApi openAiAudioApi(RestClient.Builder builder) {
-			return new OpenAiAudioApi("https://api.openai.com", new SimpleApiKey("test-api-key"),
-					new LinkedMultiValueMap<>(), builder, WebClient.builder(),
-					RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+			return new OpenAiAudioApi("https://api.openai.com", new SimpleApiKey("test-api-key"), new HttpHeaders(),
+					builder, WebClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 		}
 
 		@Bean
