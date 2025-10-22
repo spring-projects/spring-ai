@@ -172,7 +172,7 @@
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-bedrock-converse</module>
 		<module>models/spring-ai-elevenlabs</module>
-		<module>models/spring-ai-huggingface</module>
+<!--		<module>models/spring-ai-huggingface</module>-->
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-oci-genai</module>
