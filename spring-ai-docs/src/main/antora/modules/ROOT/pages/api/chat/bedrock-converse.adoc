@@ -73,7 +73,7 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.aws.region     | AWS region to use.  | us-east-1
+| spring.ai.bedrock.aws.region     | AWS region to use.  | AWS SDK value or us-east-1
 | spring.ai.bedrock.aws.timeout    | AWS timeout to use. | 5m
 | spring.ai.bedrock.aws.access-key | AWS access key.  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
@@ -89,6 +89,8 @@ To enable, spring.ai.model.chat=bedrock-converse (It is enabled by default)
 To disable, spring.ai.model.chat=none (or any value which doesn't match bedrock-converse)
 
 This change is done to allow configuration of multiple models.
+
+The AWS SDK checks several places for the region, if none of these are set then "us-east-1" is used.
 ====
 
 The prefix `spring.ai.bedrock.converse.chat` is the property prefix that configures the chat model implementation for the Converse API.
