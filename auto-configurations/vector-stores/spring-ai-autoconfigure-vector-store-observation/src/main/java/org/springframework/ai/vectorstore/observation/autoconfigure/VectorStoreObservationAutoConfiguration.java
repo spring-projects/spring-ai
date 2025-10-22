@@ -43,9 +43,9 @@ import org.springframework.context.annotation.Configuration;
  * @since 1.0.0
  */
 @AutoConfiguration(
-		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration" })
+		afterName = "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration")
 @ConditionalOnClass(VectorStore.class)
-@EnableConfigurationProperties({ VectorStoreObservationProperties.class })
+@EnableConfigurationProperties(VectorStoreObservationProperties.class)
 public class VectorStoreObservationAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(VectorStoreObservationAutoConfiguration.class);

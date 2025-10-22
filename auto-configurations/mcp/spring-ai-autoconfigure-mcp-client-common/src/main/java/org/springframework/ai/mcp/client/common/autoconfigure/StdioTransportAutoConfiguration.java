@@ -54,7 +54,7 @@ import org.springframework.context.annotation.Bean;
  * @see McpStdioClientProperties
  */
 @AutoConfiguration
-@ConditionalOnClass({ McpSchema.class })
+@ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties({ McpStdioClientProperties.class, McpClientCommonProperties.class })
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)

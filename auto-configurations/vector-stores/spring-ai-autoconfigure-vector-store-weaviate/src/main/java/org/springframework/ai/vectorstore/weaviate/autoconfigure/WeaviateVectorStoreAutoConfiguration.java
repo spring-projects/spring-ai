@@ -48,7 +48,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, WeaviateVectorStore.class })
-@EnableConfigurationProperties({ WeaviateVectorStoreProperties.class })
+@EnableConfigurationProperties(WeaviateVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.WEAVIATE,
 		matchIfMissing = true)
 public class WeaviateVectorStoreAutoConfiguration {

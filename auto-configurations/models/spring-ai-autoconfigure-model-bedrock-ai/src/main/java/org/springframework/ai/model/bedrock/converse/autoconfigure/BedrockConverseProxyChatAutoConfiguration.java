@@ -51,7 +51,7 @@ import org.springframework.context.annotation.Import;
  * @author Wei Jiang
  * @author Pawel Potaczala
  */
-@AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = ToolCallingAutoConfiguration.class)
 @EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
 @ConditionalOnClass({ BedrockProxyChatModel.class, BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.BEDROCK_CONVERSE,
@@ -75,6 +75,10 @@ public class BedrockConverseProxyChatAutoConfiguration {
 			.credentialsProvider(credentialsProvider)
 			.region(regionProvider.getRegion())
 			.timeout(connectionProperties.getTimeout())
+			.connectionTimeout(connectionProperties.getConnectionTimeout())
+			.asyncReadTimeout(connectionProperties.getAsyncReadTimeout())
+			.connectionAcquisitionTimeout(connectionProperties.getConnectionAcquisitionTimeout())
+			.socketTimeout(connectionProperties.getSocketTimeout())
 			.defaultOptions(chatProperties.getOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallingManager(toolCallingManager)

@@ -30,7 +30,7 @@ import org.springframework.test.context.jdbc.Sql;
  * @author Henning Pöttker
  */
 @SpringBootTest
-@TestPropertySource(properties = { "spring.datasource.url=jdbc:tc:mysql:8.0.42:///" })
+@TestPropertySource(properties = "spring.datasource.url=jdbc:tc:mysql:8.0.42:///")
 @Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-mysql.sql")
 class JdbcChatMemoryRepositoryMysqlIT extends AbstractJdbcChatMemoryRepositoryIT {
 
