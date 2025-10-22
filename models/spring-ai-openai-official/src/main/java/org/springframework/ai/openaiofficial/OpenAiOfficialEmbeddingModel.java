@@ -27,13 +27,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import static com.openai.models.embeddings.EmbeddingModel.TEXT_EMBEDDING_ADA_002;
-
+/**
+ * Embedding Model implementation using the OpenAI Java SDK.
+ *
+ * @author Julien Dubois
+ */
 public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiOfficialEmbeddingModel.class);
+	private static final String DEFAULT_MODEL_NAME = OpenAiOfficialEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+
+	private static final Logger logger = LoggerFactory.getLogger(OpenAiOfficialEmbeddingModel.class);
 
 	private final OpenAIClient openAiClient;
 
@@ -41,14 +46,8 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final MetadataMode metadataMode;
 
-	/**
-	 * Observation registry used for instrumentation.
-	 */
 	private final ObservationRegistry observationRegistry;
 
-	/**
-	 * Conventions to use for generating observations.
-	 */
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient) {
@@ -56,8 +55,7 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode) {
-		this(openAiClient, metadataMode,
-				OpenAiOfficialEmbeddingOptions.builder().deploymentName(TEXT_EMBEDDING_ADA_002.toString()).build());
+		this(openAiClient, metadataMode, OpenAiOfficialEmbeddingOptions.builder().model(DEFAULT_MODEL_NAME).build());
 	}
 
 	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
@@ -71,6 +69,7 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notNull(openAiClient, "com.openai.client.OpenAIClient must not be null");
 		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		Assert.notNull(options, "Options must not be null");
+		Assert.notNull(options.getModel(), "Model name must not be null");
 		Assert.notNull(observationRegistry, "Observation registry must not be null");
 		this.openAiClient = openAiClient;
 		this.metadataMode = metadataMode;
@@ -80,11 +79,8 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		logger.debug("Retrieving embeddings");
-
 		EmbeddingResponse response = this
 			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
-		logger.debug("Embeddings retrieved");
 
 		if (CollectionUtils.isEmpty(response.getResults())) {
 			return new float[0];
@@ -94,8 +90,6 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest embeddingRequest) {
-		logger.debug("Retrieving embeddings");
-
 		OpenAiOfficialEmbeddingOptions options = OpenAiOfficialEmbeddingOptions.builder()
 			.from(this.defaultOptions)
 			.merge(embeddingRequest.getOptions())
@@ -107,9 +101,14 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 		EmbeddingCreateParams embeddingCreateParams = options
 			.toOpenAiCreateParams(embeddingRequestWithMergedOptions.getInstructions());
 
+		if (logger.isTraceEnabled()) {
+			logger.trace("OpenAiOfficialEmbeddingModel call {} with the following options : {} ", options.getModel(),
+					embeddingCreateParams);
+		}
+
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequestWithMergedOptions)
-			.provider(AiProvider.AZURE_OPENAI.value())
+			.provider(AiProvider.OPENAI_OFFICIAL.value())
 			.build();
 
 		return Objects.requireNonNull(
@@ -119,7 +118,6 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 					.observe(() -> {
 						CreateEmbeddingResponse response = this.openAiClient.embeddings().create(embeddingCreateParams);
 
-						logger.debug("Embeddings retrieved");
 						var embeddingResponse = generateEmbeddingResponse(response);
 						observationContext.setResponse(embeddingResponse);
 						return embeddingResponse;
@@ -130,6 +128,7 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
 		List<Embedding> data = generateEmbeddingList(response.data());
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
+		metadata.setModel(response.model());
 		metadata.setUsage(getDefaultUsage(response.usage()));
 		return new EmbeddingResponse(data, metadata);
 	}
@@ -143,7 +142,7 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 		List<Embedding> data = new ArrayList<>();
 		for (com.openai.models.embeddings.Embedding nativeDatum : nativeData) {
 			List<Float> nativeDatumEmbedding = nativeDatum.embedding();
-			Long nativeIndex = nativeDatum.index();
+			long nativeIndex = nativeDatum.index();
 			Embedding embedding = new Embedding(EmbeddingUtils.toPrimitive(nativeDatumEmbedding),
 					Math.toIntExact(nativeIndex));
 			data.add(embedding);

@@ -23,13 +23,21 @@ import org.springframework.ai.document.MetadataMode;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 
+import static org.springframework.ai.openaiofficial.OpenAiOfficialEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
+import static org.springframework.ai.openaiofficial.OpenAiOfficialImageOptions.DEFAULT_IMAGE_MODEL;
+
 /**
  * Context configuration for OpenAI official SDK tests.
  *
  * @author Julien Dubois
  */
 @SpringBootConfiguration
-public class OpenAiOfficialTestConfiguration {
+public class OpenAiOfficialTestConfigurationWithObservability {
+
+	@Bean
+	public TestObservationRegistry testObservationRegistry() {
+		return TestObservationRegistry.create();
+	}
 
 	@Bean
 	public OpenAIClient openAIClient() {
@@ -37,13 +45,16 @@ public class OpenAiOfficialTestConfiguration {
 	}
 
 	@Bean
-	public OpenAiOfficialEmbeddingModel openAiEmbeddingModel(OpenAIClient client) {
-		return new OpenAiOfficialEmbeddingModel(client);
+	public OpenAiOfficialEmbeddingModel openAiEmbeddingModel(OpenAIClient client,
+			TestObservationRegistry observationRegistry) {
+		return new OpenAiOfficialEmbeddingModel(client, MetadataMode.EMBED,
+				OpenAiOfficialEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build(), observationRegistry);
 	}
 
 	@Bean
-	public OpenAiOfficialImageModel openAiImageModel(OpenAIClient client) {
-		return new OpenAiOfficialImageModel(client);
+	public OpenAiOfficialImageModel openAiImageModel(OpenAIClient client, TestObservationRegistry observationRegistry) {
+		return new OpenAiOfficialImageModel(client,
+				OpenAiOfficialImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build(), observationRegistry);
 	}
 
 }

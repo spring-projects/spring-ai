@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,9 @@
 
 package org.springframework.ai.openaiofficial.embedding;
 
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 import com.openai.models.embeddings.EmbeddingModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -35,14 +31,22 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Integration tests for {@link OpenAiOfficialEmbeddingModel}.
+ *
+ * @author Julien Dubois
+ */
 @SpringBootTest(classes = OpenAiOfficialTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
-class EmbeddingIT {
+class OpenAiOfficialEmbeddingIT {
 
-	private Resource resource = new DefaultResourceLoader().getResource("classpath:text_source.txt");
+	private final Resource resource = new DefaultResourceLoader().getResource("classpath:text_source.txt");
 
 	@Autowired
 	private OpenAiOfficialEmbeddingModel openAiOfficialEmbeddingModel;
@@ -60,6 +64,8 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 
 		assertThat(this.openAiOfficialEmbeddingModel.dimensions()).isEqualTo(1536);
+		assertThat(embeddingResponse.getMetadata().getModel())
+			.isEqualTo(EmbeddingModel.TEXT_EMBEDDING_ADA_002.toString());
 	}
 
 	@Test
@@ -102,6 +108,8 @@ class EmbeddingIT {
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(3072);
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(2);
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
+		assertThat(embeddingResponse.getMetadata().getModel())
+			.isEqualTo(EmbeddingModel.TEXT_EMBEDDING_3_LARGE.toString());
 	}
 
 	@Test
@@ -118,6 +126,8 @@ class EmbeddingIT {
 
 		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(2);
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
+		assertThat(embeddingResponse.getMetadata().getModel())
+			.isEqualTo(EmbeddingModel.TEXT_EMBEDDING_3_SMALL.toString());
 	}
 
 }
