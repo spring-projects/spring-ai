@@ -120,6 +120,14 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), you can optionally specify which organization and project is used for an API request.
 Usage from these API requests will count as usage for the specified organization and project.
 
+==== User-Agent Header
+
+Spring AI automatically sends a `User-Agent: spring-ai` header with all requests to OpenAI.
+This helps OpenAI identify requests originating from Spring AI for analytics and support purposes.
+This header is sent automatically and requires no configuration from Spring AI users.
+
+If you are an API provider building an OpenAI-compatible service, you can track Spring AI usage by reading the `User-Agent` HTTP header from incoming requests on your server.
+
 ==== Configuration Properties
 
 [NOTE]

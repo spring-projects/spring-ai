@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -35,6 +38,8 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 import org.springframework.ai.openai.api.OpenAiApi.Embedding;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -235,6 +240,60 @@ class OpenAiApiIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
 		assertThat(response.getBody().serviceTier()).containsIgnoringCase(serviceTier.getValue());
+	}
+
+	@Test
+	void userAgentHeaderIsSentInChatCompletionRequests() throws Exception {
+		try (MockWebServer mockWebServer = new MockWebServer()) {
+			mockWebServer.start();
+
+			// Mock response from OpenAI
+			mockWebServer.enqueue(new MockResponse().setResponseCode(200)
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.setBody("""
+						{
+							"id": "chatcmpl-123",
+							"object": "chat.completion",
+							"created": 1677652288,
+							"model": "gpt-3.5-turbo",
+							"choices": [{
+								"index": 0,
+								"message": {
+									"role": "assistant",
+									"content": "Hello there!"
+								},
+								"finish_reason": "stop"
+							}],
+							"usage": {
+								"prompt_tokens": 9,
+								"completion_tokens": 2,
+								"total_tokens": 11
+							}
+						}
+						"""));
+
+			// Create OpenAiApi instance pointing to mock server
+			OpenAiApi testApi = OpenAiApi.builder()
+				.apiKey(System.getenv("OPENAI_API_KEY"))
+				.baseUrl(mockWebServer.url("/").toString())
+				.build();
+
+			// Make a request
+			ChatCompletionMessage message = new ChatCompletionMessage("Hello world", Role.USER);
+			ResponseEntity<ChatCompletion> response = testApi
+				.chatCompletionEntity(new ChatCompletionRequest(List.of(message), "gpt-3.5-turbo", 0.8, false));
+
+			// Verify the response succeeded
+			assertThat(response).isNotNull();
+			assertThat(response.getBody()).isNotNull();
+
+			// Verify the User-Agent header was sent in the request
+			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader(OpenAiApi.HTTP_USER_AGENT_HEADER))
+				.isEqualTo(OpenAiApi.SPRING_AI_USER_AGENT);
+
+			mockWebServer.shutdown();
+		}
 	}
 
 }
