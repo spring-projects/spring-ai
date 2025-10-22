@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,17 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 
 import java.util.List;
 
+import static com.openai.models.embeddings.EmbeddingModel.TEXT_EMBEDDING_ADA_002;
+
 /**
- * The configuration information for the embedding requests.
+ * Configuration information for the Embedding Model implementation using the OpenAI Java
+ * SDK.
+ *
+ * @author Julien Dubois
  */
 public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
+
+	public static final String DEFAULT_EMBEDDING_MODEL = TEXT_EMBEDDING_ADA_002.asString();
 
 	/**
 	 * An identifier for the caller or end user of the operation. This may be used for
@@ -89,15 +96,27 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 		this.dimensions = dimensions;
 	}
 
+	@Override
+	public String toString() {
+		return "OpenAiOfficialEmbeddingOptions{" + "user='" + user + '\'' + ", model='" + model + '\''
+				+ ", deploymentName='" + deploymentName + '\'' + ", dimensions=" + dimensions + '}';
+	}
+
 	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
 
 		EmbeddingCreateParams.Builder builder = EmbeddingCreateParams.builder();
 
-		if (instructions != null && instructions.size() > 0) {
-			builder.input(EmbeddingCreateParams.Input.ofArrayOfStrings(instructions));
-		}
+		// Use deployment name if available (for Azure AI Foundry), otherwise use model
+		// name
 		if (this.getDeploymentName() != null) {
 			builder.model(this.getDeploymentName());
+		}
+		else if (this.getModel() != null) {
+			builder.model(this.getModel());
+		}
+
+		if (instructions != null && !instructions.isEmpty()) {
+			builder.input(EmbeddingCreateParams.Input.ofArrayOfStrings(instructions));
 		}
 		if (this.getUser() != null) {
 			builder.user(this.getUser());
@@ -114,6 +133,7 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder from(OpenAiOfficialEmbeddingOptions fromOptions) {
 			this.options.setUser(fromOptions.getUser());
+			this.options.setModel(fromOptions.getModel());
 			this.options.setDeploymentName(fromOptions.getDeploymentName());
 			this.options.setDimensions(fromOptions.getDimensions());
 			return this;
@@ -124,6 +144,9 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 
 				if (castFrom.getUser() != null) {
 					this.options.setUser(castFrom.getUser());
+				}
+				if (castFrom.getModel() != null) {
+					this.options.setModel(castFrom.getModel());
 				}
 				if (castFrom.getDeploymentName() != null) {
 					this.options.setDeploymentName(castFrom.getDeploymentName());
@@ -140,6 +163,7 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 			if (openAiCreateParams.user().isPresent()) {
 				this.options.setUser(openAiCreateParams.user().get());
 			}
+			this.options.setModel(openAiCreateParams.model().toString());
 			this.options.setDeploymentName(openAiCreateParams.model().toString());
 			if (openAiCreateParams.dimensions().isPresent()) {
 				this.options.setDimensions(Math.toIntExact(openAiCreateParams.dimensions().get()));
@@ -152,8 +176,8 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder deploymentName(String model) {
-			this.options.setDeploymentName(model);
+		public Builder deploymentName(String deploymentName) {
+			this.options.setDeploymentName(deploymentName);
 			return this;
 		}
 

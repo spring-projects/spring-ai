@@ -18,7 +18,7 @@ echo "Setting up environment variables..."
 echo "----------------------------------"
 PROJECT="spring-ai-open-ai-official-$RANDOM-$RANDOM-$RANDOM"
 RESOURCE_GROUP="rg-$PROJECT"
-LOCATION="swedencentral"
+LOCATION="eastus"
 AI_SERVICE="ai-$PROJECT"
 TAG="$PROJECT"
 
@@ -69,23 +69,46 @@ for i in "${!models[@]}"; do
     --sku-name "$sku" || echo "Failed to deploy $model. Check SKU and region compatibility."
 done
 
+echo "Deploying Image Models"
+echo "=========================="
+
+models=("dall-e-3")
+versions=("3.0")
+skus=("Standard")
+
+for i in "${!models[@]}"; do
+  model="${models[$i]}"
+  sku="${skus[$i]}"
+  version="${versions[$i]}"
+  echo "Deploying $model..."
+  az cognitiveservices account deployment create \
+    --name "$AI_SERVICE" \
+    --resource-group "$RESOURCE_GROUP" \
+    --deployment-name "$model" \
+    --model-name "$model" \
+    --model-version "$version"\
+    --model-format "OpenAI" \
+    --sku-capacity 1 \
+    --sku-name "$sku" || echo "Failed to deploy $model. Check SKU and region compatibility."
+done
+
 echo "Storing the key and endpoint in environment variables..."
 echo "--------------------------------------------------------"
-AZURE_OPENAI_KEY=$(
+OPENAI_API_KEY=$(
   az cognitiveservices account keys list \
     --name "$AI_SERVICE" \
     --resource-group "$RESOURCE_GROUP" \
     | jq -r .key1
   )
-AZURE_OPENAI_ENDPOINT=$(
+OPENAI_BASE_URL=$(
   az cognitiveservices account show \
     --name "$AI_SERVICE" \
     --resource-group "$RESOURCE_GROUP" \
     | jq -r .properties.endpoint
   )
 
-echo "AZURE_OPENAI_KEY=$AZURE_OPENAI_KEY"
-echo "AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT"
+echo "OPENAI_API_KEY=$OPENAI_API_KEY"
+echo "OPENAI_BASE_URL=$OPENAI_BASE_URL"
 
 # Once you finish the tests, you can delete the resource group with the following command:
 #echo "Deleting the resource group..."
