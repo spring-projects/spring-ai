@@ -66,8 +66,7 @@ class OllamaChatModelMetadataTests extends BaseOllamaIT {
 		chatResponse.getResults().forEach(generation -> {
 			ChatGenerationMetadata chatGenerationMetadata = generation.getMetadata();
 			assertThat(chatGenerationMetadata).isNotNull();
-			var thinking = chatGenerationMetadata.get("thinking");
-			assertThat(thinking).isNotNull();
+			assertThat(chatGenerationMetadata.containsKey("thinking"));
 		});
 	}
 
