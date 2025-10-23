@@ -16,7 +16,6 @@
 
 package org.springframework.ai.openaiofficial.image;
 
-import com.openai.models.embeddings.EmbeddingModel;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.openaiofficial;
 
 import com.openai.client.OpenAIClient;
@@ -27,6 +43,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static org.springframework.ai.openaiofficial.setup.OpenAiOfficialSetup.setupSyncClient;
+
 /**
  * Embedding Model implementation using the OpenAI Java SDK.
  *
@@ -42,7 +60,7 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final OpenAIClient openAiClient;
 
-	private final OpenAiOfficialEmbeddingOptions defaultOptions;
+	private final OpenAiOfficialEmbeddingOptions options;
 
 	private final MetadataMode metadataMode;
 
@@ -50,31 +68,58 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	public OpenAiOfficialEmbeddingModel() {
+		this(null, null, null, null);
+	}
+
+	public OpenAiOfficialEmbeddingModel(OpenAiOfficialEmbeddingOptions options) {
+		this(null, null, options, null);
+	}
+
+	public OpenAiOfficialEmbeddingModel(MetadataMode metadataMode, OpenAiOfficialEmbeddingOptions options) {
+		this(null, metadataMode, options, null);
+	}
+
+	public OpenAiOfficialEmbeddingModel(OpenAiOfficialEmbeddingOptions options,
+			ObservationRegistry observationRegistry) {
+		this(null, null, options, observationRegistry);
+	}
+
+	public OpenAiOfficialEmbeddingModel(MetadataMode metadataMode, OpenAiOfficialEmbeddingOptions options,
+			ObservationRegistry observationRegistry) {
+		this(null, metadataMode, options, observationRegistry);
+	}
+
 	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient) {
-		this(openAiClient, MetadataMode.EMBED);
+		this(openAiClient, null, null, null);
 	}
 
 	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode) {
-		this(openAiClient, metadataMode, OpenAiOfficialEmbeddingOptions.builder().model(DEFAULT_MODEL_NAME).build());
+		this(openAiClient, metadataMode, null, null);
 	}
 
 	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
 			OpenAiOfficialEmbeddingOptions options) {
-		this(openAiClient, metadataMode, options, ObservationRegistry.NOOP);
+		this(openAiClient, metadataMode, options, null);
 	}
 
 	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
 			OpenAiOfficialEmbeddingOptions options, ObservationRegistry observationRegistry) {
 
-		Assert.notNull(openAiClient, "com.openai.client.OpenAIClient must not be null");
-		Assert.notNull(metadataMode, "Metadata mode must not be null");
-		Assert.notNull(options, "Options must not be null");
-		Assert.notNull(options.getModel(), "Model name must not be null");
-		Assert.notNull(observationRegistry, "Observation registry must not be null");
-		this.openAiClient = openAiClient;
-		this.metadataMode = metadataMode;
-		this.defaultOptions = options;
-		this.observationRegistry = observationRegistry;
+		if (options == null) {
+			this.options = OpenAiOfficialEmbeddingOptions.builder().model(DEFAULT_MODEL_NAME).build();
+		}
+		else {
+			this.options = options;
+		}
+		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
+				() -> setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(), this.options.getCredential(),
+						this.options.getAzureDeploymentName(), this.options.getAzureOpenAIServiceVersion(),
+						this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
+						this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
+						this.options.getProxy(), this.options.getCustomHeaders()));
+		this.metadataMode = Objects.requireNonNullElse(metadataMode, MetadataMode.EMBED);
+		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}
 
 	@Override
@@ -91,7 +136,7 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest embeddingRequest) {
 		OpenAiOfficialEmbeddingOptions options = OpenAiOfficialEmbeddingOptions.builder()
-			.from(this.defaultOptions)
+			.from(this.options)
 			.merge(embeddingRequest.getOptions())
 			.build();
 
@@ -150,8 +195,8 @@ public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 		return data;
 	}
 
-	public OpenAiOfficialEmbeddingOptions getDefaultOptions() {
-		return this.defaultOptions;
+	public OpenAiOfficialEmbeddingOptions getOptions() {
+		return this.options;
 	}
 
 	/**
