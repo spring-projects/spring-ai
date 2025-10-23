@@ -17,23 +17,35 @@
 package org.springframework.ai.vertexai.imagen;
 
 /**
- * Imagen on VertexAI Models:
- * - <a href="https://cloud.google.com/vertex-ai/generative-ai/docs/image/model-versioning">Image generation</a>
+ * Imagen on VertexAI Models: - <a href=
+ * "https://cloud.google.com/vertex-ai/generative-ai/docs/image/model-versioning">Image
+ * generation</a>
  *
  * @author Sami Marzouki
  */
 public enum VertexAiImagenImageModelName {
 
-	IMAGEN_3("imagen-3.0-generate-001"),
+	IMAGEN_4_V001("imagen-4.0-generate-001"),
+
+	IMAGEN_4_FAST("imagen-4.0-fast-generate-001"),
+
+	IMAGEN_4_ULTRA("imagen-4.0-ultra-generate-001"),
+
+	IMAGEN_3_V002("imagen-3.0-generate-002"),
+
+	IMAGEN_3_V001("imagen-3.0-generate-001"),
 
 	IMAGEN_3_FAST("imagen-3.0-fast-generate-001"),
 
 	IMAGEN_3_CUSTOMIZATION_AND_EDITING("imagen-3.0-capability-001"),
 
+	@Deprecated
 	IMAGEN_2_V006("imagegeneration@006"),
 
+	@Deprecated
 	IMAGEN_2_V005("imagegeneration@005"),
 
+	@Deprecated
 	IMAGEN_1_V002("imagegeneration@002");
 
 	private final String value;
@@ -45,4 +57,5 @@ public enum VertexAiImagenImageModelName {
 	public String getValue() {
 		return this.value;
 	}
+
 }

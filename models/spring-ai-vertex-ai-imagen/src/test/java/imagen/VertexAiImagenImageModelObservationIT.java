@@ -61,9 +61,9 @@ public class VertexAiImagenImageModelObservationIT {
 	@Test
 	void observationForImageOperation() {
 		var options = VertexAiImagenImageOptions.builder()
-				.model(VertexAiImagenImageModelName.IMAGEN_2_V006.getValue())
-				.N(1)
-				.build();
+			.model(VertexAiImagenImageModelName.IMAGEN_3_V002.getValue())
+			.N(1)
+			.build();
 
 		ImagePrompt imagePrompt = new ImagePrompt("Little kitten sitting on a purple cushion", options);
 		ImageResponse imageResponse = this.imageModel.call(imagePrompt);
@@ -73,20 +73,20 @@ public class VertexAiImagenImageModelObservationIT {
 		assertThat(responseMetadata).isNotNull();
 
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
-				.doesNotHaveAnyRemainingCurrentObservation()
-				.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
-				.that()
-				.hasContextualNameEqualTo("image " + VertexAiImagenImageModelName.IMAGEN_2_V006.getValue())
-				.hasLowCardinalityKeyValue(
-						ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
-						AiOperationType.IMAGE.value())
-				.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
-						AiProvider.VERTEX_AI.value())
-				.hasLowCardinalityKeyValue(
-						ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-						VertexAiImagenImageModelName.IMAGEN_2_V006.getValue())
-				.hasBeenStarted()
-				.hasBeenStopped();
+			.doesNotHaveAnyRemainingCurrentObservation()
+			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.hasContextualNameEqualTo("image " + VertexAiImagenImageModelName.IMAGEN_3_V002.getValue())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					AiOperationType.IMAGE.value())
+			.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					AiProvider.VERTEX_AI.value())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+					VertexAiImagenImageModelName.IMAGEN_3_V002.getValue())
+			.hasBeenStarted()
+			.hasBeenStopped();
 	}
 
 	@SpringBootConfiguration
@@ -100,18 +100,18 @@ public class VertexAiImagenImageModelObservationIT {
 		@Bean
 		public VertexAiImagenConnectionDetails connectionDetails() {
 			return VertexAiImagenConnectionDetails.builder()
-					.projectId(System.getenv("VERTEX_AI_IMAGEN_PROJECT_ID"))
-					.location(System.getenv("VERTEX_AI_IMAGEN_LOCATION"))
-					.build();
+				.projectId(System.getenv("VERTEX_AI_IMAGEN_PROJECT_ID"))
+				.location(System.getenv("VERTEX_AI_IMAGEN_LOCATION"))
+				.build();
 		}
 
 		@Bean
 		public VertexAiImagenImageModel imageModel(VertexAiImagenConnectionDetails connectionDetails,
-												   ObservationRegistry observationRegistry) {
+				ObservationRegistry observationRegistry) {
 
 			VertexAiImagenImageOptions options = VertexAiImagenImageOptions.builder()
-					.model(VertexAiImagenImageOptions.DEFAULT_MODEL_NAME)
-					.build();
+				.model(VertexAiImagenImageOptions.DEFAULT_MODEL_NAME)
+				.build();
 
 			return new VertexAiImagenImageModel(connectionDetails, options, RetryUtils.DEFAULT_RETRY_TEMPLATE,
 					observationRegistry);

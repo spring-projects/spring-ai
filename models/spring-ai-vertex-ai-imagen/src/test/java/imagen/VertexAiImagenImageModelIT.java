@@ -20,7 +20,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.vertexai.imagen.VertexAiImagenConnectionDetails;
@@ -44,21 +43,31 @@ public class VertexAiImagenImageModelIT {
 	protected VertexAiImagenImageModel imageModel;
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = {"imagen-3.0-generate-001", "imagen-3.0-fast-generate-001", "imagen-3.0-capability-001",
-			"imagegeneration@006", "imagegeneration@005", "imagegeneration@002"})
+	@ValueSource(strings = { "imagen-4.0-generate-001", "imagen-4.0-fast-generate-001", "imagen-4.0-ultra-generate-001",
+			"imagen-3.0-generate-002", "imagen-3.0-generate-001", "imagen-3.0-fast-generate-001",
+			"imagen-3.0-capability-001" })
 	void defaultImageGenerator(String modelName) {
 		Assertions.assertThat(this.imageModel).isNotNull();
 
 		var options = VertexAiImagenImageOptions.builder().model(modelName).N(1).build();
 
 		ImageResponse imageResponse = this.imageModel
-				.call(new ImagePrompt("little kitten sitting on a purple cushion", options));
+			.call(new ImagePrompt("little kitten sitting on a purple cushion", options));
 
 		Assertions.assertThat(imageResponse.getResults()).hasSize(2);
 		Assertions.assertThat(imageResponse.getResults().get(0).getOutput().getB64Json()).isNotEmpty();
-		Assertions.assertThat(((VertexAiImagenImageGenerationMetadata) imageResponse.getResults().get(0).getMetadata()).getModel()).isNotEmpty();
-		Assertions.assertThat(((VertexAiImagenImageGenerationMetadata) imageResponse.getResults().get(0).getMetadata()).getPrompt()).isNotEmpty();
-		Assertions.assertThat(((VertexAiImagenImageGenerationMetadata) imageResponse.getResults().get(0).getMetadata()).getMimeType()).isNotEmpty();
+		Assertions
+			.assertThat(((VertexAiImagenImageGenerationMetadata) imageResponse.getResults().get(0).getMetadata())
+				.getModel())
+			.isNotEmpty();
+		Assertions
+			.assertThat(((VertexAiImagenImageGenerationMetadata) imageResponse.getResults().get(0).getMetadata())
+				.getPrompt())
+			.isNotEmpty();
+		Assertions
+			.assertThat(((VertexAiImagenImageGenerationMetadata) imageResponse.getResults().get(0).getMetadata())
+				.getMimeType())
+			.isNotEmpty();
 	}
 
 	@SpringBootConfiguration
@@ -67,17 +76,17 @@ public class VertexAiImagenImageModelIT {
 		@Bean
 		public VertexAiImagenConnectionDetails connectionDetails() {
 			return VertexAiImagenConnectionDetails.builder()
-					.projectId(System.getenv("VERTEX_AI_IMAGEN_PROJECT_ID"))
-					.location(System.getenv("VERTEX_AI_IMAGEN_LOCATION"))
-					.build();
+				.projectId(System.getenv("VERTEX_AI_IMAGEN_PROJECT_ID"))
+				.location(System.getenv("VERTEX_AI_IMAGEN_LOCATION"))
+				.build();
 		}
 
 		@Bean
 		public VertexAiImagenImageModel imageModel(VertexAiImagenConnectionDetails connectionDetails) {
 
 			VertexAiImagenImageOptions options = VertexAiImagenImageOptions.builder()
-					.model(VertexAiImagenImageOptions.DEFAULT_MODEL_NAME)
-					.build();
+				.model(VertexAiImagenImageOptions.DEFAULT_MODEL_NAME)
+				.build();
 
 			return new VertexAiImagenImageModel(connectionDetails, options);
 		}

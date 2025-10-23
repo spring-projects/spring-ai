@@ -16,18 +16,18 @@
 
 package org.springframework.ai.vertexai.imagen;
 
-import java.util.Arrays;
-import java.util.List;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
-
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * Utility class for constructing parameter objects for Imagen on Vertex AI requests.
+ * <b>VertexAiImagenUtils</b> is a Utility class for constructing parameter objects for
+ * Imagen on Vertex AI requests.
  *
  * @author Sami Marzouki
  */
@@ -63,8 +63,8 @@ public abstract class VertexAiImagenUtils {
 				case "16:9" -> List.of(1600, 900);
 				case "3:4" -> List.of(750, 1000);
 				case "4:3" -> List.of(1000, 750);
-				default -> throw new IllegalStateException("Unexpected value: " + aspectRatio +
-						" aspect ratio must be one of these values : ['1:1', '9:16', '16:9', '3:4', or '4:3']");
+				default -> throw new IllegalStateException("Unexpected value: " + aspectRatio
+						+ " aspect ratio must be one of these values : ['1:1', '9:16', '16:9', '3:4', or '4:3']");
 			};
 		}
 		return Arrays.asList(1024, 1024);
@@ -86,19 +86,34 @@ public abstract class VertexAiImagenUtils {
 			textBuilder.putFields("prompt", valueOf(this.prompt));
 			return textBuilder.build();
 		}
+
 	}
 
 	public static class ImageParametersBuilder {
 
 		public Integer sampleCount;
+
 		public Integer seed;
+
 		public String negativePrompt;
+
 		public String aspectRatio;
+
 		public Boolean addWatermark;
+
 		public String storageUri;
+
 		public String personGeneration;
+
 		public String safetySetting;
+
 		public Struct outputOptions;
+
+		public String language;
+
+		public Boolean enhancePrompt;
+
+		public String sampleImageSize;
 
 		public static ImageParametersBuilder of() {
 			return new ImageParametersBuilder();
@@ -158,6 +173,24 @@ public abstract class VertexAiImagenUtils {
 			return this;
 		}
 
+		public ImageParametersBuilder language(String language) {
+			Assert.notNull(language, "language must not be null");
+			this.language = language;
+			return this;
+		}
+
+		public ImageParametersBuilder enhancePrompt(Boolean enhancePrompt) {
+			Assert.notNull(enhancePrompt, "enhancePrompt must not be null");
+			this.enhancePrompt = enhancePrompt;
+			return this;
+		}
+
+		public ImageParametersBuilder sampleImageSize(String sampleImageSize) {
+			Assert.notNull(sampleImageSize, "sampleImageSize must not be null");
+			this.sampleImageSize = sampleImageSize;
+			return this;
+		}
+
 		public Struct build() {
 			Struct.Builder imageParametersBuilder = Struct.newBuilder();
 
@@ -186,13 +219,25 @@ public abstract class VertexAiImagenUtils {
 				imageParametersBuilder.putFields("safetySetting", valueOf(this.safetySetting));
 			}
 			if (this.outputOptions != null) {
-				imageParametersBuilder.putFields("outputOptions", Value.newBuilder().setStructValue(this.outputOptions).build());
+				imageParametersBuilder.putFields("outputOptions",
+						Value.newBuilder().setStructValue(this.outputOptions).build());
+			}
+			if (this.language != null) {
+				imageParametersBuilder.putFields("language", valueOf(this.language));
+			}
+			if (this.enhancePrompt != null) {
+				imageParametersBuilder.putFields("enhancePrompt", valueOf(this.enhancePrompt));
+			}
+			if (this.sampleImageSize != null) {
+				imageParametersBuilder.putFields("sampleImageSize", valueOf(this.sampleImageSize));
 			}
 			return imageParametersBuilder.build();
 		}
 
 		public static class OutputOptions {
+
 			public String mimeType;
+
 			public Integer compressionQuality;
 
 			public static OutputOptions of() {

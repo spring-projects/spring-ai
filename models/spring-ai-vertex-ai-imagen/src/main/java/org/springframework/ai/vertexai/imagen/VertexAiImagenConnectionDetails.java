@@ -23,10 +23,10 @@ import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
 
 import org.springframework.util.StringUtils;
 
-
 /**
- * VertexAiImagenConnectionDetails represents the details of a connection to the Vertex AI imagen service.
- * It provides methods to access the project ID, location, publisher, and PredictionServiceSettings.
+ * <b>VertexAiImagenConnectionDetails</b> represents the details of a connection to the
+ * Vertex AI imagen service. It provides methods to access the project ID, location,
+ * publisher, and PredictionServiceSettings.
  *
  * @author Sami Marzouki
  */
@@ -59,7 +59,7 @@ public class VertexAiImagenConnectionDetails {
 	private final PredictionServiceSettings predictionServiceSettings;
 
 	public VertexAiImagenConnectionDetails(String projectId, String location, String publisher,
-										   PredictionServiceSettings predictionServiceSettings) {
+			PredictionServiceSettings predictionServiceSettings) {
 		this.projectId = projectId;
 		this.location = location;
 		this.publisher = publisher;
@@ -153,7 +153,8 @@ public class VertexAiImagenConnectionDetails {
 				if (!StringUtils.hasText(this.location)) {
 					this.endpoint = DEFAULT_ENDPOINT;
 					this.location = DEFAULT_LOCATION;
-				} else {
+				}
+				else {
 					this.endpoint = this.location + DEFAULT_ENDPOINT_SUFFIX;
 				}
 			}
@@ -165,9 +166,10 @@ public class VertexAiImagenConnectionDetails {
 			if (this.predictionServiceSettings == null) {
 				try {
 					this.predictionServiceSettings = PredictionServiceSettings.newBuilder()
-							.setEndpoint(this.endpoint)
-							.build();
-				} catch (IOException e) {
+						.setEndpoint(this.endpoint)
+						.build();
+				}
+				catch (IOException e) {
 					throw new RuntimeException(e);
 				}
 			}

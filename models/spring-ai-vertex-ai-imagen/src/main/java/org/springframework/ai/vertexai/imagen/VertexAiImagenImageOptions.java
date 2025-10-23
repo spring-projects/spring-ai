@@ -15,75 +15,148 @@
  */
 package org.springframework.ai.vertexai.imagen;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import org.springframework.ai.image.ImageOptions;
+
+import java.util.List;
 
 import static org.springframework.ai.vertexai.imagen.VertexAiImagenUtils.calculateSizeFromAspectRatio;
 
 /**
- * Options for the Vertex AI Image service.
+ * <h4>Options for the Vertex AI Image service.</h4>
  *
  * @author Sami Marzouki
  */
 public class VertexAiImagenImageOptions implements ImageOptions {
 
-	public static final String DEFAULT_MODEL_NAME = VertexAiImagenImageModelName.IMAGEN_2_V006.getValue();
+	public static final String DEFAULT_MODEL_NAME = VertexAiImagenImageModelName.IMAGEN_3_V002.getValue();
 
 	/**
-	 * Required: int
-	 * The number of images to generate. The default value is 4. The
-	 * imagen-3.0-generate-001 model supports values 1 through 4. The
-	 * imagen-3.0-fast-generate-001 model supports values 1 through 4. The
-	 * imagegeneration@006 model supports values 1 through 4. The imagegeneration@005
-	 * model supports values 1 through 4. The imagegeneration@002 model supports values 1
-	 * through 8.
+	 * <b>Required: int</b>
+	 * <p>
+	 * The number of images to generate. The default value is 4.
+	 * </p>
+	 * <ul>
+	 * <li>imagen-3.0-generate-001 model supports values 1 through 4.</li>
+	 * <li>imagen-3.0-fast-generate-001 model supports values 1 through 4.</li>
+	 * <li>imagegeneration@006 model supports values 1 through 4.</li>
+	 * <li>imagegeneration@005 model supports values 1 through 4.</li>
+	 * <li>imagegeneration@002 model supports values 1 through 8.</li>
+	 * </ul>
 	 */
 	@JsonProperty("sampleCount")
 	private Integer n;
 
 	/**
+	 * <p>
 	 * The model to use for image generation.
+	 * </p>
 	 */
 	@JsonProperty("model")
 	private String model;
 
 	/**
-	 * Optional: Uint32
-	 * The random seed for image generation. This is not available when addWatermark is set to true.
+	 * <b>Optional: Uint32</b>
+	 * <p>
+	 * The random seed for image generation. This is not available when addWatermark is
+	 * set to true.
+	 * </p>
 	 */
 	@JsonProperty("seed")
 	private Integer seed;
 
 	/**
-	 * Optional: string
+	 * <b>Optional: string</b>
+	 * <p>
 	 * A description of what to discourage in the generated images.
-	 * The imagen-3.0-generate-001 model supports up to 480 tokens.
-	 * The imagen-3.0-fast-generate-001 model supports up to 480 tokens.
-	 * The imagegeneration@006 model supports up to 128 tokens.
-	 * The imagegeneration@005 model supports up to 128 tokens.
-	 * The imagegeneration@002 model supports up to 64 tokens.
+	 * <p>
+	 * <ul>
+	 * <li>The imagen-3.0-generate-001 model supports up to 480 tokens.</li>
+	 * <li>The imagen-3.0-fast-generate-001 model supports up to 480 tokens.</li>
+	 * <li>The imagegeneration@006 model supports up to 128 tokens.</li>
+	 * <li>The imagegeneration@005 model supports up to 128 tokens.</li>
+	 * <li>The imagegeneration@002 model supports up to 64 tokens.</li>
+	 * </ul>
+	 * negativePrompt isn't supported by imagen-3.0-generate-002 and newer models.
 	 */
 	@JsonProperty("negativePrompt")
 	private String negativePrompt;
 
 	/**
-	 * Optional: string
+	 * <b>Optional: string</b>
+	 * <p>
+	 * Specifies the generated image's output resolution.<br>
+	 * The accepted values are "1K" or "2K".<br>
+	 * The default value is "1K".
+	 * </p>
+	 */
+	@JsonProperty("sampleImageSize")
+	private String sampleImageSize;
+
+	/**
+	 * <b>Optional: boolean</b>
+	 * <p>
+	 * An optional parameter to use an LLM-based prompt rewriting feature to deliver
+	 * higher quality images that better reflect the original prompt's intent. Disabling
+	 * this feature may impact image quality and prompt adherence.
+	 * </p>
+	 */
+	@JsonProperty("enhancePrompt")
+	private Boolean enhancePrompt;
+
+	/**
+	 * <b>Optional: string</b>
+	 * <p>
+	 * The language code that corresponds to your text prompt language.
+	 * </p>
+	 * <ul>
+	 * <li>auto: Automatic detection.
+	 * <p>
+	 * If Imagen detects a supported language, the prompt and an optional negative prompt
+	 * are translated to English. If the language detected isn't supported, Imagen uses
+	 * the input text verbatim, which might result in an unexpected output. No error code
+	 * is returned.
+	 * </p>
+	 * </li>
+	 * <li>en: English (if omitted, the default value)</li>
+	 * <li>zh or zh-CN: Chinese (simplified)</li>
+	 * <li>zh-TW: Chinese (traditional)</li>
+	 * <li>hi: Hindi</li>
+	 * <li>ja: Japanese</li>
+	 * <li>ko: Korean</li>
+	 * <li>pt: Portuguese</li>
+	 * <li>es: Spanish</li>
+	 * </ul>
+	 */
+	@JsonProperty("language")
+	private String language;
+
+	/**
+	 * </b>Optional: string</b>
+	 * <p>
 	 * The aspect ratio for the image. The default value is "1:1".
-	 * The imagen-3.0-generate-001 model supports "1:1", "9:16", "16:9", "3:4", or "4:3".
-	 * The imagen-3.0-fast-generate-001 model supports "1:1", "9:16", "16:9", "3:4", or "4:3".
-	 * The imagegeneration@006 model supports "1:1", "9:16", "16:9", "3:4", or "4:3".
-	 * The imagegeneration@005 model supports "1:1" or "9:16".
-	 * The imagegeneration@002 model supports "1:1".
+	 * </p>
+	 * <ul>
+	 * <li>The imagen-3.0-generate-002 model supports "1:1", "9:16", "16:9", "3:4", or
+	 * "4:3".</li>
+	 * <li>The imagen-3.0-generate-001 model supports "1:1", "9:16", "16:9", "3:4", or
+	 * "4:3".</li>
+	 * <li>The imagen-3.0-fast-generate-001 model supports "1:1", "9:16", "16:9", "3:4",
+	 * or "4:3".</li>
+	 * <li>The imagegeneration@006 model supports "1:1", "9:16", "16:9", "3:4", or
+	 * "4:3".</li>
+	 * <li>The imagegeneration@005 model supports "1:1" or "9:16".</li>
+	 * <li>The imagegeneration@002 model supports "1:1".</li>
+	 * </ul>
 	 */
 	@JsonProperty("aspectRatio")
 	private String aspectRatio;
 
 	/**
-	 * Optional: outputOptions
+	 * <b>Optional: outputOptions</b>
+	 * <p>
 	 * Describes the output image format in an outputOptions object.
+	 * </p>
 	 *
 	 * @see OutputOptions
 	 */
@@ -91,50 +164,82 @@ public class VertexAiImagenImageOptions implements ImageOptions {
 	private OutputOptions outputOptions;
 
 	/**
-	 * Optional: string (imagegeneration@002 only)
+	 * <b>Optional: string (imagegeneration@002 only)</b>
+	 * <p>
 	 * Describes the style for the generated images. The following values are supported:
-	 * "photograph", "digital_art", "landscape", "sketch", "watercolor", "cyberpunk", "pop_art".
+	 * </p>
+	 * <ul>
+	 * <li>"photograph"</li>
+	 * <li>"digital_art"</li>
+	 * <li>"landscape"</li>
+	 * <li>"sketch"</li>
+	 * <li>"watercolor"</li>
+	 * <li>"cyberpunk"</li>
+	 * <li>"pop_art"</li>
+	 * </ul>
 	 */
 	@JsonProperty("sampleImageStyle")
 	private String style;
 
 	/**
-	 * Optional: string (imagen-3.0-generate-001, imagen-3.0-fast-generate-001, and imagegeneration@006 only)
+	 * <b>Optional: string (imagen-3.0-generate-001, imagen-3.0-fast-generate-001, and
+	 * imagegeneration@006 only)</b>
+	 * <p>
 	 * Allow generation of people by the model. The following values are supported:
-	 * "dont_allow": Disallow the inclusion of people or faces in images.
-	 * "allow_adult": Allow generation of adults only.
-	 * "allow_all": Allow generation of people of all ages.
+	 * </p>
+	 * <ul>
+	 * <li>"dont_allow": Disallow the inclusion of people or faces in images.</li>
+	 * <li>"allow_adult": Allow generation of adults only.</li>
+	 * <li>"allow_all": Allow generation of people of all ages.</li>
+	 * </ul>
+	 * <p>
 	 * The default value is "allow_adult".
+	 * </p>
 	 */
 	@JsonProperty("personGeneration")
 	private String personGeneration;
 
 	/**
-	 * Optional: string (imagen-3.0-generate-001, imagen-3.0-fast-generate-001, and imagegeneration@006 only)
+	 * <b>Optional: string (imagen-3.0-generate-001, imagen-3.0-fast-generate-001, and
+	 * imagegeneration@006 only)</b>
+	 * <p>
 	 * Adds a filter level to safety filtering. The following values are supported:
-	 * "block_low_and_above": Strongest filtering level, most strict blocking. Deprecated value: "block_most".
-	 * "block_medium_and_above": Block some problematic prompts and responses. Deprecated value: "block_some".
-	 * "block_only_high": Reduces the number of requests blocked due to safety filters. May increase objectionable
-	 * content generated by Imagen. Deprecated value: "block_few".
-	 * "block_none": Block very few problematic prompts and responses. Access to this feature is restricted.
-	 * Previous field value: "block_fewest".
+	 * </p>
+	 * <ul>
+	 * <li>"block_low_and_above": Strongest filtering level, most strict blocking.<br>
+	 * Deprecated value: "block_most".</li>
+	 * <li>"block_medium_and_above": Block some problematic prompts and responses.<br>
+	 * Deprecated value: "block_some".</li>
+	 * <li>"block_only_high": Reduces the number of requests blocked due to safety
+	 * filters. May increase objectionable content generated by Imagen.<br>
+	 * Deprecated value: "block_few".</li>
+	 * <li>"block_none": Block very few problematic prompts and responses. Access to this
+	 * feature is restricted. <br>
+	 * Previous field value: "block_fewest".</li>
+	 * </ul>
+	 * <p>
 	 * The default value is "block_medium_and_above".
+	 * </p>
 	 */
 	@JsonProperty("safetySetting")
 	private String safetySetting;
 
 	/**
-	 * Optional: bool
-	 * Add an invisible watermark to the generated images.
-	 * The default value is false for the imagegeneration@002 and imagegeneration@005 models,
-	 * and true for the imagen-3.0-fast-generate-001, imagegeneration@006, and imagegeneration@006 models.
+	 * <b>Optional: bool</b>
+	 * <p>
+	 * Add an invisible watermark to the generated images. The default value is false for
+	 * the imagegeneration@002 and imagegeneration@005 models, and true for the
+	 * imagen-3.0-fast-generate-001, imagegeneration@006, and imagegeneration@006 models.
+	 * </p>
 	 */
 	@JsonProperty("addWatermark")
 	private Boolean addWatermark;
 
 	/**
-	 * Optional: string
+	 * <b>Optional: string</b>
+	 * <p>
 	 * Cloud Storage URI to store the generated images.
+	 * </p>
 	 */
 	@JsonProperty("storageUri")
 	private String storageUri;
@@ -267,11 +372,56 @@ public class VertexAiImagenImageOptions implements ImageOptions {
 		this.size = size;
 	}
 
+	public Boolean getEnhancePrompt() {
+		return enhancePrompt;
+	}
+
+	public void setEnhancePrompt(Boolean enhancePrompt) {
+		this.enhancePrompt = enhancePrompt;
+	}
+
+	public String getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(String language) {
+		this.language = language;
+	}
+
+	public String getSampleImageSize() {
+		return sampleImageSize;
+	}
+
+	public void setSampleImageSize(String sampleImageSize) {
+		this.sampleImageSize = sampleImageSize;
+	}
+
 	public static final class OutputOptions {
 
+		/**
+		 * <b>Optional: string</b>
+		 * <p>
+		 * The image format that the output should be saved as. The following values are
+		 * supported:
+		 * </p>
+		 * <ul>
+		 * <li>"image/png": Save as a PNG image</li>
+		 * <li>"image/jpeg": Save as a JPEG image</li>
+		 * </ul>
+		 * <p>
+		 * The default value is "image/png".
+		 * </p>
+		 */
 		@JsonProperty("mimeType")
 		private String mimeType;
 
+		/**
+		 * <b>Optional: int</b>
+		 * <p>
+		 * The level of compression if the output type is "image/jpeg". Accepted values
+		 * are 0 through 100. The default value is 75.
+		 * </p>
+		 */
 		@JsonProperty("compressionQuality")
 		private Integer compressionQuality;
 
@@ -316,7 +466,9 @@ public class VertexAiImagenImageOptions implements ImageOptions {
 			public OutputOptions build() {
 				return this.options;
 			}
+
 		}
+
 	}
 
 	public static final class Builder {
@@ -366,6 +518,15 @@ public class VertexAiImagenImageOptions implements ImageOptions {
 			}
 			if (fromOptions.getStorageUri() != null) {
 				this.options.setStorageUri(fromOptions.getStorageUri());
+			}
+			if (fromOptions.getLanguage() != null) {
+				this.options.setLanguage(fromOptions.getLanguage());
+			}
+			if (fromOptions.getEnhancePrompt() != null) {
+				this.options.setEnhancePrompt(fromOptions.getEnhancePrompt());
+			}
+			if (fromOptions.getSampleImageSize() != null) {
+				this.options.setSampleImageSize(fromOptions.getSampleImageSize());
 			}
 
 			return this;
@@ -427,9 +588,25 @@ public class VertexAiImagenImageOptions implements ImageOptions {
 			return this;
 		}
 
+		public Builder language(String language) {
+			this.options.setLanguage(language);
+			return this;
+		}
+
+		public Builder enhancePrompt(Boolean enhancePrompt) {
+			this.options.setEnhancePrompt(enhancePrompt);
+			return this;
+		}
+
+		public Builder sampleImageSize(String sampleImageSize) {
+			this.options.setSampleImageSize(sampleImageSize);
+			return this;
+		}
+
 		public VertexAiImagenImageOptions build() {
 			return this.options;
 		}
 
 	}
+
 }

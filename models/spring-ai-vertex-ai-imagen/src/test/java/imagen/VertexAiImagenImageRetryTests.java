@@ -82,25 +82,24 @@ public class VertexAiImagenImageRetryTests {
 	public void vertexAiImageGeneratorTransientError() {
 		// Set up the mock PredictResponse
 		PredictResponse mockResponse = PredictResponse.newBuilder()
-				.addPredictions(Value.newBuilder()
-						.setStructValue(Struct.newBuilder()
-								.putFields("bytesBase64Encoded", Value.newBuilder().setStringValue("BASE64_IMG_BYTES").build())
-								.putFields("mimeType", Value.newBuilder().setStringValue("image/png").build())
-								.build())
-						.build())
-				.addPredictions(Value.newBuilder()
-						.setStructValue(Struct.newBuilder()
-								.putFields("mimeType", Value.newBuilder().setStringValue("image/png").build())
-								.putFields("bytesBase64Encoded", Value.newBuilder().setStringValue("BASE64_IMG_BYTES").build())
-								.build())
-						.build())
-				.build();
+			.addPredictions(Value.newBuilder()
+				.setStructValue(Struct.newBuilder()
+					.putFields("bytesBase64Encoded", Value.newBuilder().setStringValue("BASE64_IMG_BYTES").build())
+					.putFields("mimeType", Value.newBuilder().setStringValue("image/png").build())
+					.build())
+				.build())
+			.addPredictions(Value.newBuilder()
+				.setStructValue(Struct.newBuilder()
+					.putFields("mimeType", Value.newBuilder().setStringValue("image/png").build())
+					.putFields("bytesBase64Encoded", Value.newBuilder().setStringValue("BASE64_IMG_BYTES").build())
+					.build())
+				.build())
+			.build();
 
 		// Set up the mock PredictionServiceClient
-		given(this.mockPredictionServiceClient.predict(any()))
-				.willThrow(new TransientAiException("Transient Error 1"))
-				.willThrow(new TransientAiException("Transient Error 2"))
-				.willReturn(mockResponse);
+		given(this.mockPredictionServiceClient.predict(any())).willThrow(new TransientAiException("Transient Error 1"))
+			.willThrow(new TransientAiException("Transient Error 2"))
+			.willReturn(mockResponse);
 
 		ImageResponse result = this.imageModel.call(new ImagePrompt("text1", null));
 
@@ -121,7 +120,7 @@ public class VertexAiImagenImageRetryTests {
 
 		// Assert that a RuntimeException is thrown and not retried
 		assertThatThrownBy(() -> this.imageModel.call(new ImagePrompt("text1", null)))
-				.isInstanceOf(RuntimeException.class);
+			.isInstanceOf(RuntimeException.class);
 
 		// Verify that predict was called only once (no retries for non-transient errors)
 		verify(this.mockPredictionServiceClient, times(1)).predict(any());
@@ -130,6 +129,7 @@ public class VertexAiImagenImageRetryTests {
 	private static class TestRetryListener implements RetryListener {
 
 		int onErrorRetryCount = 0;
+
 		int onSuccessRetryCount = 0;
 
 		@Override
@@ -139,7 +139,7 @@ public class VertexAiImagenImageRetryTests {
 
 		@Override
 		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-													 Throwable throwable) {
+				Throwable throwable) {
 			this.onErrorRetryCount = context.getRetryCount();
 		}
 

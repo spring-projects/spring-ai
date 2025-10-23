@@ -54,11 +54,8 @@ public class VertexAiImagenImageGenerationMetadata implements ImageGenerationMet
 
 	@Override
 	public String toString() {
-		return "VertexAiImagenImageGenerationMetadata{" +
-				"prompt='" + prompt + '\'' +
-				", model='" + model + '\'' +
-				", mimeType='" + mimeType + '\'' +
-				'}';
+		return "VertexAiImagenImageGenerationMetadata{" + "prompt='" + prompt + '\'' + ", model='" + model + '\''
+				+ ", mimeType='" + mimeType + '\'' + '}';
 	}
 
 	@Override
@@ -68,8 +65,7 @@ public class VertexAiImagenImageGenerationMetadata implements ImageGenerationMet
 		if (o == null || getClass() != o.getClass())
 			return false;
 		VertexAiImagenImageGenerationMetadata that = (VertexAiImagenImageGenerationMetadata) o;
-		return Objects.equals(prompt, that.prompt)
-				&& Objects.equals(model, that.model)
+		return Objects.equals(prompt, that.prompt) && Objects.equals(model, that.model)
 				&& Objects.equals(mimeType, that.mimeType);
 	}
 

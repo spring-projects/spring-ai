@@ -36,7 +36,7 @@ public class TestVertexAiImagenImageModel extends VertexAiImagenImageModel {
 	private PredictRequest.Builder mockPredictRequestBuilder;
 
 	public TestVertexAiImagenImageModel(VertexAiImagenConnectionDetails connectionDetails,
-										VertexAiImagenImageOptions defaultOptions, RetryTemplate retryTemplate) {
+			VertexAiImagenImageOptions defaultOptions, RetryTemplate retryTemplate) {
 		super(connectionDetails, defaultOptions, retryTemplate);
 	}
 
@@ -53,7 +53,8 @@ public class TestVertexAiImagenImageModel extends VertexAiImagenImageModel {
 	}
 
 	@Override
-	public PredictResponse getPredictResponse(PredictionServiceClient client, PredictRequest.Builder predictRequestBuilder) {
+	public PredictResponse getPredictResponse(PredictionServiceClient client,
+			PredictRequest.Builder predictRequestBuilder) {
 		if (this.mockPredictionServiceClient != null) {
 			return this.mockPredictionServiceClient.predict(predictRequestBuilder.build());
 		}
@@ -66,7 +67,7 @@ public class TestVertexAiImagenImageModel extends VertexAiImagenImageModel {
 
 	@Override
 	protected PredictRequest.Builder getPredictRequestBuilder(ImagePrompt imagePrompt, EndpointName endpointName,
-															  VertexAiImagenImageOptions finalOptions) {
+			VertexAiImagenImageOptions finalOptions) {
 		if (this.mockPredictRequestBuilder != null) {
 			return this.mockPredictRequestBuilder;
 		}

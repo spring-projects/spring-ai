@@ -16,17 +16,12 @@
 
 package org.springframework.ai.vertexai.imagen;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictRequest;
 import com.google.cloud.aiplatform.v1.PredictResponse;
 import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 import com.google.protobuf.Value;
 import io.micrometer.observation.ObservationRegistry;
-
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageGenerationMetadata;
@@ -46,8 +41,13 @@ import org.springframework.ai.vertexai.imagen.metadata.VertexAiImagenImageGenera
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 /**
- * VertexAiImagenImageModel is a class that implements the ImageModel interface. It
+ * <b>VertexAiImagenImageModel</b> is a class that implements the ImageModel interface. It
  * provides a client for calling the Imagen on Vertex AI image generation API.
  *
  * @author Sami Marzouki
@@ -82,18 +82,18 @@ public class VertexAiImagenImageModel implements ImageModel {
 	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public VertexAiImagenImageModel(VertexAiImagenConnectionDetails connectionDetails,
-									VertexAiImagenImageOptions defaultOptions) {
+			VertexAiImagenImageOptions defaultOptions) {
 		this(connectionDetails, defaultOptions, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public VertexAiImagenImageModel(VertexAiImagenConnectionDetails connectionDetails,
-									VertexAiImagenImageOptions defaultOptions, RetryTemplate retryTemplate) {
+			VertexAiImagenImageOptions defaultOptions, RetryTemplate retryTemplate) {
 		this(connectionDetails, defaultOptions, retryTemplate, ObservationRegistry.NOOP);
 	}
 
 	public VertexAiImagenImageModel(VertexAiImagenConnectionDetails connectionDetails,
-									VertexAiImagenImageOptions defaultOptions, RetryTemplate retryTemplate,
-									ObservationRegistry observationRegistry) {
+			VertexAiImagenImageOptions defaultOptions, RetryTemplate retryTemplate,
+			ObservationRegistry observationRegistry) {
 		Assert.notNull(defaultOptions, "options must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
@@ -130,6 +130,15 @@ public class VertexAiImagenImageModel implements ImageModel {
 		if (finalOptions.getSafetySetting() != null) {
 			parametersBuilder.safetySetting(finalOptions.getSafetySetting());
 		}
+		if (finalOptions.getLanguage() != null) {
+			parametersBuilder.language(finalOptions.getLanguage());
+		}
+		if (finalOptions.getEnhancePrompt() != null) {
+			parametersBuilder.enhancePrompt(finalOptions.getEnhancePrompt());
+		}
+		if (finalOptions.getSampleImageSize() != null) {
+			parametersBuilder.sampleImageSize(finalOptions.getSampleImageSize());
+		}
 		if (finalOptions.getOutputOptions() != null) {
 
 			ImageParametersBuilder.OutputOptions outputOptions = ImageParametersBuilder.OutputOptions.of();
@@ -156,37 +165,37 @@ public class VertexAiImagenImageModel implements ImageModel {
 			.provider(AiProvider.VERTEX_AI.value())
 			.build();
 
-		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					PredictionServiceClient client = createPredictionServiceClient();
+		return Objects.requireNonNull(
+				ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
+					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+							this.observationRegistry)
+					.observe(() -> {
 
-					EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
-
-					PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(finalPrompt, endpointName,
-							finalOptions);
-
-					PredictResponse imageResponse = this.retryTemplate
+						PredictionServiceClient client = createPredictionServiceClient();
+						EndpointName endpointName = this.connectionDetails.getEndpointName(finalOptions.getModel());
+						PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(finalPrompt,
+								endpointName, finalOptions);
+						PredictResponse imageResponse = this.retryTemplate
 							.execute(context -> getPredictResponse(client, predictRequestBuilder));
+						List<ImageGeneration> imageGenerationList = new ArrayList<>();
 
-					List<ImageGeneration> imageGenerationList = new ArrayList<>();
-					for (Value prediction : imageResponse.getPredictionsList()) {
-						Value bytesBase64Encoded = prediction.getStructValue().getFieldsOrThrow("bytesBase64Encoded");
-						Value mimeType = prediction.getStructValue().getFieldsOrThrow("mimeType");
-						ImageGenerationMetadata metadata = new VertexAiImagenImageGenerationMetadata(
-								finalPrompt.getInstructions().get(0).getText(), finalOptions.getModel(),
-								mimeType.getStringValue());
-						Image image = new Image(null, bytesBase64Encoded.getStringValue());
-						imageGenerationList.add(new ImageGeneration(image, metadata));
-					}
-					ImageResponse response = new ImageResponse(imageGenerationList);
+						for (Value prediction : imageResponse.getPredictionsList()) {
+							Value bytesBase64Encoded = prediction.getStructValue()
+								.getFieldsOrThrow("bytesBase64Encoded");
+							Value mimeType = prediction.getStructValue().getFieldsOrThrow("mimeType");
+							ImageGenerationMetadata metadata = new VertexAiImagenImageGenerationMetadata(
+									finalPrompt.getInstructions().get(0).getText(), finalOptions.getModel(),
+									mimeType.getStringValue());
+							Image image = new Image(null, bytesBase64Encoded.getStringValue());
+							imageGenerationList.add(new ImageGeneration(image, metadata));
+						}
+						ImageResponse response = new ImageResponse(imageGenerationList);
 
-					observationContext.setResponse(response);
+						observationContext.setResponse(response);
 
-					return response;
+						return response;
 
-				});
+					}));
 	}
 
 	private ImagePrompt mergedPrompt(ImagePrompt originalPrompt) {
@@ -202,7 +211,7 @@ public class VertexAiImagenImageModel implements ImageModel {
 	}
 
 	protected PredictRequest.Builder getPredictRequestBuilder(ImagePrompt imagePrompt, EndpointName endpointName,
-															  VertexAiImagenImageOptions finalOptions) {
+			VertexAiImagenImageOptions finalOptions) {
 		PredictRequest.Builder predictRequestBuilder = PredictRequest.newBuilder().setEndpoint(endpointName.toString());
 
 		ImageParametersBuilder parametersBuilder = getImageParametersBuilder(finalOptions);
@@ -222,7 +231,7 @@ public class VertexAiImagenImageModel implements ImageModel {
 		for (int i = 0; i < imagePrompt.getInstructions().size(); i++) {
 
 			ImageInstanceBuilder instanceBuilder = ImageInstanceBuilder
-					.of(imagePrompt.getInstructions().get(i).getText());
+				.of(imagePrompt.getInstructions().get(i).getText());
 			predictRequestBuilder.addInstances(VertexAiImagenUtils.valueOf(instanceBuilder.build()));
 		}
 		return predictRequestBuilder;
@@ -232,19 +241,20 @@ public class VertexAiImagenImageModel implements ImageModel {
 	protected PredictionServiceClient createPredictionServiceClient() {
 		try {
 			return PredictionServiceClient.create(this.connectionDetails.getPredictionServiceSettings());
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	// for testing
-	protected PredictResponse getPredictResponse(PredictionServiceClient client, PredictRequest.Builder predictRequestBuilder) {
+	protected PredictResponse getPredictResponse(PredictionServiceClient client,
+			PredictRequest.Builder predictRequestBuilder) {
 		return client.predict(predictRequestBuilder.build());
 	}
 
 	/**
 	 * Use the provided convention for reporting observation data.
-	 *
 	 * @param observationConvention The provided convention
 	 */
 	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
