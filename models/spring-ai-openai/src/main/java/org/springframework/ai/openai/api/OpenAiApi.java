@@ -70,6 +70,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class OpenAiApi {
 
+	public static final String HTTP_USER_AGENT_HEADER = "User-Agent";
+
+	public static final String SPRING_AI_USER_AGENT = "spring-ai";
+
 	/**
 	 * Returns a builder pre-populated with the current configuration for mutation.
 	 */
@@ -140,6 +144,7 @@ public class OpenAiApi {
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
 			h.setContentType(MediaType.APPLICATION_JSON);
+			h.set(HTTP_USER_AGENT_HEADER, SPRING_AI_USER_AGENT);
 			h.addAll(headers);
 		};
 		this.restClient = restClientBuilder.clone()
