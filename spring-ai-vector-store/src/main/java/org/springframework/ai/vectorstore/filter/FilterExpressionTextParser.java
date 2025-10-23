@@ -30,6 +30,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersBaseVisitor;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser;
