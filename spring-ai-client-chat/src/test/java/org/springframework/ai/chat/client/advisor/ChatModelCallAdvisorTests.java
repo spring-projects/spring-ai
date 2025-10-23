@@ -18,7 +18,13 @@ package org.springframework.ai.chat.client.advisor;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
+import org.springframework.ai.chat.model.ChatModel;
+
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link ChatModelCallAdvisor}.
@@ -32,6 +38,21 @@ class ChatModelCallAdvisorTests {
 		assertThatThrownBy(() -> ChatModelCallAdvisor.builder().chatModel(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
+	}
+
+	@Test
+	void whenNotLastInChainThrow() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ChatClientRequest chatClientRequest = mock(ChatClientRequest.class);
+		CallAdvisorChain callAdvisorChain = mock(CallAdvisorChain.class);
+
+		when(callAdvisorChain.hasNextCallAdvisor()).thenReturn(true);
+
+		ChatModelCallAdvisor chatModelCallAdvisor = ChatModelCallAdvisor.builder().chatModel(chatModel).build();
+
+		assertThatThrownBy(() -> chatModelCallAdvisor.adviseCall(chatClientRequest, callAdvisorChain))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("ChatModelCallAdvisor should be the last CallAdvisor in the chain");
 	}
 
 }
