@@ -16,17 +16,18 @@
 
 package org.springframework.ai.vectorstore.filter;
 
+import java.util.List;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
-
-import java.util.List;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
@@ -85,7 +86,7 @@ class FilterExpressionTextParserTests {
 				new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
 						new Expression(NE, new Key("city"), new Value("Sofia")))));
 
-		assertThat(parser.getCache())
+		assertThat(this.parser.getCache())
 			.containsEntry("WHERE " + "year >= 2020 OR country == \"BG\" AND city != \"Sofia\"", exp);
 	}
 
@@ -99,7 +100,7 @@ class FilterExpressionTextParserTests {
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
 
-		assertThat(parser.getCache())
+		assertThat(this.parser.getCache())
 			.containsEntry("WHERE " + "(year >= 2020 OR country == \"BG\") AND city NIN [\"Sofia\", \"Plovdiv\"]", exp);
 	}
 
@@ -113,7 +114,7 @@ class FilterExpressionTextParserTests {
 						new Expression(GTE, new Key("year"), new Value(2020))),
 				new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US")))));
 
-		assertThat(parser.getCache())
+		assertThat(this.parser.getCache())
 			.containsEntry("WHERE " + "isOpen == true AND year >= 2020 AND country IN [\"BG\", \"NL\", \"US\"]", exp);
 	}
 
@@ -130,7 +131,7 @@ class FilterExpressionTextParserTests {
 						new Expression(IN, new Key("country"), new Value(List.of("BG", "NL", "US"))))),
 				null));
 
-		assertThat(parser.getCache()).containsEntry(
+		assertThat(this.parser.getCache()).containsEntry(
 				"WHERE " + "not(isOpen == true AND year >= 2020 AND country IN [\"BG\", \"NL\", \"US\"])", exp);
 	}
 
@@ -167,7 +168,7 @@ class FilterExpressionTextParserTests {
 								null))),
 				null));
 
-		assertThat(parser.getCache()).containsEntry(
+		assertThat(this.parser.getCache()).containsEntry(
 				"WHERE " + "not(isOpen == true AND year >= 2020 AND NOT(country IN [\"BG\", \"NL\", \"US\"]))", exp);
 	}
 
@@ -180,7 +181,7 @@ class FilterExpressionTextParserTests {
 		assertThat(exp).isEqualTo(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-15.6)),
 				new Expression(LTE, new Key("temperature"), new Value(20.13))));
 
-		assertThat(parser.getCache()).containsEntry("WHERE " + expText, exp);
+		assertThat(this.parser.getCache()).containsEntry("WHERE " + expText, exp);
 	}
 
 	@Test
@@ -213,7 +214,7 @@ class FilterExpressionTextParserTests {
 	@MethodSource("constantConstantProvider")
 	@ParameterizedTest(name = "{index} => [{0}, expected={1}]")
 	void testConstants(String expr, Object expectedValue) {
-		Expression result = parser.parse(expr);
+		Expression result = this.parser.parse(expr);
 		assertThat(result).isEqualTo(new Expression(EQ, new Key("id"), new Value(expectedValue)));
 	}
 

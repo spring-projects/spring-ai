@@ -16,6 +16,12 @@
 
 package org.springframework.ai.vectorstore.filter;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -30,12 +36,6 @@ import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.NotExpressionContext;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Parse a textual, vector-store agnostic, filter expression language into
