@@ -698,7 +698,7 @@ public class OpenAiChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public OpenAiChatOptions getDefaultOptions() {
 		return OpenAiChatOptions.fromOptions(this.defaultOptions);
 	}
 
