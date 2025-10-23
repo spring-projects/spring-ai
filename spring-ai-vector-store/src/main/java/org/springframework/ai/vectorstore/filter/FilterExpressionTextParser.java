@@ -16,12 +16,6 @@
 
 package org.springframework.ai.vectorstore.filter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.BaseErrorListener;
@@ -30,7 +24,6 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
-
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersBaseVisitor;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser;
@@ -38,11 +31,16 @@ import org.springframework.ai.vectorstore.filter.antlr4.FiltersParser.NotExpress
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 /**
- *
  * Parse a textual, vector-store agnostic, filter expression language into
  * {@link Filter.Expression}.
- *
+ * <p>
  * The vector-store agnostic, filter expression language is defined by a formal ANTLR4
  * grammar (Filters.g4). The language looks and feels like a subset of the well known SQL
  * WHERE filter expressions. For example, you can use the parser like this:
@@ -161,7 +159,9 @@ public class FilterExpressionTextParser {
 		this.cache.clear();
 	}
 
-	/** For testing only */
+	/**
+	 * For testing only
+	 */
 	Map<String, Filter.Expression> getCache() {
 		return this.cache;
 	}
@@ -202,7 +202,13 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitIntegerConstant(FiltersParser.IntegerConstantContext ctx) {
-			return new Filter.Value(Integer.valueOf(ctx.getText()));
+			String text = ctx.getText();
+			try {
+				return new Filter.Value(Integer.parseInt(text));
+			}
+			catch (NumberFormatException ignored) {
+				return new Filter.Value(Long.parseLong(text));
+			}
 		}
 
 		@Override
