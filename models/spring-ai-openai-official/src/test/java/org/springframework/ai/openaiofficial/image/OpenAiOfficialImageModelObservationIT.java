@@ -28,7 +28,6 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaiofficial.OpenAiOfficialImageModel;
 import org.springframework.ai.openaiofficial.OpenAiOfficialImageOptions;
-import org.springframework.ai.openaiofficial.OpenAiOfficialTestConfiguration;
 import org.springframework.ai.openaiofficial.OpenAiOfficialTestConfigurationWithObservability;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
