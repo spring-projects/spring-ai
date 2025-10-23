@@ -29,7 +29,7 @@ import static com.openai.models.embeddings.EmbeddingModel.TEXT_EMBEDDING_ADA_002
  *
  * @author Julien Dubois
  */
-public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
+public class OpenAiOfficialEmbeddingOptions extends AbstractOpenAiOfficialOptions implements EmbeddingOptions {
 
 	public static final String DEFAULT_EMBEDDING_MODEL = TEXT_EMBEDDING_ADA_002.asString();
 
@@ -38,19 +38,6 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 	 * tracking or rate-limiting purposes.
 	 */
 	private String user;
-
-	/**
-	 * The model name used. When using Azure AI Foundry, this is also used as the default
-	 * deployment name.
-	 */
-	private String model;
-
-	/**
-	 * The deployment name as defined in Azure AI Foundry. On Azure AI Foundry, the
-	 * default deployment name is the same as the model name. When using OpenAI directly,
-	 * this value isn't used.
-	 */
-	private String deploymentName;
 
 	/*
 	 * The number of dimensions the resulting output embeddings should have. Only
@@ -62,29 +49,12 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 		return new Builder();
 	}
 
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	public String getUser() {
 		return this.user;
 	}
 
 	public void setUser(String user) {
 		this.user = user;
-	}
-
-	public String getDeploymentName() {
-		return this.deploymentName;
-	}
-
-	public void setDeploymentName(String deploymentName) {
-		this.deploymentName = deploymentName;
 	}
 
 	@Override
@@ -98,8 +68,8 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 
 	@Override
 	public String toString() {
-		return "OpenAiOfficialEmbeddingOptions{" + "user='" + user + '\'' + ", model='" + model + '\''
-				+ ", deploymentName='" + deploymentName + '\'' + ", dimensions=" + dimensions + '}';
+		return "OpenAiOfficialEmbeddingOptions{" + "user='" + user + '\'' + ", model='" + getModel() + '\''
+				+ ", deploymentName='" + getDeploymentName() + '\'' + ", dimensions=" + dimensions + '}';
 	}
 
 	public EmbeddingCreateParams toOpenAiCreateParams(List<String> instructions) {
@@ -163,8 +133,6 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 			if (openAiCreateParams.user().isPresent()) {
 				this.options.setUser(openAiCreateParams.user().get());
 			}
-			this.options.setModel(openAiCreateParams.model().toString());
-			this.options.setDeploymentName(openAiCreateParams.model().toString());
 			if (openAiCreateParams.dimensions().isPresent()) {
 				this.options.setDimensions(Math.toIntExact(openAiCreateParams.dimensions().get()));
 			}
@@ -192,9 +160,6 @@ public class OpenAiOfficialEmbeddingOptions implements EmbeddingOptions {
 		}
 
 		public OpenAiOfficialEmbeddingOptions build() {
-			if (this.options.deploymentName == null) {
-				this.options.deploymentName = this.options.model;
-			}
 			return this.options;
 		}
 

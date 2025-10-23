@@ -16,10 +16,6 @@
 
 package org.springframework.ai.openaiofficial;
 
-import com.openai.client.OpenAIClient;
-import com.openai.client.okhttp.OpenAIOkHttpClient;
-import io.micrometer.observation.tck.TestObservationRegistry;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -32,18 +28,13 @@ import org.springframework.context.annotation.Bean;
 public class OpenAiOfficialTestConfiguration {
 
 	@Bean
-	public OpenAIClient openAIClient() {
-		return OpenAIOkHttpClient.fromEnv();
+	public OpenAiOfficialEmbeddingModel openAiEmbeddingModel() {
+		return new OpenAiOfficialEmbeddingModel();
 	}
 
 	@Bean
-	public OpenAiOfficialEmbeddingModel openAiEmbeddingModel(OpenAIClient client) {
-		return new OpenAiOfficialEmbeddingModel(client);
-	}
-
-	@Bean
-	public OpenAiOfficialImageModel openAiImageModel(OpenAIClient client) {
-		return new OpenAiOfficialImageModel(client);
+	public OpenAiOfficialImageModel openAiImageModel() {
+		return new OpenAiOfficialImageModel();
 	}
 
 }

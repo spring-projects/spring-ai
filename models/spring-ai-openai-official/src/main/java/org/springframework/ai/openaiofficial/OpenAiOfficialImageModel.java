@@ -39,6 +39,8 @@ import org.springframework.util.Assert;
 import java.util.List;
 import java.util.Objects;
 
+import static org.springframework.ai.openaiofficial.setup.OpenAiOfficialSetup.setupSyncClient;
+
 /**
  * Image Model implementation using the OpenAI Java SDK.
  *
@@ -54,36 +56,66 @@ public class OpenAiOfficialImageModel implements ImageModel {
 
 	private final OpenAIClient openAiClient;
 
-	private final OpenAiOfficialImageOptions defaultOptions;
+	private final OpenAiOfficialImageOptions options;
 
 	private final ObservationRegistry observationRegistry;
 
 	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	public OpenAiOfficialImageModel() {
+		this(null, null, null);
+	}
+
+	public OpenAiOfficialImageModel(OpenAiOfficialImageOptions options) {
+		this(null, options, null);
+	}
+
+	public OpenAiOfficialImageModel(ObservationRegistry observationRegistry) {
+		this(null, null, observationRegistry);
+	}
+
+	public OpenAiOfficialImageModel(OpenAiOfficialImageOptions options, ObservationRegistry observationRegistry) {
+		this(null, options, observationRegistry);
+	}
+
 	public OpenAiOfficialImageModel(OpenAIClient openAIClient) {
-		this(openAIClient, OpenAiOfficialImageOptions.builder().model(DEFAULT_MODEL_NAME).build(),
-				ObservationRegistry.NOOP);
+		this(openAIClient, null, null);
+	}
+
+	public OpenAiOfficialImageModel(OpenAIClient openAIClient, OpenAiOfficialImageOptions options) {
+		this(openAIClient, options, null);
+	}
+
+	public OpenAiOfficialImageModel(OpenAIClient openAIClient, ObservationRegistry observationRegistry) {
+		this(openAIClient, null, observationRegistry);
 	}
 
 	public OpenAiOfficialImageModel(OpenAIClient openAiClient, OpenAiOfficialImageOptions options,
 			ObservationRegistry observationRegistry) {
-		Assert.notNull(openAiClient, "com.openai.client.OpenAIClient must not be null");
-		Assert.notNull(options, "OpenAiOfficialImageOptions must not be null");
-		Assert.notNull(options.getModel(), "Model name must not be null");
-		Assert.notNull(observationRegistry, "Observation registry must not be null");
-		this.openAiClient = openAiClient;
-		this.defaultOptions = options;
-		this.observationRegistry = observationRegistry;
+
+		if (options == null) {
+			this.options = OpenAiOfficialImageOptions.builder().model(DEFAULT_MODEL_NAME).build();
+		}
+		else {
+			this.options = options;
+		}
+		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
+				() -> setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(), this.options.getCredential(),
+						this.options.getAzureDeploymentName(), this.options.getAzureOpenAIServiceVersion(),
+						this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
+						this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
+						this.options.getProxy(), this.options.getCustomHeaders()));
+		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}
 
-	public OpenAiOfficialImageOptions getDefaultOptions() {
-		return this.defaultOptions;
+	public OpenAiOfficialImageOptions getOptions() {
+		return this.options;
 	}
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
 		OpenAiOfficialImageOptions options = OpenAiOfficialImageOptions.builder()
-			.from(this.defaultOptions)
+			.from(this.options)
 			.merge(imagePrompt.getOptions())
 			.build();
 

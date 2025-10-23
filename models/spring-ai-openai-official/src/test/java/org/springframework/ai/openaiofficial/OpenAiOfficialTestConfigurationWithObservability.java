@@ -16,8 +16,6 @@
 
 package org.springframework.ai.openaiofficial;
 
-import com.openai.client.OpenAIClient;
-import com.openai.client.okhttp.OpenAIOkHttpClient;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.boot.SpringBootConfiguration;
@@ -40,21 +38,15 @@ public class OpenAiOfficialTestConfigurationWithObservability {
 	}
 
 	@Bean
-	public OpenAIClient openAIClient() {
-		return OpenAIOkHttpClient.fromEnv();
-	}
-
-	@Bean
-	public OpenAiOfficialEmbeddingModel openAiEmbeddingModel(OpenAIClient client,
-			TestObservationRegistry observationRegistry) {
-		return new OpenAiOfficialEmbeddingModel(client, MetadataMode.EMBED,
+	public OpenAiOfficialEmbeddingModel openAiEmbeddingModel(TestObservationRegistry observationRegistry) {
+		return new OpenAiOfficialEmbeddingModel(MetadataMode.EMBED,
 				OpenAiOfficialEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build(), observationRegistry);
 	}
 
 	@Bean
-	public OpenAiOfficialImageModel openAiImageModel(OpenAIClient client, TestObservationRegistry observationRegistry) {
-		return new OpenAiOfficialImageModel(client,
-				OpenAiOfficialImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build(), observationRegistry);
+	public OpenAiOfficialImageModel openAiImageModel(TestObservationRegistry observationRegistry) {
+		return new OpenAiOfficialImageModel(OpenAiOfficialImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build(),
+				observationRegistry);
 	}
 
 }
