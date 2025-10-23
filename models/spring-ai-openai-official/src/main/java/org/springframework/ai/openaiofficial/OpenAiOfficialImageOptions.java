@@ -27,7 +27,7 @@ import java.util.Objects;
  *
  * @author Julien Dubois
  */
-public class OpenAiOfficialImageOptions implements ImageOptions {
+public class OpenAiOfficialImageOptions extends AbstractOpenAiOfficialOptions implements ImageOptions {
 
 	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.toString();
 
@@ -36,19 +36,6 @@ public class OpenAiOfficialImageOptions implements ImageOptions {
 	 * is supported.
 	 */
 	private Integer n;
-
-	/**
-	 * The model name used. When using Azure AI Foundry, this is also used as the default
-	 * deployment name. By default, dall-e-3.
-	 */
-	private String model = ImageModel.DALL_E_3.toString();
-
-	/**
-	 * The deployment name as defined in Azure AI Foundry. On Azure AI Foundry, the
-	 * default deployment name is the same as the model name. When using OpenAI directly,
-	 * this value isn't used.
-	 */
-	private String deploymentName;
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
@@ -104,15 +91,6 @@ public class OpenAiOfficialImageOptions implements ImageOptions {
 
 	public void setN(Integer n) {
 		this.n = n;
-	}
-
-	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
 	}
 
 	@Override
@@ -180,41 +158,27 @@ public class OpenAiOfficialImageOptions implements ImageOptions {
 		this.style = style;
 	}
 
-	public String getDeploymentName() {
-		return this.deploymentName;
-	}
-
-	public void setDeploymentName(String deploymentName) {
-		this.deploymentName = deploymentName;
-	}
-
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof OpenAiOfficialImageOptions that)) {
+		if (o == null || getClass() != o.getClass())
 			return false;
-		}
-		return Objects.equals(this.n, that.n) && Objects.equals(this.model, that.model)
-				&& Objects.equals(this.deploymentName, that.deploymentName) && Objects.equals(this.width, that.width)
-				&& Objects.equals(this.height, that.height) && Objects.equals(this.quality, that.quality)
-				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.size, that.size)
-				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user);
+		OpenAiOfficialImageOptions that = (OpenAiOfficialImageOptions) o;
+		return Objects.equals(n, that.n) && Objects.equals(width, that.width) && Objects.equals(height, that.height)
+				&& Objects.equals(quality, that.quality) && Objects.equals(responseFormat, that.responseFormat)
+				&& Objects.equals(size, that.size) && Objects.equals(style, that.style)
+				&& Objects.equals(user, that.user);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.n, this.model, this.deploymentName, this.width, this.height, this.quality,
-				this.responseFormat, this.size, this.style, this.user);
+		return Objects.hash(n, width, height, quality, responseFormat, size, style, user);
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiOfficialImageOptions{" + "n=" + n + ", model='" + model + '\'' + ", deploymentName='"
-				+ deploymentName + '\'' + ", width=" + width + ", height=" + height + ", quality='" + quality + '\''
-				+ ", responseFormat='" + responseFormat + '\'' + ", size='" + size + '\'' + ", style='" + style + '\''
-				+ ", user='" + user + '\'' + '}';
+		return "OpenAiOfficialImageOptions{" + "n=" + n + ", width=" + width + ", height=" + height + ", quality='"
+				+ quality + '\'' + ", responseFormat='" + responseFormat + '\'' + ", size='" + size + '\'' + ", style='"
+				+ style + '\'' + ", user='" + user + '\'' + '}';
 	}
 
 	public ImageGenerateParams toOpenAiImageGenerateParams(ImagePrompt imagePrompt) {
@@ -355,9 +319,6 @@ public class OpenAiOfficialImageOptions implements ImageOptions {
 		}
 
 		public OpenAiOfficialImageOptions build() {
-			if (this.options.deploymentName == null) {
-				this.options.deploymentName = this.options.model;
-			}
 			return this.options;
 		}
 
