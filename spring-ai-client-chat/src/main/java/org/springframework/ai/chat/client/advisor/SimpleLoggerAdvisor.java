@@ -88,11 +88,11 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 		return new ChatClientMessageAggregator().aggregateChatClientResponse(chatClientResponses, this::logResponse);
 	}
 
-	private void logRequest(ChatClientRequest request) {
+	protected void logRequest(ChatClientRequest request) {
 		logger.debug("request: {}", this.requestToString.apply(request));
 	}
 
-	private void logResponse(ChatClientResponse chatClientResponse) {
+	protected void logResponse(ChatClientResponse chatClientResponse) {
 		logger.debug("response: {}", this.responseToString.apply(chatClientResponse.chatResponse()));
 	}
 

@@ -5,6 +5,7 @@
 * Reference
 ** xref:api/chatclient.adoc[]
 *** xref:api/advisors.adoc[Advisors]
+**** xref:api/advisors-recursive.adoc[Recursive Advisors]
 
 ** xref:api/prompt.adoc[]
 ** xref:api/structured-output-converter.adoc[Structured Output]
