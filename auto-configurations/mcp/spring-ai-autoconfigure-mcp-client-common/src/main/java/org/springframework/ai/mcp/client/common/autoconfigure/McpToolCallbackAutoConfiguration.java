@@ -60,9 +60,17 @@ public class McpToolCallbackAutoConfiguration {
 	 * <p>
 	 * These callbacks enable integration with Spring AI's tool execution framework,
 	 * allowing MCP tools to be used as part of AI interactions.
+	 *
+	 * <p>
+	 * IMPORTANT: This method receives the same list reference that is populated by
+	 * {@link McpClientAutoConfiguration.McpSyncClientInitializer} in its
+	 * {@code afterSingletonsInstantiated()} method. This ensures that when
+	 * {@code getToolCallbacks()} is called, even if it's called before full
+	 * initialization completes, it will eventually see the populated list.
 	 * @param syncClientsToolFilter list of {@link McpToolFilter}s for the sync client to
 	 * filter the discovered tools
-	 * @param syncMcpClients provider of MCP sync clients
+	 * @param syncMcpClients the MCP sync clients list (same reference as returned by
+	 * mcpSyncClients() bean method)
 	 * @param mcpToolNamePrefixGenerator the tool name prefix generator
 	 * @return list of tool callbacks for MCP integration
 	 */
@@ -70,15 +78,14 @@ public class McpToolCallbackAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public SyncMcpToolCallbackProvider mcpToolCallbacks(ObjectProvider<McpToolFilter> syncClientsToolFilter,
-			ObjectProvider<List<McpSyncClient>> syncMcpClients,
-			ObjectProvider<McpToolNamePrefixGenerator> mcpToolNamePrefixGenerator,
+			List<McpSyncClient> syncMcpClients, ObjectProvider<McpToolNamePrefixGenerator> mcpToolNamePrefixGenerator,
 			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter) {
 
-		List<McpSyncClient> mcpClients = syncMcpClients.stream().flatMap(List::stream).toList();
-
+		// Use mcpClientsReference to share the list reference - it will be populated by
+		// SmartInitializingSingleton
 		return SyncMcpToolCallbackProvider.builder()
-			.mcpClients(mcpClients)
-			.toolFilter(syncClientsToolFilter.getIfUnique((() -> (McpSyncClient, tool) -> true)))
+			.mcpClientsReference(syncMcpClients)
+			.toolFilter(syncClientsToolFilter.getIfUnique((() -> (mcpClient, tool) -> true)))
 			.toolNamePrefixGenerator(
 					mcpToolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
 			.toolContextToMcpMetaConverter(
@@ -86,19 +93,34 @@ public class McpToolCallbackAutoConfiguration {
 			.build();
 	}
 
+	/**
+	 * Creates async tool callbacks for all configured MCP clients.
+	 *
+	 * <p>
+	 * IMPORTANT: This method receives the same list reference that is populated by
+	 * {@link McpClientAutoConfiguration.McpAsyncClientInitializer} in its
+	 * {@code afterSingletonsInstantiated()} method.
+	 * @param asyncClientsToolFilter tool filter for async clients
+	 * @param mcpClients the MCP async clients list (same reference as returned by
+	 * mcpAsyncClients() bean method)
+	 * @param toolNamePrefixGenerator the tool name prefix generator
+	 * @param toolContextToMcpMetaConverter converter for tool context to MCP metadata
+	 * @return async tool callback provider
+	 */
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public AsyncMcpToolCallbackProvider mcpAsyncToolCallbacks(ObjectProvider<McpToolFilter> asyncClientsToolFilter,
-			ObjectProvider<List<McpAsyncClient>> mcpClientsProvider,
-			ObjectProvider<McpToolNamePrefixGenerator> toolNamePrefixGenerator,
-			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter) { // TODO
-		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
+			List<McpAsyncClient> mcpClients, ObjectProvider<McpToolNamePrefixGenerator> toolNamePrefixGenerator,
+			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter) {
+
+		// Use mcpClientsReference to share the list reference - it will be populated by
+		// SmartInitializingSingleton
 		return AsyncMcpToolCallbackProvider.builder()
-			.toolFilter(asyncClientsToolFilter.getIfUnique(() -> (McpAsyncClient, tool) -> true))
+			.toolFilter(asyncClientsToolFilter.getIfUnique(() -> (mcpClient, tool) -> true))
 			.toolNamePrefixGenerator(toolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
 			.toolContextToMcpMetaConverter(
 					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
-			.mcpClients(mcpClients)
+			.mcpClientsReference(mcpClients)
 			.build();
 	}
 

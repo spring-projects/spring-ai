@@ -185,6 +185,43 @@ class ToolCallingAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void mcpToolCallbackProvidersAreFilteredOut() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(ConfigWithMcpProviders.class)
+			.run(context -> {
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
+
+				// Regular ToolCallbackProvider should be resolved
+				assertThat(toolCallbackResolver.resolve("regularTool")).isNotNull();
+				assertThat(toolCallbackResolver.resolve("regularTool").getToolDefinition().name())
+					.isEqualTo("regularTool");
+
+				// MCP tools should NOT be resolved (filtered out from static resolver)
+				// They will be resolved lazily through ChatClient
+				assertThat(toolCallbackResolver.resolve("syncMcpTool")).isNull();
+				assertThat(toolCallbackResolver.resolve("asyncMcpTool")).isNull();
+			});
+	}
+
+	@Test
+	void nonMcpToolCallbackProvidersAreIncluded() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(ConfigWithRegularProvider.class)
+			.run(context -> {
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				assertThat(toolCallbackResolver).isInstanceOf(DelegatingToolCallbackResolver.class);
+
+				// All tools from regular ToolCallbackProvider should be resolved
+				assertThat(toolCallbackResolver.resolve("tool1")).isNotNull();
+				assertThat(toolCallbackResolver.resolve("tool1").getToolDefinition().name()).isEqualTo("tool1");
+
+				assertThat(toolCallbackResolver.resolve("tool2")).isNotNull();
+				assertThat(toolCallbackResolver.resolve("tool2").getToolDefinition().name()).isEqualTo("tool2");
+			});
+	}
+
 	static class WeatherService {
 
 		@Tool(description = "Get the weather in location. Return temperature in 36°F or 36°C format.")
@@ -271,6 +308,79 @@ class ToolCallingAutoConfigurationTests {
 		}
 
 		public record Response(String temperature) {
+		}
+
+	}
+
+	@Configuration
+	static class ConfigWithMcpProviders {
+
+		@Bean
+		public ToolCallbackProvider regularProvider() {
+			return new StaticToolCallbackProvider(FunctionToolCallback.builder("regularTool", request -> "OK")
+				.description("Regular tool")
+				.inputType(Request.class)
+				.build());
+		}
+
+		@Bean
+		public ToolCallbackProvider syncMcpProvider() {
+			return new SyncMcpToolCallbackProvider();
+		}
+
+		@Bean
+		public ToolCallbackProvider asyncMcpProvider() {
+			return new AsyncMcpToolCallbackProvider();
+		}
+
+		public record Request(String input) {
+		}
+
+	}
+
+	@Configuration
+	static class ConfigWithRegularProvider {
+
+		@Bean
+		public ToolCallbackProvider multiToolProvider() {
+			return new StaticToolCallbackProvider(
+					FunctionToolCallback.builder("tool1", request -> "Result 1")
+						.description("Tool 1")
+						.inputType(Request.class)
+						.build(),
+					FunctionToolCallback.builder("tool2", request -> "Result 2")
+						.description("Tool 2")
+						.inputType(Request.class)
+						.build());
+		}
+
+		public record Request(String input) {
+		}
+
+	}
+
+	// Mock classes that simulate MCP providers - must match exact names that filter
+	// checks
+	static class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
+
+		@Override
+		public ToolCallback[] getToolCallbacks() {
+			return new ToolCallback[] { FunctionToolCallback.builder("syncMcpTool", request -> "Sync")
+				.description("Sync MCP tool")
+				.inputType(Config.Request.class)
+				.build() };
+		}
+
+	}
+
+	static class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
+
+		@Override
+		public ToolCallback[] getToolCallbacks() {
+			return new ToolCallback[] { FunctionToolCallback.builder("asyncMcpTool", request -> "Async")
+				.description("Async MCP tool")
+				.inputType(Config.Request.class)
+				.build() };
 		}
 
 	}
