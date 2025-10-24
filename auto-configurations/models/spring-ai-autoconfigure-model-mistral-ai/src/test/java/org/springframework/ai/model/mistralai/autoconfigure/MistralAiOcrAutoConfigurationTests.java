@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.mistralai.ocr.MistralOcrApi;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.http.ResponseEntity;
 
@@ -37,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </p>
  *
  * @author Alexandros Pappas
+ * @author Issam El-atif
  * @since 1.1.0
  */
 @EnabledIfEnvironmentVariable(named = MistralAiOcrAutoConfigurationTests.ENV_VAR_NAME, matches = ".*")
@@ -46,7 +48,7 @@ class MistralAiOcrAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv(ENV_VAR_NAME))
-		.withConfiguration(BaseMistralAiIT.mistralAiOCRAutoConfig());
+		.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiOcrAutoConfiguration.class));
 
 	@Test
 	void ocrExtractionWithPublicUrl() {
