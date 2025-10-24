@@ -63,7 +63,7 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	public OpenAiAudioTranscriptionModel(OpenAiAudioApi audioApi) {
 		this(audioApi,
 				OpenAiAudioTranscriptionOptions.builder()
-					.model(OpenAiAudioApi.WhisperModel.WHISPER_1.getValue())
+					.model(OpenAiAudioApi.TranscriptionModels.WHISPER_1.getValue())
 					.responseFormat(OpenAiAudioApi.TranscriptResponseFormat.JSON)
 					.temperature(0.7f)
 					.build());

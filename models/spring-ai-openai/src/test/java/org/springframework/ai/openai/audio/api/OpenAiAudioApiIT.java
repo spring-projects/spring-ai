@@ -27,10 +27,10 @@ import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
+import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionModels;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranslationRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TtsModel;
-import org.springframework.ai.openai.api.OpenAiAudioApi.WhisperModel;
 import org.springframework.util.FileCopyUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ public class OpenAiAudioApiIT {
 
 		byte[] speech = this.audioApi
 			.createSpeech(SpeechRequest.builder()
-				.model(TtsModel.TTS_1_HD.getValue())
+				.model(TtsModel.GPT_4_O_MINI_TTS.getValue())
 				.input("Hello, my name is Chris and I love Spring A.I.")
 				.voice(Voice.ONYX.getValue())
 				.build())
@@ -64,7 +64,7 @@ public class OpenAiAudioApiIT {
 
 		StructuredResponse translation = this.audioApi
 			.createTranslation(TranslationRequest.builder()
-				.model(WhisperModel.WHISPER_1.getValue())
+				.model(TranscriptionModels.WHISPER_1.getValue())
 				.file(speech)
 				.fileName("speech.mp3")
 				.build(), StructuredResponse.class)
@@ -74,7 +74,7 @@ public class OpenAiAudioApiIT {
 
 		StructuredResponse transcriptionEnglish = this.audioApi
 			.createTranscription(TranscriptionRequest.builder()
-				.model(WhisperModel.WHISPER_1.getValue())
+				.model(TranscriptionModels.WHISPER_1.getValue())
 				.file(speech)
 				.fileName("speech.mp3")
 				.build(), StructuredResponse.class)

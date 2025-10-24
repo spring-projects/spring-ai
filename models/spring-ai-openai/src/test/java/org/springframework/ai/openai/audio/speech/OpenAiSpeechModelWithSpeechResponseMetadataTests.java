@@ -75,7 +75,7 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
+			.model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
 			.build();
 
 		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
