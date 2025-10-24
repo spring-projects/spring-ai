@@ -57,15 +57,15 @@ Please refer to the [Getting Started Guide](https://docs.spring.io/spring-ai/ref
 ## Cloning the repo
 
 This repository contains [large model files](https://github.com/spring-projects/spring-ai/tree/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2).
-To clone it you have to either:
+To clone it you have to:
 
-- Ignore the large files (won't affect the spring-ai behaviour) :  `GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:spring-projects/spring-ai.git`.
-- Or install the [Git Large File Storage](https://git-lfs.com/) before cloning the repo.
+- Install the [Git Large File Storage](https://git-lfs.com/) before cloning the repo.
+- Optionally ignore the large files to reduce disk size (won't affect the spring-ai behaviour):  `GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:spring-projects/spring-ai.git`.
 
 
 ## Building
 
-Build using Java 17.
+Build using Java 17. A container runtime is required.
 
 To build with running unit tests
 
