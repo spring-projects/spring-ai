@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Jonghoon Park
  * @author Issam El-atif
+ * @author Yanming Zhou
  * @since 0.8.0
  */
 public class OpenAiPropertiesTests {
@@ -687,6 +688,21 @@ public class OpenAiPropertiesTests {
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isNotEmpty();
 			});
 
+	}
+
+	@Test
+	public void moderationOptionsTest() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai.moderation.base-url=TEST_BASE_URL",
+					"spring.ai.openai.moderation.api-key=abc123",
+					"spring.ai.openai.moderation.options.model=MODERATION_MODEL")
+			.withConfiguration(AutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
+			.run(context -> {
+				var moderationProperties = context.getBean(OpenAiModerationProperties.class);
+				assertThat(moderationProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(moderationProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(moderationProperties.getOptions().getModel()).isEqualTo("MODERATION_MODEL");
+			});
 	}
 
 }
