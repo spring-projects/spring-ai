@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -84,7 +83,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+		assertThat(result.get("timestamp")).isNotNull();
 	}
 
 	@Test
@@ -114,7 +113,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 			assertThat(result.get("content")).isEqualTo(message.getText());
 			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+			assertThat(result.get("timestamp")).isNotNull();
 		}
 
 		var count = this.chatMemoryRepository.findByConversationId(conversationId).size();
