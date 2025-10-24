@@ -16,7 +16,11 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -33,6 +37,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
 /**
@@ -46,10 +51,17 @@ import org.springframework.web.servlet.function.ServerResponse;
 		McpServerAutoConfiguration.EnabledStreamableServerCondition.class })
 public class McpServerStreamableHttpWebMvcAutoConfiguration {
 
+	/**
+	 * Creates a WebMvc streamable server transport provider.
+	 * @param objectMapperProvider the object mapper provider
+	 * @param serverProperties the server properties
+	 * @return the transport provider
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(
-			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerStreamableHttpProperties serverProperties) {
+			final ObjectProvider<ObjectMapper> objectMapperProvider,
+			final McpServerStreamableHttpProperties serverProperties) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
@@ -58,15 +70,29 @@ public class McpServerStreamableHttpWebMvcAutoConfiguration {
 			.mcpEndpoint(serverProperties.getMcpEndpoint())
 			.keepAliveInterval(serverProperties.getKeepAliveInterval())
 			.disallowDelete(serverProperties.isDisallowDelete())
+			.contextExtractor(this::extractContextFromRequest)
 			.build();
 	}
 
-	// Router function for streamable http transport used by Spring WebFlux to start an
-	// HTTP server.
+	private McpTransportContext extractContextFromRequest(final ServerRequest serverRequest) {
+		Map<String, Object> headersMap = new HashMap<>();
+		serverRequest.headers().asHttpHeaders().forEach((headerName, headerValues) -> {
+			if (!headerValues.isEmpty()) {
+				headersMap.put(headerName, headerValues.get(0));
+			}
+		});
+		return McpTransportContext.create(headersMap);
+	}
+
+	/**
+	 * Creates a router function for the streamable server transport.
+	 * @param webMvcProvider the transport provider
+	 * @return the router function
+	 */
 	@Bean
 	@ConditionalOnMissingBean(name = "webMvcStreamableServerRouterFunction")
 	public RouterFunction<ServerResponse> webMvcStreamableServerRouterFunction(
-			WebMvcStreamableServerTransportProvider webMvcProvider) {
+			final WebMvcStreamableServerTransportProvider webMvcProvider) {
 		return webMvcProvider.getRouterFunction();
 	}
 
