@@ -26,6 +26,7 @@ import io.micrometer.observation.ObservationRegistry;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -65,22 +66,46 @@ public interface ChatClient {
 		return create(chatModel, observationRegistry, null);
 	}
 
+	/**
+	 * @deprecated in favor of
+	 * {@link #create(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
+	 */
+	@Deprecated(since = "1.1.0", forRemoval = true)
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention observationConvention) {
+			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
+		return create(chatModel, observationRegistry, chatClientObservationConvention, null);
+	}
+
+	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		return builder(chatModel, observationRegistry, observationConvention).build();
+		return builder(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention)
+			.build();
 	}
 
 	static Builder builder(ChatModel chatModel) {
 		return builder(chatModel, ObservationRegistry.NOOP, null);
 	}
 
+	/**
+	 * @deprecated in favor of
+	 * {@link #builder(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
+	 */
+	@Deprecated(since = "1.1.0", forRemoval = true)
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention customObservationConvention) {
+			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
+		return builder(chatModel, observationRegistry, chatClientObservationConvention, null);
+	}
+
+	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		return new DefaultChatClientBuilder(chatModel, observationRegistry, customObservationConvention);
+		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
+				advisorObservationConvention);
 	}
 
 	ChatClientRequestSpec prompt();
