@@ -75,21 +75,22 @@ They measure the time spent performing the invocation and propagate the related 
 |`spring.ai.chat.client.user.text` (deprecated) | Chat client user text. Optional. Superseded by `gen_ai.prompt`.
 |===
 
-=== Prompt Content
+=== Prompt and Completion Data
 
-The `ChatClient` prompt content is typically big and possibly containing sensitive information.
+The `ChatClient` prompt and completion data is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports logging the prompt content to help with debugging and troubleshooting.
+Spring AI supports logging the prompt and completion data to help with debugging and troubleshooting.
 
 [cols="6,3,1", stripes=even]
 |====
 | Property | Description | Default
 
 | `spring.ai.chat.client.observations.log-prompt` |  Whether to log the chat client prompt content. | `false`
+| `spring.ai.chat.client.observations.log-completion` |  Whether to log the chat client completion content. | `false`
 |====
 
-WARNING: If you enable logging of the chat client prompt content, there's a risk of exposing sensitive or private information. Please, be careful!
+WARNING: If you enable logging of the chat client prompt and completion data, there's a risk of exposing sensitive or private information. Please, be careful!
 
 === Input Data (Deprecated)
 
