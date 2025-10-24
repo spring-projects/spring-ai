@@ -690,7 +690,7 @@ public class OpenAiPropertiesTests {
 			.withPropertyValues("spring.ai.openai.moderation.base-url=TEST_BASE_URL",
 					"spring.ai.openai.moderation.api-key=abc123",
 					"spring.ai.openai.moderation.options.model=MODERATION_MODEL")
-			.withConfiguration(AutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
 			.run(context -> {
 				var moderationProperties = context.getBean(OpenAiModerationProperties.class);
 				assertThat(moderationProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
