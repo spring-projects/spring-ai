@@ -32,6 +32,7 @@ import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
+import org.springframework.ai.tool.resolution.ProviderToolCallbackResolver;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
@@ -51,6 +52,7 @@ import org.springframework.util.ClassUtils;
  * @author Thomas Vitale
  * @author Christian Tzolov
  * @author Daniel Garnier-Moiroux
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -66,15 +68,17 @@ public class ToolCallingAutoConfiguration {
 			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
 
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
-		tcbProviders.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionAndToolCallbacks::addAll);
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
+
+		var providerToolCallbackResolver = new ProviderToolCallbackResolver(tcbProviders);
 
 		var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
 			.applicationContext(applicationContext)
 			.build();
 
-		return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+		return new DelegatingToolCallbackResolver(
+				List.of(staticToolCallbackResolver, providerToolCallbackResolver, springBeanToolCallbackResolver));
 	}
 
 	@Bean
