@@ -23,6 +23,7 @@ import org.springframework.ai.model.ChatModelDescription;
  *
  * @author Siarhei Blashuk
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public enum OllamaModel implements ChatModelDescription {
@@ -50,6 +51,16 @@ public enum OllamaModel implements ChatModelDescription {
 	 * Qwen3 4B
 	 */
 	QWEN3_4B("qwen3:4b"),
+
+	/**
+	 * Qwen3 1.7b
+	 */
+	QWEN_3_1_7_B("qwen3:1.7b"),
+
+	/**
+	 * Qwen3 0.6b
+	 */
+	QWEN_3_06B("qwen3:0.6b"),
 
 	/**
 	 * QwQ is the reasoning model of the Qwen series.
