@@ -50,11 +50,6 @@
 			<artifactId>spring-jdbc</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-		</dependency>
-
 		<!-- TESTING -->
 
 		<dependency>
@@ -83,6 +78,18 @@
 			<artifactId>mssql-jdbc</artifactId>
 			<scope>test</scope>
 			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc11</artifactId>
+			<version>23.4.0.24.05</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>

@@ -128,6 +128,7 @@ Spring AI supports multiple relational databases via a dialect abstraction. The 
 - MySQL / MariaDB
 - SQL Server
 - HSQLDB
+- Oracle Database
 
 The correct dialect can be auto-detected from the JDBC URL when using `JdbcChatMemoryRepositoryDialect.from(DataSource)`. You can extend support for other databases by implementing the `JdbcChatMemoryRepositoryDialect` interface.
 
