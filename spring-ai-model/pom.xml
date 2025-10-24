@@ -69,12 +69,17 @@
 			<artifactId>spring-messaging</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-core</artifactId>
-		</dependency>
+	<dependency>
+		<groupId>io.projectreactor</groupId>
+		<artifactId>reactor-core</artifactId>
+	</dependency>
 
-		<!-- ANTLR for Filter Expression Parsing -->
+	<dependency>
+		<groupId>org.springframework.retry</groupId>
+		<artifactId>spring-retry</artifactId>
+	</dependency>
+
+	<!-- ANTLR for Filter Expression Parsing -->
 		<dependency>
 			<groupId>org.antlr</groupId>
 			<artifactId>antlr4-runtime</artifactId>
