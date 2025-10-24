@@ -49,12 +49,8 @@ import org.springframework.core.log.LogAccessor;
  *
  * <p>
  * This configuration class sets up the necessary beans for SSE-based HTTP client
- * transport when WebFlux is not available. It provides HTTP client-based SSE transport
- * implementation for MCP client communication.
- *
- * <p>
- * The configuration is activated after the WebFlux SSE transport auto-configuration to
- * ensure proper fallback behavior when WebFlux is not available.
+ * transport. It provides HTTP client-based SSE transport implementation for MCP client
+ * communication.
  *
  * <p>
  * Key features:

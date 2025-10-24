@@ -47,12 +47,8 @@ import org.springframework.core.log.LogAccessor;
  *
  * <p>
  * This configuration class sets up the necessary beans for Streamable HTTP client
- * transport when WebFlux is not available. It provides HTTP client-based Streamable HTTP
- * transport implementation for MCP client communication.
- *
- * <p>
- * The configuration is activated after the WebFlux Streamable HTTP transport
- * auto-configuration to ensure proper fallback behavior when WebFlux is not available.
+ * transport. It provides HTTP client-based Streamable HTTP transport implementation for
+ * MCP client communication.
  *
  * <p>
  * Key features:
