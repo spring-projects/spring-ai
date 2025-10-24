@@ -32,6 +32,7 @@ import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -407,6 +408,56 @@ class AzureOpenAiChatModelIT {
 																				// tolerance
 			}
 		}
+	}
+
+	@Test
+	void testModelInStreamingResponse() {
+		String prompt = "List three colors of the rainbow.";
+
+		// @formatter:off
+		Flux<ChatResponse> responseFlux = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder()
+						.deploymentName("gpt-4o")
+						.build())
+				.user(prompt)
+				.stream()
+				.chatResponse();
+		// @formatter:on
+
+		List<ChatResponse> responses = responseFlux.collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		ChatResponse firstResponse = responses.get(0);
+		logger.info("First response model: {}", firstResponse.getMetadata().getModel());
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		logger.info("Last response model: {}", lastResponse.getMetadata().getModel());
+
+		boolean modelFound = responses.stream()
+			.map(ChatResponse::getMetadata)
+			.filter(Objects::nonNull)
+			.map(metadata -> metadata.getModel())
+			.anyMatch(Objects::nonNull);
+
+		assertThat(modelFound).as("Model field should be present in streaming responses").isTrue();
+
+		if (lastResponse.getMetadata() != null && lastResponse.getMetadata().getModel() != null) {
+			String model = lastResponse.getMetadata().getModel();
+			logger.info("Final merged response model: {}", model);
+			assertThat(model).isNotEmpty();
+			// Azure OpenAI models typically contain "gpt" in their name
+			assertThat(model).containsIgnoringCase("gpt");
+		}
+		String content = responses.stream()
+			.flatMap(r -> r.getResults().stream())
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(Objects::nonNull)
+			.collect(Collectors.joining());
+
+		assertThat(content).isNotEmpty();
+		logger.info("Generated content: {}", content);
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

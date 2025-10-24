@@ -168,6 +168,10 @@ public final class MergeUtils {
 
 		setField(instance, "usage", usage);
 
+		setField(instance, "model", right.getModel() == null ? left.getModel() : right.getModel());
+
+		setField(instance, "serviceTier", right.getServiceTier() == null ? left.getServiceTier() : right.getModel());
+
 		return instance;
 	}
 
