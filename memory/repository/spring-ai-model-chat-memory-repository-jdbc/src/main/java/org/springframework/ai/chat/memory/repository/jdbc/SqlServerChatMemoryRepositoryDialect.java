@@ -20,28 +20,14 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  * Dialect for SQL Server.
  *
  * @author Mark Pollack
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class SqlServerChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override
-	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY [timestamp]";
-	}
-
-	@Override
-	public String getInsertMessageSql() {
-		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, [timestamp]) VALUES (?, ?, ?, ?)";
-	}
-
-	@Override
-	public String getSelectConversationIdsSql() {
-		return "SELECT DISTINCT conversation_id FROM SPRING_AI_CHAT_MEMORY";
-	}
-
-	@Override
-	public String getDeleteMessagesSql() {
-		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
+	public String escape(String identifier) {
+		return "[" + identifier + "]";
 	}
 
 }
