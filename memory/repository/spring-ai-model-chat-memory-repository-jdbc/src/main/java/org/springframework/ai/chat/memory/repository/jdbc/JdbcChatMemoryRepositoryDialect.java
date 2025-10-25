@@ -61,28 +61,6 @@ public interface JdbcChatMemoryRepositoryDialect {
 	 * Detects the dialect from the DataSource.
 	 */
 	static JdbcChatMemoryRepositoryDialect from(DataSource dataSource) {
-		// Simple detection (could be improved)
-		try (Connection connection = dataSource.getConnection()) {
-			String url = connection.getMetaData().getURL().toLowerCase();
-			if (url.contains("postgresql")) {
-				return new PostgresChatMemoryRepositoryDialect();
-			}
-			if (url.contains("mysql")) {
-				return new MysqlChatMemoryRepositoryDialect();
-			}
-			if (url.contains("mariadb")) {
-				return new MysqlChatMemoryRepositoryDialect();
-			}
-			if (url.contains("sqlserver")) {
-				return new SqlServerChatMemoryRepositoryDialect();
-			}
-			if (url.contains("hsqldb")) {
-				return new HsqldbChatMemoryRepositoryDialect();
-			}
-			if (url.contains("oracle")) {
-				return new OracleChatMemoryRepositoryDialect();
-			}
-			// Add more as needed
 		String productName = null;
 		try {
 			productName = JdbcUtils.extractDatabaseMetaData(dataSource, DatabaseMetaData::getDatabaseProductName);
@@ -100,6 +78,7 @@ public interface JdbcChatMemoryRepositoryDialect {
 			case "MySQL", "MariaDB" -> new MysqlChatMemoryRepositoryDialect();
 			case "Microsoft SQL Server" -> new SqlServerChatMemoryRepositoryDialect();
 			case "HSQL Database Engine" -> new HsqldbChatMemoryRepositoryDialect();
+			case "Oracle" -> new OracleChatMemoryRepositoryDialect();
 			default -> // Add more as needed
 				new PostgresChatMemoryRepositoryDialect();
 		};
