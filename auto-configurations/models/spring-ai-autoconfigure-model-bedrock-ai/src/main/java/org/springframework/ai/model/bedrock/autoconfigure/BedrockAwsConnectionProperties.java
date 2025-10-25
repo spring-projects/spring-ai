@@ -50,12 +50,13 @@ public class BedrockAwsConnectionProperties {
 
 	/**
 	 * AWS session token. (optional) When provided the AwsSessionCredentials are used.
-	 * Otherwise the AwsBasicCredentials are used.
+	 * Otherwise, the AwsBasicCredentials are used.
 	 */
 	private String sessionToken;
 
 	/**
-	 * Aws profile. When the {@link #accessKey}  and {@link #secretKey} are not declared, use the profile configuration.
+	 * Aws profile. (optional) When the {@link #accessKey} and {@link #secretKey} are not
+	 * declared. Otherwise, the AwsBasicCredentials are used.
 	 */
 	@NestedConfigurationProperty
 	private ProfileProperties profile;
@@ -106,10 +107,11 @@ public class BedrockAwsConnectionProperties {
 	}
 
 	public ProfileProperties getProfile() {
-		return profile;
+		return this.profile;
 	}
 
 	public void setProfile(ProfileProperties profile) {
 		this.profile = profile;
 	}
+
 }
