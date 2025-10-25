@@ -24,6 +24,7 @@ import org.springframework.ai.chat.messages.Message;
  * A repository for storing and retrieving chat messages.
  *
  * @author Thomas Vitale
+ * @author Xiaotong Fan
  * @since 1.0.0
  */
 public interface ChatMemoryRepository {
@@ -39,5 +40,10 @@ public interface ChatMemoryRepository {
 	void saveAll(String conversationId, List<Message> messages);
 
 	void deleteByConversationId(String conversationId);
+
+	/**
+	 * Deletes all the conversation IDs.
+	 */
+	void deleteConversationIds();
 
 }
