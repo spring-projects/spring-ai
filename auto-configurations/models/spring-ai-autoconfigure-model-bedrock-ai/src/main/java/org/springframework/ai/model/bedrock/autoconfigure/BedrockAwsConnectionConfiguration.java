@@ -43,7 +43,7 @@ import org.springframework.util.StringUtils;
  * @author Baojun Jiang
  */
 @Configuration
-@EnableConfigurationProperties({ BedrockAwsConnectionProperties.class })
+@EnableConfigurationProperties(BedrockAwsConnectionProperties.class)
 public class BedrockAwsConnectionConfiguration {
 
 	@Bean

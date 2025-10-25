@@ -2,6 +2,27 @@
 = Observability
 
 Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations.
+
+The spring-boot-actuator module is required for enabling observability.
+Add the Spring Boot Actuator dependency to your project's Maven `pom.xml` build file:
+
+[source,xml]
+----
+<dependency>
+ <groupId>org.springframework.boot</groupId>
+ <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+}
+----
+
 Spring AI provides metrics and tracing capabilities for its core components: `ChatClient` (including `Advisor`),
 `ChatModel`, `EmbeddingModel`, `ImageModel`, and `VectorStore`.
 

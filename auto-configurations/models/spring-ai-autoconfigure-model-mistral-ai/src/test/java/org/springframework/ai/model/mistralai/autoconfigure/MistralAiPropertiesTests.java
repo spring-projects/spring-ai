@@ -140,11 +140,14 @@ public class MistralAiPropertiesTests {
 	@Test
 	public void moderationOptionsTest() {
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL", "spring.ai.mistralai.api-key=abc123",
+			.withPropertyValues("spring.ai.mistralai.moderation.base-url=TEST_BASE_URL",
+					"spring.ai.mistralai.moderation.api-key=abc123",
 					"spring.ai.mistralai.moderation.options.model=MODERATION_MODEL")
 			.withConfiguration(BaseMistralAiIT.mistralAiModerationAutoConfig())
 			.run(context -> {
 				var moderationProperties = context.getBean(MistralAiModerationProperties.class);
+				assertThat(moderationProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(moderationProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(moderationProperties.getOptions().getModel()).isEqualTo("MODERATION_MODEL");
 			});
 	}

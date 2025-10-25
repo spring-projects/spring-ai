@@ -378,7 +378,7 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestClient {
 
 		@Value("${test.spring.ai.vectorstore.oracle.distanceType}")
