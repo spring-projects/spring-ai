@@ -16,11 +16,8 @@
 
 package org.springframework.ai.model.bedrock.autoconfigure;
 
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
@@ -31,11 +28,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.StringUtils;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 /**
  * {@link Configuration} for AWS connection.
  *
  * @author Christian Tzolov
  * @author Wei Jiang
+ * @author Baojun Jiang
  */
 @Configuration
 @EnableConfigurationProperties({ BedrockAwsConnectionProperties.class })
@@ -44,19 +45,45 @@ public class BedrockAwsConnectionConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public AwsCredentialsProvider credentialsProvider(BedrockAwsConnectionProperties properties) {
-
 		if (StringUtils.hasText(properties.getAccessKey()) && StringUtils.hasText(properties.getSecretKey())) {
-
+			// Security key
 			if (StringUtils.hasText(properties.getSessionToken())) {
 				return StaticCredentialsProvider.create(AwsSessionCredentials.create(properties.getAccessKey(),
 						properties.getSecretKey(), properties.getSessionToken()));
 			}
-
 			return StaticCredentialsProvider
 				.create(AwsBasicCredentials.create(properties.getAccessKey(), properties.getSecretKey()));
+		} else if(properties.getProfile()!=null && StringUtils.hasText(properties.getProfile().getName())){
+			// Profile
+			ProfileProperties profile = properties.getProfile();
+			String configurationPath = profile.getConfigurationPath();
+			String credentialsPath = profile.getCredentialsPath();
+			boolean hasCredentials = StringUtils.hasText(credentialsPath);
+			boolean hasConfig = StringUtils.hasText(configurationPath);
+			ProfileCredentialsProvider.Builder providerBuilder = ProfileCredentialsProvider.builder();
+			if (hasCredentials || hasConfig) {
+				ProfileFile.Aggregator aggregator = ProfileFile.aggregator();
+				if (hasCredentials) {
+					ProfileFile profileFile = ProfileFile.builder()
+							.content(Paths.get(credentialsPath))
+							.type(ProfileFile.Type.CREDENTIALS)
+							.build();
+					aggregator.addFile(profileFile);
+				}
+				if (hasConfig) {
+					ProfileFile configFile = ProfileFile.builder()
+							.content(Paths.get(configurationPath))
+							.type(ProfileFile.Type.CONFIGURATION)
+							.build();
+					aggregator.addFile(configFile);
+				}
+				ProfileFile aggregatedProfileFile = aggregator.build();
+				providerBuilder.profileFile(aggregatedProfileFile);
+			}
+			return providerBuilder.profileName(profile.getName()).build();
 		}
-
-		return DefaultCredentialsProvider.create();
+		// IAM Role
+		return DefaultCredentialsProvider.builder().build();
 	}
 
 	@Bean
