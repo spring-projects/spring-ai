@@ -76,6 +76,7 @@ public interface JdbcChatMemoryRepositoryDialect {
 			case "HSQL Database Engine" -> new HsqldbChatMemoryRepositoryDialect();
 			case "SQLite" -> new SqliteChatMemoryRepositoryDialect();
 			case "H2" -> new H2ChatMemoryRepositoryDialect();
+			case "Oracle" -> new OracleChatMemoryRepositoryDialect();
 			default -> // Add more as needed
 				new PostgresChatMemoryRepositoryDialect();
 		};
