@@ -54,10 +54,6 @@ public interface JdbcChatMemoryRepositoryDialect {
 	String getDeleteMessagesSql();
 
 	/**
-	 * Optionally, dialect can provide more advanced SQL as needed.
-	 */
-
-	/**
 	 * Detects the dialect from the DataSource.
 	 */
 	static JdbcChatMemoryRepositoryDialect from(DataSource dataSource) {
