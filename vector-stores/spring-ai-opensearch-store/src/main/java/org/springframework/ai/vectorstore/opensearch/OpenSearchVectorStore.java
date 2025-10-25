@@ -170,6 +170,10 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private String similarityFunction;
 
+	private final boolean useApproximateKnn;
+
+	private final int dimensions;
+
 	/**
 	 * Creates a new OpenSearchVectorStore using the builder pattern.
 	 * @param builder The configured builder instance
@@ -187,6 +191,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		// https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/#spaces
 		this.similarityFunction = builder.similarityFunction;
 		this.initializeSchema = builder.initializeSchema;
+		this.useApproximateKnn = builder.useApproximateKnn;
+		this.dimensions = builder.dimensions;
 	}
 
 	/**
@@ -249,7 +255,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 				.build();
 
 			DeleteByQueryResponse response = this.openSearchClient.deleteByQuery(request);
-			logger.debug("Deleted " + response.deleted() + " documents matching filter expression");
+			logger.debug("Deleted {} documents matching filter expression", response.deleted());
 
 			if (!response.failures().isEmpty()) {
 				throw new IllegalStateException("Failed to delete some documents: " + response.failures());
@@ -270,17 +276,38 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	public List<Document> similaritySearch(float[] embedding, int topK, double similarityThreshold,
 			Filter.Expression filterExpression) {
-		return similaritySearch(new org.opensearch.client.opensearch.core.SearchRequest.Builder()
-			.query(getOpenSearchSimilarityQuery(embedding, filterExpression))
+		return similaritySearch(
+				this.useApproximateKnn ? buildApproximateQuery(embedding, topK, similarityThreshold, filterExpression)
+						: buildExactQuery(embedding, topK, similarityThreshold, filterExpression));
+	}
+
+	private org.opensearch.client.opensearch.core.SearchRequest buildApproximateQuery(float[] embedding, int topK,
+			double similarityThreshold, Filter.Expression filterExpression) {
+		return new org.opensearch.client.opensearch.core.SearchRequest.Builder().index(this.index)
+			.query(Query.of(builder -> builder.knn(knnQueryBuilder -> knnQueryBuilder
+				.filter(Query
+					.of(queryBuilder -> queryBuilder.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
+						.query(getOpenSearchQueryString(filterExpression)))))
+				.field("embedding")
+				.k(topK)
+				.vector(embedding))))
+			.minScore(similarityThreshold)
+			.build();
+	}
+
+	private org.opensearch.client.opensearch.core.SearchRequest buildExactQuery(float[] embedding, int topK,
+			double similarityThreshold, Filter.Expression filterExpression) {
+		return new org.opensearch.client.opensearch.core.SearchRequest.Builder()
+			.query(buildExactQuery(embedding, filterExpression))
 			.index(this.index)
 			.sort(sortOptionsBuilder -> sortOptionsBuilder
 				.score(scoreSortBuilder -> scoreSortBuilder.order(SortOrder.Desc)))
 			.size(topK)
 			.minScore(similarityThreshold)
-			.build());
+			.build();
 	}
 
-	private Query getOpenSearchSimilarityQuery(float[] embedding, Filter.Expression filterExpression) {
+	private Query buildExactQuery(float[] embedding, Filter.Expression filterExpression) {
 		return Query.of(queryBuilder -> queryBuilder.scriptScore(scriptScoreQueryBuilder -> {
 			scriptScoreQueryBuilder
 				.query(queryBuilder2 -> queryBuilder2.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
@@ -358,8 +385,41 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	@Override
 	public void afterPropertiesSet() {
+		/**
+		 * Generates a JSON string for the k-NN vector mapping configuration. The
+		 * knn_vector field allows k-NN vectors ingestion into OpenSearch and supports
+		 * various k-NN searches.
+		 * @see <a href=
+		 * "https://opensearch.org/docs/latest/search-plugins/knn/knn-index#method-definitions">OpenSearch
+		 * k-NN Method Definitions</a>
+		 */
 		if (this.initializeSchema && !exists(this.index)) {
-			createIndexMapping(this.index, String.format(this.mappingJson, this.embeddingModel.dimensions()));
+			String finalMappingJson;
+			if (this.useApproximateKnn
+					&& this.mappingJson.equals(DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION)) {
+				// Generate approximate k-NN mapping with HNSW method
+				finalMappingJson = """
+						{
+							"properties": {
+								"embedding": {
+									"type": "knn_vector",
+									"dimension": %d,
+									"method": {
+										"name": "hnsw",
+										"engine": "lucene",
+										"space_type": "%s"
+									}
+								}
+							}
+						}
+						""".formatted(this.dimensions > 0 ? this.dimensions : this.embeddingModel.dimensions(),
+						this.similarityFunction);
+			}
+			else {
+				// Use provided mapping or default exact k-NN mapping
+				finalMappingJson = String.format(this.mappingJson, this.embeddingModel.dimensions());
+			}
+			createIndexMapping(this.index, finalMappingJson);
 		}
 	}
 
@@ -416,6 +476,10 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		private FilterExpressionConverter filterExpressionConverter = new OpenSearchAiSearchFilterExpressionConverter();
 
 		private String similarityFunction = COSINE_SIMILARITY_FUNCTION;
+
+		private boolean useApproximateKnn = false;
+
+		private int dimensions = 1536;
 
 		/**
 		 * Sets the OpenSearch client.
@@ -485,6 +549,39 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		public Builder similarityFunction(String similarityFunction) {
 			Assert.hasText(similarityFunction, "similarityFunction must not be null or empty");
 			this.similarityFunction = similarityFunction;
+			return this;
+		}
+
+		/**
+		 * Sets whether to use approximate k-NN search. If true, the approximate k-NN
+		 * method is used for faster searches and maintains good performance even at large
+		 * scales. If false, the exact brute-force k-NN method is used for precise and
+		 * highly accurate searches.
+		 * @param useApproximateKnn true to use approximate k-NN, false for exact k-NN
+		 * @return The builder instance
+		 * @see <a href=
+		 * "https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/">Approximate
+		 * k-NN</a>
+		 * @see <a href=
+		 * "https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script/">Exact
+		 * k-NN with scoring script</a>
+		 */
+		public Builder useApproximateKnn(boolean useApproximateKnn) {
+			this.useApproximateKnn = useApproximateKnn;
+			return this;
+		}
+
+		/**
+		 * Sets the number of dimensions for the vector embeddings. This is used when
+		 * creating the index mapping for approximate k-NN. If not set, defaults to 1536
+		 * or uses the embedding model's dimensions.
+		 * @param dimensions The number of dimensions
+		 * @return The builder instance
+		 * @throws IllegalArgumentException if dimensions is less than or equal to 0
+		 */
+		public Builder dimensions(int dimensions) {
+			Assert.isTrue(dimensions > 0, "dimensions must be greater than 0");
+			this.dimensions = dimensions;
 			return this;
 		}
 

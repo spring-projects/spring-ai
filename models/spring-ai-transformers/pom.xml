@@ -61,7 +61,6 @@
 		<dependency>
 			<groupId>com.microsoft.onnxruntime</groupId>
 			<artifactId>onnxruntime</artifactId>
-			<version>${onnxruntime.version}</version>
 		</dependency>
 
 		<dependency>

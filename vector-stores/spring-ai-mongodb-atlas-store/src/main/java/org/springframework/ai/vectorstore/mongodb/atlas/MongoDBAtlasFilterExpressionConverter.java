@@ -64,30 +64,19 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 	}
 
 	private String getOperationSymbol(Filter.Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return "$and";
-			case OR:
-				return "$or";
-			case EQ:
-				return "$eq";
-			case NE:
-				return "$ne";
-			case LT:
-				return "$lt";
-			case LTE:
-				return "$lte";
-			case GT:
-				return "$gt";
-			case GTE:
-				return "$gte";
-			case IN:
-				return "$in";
-			case NIN:
-				return "$nin";
-			default:
-				throw new RuntimeException("Not supported expression type:" + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> "$and";
+			case OR -> "$or";
+			case EQ -> "$eq";
+			case NE -> "$ne";
+			case LT -> "$lt";
+			case LTE -> "$lte";
+			case GT -> "$gt";
+			case GTE -> "$gte";
+			case IN -> "$in";
+			case NIN -> "$nin";
+			default -> throw new RuntimeException("Not supported expression type:" + exp.type());
+		};
 	}
 
 	@Override

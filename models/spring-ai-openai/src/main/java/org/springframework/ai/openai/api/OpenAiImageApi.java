@@ -162,7 +162,7 @@ public class OpenAiImageApi {
 	/**
 	 * Builder to construct {@link OpenAiImageApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 

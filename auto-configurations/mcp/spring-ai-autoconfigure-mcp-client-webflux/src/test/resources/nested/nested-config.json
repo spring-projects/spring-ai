@@ -1,0 +1,8 @@
+{
+  "name": "nested-config",
+  "description": "Test JSON file in nested subfolder of test resources",
+  "version": "1.0.0",
+  "nestedProperties": {
+	"nestedProperty1": "nestedValue1"
+  }
+}

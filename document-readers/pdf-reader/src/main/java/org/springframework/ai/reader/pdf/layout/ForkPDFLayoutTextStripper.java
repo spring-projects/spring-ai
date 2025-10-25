@@ -18,7 +18,6 @@ package org.springframework.ai.reader.pdf.layout;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -78,12 +77,11 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	@Override
 	protected void writePage() throws IOException {
 		List<List<TextPosition>> charactersByArticle = super.getCharactersByArticle();
-		for (int i = 0; i < charactersByArticle.size(); i++) {
-			List<TextPosition> textList = charactersByArticle.get(i);
+		for (List<TextPosition> textList : charactersByArticle) {
 			try {
 				this.sortTextPositionList(textList);
 			}
-			catch (java.lang.IllegalArgumentException e) {
+			catch (IllegalArgumentException e) {
 				logger.error("Error sorting text positions", e);
 			}
 			this.iterateThroughTextList(textList.iterator());
@@ -106,7 +104,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	 */
 	private void sortTextPositionList(final List<TextPosition> textList) {
 		TextPositionComparator comparator = new TextPositionComparator();
-		Collections.sort(textList, comparator);
+		textList.sort(comparator);
 	}
 
 	private void writeLine(final List<TextPosition> textPositionList) {

@@ -364,7 +364,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 				this.idFieldName, this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
 				getFullyQualifiedTableName(), jsonPathFilter);
 
-		logger.debug("SQL query: " + sql);
+		logger.debug("SQL query: {}", sql);
 
 		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), embedding, distance,
 				request.getTopK());
@@ -487,7 +487,13 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 			metadata.put("distance", distance);
 
-			return new Document(id, content, metadata);
+			// @formatter:off
+			return Document.builder()
+					.id(id)
+					.text(content)
+					.metadata(metadata)
+					.score(1.0 - distance)
+					.build(); // @formatter:on
 		}
 
 		private Map<String, Object> toMap(String source) {

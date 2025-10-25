@@ -59,11 +59,11 @@ public abstract class MimeTypeDetector {
 	static final Map<String, MimeType> GEMINI_MIME_TYPES = new HashMap<>();
 
 	public static MimeType getMimeType(URL url) {
-		return getMimeType(url.getFile());
+		return getMimeType(url.getPath());
 	}
 
 	public static MimeType getMimeType(URI uri) {
-		return getMimeType(uri.toString());
+		return getMimeType(uri.getPath());
 	}
 
 	public static MimeType getMimeType(File file) {

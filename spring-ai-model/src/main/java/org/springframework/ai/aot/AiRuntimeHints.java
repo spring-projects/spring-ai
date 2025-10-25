@@ -17,6 +17,7 @@
 package org.springframework.ai.aot;
 
 import java.lang.reflect.Executable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -155,6 +156,42 @@ public abstract class AiRuntimeHints {
 			}
 		}
 		return jsonTypes;
+	}
+
+	/**
+	 * Discovers all inner classes of a given class.
+	 * <p>
+	 * This method recursively finds all nested classes (both declared and inherited) of
+	 * the provided class and converts them to type references.
+	 * @param clazz the class to find inner classes for
+	 * @return a set of type references for all discovered inner classes
+	 */
+	public static Set<TypeReference> findInnerClassesFor(Class<?> clazz) {
+		var indent = new HashSet<String>();
+		findNestedClasses(clazz, indent);
+		return indent.stream().map(TypeReference::of).collect(Collectors.toSet());
+	}
+
+	/**
+	 * Recursively finds all nested classes of a given class.
+	 * <p>
+	 * This method:
+	 * <ol>
+	 * <li>Collects both declared and inherited nested classes</li>
+	 * <li>Recursively processes each nested class</li>
+	 * <li>Adds the class names to the provided set</li>
+	 * </ol>
+	 * @param clazz the class to find nested classes for
+	 * @param indent the set to collect class names in
+	 */
+	private static void findNestedClasses(Class<?> clazz, Set<String> indent) {
+		var classes = new ArrayList<Class<?>>();
+		classes.addAll(Arrays.asList(clazz.getDeclaredClasses()));
+		classes.addAll(Arrays.asList(clazz.getClasses()));
+		for (var nestedClass : classes) {
+			findNestedClasses(nestedClass, indent);
+		}
+		indent.addAll(classes.stream().map(Class::getName).toList());
 	}
 
 }

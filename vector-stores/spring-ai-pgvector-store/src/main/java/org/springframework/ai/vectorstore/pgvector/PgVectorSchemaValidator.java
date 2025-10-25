@@ -131,7 +131,7 @@ public class PgVectorSchemaValidator {
 
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema" + e.getMessage());
+			logger.error("Error while validating table schema{}", e.getMessage());
 			logger
 				.error("Failed to operate with the specified table in the database. To resolve this issue, please ensure the following steps are completed:\n"
 						+ "1. Ensure the necessary PostgreSQL extensions are enabled. Run the following SQL commands:\n"

@@ -47,7 +47,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, SearchIndexClient.class, AzureVectorStore.class })
-@EnableConfigurationProperties({ AzureVectorStoreProperties.class })
+@EnableConfigurationProperties(AzureVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.AZURE,
 		matchIfMissing = true)
 public class AzureVectorStoreAutoConfiguration {
@@ -74,7 +74,7 @@ public class AzureVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

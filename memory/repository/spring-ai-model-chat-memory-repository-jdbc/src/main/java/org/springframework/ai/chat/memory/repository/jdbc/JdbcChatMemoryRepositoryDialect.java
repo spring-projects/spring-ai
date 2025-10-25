@@ -16,13 +16,21 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
+import java.sql.DatabaseMetaData;
+
 import javax.sql.DataSource;
-import java.sql.Connection;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.jdbc.support.JdbcUtils;
 
 /**
  * Abstraction for database-specific SQL for chat memory repository.
  */
 public interface JdbcChatMemoryRepositoryDialect {
+
+	Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepositoryDialect.class);
 
 	/**
 	 * Returns the SQL to fetch messages for a conversation, ordered by timestamp, with
@@ -50,7 +58,7 @@ public interface JdbcChatMemoryRepositoryDialect {
 	 */
 
 	/**
-	 * Detects the dialect from the DataSource or JDBC URL.
+	 * Detects the dialect from the DataSource.
 	 */
 	static JdbcChatMemoryRepositoryDialect from(DataSource dataSource) {
 		// Simple detection (could be improved)
@@ -75,10 +83,26 @@ public interface JdbcChatMemoryRepositoryDialect {
 				return new OracleChatMemoryRepositoryDialect();
 			}
 			// Add more as needed
+		String productName = null;
+		try {
+			productName = JdbcUtils.extractDatabaseMetaData(dataSource, DatabaseMetaData::getDatabaseProductName);
 		}
-		catch (Exception ignored) {
+		catch (Exception e) {
+			logger.warn("Due to failure in establishing JDBC connection or parsing metadata, the JDBC database vendor "
+					+ "could not be determined", e);
 		}
-		return new PostgresChatMemoryRepositoryDialect(); // default
+		if (productName == null || productName.trim().isEmpty()) {
+			logger.warn("Database product name is null or empty, defaulting to Postgres dialect.");
+			return new PostgresChatMemoryRepositoryDialect();
+		}
+		return switch (productName) {
+			case "PostgreSQL" -> new PostgresChatMemoryRepositoryDialect();
+			case "MySQL", "MariaDB" -> new MysqlChatMemoryRepositoryDialect();
+			case "Microsoft SQL Server" -> new SqlServerChatMemoryRepositoryDialect();
+			case "HSQL Database Engine" -> new HsqldbChatMemoryRepositoryDialect();
+			default -> // Add more as needed
+				new PostgresChatMemoryRepositoryDialect();
+		};
 	}
 
 }

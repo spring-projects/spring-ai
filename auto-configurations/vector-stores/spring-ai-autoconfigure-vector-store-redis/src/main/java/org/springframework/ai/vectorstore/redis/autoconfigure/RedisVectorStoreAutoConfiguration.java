@@ -56,7 +56,7 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 public class RedisVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

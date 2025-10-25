@@ -628,7 +628,7 @@ public class ChromaApi {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = ChromaApiConstants.DEFAULT_BASE_URL;
 

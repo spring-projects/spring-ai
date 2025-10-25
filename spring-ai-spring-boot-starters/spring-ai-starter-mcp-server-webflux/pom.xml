@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-autoconfigure-mcp-server</artifactId>
+            <artifactId>spring-ai-autoconfigure-mcp-server-webflux</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
@@ -55,6 +55,13 @@
             <artifactId>spring-ai-mcp</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-mcp-annotations</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
 
         <dependency>
             <groupId>io.modelcontextprotocol.sdk</groupId>

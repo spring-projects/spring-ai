@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -162,12 +163,16 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!")));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolA", "toolA", "Mission accomplished!")))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
@@ -184,12 +189,16 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!")));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolA", "toolA", "Mission accomplished!")))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
@@ -209,14 +218,18 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!"),
-						new ToolResponseMessage.ToolResponse("toolB", "toolB", "Mission accomplished!")));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolA", "toolA", "Mission accomplished!"),
+					new ToolResponse("toolB", "toolB", "Mission accomplished!")))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
@@ -233,12 +246,16 @@ class DefaultToolCallingManagerTests {
 					.toolNames("toolA")
 					.build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!")));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolA", "toolA", "Mission accomplished!")))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
@@ -257,14 +274,18 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!"),
-						new ToolResponseMessage.ToolResponse("toolB", "toolB", "Mission accomplished!")));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolA", "toolA", "Mission accomplished!"),
+					new ToolResponse("toolB", "toolB", "Mission accomplished!")))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
@@ -284,14 +305,18 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", "Mission accomplished!"),
-						new ToolResponseMessage.ToolResponse("toolB", "toolB", "Mission accomplished!")));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolA", "toolA", "Mission accomplished!"),
+					new ToolResponse("toolB", "toolB", "Mission accomplished!")))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
@@ -309,12 +334,16 @@ class DefaultToolCallingManagerTests {
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolC", "function", "toolC", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolC", "function", "toolC", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolC", "toolC", "You failed this city!")));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolC", "toolC", "You failed this city!")))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 
@@ -349,15 +378,18 @@ class DefaultToolCallingManagerTests {
 					.build());
 
 		ChatResponse chatResponse = ChatResponse.builder()
-			.generations(List.of(new Generation(new AssistantMessage("", Map.of(),
-					List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
-							new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}"))))))
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}")))
+				.build())))
 			.build();
 
-		ToolResponseMessage expectedToolResponse = new ToolResponseMessage(
-				List.of(new ToolResponseMessage.ToolResponse("toolA", "toolA", TestGenericClass.CALL_RESULT_JSON),
-						new ToolResponseMessage.ToolResponse("toolB", "toolB",
-								TestGenericClass.CALL_WITH_TOOL_CONTEXT_RESULT_JSON)));
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("toolA", "toolA", TestGenericClass.CALL_RESULT_JSON),
+					new ToolResponse("toolB", "toolB", TestGenericClass.CALL_WITH_TOOL_CONTEXT_RESULT_JSON)))
+			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
 

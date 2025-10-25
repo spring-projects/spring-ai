@@ -60,7 +60,6 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>${postgresql.version}</version>
 			<scope>test</scope>
 			<optional>true</optional>
 		</dependency>
@@ -68,7 +67,6 @@
 		<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>
-			<version>${mariadb.version}</version>
 			<scope>test</scope>
 			<optional>true</optional>
 		</dependency>
@@ -76,7 +74,6 @@
 		<dependency>
 			<groupId>com.mysql</groupId>
 			<artifactId>mysql-connector-j</artifactId>
-			<version>${mysql.version}</version>
 			<scope>test</scope>
 			<optional>true</optional>
 		</dependency>

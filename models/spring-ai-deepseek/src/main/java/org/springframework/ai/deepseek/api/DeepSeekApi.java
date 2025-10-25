@@ -905,7 +905,7 @@ public class DeepSeekApi {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_BASE_URL;
 

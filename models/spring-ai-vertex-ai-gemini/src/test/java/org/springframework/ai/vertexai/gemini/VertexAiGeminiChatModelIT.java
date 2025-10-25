@@ -46,6 +46,7 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
+import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,8 +63,8 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
 class VertexAiGeminiChatModelIT {
 
 	@Autowired
@@ -117,7 +118,7 @@ class VertexAiGeminiChatModelIT {
 	@Test
 	@Disabled
 	void testSafetySettings() {
-		List<VertexAiGeminiSafetySetting> safetySettings = List.of(new VertexAiGeminiSafetySetting.Builder()
+		List<VertexAiGeminiSafetySetting> safetySettings = List.of(VertexAiGeminiSafetySetting.builder()
 			.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
 			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
 			.build());
@@ -227,6 +228,26 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	@Test
+	void logprobs() {
+		VertexAiGeminiChatOptions chatOptions = VertexAiGeminiChatOptions.builder()
+			.logprobs(1)
+			.responseLogprobs(true)
+			.build();
+
+		var logprobs = (VertexAiGeminiApi.LogProbs) this.chatModel
+			.call(new Prompt("Explain Bulgaria? Answer in 10 paragraphs.", chatOptions))
+			.getResult()
+			.getOutput()
+			.getMetadata()
+			.get("logprobs");
+
+		assertThat(logprobs).isNotNull();
+		assertThat(logprobs.avgLogprobs()).isNotZero();
+		assertThat(logprobs.topCandidates()).isNotEmpty();
+		assertThat(logprobs.chosenCandidates()).isNotEmpty();
+	}
+
+	@Test
 	void beanStreamOutputConverterRecords() {
 
 		BeanOutputConverter<ActorsFilmsRecord> outputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
@@ -318,8 +339,8 @@ class VertexAiGeminiChatModelIT {
 	 * Helper method to create a VertexAI instance for tests
 	 */
 	private VertexAI vertexAiApi() {
-		String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
-		String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+		String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 		return new VertexAI.Builder().setProjectId(projectId)
 			.setLocation(location)
 			.setTransport(Transport.REST)
@@ -394,6 +415,47 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	/**
+	 * See https://github.com/spring-projects/spring-ai/pull/4599
+	 */
+	@Test
+	void testMixedPartsMessages() {
+		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
+			.vertexAI(vertexAiApi())
+			.defaultOptions(VertexAiGeminiChatOptions.builder().model("gemini-2.5-pro").temperature(0.0).build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+
+		// Create a prompt that will encourage gemini to explain why it is calling tools
+		// as it does.
+		AlarmTools alarmTools = new AlarmTools();
+		String response = chatClient.prompt()
+			.tools(new CurrentTimeTools(), alarmTools)
+			.system("You MUST include reasoning when you issue tool calls.")
+			.user("Set an alarm for an hour from now, and tell me what time that was for.")
+			.call()
+			.content();
+
+		assertThat(response).isEqualTo("I have set an alarm for 11:10 AM.");
+		assertThat(alarmTools.getAlarm()).isEqualTo("2025-05-08T11:10:10+02:00");
+	}
+
+	public static class AlarmTools {
+
+		private String alarm;
+
+		@Tool(description = "Set a user alarm for the given time, provided in ISO-8601 format")
+		void setAlarm(String time) {
+			this.alarm = time;
+		}
+
+		public String getAlarm() {
+			return this.alarm;
+		}
+
+	}
+
+	/**
 	 * Tool class that returns a JSON array to test the jsonToStruct method's ability to
 	 * handle JSON arrays. This specifically tests the PR changes that improve the
 	 * jsonToStruct method to handle JSON arrays in addition to JSON objects.
@@ -434,8 +496,8 @@ class VertexAiGeminiChatModelIT {
 
 		@Bean
 		public VertexAI vertexAiApi() {
-			String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
-			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 			return new VertexAI.Builder().setProjectId(projectId)
 				.setLocation(location)
 				.setTransport(Transport.REST)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Thomas Vitale
  * @since 1.0.0
  */
 public class AssistantMessage extends AbstractMessage implements MediaContent {
@@ -45,14 +46,26 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		this(content, Map.of());
 	}
 
+	/**
+	 * @deprecated in favor of {@link AssistantMessage#builder()}.
+	 */
+	@Deprecated
 	public AssistantMessage(String content, Map<String, Object> properties) {
 		this(content, properties, List.of());
 	}
 
+	/**
+	 * @deprecated in favor of {@link AssistantMessage#builder()}.
+	 */
+	@Deprecated
 	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
 		this(content, properties, toolCalls, List.of());
 	}
 
+	/**
+	 * @deprecated in favor of {@link AssistantMessage#builder()}.
+	 */
+	@Deprecated
 	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
 			List<Media> media) {
 		super(MessageType.ASSISTANT, content, properties);
@@ -100,7 +113,50 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 				+ this.textContent + ", metadata=" + this.metadata + "]";
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public record ToolCall(String id, String type, String name, String arguments) {
+
+	}
+
+	public static final class Builder {
+
+		private String content;
+
+		private Map<String, Object> properties = Map.of();
+
+		private List<ToolCall> toolCalls = List.of();
+
+		private List<Media> media = List.of();
+
+		private Builder() {
+		}
+
+		public Builder content(String content) {
+			this.content = content;
+			return this;
+		}
+
+		public Builder properties(Map<String, Object> properties) {
+			this.properties = properties;
+			return this;
+		}
+
+		public Builder toolCalls(List<ToolCall> toolCalls) {
+			this.toolCalls = toolCalls;
+			return this;
+		}
+
+		public Builder media(List<Media> media) {
+			this.media = media;
+			return this;
+		}
+
+		public AssistantMessage build() {
+			return new AssistantMessage(this.content, this.properties, this.toolCalls, this.media);
+		}
 
 	}
 

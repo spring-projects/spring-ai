@@ -72,9 +72,12 @@ public class MariaDBSchemaValidator {
 					schemaName, tableName);
 		}
 		catch (DataAccessException e) {
-			logger.error("Error while validating database vector support " + e.getMessage());
-			logger.error("Failed to validate that database supports VECTOR.\n" + "Run the following SQL commands:\n"
-					+ "   SELECT @@version; \nAnd ensure that version is >= 11.7.1");
+			logger.error("Error while validating database vector support {}", e.getMessage());
+			logger.error("""
+					Failed to validate that database supports VECTOR.
+					Run the following SQL commands:
+					   SELECT @@version;\s
+					And ensure that version is >= 11.7.1""");
 			throw new IllegalStateException(e);
 		}
 
@@ -118,7 +121,7 @@ public class MariaDBSchemaValidator {
 
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema" + e.getMessage());
+			logger.error("Error while validating table schema{}", e.getMessage());
 			logger.error("Failed to operate with the specified table in the database. To resolve this issue,"
 					+ " please ensure the following steps are completed:\n"
 					+ "1. Verify that the table exists with the appropriate structure. If it does not"
