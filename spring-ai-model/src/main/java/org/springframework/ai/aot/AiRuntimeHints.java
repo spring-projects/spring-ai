@@ -41,6 +41,7 @@ import org.springframework.core.type.filter.TypeFilter;
  * @author Josh Long
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Fu Jian
  */
 public abstract class AiRuntimeHints {
 
@@ -100,12 +101,11 @@ public abstract class AiRuntimeHints {
 	}
 
 	private static boolean hasJacksonAnnotations(Class<?> type) {
-		var hasAnnotation = false;
 		var annotationsToFind = Set.of(JsonProperty.class, JsonInclude.class);
 		for (var annotationToFind : annotationsToFind) {
 
 			if (type.isAnnotationPresent(annotationToFind)) {
-				hasAnnotation = true;
+				return true;
 			}
 
 			var executables = new HashSet<Executable>();
@@ -114,15 +114,13 @@ public abstract class AiRuntimeHints {
 			executables.addAll(Set.of(type.getDeclaredConstructors()));
 
 			for (var executable : executables) {
-				//
 				if (executable.isAnnotationPresent(annotationToFind)) {
-					hasAnnotation = true;
+					return true;
 				}
 
-				///
 				for (var p : executable.getParameters()) {
 					if (p.isAnnotationPresent(annotationToFind)) {
-						hasAnnotation = true;
+						return true;
 					}
 				}
 			}
@@ -130,19 +128,19 @@ public abstract class AiRuntimeHints {
 			if (type.getRecordComponents() != null) {
 				for (var r : type.getRecordComponents()) {
 					if (r.isAnnotationPresent(annotationToFind)) {
-						hasAnnotation = true;
+						return true;
 					}
 				}
 			}
 
 			for (var f : type.getFields()) {
 				if (f.isAnnotationPresent(annotationToFind)) {
-					hasAnnotation = true;
+					return true;
 				}
 			}
 		}
 
-		return hasAnnotation;
+		return false;
 	}
 
 	private static Set<Class<?>> discoverJacksonAnnotatedTypesFromRootType(Class<?> type) {
