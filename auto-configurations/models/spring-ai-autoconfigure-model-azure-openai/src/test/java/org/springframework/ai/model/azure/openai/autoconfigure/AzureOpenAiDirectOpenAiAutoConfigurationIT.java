@@ -34,6 +34,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -60,8 +61,8 @@ public class AzureOpenAiDirectOpenAiAutoConfigurationIT {
 			"spring.ai.azure.openai.embedding.options.deployment-name=" + EMBEDDING_MODEL_NAME
 			// @formatter:on
 	)
-		.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
-				AzureOpenAiEmbeddingAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class,
+				AzureOpenAiChatAutoConfiguration.class, AzureOpenAiEmbeddingAutoConfiguration.class));
 
 	private final Message systemMessage = new SystemPromptTemplate("""
 			You are a helpful AI assistant. Your name is {name}.

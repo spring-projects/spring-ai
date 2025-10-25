@@ -283,8 +283,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ this.embeddingDimension, e);
+			logger.warn(
+					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
+					this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

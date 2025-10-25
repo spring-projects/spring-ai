@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -30,9 +31,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
+import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -42,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author YunKui Lu
  * @since 1.0.0 M1
  */
 @JsonInclude(Include.NON_NULL)
@@ -78,9 +82,6 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	 * provide a list of functions the model may generate JSON inputs for.
 	 */
 	private @JsonProperty("tools") List<ZhiPuAiApi.FunctionTool> tools;
-
-	private @JsonProperty("tools1")  List<ZhiPuAiApi.Foo> foos;
-
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will not call a
 	 * function and instead generates a message. auto means the model can pick between generating a message or calling a
@@ -106,6 +107,16 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	 * The default value is true.
 	 */
 	private @JsonProperty("do_sample") Boolean doSample;
+
+	/**
+	 * Control the format of the model output. Set to `json_object` to ensure the message is a valid JSON object.
+	 */
+	private @JsonProperty("response_format") ChatCompletionRequest.ResponseFormat responseFormat;
+
+	/**
+	 * Control whether to enable the large model's chain of thought. Available options: (default) enabled, disabled.
+	 */
+	private @JsonProperty("thinking") ChatCompletionRequest.Thinking thinking;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat completion requests.
@@ -149,6 +160,8 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.toolContext(fromOptions.getToolContext())
+			.responseFormat(fromOptions.getResponseFormat())
+			.thinking(fromOptions.getThinking())
 			.build();
 	}
 
@@ -247,6 +260,24 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		this.doSample = doSample;
 	}
 
+	public ChatCompletionRequest.ResponseFormat getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public ZhiPuAiChatOptions setResponseFormat(ChatCompletionRequest.ResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
+		return this;
+	}
+
+	public ChatCompletionRequest.Thinking getThinking() {
+		return this.thinking;
+	}
+
+	public ZhiPuAiChatOptions setThinking(ChatCompletionRequest.Thinking thinking) {
+		this.thinking = thinking;
+		return this;
+	}
+
 	@Override
 	@JsonIgnore
 	public Double getFrequencyPenalty() {
@@ -314,138 +345,53 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public void setToolContext(Map<String, Object> toolContext) {
+		Assert.notNull(toolContext, "toolContext cannot be null");
 		this.toolContext = toolContext;
 	}
 
 	@Override
+	public final boolean equals(Object o) {
+		if (!(o instanceof ZhiPuAiChatOptions that)) {
+			return false;
+		}
+
+		return Objects.equals(this.model, that.model) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.stop, that.stop) && Objects.equals(this.temperature, that.temperature)
+				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.tools, that.tools)
+				&& Objects.equals(this.toolChoice, that.toolChoice) && Objects.equals(this.user, that.user)
+				&& Objects.equals(this.requestId, that.requestId) && Objects.equals(this.doSample, that.doSample)
+				&& Objects.equals(this.responseFormat, that.responseFormat)
+				&& Objects.equals(this.thinking, that.thinking)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolContext, that.toolContext);
+	}
+
+	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((this.model == null) ? 0 : this.model.hashCode());
-		result = prime * result + ((this.maxTokens == null) ? 0 : this.maxTokens.hashCode());
-		result = prime * result + ((this.stop == null) ? 0 : this.stop.hashCode());
-		result = prime * result + ((this.temperature == null) ? 0 : this.temperature.hashCode());
-		result = prime * result + ((this.topP == null) ? 0 : this.topP.hashCode());
-		result = prime * result + ((this.tools == null) ? 0 : this.tools.hashCode());
-		result = prime * result + ((this.toolChoice == null) ? 0 : this.toolChoice.hashCode());
-		result = prime * result + ((this.user == null) ? 0 : this.user.hashCode());
-		result = prime * result
-				+ ((this.internalToolExecutionEnabled == null) ? 0 : this.internalToolExecutionEnabled.hashCode());
-		result = prime * result + ((this.toolCallbacks == null) ? 0 : this.toolCallbacks.hashCode());
-		result = prime * result + ((this.toolNames == null) ? 0 : this.toolNames.hashCode());
-		result = prime * result + ((this.toolContext == null) ? 0 : this.toolContext.hashCode());
+		int result = Objects.hashCode(this.model);
+		result = 31 * result + Objects.hashCode(this.maxTokens);
+		result = 31 * result + Objects.hashCode(this.stop);
+		result = 31 * result + Objects.hashCode(this.temperature);
+		result = 31 * result + Objects.hashCode(this.topP);
+		result = 31 * result + Objects.hashCode(this.tools);
+		result = 31 * result + Objects.hashCode(this.toolChoice);
+		result = 31 * result + Objects.hashCode(this.user);
+		result = 31 * result + Objects.hashCode(this.requestId);
+		result = 31 * result + Objects.hashCode(this.doSample);
+		result = 31 * result + Objects.hashCode(this.responseFormat);
+		result = 31 * result + Objects.hashCode(this.thinking);
+		result = 31 * result + Objects.hashCode(this.toolCallbacks);
+		result = 31 * result + Objects.hashCode(this.toolNames);
+		result = 31 * result + Objects.hashCode(this.internalToolExecutionEnabled);
+		result = 31 * result + Objects.hashCode(this.toolContext);
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		ZhiPuAiChatOptions other = (ZhiPuAiChatOptions) obj;
-		if (this.model == null) {
-			if (other.model != null) {
-				return false;
-			}
-		}
-		else if (!this.model.equals(other.model)) {
-			return false;
-		}
-		if (this.maxTokens == null) {
-			if (other.maxTokens != null) {
-				return false;
-			}
-		}
-		else if (!this.maxTokens.equals(other.maxTokens)) {
-			return false;
-		}
-		if (this.stop == null) {
-			if (other.stop != null) {
-				return false;
-			}
-		}
-		else if (!this.stop.equals(other.stop)) {
-			return false;
-		}
-		if (this.temperature == null) {
-			if (other.temperature != null) {
-				return false;
-			}
-		}
-		else if (!this.temperature.equals(other.temperature)) {
-			return false;
-		}
-		if (this.topP == null) {
-			if (other.topP != null) {
-				return false;
-			}
-		}
-		else if (!this.topP.equals(other.topP)) {
-			return false;
-		}
-		if (this.tools == null) {
-			if (other.tools != null) {
-				return false;
-			}
-		}
-		else if (!this.tools.equals(other.tools)) {
-			return false;
-		}
-		if (this.toolChoice == null) {
-			if (other.toolChoice != null) {
-				return false;
-			}
-		}
-		else if (!this.toolChoice.equals(other.toolChoice)) {
-			return false;
-		}
-		if (this.user == null) {
-			if (other.user != null) {
-				return false;
-			}
-		}
-		else if (!this.user.equals(other.user)) {
-			return false;
-		}
-		if (this.requestId == null) {
-			if (other.requestId != null) {
-				return false;
-			}
-		}
-		else if (!this.requestId.equals(other.requestId)) {
-			return false;
-		}
-		if (this.doSample == null) {
-			if (other.doSample != null) {
-				return false;
-			}
-		}
-		else if (!this.doSample.equals(other.doSample)) {
-			return false;
-		}
-		if (this.internalToolExecutionEnabled == null) {
-			if (other.internalToolExecutionEnabled != null) {
-				return false;
-			}
-		}
-		else if (!this.internalToolExecutionEnabled.equals(other.internalToolExecutionEnabled)) {
-			return false;
-		}
-		if (this.toolContext == null) {
-			if (other.toolContext != null) {
-				return false;
-			}
-		}
-		else if (!this.toolContext.equals(other.toolContext)) {
-			return false;
-		}
-		return true;
+	public String toString() {
+		return "ZhiPuAiChatOptions: " + ModelOptionsUtils.toJsonString(this);
 	}
 
 	@Override
@@ -513,7 +459,7 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 		return builder.build();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected ZhiPuAiChatOptions options;
 
@@ -610,6 +556,16 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder responseFormat(ChatCompletionRequest.ResponseFormat responseFormat) {
+			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder thinking(ChatCompletionRequest.Thinking thinking) {
+			this.options.thinking = thinking;
 			return this;
 		}
 

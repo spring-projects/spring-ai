@@ -16,9 +16,13 @@
 
 package org.springframework.ai.azure.openai;
 
+import java.util.concurrent.TimeUnit;
+
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
+import com.azure.core.http.okhttp.OkHttpAsyncHttpClientBuilder;
+import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
@@ -91,8 +95,16 @@ class AzureOpenAiAudioTranscriptionModelIT {
 
 			// System.out.println("API Key: " + apiKey);
 			// System.out.println("Endpoint: " + endpoint);
+			int readTimeout = 120;
+			int writeTimeout = 120;
 
-			return new OpenAIClientBuilder().credential(new AzureKeyCredential(apiKey))
+			// OkHttp client with long timeouts
+			OkHttpClient okHttpClient = new OkHttpClient.Builder().readTimeout(readTimeout, TimeUnit.SECONDS)
+				.callTimeout(writeTimeout, TimeUnit.SECONDS)
+				.build();
+
+			return new OpenAIClientBuilder().httpClient(new OkHttpAsyncHttpClientBuilder(okHttpClient).build())
+				.credential(new AzureKeyCredential(apiKey))
 				.endpoint(endpoint)
 				// .serviceVersion(OpenAIServiceVersion.V2024_02_15_PREVIEW)
 				.buildClient();

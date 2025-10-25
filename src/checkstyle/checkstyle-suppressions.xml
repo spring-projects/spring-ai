@@ -22,14 +22,14 @@
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="Javadoc*" />
 	<suppress files=".*Tests\.java" checks="Javadoc*" />
 	<suppress files="generated-sources" checks="[a-zA-Z0-9]*" />
+	<suppress files="vectorstore[\\/]filter[\\/]antlr4.*" checks="[a-zA-Z0-9]*"/>
 	<suppress files="org[\\/]eclipse[\\/]jdt[\\/]internal[\\/]formatter[\\/]linewrap[\\/]WrapPreparator\.java" checks="[a-zA-Z0-9]*" />
 
 	<suppress files=".*BeanOutputConverterTest\.java$" checks="RegexpSinglelineJava"/>
-	<suppress files="FiltersParser\.java" checks="AvoidNestedBlocks"/>
-	<suppress files="FiltersParser\.java" checks="MultipleVariableDeclarations"/>
-	<suppress files="FiltersLexer\.java" checks="MultipleVariableDeclarations"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
+	<suppress  files="OpenAiApiBuilderTests.java" checks="RegexpSinglelineJava"/>
+	<suppress  files="AnthropicApiBuilderTests.java" checks="RegexpSinglelineJava"/>
 	<suppress  files="OpenAiChatModelResponseFormatIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="ClientIT.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiChatModelWithChatResponseMetadataTests.java" checks="RegexpSinglelineJava"/>
@@ -46,6 +46,7 @@
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>
 	<suppress files="CassandraVectorStore.java" checks="FinalClass"/>
 	<suppress files="CoherenceVectorStore.java" checks="FinalClass"/>
+	<suppress files="CosmosDBChatMemoryRepository.java" checks="FinalClass"/>
 	<suppress files="CosmosDBVectorStore.java" checks="FinalClass"/>
 	<suppress files="CouchbaseSearchVectorStore.java" checks="FinalClass"/>
 	<suppress files="GemFireVectorStore.java" checks="FinalClass"/>

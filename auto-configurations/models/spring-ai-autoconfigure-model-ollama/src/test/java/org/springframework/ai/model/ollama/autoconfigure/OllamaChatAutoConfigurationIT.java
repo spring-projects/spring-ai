@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.management.OllamaModelManager;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 
-	private static final String MODEL_NAME = OllamaModel.LLAMA3_2.getName();
+	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -55,7 +54,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
 				// @formatter:on
-		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class));
+		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class));
 
 	private final UserMessage userMessage = new UserMessage("What's the capital of Denmark?");
 

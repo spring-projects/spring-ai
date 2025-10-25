@@ -57,6 +57,10 @@ public class OpenAiStreamFunctionCallingHelper {
 			return current;
 		}
 
+		if (current == null) {
+			return previous;
+		}
+
 		String id = (current.id() != null ? current.id() : previous.id());
 		Long created = (current.created() != null ? current.created() : previous.created());
 		String model = (current.model() != null ? current.model() : previous.model());
@@ -77,6 +81,10 @@ public class OpenAiStreamFunctionCallingHelper {
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
 		if (previous == null) {
 			return current;
+		}
+
+		if (current == null) {
+			return previous;
 		}
 
 		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
@@ -104,13 +112,13 @@ public class OpenAiStreamFunctionCallingHelper {
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
-		if (previous.toolCalls() != null) {
+		if (previous.toolCalls() != null && !previous.toolCalls().isEmpty()) {
 			lastPreviousTooCall = previous.toolCalls().get(previous.toolCalls().size() - 1);
 			if (previous.toolCalls().size() > 1) {
 				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
 			}
 		}
-		if (current.toolCalls() != null) {
+		if (current.toolCalls() != null && !current.toolCalls().isEmpty()) {
 			if (current.toolCalls().size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}

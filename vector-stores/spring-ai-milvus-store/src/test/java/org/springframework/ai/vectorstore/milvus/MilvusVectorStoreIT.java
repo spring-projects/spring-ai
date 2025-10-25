@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.milvus;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,10 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.AppenderBase;
+import io.milvus.client.AbstractMilvusGrpcClient;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
@@ -34,6 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.milvus.MilvusContainer;
@@ -324,6 +330,22 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void initializeSchema() {
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=COSINE").run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			Logger logger = (Logger) LoggerFactory.getLogger(AbstractMilvusGrpcClient.class);
+			LogAppender logAppender = new LogAppender();
+			logger.addAppender(logAppender);
+			logAppender.start();
+
+			resetCollection(vectorStore);
+
+			assertThat(logAppender.capturedLogs).isEmpty();
+		});
+	}
+
+	@Test
 	void getNativeClientTest() {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=COSINE").run(context -> {
 			MilvusVectorStore vectorStore = context.getBean(MilvusVectorStore.class);
@@ -333,7 +355,7 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Value("${test.spring.ai.vectorstore.milvus.metricType}")
@@ -365,6 +387,21 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 			// return new OpenAiEmbeddingModel(new
 			// OpenAiApi(System.getenv("OPENAI_API_KEY")), MetadataMode.EMBED,
 			// OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
+		}
+
+	}
+
+	static class LogAppender extends AppenderBase<ILoggingEvent> {
+
+		private final List<String> capturedLogs = new ArrayList<>();
+
+		@Override
+		protected void append(ILoggingEvent eventObject) {
+			this.capturedLogs.add(eventObject.getFormattedMessage());
+		}
+
+		public List<String> getCapturedLogs() {
+			return this.capturedLogs;
 		}
 
 	}

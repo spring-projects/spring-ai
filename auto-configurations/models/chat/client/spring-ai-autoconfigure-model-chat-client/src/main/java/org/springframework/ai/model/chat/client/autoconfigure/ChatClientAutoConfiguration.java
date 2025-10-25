@@ -57,7 +57,7 @@ import org.springframework.context.annotation.Scope;
  * @since 1.0.0
  */
 @AutoConfiguration(
-		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration" })
+		afterName = "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration")
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",

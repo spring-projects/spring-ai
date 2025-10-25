@@ -19,6 +19,7 @@ package org.springframework.ai.model.anthropic.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.api.AnthropicApi.ToolChoiceTool;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
@@ -44,8 +45,7 @@ public class AnthropicPropertiesTests {
 					"spring.ai.anthropic.chat.options.model=MODEL_XYZ",
 					"spring.ai.anthropic.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(BaseAnthropicIT.anthropicAutoConfig(AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -76,11 +76,12 @@ public class AnthropicPropertiesTests {
 
 				"spring.ai.anthropic.chat.options.temperature=0.55",
 				"spring.ai.anthropic.chat.options.top-p=0.56",
-				"spring.ai.anthropic.chat.options.top-k=100"
+				"spring.ai.anthropic.chat.options.top-k=100",
+
+				"spring.ai.anthropic.chat.options.toolChoice={\"name\":\"toolChoiceFunctionName\",\"type\":\"tool\"}"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(BaseAnthropicIT.anthropicAutoConfig(AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -95,6 +96,11 @@ public class AnthropicPropertiesTests {
 				assertThat(chatProperties.getOptions().getTopK()).isEqualTo(100);
 
 				assertThat(chatProperties.getOptions().getMetadata().userId()).isEqualTo("MyUserId");
+
+				assertThat(chatProperties.getOptions().getToolChoice()).isNotNull();
+				assertThat(chatProperties.getOptions().getToolChoice().type()).isEqualTo("tool");
+				assertThat(((ToolChoiceTool) chatProperties.getOptions().getToolChoice()).name())
+					.isEqualTo("toolChoiceFunctionName");
 			});
 	}
 
@@ -103,8 +109,7 @@ public class AnthropicPropertiesTests {
 
 		// It is enabled by default
 		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(BaseAnthropicIT.anthropicAutoConfig(AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
@@ -113,8 +118,7 @@ public class AnthropicPropertiesTests {
 		// Explicitly enable the chat auto-configuration.
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY", "spring.ai.model.chat=anthropic")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(BaseAnthropicIT.anthropicAutoConfig(AnthropicChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();

@@ -71,9 +71,7 @@ public class OpenAiAudioApi {
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		Consumer<HttpHeaders> authHeaders = h -> {
-			h.addAll(headers);
-		};
+		Consumer<HttpHeaders> authHeaders = h -> h.addAll(headers);
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()
@@ -160,7 +158,7 @@ public class OpenAiAudioApi {
 
 			@Override
 			public String getFilename() {
-				return "audio.webm";
+				return requestBody.fileName();
 			}
 		});
 		multipartBody.add("model", requestBody.model());
@@ -206,7 +204,7 @@ public class OpenAiAudioApi {
 
 			@Override
 			public String getFilename() {
-				return "audio.webm";
+				return requestBody.fileName();
 			}
 		});
 		multipartBody.add("model", requestBody.model());
@@ -437,7 +435,7 @@ public class OpenAiAudioApi {
 		/**
 		 * Builder for the SpeechRequest.
 		 */
-		public static class Builder {
+		public static final class Builder {
 
 			private String model = TtsModel.TTS_1.getValue();
 
@@ -496,6 +494,7 @@ public class OpenAiAudioApi {
 	 * Transcription</a>
 	 *
 	 * @param file The audio file to transcribe. Must be a valid audio file type.
+	 * @param fileName The audio file name.
 	 * @param model ID of the model to use. Only whisper-1 is currently available.
 	 * @param language The language of the input audio. Supplying the input language in
 	 * ISO-639-1 format will improve accuracy and latency.
@@ -517,6 +516,7 @@ public class OpenAiAudioApi {
 	public record TranscriptionRequest(
 	// @formatter:off
 		@JsonProperty("file") byte[] file,
+		@JsonProperty("fileName") String fileName,
 		@JsonProperty("model") String model,
 		@JsonProperty("language") String language,
 		@JsonProperty("prompt") String prompt,
@@ -550,9 +550,11 @@ public class OpenAiAudioApi {
 
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private byte[] file;
+
+			private String fileName;
 
 			private String model = WhisperModel.WHISPER_1.getValue();
 
@@ -568,6 +570,11 @@ public class OpenAiAudioApi {
 
 			public Builder file(byte[] file) {
 				this.file = file;
+				return this;
+			}
+
+			public Builder fileName(String fileName) {
+				this.fileName = fileName;
 				return this;
 			}
 
@@ -603,11 +610,12 @@ public class OpenAiAudioApi {
 
 			public TranscriptionRequest build() {
 				Assert.notNull(this.file, "file must not be null");
+				Assert.notNull(this.fileName, "fileName must not be null");
 				Assert.hasText(this.model, "model must not be empty");
 				Assert.notNull(this.responseFormat, "response_format must not be null");
 
-				return new TranscriptionRequest(this.file, this.model, this.language, this.prompt, this.responseFormat,
-						this.temperature, this.granularityType);
+				return new TranscriptionRequest(this.file, this.fileName, this.model, this.language, this.prompt,
+						this.responseFormat, this.temperature, this.granularityType);
 			}
 
 		}
@@ -619,6 +627,7 @@ public class OpenAiAudioApi {
 	 *
 	 * @param file The audio file object (not file name) to translate, in one of these
 	 * formats: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.
+	 * @param fileName The audio file name.
 	 * @param model ID of the model to use. Only whisper-1 is currently available.
 	 * @param prompt An optional text to guide the model's style or continue a previous
 	 * audio segment. The prompt should be in English.
@@ -633,6 +642,7 @@ public class OpenAiAudioApi {
 	public record TranslationRequest(
 	// @formatter:off
 		@JsonProperty("file") byte[] file,
+		@JsonProperty("fileName") String fileName,
 		@JsonProperty("model") String model,
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("response_format") TranscriptResponseFormat responseFormat,
@@ -643,9 +653,11 @@ public class OpenAiAudioApi {
 			return new Builder();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private byte[] file;
+
+			private String fileName;
 
 			private String model = WhisperModel.WHISPER_1.getValue();
 
@@ -657,6 +669,11 @@ public class OpenAiAudioApi {
 
 			public Builder file(byte[] file) {
 				this.file = file;
+				return this;
+			}
+
+			public Builder fileName(String fileName) {
+				this.fileName = fileName;
 				return this;
 			}
 
@@ -685,7 +702,7 @@ public class OpenAiAudioApi {
 				Assert.hasText(this.model, "model must not be empty");
 				Assert.notNull(this.responseFormat, "response_format must not be null");
 
-				return new TranslationRequest(this.file, this.model, this.prompt, this.responseFormat,
+				return new TranslationRequest(this.file, this.fileName, this.model, this.prompt, this.responseFormat,
 						this.temperature);
 			}
 
@@ -773,7 +790,7 @@ public class OpenAiAudioApi {
 	/**
 	 * Builder to construct {@link OpenAiAudioApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 

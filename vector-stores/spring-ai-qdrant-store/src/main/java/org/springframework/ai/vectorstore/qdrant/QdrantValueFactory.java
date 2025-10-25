@@ -70,27 +70,21 @@ final class QdrantValueFactory {
 			return value((List<Object>) value);
 		}
 
-		switch (value.getClass().getSimpleName()) {
-			case "String":
-				return ValueFactory.value((String) value);
-			case "Integer":
-				return ValueFactory.value((Integer) value);
-			case "Long":
+		return switch (value.getClass().getSimpleName()) {
+			case "String" -> ValueFactory.value((String) value);
+			case "Integer" -> ValueFactory.value((Integer) value);
+			case "Long" ->
 				// use String representation
-				return ValueFactory.value(String.valueOf(value));
-			case "Double":
-				return ValueFactory.value((Double) value);
-			case "Float":
-				return ValueFactory.value((Float) value);
-			case "Boolean":
-				return ValueFactory.value((Boolean) value);
-			default:
-				throw new IllegalArgumentException("Unsupported Qdrant value type: " + value.getClass());
-		}
+				ValueFactory.value(String.valueOf(value));
+			case "Double" -> ValueFactory.value((Double) value);
+			case "Float" -> ValueFactory.value((Float) value);
+			case "Boolean" -> ValueFactory.value((Boolean) value);
+			default -> throw new IllegalArgumentException("Unsupported Qdrant value type: " + value.getClass());
+		};
 	}
 
 	private static Value value(List<Object> elements) {
-		List<Value> values = new ArrayList<Value>(elements.size());
+		List<Value> values = new ArrayList<>(elements.size());
 
 		for (Object element : elements) {
 			values.add(value(element));
@@ -100,7 +94,7 @@ final class QdrantValueFactory {
 	}
 
 	private static Value value(Object[] elements) {
-		List<Value> values = new ArrayList<Value>(elements.length);
+		List<Value> values = new ArrayList<>(elements.length);
 
 		for (Object element : elements) {
 			values.add(value(element));

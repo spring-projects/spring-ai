@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ public class ChatCompletionRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = new ZhiPuAiChatModel(new ZhiPuAiApi("TEST"),
+		var client = new ZhiPuAiChatModel(ZhiPuAiApi.builder().apiKey("TEST").build(),
 				ZhiPuAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
 
 		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
@@ -63,7 +63,7 @@ public class ChatCompletionRequestTests {
 
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new ZhiPuAiChatModel(new ZhiPuAiApi("TEST"),
+		var client = new ZhiPuAiChatModel(ZhiPuAiApi.builder().apiKey("TEST").build(),
 				ZhiPuAiChatOptions.builder().model("DEFAULT_MODEL").build());
 
 		var request = client.createRequest(new Prompt("Test message content",
@@ -89,7 +89,7 @@ public class ChatCompletionRequestTests {
 
 		final String TOOL_FUNCTION_NAME = "CurrentWeather";
 
-		var client = new ZhiPuAiChatModel(new ZhiPuAiApi("TEST"),
+		var client = new ZhiPuAiChatModel(ZhiPuAiApi.builder().apiKey("TEST").build(),
 				ZhiPuAiChatOptions.builder()
 					.model("DEFAULT_MODEL")
 					.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
@@ -105,6 +105,53 @@ public class ChatCompletionRequestTests {
 		assertThat(request.messages()).hasSize(1);
 		assertThat(request.stream()).isFalse();
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
+	}
+
+	@Test
+	public void promptOptionsOverrideDefaultOptions() {
+		var client = new ZhiPuAiChatModel(ZhiPuAiApi.builder().apiKey("TEST").build(),
+				ZhiPuAiChatOptions.builder().model("DEFAULT_MODEL").temperature(10.0).build());
+
+		var request = client.createRequest(new Prompt("Test", ZhiPuAiChatOptions.builder().temperature(90.0).build()),
+				false);
+
+		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
+		assertThat(request.temperature()).isEqualTo(90.0);
+	}
+
+	@Test
+	public void defaultOptionsToolsWithAssertion() {
+		final String TOOL_FUNCTION_NAME = "CurrentWeather";
+
+		var client = new ZhiPuAiChatModel(ZhiPuAiApi.builder().apiKey("TEST").build(),
+				ZhiPuAiChatOptions.builder()
+					.model("DEFAULT_MODEL")
+					.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.build()))
+					.build());
+
+		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(1);
+		assertThat(request.stream()).isFalse();
+		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
+		assertThat(request.tools()).hasSize(1);
+		assertThat(request.tools().get(0).getFunction().getName()).isEqualTo(TOOL_FUNCTION_NAME);
+	}
+
+	@Test
+	public void createRequestWithStreamingEnabled() {
+		var client = new ZhiPuAiChatModel(ZhiPuAiApi.builder().apiKey("TEST").build(),
+				ZhiPuAiChatOptions.builder().model("DEFAULT_MODEL").build());
+
+		var prompt = client.buildRequestPrompt(new Prompt("Test streaming"));
+		var request = client.createRequest(prompt, true);
+
+		assertThat(request.stream()).isTrue();
+		assertThat(request.messages()).hasSize(1);
 	}
 
 }

@@ -35,6 +35,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.cfg.CoercionAction;
+import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -72,13 +74,20 @@ public abstract class ModelOptionsUtils {
 		.build()
 		.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
 
+	static {
+		// Configure coercion for empty strings to null for Enum types
+		// This fixes the issue where empty string finish_reason values cause
+		// deserialization failures
+		OBJECT_MAPPER.coercionConfigFor(Enum.class).setCoercion(CoercionInputShape.EmptyString, CoercionAction.AsNull);
+	}
+
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
-	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<Class<?>, List<String>>();
+	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
 
 	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
-	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<HashMap<String, Object>>() {
+	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 
 	};
 
@@ -186,12 +195,12 @@ public abstract class ModelOptionsUtils {
 		targetMap.putAll(sourceMap.entrySet()
 			.stream()
 			.filter(e -> e.getValue() != null)
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 		targetMap = targetMap.entrySet()
 			.stream()
 			.filter(e -> requestFieldNames.contains(e.getKey()))
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		return ModelOptionsUtils.mapToClass(targetMap, clazz);
 	}
@@ -229,7 +238,7 @@ public abstract class ModelOptionsUtils {
 				.entrySet()
 				.stream()
 				.filter(e -> e.getValue() != null)
-				.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);

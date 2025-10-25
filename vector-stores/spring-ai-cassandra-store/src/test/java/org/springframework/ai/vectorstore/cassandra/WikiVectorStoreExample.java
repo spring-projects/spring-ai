@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Example integration-test to use against the schema and full wiki datasets in sstable
+ * Example integration-test to use against the schema and full wiki datasets in stable
  * format available from https://github.com/datastax-labs/colbert-wikipedia-data
  *
  * Use `mvn failsafe:integration-test -Dit.test=WikiVectorStoreExample`
@@ -78,7 +78,7 @@ class WikiVectorStoreExample {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Bean
@@ -106,7 +106,7 @@ class WikiVectorStoreExample {
 				.addMetadataColumns(extraColumns)
 				.primaryKeyTranslator((List<Object> primaryKeys) -> {
 					// the deliminator used to join fields together into the document's id
-					// is arbitary, here "§¶" is used
+					// is arbitrary, here "§¶" is used
 					if (primaryKeys.isEmpty()) {
 						return "test§¶0";
 					}

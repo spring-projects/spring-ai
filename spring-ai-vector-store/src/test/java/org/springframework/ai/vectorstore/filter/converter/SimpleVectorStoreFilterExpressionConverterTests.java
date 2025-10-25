@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.filter.converter;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,18 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 				Map.of("activationDate", "1970-01-01T00:00:02Z", "year", 2020, "country", "BG"));
 		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 
+	}
+
+	@Test
+	public void testDatesConcurrently() {
+		IntStream.range(0, 10).parallel().forEach(i -> {
+			String vectorExpr = this.converter.convertExpression(new Filter.Expression(EQ,
+					new Filter.Key("activationDate"), new Filter.Value(new Date(1704637752148L))));
+			String vectorExpr2 = this.converter.convertExpression(new Filter.Expression(EQ,
+					new Filter.Key("activationDate"), new Filter.Value(new Date(1704637753150L))));
+			assertThat(vectorExpr).isEqualTo("#metadata['activationDate'] == '2024-01-07T14:29:12Z'");
+			assertThat(vectorExpr2).isEqualTo("#metadata['activationDate'] == '2024-01-07T14:29:13Z'");
+		});
 	}
 
 	@Test

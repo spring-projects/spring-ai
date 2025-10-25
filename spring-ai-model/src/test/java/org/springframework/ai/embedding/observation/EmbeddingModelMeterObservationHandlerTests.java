@@ -93,7 +93,7 @@ class EmbeddingModelMeterObservationHandlerTests {
 
 	private EmbeddingModelObservationContext generateObservationContext() {
 		return EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().withModel("mistral").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 	}

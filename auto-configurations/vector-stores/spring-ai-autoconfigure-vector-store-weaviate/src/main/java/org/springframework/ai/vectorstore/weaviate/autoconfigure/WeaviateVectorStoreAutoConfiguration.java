@@ -48,14 +48,14 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, WeaviateVectorStore.class })
-@EnableConfigurationProperties({ WeaviateVectorStoreProperties.class })
+@EnableConfigurationProperties(WeaviateVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.WEAVIATE,
 		matchIfMissing = true)
 public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(WeaviateConnectionDetails.class)
-	public PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
+	PropertiesWeaviateConnectionDetails weaviateConnectionDetails(WeaviateVectorStoreProperties properties) {
 		return new PropertiesWeaviateConnectionDetails(properties);
 	}
 
@@ -74,7 +74,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -105,6 +105,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 		PropertyMapper mapper = PropertyMapper.get();
 		mapper.from(properties::getContentFieldName).whenHasText().to(weaviateVectorStoreOptions::setContentFieldName);
 		mapper.from(properties::getObjectClass).whenHasText().to(weaviateVectorStoreOptions::setObjectClass);
+		mapper.from(properties::getMetaFieldPrefix).whenHasText().to(weaviateVectorStoreOptions::setMetaFieldPrefix);
 
 		return weaviateVectorStoreOptions;
 	}

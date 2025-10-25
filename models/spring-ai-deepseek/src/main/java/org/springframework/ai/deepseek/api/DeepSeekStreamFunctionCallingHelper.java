@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,14 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Cha
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Role;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * Helper class to support Streaming function calling. It can merge the streamed
  * ChatCompletionChunk in case of function calling message.
  *
  * @author Geng Rong
+ * @author Sun Yuhan
  */
 public class DeepSeekStreamFunctionCallingHelper {
 
@@ -75,8 +77,9 @@ public class DeepSeekStreamFunctionCallingHelper {
 	}
 
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
-		String content = (current.content() != null ? current.content()
-				: "" + ((previous.content() != null) ? previous.content() : ""));
+		String content = (current.content() != null
+				? (previous.content() != null ? previous.content() + current.content() : current.content())
+				: (previous.content() != null ? previous.content() : ""));
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (current.name() != null ? current.name() : previous.name());
@@ -84,18 +87,18 @@ public class DeepSeekStreamFunctionCallingHelper {
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
-		if (previous.toolCalls() != null) {
+		if (!CollectionUtils.isEmpty(previous.toolCalls())) {
 			lastPreviousTooCall = previous.toolCalls().get(previous.toolCalls().size() - 1);
 			if (previous.toolCalls().size() > 1) {
 				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
 			}
 		}
-		if (current.toolCalls() != null) {
+		if (!CollectionUtils.isEmpty(current.toolCalls())) {
 			if (current.toolCalls().size() > 1) {
 				throw new IllegalStateException("Currently only one tool call is supported per message!");
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
-			if (currentToolCall.id() != null) {
+			if (StringUtils.hasText(currentToolCall.id())) {
 				if (lastPreviousTooCall != null) {
 					toolCalls.add(lastPreviousTooCall);
 				}
@@ -117,7 +120,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String id = (current.id() != null ? current.id() : previous.id());
+		String id = (StringUtils.hasText(current.id()) ? current.id() : previous.id());
 		String type = (current.type() != null ? current.type() : previous.type());
 		ChatCompletionFunction function = merge(previous.function(), current.function());
 		return new ToolCall(id, type, function);
@@ -127,7 +130,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 		if (previous == null) {
 			return current;
 		}
-		String name = (current.name() != null ? current.name() : previous.name());
+		String name = (StringUtils.hasText(current.name()) ? current.name() : previous.name());
 		StringBuilder arguments = new StringBuilder();
 		if (previous.arguments() != null) {
 			arguments.append(previous.arguments());

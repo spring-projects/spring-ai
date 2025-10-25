@@ -118,6 +118,14 @@ public interface FiltersVisitor<T> extends ParseTreeVisitor<T> {
 	T visitIdentifier(FiltersParser.IdentifierContext ctx);
 
 	/**
+	 * Visit a parse tree produced by the {@code LongConstant} labeled alternative in
+	 * {@link FiltersParser#constant}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLongConstant(FiltersParser.LongConstantContext ctx);
+
+	/**
 	 * Visit a parse tree produced by the {@code IntegerConstant} labeled alternative in
 	 * {@link FiltersParser#constant}.
 	 * @param ctx the parse tree

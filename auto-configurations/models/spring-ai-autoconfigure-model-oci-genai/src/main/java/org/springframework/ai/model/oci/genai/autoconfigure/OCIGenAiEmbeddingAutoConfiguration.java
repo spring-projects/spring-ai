@@ -22,7 +22,6 @@ import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.oci.OCIEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,13 +34,13 @@ import org.springframework.context.annotation.Bean;
  *
  * @author Anders Swanson
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  */
-@AutoConfiguration
+@AutoConfiguration(after = OCIGenAiInferenceClientAutoConfiguration.class)
 @ConditionalOnClass(OCIEmbeddingModel.class)
 @EnableConfigurationProperties(OCIEmbeddingModelProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OCI_GENAI,
 		matchIfMissing = true)
-@ImportAutoConfiguration(OCIGenAiInferenceClientAutoConfiguration.class)
 public class OCIGenAiEmbeddingAutoConfiguration {
 
 	@Bean

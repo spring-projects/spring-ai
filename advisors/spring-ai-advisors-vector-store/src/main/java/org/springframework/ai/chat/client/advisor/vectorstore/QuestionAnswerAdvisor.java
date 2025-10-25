@@ -48,6 +48,7 @@ import org.springframework.util.StringUtils;
  * @author Timo Salm
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements BaseAdvisor {
@@ -82,6 +83,12 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 	private final int order;
 
+	/**
+	 * Construct instance by given VectorStore
+	 * @param vectorStore the given VectorStore
+	 * @deprecated in favor of {@link #builder(VectorStore)}}
+	 */
+	@Deprecated
 	public QuestionAnswerAdvisor(VectorStore vectorStore) {
 		this(vectorStore, SearchRequest.builder().build(), DEFAULT_PROMPT_TEMPLATE, BaseAdvisor.DEFAULT_SCHEDULER,
 				DEFAULT_ORDER);
@@ -122,8 +129,9 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 		context.put(RETRIEVED_DOCUMENTS, documents);
 
-		String documentContext = documents == null ? ""
-				: documents.stream().map(Document::getText).collect(Collectors.joining(System.lineSeparator()));
+		String documentContext = documents.stream()
+			.map(Document::getText)
+			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 3. Augment the user prompt with the document context.
 		UserMessage userMessage = chatClientRequest.prompt().getUserMessage();

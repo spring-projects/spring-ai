@@ -52,7 +52,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class PgVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy pgVectorStoreBatchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

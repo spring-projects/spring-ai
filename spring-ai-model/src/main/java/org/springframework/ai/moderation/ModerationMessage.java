@@ -52,10 +52,9 @@ public class ModerationMessage {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ModerationMessage)) {
+		if (!(o instanceof ModerationMessage that)) {
 			return false;
 		}
-		ModerationMessage that = (ModerationMessage) o;
 		return Objects.equals(this.text, that.text);
 	}
 

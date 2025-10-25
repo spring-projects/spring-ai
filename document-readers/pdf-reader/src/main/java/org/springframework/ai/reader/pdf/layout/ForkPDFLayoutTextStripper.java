@@ -18,7 +18,6 @@ package org.springframework.ai.reader.pdf.layout;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,6 +26,8 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.apache.pdfbox.text.TextPositionComparator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class extends PDFTextStripper to provide custom text extraction and formatting
@@ -37,6 +38,8 @@ import org.apache.pdfbox.text.TextPositionComparator;
  *
  */
 public class ForkPDFLayoutTextStripper extends PDFTextStripper {
+
+	private final static Logger logger = LoggerFactory.getLogger(ForkPDFLayoutTextStripper.class);
 
 	public static final boolean DEBUG = false;
 
@@ -54,7 +57,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	public ForkPDFLayoutTextStripper() throws IOException {
 		super();
 		this.previousTextPosition = null;
-		this.textLineList = new ArrayList<TextLine>();
+		this.textLineList = new ArrayList<>();
 	}
 
 	/**
@@ -67,20 +70,19 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 			this.setCurrentPageWidth(pageRectangle.getWidth() * 1.4);
 			super.processPage(page);
 			this.previousTextPosition = null;
-			this.textLineList = new ArrayList<TextLine>();
+			this.textLineList = new ArrayList<>();
 		}
 	}
 
 	@Override
 	protected void writePage() throws IOException {
 		List<List<TextPosition>> charactersByArticle = super.getCharactersByArticle();
-		for (int i = 0; i < charactersByArticle.size(); i++) {
-			List<TextPosition> textList = charactersByArticle.get(i);
+		for (List<TextPosition> textList : charactersByArticle) {
 			try {
 				this.sortTextPositionList(textList);
 			}
-			catch (java.lang.IllegalArgumentException e) {
-				System.err.println(e);
+			catch (IllegalArgumentException e) {
+				logger.error("Error sorting text positions", e);
 			}
 			this.iterateThroughTextList(textList.iterator());
 		}
@@ -102,7 +104,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	 */
 	private void sortTextPositionList(final List<TextPosition> textList) {
 		TextPositionComparator comparator = new TextPositionComparator();
-		Collections.sort(textList, comparator);
+		textList.sort(comparator);
 	}
 
 	private void writeLine(final List<TextPosition> textPositionList) {
@@ -124,7 +126,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	}
 
 	private void iterateThroughTextList(Iterator<TextPosition> textIterator) {
-		List<TextPosition> textPositionList = new ArrayList<TextPosition>();
+		List<TextPosition> textPositionList = new ArrayList<>();
 
 		while (textIterator.hasNext()) {
 			TextPosition textPosition = (TextPosition) textIterator.next();

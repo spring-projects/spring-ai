@@ -224,7 +224,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	/**
 	 * Default implementation of {@link ToolCallingChatOptions.Builder}.
 	 */
-	public static class Builder implements ToolCallingChatOptions.Builder {
+	public static final class Builder implements ToolCallingChatOptions.Builder {
 
 		private final DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
 

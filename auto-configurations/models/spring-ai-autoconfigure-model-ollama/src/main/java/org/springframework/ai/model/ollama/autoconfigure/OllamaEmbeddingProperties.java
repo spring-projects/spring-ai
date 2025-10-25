@@ -16,8 +16,8 @@
 
 package org.springframework.ai.model.ollama.autoconfigure;
 
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -38,7 +38,9 @@ public class OllamaEmbeddingProperties {
 	 * generative's defaults.
 	 */
 	@NestedConfigurationProperty
-	private OllamaOptions options = OllamaOptions.builder().model(OllamaModel.MXBAI_EMBED_LARGE.id()).build();
+	private final OllamaEmbeddingOptions options = OllamaEmbeddingOptions.builder()
+		.model(OllamaModel.MXBAI_EMBED_LARGE.id())
+		.build();
 
 	public String getModel() {
 		return this.options.getModel();
@@ -48,7 +50,7 @@ public class OllamaEmbeddingProperties {
 		this.options.setModel(model);
 	}
 
-	public OllamaOptions getOptions() {
+	public OllamaEmbeddingOptions getOptions() {
 		return this.options;
 	}
 
