@@ -19,7 +19,6 @@ package org.springframework.ai.chat.client.advisor.api;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -40,8 +39,6 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public interface BaseAdvisor extends CallAdvisor, StreamAdvisor {
-
-	Scheduler DEFAULT_SCHEDULER = Schedulers.boundedElastic();
 
 	@Override
 	default ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
@@ -92,7 +89,7 @@ public interface BaseAdvisor extends CallAdvisor, StreamAdvisor {
 	 * Scheduler used for processing the advisor logic when streaming.
 	 */
 	default Scheduler getScheduler() {
-		return DEFAULT_SCHEDULER;
+		return SchedulerHolder.DEFAULT_SCHEDULER;
 	}
 
 }
