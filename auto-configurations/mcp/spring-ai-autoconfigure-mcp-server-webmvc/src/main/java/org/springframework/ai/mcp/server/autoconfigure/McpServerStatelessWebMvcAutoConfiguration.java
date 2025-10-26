@@ -21,6 +21,7 @@ import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperFactory;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
@@ -50,7 +51,7 @@ public class McpServerStatelessWebMvcAutoConfiguration {
 	public WebMvcStatelessServerTransport webMvcStatelessServerTransport(
 			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerStreamableHttpProperties serverProperties) {
 
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		ObjectMapper objectMapper = McpServerObjectMapperFactory.getOrCreateObjectMapper(objectMapperProvider);
 
 		return WebMvcStatelessServerTransport.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
