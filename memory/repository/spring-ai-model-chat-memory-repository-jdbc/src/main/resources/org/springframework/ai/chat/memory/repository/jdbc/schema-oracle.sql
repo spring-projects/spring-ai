@@ -1,9 +1,21 @@
+DROP TABLE SPRING_AI_CHAT_MEMORY;
+
 CREATE TABLE SPRING_AI_CHAT_MEMORY (
-    conversation_id VARCHAR2(36) NOT NULL,
-    content CLOB NOT NULL,
-    type VARCHAR2(10) NOT NULL CHECK (type IN ('USER', 'ASSISTANT', 'SYSTEM', 'TOOL')),
-    "timestamp" TIMESTAMP NOT NULL
+    CONVERSATION_ID VARCHAR2(36 CHAR) NOT NULL,
+    CONTENT CLOB NOT NULL,
+    "TYPE" VARCHAR2(10 CHAR) NOT NULL CHECK (
+        "TYPE" IN (
+            'USER',
+            'ASSISTANT',
+            'SYSTEM',
+            'TOOL'
+        )
+    ),
+    "TIMESTAMP" TIMESTAMP NOT NULL
 );
 
-CREATE INDEX idx_conversation_id ON SPRING_AI_CHAT_MEMORY(conversation_id);
-CREATE INDEX idx_conversation_id_timestamp ON SPRING_AI_CHAT_MEMORY(conversation_id, "timestamp");
+CREATE INDEX SPRING_AI_CHAT_MEMORY_CONVERSATION_ID_TIMESTAMP_IDX
+    ON SPRING_AI_CHAT_MEMORY(
+        CONVERSATION_ID,
+        'TIMESTAMP'
+    );

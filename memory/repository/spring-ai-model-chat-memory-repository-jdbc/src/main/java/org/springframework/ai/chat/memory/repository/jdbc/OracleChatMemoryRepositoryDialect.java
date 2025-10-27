@@ -27,12 +27,12 @@ public class OracleChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY \"timestamp\"";
+		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE CONVERSATION_ID = ? ORDER BY \"TIMESTAMP\"";
 	}
 
 	@Override
 	public String getInsertMessageSql() {
-		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, \"timestamp\") VALUES (?, ?, ?, ?)";
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (CONVERSATION_ID, CONTENT, TYPE, \"TIMESTAMP\") VALUES (?, ?, ?, ?)";
 	}
 
 	@Override
@@ -42,7 +42,7 @@ public class OracleChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 
 	@Override
 	public String getDeleteMessagesSql() {
-		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
+		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE CONVERSATION_ID = ?";
 	}
 
 	/**
