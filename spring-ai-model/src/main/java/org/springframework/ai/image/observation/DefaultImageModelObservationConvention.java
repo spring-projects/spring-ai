@@ -85,7 +85,7 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 	// Request
 
 	protected KeyValues requestImageFormat(KeyValues keyValues, ImageModelObservationContext context) {
-		ImageResponseFormat responseFormat = context.getRequest().getOptions().getResponseFormat();
+		ImageResponseFormat responseFormat = context.getRequest().getOptions().getResponseFormatAsEnum();
 		if (responseFormat != null) {
 			return keyValues.and(
 					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),

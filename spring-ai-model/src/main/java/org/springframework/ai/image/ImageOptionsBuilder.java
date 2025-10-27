@@ -100,8 +100,8 @@ public final class ImageOptionsBuilder {
 		}
 
 		@Override
-		public ImageResponseFormat getResponseFormat() {
-			return this.responseFormat;
+		public String getResponseFormat() {
+			return (this.responseFormat != null) ? this.responseFormat.getValue() : null;
 		}
 
 		public void setResponseFormat(ImageResponseFormat responseFormat) {

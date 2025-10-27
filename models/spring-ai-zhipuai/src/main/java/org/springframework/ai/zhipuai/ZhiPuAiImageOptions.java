@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.image.ImageOptions;
-import org.springframework.ai.image.ImageResponseFormat;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
 
 /**
@@ -97,7 +96,7 @@ public class ZhiPuAiImageOptions implements ImageOptions {
 
 	@Override
 	@JsonIgnore
-	public ImageResponseFormat getResponseFormat() {
+	public String getResponseFormat() {
 		return null;
 	}
 

@@ -46,7 +46,8 @@ class OpenAiImageOptionsTests {
 		assertThat(options.getN()).isEqualTo(2);
 		assertThat(options.getModel()).isEqualTo("dall-e-3");
 		assertThat(options.getQuality()).isEqualTo("hd");
-		assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.URL);
+		assertThat(options.getResponseFormat()).isEqualTo("url");
+		assertThat(options.getResponseFormatAsEnum()).isEqualTo(ImageResponseFormat.URL);
 		assertThat(options.getWidth()).isEqualTo(1024);
 		assertThat(options.getHeight()).isEqualTo(1024);
 		assertThat(options.getSize()).isEqualTo("1024x1024");
@@ -74,6 +75,7 @@ class OpenAiImageOptionsTests {
 		assertThat(copied.getModel()).isEqualTo(original.getModel());
 		assertThat(copied.getQuality()).isEqualTo(original.getQuality());
 		assertThat(copied.getResponseFormat()).isEqualTo(original.getResponseFormat());
+		assertThat(copied.getResponseFormatAsEnum()).isEqualTo(original.getResponseFormatAsEnum());
 		assertThat(copied.getWidth()).isEqualTo(original.getWidth());
 		assertThat(copied.getHeight()).isEqualTo(original.getHeight());
 		assertThat(copied.getSize()).isEqualTo(original.getSize());
@@ -87,6 +89,7 @@ class OpenAiImageOptionsTests {
 		assertThat(copiedViaMethod.getModel()).isEqualTo(original.getModel());
 		assertThat(copiedViaMethod.getQuality()).isEqualTo(original.getQuality());
 		assertThat(copiedViaMethod.getResponseFormat()).isEqualTo(original.getResponseFormat());
+		assertThat(copiedViaMethod.getResponseFormatAsEnum()).isEqualTo(original.getResponseFormatAsEnum());
 		assertThat(copiedViaMethod.getWidth()).isEqualTo(original.getWidth());
 		assertThat(copiedViaMethod.getHeight()).isEqualTo(original.getHeight());
 		assertThat(copiedViaMethod.getSize()).isEqualTo(original.getSize());
@@ -110,7 +113,8 @@ class OpenAiImageOptionsTests {
 		assertThat(options.getN()).isEqualTo(4);
 		assertThat(options.getModel()).isEqualTo("dall-e-2");
 		assertThat(options.getQuality()).isEqualTo("standard");
-		assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.URL);
+		assertThat(options.getResponseFormat()).isEqualTo("url");
+		assertThat(options.getResponseFormatAsEnum()).isEqualTo(ImageResponseFormat.URL);
 		assertThat(options.getWidth()).isEqualTo(512);
 		assertThat(options.getHeight()).isEqualTo(512);
 		assertThat(options.getSize()).isEqualTo("512x512");
@@ -224,7 +228,8 @@ class OpenAiImageOptionsTests {
 		assertThat(options.getN()).isEqualTo(1);
 		assertThat(options.getModel()).isEqualTo("dall-e-3");
 		assertThat(options.getQuality()).isEqualTo("hd");
-		assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.URL);
+		assertThat(options.getResponseFormat()).isEqualTo("url");
+		assertThat(options.getResponseFormatAsEnum()).isEqualTo(ImageResponseFormat.URL);
 		assertThat(options.getWidth()).isEqualTo(1024);
 		assertThat(options.getHeight()).isEqualTo(1024);
 		assertThat(options.getSize()).isEqualTo("1024x1024");

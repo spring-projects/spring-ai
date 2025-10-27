@@ -72,7 +72,8 @@ public class StabilityAiImageOptionsTests {
 			assertThat(options.getModel()).isEqualTo("runtime-model");
 			assertThat(options.getWidth()).isEqualTo(1024);
 			assertThat(options.getHeight()).isEqualTo(768);
-			assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.APPLICATION_JSON);
+			assertThat(options.getResponseFormat()).isEqualTo("application/json");
+			assertThat(options.getResponseFormatAsEnum()).isEqualTo(ImageResponseFormat.APPLICATION_JSON);
 			assertThat(options.getCfgScale()).isEqualTo(14.0f);
 			assertThat(options.getClipGuidancePreset()).isEqualTo("FAST_GREEN");
 			assertThat(options.getSampler()).isEqualTo("DDPM");
@@ -137,7 +138,7 @@ public class StabilityAiImageOptionsTests {
 			}
 
 			@Override
-			public ImageResponseFormat getResponseFormat() {
+			public String getResponseFormat() {
 				return null;
 			}
 

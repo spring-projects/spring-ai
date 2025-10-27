@@ -89,7 +89,9 @@ public interface ImageOptions extends ModelOptions {
 
 	Integer getHeight();
 
-ImageResponseFormat getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+	String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+
+	default ImageResponseFormat getResponseFormatAsEnum(); // convenience conversion helper
 
 }
 ----

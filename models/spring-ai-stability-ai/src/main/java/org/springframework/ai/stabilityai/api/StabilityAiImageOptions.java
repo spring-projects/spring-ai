@@ -329,12 +329,20 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	@Override
-	public ImageResponseFormat getResponseFormat() {
+	public String getResponseFormat() {
+		return (this.responseFormat != null) ? this.responseFormat.getValue() : null;
+	}
+
+	public ImageResponseFormat getResponseFormatEnum() {
 		return this.responseFormat;
 	}
 
 	public void setResponseFormat(ImageResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
+	}
+
+	public void setResponseFormat(String responseFormat) {
+		this.responseFormat = ImageResponseFormat.fromValue(responseFormat);
 	}
 
 	public Float getCfgScale() {
@@ -457,6 +465,11 @@ public class StabilityAiImageOptions implements ImageOptions {
 		}
 
 		public Builder responseFormat(ImageResponseFormat responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder responseFormat(String responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}

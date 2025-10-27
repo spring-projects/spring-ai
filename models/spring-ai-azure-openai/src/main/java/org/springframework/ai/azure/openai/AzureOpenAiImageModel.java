@@ -181,7 +181,7 @@ public class AzureOpenAiImageModel implements ImageModel {
 			if (runtimeImageOptions.getResponseFormat() != null) {
 				// b64_json or url
 				imageGenerationOptions.setResponseFormat(
-						ImageGenerationResponseFormat.fromString(runtimeImageOptions.getResponseFormat().getValue()));
+						ImageGenerationResponseFormat.fromString(runtimeImageOptions.getResponseFormat()));
 			}
 			if (runtimeImageOptions.getWidth() != null && runtimeImageOptions.getHeight() != null) {
 				imageGenerationOptions.setSize(
