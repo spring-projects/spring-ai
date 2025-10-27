@@ -38,8 +38,13 @@ public final class ImageOptionsBuilder {
 		return this;
 	}
 
-	public ImageOptionsBuilder responseFormat(String responseFormat) {
+	public ImageOptionsBuilder responseFormat(ImageResponseFormat responseFormat) {
 		this.options.setResponseFormat(responseFormat);
+		return this;
+	}
+
+	public ImageOptionsBuilder responseFormat(String responseFormat) {
+		this.options.setResponseFormat(ImageResponseFormat.fromValue(responseFormat));
 		return this;
 	}
 
@@ -72,7 +77,7 @@ public final class ImageOptionsBuilder {
 
 		private Integer height;
 
-		private String responseFormat;
+		private ImageResponseFormat responseFormat;
 
 		private String style;
 
@@ -95,11 +100,11 @@ public final class ImageOptionsBuilder {
 		}
 
 		@Override
-		public String getResponseFormat() {
+		public ImageResponseFormat getResponseFormat() {
 			return this.responseFormat;
 		}
 
-		public void setResponseFormat(String responseFormat) {
+		public void setResponseFormat(ImageResponseFormat responseFormat) {
 			this.responseFormat = responseFormat;
 		}
 

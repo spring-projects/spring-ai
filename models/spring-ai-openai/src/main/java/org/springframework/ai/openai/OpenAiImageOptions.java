@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageResponseFormat;
 
 /**
  * OpenAI Image API options. OpenAiImageOptions.java
@@ -79,7 +80,7 @@ public class OpenAiImageOptions implements ImageOptions {
 	 * b64_json.
 	 */
 	@JsonProperty("response_format")
-	private String responseFormat;
+	private ImageResponseFormat responseFormat;
 
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
@@ -158,11 +159,11 @@ public class OpenAiImageOptions implements ImageOptions {
 	}
 
 	@Override
-	public String getResponseFormat() {
+	public ImageResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
+	public void setResponseFormat(ImageResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
@@ -326,7 +327,7 @@ public class OpenAiImageOptions implements ImageOptions {
 			return this;
 		}
 
-		public Builder responseFormat(String responseFormat) {
+		public Builder responseFormat(ImageResponseFormat responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}

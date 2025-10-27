@@ -19,6 +19,7 @@ package org.springframework.ai.stabilityai;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageResponseFormat;
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 
@@ -37,7 +38,7 @@ public class StabilityAiImageOptionsTests {
 			.model("default-model")
 			.width(512)
 			.height(512)
-			.responseFormat("image/png")
+			.responseFormat(ImageResponseFormat.IMAGE_PNG)
 			.cfgScale(7.0f)
 			.clipGuidancePreset("FAST_BLUE")
 			.sampler("DDIM")
@@ -52,7 +53,7 @@ public class StabilityAiImageOptionsTests {
 			.model("runtime-model")
 			.width(1024)
 			.height(768)
-			.responseFormat("application/json")
+			.responseFormat(ImageResponseFormat.APPLICATION_JSON)
 			.cfgScale(14.0f)
 			.clipGuidancePreset("FAST_GREEN")
 			.sampler("DDPM")
@@ -71,7 +72,7 @@ public class StabilityAiImageOptionsTests {
 			assertThat(options.getModel()).isEqualTo("runtime-model");
 			assertThat(options.getWidth()).isEqualTo(1024);
 			assertThat(options.getHeight()).isEqualTo(768);
-			assertThat(options.getResponseFormat()).isEqualTo("application/json");
+			assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.APPLICATION_JSON);
 			assertThat(options.getCfgScale()).isEqualTo(14.0f);
 			assertThat(options.getClipGuidancePreset()).isEqualTo("FAST_GREEN");
 			assertThat(options.getSampler()).isEqualTo("DDPM");
@@ -136,7 +137,7 @@ public class StabilityAiImageOptionsTests {
 			}
 
 			@Override
-			public String getResponseFormat() {
+			public ImageResponseFormat getResponseFormat() {
 				return null;
 			}
 

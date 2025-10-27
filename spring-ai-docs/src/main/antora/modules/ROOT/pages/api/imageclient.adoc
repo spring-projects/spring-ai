@@ -89,7 +89,7 @@ public interface ImageOptions extends ModelOptions {
 
 	Integer getHeight();
 
-	String getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
+ImageResponseFormat getResponseFormat(); // openai - url or base64 : stability ai byte[] or base64
 
 }
 ----
@@ -111,6 +111,10 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	private final ImageResponseMetadata imageResponseMetadata;
 
 	private final List<ImageGeneration> imageGenerations;
+
+	Optional<byte[]> getResultAsBytes();
+
+	List<byte[]> getResultsAsBytes();
 
 	@Override
 	public ImageGeneration getResult() {

@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageResponseFormat;
 import org.springframework.ai.stabilityai.StyleEnum;
 
 /**
@@ -122,7 +123,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 * accept header. Must be "application/json" or "image/png"
 	 */
 	@JsonProperty("response_format")
-	private String responseFormat;
+	private ImageResponseFormat responseFormat;
 
 	/**
 	 * The strictness level of the diffusion process adherence to the prompt text.
@@ -328,11 +329,11 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	@Override
-	public String getResponseFormat() {
+	public ImageResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
+	public void setResponseFormat(ImageResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
@@ -455,7 +456,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 			return this;
 		}
 
-		public Builder responseFormat(String responseFormat) {
+		public Builder responseFormat(ImageResponseFormat responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}

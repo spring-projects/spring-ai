@@ -18,6 +18,8 @@ package org.springframework.ai.openai;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.image.ImageResponseFormat;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -34,7 +36,7 @@ class OpenAiImageOptionsTests {
 			.N(2)
 			.model("dall-e-3")
 			.quality("hd")
-			.responseFormat("url")
+			.responseFormat(ImageResponseFormat.URL)
 			.width(1024)
 			.height(1024)
 			.style("vivid")
@@ -44,7 +46,7 @@ class OpenAiImageOptionsTests {
 		assertThat(options.getN()).isEqualTo(2);
 		assertThat(options.getModel()).isEqualTo("dall-e-3");
 		assertThat(options.getQuality()).isEqualTo("hd");
-		assertThat(options.getResponseFormat()).isEqualTo("url");
+		assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.URL);
 		assertThat(options.getWidth()).isEqualTo(1024);
 		assertThat(options.getHeight()).isEqualTo(1024);
 		assertThat(options.getSize()).isEqualTo("1024x1024");
@@ -58,7 +60,7 @@ class OpenAiImageOptionsTests {
 			.N(3)
 			.model("dall-e-3")
 			.quality("standard")
-			.responseFormat("b64_json")
+			.responseFormat(ImageResponseFormat.B64_JSON)
 			.width(1792)
 			.height(1024)
 			.style("natural")
@@ -99,7 +101,7 @@ class OpenAiImageOptionsTests {
 		options.setN(4);
 		options.setModel("dall-e-2");
 		options.setQuality("standard");
-		options.setResponseFormat("url");
+		options.setResponseFormat(ImageResponseFormat.URL);
 		options.setWidth(512);
 		options.setHeight(512);
 		options.setStyle("vivid");
@@ -108,7 +110,7 @@ class OpenAiImageOptionsTests {
 		assertThat(options.getN()).isEqualTo(4);
 		assertThat(options.getModel()).isEqualTo("dall-e-2");
 		assertThat(options.getQuality()).isEqualTo("standard");
-		assertThat(options.getResponseFormat()).isEqualTo("url");
+		assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.URL);
 		assertThat(options.getWidth()).isEqualTo(512);
 		assertThat(options.getHeight()).isEqualTo(512);
 		assertThat(options.getSize()).isEqualTo("512x512");
@@ -212,7 +214,7 @@ class OpenAiImageOptionsTests {
 			.N(1)
 			.model("dall-e-3")
 			.quality("hd")
-			.responseFormat("url")
+			.responseFormat(ImageResponseFormat.URL)
 			.width(1024)
 			.height(1024)
 			.style("vivid")
@@ -222,7 +224,7 @@ class OpenAiImageOptionsTests {
 		assertThat(options.getN()).isEqualTo(1);
 		assertThat(options.getModel()).isEqualTo("dall-e-3");
 		assertThat(options.getQuality()).isEqualTo("hd");
-		assertThat(options.getResponseFormat()).isEqualTo("url");
+		assertThat(options.getResponseFormat()).isEqualTo(ImageResponseFormat.URL);
 		assertThat(options.getWidth()).isEqualTo(1024);
 		assertThat(options.getHeight()).isEqualTo(1024);
 		assertThat(options.getSize()).isEqualTo("1024x1024");

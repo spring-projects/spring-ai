@@ -38,7 +38,7 @@ public interface ImageOptions extends ModelOptions {
 	Integer getHeight();
 
 	@Nullable
-	String getResponseFormat();
+	ImageResponseFormat getResponseFormat();
 
 	@Nullable
 	String getStyle();
