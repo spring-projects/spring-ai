@@ -45,13 +45,4 @@ public class OracleChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE CONVERSATION_ID = ?";
 	}
 
-	/**
-	 * This method requires uncommenting the Override annotation after the interface
-	 * defines the method
-	 */
-	// @Override
-	public String getDeleteAllMessageSql() {
-		return "DELETE FROM SPRING_AI_CHAT_MEMORY";
-	}
-
 }
