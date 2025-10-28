@@ -618,6 +618,8 @@ public class DefaultChatClient implements ChatClient {
 
 		private final List<ToolCallback> toolCallbacks = new ArrayList<>();
 
+		private final List<ToolCallbackProvider> toolCallbackProviders = new ArrayList<>();
+
 		private final List<Message> messages = new ArrayList<>();
 
 		private final Map<String, Object> userParams = new HashMap<>();
@@ -648,16 +650,17 @@ public class DefaultChatClient implements ChatClient {
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
-					ccr.systemMetadata, ccr.toolCallbacks, ccr.messages, ccr.toolNames, ccr.media, ccr.chatOptions,
-					ccr.advisors, ccr.advisorParams, ccr.observationRegistry, ccr.observationConvention,
-					ccr.toolContext, ccr.templateRenderer);
+					ccr.systemMetadata, ccr.toolCallbacks, ccr.toolCallbackProviders, ccr.messages, ccr.toolNames,
+					ccr.media, ccr.chatOptions, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
+					ccr.observationConvention, ccr.toolContext, ccr.templateRenderer);
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
 				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
-				List<Message> messages, List<String> toolNames, List<Media> media, @Nullable ChatOptions chatOptions,
-				List<Advisor> advisors, Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
+				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
+				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
+				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
 				@Nullable ChatClientObservationConvention observationConvention, Map<String, Object> toolContext,
 				@Nullable TemplateRenderer templateRenderer) {
 
@@ -667,6 +670,7 @@ public class DefaultChatClient implements ChatClient {
 			Assert.notNull(systemParams, "systemParams cannot be null");
 			Assert.notNull(systemMetadata, "systemMetadata cannot be null");
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
 			Assert.notNull(messages, "messages cannot be null");
 			Assert.notNull(toolNames, "toolNames cannot be null");
 			Assert.notNull(media, "media cannot be null");
@@ -689,6 +693,7 @@ public class DefaultChatClient implements ChatClient {
 
 			this.toolNames.addAll(toolNames);
 			this.toolCallbacks.addAll(toolCallbacks);
+			this.toolCallbackProviders.addAll(toolCallbackProviders);
 			this.messages.addAll(messages);
 			this.media.addAll(media);
 			this.advisors.addAll(advisors);
@@ -755,6 +760,10 @@ public class DefaultChatClient implements ChatClient {
 			return this.toolCallbacks;
 		}
 
+		public List<ToolCallbackProvider> getToolCallbackProviders() {
+			return this.toolCallbackProviders;
+		}
+
 		public Map<String, Object> getToolContext() {
 			return this.toolContext;
 		}
@@ -773,6 +782,7 @@ public class DefaultChatClient implements ChatClient {
 				.builder(this.chatModel, this.observationRegistry, this.observationConvention)
 				.defaultTemplateRenderer(this.templateRenderer)
 				.defaultToolCallbacks(this.toolCallbacks)
+				.defaultToolCallbacks(this.toolCallbackProviders.toArray(new ToolCallback[0]))
 				.defaultToolContext(this.toolContext)
 				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
 
@@ -885,9 +895,7 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders) {
 			Assert.notNull(toolCallbackProviders, "toolCallbackProviders cannot be null");
 			Assert.noNullElements(toolCallbackProviders, "toolCallbackProviders cannot contain null elements");
-			for (ToolCallbackProvider toolCallbackProvider : toolCallbackProviders) {
-				this.toolCallbacks.addAll(List.of(toolCallbackProvider.getToolCallbacks()));
-			}
+			this.toolCallbackProviders.addAll(List.of(toolCallbackProviders));
 			return this;
 		}
 
