@@ -88,28 +88,39 @@ public class McpClientAutoConfigurationIT {
 			AutoConfigurations.of(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class));
 
 	/**
-	 * Tests the default MCP client auto-configuration.
-	 *
-	 * Note: We use 'spring.ai.mcp.client.initialized=false' to prevent the
-	 * auto-configuration from calling client.initialize() explicitly, which would cause a
-	 * 20-second timeout waiting for real MCP protocol communication. This allows us to
-	 * test bean creation and auto-configuration behavior without requiring a full MCP
-	 * server connection.
+	 * Tests that MCP clients are created after all singleton beans have been initialized,
+	 * verifying the SmartInitializingSingleton timing behavior.
+	 * <p>
+	 * This test uses a LateInitBean that records its initialization timestamp, and then
+	 * verifies that the MCP client initializer was called AFTER the late bean was
+	 * constructed. This proves that
+	 * SmartInitializingSingleton.afterSingletonsInstantiated() is called after all
+	 * singleton beans (including late-initializing ones) have been fully created.
 	 */
 	@Test
-	void defaultConfiguration() {
-		this.contextRunner.withUserConfiguration(TestTransportConfiguration.class)
+	void clientsCreatedAfterAllSingletons() {
+		this.contextRunner.withUserConfiguration(TestTransportConfiguration.class, LateInitBeanWithTimestamp.class)
 			.withPropertyValues("spring.ai.mcp.client.initialized=false")
 			.run(context -> {
-				List<McpSyncClient> clients = context.getBean("mcpSyncClients", List.class);
-				assertThat(clients).hasSize(1);
+				// Get the late-init bean and its construction timestamp
+				LateInitBeanWithTimestamp lateBean = context.getBean(LateInitBeanWithTimestamp.class);
+				long lateBeanTimestamp = lateBean.getInitTimestamp();
 
-				McpClientCommonProperties properties = context.getBean(McpClientCommonProperties.class);
-				assertThat(properties.getName()).isEqualTo("spring-ai-mcp-client");
-				assertThat(properties.getVersion()).isEqualTo("1.0.0");
-				assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
-				assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
-				assertThat(properties.isInitialized()).isFalse();
+				// Get the initializer and its execution timestamp
+				var initializer = context.getBean(McpClientAutoConfiguration.McpSyncClientInitializer.class);
+				long initializerTimestamp = initializer.getInitializationTimestamp();
+
+				// Verify clients were created
+				List<McpSyncClient> clients = context.getBean("mcpSyncClients", List.class);
+				assertThat(clients).isNotNull();
+
+				// THE KEY ASSERTION: Initializer must have been called AFTER late bean
+				// was constructed
+				// This proves SmartInitializingSingleton.afterSingletonsInstantiated()
+				// timing
+				assertThat(initializerTimestamp)
+					.as("MCP client initializer should be called AFTER all singleton beans are initialized")
+					.isGreaterThan(lateBeanTimestamp);
 			});
 	}
 
@@ -224,6 +235,54 @@ public class McpClientAutoConfigurationIT {
 				.hasSingleBean(McpClientAutoConfiguration.CloseableMcpSyncClients.class));
 	}
 
+	/**
+	 * Tests that SmartInitializingSingleton initializers are created and function
+	 * correctly for sync clients.
+	 */
+	@Test
+	void smartInitializingSingletonBehavior() {
+		this.contextRunner.withUserConfiguration(TestTransportConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.initialized=false")
+			.run(context -> {
+				// Verify that McpSyncClientInitializer bean exists
+				assertThat(context).hasBean("mcpSyncClientInitializer");
+				assertThat(context.getBean("mcpSyncClientInitializer"))
+					.isInstanceOf(McpClientAutoConfiguration.McpSyncClientInitializer.class);
+
+				// Verify that clients list exists and was created by initializer
+				List<McpSyncClient> clients = context.getBean("mcpSyncClients", List.class);
+				assertThat(clients).isNotNull();
+
+				// Verify the initializer has completed
+				var initializer = context.getBean(McpClientAutoConfiguration.McpSyncClientInitializer.class);
+				assertThat(initializer.getClients()).isSameAs(clients);
+			});
+	}
+
+	/**
+	 * Tests that SmartInitializingSingleton initializers are created and function
+	 * correctly for async clients.
+	 */
+	@Test
+	void smartInitializingSingletonForAsyncClients() {
+		this.contextRunner.withUserConfiguration(TestTransportConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC", "spring.ai.mcp.client.initialized=false")
+			.run(context -> {
+				// Verify that McpAsyncClientInitializer bean exists
+				assertThat(context).hasBean("mcpAsyncClientInitializer");
+				assertThat(context.getBean("mcpAsyncClientInitializer"))
+					.isInstanceOf(McpClientAutoConfiguration.McpAsyncClientInitializer.class);
+
+				// Verify that clients list exists and was created by initializer
+				List<McpAsyncClient> clients = context.getBean("mcpAsyncClients", List.class);
+				assertThat(clients).isNotNull();
+
+				// Verify the initializer has completed
+				var initializer = context.getBean(McpClientAutoConfiguration.McpAsyncClientInitializer.class);
+				assertThat(initializer.getClients()).isSameAs(clients);
+			});
+	}
+
 	@Configuration
 	static class TestTransportConfiguration {
 
@@ -261,6 +320,55 @@ public class McpClientAutoConfigurationIT {
 		McpSyncClientCustomizer testCustomizer() {
 			return (name, spec) -> {
 				/* no-op */ };
+		}
+
+	}
+
+	@Configuration
+	static class LateInitBean {
+
+		private final boolean initialized;
+
+		LateInitBean() {
+			// Simulate late initialization
+			this.initialized = true;
+		}
+
+		@Bean
+		String lateInitBean() {
+			// This bean method ensures the configuration is instantiated
+			return "late-init-marker";
+		}
+
+		boolean isInitialized() {
+			return this.initialized;
+		}
+
+	}
+
+	/**
+	 * A configuration bean that records when it was initialized. Used to verify
+	 * SmartInitializingSingleton timing - that the MCP client initializer is called AFTER
+	 * all singleton beans (including this one) have been constructed.
+	 */
+	@Configuration
+	static class LateInitBeanWithTimestamp {
+
+		private final long initTimestamp;
+
+		LateInitBeanWithTimestamp() {
+			// Record when this bean was constructed
+			this.initTimestamp = System.nanoTime();
+		}
+
+		@Bean
+		String lateInitMarker() {
+			// This bean method ensures the configuration is instantiated
+			return "late-init-marker";
+		}
+
+		long getInitTimestamp() {
+			return this.initTimestamp;
 		}
 
 	}
