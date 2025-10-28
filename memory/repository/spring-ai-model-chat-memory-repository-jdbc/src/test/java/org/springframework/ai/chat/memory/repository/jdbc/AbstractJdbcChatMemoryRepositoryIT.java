@@ -185,6 +185,30 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 				"4-Fourth message");
 	}
 
+	@Test
+	void testMessageOrderWithLargeBatch() {
+		var conversationId = UUID.randomUUID().toString();
+
+		// Create a large batch of 50 messages to ensure timestamp ordering issues
+		// are detected. With the old millisecond-precision code, MySQL/MariaDB's
+		// second-precision TIMESTAMP columns would truncate all timestamps to the
+		// same value, causing random ordering. This test validates the fix.
+		List<Message> messages = new java.util.ArrayList<>();
+		for (int i = 0; i < 50; i++) {
+			messages.add(new UserMessage("Message " + i));
+		}
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
+
+		// Verify we got all messages back in the exact order they were saved
+		assertThat(retrievedMessages).hasSize(50);
+		for (int i = 0; i < 50; i++) {
+			assertThat(retrievedMessages.get(i).getText()).isEqualTo("Message " + i);
+		}
+	}
+
 	/**
 	 * Base configuration for all integration tests.
 	 */
