@@ -65,8 +65,8 @@ public class DefaultChatClientBuilder implements Builder {
 		Assert.notNull(chatModel, "the " + ChatModel.class.getName() + " must be non-null");
 		Assert.notNull(observationRegistry, "the " + ObservationRegistry.class.getName() + " must be non-null");
 		this.defaultRequest = new DefaultChatClientRequestSpec(chatModel, null, Map.of(), Map.of(), null, Map.of(),
-				Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(), observationRegistry,
-				customObservationConvention, Map.of(), null);
+				Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
+				observationRegistry, customObservationConvention, Map.of(), null);
 	}
 
 	public ChatClient build() {
