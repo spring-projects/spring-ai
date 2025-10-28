@@ -367,20 +367,6 @@
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>io.spring.javaformat</groupId>
-				<artifactId>spring-javaformat-maven-plugin</artifactId>
-				<version>${spring-javaformat-maven-plugin.version}</version>
-				<executions>
-					<execution>
-						<phase>validate</phase>
-						<inherited>true</inherited>
-						<goals>
-							<goal>validate</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
 				<version>${maven-checkstyle-plugin.version}</version>
@@ -611,6 +597,63 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>format-check</id>
+			<activation>
+				<property>
+					<name>env.CI</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.spring.javaformat</groupId>
+						<artifactId>spring-javaformat-maven-plugin</artifactId>
+						<version>${spring-javaformat-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<phase>validate</phase>
+								<inherited>true</inherited>
+								<goals>
+									<goal>validate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+
+		</profile>
+		<profile>
+			<id>format-apply</id>
+			<activation>
+				<property>
+					<name>!env.CI</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.spring.javaformat</groupId>
+						<artifactId>spring-javaformat-maven-plugin</artifactId>
+						<version>${spring-javaformat-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<phase>process-sources</phase>
+								<inherited>true</inherited>
+								<goals>
+									<goal>apply</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+
+		</profile>
 		<profile>
 			<id>license</id>
 			<activation>
