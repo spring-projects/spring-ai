@@ -132,8 +132,7 @@ public class ChromaApi {
 				.uri("/api/v2/tenants/{tenant_name}", tenantName)
 				.headers(this::httpHeaders)
 				.retrieve()
-				.toEntity(Tenant.class)
-				.getBody();
+				.body(Tenant.class);
 		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
@@ -162,8 +161,7 @@ public class ChromaApi {
 				.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}", tenantName, databaseName)
 				.headers(this::httpHeaders)
 				.retrieve()
-				.toEntity(Database.class)
-				.getBody();
+				.body(Database.class);
 		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
@@ -197,8 +195,7 @@ public class ChromaApi {
 			.headers(this::httpHeaders)
 			.body(createCollectionRequest)
 			.retrieve()
-			.toEntity(Collection.class)
-			.getBody();
+			.body(Collection.class);
 	}
 
 	/**
@@ -225,8 +222,7 @@ public class ChromaApi {
 						tenantName, databaseName, collectionName)
 				.headers(this::httpHeaders)
 				.retrieve()
-				.toEntity(Collection.class)
-				.getBody();
+				.body(Collection.class);
 		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
@@ -244,8 +240,7 @@ public class ChromaApi {
 			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections", tenantName, databaseName)
 			.headers(this::httpHeaders)
 			.retrieve()
-			.toEntity(CollectionList.class)
-			.getBody();
+			.body(CollectionList.class);
 	}
 
 	public void upsertEmbeddings(String tenantName, String databaseName, String collectionId,
@@ -281,8 +276,7 @@ public class ChromaApi {
 					tenantName, databaseName, collectionId)
 			.headers(this::httpHeaders)
 			.retrieve()
-			.toEntity(Long.class)
-			.getBody();
+			.body(Long.class);
 	}
 
 	@Nullable
@@ -295,8 +289,7 @@ public class ChromaApi {
 			.headers(this::httpHeaders)
 			.body(queryRequest)
 			.retrieve()
-			.toEntity(QueryResponse.class)
-			.getBody();
+			.body(QueryResponse.class);
 	}
 
 	//
@@ -312,8 +305,7 @@ public class ChromaApi {
 			.headers(this::httpHeaders)
 			.body(getEmbeddingsRequest)
 			.retrieve()
-			.toEntity(GetEmbeddingResponse.class)
-			.getBody();
+			.body(GetEmbeddingResponse.class);
 	}
 
 	// Utils
