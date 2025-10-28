@@ -57,6 +57,7 @@ public abstract class RetryUtils {
 			handleError(response);
 		}
 
+		@Override
 		@SuppressWarnings("removal")
 		public void handleError(@NonNull ClientHttpResponse response) throws IOException {
 			if (response.getStatusCode().isError()) {
@@ -82,7 +83,7 @@ public abstract class RetryUtils {
 		.maxAttempts(10)
 		.retryOn(TransientAiException.class)
 		.retryOn(ResourceAccessException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000))
+		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000L))
 		.withListener(new RetryListener() {
 
 			@Override
