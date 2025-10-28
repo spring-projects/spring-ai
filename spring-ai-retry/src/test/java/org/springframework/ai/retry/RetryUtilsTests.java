@@ -41,82 +41,84 @@ import org.springframework.retry.support.RetryTemplate;
  */
 class RetryUtilsTests {
 
-  /**
-   * valid http 4xx
-   *
-   * @throws IOException ex
-   */
-  @Test
-  void testHandleError_4xx() throws IOException {
-    try (ClientHttpResponse response = mock(ClientHttpResponse.class)) {
-      URI url = mock(URI.class);
-      HttpMethod method = HttpMethod.POST;
+	/**
+	 * valid http 4xx
+	 * @throws IOException ex
+	 */
+	@Test
+	void testHandleError_4xx() throws IOException {
+		try (ClientHttpResponse response = mock(ClientHttpResponse.class)) {
+			URI url = mock(URI.class);
+			HttpMethod method = HttpMethod.POST;
 
-      when(response.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
-      when(response.getBody()).thenReturn(new ByteArrayInputStream("Bad request".getBytes(StandardCharsets.UTF_8)));
+			when(response.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
+			when(response.getBody())
+				.thenReturn(new ByteArrayInputStream("Bad request".getBytes(StandardCharsets.UTF_8)));
 
-      assertThrows(NonTransientAiException.class, () -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER.handleError(url, method, response));
-    }
-  }
+			assertThrows(NonTransientAiException.class,
+					() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER.handleError(url, method, response));
+		}
+	}
 
-  /**
-   * valid http 5xx
-   *
-   * @throws IOException ex
-   */
-  @Test
-  void testHandleError_5xx() throws IOException {
-    try (ClientHttpResponse response = mock(ClientHttpResponse.class)) {
-      URI url = mock(URI.class);
-      HttpMethod method = HttpMethod.POST;
-      when(response.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-      when(response.getBody()).thenReturn(new ByteArrayInputStream("Server error".getBytes(StandardCharsets.UTF_8)));
+	/**
+	 * valid http 5xx
+	 * @throws IOException ex
+	 */
+	@Test
+	void testHandleError_5xx() throws IOException {
+		try (ClientHttpResponse response = mock(ClientHttpResponse.class)) {
+			URI url = mock(URI.class);
+			HttpMethod method = HttpMethod.POST;
+			when(response.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
+			when(response.getBody())
+				.thenReturn(new ByteArrayInputStream("Server error".getBytes(StandardCharsets.UTF_8)));
 
-      assertThrows(TransientAiException.class, () -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER.handleError(url, method, response));
-    }
-  }
+			assertThrows(TransientAiException.class,
+					() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER.handleError(url, method, response));
+		}
+	}
 
-  /**
-   * valid not error
-   *
-   * @throws IOException ex
-   */
-  @Test
-  void testHasError() throws IOException {
-    try (ClientHttpResponse response = mock(ClientHttpResponse.class)) {
-      when(response.getStatusCode()).thenReturn(HttpStatus.OK);
-      when(response.getBody()).thenReturn(new ByteArrayInputStream("success".getBytes(StandardCharsets.UTF_8)));
+	/**
+	 * valid not error
+	 * @throws IOException ex
+	 */
+	@Test
+	void testHasError() throws IOException {
+		try (ClientHttpResponse response = mock(ClientHttpResponse.class)) {
+			when(response.getStatusCode()).thenReturn(HttpStatus.OK);
+			when(response.getBody()).thenReturn(new ByteArrayInputStream("success".getBytes(StandardCharsets.UTF_8)));
 
-      assertFalse(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER.hasError(response));
-    }
-  }
+			assertFalse(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER.hasError(response));
+		}
+	}
 
-  @Test
-  void testShortRetryTemplateRetries() {
-    AtomicInteger counter = new AtomicInteger(0);
-    RetryTemplate template = RetryUtils.SHORT_RETRY_TEMPLATE;
+	@Test
+	void testShortRetryTemplateRetries() {
+		AtomicInteger counter = new AtomicInteger(0);
+		RetryTemplate template = RetryUtils.SHORT_RETRY_TEMPLATE;
 
-    assertThrows(TransientAiException.class, () -> template.execute(cb -> {
-      counter.incrementAndGet();
-      throw new TransientAiException("test fail");
-    }));
+		assertThrows(TransientAiException.class, () -> template.execute(cb -> {
+			counter.incrementAndGet();
+			throw new TransientAiException("test fail");
+		}));
 
-    assertEquals(10, counter.get());
-  }
+		assertEquals(10, counter.get());
+	}
 
-  @Test
-  void testShortRetryTemplateSucceedsBeforeMaxAttempts() {
-    AtomicInteger counter = new AtomicInteger(0);
-    RetryTemplate template = RetryUtils.SHORT_RETRY_TEMPLATE;
+	@Test
+	void testShortRetryTemplateSucceedsBeforeMaxAttempts() {
+		AtomicInteger counter = new AtomicInteger(0);
+		RetryTemplate template = RetryUtils.SHORT_RETRY_TEMPLATE;
 
-    String result = template.execute(cb -> {
-      if (counter.incrementAndGet() < 5) {
-        throw new TransientAiException("test fail");
-      }
-      return "success";
-    });
+		String result = template.execute(cb -> {
+			if (counter.incrementAndGet() < 5) {
+				throw new TransientAiException("test fail");
+			}
+			return "success";
+		});
 
-    assertEquals(5, counter.get());
-    assertEquals("success", result);
-  }
+		assertEquals(5, counter.get());
+		assertEquals("success", result);
+	}
+
 }
