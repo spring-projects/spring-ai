@@ -11,7 +11,7 @@ This implementation provides two authentication modes:
 - **Gemini Developer API**: Use an API key for quick prototyping and development
 - **Vertex AI**: Use Google Cloud credentials for production deployments with enterprise features
 
-link:https://ai.google.dev/gemini-api/docs/reference[Gemini API Reference]
+link:https://ai.google.dev/api[Gemini API Reference]
 
 == Prerequisites
 
