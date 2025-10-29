@@ -45,13 +45,8 @@ import org.springframework.ai.util.JacksonUtils;
  * <li><b>Jackson Modules:</b> Registers standard modules for Java 8, JSR-310, parameter
  * names, and Kotlin (if available)</li>
  * </ul>
- * <p>
- * This factory was introduced to fix Issue #4451 where @McpTool annotated methods failed
- * to load with STDIO protocol due to JSON serialization errors caused by using an
- * unconfigured ObjectMapper instance.
  *
  * @author Spring AI Team
- * @see <a href="https://github.com/spring-projects/spring-ai/issues/4451">Issue #4451</a>
  */
 public final class McpServerObjectMapperFactory {
 

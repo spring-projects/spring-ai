@@ -41,12 +41,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for @McpTool annotations with STDIO transport.
- * <p>
- * This test verifies the fix for Issue #4451 where @McpTool annotated methods failed to
- * load when using STDIO protocol due to JSON serialization issues with unconfigured
- * ObjectMapper.
- *
- * @see <a href="https://github.com/spring-projects/spring-ai/issues/4451">Issue #4451</a>
  */
 public class McpToolWithStdioIT {
 
@@ -92,10 +86,7 @@ public class McpToolWithStdioIT {
 
 	/**
 	 * Verifies that @McpTool annotated methods are successfully registered with STDIO
-	 * transport.
-	 * <p>
-	 * This is the core test for Issue #4451 - it ensures that tool specifications
-	 * generated from @McpTool annotations can be properly serialized to JSON without
+	 * transport and that tool specifications can be properly serialized to JSON without
 	 * errors.
 	 */
 	@Test

@@ -21,11 +21,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
@@ -54,7 +50,6 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -114,18 +109,7 @@ public class McpServerAutoConfiguration {
 	@Bean(name = "mcpServerObjectMapper")
 	@ConditionalOnMissingBean(name = "mcpServerObjectMapper")
 	public ObjectMapper mcpServerObjectMapper() {
-		return JsonMapper.builder()
-			// Deserialization configuration
-			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
-			// Serialization configuration
-			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-			.serializationInclusion(JsonInclude.Include.NON_NULL)
-			// Register standard modules (Jdk8, JavaTime, ParameterNames, Kotlin if
-			// available)
-			.addModules(JacksonUtils.instantiateAvailableModules())
-			.build();
+		return McpServerObjectMapperFactory.createObjectMapper();
 	}
 
 	@Bean
