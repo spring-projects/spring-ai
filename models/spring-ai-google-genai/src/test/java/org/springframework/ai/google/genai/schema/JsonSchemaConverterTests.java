@@ -78,13 +78,11 @@ class JsonSchemaConverterTests {
 	void shouldHandleBooleanAdditionalProperties() {
 		String json = """
 				{
-				    "type": "object",
-				    "additionalProperties": true
+					"type": "object",
+					"additionalProperties": true
 				}
 				""";
-
 		ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
-
 		assertThat(result.get("additionalProperties").asBoolean()).isTrue();
 	}
 
@@ -92,13 +90,11 @@ class JsonSchemaConverterTests {
 	void shouldHandleEnumProperty() {
 		String json = """
 				{
-				    "type": "string",
-				    "enum": ["a", "b", "c"]
+					"type": "string",
+					"enum": ["a", "b", "c"]
 				}
 				""";
-
 		ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
-
 		assertThat(result.get("enum")).isNotNull();
 		assertThat(result.get("enum").get(0).asText()).isEqualTo("a");
 		assertThat(result.get("enum").get(1).asText()).isEqualTo("b");
@@ -109,16 +105,14 @@ class JsonSchemaConverterTests {
 	void shouldHandleOpenApiSpecificProperties() {
 		String json = """
 				{
-				    "type": "string",
-				    "nullable": true,
-				    "readOnly": true,
-				    "writeOnly": false,
-				    "description": {"propertyName": "type"}
+					"type": "string",
+					"nullable": true,
+					"readOnly": true,
+					"writeOnly": false,
+					"description": {"propertyName": "type"}
 				}
 				""";
-
 		ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
-
 		assertThat(result.get("nullable").asBoolean()).isTrue();
 		assertThat(result.get("readOnly").asBoolean()).isTrue();
 		assertThat(result.get("writeOnly").asBoolean()).isFalse();
