@@ -203,6 +203,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.type);
+		postProcessSchema(jsonNode);
 		ObjectWriter objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter()
 			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
@@ -212,6 +213,14 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
 			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
 		}
+	}
+
+	/**
+	 * Empty template method that allows for customization of the JSON schema in
+	 * subclasses.
+	 * @param jsonNode the JSON schema, in the form of a JSON node
+	 */
+	protected void postProcessSchema(@NonNull JsonNode jsonNode) {
 	}
 
 	/**
