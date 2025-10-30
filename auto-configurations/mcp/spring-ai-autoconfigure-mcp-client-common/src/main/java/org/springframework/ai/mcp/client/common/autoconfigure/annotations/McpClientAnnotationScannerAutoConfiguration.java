@@ -27,9 +27,11 @@ import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
+import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -57,6 +59,14 @@ public class McpClientAnnotationScannerAutoConfiguration {
 	private static final Set<Class<? extends Annotation>> CLIENT_MCP_ANNOTATIONS = Set.of(McpLogging.class,
 			McpSampling.class, McpElicitation.class, McpProgress.class, McpToolListChanged.class,
 			McpResourceListChanged.class, McpPromptListChanged.class);
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public ClientMcpSyncHandlersRegistry mcpHandlersRegistry() {
+		return new ClientMcpSyncHandlersRegistry();
+	}
 
 	@Bean
 	@ConditionalOnMissingBean

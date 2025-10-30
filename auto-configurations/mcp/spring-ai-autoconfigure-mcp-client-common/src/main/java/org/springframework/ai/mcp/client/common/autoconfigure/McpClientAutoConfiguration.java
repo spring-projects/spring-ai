@@ -24,22 +24,15 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.resource.SyncResourceListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.tool.SyncToolListChangedSpecification;
 import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification;
-import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification;
 import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
-import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
-import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
-import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
 
+import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpAsyncAnnotationCustomizer;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpSyncAnnotationCustomizer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -161,7 +154,8 @@ public class McpClientAutoConfiguration {
 			matchIfMissing = true)
 	public List<McpSyncClient> mcpSyncClients(McpSyncClientConfigurer mcpSyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
+			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
+			ClientMcpSyncHandlersRegistry clientMcpSyncHandlersRegistry) {
 
 		List<McpSyncClient> mcpSyncClients = new ArrayList<>();
 
@@ -176,7 +170,22 @@ public class McpClientAutoConfiguration {
 
 				McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport())
 					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
+					.requestTimeout(commonProperties.getRequestTimeout())
+					.sampling(samplingRequest -> clientMcpSyncHandlersRegistry.handleSampling(namedTransport.name(),
+							samplingRequest))
+					.elicitation(elicitationRequest -> clientMcpSyncHandlersRegistry
+						.handleElicitation(namedTransport.name(), elicitationRequest))
+					.loggingConsumer(loggingMessageNotification -> clientMcpSyncHandlersRegistry
+						.handleLogging(namedTransport.name(), loggingMessageNotification))
+					.progressConsumer(progressNotification -> clientMcpSyncHandlersRegistry
+						.handleProgress(namedTransport.name(), progressNotification))
+					.toolsChangeConsumer(newTools -> clientMcpSyncHandlersRegistry
+						.handleToolListChanged(namedTransport.name(), newTools))
+					.promptsChangeConsumer(newPrompts -> clientMcpSyncHandlersRegistry
+						.handlePromptListChanged(namedTransport.name(), newPrompts))
+					.resourcesChangeConsumer(newResources -> clientMcpSyncHandlersRegistry
+						.handleResourceListChanged(namedTransport.name(), newResources))
+					.capabilities(clientMcpSyncHandlersRegistry.getCapabilities(namedTransport.name()));
 
 				spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
 
@@ -220,20 +229,6 @@ public class McpClientAutoConfiguration {
 			matchIfMissing = true)
 	McpSyncClientConfigurer mcpSyncClientConfigurer(ObjectProvider<McpSyncClientCustomizer> customizerProvider) {
 		return new McpSyncClientConfigurer(customizerProvider.orderedStream().toList());
-	}
-
-	@Bean
-	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
-			matchIfMissing = true)
-	public McpSyncClientCustomizer mcpAnnotationMcpSyncClientCustomizer(List<SyncLoggingSpecification> loggingSpecs,
-			List<SyncSamplingSpecification> samplingSpecs, List<SyncElicitationSpecification> elicitationSpecs,
-			List<SyncProgressSpecification> progressSpecs,
-			List<SyncToolListChangedSpecification> syncToolListChangedSpecifications,
-			List<SyncResourceListChangedSpecification> syncResourceListChangedSpecifications,
-			List<SyncPromptListChangedSpecification> syncPromptListChangedSpecifications) {
-		return new McpSyncAnnotationCustomizer(samplingSpecs, loggingSpecs, elicitationSpecs, progressSpecs,
-				syncToolListChangedSpecifications, syncResourceListChangedSpecifications,
-				syncPromptListChangedSpecifications);
 	}
 
 	// Async client configuration

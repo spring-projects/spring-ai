@@ -18,30 +18,16 @@ package org.springframework.ai.mcp.client.common.autoconfigure.annotations;
 
 import java.util.List;
 
-import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpLogging;
-import org.springaicommunity.mcp.annotation.McpProgress;
-import org.springaicommunity.mcp.annotation.McpPromptListChanged;
-import org.springaicommunity.mcp.annotation.McpResourceListChanged;
-import org.springaicommunity.mcp.annotation.McpSampling;
-import org.springaicommunity.mcp.annotation.McpToolListChanged;
 import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.resource.SyncResourceListChangedSpecification;
 import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.tool.SyncToolListChangedSpecification;
 import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification;
-import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification;
 import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
-import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
 import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
-import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
 import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
-import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
 
 import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
-import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration.ClientMcpAnnotatedBeans;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -59,58 +45,6 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(prefix = McpClientAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true", matchIfMissing = true)
 public class McpClientSpecificationFactoryAutoConfiguration {
-
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
-			matchIfMissing = true)
-	static class SyncClientSpecificationConfiguration {
-
-		@Bean
-		List<SyncLoggingSpecification> loggingSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.loggingSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpLogging.class));
-		}
-
-		@Bean
-		List<SyncSamplingSpecification> samplingSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.samplingSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpSampling.class));
-		}
-
-		@Bean
-		List<SyncElicitationSpecification> elicitationSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.elicitationSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpElicitation.class));
-		}
-
-		@Bean
-		List<SyncProgressSpecification> progressSpecs(ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders
-				.progressSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpProgress.class));
-		}
-
-		@Bean
-		List<SyncToolListChangedSpecification> syncToolListChangedSpecs(
-				ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders.toolListChangedSpecifications(
-					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpToolListChanged.class));
-		}
-
-		@Bean
-		List<SyncResourceListChangedSpecification> syncResourceListChangedSpecs(
-				ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders.resourceListChangedSpecifications(
-					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResourceListChanged.class));
-		}
-
-		@Bean
-		List<SyncPromptListChangedSpecification> syncPromptListChangedSpecs(
-				ClientMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return SyncMcpAnnotationProviders.promptListChangedSpecifications(
-					beansWithMcpMethodAnnotations.getBeansByAnnotation(McpPromptListChanged.class));
-		}
-
-	}
 
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
