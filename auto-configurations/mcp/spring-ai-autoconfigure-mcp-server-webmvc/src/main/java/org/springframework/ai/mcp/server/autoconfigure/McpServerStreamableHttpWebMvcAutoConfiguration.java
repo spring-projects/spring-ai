@@ -27,6 +27,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisa
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -50,7 +51,8 @@ public class McpServerStreamableHttpWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(
-			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerStreamableHttpProperties serverProperties) {
+			@Qualifier("mcpServerObjectMapper") ObjectProvider<ObjectMapper> objectMapperProvider,
+			McpServerStreamableHttpProperties serverProperties) {
 
 		ObjectMapper objectMapper = McpServerObjectMapperFactory.getOrCreateObjectMapper(objectMapperProvider);
 

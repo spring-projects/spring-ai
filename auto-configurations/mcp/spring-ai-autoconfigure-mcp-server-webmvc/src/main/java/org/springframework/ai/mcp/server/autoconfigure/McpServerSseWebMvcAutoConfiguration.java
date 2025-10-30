@@ -26,6 +26,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMap
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -77,7 +78,8 @@ public class McpServerSseWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
-			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerSseProperties serverProperties) {
+			@Qualifier("mcpServerObjectMapper") ObjectProvider<ObjectMapper> objectMapperProvider,
+			McpServerSseProperties serverProperties) {
 
 		ObjectMapper objectMapper = McpServerObjectMapperFactory.getOrCreateObjectMapper(objectMapperProvider);
 

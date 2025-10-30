@@ -273,7 +273,6 @@
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
-		<victools.version>4.37.0</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
@@ -286,7 +285,7 @@
 		<com.google.cloud.version>26.60.0</com.google.cloud.version>
 		<com.google.genai.version>1.17.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
-		<jsonschema.version>4.37.0</jsonschema.version>
+		<jsonschema.version>4.38.0</jsonschema.version>
 		<swagger-annotations.version>2.2.30</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
