@@ -27,9 +27,11 @@ import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
+import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
+import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
-import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -60,15 +62,17 @@ public class McpClientAnnotationScannerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ClientMcpAnnotatedBeans clientAnnotatedBeans() {
-		return new ClientMcpAnnotatedBeans();
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public ClientMcpSyncHandlersRegistry clientMcpSyncHandlersRegistry() {
+		return new ClientMcpSyncHandlersRegistry();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public static ClientAnnotatedMethodBeanPostProcessor clientAnnotatedMethodBeanPostProcessor(
-			ClientMcpAnnotatedBeans clientMcpAnnotatedBeans, McpClientAnnotationScannerProperties properties) {
-		return new ClientAnnotatedMethodBeanPostProcessor(clientMcpAnnotatedBeans, CLIENT_MCP_ANNOTATIONS);
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry() {
+		return new ClientMcpAsyncHandlersRegistry();
 	}
 
 	@Bean
@@ -86,15 +90,6 @@ public class McpClientAnnotationScannerAutoConfiguration {
 		public ClientAnnotatedBeanFactoryInitializationAotProcessor(
 				Set<Class<? extends Annotation>> targetAnnotations) {
 			super(targetAnnotations);
-		}
-
-	}
-
-	public static class ClientAnnotatedMethodBeanPostProcessor extends AbstractAnnotatedMethodBeanPostProcessor {
-
-		public ClientAnnotatedMethodBeanPostProcessor(ClientMcpAnnotatedBeans clientMcpAnnotatedBeans,
-				Set<Class<? extends Annotation>> targetAnnotations) {
-			super(clientMcpAnnotatedBeans, targetAnnotations);
 		}
 
 	}
