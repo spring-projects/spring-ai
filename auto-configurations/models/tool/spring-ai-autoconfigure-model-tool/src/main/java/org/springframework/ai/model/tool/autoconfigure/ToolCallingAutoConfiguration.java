@@ -52,6 +52,7 @@ import org.springframework.util.ClassUtils;
  * @author Thomas Vitale
  * @author Christian Tzolov
  * @author Daniel Garnier-Moiroux
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -70,10 +71,9 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
+			List<ToolCallback> toolCallbacks, ObjectProvider<ToolCallbackProvider> tcbProviders) {
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
-		tcbProviders.stream()
-			.filter(pr -> !isMcpToolCallbackProvider(ResolvableType.forInstance(pr)))
+		tcbProviders.stream(clazz -> !isMcpToolCallbackProvider(ResolvableType.forClass(clazz)))
 			.map(pr -> List.of(pr.getToolCallbacks()))
 			.forEach(allFunctionAndToolCallbacks::addAll);
 
