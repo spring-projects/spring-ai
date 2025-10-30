@@ -47,10 +47,14 @@ import org.springframework.core.ResolvableType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * @author Daniel Garnier-Moiroux
+ * @author Yanming Zhou
  */
 class McpToolsConfigurationTests {
 
@@ -123,24 +127,16 @@ class McpToolsConfigurationTests {
 
 			// MCP toolcallback providers are never added to the resolver
 
-			// Bean graph setup
-			var injectedProviders = (List<ToolCallbackProvider>) ctx.getBean(
-					"org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.toolcallbackprovider.mcp-excluded");
-			// Beans exposed as non-MCP
-			var toolCallbackProvider = (ToolCallbackProvider) ctx.getBean("toolCallbackProvider");
-			var customToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("customToolCallbackProvider");
 			// This is injected in the resolver bean, because it's exposed as a
 			// ToolCallbackProvider, but it's not added to the resolver
 			var genericMcpToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("genericMcpToolCallbackProvider");
-
 			// beans exposed as MCP
 			var mcpToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("mcpToolCallbackProvider");
 			var customMcpToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("customMcpToolCallbackProvider");
 
-			assertThat(injectedProviders)
-				.containsExactlyInAnyOrder(toolCallbackProvider, customToolCallbackProvider,
-						genericMcpToolCallbackProvider)
-				.doesNotContain(mcpToolCallbackProvider, customMcpToolCallbackProvider);
+			verify(genericMcpToolCallbackProvider, never()).getToolCallbacks();
+			verify(mcpToolCallbackProvider, never()).getToolCallbacks();
+			verify(customMcpToolCallbackProvider, never()).getToolCallbacks();
 
 		});
 	}
@@ -211,15 +207,15 @@ class McpToolsConfigurationTests {
 		// This bean depends on the resolver, to ensure there are no cyclic dependencies
 		@Bean
 		CustomMcpToolCallbackProvider customMcpToolCallbackProvider(ToolCallbackResolver resolver) {
-			return new CustomMcpToolCallbackProvider();
+			return spy(new CustomMcpToolCallbackProvider());
 		}
 
 		// This will be added to the resolver, because the visible type of the bean
 		// is ToolCallbackProvider ; we would need to actually instantiate the bean
 		// to find out that it is MCP-related
 		@Bean
-		ToolCallbackProvider genericMcpToolCallbackProvider() {
-			return new CustomMcpToolCallbackProvider();
+		CustomMcpToolCallbackProvider genericMcpToolCallbackProvider() {
+			return spy(new CustomMcpToolCallbackProvider());
 		}
 
 		static ToolCallback[] toolCallback(String name) {
