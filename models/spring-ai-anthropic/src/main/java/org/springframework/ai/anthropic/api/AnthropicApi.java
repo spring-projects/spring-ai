@@ -88,8 +88,6 @@ public final class AnthropicApi {
 
 	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04,pdfs-2024-09-25";
 
-	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
-
 	public static final String BETA_EXTENDED_CACHE_TTL = "extended-cache-ttl-2025-04-11";
 
 	private static final String HEADER_X_API_KEY = "x-api-key";
@@ -301,7 +299,7 @@ public final class AnthropicApi {
 		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
 
 		/**
-		 * The claude-3-5-sonnet-latest model.
+		 * The claude-3-5-sonnet-latest model.(Deprecated on October 28, 2025)
 		 */
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
 

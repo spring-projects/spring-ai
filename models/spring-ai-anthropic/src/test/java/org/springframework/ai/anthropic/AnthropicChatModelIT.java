@@ -116,7 +116,7 @@ class AnthropicChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				AnthropicChatOptions.builder().model("claude-3-5-sonnet-latest").build());
+				AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET).build());
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
@@ -269,7 +269,7 @@ class AnthropicChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage),
-				ToolCallingChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName()).build()));
+				ToolCallingChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName()).build()));
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
@@ -315,7 +315,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -345,7 +345,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -381,7 +381,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName();
+		String model = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder().model(model).build())
@@ -499,7 +499,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
 			.toolChoice(new AnthropicApi.ToolChoiceAny())
 			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
@@ -528,7 +528,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
 			.toolChoice(new AnthropicApi.ToolChoiceTool("getFunResponse", true))
 			.internalToolExecutionEnabled(false)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
@@ -566,7 +566,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
 			.toolChoice(new AnthropicApi.ToolChoiceNone())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
