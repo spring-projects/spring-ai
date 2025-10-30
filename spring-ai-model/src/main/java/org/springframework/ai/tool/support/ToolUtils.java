@@ -18,6 +18,7 @@ package org.springframework.ai.tool.support;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolMetadata;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.util.ParsingUtils;
@@ -118,6 +120,52 @@ public final class ToolUtils {
 	public static List<String> getDuplicateToolNames(ToolCallback... toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		return getDuplicateToolNames(Arrays.asList(toolCallbacks));
+	}
+
+	/**
+	 * Extracts metadata from a method annotated with {@link ToolMetadata}.
+	 * @param method the method to extract metadata from
+	 * @return a map of metadata key-value pairs, or an empty map if no metadata is
+	 * present
+	 */
+	public static Map<String, Object> getToolMetadata(Method method) {
+		Assert.notNull(method, "method cannot be null");
+		var toolMetadata = AnnotatedElementUtils.findMergedAnnotation(method, ToolMetadata.class);
+		if (toolMetadata == null) {
+			return Map.of();
+		}
+
+		Map<String, Object> metadata = new HashMap<>();
+
+		if (StringUtils.hasText(toolMetadata.type())) {
+			metadata.put("type", toolMetadata.type());
+		}
+
+		if (StringUtils.hasText(toolMetadata.category())) {
+			metadata.put("category", toolMetadata.category());
+		}
+
+		metadata.put("priority", toolMetadata.priority());
+
+		if (toolMetadata.tags().length > 0) {
+			metadata.put("tags", Arrays.asList(toolMetadata.tags()));
+		}
+
+		for (String entry : toolMetadata.value()) {
+			String[] parts = entry.split("=", 2);
+			if (parts.length == 2) {
+				String key = parts[0].trim();
+				String value = parts[1].trim();
+				if (StringUtils.hasText(key) && StringUtils.hasText(value)) {
+					metadata.put(key, value);
+				}
+			}
+			else {
+				logger.warn("Invalid metadata entry format: '{}'. Expected format is 'key=value'.", entry);
+			}
+		}
+
+		return metadata;
 	}
 
 	/**
