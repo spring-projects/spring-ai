@@ -67,7 +67,7 @@ public class DeepSeekApi {
 
 	private final WebClient webClient;
 
-	private DeepSeekStreamFunctionCallingHelper chunkMerger = new DeepSeekStreamFunctionCallingHelper();
+	private final DeepSeekStreamFunctionCallingHelper chunkMerger = new DeepSeekStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api.
@@ -90,21 +90,39 @@ public class DeepSeekApi {
 
 		this.completionsPath = completionsPath;
 		this.betaPrefixPath = betaPrefixPath;
-		// @formatter:off
+
 		Consumer<HttpHeaders> finalHeaders = h -> {
 			h.setBearerAuth(apiKey.getValue());
 			h.setContentType(MediaType.APPLICATION_JSON);
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 		};
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder
-			.baseUrl(baseUrl)
-			.defaultHeaders(finalHeaders)
-			.build(); // @formatter:on
+		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(finalHeaders).build();
+
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param betaPrefixPath the prefix path to the beta feature endpoint.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 */
+	public DeepSeekApi(String completionsPath, String betaPrefixPath, RestClient restClient, WebClient webClient) {
+
+		Assert.hasText(completionsPath, "Completions Path must not be null");
+		Assert.hasText(betaPrefixPath, "Beta feature path must not be null");
+		Assert.notNull(restClient, "RestClient must not be null");
+		Assert.notNull(webClient, "WebClient must not be null");
+
+		this.completionsPath = completionsPath;
+		this.betaPrefixPath = betaPrefixPath;
+		this.restClient = restClient;
+		this.webClient = webClient;
 	}
 
 	/**
@@ -153,7 +171,7 @@ public class DeepSeekApi {
 
 		return this.webClient.post()
 			.uri(this.getEndpoint(chatRequest))
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)

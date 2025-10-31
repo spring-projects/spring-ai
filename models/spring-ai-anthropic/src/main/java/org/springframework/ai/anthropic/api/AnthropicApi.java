@@ -149,6 +149,20 @@ public final class AnthropicApi {
 	}
 
 	/**
+	 * Create a new client api.
+	 * @param completionsPath path to append to the base URL.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 * @param apiKey Anthropic api Key.
+	 */
+	public AnthropicApi(String completionsPath, RestClient restClient, WebClient webClient, ApiKey apiKey) {
+		this.completionsPath = completionsPath;
+		this.restClient = restClient;
+		this.webClient = webClient;
+		this.apiKey = apiKey;
+	}
+
+	/**
 	 * Creates a model response for the given chat conversation.
 	 * @param chatRequest The chat completion request.
 	 * @return Entity response with {@link ChatCompletionResponse} as a body and HTTP
@@ -176,7 +190,7 @@ public final class AnthropicApi {
 		return this.restClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
-				headers.addAll(additionalHttpHeader);
+				headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader));
 				addDefaultHeadersIfMissing(headers);
 			})
 			.body(chatRequest)
@@ -217,7 +231,7 @@ public final class AnthropicApi {
 		return this.webClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
-				headers.addAll(additionalHttpHeader);
+				headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader));
 				addDefaultHeadersIfMissing(headers);
 			}) // @formatter:off
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
@@ -256,7 +270,7 @@ public final class AnthropicApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HEADER_X_API_KEY)) {
+		if (null == headers.getFirst(HEADER_X_API_KEY)) {
 			String apiKeyValue = this.apiKey.getValue();
 			if (StringUtils.hasText(apiKeyValue)) {
 				headers.add(HEADER_X_API_KEY, apiKeyValue);

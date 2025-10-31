@@ -71,7 +71,7 @@ public final class OpenAiResponseHeaderExtractor {
 
 	private static Duration getHeaderAsDuration(ResponseEntity<?> response, String headerName) {
 		var headers = response.getHeaders();
-		if (headers.containsKey(headerName)) {
+		if (null != headers.getFirst(headerName)) {
 			var values = headers.get(headerName);
 			if (!CollectionUtils.isEmpty(values)) {
 				return DurationFormatter.TIME_UNIT.parse(values.get(0));
@@ -82,7 +82,7 @@ public final class OpenAiResponseHeaderExtractor {
 
 	private static Long getHeaderAsLong(ResponseEntity<?> response, String headerName) {
 		var headers = response.getHeaders();
-		if (headers.containsKey(headerName)) {
+		if (null != headers.getFirst(headerName)) {
 			var values = headers.get(headerName);
 			if (!CollectionUtils.isEmpty(values)) {
 				return parseLong(headerName, values.get(0));
