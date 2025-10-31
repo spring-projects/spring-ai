@@ -24,9 +24,6 @@ jobs:
     name: Build branch
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'spring-projects' }}
-    concurrency:
-      group: continuous-integration-${{ github.ref }}
-      cancel-in-progress: true  # Skip if another build is running - next cron will trigger soon
     services:
       ollama:
         image: ollama/ollama:latest
