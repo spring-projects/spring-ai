@@ -37,12 +37,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static com.openai.models.ChatModel.GPT_5_MINI;
+
 /**
  * Configuration information for the Chat Model implementation using the OpenAI Java SDK.
  *
  * @author Julien Dubois
  */
 public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions implements ToolCallingChatOptions {
+
+	public static final String DEFAULT_CHAT_MODEL = GPT_5_MINI.asString();
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiOfficialChatOptions.class);
 
@@ -59,8 +63,6 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 	private Integer maxCompletionTokens;
 
 	private Integer n;
-
-	private List<String> outputModalities;
 
 	private ChatCompletionAudioParam outputAudio;
 
@@ -162,14 +164,6 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 	public void setN(Integer n) {
 		this.n = n;
-	}
-
-	public List<String> getOutputModalities() {
-		return this.outputModalities;
-	}
-
-	public void setOutputModalities(List<String> outputModalities) {
-		this.outputModalities = outputModalities;
 	}
 
 	public ChatCompletionAudioParam getOutputAudio() {
@@ -396,8 +390,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 		return Objects.equals(frequencyPenalty, options.frequencyPenalty)
 				&& Objects.equals(logitBias, options.logitBias) && Objects.equals(logprobs, options.logprobs)
 				&& Objects.equals(topLogprobs, options.topLogprobs) && Objects.equals(maxTokens, options.maxTokens)
-				&& Objects.equals(n, options.n) && Objects.equals(outputModalities, options.outputModalities)
-				&& Objects.equals(outputAudio, options.outputAudio)
+				&& Objects.equals(n, options.n) && Objects.equals(outputAudio, options.outputAudio)
 				&& Objects.equals(presencePenalty, options.presencePenalty)
 				&& Objects.equals(responseFormat, options.responseFormat)
 				&& Objects.equals(streamOptions, options.streamOptions) && Objects.equals(seed, options.seed)
@@ -415,24 +408,24 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, outputModalities,
-				outputAudio, presencePenalty, responseFormat, streamOptions, seed, stop, temperature, topP, tools,
-				toolChoice, user, parallelToolCalls, store, metadata, reasoningEffort, verbosity, serviceTier,
-				toolCallbacks, toolNames, internalToolExecutionEnabled, httpHeaders, toolContext);
+		return Objects.hash(frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, outputAudio,
+				presencePenalty, responseFormat, streamOptions, seed, stop, temperature, topP, tools, toolChoice, user,
+				parallelToolCalls, store, metadata, reasoningEffort, verbosity, serviceTier, toolCallbacks, toolNames,
+				internalToolExecutionEnabled, httpHeaders, toolContext);
 	}
 
 	@Override
 	public String toString() {
 		return "OpenAiOfficialChatOptions{" + "frequencyPenalty=" + frequencyPenalty + ", logitBias=" + logitBias
 				+ ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs + ", maxTokens=" + maxTokens + ", n=" + n
-				+ ", outputModalities=" + outputModalities + ", outputAudio=" + outputAudio + ", presencePenalty="
-				+ presencePenalty + ", responseFormat=" + responseFormat + ", streamOptions=" + streamOptions
-				+ ", seed=" + seed + ", stop=" + stop + ", temperature=" + temperature + ", topP=" + topP + ", tools="
-				+ tools + ", toolChoice=" + toolChoice + ", user='" + user + '\'' + ", parallelToolCalls="
-				+ parallelToolCalls + ", store=" + store + ", metadata=" + metadata + ", reasoningEffort='"
-				+ reasoningEffort + '\'' + ", verbosity='" + verbosity + '\'' + ", serviceTier='" + serviceTier + '\''
-				+ ", toolCallbacks=" + toolCallbacks + ", toolNames=" + toolNames + ", internalToolExecutionEnabled="
-				+ internalToolExecutionEnabled + ", httpHeaders=" + httpHeaders + ", toolContext=" + toolContext + '}';
+				+ ", outputAudio=" + outputAudio + ", presencePenalty=" + presencePenalty + ", responseFormat="
+				+ responseFormat + ", streamOptions=" + streamOptions + ", seed=" + seed + ", stop=" + stop
+				+ ", temperature=" + temperature + ", topP=" + topP + ", tools=" + tools + ", toolChoice=" + toolChoice
+				+ ", user='" + user + '\'' + ", parallelToolCalls=" + parallelToolCalls + ", store=" + store
+				+ ", metadata=" + metadata + ", reasoningEffort='" + reasoningEffort + '\'' + ", verbosity='"
+				+ verbosity + '\'' + ", serviceTier='" + serviceTier + '\'' + ", toolCallbacks=" + toolCallbacks
+				+ ", toolNames=" + toolNames + ", internalToolExecutionEnabled=" + internalToolExecutionEnabled
+				+ ", httpHeaders=" + httpHeaders + ", toolContext=" + toolContext + '}';
 	}
 
 	public static final class Builder {
@@ -449,8 +442,6 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			this.options.setMaxTokens(fromOptions.getMaxTokens());
 			this.options.setMaxCompletionTokens(fromOptions.getMaxCompletionTokens());
 			this.options.setN(fromOptions.getN());
-			this.options.setOutputModalities(fromOptions.getOutputModalities() != null
-					? new ArrayList<>(fromOptions.getOutputModalities()) : null);
 			this.options.setOutputAudio(fromOptions.getOutputAudio());
 			this.options.setPresencePenalty(fromOptions.getPresencePenalty());
 			this.options.setResponseFormat(fromOptions.getResponseFormat());
@@ -504,9 +495,6 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			}
 			if (from.getN() != null) {
 				this.options.setN(from.getN());
-			}
-			if (from.getOutputModalities() != null) {
-				this.options.setOutputModalities(new ArrayList<>(from.getOutputModalities()));
 			}
 			if (from.getOutputAudio() != null) {
 				this.options.setOutputAudio(from.getOutputAudio());
@@ -633,11 +621,6 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 		public Builder N(Integer n) {
 			this.options.setN(n);
-			return this;
-		}
-
-		public Builder outputModalities(List<String> modalities) {
-			this.options.setOutputModalities(modalities);
 			return this;
 		}
 

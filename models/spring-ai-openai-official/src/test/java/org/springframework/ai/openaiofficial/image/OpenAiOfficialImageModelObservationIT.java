@@ -38,7 +38,7 @@ import static org.springframework.ai.image.observation.ImageModelObservationDocu
 import static org.springframework.ai.image.observation.ImageModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
- * Integration tests for {@link OpenAiOfficialImageModel}.
+ * Integration tests for observation instrumentation in {@link OpenAiOfficialImageModel}.
  *
  * @author Julien Dubois
  */

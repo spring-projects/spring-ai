@@ -19,7 +19,9 @@ package org.springframework.ai.openaiofficial.setup;
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientAsync;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
+import com.openai.client.okhttp.OpenAIOkHttpClientAsync;
 import com.openai.credential.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,32 +66,8 @@ public class OpenAiOfficialSetup {
 			boolean isAzure, boolean isGitHubModels, String modelName, Duration timeout, Integer maxRetries,
 			Proxy proxy, Map<String, String> customHeaders) {
 
-		if (apiKey == null && credential == null) {
-			var openAiKey = System.getenv("OPENAI_API_KEY");
-			if (openAiKey != null) {
-				apiKey = openAiKey;
-				logger.debug("OpenAI API Key detected from environment variable OPENAI_API_KEY.");
-			}
-			var azureOpenAiKey = System.getenv("AZURE_OPENAI_KEY");
-			if (azureOpenAiKey != null) {
-				apiKey = azureOpenAiKey;
-				logger.debug("Azure OpenAI Key detected from environment variable AZURE_OPENAI_KEY.");
-			}
-		}
-		if (baseUrl == null) {
-			var openAiBaseUrl = System.getenv("OPENAI_BASE_URL");
-			if (openAiBaseUrl != null) {
-				baseUrl = openAiBaseUrl;
-				logger.debug("OpenAI Base URL detected from environment variable OPENAI_BASE_URL.");
-			}
-			var azureOpenAiBaseUrl = System.getenv("AZURE_OPENAI_BASE_URL");
-			if (azureOpenAiBaseUrl != null) {
-				baseUrl = azureOpenAiBaseUrl;
-				logger.debug("Azure OpenAI Base URL detected from environment variable AZURE_OPENAI_BASE_URL.");
-			}
-		}
-
-		ModelHost modelHost = detectModelHost(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
+		baseUrl = detectBaseUrlFromEnv(baseUrl);
+		var modelHost = detectModelHost(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
 		if (timeout == null) {
 			timeout = DEFAULT_DURATION;
@@ -135,8 +113,81 @@ public class OpenAiOfficialSetup {
 		return builder.build();
 	}
 
+	/**
+	 * The asynchronous client setup is the same as the synchronous one in the OpenAI Java
+	 * SDK, but uses a different client implementation.
+	 */
+	public static OpenAIClientAsync setupAsyncClient(String baseUrl, String apiKey, Credential credential,
+			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAiServiceVersion, String organizationId,
+			boolean isAzure, boolean isGitHubModels, String modelName, Duration timeout, Integer maxRetries,
+			Proxy proxy, Map<String, String> customHeaders) {
+
+		baseUrl = detectBaseUrlFromEnv(baseUrl);
+		var modelHost = detectModelHost(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
+				azureOpenAiServiceVersion);
+		if (timeout == null) {
+			timeout = DEFAULT_DURATION;
+		}
+		if (maxRetries == null) {
+			maxRetries = DEFAULT_MAX_RETRIES;
+		}
+
+		OpenAIOkHttpClientAsync.Builder builder = OpenAIOkHttpClientAsync.builder();
+		builder
+			.baseUrl(calculateBaseUrl(baseUrl, modelHost, modelName, azureDeploymentName, azureOpenAiServiceVersion));
+
+		Credential calculatedCredential = calculateCredential(modelHost, apiKey, credential);
+		String calculatedApiKey = calculateApiKey(modelHost, apiKey);
+		if (calculatedCredential == null && calculatedApiKey == null) {
+			throw new IllegalArgumentException("Either apiKey or credential must be set to authenticate");
+		}
+		else if (calculatedCredential != null) {
+			builder.credential(calculatedCredential);
+		}
+		else {
+			builder.apiKey(calculatedApiKey);
+		}
+		builder.organization(organizationId);
+
+		if (azureOpenAiServiceVersion != null) {
+			builder.azureServiceVersion(azureOpenAiServiceVersion);
+		}
+
+		if (proxy != null) {
+			builder.proxy(proxy);
+		}
+
+		builder.putHeader("User-Agent", DEFAULT_USER_AGENT);
+		if (customHeaders != null) {
+			builder.putAllHeaders(customHeaders.entrySet()
+				.stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> Collections.singletonList(entry.getValue()))));
+		}
+
+		builder.timeout(timeout);
+		builder.maxRetries(maxRetries);
+		return builder.build();
+	}
+
+	static String detectBaseUrlFromEnv(String baseUrl) {
+		if (baseUrl == null) {
+			var openAiBaseUrl = System.getenv("OPENAI_BASE_URL");
+			if (openAiBaseUrl != null) {
+				baseUrl = openAiBaseUrl;
+				logger.debug("OpenAI Base URL detected from environment variable OPENAI_BASE_URL.");
+			}
+			var azureOpenAiBaseUrl = System.getenv("AZURE_OPENAI_BASE_URL");
+			if (azureOpenAiBaseUrl != null) {
+				baseUrl = azureOpenAiBaseUrl;
+				logger.debug("Azure OpenAI Base URL detected from environment variable AZURE_OPENAI_BASE_URL.");
+			}
+		}
+		return baseUrl;
+	}
+
 	static ModelHost detectModelHost(boolean isAzure, boolean isGitHubModels, String baseUrl,
 			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
+
 		if (isAzure) {
 			return ModelHost.AZURE_OPENAI; // Forced by the user
 		}
@@ -159,8 +210,9 @@ public class OpenAiOfficialSetup {
 		return ModelHost.OPENAI;
 	}
 
-	static String calculateBaseUrl(final String baseUrl, ModelHost modelHost, String modelName,
-			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAiServiceVersion) {
+	static String calculateBaseUrl(String baseUrl, ModelHost modelHost, String modelName, String azureDeploymentName,
+			AzureOpenAIServiceVersion azureOpenAiServiceVersion) {
+
 		if (modelHost == ModelHost.OPENAI) {
 			if (baseUrl == null || baseUrl.isBlank()) {
 				return OPENAI_URL;
@@ -211,6 +263,18 @@ public class OpenAiOfficialSetup {
 	}
 
 	static String calculateApiKey(ModelHost modelHost, String apiKey) {
+		if (apiKey == null) {
+			var openAiKey = System.getenv("OPENAI_API_KEY");
+			if (openAiKey != null) {
+				apiKey = openAiKey;
+				logger.debug("OpenAI API Key detected from environment variable OPENAI_API_KEY.");
+			}
+			var azureOpenAiKey = System.getenv("AZURE_OPENAI_KEY");
+			if (azureOpenAiKey != null) {
+				apiKey = azureOpenAiKey;
+				logger.debug("Azure OpenAI Key detected from environment variable AZURE_OPENAI_KEY.");
+			}
+		}
 		if (modelHost != ModelHost.AZURE_OPENAI && apiKey != null) {
 			return apiKey;
 		}

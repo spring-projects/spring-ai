@@ -37,4 +37,9 @@ public class OpenAiOfficialTestConfiguration {
 		return new OpenAiOfficialImageModel();
 	}
 
+	@Bean
+	public OpenAiOfficialChatModel openAiChatModel() {
+		return new OpenAiOfficialChatModel();
+	}
+
 }
