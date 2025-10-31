@@ -35,7 +35,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for observation instrumentation in {@link OpenAiOfficialImageModel}.
+ * Integration tests for {@link OpenAiOfficialImageModel}.
  *
  * @author Julien Dubois
  */
