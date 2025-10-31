@@ -22,8 +22,6 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -39,7 +37,7 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
+import org.springframework.ai.tool.method.MethodToolCallback;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
@@ -196,12 +194,13 @@ public final class McpToolUtils {
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
 
-		SharedSyncToolSpecification sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
+		SharedAsyncToolSpecification sharedSpec = toSharedAsyncToolSpecification(toolCallback, mimeType);
 
 		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(),
 				(exchange, map) -> sharedSpec.sharedHandler()
-					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map)),
-				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
+					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map))
+					.block(),
+				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request).block());
 	}
 
 	/**
@@ -219,15 +218,15 @@ public final class McpToolUtils {
 	public static McpStatelessServerFeatures.SyncToolSpecification toStatelessSyncToolSpecification(
 			ToolCallback toolCallback, MimeType mimeType) {
 
-		var sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
+		var sharedSpec = toSharedAsyncToolSpecification(toolCallback, mimeType);
 
 		return McpStatelessServerFeatures.SyncToolSpecification.builder()
 			.tool(sharedSpec.tool())
-			.callHandler((exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request))
+			.callHandler((exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request).block())
 			.build();
 	}
 
-	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
+	private static SharedAsyncToolSpecification toSharedAsyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
 
 		var tool = McpSchema.Tool.builder()
@@ -237,20 +236,31 @@ public final class McpToolUtils {
 					McpSchema.JsonSchema.class))
 			.build();
 
-		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
-			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
-						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
+		return new SharedAsyncToolSpecification(tool, (exchangeOrContext, request) -> {
+			final String toolRequest = ModelOptionsUtils.toJsonString(request.arguments());
+			final ToolContext toolContext = new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext));
+			final Mono<String> callResult;
+			if (toolCallback instanceof MethodToolCallback reactiveMethodToolCallback) {
+				callResult = reactiveMethodToolCallback.callReactive(toolRequest, toolContext);
+			}
+			else {
+				callResult = Mono.fromCallable(() -> toolCallback.call(toolRequest, toolContext));
+			}
+			return callResult.map(result -> {
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
-					return new McpSchema.CallToolResult(
-							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
+					return McpSchema.CallToolResult.builder()
+						.addContent(new McpSchema.ImageContent(annotations, result, mimeType.toString()))
+						.isError(false)
+						.build();
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
-			}
-			catch (Exception e) {
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
-			}
+				return McpSchema.CallToolResult.builder().addTextContent(result).isError(false).build();
+			})
+				.onErrorResume(Exception.class,
+						error -> Mono.fromSupplier(() -> McpSchema.CallToolResult.builder()
+							.addTextContent(error.getMessage())
+							.isError(true)
+							.build()));
 		});
 	}
 
@@ -331,7 +341,6 @@ public final class McpToolUtils {
 	 * This method enables Spring AI tools to be exposed as asynchronous MCP tools that
 	 * can be discovered and invoked by language models. The conversion process:
 	 * <ul>
-	 * <li>First converts the callback to a synchronous specification</li>
 	 * <li>Wraps the synchronous execution in a reactive Mono</li>
 	 * <li>Configures execution on a bounded elastic scheduler for non-blocking
 	 * operation</li>
@@ -352,13 +361,12 @@ public final class McpToolUtils {
 	public static McpServerFeatures.AsyncToolSpecification toAsyncToolSpecification(ToolCallback toolCallback,
 			MimeType mimeType) {
 
-		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
+		SharedAsyncToolSpecification asyncToolSpecification = toSharedAsyncToolSpecification(toolCallback, mimeType);
 
 		return McpServerFeatures.AsyncToolSpecification.builder()
-			.tool(syncToolSpecification.tool())
-			.callHandler((exchange, request) -> Mono
-				.fromCallable(
-						() -> syncToolSpecification.callHandler().apply(new McpSyncServerExchange(exchange), request))
+			.tool(asyncToolSpecification.tool())
+			.callHandler((exchange, request) -> asyncToolSpecification.sharedHandler()
+				.apply(new McpSyncServerExchange(exchange), request)
 				.subscribeOn(Schedulers.boundedElastic()))
 			.build();
 	}
@@ -366,12 +374,11 @@ public final class McpToolUtils {
 	public static McpStatelessServerFeatures.AsyncToolSpecification toStatelessAsyncToolSpecification(
 			ToolCallback toolCallback, MimeType mimeType) {
 
-		McpStatelessServerFeatures.SyncToolSpecification statelessSyncToolSpecification = toStatelessSyncToolSpecification(
-				toolCallback, mimeType);
+		SharedAsyncToolSpecification asyncToolSpecification = toSharedAsyncToolSpecification(toolCallback, mimeType);
 
-		return new McpStatelessServerFeatures.AsyncToolSpecification(statelessSyncToolSpecification.tool(),
-				(context, request) -> Mono
-					.fromCallable(() -> statelessSyncToolSpecification.callHandler().apply(context, request))
+		return new McpStatelessServerFeatures.AsyncToolSpecification(asyncToolSpecification.tool(),
+				(context, request) -> asyncToolSpecification.sharedHandler()
+					.apply(context, request)
 					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
@@ -441,13 +448,8 @@ public final class McpToolUtils {
 		return List.of((AsyncMcpToolCallbackProvider.builder().mcpClients(asyncMcpClients).build().getToolCallbacks()));
 	}
 
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	// @formatter:off
-	private record Base64Wrapper(@JsonAlias("mimetype") @Nullable MimeType mimeType, @JsonAlias({
-			"base64", "b64", "imageData" }) @Nullable String data) {
+	private record SharedAsyncToolSpecification(McpSchema.Tool tool,
+			BiFunction<Object, CallToolRequest, Mono<McpSchema.CallToolResult>> sharedHandler) {
 	}
 
-	private record SharedSyncToolSpecification(McpSchema.Tool tool,
-											BiFunction<Object, CallToolRequest, McpSchema.CallToolResult> sharedHandler) {
-	}
 }
