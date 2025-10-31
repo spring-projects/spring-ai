@@ -34,6 +34,7 @@ import org.springframework.core.annotation.AnnotationUtils;
  * </p>
  *
  * @author Issam El-atif
+ * @since 1.1.0
  * @see AutoConfigurations
  */
 public final class SpringAiTestAutoConfigurations {

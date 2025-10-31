@@ -19,6 +19,7 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,11 +30,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Ilayaperumal Gopinathan
  * @author Pawel Potaczala
+ * @author Issam El-atif
  */
 public class BedrockConverseModelConfigurationTests {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			BedrockConverseProxyITUtil.bedrockConverseProxyAutoConfig(BedrockConverseProxyChatAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(SpringAiTestAutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
 
 	@Test
 	void chatModelActivation() {
