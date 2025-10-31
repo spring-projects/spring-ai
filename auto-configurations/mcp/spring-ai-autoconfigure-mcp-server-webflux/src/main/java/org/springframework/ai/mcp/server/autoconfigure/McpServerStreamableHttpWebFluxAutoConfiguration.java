@@ -26,7 +26,6 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisa
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -49,8 +48,7 @@ public class McpServerStreamableHttpWebFluxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebFluxStreamableServerTransportProvider webFluxStreamableServerTransportProvider(
-			@Qualifier("mcpServerObjectMapper") ObjectProvider<ObjectMapper> objectMapperProvider,
-			McpServerStreamableHttpProperties serverProperties) {
+			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerStreamableHttpProperties serverProperties) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
