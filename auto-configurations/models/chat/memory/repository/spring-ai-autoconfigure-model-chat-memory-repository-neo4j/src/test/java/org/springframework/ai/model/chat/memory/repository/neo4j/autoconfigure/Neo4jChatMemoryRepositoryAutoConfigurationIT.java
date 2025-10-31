@@ -39,7 +39,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
+import org.springframework.boot.neo4j.autoconfigure.Neo4jAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.util.MimeType;
 

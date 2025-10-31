@@ -44,8 +44,6 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.testcontainer.CouchbaseContainerMetadata;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -283,7 +281,6 @@ public class CouchbaseSearchVectorStoreIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Bean

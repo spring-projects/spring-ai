@@ -38,8 +38,6 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -232,7 +230,6 @@ class CassandraChatMemoryRepositoryIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Bean

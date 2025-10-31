@@ -41,8 +41,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -204,7 +202,6 @@ class MilvusVectorStoreCustomFieldNamesIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	static class TestApplication {
 
 		@Value("${test.spring.ai.vectorstore.milvus.metricType}")

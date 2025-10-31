@@ -81,13 +81,13 @@
 
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>qdrant</artifactId>
+            <artifactId>testcontainers-qdrant</artifactId>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 

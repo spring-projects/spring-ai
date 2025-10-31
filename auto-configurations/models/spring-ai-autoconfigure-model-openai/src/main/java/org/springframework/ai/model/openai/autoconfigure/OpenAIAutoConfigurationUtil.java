@@ -16,14 +16,9 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import org.springframework.http.HttpHeaders;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 public final class OpenAIAutoConfigurationUtil {
@@ -44,12 +39,12 @@ public final class OpenAIAutoConfigurationUtil {
 		String organizationId = StringUtils.hasText(modelProperties.getOrganizationId())
 				? modelProperties.getOrganizationId() : commonProperties.getOrganizationId();
 
-		Map<String, List<String>> connectionHeaders = new HashMap<>();
+		HttpHeaders connectionHeaders = new HttpHeaders();
 		if (StringUtils.hasText(projectId)) {
-			connectionHeaders.put("OpenAI-Project", List.of(projectId));
+			connectionHeaders.add("OpenAI-Project", projectId);
 		}
 		if (StringUtils.hasText(organizationId)) {
-			connectionHeaders.put("OpenAI-Organization", List.of(organizationId));
+			connectionHeaders.add("OpenAI-Organization", organizationId);
 		}
 
 		Assert.hasText(baseUrl,
@@ -59,10 +54,10 @@ public final class OpenAIAutoConfigurationUtil {
 				"OpenAI API key must be set. Use the connection property: spring.ai.openai.api-key or spring.ai.openai."
 						+ modelType + ".api-key property.");
 
-		return new ResolvedConnectionProperties(baseUrl, apiKey, CollectionUtils.toMultiValueMap(connectionHeaders));
+		return new ResolvedConnectionProperties(baseUrl, apiKey, connectionHeaders);
 	}
 
-	public record ResolvedConnectionProperties(String baseUrl, String apiKey, MultiValueMap<String, String> headers) {
+	public record ResolvedConnectionProperties(String baseUrl, String apiKey, HttpHeaders headers) {
 
 	}
 
