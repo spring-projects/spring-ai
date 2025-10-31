@@ -135,6 +135,7 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 					SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 					"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
+					"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
 					"spring.ai.vectorstore.elasticsearch.index-name=example",
 					"spring.ai.vectorstore.elasticsearch.dimensions=1024",
 					"spring.ai.vectorstore.elasticsearch.dense-vector-indexing=true",
