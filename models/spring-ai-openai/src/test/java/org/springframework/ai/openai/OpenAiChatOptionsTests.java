@@ -143,6 +143,7 @@ class OpenAiChatOptionsTests {
 			.reasoningEffort("low")
 			.internalToolExecutionEnabled(true)
 			.httpHeaders(Map.of("header1", "value1"))
+			.chatTemplateKwargs(Map.of("enable_thinking", true))
 			.serviceTier(ServiceTier.DEFAULT)
 			.build();
 
@@ -192,6 +193,7 @@ class OpenAiChatOptionsTests {
 		options.setReasoningEffort("high");
 		options.setInternalToolExecutionEnabled(false);
 		options.setHttpHeaders(Map.of("header2", "value2"));
+		options.setChatTemplateKwargs(Map.of("enable_thinking", true));
 		options.setServiceTier(ServiceTier.DEFAULT.getValue());
 
 		assertThat(options.getModel()).isEqualTo("test-model");
@@ -227,6 +229,7 @@ class OpenAiChatOptionsTests {
 		options.setStopSequences(List.of("s1", "s2"));
 		assertThat(options.getStopSequences()).isEqualTo(List.of("s1", "s2"));
 		assertThat(options.getStop()).isEqualTo(List.of("s1", "s2"));
+		assertThat(options.getChatTemplateKwargs()).isEqualTo(Map.of("enable_thinking", true));
 		assertThat(options.getServiceTier()).isEqualTo("default");
 	}
 
@@ -263,6 +266,7 @@ class OpenAiChatOptionsTests {
 		assertThat(options.getToolContext()).isEqualTo(new HashMap<>());
 		assertThat(options.getStreamUsage()).isFalse();
 		assertThat(options.getStopSequences()).isNull();
+		assertThat(options.getChatTemplateKwargs()).isNull();
 		assertThat(options.getServiceTier()).isNull();
 	}
 
