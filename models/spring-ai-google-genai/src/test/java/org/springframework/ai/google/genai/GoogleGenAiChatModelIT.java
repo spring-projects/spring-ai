@@ -28,6 +28,8 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -42,10 +44,10 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -64,6 +66,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
 class GoogleGenAiChatModelIT {
+
+	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiChatModelIT.class);
 
 	@Autowired
 	private GoogleGenAiChatModel chatModel;
@@ -382,6 +386,102 @@ class GoogleGenAiChatModelIT {
 
 		assertThat(response).isNotEmpty();
 		assertThat(response).contains("2025-05-08T10:10:10+02:00");
+	}
+
+	@Test
+	void testThinkingBudgetGeminiProAutomaticDecisionByModel() {
+		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).temperature(0.1).build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingBudget).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt()
+			.user("Explain to me briefly how I can start a SpringAI project")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	@Test
+	void testThinkingBudgetGeminiProMinBudget() {
+		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_2_5_PRO)
+				.temperature(0.1)
+				.thinkingBudget(128)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingBudget).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt()
+			.user("Explain to me briefly how I can start a SpringAI project")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	@Test
+	void testThinkingBudgetGeminiFlashDefaultBudget() {
+		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_2_5_FLASH)
+				.temperature(0.1)
+				.thinkingBudget(8192)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingBudget).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt()
+			.user("Explain to me briefly how I can start a SpringAI project")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	@Test
+	void testThinkingBudgetGeminiFlashThinkingTurnedOff() {
+		GoogleGenAiChatModel chatModelWithThinkingBudget = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_2_5_FLASH)
+				.temperature(0.1)
+				.thinkingBudget(0)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingBudget).build();
+
+		// Create a prompt that will trigger the tool call with a specific request that
+		// should invoke the tool
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt()
+			.user("Explain to me briefly how I can start a SpringAI project")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
 	}
 
 	/**

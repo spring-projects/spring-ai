@@ -364,28 +364,32 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(model, frequencyPenalty, maxTokens, n, presencePenalty, responseFormat, seed, stop,
-				temperature, topP, maskSensitiveInfo, tools, toolChoice, toolCallbacks, toolNames, toolContext,
-				internalToolExecutionEnabled);
+		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.n, this.presencePenalty,
+				this.responseFormat, this.seed, this.stop, this.temperature, this.topP, this.maskSensitiveInfo,
+				this.tools, this.toolChoice, this.toolCallbacks, this.toolNames, this.toolContext,
+				this.internalToolExecutionEnabled);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o)
+		if (this == o) {
 			return true;
-		if (o == null || getClass() != o.getClass())
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 		MiniMaxChatOptions that = (MiniMaxChatOptions) o;
-		return Objects.equals(model, that.model) && Objects.equals(frequencyPenalty, that.frequencyPenalty)
-				&& Objects.equals(maxTokens, that.maxTokens) && Objects.equals(n, that.n)
-				&& Objects.equals(presencePenalty, that.presencePenalty)
-				&& Objects.equals(responseFormat, that.responseFormat) && Objects.equals(seed, that.seed)
-				&& Objects.equals(stop, that.stop) && Objects.equals(temperature, that.temperature)
-				&& Objects.equals(topP, that.topP) && Objects.equals(maskSensitiveInfo, that.maskSensitiveInfo)
-				&& Objects.equals(tools, that.tools) && Objects.equals(toolChoice, that.toolChoice)
-				&& Objects.equals(toolCallbacks, that.toolCallbacks) && Objects.equals(toolNames, that.toolNames)
-				&& Objects.equals(toolContext, that.toolContext)
-				&& Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled);
+		return Objects.equals(this.model, that.model) && Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.maxTokens, that.maxTokens) && Objects.equals(this.n, that.n)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.stop, that.stop) && Objects.equals(this.temperature, that.temperature)
+				&& Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.maskSensitiveInfo, that.maskSensitiveInfo)
+				&& Objects.equals(this.tools, that.tools) && Objects.equals(this.toolChoice, that.toolChoice)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled);
 	}
 
 	@Override
@@ -393,7 +397,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return fromOptions(this);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected MiniMaxChatOptions options;
 

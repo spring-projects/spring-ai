@@ -111,7 +111,7 @@ If you'd rather create the `JdbcChatMemoryRepository` manually, you can do so by
 ----
 ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
     .jdbcTemplate(jdbcTemplate)
-    .dialect(new PostgresChatMemoryDialect())
+    .dialect(new PostgresChatMemoryRepositoryDialect())
     .build();
 
 ChatMemory chatMemory = MessageWindowChatMemory.builder()
@@ -128,6 +128,7 @@ Spring AI supports multiple relational databases via a dialect abstraction. The 
 - MySQL / MariaDB
 - SQL Server
 - HSQLDB
+- Oracle Database
 
 The correct dialect can be auto-detected from the JDBC URL when using `JdbcChatMemoryRepositoryDialect.from(DataSource)`. You can extend support for other databases by implementing the `JdbcChatMemoryRepositoryDialect` interface.
 
@@ -222,7 +223,7 @@ If you'd rather create the `CassandraChatMemoryRepository` manually, you can do 
 [source,java]
 ----
 ChatMemoryRepository chatMemoryRepository = CassandraChatMemoryRepository
-    .create(CassandraChatMemoryConfig.builder().withCqlSession(cqlSession));
+    .create(CassandraChatMemoryRepositoryConfig.builder().withCqlSession(cqlSession));
 
 ChatMemory chatMemory = MessageWindowChatMemory.builder()
     .chatMemoryRepository(chatMemoryRepository)
@@ -322,6 +323,90 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 ==== Index Initialization
 
 The Neo4j repository will automatically ensure that indexes are created for conversation IDs and message indices to optimize performance. If you use custom labels, indexes will be created for those labels as well. No schema initialization is required, but you should ensure your Neo4j instance is accessible to your application.
+
+=== CosmosDBChatMemoryRepository
+
+`CosmosDBChatMemoryRepository` is a built-in implementation that uses Azure Cosmos DB NoSQL API to store messages. It is suitable for applications that require a globally distributed, highly scalable document database for chat memory persistence. The repository uses the conversation ID as the partition key to ensure efficient data distribution and fast retrieval.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-cosmos-db</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-cosmos-db'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `CosmosDBChatMemoryRepository`, which you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+CosmosDBChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `CosmosDBChatMemoryRepository` manually, you can do so by providing a `CosmosDBChatMemoryRepositoryConfig` instance:
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = CosmosDBChatMemoryRepository
+    .create(CosmosDBChatMemoryRepositoryConfig.builder()
+        .withCosmosClient(cosmosAsyncClient)
+        .withDatabaseName("chat-memory-db")
+        .withContainerName("conversations")
+        .build());
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.ai.chat.memory.repository.cosmosdb.endpoint` | Azure Cosmos DB endpoint URI. Required for auto-configuration. |
+| `spring.ai.chat.memory.repository.cosmosdb.key` | Azure Cosmos DB primary or secondary key. If not provided, Azure Identity authentication will be used. |
+| `spring.ai.chat.memory.repository.cosmosdb.connection-mode` | Connection mode for Cosmos DB client (`direct` or `gateway`). | `gateway`
+| `spring.ai.chat.memory.repository.cosmosdb.database-name` | Name of the Cosmos DB database. | `SpringAIChatMemory`
+| `spring.ai.chat.memory.repository.cosmosdb.container-name` | Name of the Cosmos DB container. | `ChatMemory`
+| `spring.ai.chat.memory.repository.cosmosdb.partition-key-path` | Partition key path for the container. | `/conversationId`
+|===
+
+==== Authentication
+
+The Cosmos DB Chat Memory Repository supports two authentication methods:
+
+1. **Key-based authentication**: Provide the `spring.ai.chat.memory.repository.cosmosdb.key` property with your Cosmos DB primary or secondary key.
+2. **Azure Identity authentication**: When no key is provided, the repository uses Azure Identity (`DefaultAzureCredential`) to authenticate with managed identity, service principal, or other Azure credential sources.
+
+==== Schema Initialization
+
+The auto-configuration will automatically create the specified database and container if they don't exist. The container is configured with the conversation ID as the partition key (`/conversationId`) to ensure optimal performance for chat memory operations. No manual schema setup is required.
+
+You can customize the database and container names using the configuration properties mentioned above.
 
 == Memory in Chat Client
 

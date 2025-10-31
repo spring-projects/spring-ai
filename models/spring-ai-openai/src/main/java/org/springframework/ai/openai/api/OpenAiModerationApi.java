@@ -47,7 +47,7 @@ import org.springframework.web.client.RestClient;
  */
 public class OpenAiModerationApi {
 
-	public static final String DEFAULT_MODERATION_MODEL = "text-moderation-latest";
+	public static final String DEFAULT_MODERATION_MODEL = "omni-moderation-latest";
 
 	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
 
@@ -172,7 +172,7 @@ public class OpenAiModerationApi {
 	/**
 	 * Builder to construct {@link OpenAiModerationApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 

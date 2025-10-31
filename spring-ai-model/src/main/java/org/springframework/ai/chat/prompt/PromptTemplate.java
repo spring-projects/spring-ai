@@ -111,8 +111,8 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 		// Process internal variables to handle Resources before rendering
 		Map<String, Object> processedVariables = new HashMap<>();
 		for (Entry<String, Object> entry : this.variables.entrySet()) {
-			if (entry.getValue() instanceof Resource) {
-				processedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
+			if (entry.getValue() instanceof Resource resource) {
+				processedVariables.put(entry.getKey(), renderResource(resource));
 			}
 			else {
 				processedVariables.put(entry.getKey(), entry.getValue());
@@ -123,11 +123,16 @@ public class PromptTemplate implements PromptTemplateActions, PromptTemplateMess
 
 	@Override
 	public String render(Map<String, Object> additionalVariables) {
-		Map<String, Object> combinedVariables = new HashMap<>(this.variables);
+		Map<String, Object> combinedVariables = new HashMap<>();
+		Map<String, Object> mergedVariables = new HashMap<>(this.variables);
+		// variables + additionalVariables => mergedVariables
+		if (additionalVariables != null && !additionalVariables.isEmpty()) {
+			mergedVariables.putAll(additionalVariables);
+		}
 
-		for (Entry<String, Object> entry : additionalVariables.entrySet()) {
-			if (entry.getValue() instanceof Resource) {
-				combinedVariables.put(entry.getKey(), renderResource((Resource) entry.getValue()));
+		for (Entry<String, Object> entry : mergedVariables.entrySet()) {
+			if (entry.getValue() instanceof Resource resource) {
+				combinedVariables.put(entry.getKey(), renderResource(resource));
 			}
 			else {
 				combinedVariables.put(entry.getKey(), entry.getValue());

@@ -19,7 +19,6 @@ package org.springframework.ai.google.genai.schema;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.google.genai.schema.JsonSchemaConverter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,6 +52,71 @@ class JsonSchemaConverterTests {
 		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("JSON Schema node must not be null");
+	}
+
+	@Test
+	void fromJsonShouldHandleEmptyObject() {
+		String json = "{}";
+		ObjectNode result = JsonSchemaConverter.fromJson(json);
+
+		assertThat(result).isNotNull();
+		assertThat(result.size()).isEqualTo(0);
+	}
+
+	@Test
+	void fromJsonShouldHandleEmptyString() {
+		assertThatThrownBy(() -> JsonSchemaConverter.fromJson("")).isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Failed to parse JSON");
+	}
+
+	@Test
+	void fromJsonShouldHandleNullInput() {
+		assertThatThrownBy(() -> JsonSchemaConverter.fromJson(null)).isInstanceOf(RuntimeException.class);
+	}
+
+	@Test
+	void shouldHandleBooleanAdditionalProperties() {
+		String json = """
+				{
+					"type": "object",
+					"additionalProperties": true
+				}
+				""";
+		ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
+		assertThat(result.get("additionalProperties").asBoolean()).isTrue();
+	}
+
+	@Test
+	void shouldHandleEnumProperty() {
+		String json = """
+				{
+					"type": "string",
+					"enum": ["a", "b", "c"]
+				}
+				""";
+		ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
+		assertThat(result.get("enum")).isNotNull();
+		assertThat(result.get("enum").get(0).asText()).isEqualTo("a");
+		assertThat(result.get("enum").get(1).asText()).isEqualTo("b");
+		assertThat(result.get("enum").get(2).asText()).isEqualTo("c");
+	}
+
+	@Test
+	void shouldHandleOpenApiSpecificProperties() {
+		String json = """
+				{
+					"type": "string",
+					"nullable": true,
+					"readOnly": true,
+					"writeOnly": false,
+					"description": {"propertyName": "type"}
+				}
+				""";
+		ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
+		assertThat(result.get("nullable").asBoolean()).isTrue();
+		assertThat(result.get("readOnly").asBoolean()).isTrue();
+		assertThat(result.get("writeOnly").asBoolean()).isFalse();
+		assertThat(result.get("description").get("propertyName").asText()).isEqualTo("type");
 	}
 
 	@Nested

@@ -20,10 +20,12 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.aot.McpClientAutoConfigurationRuntimeHints;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
+import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.core.io.Resource;
@@ -37,19 +39,30 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
  */
 public class McpClientAutoConfigurationRuntimeHintsTests {
 
+	private static final String MCP_CLIENT_PACKAGE = "org.springframework.ai.mcp.client.autoconfigure";
+
+	private static final String JSON_PATTERN = "**.json";
+
+	private RuntimeHints runtimeHints;
+
+	private McpClientAutoConfigurationRuntimeHints mcpRuntimeHints;
+
+	@BeforeEach
+	void setUp() {
+		this.runtimeHints = new RuntimeHints();
+		this.mcpRuntimeHints = new McpClientAutoConfigurationRuntimeHints();
+	}
+
 	@Test
 	void registerHints() throws IOException {
 
-		RuntimeHints runtimeHints = new RuntimeHints();
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
 
-		McpClientAutoConfigurationRuntimeHints mcpRuntimeHints = new McpClientAutoConfigurationRuntimeHints();
-		mcpRuntimeHints.registerHints(runtimeHints, null);
-
-		boolean hasJsonPattern = runtimeHints.resources()
+		boolean hasJsonPattern = this.runtimeHints.resources()
 			.resourcePatternHints()
 			.anyMatch(resourceHints -> resourceHints.getIncludes()
 				.stream()
-				.anyMatch(pattern -> "**.json".equals(pattern.getPattern())));
+				.anyMatch(pattern -> JSON_PATTERN.equals(pattern.getPattern())));
 
 		assertThat(hasJsonPattern).as("The **.json resource pattern should be registered").isTrue();
 
@@ -80,11 +93,10 @@ public class McpClientAutoConfigurationRuntimeHintsTests {
 
 		assertThat(foundSubfolderJson).as("nested-config.json should exist in the nested subfolder").isTrue();
 
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(
-				"org.springframework.ai.mcp.client.autoconfigure");
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(MCP_CLIENT_PACKAGE);
 
 		Set<TypeReference> registeredTypes = new HashSet<>();
-		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 			assertThat(registeredTypes.contains(jsonAnnotatedClass))
@@ -95,6 +107,107 @@ public class McpClientAutoConfigurationRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(McpStdioClientProperties.Parameters.class)))
 			.as("McpStdioClientProperties.Parameters class should be registered")
 			.isTrue();
+	}
+
+	@Test
+	void registerHintsWithNullClassLoader() {
+		// Test that registering hints with null ClassLoader works correctly
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+
+		boolean hasJsonPattern = this.runtimeHints.resources()
+			.resourcePatternHints()
+			.anyMatch(resourceHints -> resourceHints.getIncludes()
+				.stream()
+				.anyMatch(pattern -> JSON_PATTERN.equals(pattern.getPattern())));
+
+		assertThat(hasJsonPattern).as("The **.json resource pattern should be registered with null ClassLoader")
+			.isTrue();
+	}
+
+	@Test
+	void allMemberCategoriesAreRegistered() {
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(MCP_CLIENT_PACKAGE);
+
+		// Verify that all MemberCategory values are registered for each type
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> {
+			if (jsonAnnotatedClasses.contains(typeHint.getType())) {
+				Set<MemberCategory> expectedCategories = Set.of(MemberCategory.values());
+				Set<MemberCategory> actualCategories = typeHint.getMemberCategories();
+				assertThat(actualCategories.containsAll(expectedCategories)).isTrue();
+			}
+		});
+	}
+
+	@Test
+	void verifySpecificMcpClientClasses() {
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify specific MCP client classes are registered
+		assertThat(registeredTypes.contains(TypeReference.of(McpStdioClientProperties.Parameters.class)))
+			.as("McpStdioClientProperties.Parameters class should be registered")
+			.isTrue();
+	}
+
+	@Test
+	void multipleRegistrationCallsAreIdempotent() {
+		// Register hints multiple times and verify no duplicates
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+		int firstRegistrationCount = (int) this.runtimeHints.reflection().typeHints().count();
+
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+		int secondRegistrationCount = (int) this.runtimeHints.reflection().typeHints().count();
+
+		assertThat(firstRegistrationCount).isEqualTo(secondRegistrationCount);
+
+		// Verify resource pattern registration is also idempotent
+		boolean hasJsonPattern = this.runtimeHints.resources()
+			.resourcePatternHints()
+			.anyMatch(resourceHints -> resourceHints.getIncludes()
+				.stream()
+				.anyMatch(pattern -> JSON_PATTERN.equals(pattern.getPattern())));
+
+		assertThat(hasJsonPattern).as("JSON pattern should still be registered after multiple calls").isTrue();
+	}
+
+	@Test
+	void verifyJsonResourcePatternIsRegistered() {
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+
+		// Verify the specific JSON resource pattern is registered
+		boolean hasJsonPattern = this.runtimeHints.resources()
+			.resourcePatternHints()
+			.anyMatch(resourceHints -> resourceHints.getIncludes()
+				.stream()
+				.anyMatch(pattern -> JSON_PATTERN.equals(pattern.getPattern())));
+
+		assertThat(hasJsonPattern).as("The **.json resource pattern should be registered").isTrue();
+	}
+
+	@Test
+	void verifyNestedClassesAreRegistered() {
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify nested classes are properly registered
+		assertThat(registeredTypes.contains(TypeReference.of(McpStdioClientProperties.Parameters.class)))
+			.as("Nested Parameters class should be registered")
+			.isTrue();
+	}
+
+	@Test
+	void verifyResourcePatternHintsArePresentAfterRegistration() {
+		this.mcpRuntimeHints.registerHints(this.runtimeHints, null);
+
+		// Verify that resource pattern hints are present
+		long patternCount = this.runtimeHints.resources().resourcePatternHints().count();
+		assertThat(patternCount).isGreaterThan(0);
 	}
 
 }

@@ -24,14 +24,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.springframework.context.annotation.Primary;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -51,8 +49,10 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Gerrit Meier
@@ -207,14 +207,10 @@ class Neo4jVectorStoreIT extends BaseVectorStoreTests {
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			try {
-				vectorStore
-					.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build());
-				Assert.fail("Invalid filter expression should have been cached!");
-			}
-			catch (FilterExpressionTextParser.FilterExpressionParseException e) {
-				assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
-			}
+			assertThatExceptionOfType(FilterExpressionTextParser.FilterExpressionParseException.class)
+				.isThrownBy(() -> vectorStore
+					.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build()))
+				.withMessageContaining("Line: 1:17, Error: no viable alternative at input 'NL'");
 		});
 	}
 
@@ -373,7 +369,7 @@ class Neo4jVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Bean

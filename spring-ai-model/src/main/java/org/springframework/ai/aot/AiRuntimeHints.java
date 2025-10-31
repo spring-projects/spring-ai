@@ -17,6 +17,7 @@
 package org.springframework.ai.aot;
 
 import java.lang.reflect.Executable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -40,6 +41,7 @@ import org.springframework.core.type.filter.TypeFilter;
  * @author Josh Long
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Fu Jian
  */
 public abstract class AiRuntimeHints {
 
@@ -99,12 +101,11 @@ public abstract class AiRuntimeHints {
 	}
 
 	private static boolean hasJacksonAnnotations(Class<?> type) {
-		var hasAnnotation = false;
 		var annotationsToFind = Set.of(JsonProperty.class, JsonInclude.class);
 		for (var annotationToFind : annotationsToFind) {
 
 			if (type.isAnnotationPresent(annotationToFind)) {
-				hasAnnotation = true;
+				return true;
 			}
 
 			var executables = new HashSet<Executable>();
@@ -113,15 +114,13 @@ public abstract class AiRuntimeHints {
 			executables.addAll(Set.of(type.getDeclaredConstructors()));
 
 			for (var executable : executables) {
-				//
 				if (executable.isAnnotationPresent(annotationToFind)) {
-					hasAnnotation = true;
+					return true;
 				}
 
-				///
 				for (var p : executable.getParameters()) {
 					if (p.isAnnotationPresent(annotationToFind)) {
-						hasAnnotation = true;
+						return true;
 					}
 				}
 			}
@@ -129,19 +128,19 @@ public abstract class AiRuntimeHints {
 			if (type.getRecordComponents() != null) {
 				for (var r : type.getRecordComponents()) {
 					if (r.isAnnotationPresent(annotationToFind)) {
-						hasAnnotation = true;
+						return true;
 					}
 				}
 			}
 
 			for (var f : type.getFields()) {
 				if (f.isAnnotationPresent(annotationToFind)) {
-					hasAnnotation = true;
+					return true;
 				}
 			}
 		}
 
-		return hasAnnotation;
+		return false;
 	}
 
 	private static Set<Class<?>> discoverJacksonAnnotatedTypesFromRootType(Class<?> type) {
@@ -155,6 +154,42 @@ public abstract class AiRuntimeHints {
 			}
 		}
 		return jsonTypes;
+	}
+
+	/**
+	 * Discovers all inner classes of a given class.
+	 * <p>
+	 * This method recursively finds all nested classes (both declared and inherited) of
+	 * the provided class and converts them to type references.
+	 * @param clazz the class to find inner classes for
+	 * @return a set of type references for all discovered inner classes
+	 */
+	public static Set<TypeReference> findInnerClassesFor(Class<?> clazz) {
+		var indent = new HashSet<String>();
+		findNestedClasses(clazz, indent);
+		return indent.stream().map(TypeReference::of).collect(Collectors.toSet());
+	}
+
+	/**
+	 * Recursively finds all nested classes of a given class.
+	 * <p>
+	 * This method:
+	 * <ol>
+	 * <li>Collects both declared and inherited nested classes</li>
+	 * <li>Recursively processes each nested class</li>
+	 * <li>Adds the class names to the provided set</li>
+	 * </ol>
+	 * @param clazz the class to find nested classes for
+	 * @param indent the set to collect class names in
+	 */
+	private static void findNestedClasses(Class<?> clazz, Set<String> indent) {
+		var classes = new ArrayList<Class<?>>();
+		classes.addAll(Arrays.asList(clazz.getDeclaredClasses()));
+		classes.addAll(Arrays.asList(clazz.getClasses()));
+		for (var nestedClass : classes) {
+			findNestedClasses(nestedClass, indent);
+		}
+		indent.addAll(classes.stream().map(Class::getName).toList());
 	}
 
 }

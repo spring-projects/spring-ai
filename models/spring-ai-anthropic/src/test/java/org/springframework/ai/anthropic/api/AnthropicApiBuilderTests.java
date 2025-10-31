@@ -16,20 +16,21 @@
 
 package org.springframework.ai.anthropic.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
+
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.http.HttpHeaders;
@@ -42,13 +43,13 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
-import org.opentest4j.AssertionFailedError;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Filip Hrisafov
+ * @author Oleksandr Klymenko
  */
 public class AnthropicApiBuilderTests {
 
@@ -132,6 +133,80 @@ public class AnthropicApiBuilderTests {
 			.hasMessageContaining("responseErrorHandler cannot be null");
 	}
 
+	@Test
+	void testApiKeyStringOverload() {
+		AnthropicApi api = AnthropicApi.builder().apiKey("test-string-key").build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testInvalidAnthropicVersion() {
+		assertThatThrownBy(() -> AnthropicApi.builder().apiKey(TEST_API_KEY).anthropicVersion(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("anthropicVersion cannot be null");
+	}
+
+	@Test
+	void testInvalidAnthropicBetaFeatures() {
+		assertThatThrownBy(() -> AnthropicApi.builder().apiKey(TEST_API_KEY).anthropicBetaFeatures(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("anthropicBetaFeatures cannot be null");
+	}
+
+	@Test
+	void testDefaultValues() {
+		AnthropicApi api = AnthropicApi.builder().apiKey(TEST_API_KEY).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testBuilderIndependence() {
+		AnthropicApi.Builder builder1 = AnthropicApi.builder().apiKey("key1").baseUrl("https://api1.example.com");
+
+		AnthropicApi.Builder builder2 = AnthropicApi.builder().apiKey("key2").baseUrl("https://api2.example.com");
+
+		AnthropicApi api1 = builder1.build();
+		AnthropicApi api2 = builder2.build();
+
+		assertThat(api1).isNotNull();
+		assertThat(api2).isNotNull();
+	}
+
+	@Test
+	void testCustomAnthropicVersionAndBetaFeatures() {
+		AnthropicApi api = AnthropicApi.builder()
+			.apiKey(TEST_API_KEY)
+			.anthropicVersion("version")
+			.anthropicBetaFeatures("custom-beta-feature")
+			.build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testApiKeyStringNullValidation() {
+		assertThatThrownBy(() -> AnthropicApi.builder().apiKey((String) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("simpleApiKey cannot be null");
+	}
+
+	@Test
+	void testChainedBuilderMethods() {
+		AnthropicApi api = AnthropicApi.builder()
+			.baseUrl(TEST_BASE_URL)
+			.completionsPath(TEST_COMPLETIONS_PATH)
+			.apiKey(TEST_API_KEY)
+			.anthropicBetaFeatures("feature1,feature2")
+			.restClientBuilder(RestClient.builder())
+			.webClientBuilder(WebClient.builder())
+			.responseErrorHandler(mock(ResponseErrorHandler.class))
+			.build();
+
+		assertThat(api).isNotNull();
+	}
+
 	@Nested
 	class MockRequests {
 
@@ -139,13 +214,13 @@ public class AnthropicApiBuilderTests {
 
 		@BeforeEach
 		void setUp() throws IOException {
-			mockWebServer = new MockWebServer();
-			mockWebServer.start();
+			this.mockWebServer = new MockWebServer();
+			this.mockWebServer.start();
 		}
 
 		@AfterEach
 		void tearDown() throws IOException {
-			mockWebServer.shutdown();
+			this.mockWebServer.shutdown();
 		}
 
 		@Test
@@ -153,7 +228,7 @@ public class AnthropicApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			AnthropicApi api = AnthropicApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -173,8 +248,8 @@ public class AnthropicApiBuilderTests {
 							}
 						}
 						""");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
@@ -185,14 +260,14 @@ public class AnthropicApiBuilderTests {
 				.build();
 			ResponseEntity<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionEntity(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("key1");
 
 			response = api.chatCompletionEntity(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("key2");
 		}
@@ -201,7 +276,7 @@ public class AnthropicApiBuilderTests {
 		void dynamicApiKeyRestClientWithAdditionalApiKeyHeader() throws InterruptedException {
 			AnthropicApi api = AnthropicApi.builder().apiKey(() -> {
 				throw new AssertionFailedError("Should not be called, API key is provided in headers");
-			}).baseUrl(mockWebServer.url("/").toString()).build();
+			}).baseUrl(this.mockWebServer.url("/").toString()).build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -220,7 +295,7 @@ public class AnthropicApiBuilderTests {
 							}
 						}
 						""");
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
@@ -234,7 +309,7 @@ public class AnthropicApiBuilderTests {
 			ResponseEntity<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionEntity(request,
 					additionalHeaders);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("additional-key");
 		}
@@ -244,7 +319,7 @@ public class AnthropicApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			AnthropicApi api = AnthropicApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -267,8 +342,8 @@ public class AnthropicApiBuilderTests {
 							}
 						}
 						""".replace("\n", ""));
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
@@ -279,13 +354,13 @@ public class AnthropicApiBuilderTests {
 				.stream(true)
 				.build();
 			api.chatCompletionStream(request).collectList().block();
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("key1");
 
 			api.chatCompletionStream(request).collectList().block();
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("key2");
 		}
@@ -295,7 +370,7 @@ public class AnthropicApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			AnthropicApi api = AnthropicApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -318,7 +393,7 @@ public class AnthropicApiBuilderTests {
 							}
 						}
 						""".replace("\n", ""));
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
@@ -332,7 +407,7 @@ public class AnthropicApiBuilderTests {
 			additionalHeaders.add("x-api-key", "additional-key");
 
 			api.chatCompletionStream(request, additionalHeaders).collectList().block();
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
 			assertThat(recordedRequest.getHeader("x-api-key")).isEqualTo("additional-key");
 		}

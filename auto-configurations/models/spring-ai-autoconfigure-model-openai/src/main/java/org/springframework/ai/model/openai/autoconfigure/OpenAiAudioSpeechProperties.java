@@ -36,7 +36,7 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.audio.speech";
 
-	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioApi.TtsModel.TTS_1.getValue();
+	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.getValue();
 
 	private static final Float SPEED = 1.0f;
 
@@ -45,7 +45,7 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 	private static final OpenAiAudioApi.SpeechRequest.AudioResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
 
 	@NestedConfigurationProperty
-	private OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+	private final OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
 		.model(DEFAULT_SPEECH_MODEL)
 		.responseFormat(DEFAULT_RESPONSE_FORMAT)
 		.voice(VOICE)
@@ -54,10 +54,6 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public OpenAiAudioSpeechOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiAudioSpeechOptions options) {
-		this.options = options;
 	}
 
 }

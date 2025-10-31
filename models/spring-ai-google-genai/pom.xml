@@ -45,18 +45,18 @@
 		<dependency>
 			<groupId>com.google.genai</groupId>
 			<artifactId>google-genai</artifactId>
-			<version>1.8.0</version>
+			<version>${com.google.genai.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-generator</artifactId>
-			<version>${victools.version}</version>
+			<version>${jsonschema.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-module-jackson</artifactId>
-			<version>${victools.version}</version>
+			<version>${jsonschema.version}</version>
 		</dependency>
 
 		<!-- production dependencies -->

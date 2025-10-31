@@ -26,6 +26,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Josh Long
  * @author Arjen Poutsma
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 @ConfigurationProperties(ChatClientBuilderProperties.CONFIG_PREFIX)
@@ -59,12 +60,34 @@ public class ChatClientBuilderProperties {
 		 */
 		private boolean logPrompt = false;
 
+		/**
+		 * Whether to log the completion content in the observations.
+		 * @since 1.1.0
+		 */
+		private boolean logCompletion = false;
+
 		public boolean isLogPrompt() {
 			return this.logPrompt;
 		}
 
+		/**
+		 * @return Whether logging completion data is enabled or not.
+		 * @since 1.1.0
+		 */
+		public boolean isLogCompletion() {
+			return this.logCompletion;
+		}
+
 		public void setLogPrompt(boolean logPrompt) {
 			this.logPrompt = logPrompt;
+		}
+
+		/**
+		 * @param logCompletion should completion data logging be enabled or not.
+		 * @since 1.1.0
+		 */
+		public void setLogCompletion(boolean logCompletion) {
+			this.logCompletion = logCompletion;
 		}
 
 	}

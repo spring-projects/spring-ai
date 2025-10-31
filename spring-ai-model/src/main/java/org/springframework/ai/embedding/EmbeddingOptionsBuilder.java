@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ package org.springframework.ai.embedding;
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated in favor of {@link EmbeddingOptions#builder()}
  */
-public final class EmbeddingOptionsBuilder {
+@Deprecated
+public final class EmbeddingOptionsBuilder implements EmbeddingOptions.Builder {
 
 	private final DefaultEmbeddingOptions embeddingOptions = new DefaultEmbeddingOptions();
 
@@ -55,32 +57,6 @@ public final class EmbeddingOptionsBuilder {
 
 	public EmbeddingOptions build() {
 		return this.embeddingOptions;
-	}
-
-	private static class DefaultEmbeddingOptions implements EmbeddingOptions {
-
-		private String model;
-
-		private Integer dimensions;
-
-		@Override
-		public String getModel() {
-			return this.model;
-		}
-
-		public void setModel(String model) {
-			this.model = model;
-		}
-
-		@Override
-		public Integer getDimensions() {
-			return this.dimensions;
-		}
-
-		public void setDimensions(Integer dimensions) {
-			this.dimensions = dimensions;
-		}
-
 	}
 
 }

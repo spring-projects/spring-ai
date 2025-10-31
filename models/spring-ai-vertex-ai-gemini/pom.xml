@@ -57,12 +57,12 @@
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-generator</artifactId>
-			<version>${victools.version}</version>
+			<version>${jsonschema.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-module-jackson</artifactId>
-			<version>${victools.version}</version>
+			<version>${jsonschema.version}</version>
 		</dependency>
 
 		<dependency>

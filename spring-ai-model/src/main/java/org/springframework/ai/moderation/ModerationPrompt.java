@@ -73,10 +73,9 @@ public class ModerationPrompt implements ModelRequest<ModerationMessage> {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof ModerationPrompt)) {
+		if (!(o instanceof ModerationPrompt that)) {
 			return false;
 		}
-		ModerationPrompt that = (ModerationPrompt) o;
 		return Objects.equals(this.message, that.message)
 				&& Objects.equals(this.moderationModelOptions, that.moderationModelOptions);
 	}

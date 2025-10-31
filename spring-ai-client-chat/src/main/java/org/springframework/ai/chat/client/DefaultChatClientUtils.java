@@ -27,8 +27,11 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
@@ -39,6 +42,7 @@ import org.springframework.util.StringUtils;
  * Utilities for supporting the {@link DefaultChatClient} implementation.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 final class DefaultChatClientUtils {
@@ -67,7 +71,10 @@ final class DefaultChatClientUtils {
 					.build()
 					.render();
 			}
-			processedMessages.add(new SystemMessage(processedSystemText));
+			processedMessages.add(SystemMessage.builder()
+				.text(processedSystemText)
+				.metadata(inputRequest.getSystemMetadata())
+				.build());
 		}
 
 		// Messages => In the middle of the list
@@ -86,7 +93,11 @@ final class DefaultChatClientUtils {
 					.build()
 					.render();
 			}
-			processedMessages.add(UserMessage.builder().text(processedUserText).media(inputRequest.getMedia()).build());
+			processedMessages.add(UserMessage.builder()
+				.text(processedUserText)
+				.media(inputRequest.getMedia())
+				.metadata(inputRequest.getUserMetadata())
+				.build());
 		}
 
 		/*
@@ -94,15 +105,38 @@ final class DefaultChatClientUtils {
 		 */
 
 		ChatOptions processedChatOptions = inputRequest.getChatOptions();
+
+		// If we have tool-related configuration but no tool or non-tool options,
+		// create ToolCallingChatOptions
+		if (!inputRequest.getToolNames().isEmpty() || !inputRequest.getToolCallbacks().isEmpty()
+				|| !inputRequest.getToolCallbackProviders().isEmpty()
+				|| !CollectionUtils.isEmpty(inputRequest.getToolContext())) {
+
+			if (processedChatOptions == null) {
+				processedChatOptions = new DefaultToolCallingChatOptions();
+			}
+			else if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
+				processedChatOptions = ModelOptionsUtils.copyToTarget(defaultChatOptions, ChatOptions.class,
+						DefaultToolCallingChatOptions.class);
+			}
+		}
+
 		if (processedChatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			if (!inputRequest.getToolNames().isEmpty()) {
 				Set<String> toolNames = ToolCallingChatOptions
 					.mergeToolNames(new HashSet<>(inputRequest.getToolNames()), toolCallingChatOptions.getToolNames());
 				toolCallingChatOptions.setToolNames(toolNames);
 			}
-			if (!inputRequest.getToolCallbacks().isEmpty()) {
-				List<ToolCallback> toolCallbacks = ToolCallingChatOptions
-					.mergeToolCallbacks(inputRequest.getToolCallbacks(), toolCallingChatOptions.getToolCallbacks());
+
+			// Lazily resolve ToolCallbackProvider instances to ToolCallback instances
+			List<ToolCallback> allToolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
+			for (var provider : inputRequest.getToolCallbackProviders()) {
+				allToolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));
+			}
+
+			if (!allToolCallbacks.isEmpty()) {
+				List<ToolCallback> toolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(allToolCallbacks,
+						toolCallingChatOptions.getToolCallbacks());
 				ToolCallingChatOptions.validateToolCallbacks(toolCallbacks);
 				toolCallingChatOptions.setToolCallbacks(toolCallbacks);
 			}

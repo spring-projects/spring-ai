@@ -18,7 +18,6 @@ package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.pdfbox.pdfparser.PDFParser;
@@ -201,7 +200,8 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 				int x = (int) page.getMediaBox().getLowerLeftX();
 				int w = (int) page.getMediaBox().getWidth();
-				int y, h;
+				int y;
+				int h;
 
 				if (pageNumber == startPage && pageNumber == endPage) {
 					y = toPos;

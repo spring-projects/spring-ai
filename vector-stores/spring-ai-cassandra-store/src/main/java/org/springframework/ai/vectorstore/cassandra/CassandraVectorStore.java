@@ -39,6 +39,7 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
@@ -49,7 +50,6 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
@@ -60,6 +60,8 @@ import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumn;
 import com.datastax.oss.driver.api.querybuilder.schema.AlterTableAddColumnEnd;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -191,8 +193,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	public static final String DRIVER_PROFILE_SEARCH = "spring-ai-search";
 
-	private static final String QUERY_FORMAT = "select %s,%s,%s%s from %s.%s ? order by %s ann of ? limit ?";
-
 	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
 
 	private static final Map<Similarity, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
@@ -218,8 +218,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	private final ConcurrentMap<Set<String>, PreparedStatement> addStmts = new ConcurrentHashMap<>();
 
 	private final PreparedStatement deleteStmt;
-
-	private final String similarityStmt;
 
 	private final Similarity similarity;
 
@@ -247,7 +245,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			.get();
 
 		this.similarity = getIndexSimilarity(cassandraMetadata);
-		this.similarityStmt = similaritySearchStatement();
 
 		this.filterExpressionConverter = builder.filterExpressionConverter != null ? builder.filterExpressionConverter
 				: new CassandraFilterExpressionConverter(cassandraMetadata.getColumns().values());
@@ -353,21 +350,13 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		Preconditions.checkArgument(request.getTopK() <= 1000);
 		var embedding = toFloatArray(this.embeddingModel.embed(request.getQuery()));
 		CqlVector<Float> cqlVector = CqlVector.newInstance(embedding);
+		String cql = createSimilaritySearchCql(request, cqlVector, request.getTopK());
 
-		String whereClause = "";
-		if (request.hasFilterExpression()) {
-			String expression = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
-			if (!expression.isBlank()) {
-				whereClause = String.format("where %s", expression);
-			}
-		}
-
-		String query = String.format(this.similarityStmt, cqlVector, whereClause, cqlVector, request.getTopK());
 		List<Document> documents = new ArrayList<>();
-		logger.trace("Executing {}", query);
-		SimpleStatement s = SimpleStatement.newInstance(query).setExecutionProfileName(DRIVER_PROFILE_SEARCH);
+		ResultSet result = this.session
+			.execute(SimpleStatement.newInstance(cql).setExecutionProfileName(DRIVER_PROFILE_SEARCH));
 
-		for (Row row : this.session.execute(s)) {
+		for (Row row : result) {
 			float score = row.getFloat(0);
 			if (score < request.getSimilarityThreshold()) {
 				break;
@@ -455,34 +444,34 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		});
 	}
 
-	private String similaritySearchStatement() {
-		StringBuilder ids = new StringBuilder();
-		for (var m : this.schema.partitionKeys()) {
-			ids.append(m.name()).append(',');
-		}
-		for (var m : this.schema.clusteringKeys()) {
-			ids.append(m.name()).append(',');
-		}
-		ids.deleteCharAt(ids.length() - 1);
+	private String createSimilaritySearchCql(SearchRequest request, CqlVector<Float> cqlVector, int topK) {
 
-		String similarityFunction = new StringBuilder("similarity_").append(this.similarity.toString().toLowerCase())
-			.append('(')
-			.append(this.schema.embedding())
-			.append(",?)")
-			.toString();
+		Select stmt = QueryBuilder.selectFrom(this.schema.keyspace(), this.schema.table())
+			.function("similarity_" + this.similarity.toString().toLowerCase(),
+					Selector.column(this.schema.embedding()), QueryBuilder.literal(cqlVector));
 
-		StringBuilder extraSelectFields = new StringBuilder();
+		for (var c : this.schema.partitionKeys()) {
+			stmt = stmt.column(c.name());
+		}
+		for (var c : this.schema.clusteringKeys()) {
+			stmt = stmt.column(c.name());
+		}
+		stmt = stmt.column(this.schema.content());
 		for (var m : this.schema.metadataColumns()) {
-			extraSelectFields.append(',').append(m.name());
+			stmt = stmt.column(m.name());
 		}
+		stmt = stmt.column(this.schema.embedding());
 
-		// java-driver-query-builder doesn't support orderByAnnOf yet
-		String query = String.format(QUERY_FORMAT, similarityFunction, ids.toString(), this.schema.content(),
-				extraSelectFields.toString(), this.schema.keyspace(), this.schema.table(), this.schema.embedding());
-
-		query = query.replace("?", "%s");
-		logger.debug("preparing {}", query);
-		return query;
+		// the filterExpression is a string so we go back to building a CQL string
+		String whereClause = "";
+		if (request.hasFilterExpression()) {
+			String expression = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
+			if (!expression.isBlank()) {
+				whereClause = String.format(" WHERE %s", expression);
+			}
+		}
+		String cql = stmt.orderByAnnOf(this.schema.embedding(), cqlVector).limit(topK).asCql();
+		return cql.replace(" ORDER ", whereClause + " ORDER ");
 	}
 
 	private String getDocumentId(Row row) {
@@ -631,25 +620,15 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				createTable = createTable.withClusteringColumn(clusteringKey.name, clusteringKey.type);
 			}
 
-			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT);
+			createTable = createTable.withColumn(this.schema.content, DataTypes.TEXT)
+				.withColumn(this.schema.embedding, DataTypes.vectorOf(DataTypes.FLOAT, vectorDimension));
 
 			for (SchemaColumn metadata : this.schema.metadataColumns) {
 				createTable = createTable.withColumn(metadata.name(), metadata.type());
 			}
 
-			// https://datastax-oss.atlassian.net/browse/JAVA-3118
-			// .withColumn(config.embedding, new DefaultVectorType(DataTypes.FLOAT,
-			// vectorDimension));
-
-			StringBuilder tableStmt = new StringBuilder(createTable.asCql());
-			tableStmt.setLength(tableStmt.length() - 1);
-			tableStmt.append(',')
-				.append(this.schema.embedding)
-				.append(" vector<float,")
-				.append(vectorDimension)
-				.append(">)");
-			logger.debug("Executing {}", tableStmt.toString());
-			this.session.execute(tableStmt.toString());
+			logger.debug("Executing {}", createTable.asCql());
+			this.session.execute(createTable.build());
 		}
 	}
 
@@ -687,28 +666,12 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				alterTable = alterTable.addColumn(this.schema.content, DataTypes.TEXT);
 			}
 			if (addEmbedding) {
-				// special case for embedding column, bc JAVA-3118, as above
-				StringBuilder alterTableStmt = new StringBuilder(((BuildableQuery) alterTable).asCql());
-				if (newColumns.isEmpty() && !addContent) {
-					alterTableStmt.append(" ADD (");
-				}
-				else {
-					alterTableStmt.setLength(alterTableStmt.length() - 1);
-					alterTableStmt.append(',');
-				}
-				alterTableStmt.append(this.schema.embedding)
-					.append(" vector<float,")
-					.append(vectorDimension)
-					.append(">)");
-
-				logger.debug("Executing {}", alterTableStmt.toString());
-				this.session.execute(alterTableStmt.toString());
+				alterTable = alterTable.addColumn(this.schema.embedding,
+						DataTypes.vectorOf(DataTypes.FLOAT, vectorDimension));
 			}
-			else {
-				SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
-				logger.debug("Executing {}", stmt.getQuery());
-				this.session.execute(stmt);
-			}
+			SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
+			logger.debug("Executing {}", stmt.getQuery());
+			this.session.execute(stmt);
 		}
 	}
 

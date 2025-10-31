@@ -283,6 +283,20 @@ class McpSseClientPropertiesTests {
 			});
 	}
 
+	@Test
+	void mcpHubStyleUrlWithTokenPath() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.client.sse.connections.mcp-hub.url=http://localhost:3000",
+				"spring.ai.mcp.client.sse.connections.mcp-hub.sse-endpoint=/mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01")
+			.run(context -> {
+				McpSseClientProperties properties = context.getBean(McpSseClientProperties.class);
+				assertThat(properties.getConnections()).hasSize(1);
+				assertThat(properties.getConnections()).containsKey("mcp-hub");
+				assertThat(properties.getConnections().get("mcp-hub").url()).isEqualTo("http://localhost:3000");
+				assertThat(properties.getConnections().get("mcp-hub").sseEndpoint())
+					.isEqualTo("/mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01");
+			});
+	}
+
 	@Configuration
 	@EnableConfigurationProperties(McpSseClientProperties.class)
 	static class TestConfiguration {

@@ -32,6 +32,7 @@ import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -251,7 +252,7 @@ class AzureOpenAiChatModelIT {
 	@Test
 	void multiModalityImageUrl() throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
@@ -282,6 +283,174 @@ class AzureOpenAiChatModelIT {
 		assertThat(response).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
+	@Test
+	void testMaxCompletionTokensBlocking() {
+		// Test with a very low maxCompletionTokens to verify it limits the response
+		String prompt = """
+				Write a detailed essay about the history of artificial intelligence,
+				including its origins, major milestones, key researchers, current applications,
+				and future prospects. Make it comprehensive and detailed.
+				""";
+
+		// @formatter:off
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder()
+						.deploymentName("gpt-4o")
+						.maxCompletionTokens(50)
+						.build())
+				.user(prompt)
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		String content = response.getResult().getOutput().getText();
+		logger.info("Response with maxCompletionTokens=50: {}", content);
+
+		// Verify the response is limited and not empty
+		assertThat(content).isNotEmpty();
+
+		// The response should be relatively short due to the 50 token limit
+		// We can't test exact token count but can verify it's significantly shorter than
+		// unlimited
+		assertThat(content.length()).isLessThan(500); // Rough approximation for 50 tokens
+
+		// Verify usage metadata if available
+		if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
+			var usage = response.getMetadata().getUsage();
+			logger.info("Token usage - Total: {}, Prompt: {}, Completion: {}", usage.getTotalTokens(),
+					usage.getPromptTokens(), usage.getCompletionTokens());
+
+			// The completion tokens should be limited by maxCompletionTokens
+			if (usage.getCompletionTokens() != null) {
+				assertThat(usage.getCompletionTokens()).isLessThanOrEqualTo(50);
+			}
+		}
+	}
+
+	@Test
+	void testMaxCompletionTokensStreaming() {
+		String prompt = """
+				Write a detailed explanation of machine learning algorithms,
+				covering supervised learning, unsupervised learning, and reinforcement learning.
+				Include examples and applications for each type.
+				""";
+
+		// @formatter:off
+		String content = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder()
+						.deploymentName("gpt-4o")
+						.maxCompletionTokens(30)
+						.build())
+				.user(prompt)
+				.stream()
+				.content()
+				.collectList()
+				.block()
+				.stream()
+				.collect(Collectors.joining());
+		// @formatter:on
+
+		logger.info("Streaming response with maxCompletionTokens=30: {}", content);
+
+		// Verify the response is limited and not empty
+		assertThat(content).isNotEmpty();
+
+		// The response should be very short due to the 30 token limit
+		assertThat(content.length()).isLessThan(300); // Rough approximation for 30 tokens
+	}
+
+	@Test
+	void testMaxCompletionTokensOptionsBuilder() {
+		// Test that maxCompletionTokens can be set via builder and is properly retrieved
+		AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
+			.maxCompletionTokens(100)
+			.temperature(0.7)
+			.build();
+
+		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
+		assertThat(options.getDeploymentName()).isEqualTo("gpt-4o");
+		assertThat(options.getTemperature()).isEqualTo(0.7);
+	}
+
+	@Test
+	void testMaxTokensForNonReasoningModels() {
+		// Test maxTokens parameter for non-reasoning models (e.g., gpt-4o)
+		// maxTokens limits total tokens (input + output)
+		String prompt = "Explain quantum computing in simple terms. Please provide a detailed explanation.";
+
+		// @formatter:off
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder()
+						.deploymentName("gpt-4o")
+						.maxTokens(100)  // Total tokens limit for non-reasoning models
+						.build())
+				.user(prompt)
+				.call()
+				.chatResponse();
+		// @formatter:on
+
+		String content = response.getResult().getOutput().getText();
+		logger.info("Response with maxTokens=100: {}", content);
+
+		assertThat(content).isNotEmpty();
+
+		// Verify usage metadata if available
+		if (response.getMetadata() != null && response.getMetadata().getUsage() != null) {
+			var usage = response.getMetadata().getUsage();
+			logger.info("Token usage - Total: {}, Prompt: {}, Completion: {}", usage.getTotalTokens(),
+					usage.getPromptTokens(), usage.getCompletionTokens());
+
+			// Total tokens should be close to maxTokens (Azure may slightly exceed the
+			// limit)
+			if (usage.getTotalTokens() != null) {
+				assertThat(usage.getTotalTokens()).isLessThanOrEqualTo(150); // Allow some
+																				// tolerance
+			}
+		}
+	}
+
+	@Test
+	void testModelInStreamingResponse() {
+		String prompt = "List three colors of the rainbow.";
+
+		// @formatter:off
+		Flux<ChatResponse> responseFlux = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder()
+						.deploymentName("gpt-4o")
+						.build())
+				.user(prompt)
+				.stream()
+				.chatResponse();
+		// @formatter:on
+
+		List<ChatResponse> responses = responseFlux.collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+
+		// Verify that the final merged response has model metadata
+		assertThat(lastResponse.getMetadata()).as("Last response should have metadata").isNotNull();
+		assertThat(lastResponse.getMetadata().getModel()).as("Last response metadata should contain model").isNotNull();
+
+		String model = lastResponse.getMetadata().getModel();
+		logger.info("Final merged response model: {}", model);
+		assertThat(model).isNotEmpty();
+		// Azure OpenAI models typically contain "gpt" in their name
+		assertThat(model).containsIgnoringCase("gpt");
+
+		String content = responses.stream()
+			.flatMap(r -> r.getResults().stream())
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(Objects::nonNull)
+			.collect(Collectors.joining());
+
+		assertThat(content).isNotEmpty();
+		logger.info("Generated content: {}", content);
+	}
+
 	record ActorsFilms(String actor, List<String> movies) {
 
 	}
@@ -306,7 +475,7 @@ class AzureOpenAiChatModelIT {
 		public AzureOpenAiChatModel azureOpenAiChatModel(OpenAIClientBuilder openAIClientBuilder) {
 			return AzureOpenAiChatModel.builder()
 				.openAIClientBuilder(openAIClientBuilder)
-				.defaultOptions(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").maxTokens(1000).build())
+				.defaultOptions(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
 				.build();
 		}
 

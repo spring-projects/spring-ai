@@ -176,11 +176,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
@@ -214,11 +209,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public void doDelete(List<String> idList) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
 		for (String id : idList) {
 			bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(this.options.getIndexName()).id(id)));
 		}
@@ -229,12 +219,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void doDelete(Filter.Expression filterExpression) {
-		// For the index to be present, either it must be pre-created or set the
-		// initializeSchema to true.
-		if (!indexExists()) {
-			throw new IllegalArgumentException("Index not found");
-		}
-
 		try {
 			this.elasticsearchClient.deleteByQuery(d -> d.index(this.options.getIndexName())
 				.query(q -> q.queryString(qs -> qs.query(getElasticsearchQueryString(filterExpression)))));
@@ -301,17 +285,16 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	// more info on score/distance calculation
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/knn-search.html#knn-similarity-search
 	private double normalizeSimilarityScore(double score) {
-		switch (this.options.getSimilarity()) {
-			case l2_norm:
+		return switch (this.options.getSimilarity()) {
+			case l2_norm ->
 				// the returned value of l2_norm is the opposite of the other functions
 				// (closest to zero means more accurate), so to make it consistent
 				// with the other functions the reverse is returned applying a "1-"
 				// to the standard transformation
-				return (1 - (java.lang.Math.sqrt((1 / score) - 1)));
+				(1 - (Math.sqrt((1 / score) - 1)));
 			// cosine and dot_product
-			default:
-				return (2 * score) - 1;
-		}
+			default -> (2 * score) - 1;
+		};
 	}
 
 	public boolean indexExists() {
@@ -349,12 +332,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public void afterPropertiesSet() {
-		if (!this.initializeSchema) {
+		// For the index to be present, either it must be pre-created or set the
+		// initializeSchema to true.
+		if (indexExists()) {
 			return;
 		}
-		if (!indexExists()) {
-			createIndexMapping();
+		if (!this.initializeSchema) {
+			throw new IllegalArgumentException("Index not found");
 		}
+		createIndexMapping();
 	}
 
 	@Override

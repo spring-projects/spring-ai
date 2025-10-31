@@ -292,7 +292,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		long deleteCount = status.getData().getDeleteCnt();
 		if (deleteCount != idList.size()) {
-			logger.warn(String.format("Deleted only %s entries from requested %s ", deleteCount, idList.size()));
+			logger.warn("Deleted only {} entries from requested {} ", deleteCount, idList.size());
 		}
 	}
 
@@ -379,8 +379,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				JsonObject metadata = new JsonObject();
 				try {
 					metadata = (JsonObject) rowRecord.get(this.metadataFieldName);
-					// inject the distance into the metadata.
-					metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					if (metadata != null) {
+						// inject the distance into the metadata.
+						metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					}
 				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
@@ -542,8 +544,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ this.embeddingDimension, e);
+			logger.warn(
+					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
+					this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

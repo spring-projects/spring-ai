@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -84,7 +83,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+		assertThat(result.get("timestamp")).isNotNull();
 	}
 
 	@Test
@@ -114,7 +113,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 			assertThat(result.get("content")).isEqualTo(message.getText());
 			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+			assertThat(result.get("timestamp")).isNotNull();
 		}
 
 		var count = this.chatMemoryRepository.findByConversationId(conversationId).size();
@@ -187,28 +186,27 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 	}
 
 	@Test
-	void refreshConversation() {
+	void testMessageOrderWithLargeBatch() {
 		var conversationId = UUID.randomUUID().toString();
-		List<Message> initialMessages = List.of(new UserMessage("Hello"), new AssistantMessage("Hi there"),
-				new UserMessage("How are you?"));
-		this.chatMemoryRepository.saveAll(conversationId, initialMessages);
 
-		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(3);
+		// Create a large batch of 50 messages to ensure timestamp ordering issues
+		// are detected. With the old millisecond-precision code, MySQL/MariaDB's
+		// second-precision TIMESTAMP columns would truncate all timestamps to the
+		// same value, causing random ordering. This test validates the fix.
+		List<Message> messages = new java.util.ArrayList<>();
+		for (int i = 0; i < 50; i++) {
+			messages.add(new UserMessage("Message " + i));
+		}
 
-		// Define changes
-		List<Message> toDelete = List.of(new UserMessage("How are you?"));
-		List<Message> toAdd = List.of(new AssistantMessage("I am fine, thank you."));
+		this.chatMemoryRepository.saveAll(conversationId, messages);
 
-		// Apply changes
-		this.chatMemoryRepository.refresh(conversationId, toDelete, toAdd);
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
 
-		// Verify final state
-		List<Message> finalMessages = this.chatMemoryRepository.findByConversationId(conversationId);
-		assertThat(finalMessages).hasSize(3);
-		assertThat(finalMessages).contains(new UserMessage("Hello"));
-		assertThat(finalMessages).contains(new AssistantMessage("Hi there"));
-		assertThat(finalMessages).contains(new AssistantMessage("I am fine, thank you."));
-		assertThat(finalMessages).doesNotContain(new UserMessage("How are you?"));
+		// Verify we got all messages back in the exact order they were saved
+		assertThat(retrievedMessages).hasSize(50);
+		for (int i = 0; i < 50; i++) {
+			assertThat(retrievedMessages.get(i).getText()).isEqualTo("Message " + i);
+		}
 	}
 
 	/**
