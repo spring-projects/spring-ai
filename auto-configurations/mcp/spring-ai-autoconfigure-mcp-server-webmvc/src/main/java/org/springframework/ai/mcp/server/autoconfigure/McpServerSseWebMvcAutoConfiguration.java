@@ -22,6 +22,7 @@ import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperFactory;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -78,7 +79,7 @@ public class McpServerSseWebMvcAutoConfiguration {
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
 			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerSseProperties serverProperties) {
 
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		ObjectMapper objectMapper = McpServerObjectMapperFactory.getOrCreateObjectMapper(objectMapperProvider);
 
 		return WebMvcSseServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
