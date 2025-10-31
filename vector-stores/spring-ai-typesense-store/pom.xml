@@ -78,16 +78,15 @@
 
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>typesense</artifactId>
+			<artifactId>testcontainers-typesense</artifactId>
 			<scope>test</scope>
 		</dependency>
-
 
 		<dependency>
 			<groupId>io.micrometer</groupId>

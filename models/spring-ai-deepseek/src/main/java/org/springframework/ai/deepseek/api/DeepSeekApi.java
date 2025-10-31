@@ -41,8 +41,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -67,7 +65,7 @@ public class DeepSeekApi {
 
 	private final WebClient webClient;
 
-	private DeepSeekStreamFunctionCallingHelper chunkMerger = new DeepSeekStreamFunctionCallingHelper();
+	private final DeepSeekStreamFunctionCallingHelper chunkMerger = new DeepSeekStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api.
@@ -80,7 +78,7 @@ public class DeepSeekApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public DeepSeekApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
+	public DeepSeekApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String completionsPath,
 			String betaPrefixPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
@@ -90,21 +88,39 @@ public class DeepSeekApi {
 
 		this.completionsPath = completionsPath;
 		this.betaPrefixPath = betaPrefixPath;
-		// @formatter:off
+
 		Consumer<HttpHeaders> finalHeaders = h -> {
 			h.setBearerAuth(apiKey.getValue());
 			h.setContentType(MediaType.APPLICATION_JSON);
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 		};
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder
-			.baseUrl(baseUrl)
-			.defaultHeaders(finalHeaders)
-			.build(); // @formatter:on
+		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(finalHeaders).build();
+
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param betaPrefixPath the prefix path to the beta feature endpoint.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 */
+	public DeepSeekApi(String completionsPath, String betaPrefixPath, RestClient restClient, WebClient webClient) {
+
+		Assert.hasText(completionsPath, "Completions Path must not be null");
+		Assert.hasText(betaPrefixPath, "Beta feature path must not be null");
+		Assert.notNull(restClient, "RestClient must not be null");
+		Assert.notNull(webClient, "WebClient must not be null");
+
+		this.completionsPath = completionsPath;
+		this.betaPrefixPath = betaPrefixPath;
+		this.restClient = restClient;
+		this.webClient = webClient;
 	}
 
 	/**
@@ -132,7 +148,7 @@ public class DeepSeekApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionStream(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -144,7 +160,7 @@ public class DeepSeekApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
@@ -153,7 +169,7 @@ public class DeepSeekApi {
 
 		return this.webClient.post()
 			.uri(this.getEndpoint(chatRequest))
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader)))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
@@ -911,7 +927,7 @@ public class DeepSeekApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private String completionsPath = org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_COMPLETIONS_PATH;
 
@@ -941,7 +957,7 @@ public class DeepSeekApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

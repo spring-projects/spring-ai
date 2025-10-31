@@ -69,7 +69,8 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -245,7 +246,18 @@ public class OllamaChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				OllamaApi.ChatResponse ollamaResponse = this.retryTemplate.execute(ctx -> this.chatApi.chat(request));
+				OllamaApi.ChatResponse ollamaResponse = null;
+				try {
+					ollamaResponse = this.retryTemplate.execute(() -> this.chatApi.chat(request));
+				}
+				catch (RetryException e) {
+					if (e.getCause() instanceof RuntimeException r) {
+						throw r;
+					}
+					else {
+						throw new RuntimeException(e.getCause());
+					}
+				}
 
 				List<AssistantMessage.ToolCall> toolCalls = ollamaResponse.message().toolCalls() == null ? List.of()
 						: ollamaResponse.message()

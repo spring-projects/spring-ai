@@ -17,7 +17,9 @@
 package org.springframework.ai.retry.autoconfigure;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,16 +32,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
-import org.springframework.retry.support.RetryTemplateBuilder;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -61,35 +62,25 @@ public class SpringAiRetryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public RetryTemplate retryTemplate(SpringAiRetryProperties properties) {
-		RetryTemplateBuilder builder = RetryTemplate.builder()
+		RetryPolicy retryPolicy = RetryPolicy.builder()
 			.maxAttempts(properties.getMaxAttempts())
-			.retryOn(TransientAiException.class)
-			.retryOn(ResourceAccessException.class)
-			.exponentialBackoff(properties.getBackoff().getInitialInterval(), properties.getBackoff().getMultiplier(),
-					properties.getBackoff().getMaxInterval())
-			.withListener(new RetryListener() {
+			.includes(TransientAiException.class)
+			.delay(properties.getBackoff().getInitialInterval())
+			.multiplier(properties.getBackoff().getMultiplier())
+			.maxDelay(properties.getBackoff().getMaxInterval())
+			.build();
 
-				@Override
-				public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-						Throwable throwable) {
-					logger.warn("Retry error. Retry count: {}, Exception: {}", context.getRetryCount(),
-							throwable.getMessage(), throwable);
-				}
-			});
+		RetryTemplate retryTemplate = new RetryTemplate(retryPolicy);
+		retryTemplate.setRetryListener(new RetryListener() {
+			private final AtomicInteger retryCount = new AtomicInteger(0);
 
-		// Optionally add WebFlux pre-response network errors if present
-		try {
-			Class<?> webClientRequestEx = Class
-				.forName("org.springframework.web.reactive.function.client.WebClientRequestException");
-			@SuppressWarnings("unchecked")
-			Class<? extends Throwable> exClass = (Class<? extends Throwable>) webClientRequestEx;
-			builder.retryOn(exClass);
-		}
-		catch (ClassNotFoundException ignore) {
-			// WebFlux not on classpath; skip
-		}
-
-		return builder.build();
+			@Override
+			public void onRetryFailure(RetryPolicy policy, Retryable<?> retryable, Throwable throwable) {
+				int currentRetries = this.retryCount.incrementAndGet();
+				logger.warn("Retry error. Retry count:{}", currentRetries, throwable);
+			}
+		});
+		return retryTemplate;
 	}
 
 	@Bean
@@ -104,6 +95,12 @@ public class SpringAiRetryAutoConfiguration {
 			}
 
 			@Override
+			public void handleError(@NonNull URI url, @NonNull HttpMethod method, @NonNull ClientHttpResponse response)
+					throws IOException {
+				handleError(response);
+			}
+
+			@SuppressWarnings("removal")
 			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
 				if (!response.getStatusCode().isError()) {
 					return;

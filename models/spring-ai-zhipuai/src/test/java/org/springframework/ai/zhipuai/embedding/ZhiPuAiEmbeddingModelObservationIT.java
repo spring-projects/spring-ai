@@ -37,7 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
@@ -107,7 +107,7 @@ public class ZhiPuAiEmbeddingModelObservationIT {
 				TestObservationRegistry observationRegistry) {
 			return new ZhiPuAiEmbeddingModel(zhiPuAiApi, MetadataMode.EMBED,
 					ZhiPuAiEmbeddingOptions.builder().model(ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL).build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+					new RetryTemplate(), observationRegistry);
 		}
 
 	}

@@ -34,8 +34,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -144,7 +143,7 @@ public class MongoChatMemoryRepositoryIT {
 	}
 
 	@SpringBootConfiguration
-	@ImportAutoConfiguration({ MongoAutoConfiguration.class, MongoDataAutoConfiguration.class })
+	@ImportAutoConfiguration({ MongoAutoConfiguration.class })
 	static class TestConfiguration {
 
 		@Bean

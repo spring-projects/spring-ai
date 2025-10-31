@@ -28,7 +28,8 @@ import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -71,15 +72,26 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		byte[] audioData = this.retryTemplate.execute(context -> {
-			var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
-					requestContext.queryParameters);
-			if (response.getBody() == null) {
-				logger.warn("No speech response returned for request: {}", requestContext.request);
-				return new byte[0];
+		byte[] audioData = null;
+		try {
+			audioData = this.retryTemplate.execute(() -> {
+				var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
+						requestContext.queryParameters);
+				if (response.getBody() == null) {
+					logger.warn("No speech response returned for request: {}", requestContext.request);
+					return new byte[0];
+				}
+				return response.getBody();
+			});
+		}
+		catch (RetryException e) {
+			if (e.getCause() instanceof RuntimeException r) {
+				throw r;
 			}
-			return response.getBody();
-		});
+			else {
+				throw new RuntimeException(e.getCause());
+			}
+		}
 
 		return new TextToSpeechResponse(List.of(new Speech(audioData)));
 	}
@@ -88,9 +100,19 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		return this.retryTemplate.execute(context -> this.elevenLabsApi
-			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
-			.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
+		try {
+			return this.retryTemplate.execute(() -> this.elevenLabsApi
+				.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
+				.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
+		}
+		catch (RetryException e) {
+			if (e.getCause() instanceof RuntimeException r) {
+				throw r;
+			}
+			else {
+				throw new RuntimeException(e.getCause());
+			}
+		}
 	}
 
 	private RequestContext prepareRequest(TextToSpeechPrompt prompt) {

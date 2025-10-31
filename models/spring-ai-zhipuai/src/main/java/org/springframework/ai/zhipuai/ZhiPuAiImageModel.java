@@ -30,8 +30,9 @@ import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -71,30 +72,40 @@ public class ZhiPuAiImageModel implements ImageModel {
 
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
-		return this.retryTemplate.execute(ctx -> {
+		try {
+			return this.retryTemplate.execute(() -> {
 
-			String instructions = imagePrompt.getInstructions().get(0).getText();
+				String instructions = imagePrompt.getInstructions().get(0).getText();
 
-			ZhiPuAiImageApi.ZhiPuAiImageRequest imageRequest = new ZhiPuAiImageApi.ZhiPuAiImageRequest(instructions,
-					ZhiPuAiImageApi.DEFAULT_IMAGE_MODEL);
+				ZhiPuAiImageApi.ZhiPuAiImageRequest imageRequest = new ZhiPuAiImageApi.ZhiPuAiImageRequest(instructions,
+						ZhiPuAiImageApi.DEFAULT_IMAGE_MODEL);
 
-			if (this.defaultOptions != null) {
-				imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-						ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+				if (this.defaultOptions != null) {
+					imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
+							ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+				}
+
+				if (imagePrompt.getOptions() != null) {
+					imageRequest = ModelOptionsUtils.merge(toZhiPuAiImageOptions(imagePrompt.getOptions()),
+							imageRequest, ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+				}
+
+				// Make the request
+				ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity = this.zhiPuAiImageApi
+					.createImage(imageRequest);
+
+				// Convert to org.springframework.ai.model derived ImageResponse data type
+				return convertResponse(imageResponseEntity, imageRequest);
+			});
+		}
+		catch (RetryException e) {
+			if (e.getCause() instanceof RuntimeException r) {
+				throw r;
 			}
-
-			if (imagePrompt.getOptions() != null) {
-				imageRequest = ModelOptionsUtils.merge(toZhiPuAiImageOptions(imagePrompt.getOptions()), imageRequest,
-						ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+			else {
+				throw new RuntimeException(e.getCause());
 			}
-
-			// Make the request
-			ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity = this.zhiPuAiImageApi
-				.createImage(imageRequest);
-
-			// Convert to org.springframework.ai.model derived ImageResponse data type
-			return convertResponse(imageResponseEntity, imageRequest);
-		});
+		}
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity,

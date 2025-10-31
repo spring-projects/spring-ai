@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.elasticsearch;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -26,15 +27,15 @@ import java.util.concurrent.TimeUnit;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,8 +58,6 @@ import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservat
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -111,7 +110,7 @@ public class ElasticsearchVectorStoreObservationIT {
 		getContextRunner().run(context -> {
 			// deleting indices and data before following tests
 			ElasticsearchClient elasticsearchClient = context.getBean(ElasticsearchClient.class);
-			List indices = elasticsearchClient.cat().indices().valueBody().stream().map(IndicesRecord::index).toList();
+			List indices = elasticsearchClient.cat().indices().indices().stream().map(IndicesRecord::index).toList();
 			if (!indices.isEmpty()) {
 				elasticsearchClient.indices().delete(del -> del.index(indices));
 			}
@@ -198,7 +197,6 @@ public class ElasticsearchVectorStoreObservationIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class Config {
 
 		@Bean
@@ -207,7 +205,7 @@ public class ElasticsearchVectorStoreObservationIT {
 		}
 
 		@Bean
-		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, RestClient restClient,
+		public ElasticsearchVectorStore vectorStoreDefault(EmbeddingModel embeddingModel, Rest5Client restClient,
 				ObservationRegistry observationRegistry) {
 			return ElasticsearchVectorStore.builder(restClient, embeddingModel)
 				.initializeSchema(true)
@@ -224,13 +222,13 @@ public class ElasticsearchVectorStoreObservationIT {
 		}
 
 		@Bean
-		RestClient restClient() {
-			return RestClient.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build();
+		Rest5Client restClient() throws URISyntaxException {
+			return Rest5Client.builder(HttpHost.create(elasticsearchContainer.getHttpHostAddress())).build();
 		}
 
 		@Bean
-		ElasticsearchClient elasticsearchClient(RestClient restClient) {
-			return new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper(
+		ElasticsearchClient elasticsearchClient(Rest5Client restClient) {
+			return new ElasticsearchClient(new Rest5ClientTransport(restClient, new JacksonJsonpMapper(
 					new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
 		}
 

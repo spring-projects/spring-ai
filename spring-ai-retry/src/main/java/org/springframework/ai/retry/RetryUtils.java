@@ -20,17 +20,18 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -45,29 +46,44 @@ import org.springframework.web.client.ResponseErrorHandler;
  */
 public abstract class RetryUtils {
 
+	private static final int DEFAULT_MAX_ATTEMPTS = 10;
+
+	private static final long DEFAULT_INITIAL_INTERVAL = 2000;
+
+	private static final int DEFAULT_MULTIPLIER = 5;
+
+	private static final long DEFAULT_MAX_INTERVAL = 3 * 60000;
+
+	private static final long SHORT_INITIAL_INTERVAL = 100;
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(RetryUtils.class);
+
+	/**
+	 * Default ResponseErrorHandler implementation.
+	 */
 	public static final ResponseErrorHandler DEFAULT_RESPONSE_ERROR_HANDLER = new ResponseErrorHandler() {
 
 		@Override
-		public boolean hasError(@NonNull ClientHttpResponse response) throws IOException {
+		public boolean hasError(final @NonNull ClientHttpResponse response) throws IOException {
 			return response.getStatusCode().isError();
 		}
 
 		@Override
-		public void handleError(URI url, HttpMethod method, @NonNull ClientHttpResponse response) throws IOException {
+		public void handleError(final URI url, final HttpMethod method, final @NonNull ClientHttpResponse response)
+				throws IOException {
 			handleError(response);
 		}
 
-		@Override
 		@SuppressWarnings("removal")
-		public void handleError(@NonNull ClientHttpResponse response) throws IOException {
+		public void handleError(final @NonNull ClientHttpResponse response) throws IOException {
 			if (response.getStatusCode().isError()) {
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
 				String message = String.format("%s - %s", response.getStatusCode().value(), error);
-				/**
+				/*
 				 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
 				 * 401 - You must be a member of an organization to use the API, 429 -
-				 * Rate limit reached for requests, 429 - You exceeded your current quota
-				 * , please check your plan and billing details.
+				 * Rate limit reached for requests, 429 - You exceeded your current quota,
+				 * please check your plan and billing details.
 				 */
 				if (response.getStatusCode().is4xxClientError()) {
 					throw new NonTransientAiException(message);
@@ -75,42 +91,68 @@ public abstract class RetryUtils {
 				throw new TransientAiException(message);
 			}
 		}
+
 	};
 
-	private static final Logger logger = LoggerFactory.getLogger(RetryUtils.class);
-
-	public static final RetryTemplate DEFAULT_RETRY_TEMPLATE = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(TransientAiException.class)
-		.retryOn(ResourceAccessException.class)
-		.exponentialBackoff(Duration.ofMillis(2000), 5, Duration.ofMillis(3 * 60000L))
-		.withListener(new RetryListener() {
-
-			@Override
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:{}", context.getRetryCount(), throwable);
-			}
-		})
-		.build();
+	/**
+	 * Default RetryTemplate with exponential backoff configuration.
+	 */
+	public static final RetryTemplate DEFAULT_RETRY_TEMPLATE = createDefaultRetryTemplate();
 
 	/**
-	 * Useful in testing scenarios where you don't want to wait long for retry and now
-	 * show stack trace
+	 * Short RetryTemplate for testing scenarios.
 	 */
-	public static final RetryTemplate SHORT_RETRY_TEMPLATE = RetryTemplate.builder()
-		.maxAttempts(10)
-		.retryOn(TransientAiException.class)
-		.retryOn(ResourceAccessException.class)
-		.fixedBackoff(Duration.ofMillis(100))
-		.withListener(new RetryListener() {
+	public static final RetryTemplate SHORT_RETRY_TEMPLATE = createShortRetryTemplate();
+
+	private static RetryTemplate createDefaultRetryTemplate() {
+		RetryPolicy retryPolicy = RetryPolicy.builder()
+			.maxAttempts(DEFAULT_MAX_ATTEMPTS)
+			.includes(TransientAiException.class)
+			.includes(ResourceAccessException.class)
+			.delay(Duration.ofMillis(DEFAULT_INITIAL_INTERVAL))
+			.multiplier(DEFAULT_MULTIPLIER)
+			.maxDelay(Duration.ofMillis(DEFAULT_MAX_INTERVAL))
+			.build();
+
+		RetryTemplate retryTemplate = new RetryTemplate(retryPolicy);
+		retryTemplate.setRetryListener(new RetryListener() {
+			private final AtomicInteger retryCount = new AtomicInteger(0);
 
 			@Override
-			public <T extends Object, E extends Throwable> void onError(RetryContext context,
-					RetryCallback<T, E> callback, Throwable throwable) {
-				logger.warn("Retry error. Retry count:{}", context.getRetryCount());
+			public void onRetryFailure(final RetryPolicy policy, final Retryable<?> retryable,
+					final Throwable throwable) {
+				int currentRetries = this.retryCount.incrementAndGet();
+				LOGGER.warn("Retry error. Retry count:{}", currentRetries, throwable);
 			}
-		})
-		.build();
+		});
+		return retryTemplate;
+	}
+
+	/**
+	 * Useful in testing scenarios where you don't want to wait long for retry and don't
+	 * need to show stack trace.
+	 * @return a RetryTemplate with short delays
+	 */
+	private static RetryTemplate createShortRetryTemplate() {
+		RetryPolicy retryPolicy = RetryPolicy.builder()
+			.maxAttempts(DEFAULT_MAX_ATTEMPTS)
+			.includes(TransientAiException.class)
+			.includes(ResourceAccessException.class)
+			.delay(Duration.ofMillis(SHORT_INITIAL_INTERVAL))
+			.build();
+
+		RetryTemplate retryTemplate = new RetryTemplate(retryPolicy);
+		retryTemplate.setRetryListener(new RetryListener() {
+			private final AtomicInteger retryCount = new AtomicInteger(0);
+
+			@Override
+			public void onRetryFailure(final RetryPolicy policy, final Retryable<?> retryable,
+					final Throwable throwable) {
+				int currentRetries = this.retryCount.incrementAndGet();
+				LOGGER.warn("Retry error. Retry count:{}", currentRetries, throwable);
+			}
+		});
+		return retryTemplate;
+	}
 
 }

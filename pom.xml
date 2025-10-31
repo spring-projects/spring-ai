@@ -271,13 +271,14 @@
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
+		<kotlin.compiler.version>2.2.21</kotlin.compiler.version>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.5.7</spring-boot.version>
+		<spring-boot.version>4.0.0-RC2</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
-		<kotlin.version>1.9.25</kotlin.version>
+		<kotlin.version>2.2.21</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
 		<bedrockruntime.version>2.36.3</bedrockruntime.version>
@@ -305,8 +306,8 @@
 		<sap.hanadb.version>2.20.11</sap.hanadb.version>
 		<coherence.version>24.09</coherence.version>
 		<milvus.version>2.5.8</milvus.version>
-		<gemfire.testcontainers.version>2.3.0</gemfire.testcontainers.version>
-		<testcontainers.version>1.20.4</testcontainers.version>
+		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
+		<testcontainers.version>2.0.1</testcontainers.version>
 
 		<pinecone.version>4.0.1</pinecone.version>
 		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
@@ -322,6 +323,7 @@
 		<qdrant.version>1.13.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
 		<opensearch-client.version>2.23.0</opensearch-client.version>
+		<opensearch-testcontainers.version>2.0.1</opensearch-testcontainers.version>
 		<postgresql.version>42.7.7</postgresql.version>
 		<mariadb.version>3.5.3</mariadb.version>
 		<mysql.version>9.2.0</mysql.version>
@@ -332,6 +334,7 @@
 
 		<!-- testing dependencies -->
 		<okhttp3.version>4.12.0</okhttp3.version>
+		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
@@ -423,7 +426,7 @@
 			<plugin>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<artifactId>kotlin-maven-plugin</artifactId>
-				<version>${kotlin.version}</version>
+				<version>${kotlin.compiler.version}</version>
 				<configuration>
 					<jvmTarget>${java.version}</jvmTarget>
 					<javaParameters>true</javaParameters>
@@ -979,6 +982,20 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
 				<version>${spring-boot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>${testcontainers.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>io.rest-assured</groupId>
+				<artifactId>rest-assured-bom</artifactId>
+				<version>${rest-assured-bom.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>

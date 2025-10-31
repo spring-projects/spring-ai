@@ -121,6 +121,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-mongodb</artifactId>
+		</dependency>
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -241,6 +246,11 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 			<scope>test</scope>
 		</dependency>
@@ -253,13 +263,12 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers</artifactId>
-			<version>1.21.3</version>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>junit-jupiter</artifactId>
+			<artifactId>testcontainers-junit-jupiter</artifactId>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -304,56 +313,56 @@
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>qdrant</artifactId>
+			<artifactId>testcontainers-qdrant</artifactId>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>weaviate</artifactId>
+			<artifactId>testcontainers-weaviate</artifactId>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>chromadb</artifactId>
+			<artifactId>testcontainers-chromadb</artifactId>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>localstack</artifactId>
+			<artifactId>testcontainers-localstack</artifactId>
 			<optional>true</optional>
 		</dependency>
 		
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>milvus</artifactId>
+			<artifactId>testcontainers-milvus</artifactId>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>mongodb</artifactId>
+			<artifactId>testcontainers-mongodb</artifactId>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>ollama</artifactId>
+			<artifactId>testcontainers-ollama</artifactId>
 			<optional>true</optional>
 		</dependency>
 		
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>typesense</artifactId>
+			<artifactId>testcontainers-typesense</artifactId>
 			<optional>true</optional>
 		</dependency>
 
 		<dependency>
 			<groupId>org.opensearch</groupId>
 			<artifactId>opensearch-testcontainers</artifactId>
-			<version>2.0.1</version>
+			<version>${opensearch-testcontainers.version}</version>
 			<optional>true</optional>
 		</dependency>
 

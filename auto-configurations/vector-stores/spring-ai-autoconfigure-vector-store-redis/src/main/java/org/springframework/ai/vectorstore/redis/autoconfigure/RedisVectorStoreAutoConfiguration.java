@@ -34,8 +34,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 
@@ -47,7 +47,7 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
  * @author Soby Chacko
  * @author Jihoon Kim
  */
-@AutoConfiguration(after = RedisAutoConfiguration.class)
+@AutoConfiguration(after = DataRedisAutoConfiguration.class)
 @ConditionalOnClass({ JedisPooled.class, JedisConnectionFactory.class, RedisVectorStore.class, EmbeddingModel.class })
 @ConditionalOnBean(JedisConnectionFactory.class)
 @EnableConfigurationProperties(RedisVectorStoreProperties.class)

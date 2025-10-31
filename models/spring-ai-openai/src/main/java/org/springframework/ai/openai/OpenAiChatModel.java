@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -78,13 +77,13 @@ import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 /**
@@ -196,8 +195,14 @@ public class OpenAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
+				ResponseEntity<ChatCompletion> completionEntity;
+				try {
+					completionEntity = this.retryTemplate
+						.execute(() -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
+				}
+				catch (Exception e) {
+					throw new RuntimeException("Error calling OpenAI chat completion API", e);
+				}
 
 				var chatCompletion = completionEntity.getBody();
 
@@ -403,14 +408,15 @@ public class OpenAiChatModel implements ChatModel {
 		});
 	}
 
-	private MultiValueMap<String, String> getAdditionalHttpHeaders(Prompt prompt) {
+	private HttpHeaders getAdditionalHttpHeaders(Prompt prompt) {
 
 		Map<String, String> headers = new HashMap<>(this.defaultOptions.getHttpHeaders());
 		if (prompt.getOptions() != null && prompt.getOptions() instanceof OpenAiChatOptions chatOptions) {
 			headers.putAll(chatOptions.getHttpHeaders());
 		}
-		return CollectionUtils.toMultiValueMap(
-				headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue()))));
+		HttpHeaders httpHeaders = new HttpHeaders();
+		headers.forEach(httpHeaders::add);
+		return httpHeaders;
 	}
 
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata, ChatCompletionRequest request) {
