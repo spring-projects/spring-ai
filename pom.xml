@@ -916,6 +916,7 @@
 	                <configuration>
 	                    <publishingServerId>central</publishingServerId>
 	                    <autoPublish>true</autoPublish>
+	                    <excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
 	                </configuration>
 	            </plugin>
 	        </plugins>
