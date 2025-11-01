@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseFormat;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.observation.conventions.AiOperationType;
@@ -61,7 +62,7 @@ public class OpenAiImageModelObservationIT {
 			.model(OpenAiImageApi.ImageModel.DALL_E_3.getValue())
 			.height(1024)
 			.width(1024)
-			.responseFormat("url")
+			.responseFormat(ImageResponseFormat.URL)
 			.style("natural")
 			.build();
 
