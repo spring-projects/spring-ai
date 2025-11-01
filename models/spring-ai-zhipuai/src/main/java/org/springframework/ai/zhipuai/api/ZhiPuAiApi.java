@@ -174,7 +174,7 @@ public class ZhiPuAiApi {
 
 		Consumer<HttpHeaders> authHeaders = h -> {
 			h.setContentType(MediaType.APPLICATION_JSON);
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 		};
 
 		this.restClient = restClientBuilder.clone()
@@ -188,6 +188,34 @@ public class ZhiPuAiApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(authHeaders)
 			.build(); // @formatter:on
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey ZhiPuAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param embeddingsPath the path to the embeddings endpoint.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public ZhiPuAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
+			String embeddingsPath, ResponseErrorHandler responseErrorHandler, RestClient restClient,
+			WebClient webClient) {
+		Assert.hasText(completionsPath, "Completions Path must not be null");
+		Assert.hasText(embeddingsPath, "Embeddings Path must not be null");
+		Assert.notNull(headers, "Headers must not be null");
+
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.headers = headers;
+		this.completionsPath = completionsPath;
+		this.embeddingsPath = embeddingsPath;
+		this.responseErrorHandler = responseErrorHandler;
+		this.restClient = restClient;
+		this.webClient = webClient;
 	}
 
 	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
@@ -223,7 +251,7 @@ public class ZhiPuAiApi {
 		return this.restClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
-				headers.addAll(additionalHttpHeader);
+				headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader));
 				addDefaultHeadersIfMissing(headers);
 			})
 			.body(chatRequest)
@@ -260,7 +288,7 @@ public class ZhiPuAiApi {
 		return this.webClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
-				headers.addAll(additionalHttpHeader);
+				headers.addAll(HttpHeaders.readOnlyHttpHeaders(additionalHttpHeader));
 				addDefaultHeadersIfMissing(headers);
 			}) // @formatter:on
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
@@ -330,7 +358,7 @@ public class ZhiPuAiApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+		if (null == headers.getFirst(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
 			headers.setBearerAuth(this.apiKey.getValue());
 		}
 	}

@@ -25,8 +25,8 @@ import org.springframework.core.ParameterizedTypeReference
  * @author Josh Long
  */
 
-inline fun <reified T> ChatClient.CallResponseSpec.entity(): T =
+inline fun <reified T : Any> ChatClient.CallResponseSpec.entity(): T =
 	entity(object : ParameterizedTypeReference<T>() {}) as T
 
-inline fun <reified T> ChatClient.CallResponseSpec.responseEntity(): ResponseEntity<ChatResponse, T> =
+inline fun <reified T : Any> ChatClient.CallResponseSpec.responseEntity(): ResponseEntity<ChatResponse, T> =
 	responseEntity(object : ParameterizedTypeReference<T>() {}) 
