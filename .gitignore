@@ -3,6 +3,7 @@ target
 .classpath
 .project
 .settings
+.env
 bin
 build.log
 integration-repo
@@ -55,4 +56,3 @@ tmp
 
 
 plans
-
