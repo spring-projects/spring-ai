@@ -42,7 +42,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.EmbeddingList;
 import org.springframework.ai.openai.api.common.OpenAiApiConstants;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -164,8 +164,14 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse = this.retryTemplate
-					.execute(ctx -> this.openAiApi.embeddings(apiRequest).getBody());
+				EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse;
+				try {
+					apiEmbeddingResponse = this.retryTemplate
+						.execute(() -> this.openAiApi.embeddings(apiRequest).getBody());
+				}
+				catch (Exception e) {
+					throw new RuntimeException("Error calling OpenAI embedding API", e);
+				}
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);

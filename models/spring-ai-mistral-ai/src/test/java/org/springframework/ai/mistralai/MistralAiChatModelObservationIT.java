@@ -38,7 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -190,7 +190,7 @@ public class MistralAiChatModelObservationIT {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)
 				.defaultOptions(MistralAiChatOptions.builder().build())
-				.retryTemplate(RetryTemplate.defaultInstance())
+				.retryTemplate(new RetryTemplate())
 				.observationRegistry(observationRegistry)
 				.build();
 		}

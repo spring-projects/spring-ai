@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 
@@ -126,8 +126,8 @@ class OpenSearchContainerConnectionDetailsFactoryIT {
 
 		@Bean
 		@ServiceConnection
-		OpensearchContainer<?> opensearch() {
-			return new OpensearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
+		OpenSearchContainer<?> opensearch() {
+			return new OpenSearchContainer<>(OpenSearchImage.DEFAULT_IMAGE);
 		}
 
 	}

@@ -39,7 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
@@ -164,8 +164,8 @@ public class ZhiPuAiChatModelObservationIT {
 
 		@Bean
 		public ZhiPuAiChatModel zhiPuAiChatModel(ZhiPuAiApi zhiPuAiApi, TestObservationRegistry observationRegistry) {
-			return new ZhiPuAiChatModel(zhiPuAiApi, ZhiPuAiChatOptions.builder().build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+			return new ZhiPuAiChatModel(zhiPuAiApi, ZhiPuAiChatOptions.builder().build(), new RetryTemplate(),
+					observationRegistry);
 		}
 
 	}

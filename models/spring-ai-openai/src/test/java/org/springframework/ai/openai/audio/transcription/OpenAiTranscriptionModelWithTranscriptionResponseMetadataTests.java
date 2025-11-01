@@ -33,7 +33,7 @@ import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResp
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;

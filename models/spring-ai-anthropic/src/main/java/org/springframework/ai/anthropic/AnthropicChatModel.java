@@ -78,11 +78,12 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 
 /**
@@ -193,8 +194,19 @@ public class AnthropicChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletionResponse> completionEntity = this.retryTemplate.execute(
-						ctx -> this.anthropicApi.chatCompletionEntity(request, this.getAdditionalHttpHeaders(prompt)));
+				ResponseEntity<ChatCompletionResponse> completionEntity = null;
+				try {
+					completionEntity = this.retryTemplate.execute(() -> this.anthropicApi.chatCompletionEntity(request,
+							this.getAdditionalHttpHeaders(prompt)));
+				}
+				catch (RetryException e) {
+					if (e.getCause() instanceof RuntimeException r) {
+						throw r;
+					}
+					else {
+						throw new RuntimeException(e.getCause());
+					}
+				}
 
 				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
 				AnthropicApi.Usage usage = completionResponse.usage();
@@ -523,14 +535,15 @@ public class AnthropicChatModel implements ChatModel {
 				+ ". Supported types are: images (image/*) and PDF documents (application/pdf)");
 	}
 
-	private MultiValueMap<String, String> getAdditionalHttpHeaders(Prompt prompt) {
+	private HttpHeaders getAdditionalHttpHeaders(Prompt prompt) {
 
 		Map<String, String> headers = new HashMap<>(this.defaultOptions.getHttpHeaders());
 		if (prompt.getOptions() != null && prompt.getOptions() instanceof AnthropicChatOptions chatOptions) {
 			headers.putAll(chatOptions.getHttpHeaders());
 		}
-		return CollectionUtils.toMultiValueMap(
-				headers.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> List.of(e.getValue()))));
+		HttpHeaders httpHeaders = new HttpHeaders();
+		headers.forEach(httpHeaders::add);
+		return httpHeaders;
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {

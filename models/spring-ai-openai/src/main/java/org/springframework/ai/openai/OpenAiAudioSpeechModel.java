@@ -31,8 +31,8 @@ import org.springframework.ai.openai.audio.speech.StreamingSpeechModel;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -127,8 +127,13 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 
 		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
 
-		ResponseEntity<byte[]> speechEntity = this.retryTemplate
-			.execute(ctx -> this.audioApi.createSpeech(speechRequest));
+		ResponseEntity<byte[]> speechEntity;
+		try {
+			speechEntity = this.retryTemplate.execute(() -> this.audioApi.createSpeech(speechRequest));
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Error calling OpenAI audio speech API", e);
+		}
 
 		var speech = speechEntity.getBody();
 
@@ -154,8 +159,13 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 
 		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
 
-		Flux<ResponseEntity<byte[]>> speechEntity = this.retryTemplate
-			.execute(ctx -> this.audioApi.stream(speechRequest));
+		Flux<ResponseEntity<byte[]>> speechEntity;
+		try {
+			speechEntity = this.retryTemplate.execute(() -> this.audioApi.stream(speechRequest));
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Error calling OpenAI audio speech streaming API", e);
+		}
 
 		return speechEntity.map(entity -> new SpeechResponse(new Speech(entity.getBody()),
 				new OpenAiAudioSpeechResponseMetadata(OpenAiResponseHeaderExtractor.extractAiResponseHeaders(entity))));

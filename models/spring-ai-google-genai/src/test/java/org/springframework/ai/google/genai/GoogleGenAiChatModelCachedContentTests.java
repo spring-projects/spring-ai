@@ -36,7 +36,7 @@ import org.springframework.ai.google.genai.cache.CachedContentRequest;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContent;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
