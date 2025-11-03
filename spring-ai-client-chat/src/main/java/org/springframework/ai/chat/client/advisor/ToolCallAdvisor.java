@@ -30,14 +30,15 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
  * Recursive Advisor that disables the internal tool execution flow and instead implements
  * the tool calling loop as part of the advisor chain.
- *
+ * <p>
  * It uses the CallAdvisorChainUtil to implement looping advisor chain calls.
- *
+ * <p>
  * This enables intercepting the tool calling loop by the rest of the advisors next in the
  * chain.
  *
@@ -48,9 +49,10 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 	private final ToolCallingManager toolCallingManager;
 
 	/**
-	 * Set the order close to Ordered.HIGHEST_PRECEDENCE to ensure an advisor is executed
-	 * first in the chain (first for request processing, last for response processing).
-	 *
+	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
+	 * executed first in the chain (first for request processing, last for response
+	 * processing).
+	 * <p>
 	 * https://docs.spring.io/spring-ai/reference/api/advisors.html#_advisor_order
 	 */
 	private final int advisorOrder;
