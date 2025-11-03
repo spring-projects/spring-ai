@@ -17,7 +17,6 @@
 package org.springframework.ai.openaiofficial.setup;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
-import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
@@ -45,6 +44,8 @@ import static java.time.Duration.ofSeconds;
 public class OpenAiOfficialSetup {
 
 	static final String OPENAI_URL = "https://api.openai.com/v1";
+	static final String OPENAI_API_KEY = "OPENAI_API_KEY";
+	static final String AZURE_OPENAI_KEY = "AZURE_OPENAI_KEY";
 	static final String GITHUB_MODELS_URL = "https://models.inference.ai.azure.com";
 	static final String GITHUB_TOKEN = "GITHUB_TOKEN";
 	static final String DEFAULT_USER_AGENT = "spring-ai-openai-official";
@@ -75,21 +76,23 @@ public class OpenAiOfficialSetup {
 		if (maxRetries == null) {
 			maxRetries = DEFAULT_MAX_RETRIES;
 		}
-
 		OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder();
 		builder
 			.baseUrl(calculateBaseUrl(baseUrl, modelHost, modelName, azureDeploymentName, azureOpenAiServiceVersion));
 
-		Credential calculatedCredential = calculateCredential(modelHost, apiKey, credential);
-		String calculatedApiKey = calculateApiKey(modelHost, apiKey);
-		if (calculatedCredential == null && calculatedApiKey == null) {
-			throw new IllegalArgumentException("Either apiKey or credential must be set to authenticate");
-		}
-		else if (calculatedCredential != null) {
-			builder.credential(calculatedCredential);
+		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelHost);
+		if (calculatedApiKey != null) {
+			builder.apiKey(calculatedApiKey);
 		}
 		else {
-			builder.apiKey(calculatedApiKey);
+			if (credential != null) {
+				builder.credential(credential);
+			}
+			else if (modelHost == ModelHost.AZURE_OPENAI) {
+				// If no API key is provided for Azure OpenAI, we try to use passwordless
+				// authentication
+				builder.credential(azureAuthentication());
+			}
 		}
 		builder.organization(organizationId);
 
@@ -131,21 +134,23 @@ public class OpenAiOfficialSetup {
 		if (maxRetries == null) {
 			maxRetries = DEFAULT_MAX_RETRIES;
 		}
-
 		OpenAIOkHttpClientAsync.Builder builder = OpenAIOkHttpClientAsync.builder();
 		builder
 			.baseUrl(calculateBaseUrl(baseUrl, modelHost, modelName, azureDeploymentName, azureOpenAiServiceVersion));
 
-		Credential calculatedCredential = calculateCredential(modelHost, apiKey, credential);
-		String calculatedApiKey = calculateApiKey(modelHost, apiKey);
-		if (calculatedCredential == null && calculatedApiKey == null) {
-			throw new IllegalArgumentException("Either apiKey or credential must be set to authenticate");
-		}
-		else if (calculatedCredential != null) {
-			builder.credential(calculatedCredential);
+		String calculatedApiKey = apiKey != null ? apiKey : detectApiKey(modelHost);
+		if (calculatedApiKey != null) {
+			builder.apiKey(calculatedApiKey);
 		}
 		else {
-			builder.apiKey(calculatedApiKey);
+			if (credential != null) {
+				builder.credential(credential);
+			}
+			else if (modelHost == ModelHost.AZURE_OPENAI) {
+				// If no API key is provided for Azure OpenAI, we try to use passwordless
+				// authentication
+				builder.credential(azureAuthentication());
+			}
 		}
 		builder.organization(organizationId);
 
@@ -241,42 +246,25 @@ public class OpenAiOfficialSetup {
 		}
 	}
 
-	static Credential calculateCredential(ModelHost modelHost, String apiKey, Credential credential) {
-		if (apiKey != null) {
-			if (modelHost == ModelHost.AZURE_OPENAI) {
-				return AzureApiKeyCredential.create(apiKey);
-			}
+	static Credential azureAuthentication() {
+		try {
+			return AzureInternalOpenAiOfficialHelper.getAzureCredential();
 		}
-		else if (credential != null) {
-			return credential;
+		catch (NoClassDefFoundError e) {
+			throw new IllegalArgumentException("Azure OpenAI was detected, but no credential was provided. "
+					+ "If you want to use passwordless authentication, you need to add the Azure Identity library (groupId=`com.azure`, artifactId=`azure-identity`) to your classpath.");
 		}
-		else if (modelHost == ModelHost.AZURE_OPENAI) {
-			try {
-				return AzureInternalOpenAiOfficialHelper.getAzureCredential();
-			}
-			catch (NoClassDefFoundError e) {
-				throw new IllegalArgumentException("Azure OpenAI was detected, but no credential was provided. "
-						+ "If you want to use passwordless authentication, you need to add the Azure Identity library (groupId=`com.azure`, artifactId=`azure-identity`) to your classpath.");
-			}
-		}
-		return null;
 	}
 
-	static String calculateApiKey(ModelHost modelHost, String apiKey) {
-		if (apiKey == null) {
-			var openAiKey = System.getenv("OPENAI_API_KEY");
-			if (openAiKey != null) {
-				apiKey = openAiKey;
-				logger.debug("OpenAI API Key detected from environment variable OPENAI_API_KEY.");
-			}
-			var azureOpenAiKey = System.getenv("AZURE_OPENAI_KEY");
-			if (azureOpenAiKey != null) {
-				apiKey = azureOpenAiKey;
-				logger.debug("Azure OpenAI Key detected from environment variable AZURE_OPENAI_KEY.");
-			}
+	static String detectApiKey(ModelHost modelHost) {
+		if (modelHost == ModelHost.OPENAI && System.getenv(OPENAI_API_KEY) != null) {
+			return System.getenv(OPENAI_API_KEY);
 		}
-		if (modelHost != ModelHost.AZURE_OPENAI && apiKey != null) {
-			return apiKey;
+		else if (modelHost == ModelHost.AZURE_OPENAI && System.getenv(AZURE_OPENAI_KEY) != null) {
+			return System.getenv(AZURE_OPENAI_KEY);
+		}
+		else if (modelHost == ModelHost.AZURE_OPENAI && System.getenv(OPENAI_API_KEY) != null) {
+			return System.getenv(OPENAI_API_KEY);
 		}
 		else if (modelHost == ModelHost.GITHUB_MODELS && System.getenv(GITHUB_TOKEN) != null) {
 			return System.getenv(GITHUB_TOKEN);
