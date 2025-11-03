@@ -22,11 +22,9 @@ import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportP
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperFactory;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -51,10 +49,8 @@ public class McpServerStreamableHttpWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(
-			@Qualifier("mcpServerObjectMapper") ObjectProvider<ObjectMapper> objectMapperProvider,
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper,
 			McpServerStreamableHttpProperties serverProperties) {
-
-		ObjectMapper objectMapper = McpServerObjectMapperFactory.getOrCreateObjectMapper(objectMapperProvider);
 
 		return WebMvcStreamableServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))

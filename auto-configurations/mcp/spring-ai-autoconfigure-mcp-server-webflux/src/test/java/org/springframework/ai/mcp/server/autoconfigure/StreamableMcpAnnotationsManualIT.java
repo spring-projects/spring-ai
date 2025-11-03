@@ -78,6 +78,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpCli
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
@@ -109,7 +110,8 @@ public class StreamableMcpAnnotationsManualIT {
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerAnnotationScannerAutoConfiguration.class,
 				McpServerSpecificationFactoryAutoConfiguration.class, McpServerAutoConfiguration.class,
-				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class));
+				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
+				McpServerStreamableHttpWebFluxAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,

@@ -66,6 +66,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAut
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
@@ -93,7 +94,8 @@ public class StreamableWebClientWebFluxServerIT {
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class));
+				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
+				McpServerStreamableHttpWebFluxAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,

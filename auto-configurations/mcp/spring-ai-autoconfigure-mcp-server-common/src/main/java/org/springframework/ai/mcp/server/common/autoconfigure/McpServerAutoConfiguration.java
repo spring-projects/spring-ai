@@ -51,6 +51,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
@@ -91,30 +92,10 @@ public class McpServerAutoConfiguration {
 
 	private static final LogAccessor logger = new LogAccessor(McpServerAutoConfiguration.class);
 
-	/**
-	 * Creates a configured ObjectMapper for MCP server JSON serialization.
-	 * <p>
-	 * This ObjectMapper is specifically configured for MCP protocol compliance with:
-	 * <ul>
-	 * <li>Lenient deserialization that doesn't fail on unknown properties</li>
-	 * <li>Proper handling of empty beans during serialization</li>
-	 * <li>Exclusion of null values from JSON output</li>
-	 * <li>Standard Jackson modules for Java 8, JSR-310, and Kotlin support</li>
-	 * </ul>
-	 * <p>
-	 * This bean can be overridden by providing a custom ObjectMapper bean with the name
-	 * "mcpServerObjectMapper".
-	 * @return configured ObjectMapper instance for MCP server operations
-	 */
-	@Bean(name = "mcpServerObjectMapper")
-	@ConditionalOnMissingBean(name = "mcpServerObjectMapper")
-	public ObjectMapper mcpServerObjectMapper() {
-		return McpServerObjectMapperFactory.createObjectMapper();
-	}
-
 	@Bean
 	@ConditionalOnMissingBean
-	public McpServerTransportProviderBase stdioServerTransport(ObjectMapper mcpServerObjectMapper) {
+	public McpServerTransportProviderBase stdioServerTransport(
+			@Qualifier("mcpServerObjectMapper") ObjectMapper mcpServerObjectMapper) {
 		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerObjectMapper));
 	}
 
