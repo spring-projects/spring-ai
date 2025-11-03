@@ -388,7 +388,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 					.map(toolCall -> {
 					return new AssistantMessage.ToolCall(toolCall.function().get().id(), "function", toolCall.function().get().function().name(),
 							toolCall.function().get().function().arguments());
-					}).toList()).get();
+					}).toList()).orElse(List.of());
 
 		var generationMetadataBuilder = ChatGenerationMetadata.builder()
 			.finishReason(choice.finishReason().value().name());
@@ -566,8 +566,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				else {
 					builder.role(JsonValue.from(MessageType.SYSTEM));
 				}
-				Object refusal = message.getMetadata().get("refusal");
-				builder.refusal(refusal != null ? JsonValue.from(refusal.toString()) : JsonValue.from(""));
+				builder.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")));
 				return List.of(builder.build());
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
@@ -576,8 +575,12 @@ public class OpenAiOfficialChatModel implements ChatModel {
 					.role(JsonValue.from(MessageType.ASSISTANT));
 
 				if (assistantMessage.getText() != null) {
-					builder.content(ChatCompletionMessage.builder().content(assistantMessage.getText()).build().content());
+					builder.content(ChatCompletionMessage.builder()
+							.content(assistantMessage.getText())
+							.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")))
+							.build().content());
 				}
+				builder.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")));
 
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					List<ChatCompletionMessageToolCall> toolCalls = assistantMessage.getToolCalls()
@@ -604,6 +607,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 					.map(toolResponse -> ChatCompletionMessage.builder()
 						.role(JsonValue.from(MessageType.TOOL))
 						.content(ChatCompletionMessage.builder().content(toolResponse.responseData()).build().content())
+						.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")))
 						.build())
 					.toList();
 			}
