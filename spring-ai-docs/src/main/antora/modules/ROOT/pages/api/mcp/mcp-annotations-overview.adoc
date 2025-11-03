@@ -6,7 +6,7 @@ It simplifies the creation and registration of MCP server methods and client han
  The MCP Annotations enable developers to create and register MCP operation handlers using declarative annotations.
 This approach simplifies implementing MCP server and client functionality by reducing boilerplate code and improving maintainability.
 
-This library builds on top of the link:https://github.com/modelcontextprotocol/sdk-java[MCP Java SDK] to provide a higher-level, annotation-based programming model for implementing MCP servers and clients.
+This library builds on top of the link:https://github.com/modelcontextprotocol/java-sdk[MCP Java SDK] to provide a higher-level, annotation-based programming model for implementing MCP servers and clients.
 
 == Architecture
 
