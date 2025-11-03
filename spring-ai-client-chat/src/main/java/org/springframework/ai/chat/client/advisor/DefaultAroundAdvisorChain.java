@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.springframework.ai.chat.client.ChatClient;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
@@ -43,9 +44,9 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Default implementation for the {@link BaseAdvisorChain}. Used by the
- * {@link org.springframework.ai.chat.client.ChatClient} to delegate the call to the next
- * {@link CallAdvisor} or {@link StreamAdvisor} in the chain.
+ * Default implementation for the {@link BaseAdvisorChain}. Used by the {@link ChatClient}
+ * to delegate the call to the next {@link CallAdvisor} or {@link StreamAdvisor} in the
+ * chain.
  *
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
