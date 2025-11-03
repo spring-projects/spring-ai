@@ -20,9 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +34,7 @@ class McpServerSseWebFluxAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class,
-				JacksonAutoConfiguration.class, TestConfiguration.class));
+				McpServerObjectMapperAutoConfiguration.class, TestConfiguration.class));
 
 	@Test
 	void shouldConfigureWebFluxTransportWithCustomObjectMapper() {
@@ -43,7 +43,7 @@ class McpServerSseWebFluxAutoConfigurationTests {
 			assertThat(context).hasSingleBean(RouterFunction.class);
 			assertThat(context).hasSingleBean(McpServerProperties.class);
 
-			ObjectMapper objectMapper = context.getBean(ObjectMapper.class);
+			ObjectMapper objectMapper = context.getBean("mcpServerObjectMapper", ObjectMapper.class);
 
 			// Verify that the ObjectMapper is configured to ignore unknown properties
 			assertThat(objectMapper.getDeserializationConfig()

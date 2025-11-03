@@ -51,6 +51,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
@@ -93,10 +94,9 @@ public class McpServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public McpServerTransportProviderBase stdioServerTransport(ObjectProvider<ObjectMapper> objectMapperProvider) {
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-
-		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(objectMapper));
+	public McpServerTransportProviderBase stdioServerTransport(
+			@Qualifier("mcpServerObjectMapper") ObjectMapper mcpServerObjectMapper) {
+		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerObjectMapper));
 	}
 
 	@Bean
