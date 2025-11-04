@@ -190,9 +190,9 @@ public class MessageAggregator {
 	/**
 	 * Merge tool calls by id to handle streaming responses where tool call data is split
 	 * across multiple chunks. This is common in OpenAI-compatible APIs like Qwen, where
-	 * the first chunk contains the function name and subsequent chunks contain only arguments.
-	 * if a tool call has an ID, it's matched by ID.
-	 * if it has no ID (empty or null), it's merged with the last tool call in the list.
+	 * the first chunk contains the function name and subsequent chunks contain only
+	 * arguments. if a tool call has an ID, it's matched by ID. if it has no ID (empty or
+	 * null), it's merged with the last tool call in the list.
 	 * @param existingToolCalls the list of existing tool calls to merge into
 	 * @param newToolCalls the new tool calls to merge
 	 */
@@ -201,27 +201,31 @@ public class MessageAggregator {
 			if (StringUtils.hasText(newCall.id())) {
 				// ID present: match by ID or add as new
 				ToolCall existingMatch = existingToolCalls.stream()
-						.filter(existing -> newCall.id().equals(existing.id()))
-						.findFirst()
-						.orElse(null);
+					.filter(existing -> newCall.id().equals(existing.id()))
+					.findFirst()
+					.orElse(null);
 
 				if (existingMatch != null) {
 					// Merge with existing tool call with same ID
 					int index = existingToolCalls.indexOf(existingMatch);
 					ToolCall merged = mergeToolCall(existingMatch, newCall);
 					existingToolCalls.set(index, merged);
-				} else {
+				}
+				else {
 					// New tool call with ID
 					existingToolCalls.add(newCall);
 				}
-			} else {
+			}
+			else {
 				// No ID: merge with last tool call
-				ToolCall lastToolCall = existingToolCalls.isEmpty() ? null : existingToolCalls.get(existingToolCalls.size() - 1);
+				ToolCall lastToolCall = existingToolCalls.isEmpty() ? null
+						: existingToolCalls.get(existingToolCalls.size() - 1);
 				ToolCall merged = mergeToolCall(lastToolCall, newCall);
-				
+
 				if (lastToolCall != null) {
 					existingToolCalls.set(existingToolCalls.size() - 1, merged);
-				} else {
+				}
+				else {
 					existingToolCalls.add(merged);
 				}
 			}
@@ -231,14 +235,14 @@ public class MessageAggregator {
 	/**
 	 * Merge two tool calls into one, combining their properties.
 	 * @param existing the existing tool call
-	 * @param current  the current tool call to merge
+	 * @param current the current tool call to merge
 	 * @return the merged tool call
 	 */
 	private ToolCall mergeToolCall(ToolCall existing, ToolCall current) {
 		if (existing == null) {
 			return current;
 		}
-		
+
 		// Use non-empty ID, prefer existing if both present (for consistency)
 		String mergedId = StringUtils.hasText(existing.id()) ? existing.id() : current.id();
 

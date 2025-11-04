@@ -27,8 +27,9 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Tests for {@link MessageAggregator} with streaming tool calls that lack IDs in subsequent chunks.
- * This pattern is common in OpenAI-compatible APIs.
+ * Tests for {@link MessageAggregator} with streaming tool calls that lack IDs in
+ * subsequent chunks. This pattern is common in OpenAI-compatible APIs.
+ *
  * @author Taewoong Kim
  */
 class MessageAggregatorTests {
@@ -36,32 +37,32 @@ class MessageAggregatorTests {
 	private final MessageAggregator messageAggregator = new MessageAggregator();
 
 	/**
-	 * Test merging of tool calls when subsequent chunks have no ID.
-	 * First chunk contains the tool name and ID, subsequent chunks contain only arguments.
+	 * Test merging of tool calls when subsequent chunks have no ID. First chunk contains
+	 * the tool name and ID, subsequent chunks contain only arguments.
 	 */
 	@Test
 	void shouldMergeToolCallsWithoutIds() {
 		// Chunk 1: ID and name present
 		ChatResponse chunk1 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("chatcmpl-tool-123", "function", "getCurrentWeather", "")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("chatcmpl-tool-123", "function", "getCurrentWeather", "")))
+			.build())));
 
 		// Chunk 2-5: No ID, only arguments (common streaming pattern)
 		ChatResponse chunk2 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "{\"location\": \"")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "{\"location\": \"")))
+			.build())));
 
 		ChatResponse chunk3 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "Se")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "Se")))
+			.build())));
 
 		ChatResponse chunk4 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "oul")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "oul")))
+			.build())));
 
 		ChatResponse chunk5 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "\"}")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "\"}")))
+			.build())));
 
 		Flux<ChatResponse> flux = Flux.just(chunk1, chunk2, chunk3, chunk4, chunk5);
 
@@ -82,31 +83,32 @@ class MessageAggregatorTests {
 	}
 
 	/**
-	 * Test multiple tool calls being streamed simultaneously. Each tool call has its own ID in the first chunk,
-	 * and subsequent chunks have no ID but are merged with the last tool call.
+	 * Test multiple tool calls being streamed simultaneously. Each tool call has its own
+	 * ID in the first chunk, and subsequent chunks have no ID but are merged with the
+	 * last tool call.
 	 */
 	@Test
 	void shouldMergeMultipleToolCallsWithMixedIds() {
 		// Given: Multiple tool calls being streamed
 		// Chunk 1: First tool call starts with ID
 		ChatResponse chunk1 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("tool-1", "function", "getWeather", "")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("tool-1", "function", "getWeather", "")))
+			.build())));
 
 		// Chunk 2: Argument for first tool call (no ID)
 		ChatResponse chunk2 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "{\"city\":\"Tokyo\"}")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "{\"city\":\"Tokyo\"}")))
+			.build())));
 
 		// Chunk 3: Second tool call starts with ID
 		ChatResponse chunk3 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("tool-2", "function", "getTime", "")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("tool-2", "function", "getTime", "")))
+			.build())));
 
 		// Chunk 4: Argument for second tool call (no ID)
 		ChatResponse chunk4 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "{\"timezone\":\"JST\"}")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("", "function", "", "{\"timezone\":\"JST\"}")))
+			.build())));
 
 		Flux<ChatResponse> flux = Flux.just(chunk1, chunk2, chunk3, chunk4);
 
@@ -132,18 +134,19 @@ class MessageAggregatorTests {
 	}
 
 	/**
-	 * Test that tool calls with IDs are still matched correctly by ID, even when they arrive in different chunks.
+	 * Test that tool calls with IDs are still matched correctly by ID, even when they
+	 * arrive in different chunks.
 	 */
 	@Test
 	void shouldMergeToolCallsById() {
 		// Given: Chunks with same ID arriving separately
 		ChatResponse chunk1 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("tool-1", "function", "getWeather", "{\"ci")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("tool-1", "function", "getWeather", "{\"ci")))
+			.build())));
 
 		ChatResponse chunk2 = new ChatResponse(List.of(new Generation(AssistantMessage.builder()
-				.toolCalls(List.of(new AssistantMessage.ToolCall("tool-1", "function", "", "ty\":\"Paris\"}")))
-				.build())));
+			.toolCalls(List.of(new AssistantMessage.ToolCall("tool-1", "function", "", "ty\":\"Paris\"}")))
+			.build())));
 
 		Flux<ChatResponse> flux = Flux.just(chunk1, chunk2);
 
@@ -163,4 +166,3 @@ class MessageAggregatorTests {
 	}
 
 }
-
