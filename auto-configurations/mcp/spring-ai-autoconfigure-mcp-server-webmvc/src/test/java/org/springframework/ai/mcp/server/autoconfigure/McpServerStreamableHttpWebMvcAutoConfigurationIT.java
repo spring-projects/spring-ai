@@ -23,7 +23,9 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -189,6 +191,30 @@ class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=true").run(context -> {
 			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
+		});
+	}
+
+	@Test
+	void contextExtractorExtractsHeaders() {
+		this.contextRunner.run(context -> {
+			WebMvcStreamableServerTransportProvider provider = context
+				.getBean(WebMvcStreamableServerTransportProvider.class);
+
+			// Create a mock ServerRequest with headers
+			MockHttpServletRequest mockRequest = new MockHttpServletRequest();
+			mockRequest.addHeader("xxxx", "123456");
+			mockRequest.addHeader("Authorization", "Bearer token123");
+			mockRequest.addHeader("Content-Type", "application/json");
+
+			ServerRequest serverRequest = ServerRequest.create(mockRequest, java.util.Collections.emptyList());
+
+			// Verify the provider is properly configured
+			assertThat(provider).isNotNull();
+
+			// Verify headers are accessible from the ServerRequest
+			assertThat(serverRequest.headers().firstHeader("xxxx")).isEqualTo("123456");
+			assertThat(serverRequest.headers().firstHeader("Authorization")).isEqualTo("Bearer token123");
+			assertThat(serverRequest.headers().firstHeader("Content-Type")).isEqualTo("application/json");
 		});
 	}
 

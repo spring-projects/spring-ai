@@ -16,7 +16,11 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -33,6 +37,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerRequest;
 
 /**
  * @author Christian Tzolov
@@ -57,7 +62,18 @@ public class McpServerStreamableHttpWebFluxAutoConfiguration {
 			.messageEndpoint(serverProperties.getMcpEndpoint())
 			.keepAliveInterval(serverProperties.getKeepAliveInterval())
 			.disallowDelete(serverProperties.isDisallowDelete())
+			.contextExtractor(this::extractContextFromRequest)
 			.build();
+	}
+
+	private McpTransportContext extractContextFromRequest(ServerRequest serverRequest) {
+		Map<String, Object> headersMap = new HashMap<>();
+		serverRequest.headers().asHttpHeaders().forEach((headerName, headerValues) -> {
+			if (!headerValues.isEmpty()) {
+				headersMap.put(headerName, headerValues.get(0));
+			}
+		});
+		return McpTransportContext.create(headersMap);
 	}
 
 	// Router function for streamable http transport used by Spring WebFlux to start an
