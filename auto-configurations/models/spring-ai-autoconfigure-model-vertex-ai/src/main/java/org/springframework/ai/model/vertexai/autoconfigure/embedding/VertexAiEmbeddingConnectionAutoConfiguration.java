@@ -16,8 +16,6 @@
 
 package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
-import com.google.cloud.vertexai.VertexAI;
-
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -26,6 +24,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
 
 /**
  * Auto-configuration for Vertex AI Embedding Connection.
@@ -36,7 +35,7 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 @AutoConfiguration
-@ConditionalOnClass(VertexAI.class)
+@ConditionalOnClass(PredictionServiceSettings.class)
 @EnableConfigurationProperties(VertexAiEmbeddingConnectionProperties.class)
 public class VertexAiEmbeddingConnectionAutoConfiguration {
 
