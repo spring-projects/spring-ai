@@ -31,7 +31,6 @@ import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
@@ -74,7 +73,6 @@ class McpToolsConfigurationTests {
 					McpToolCallbackAutoConfiguration.class,
 					McpClientAutoConfiguration.class,
 					McpClientAnnotationScannerAutoConfiguration.class,
-					McpClientSpecificationFactoryAutoConfiguration.class,
 					// Tool callbacks
 					ToolCallingAutoConfiguration.class,
 					// Chat client for sampling

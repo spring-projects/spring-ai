@@ -23,16 +23,9 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
-import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
-import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification;
-import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
-import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
-import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
 
+import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpAsyncAnnotationCustomizer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -237,7 +230,8 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
+			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
+			ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry) {
 
 		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
@@ -252,7 +246,22 @@ public class McpClientAutoConfiguration {
 
 				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout());
+					.requestTimeout(commonProperties.getRequestTimeout())
+					.sampling(samplingRequest -> clientMcpAsyncHandlersRegistry.handleSampling(namedTransport.name(),
+							samplingRequest))
+					.elicitation(elicitationRequest -> clientMcpAsyncHandlersRegistry
+						.handleElicitation(namedTransport.name(), elicitationRequest))
+					.loggingConsumer(loggingMessageNotification -> clientMcpAsyncHandlersRegistry
+						.handleLogging(namedTransport.name(), loggingMessageNotification))
+					.progressConsumer(progressNotification -> clientMcpAsyncHandlersRegistry
+						.handleProgress(namedTransport.name(), progressNotification))
+					.toolsChangeConsumer(newTools -> clientMcpAsyncHandlersRegistry
+						.handleToolListChanged(namedTransport.name(), newTools))
+					.promptsChangeConsumer(newPrompts -> clientMcpAsyncHandlersRegistry
+						.handlePromptListChanged(namedTransport.name(), newPrompts))
+					.resourcesChangeConsumer(newResources -> clientMcpAsyncHandlersRegistry
+						.handleResourceListChanged(namedTransport.name(), newResources))
+					.capabilities(clientMcpAsyncHandlersRegistry.getCapabilities(namedTransport.name()));
 
 				spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
 
@@ -280,18 +289,6 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	McpAsyncClientConfigurer mcpAsyncClientConfigurer(ObjectProvider<McpAsyncClientCustomizer> customizerProvider) {
 		return new McpAsyncClientConfigurer(customizerProvider.orderedStream().toList());
-	}
-
-	@Bean
-	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public McpAsyncClientCustomizer mcpAnnotationMcpAsyncClientCustomizer(List<AsyncLoggingSpecification> loggingSpecs,
-			List<AsyncSamplingSpecification> samplingSpecs, List<AsyncElicitationSpecification> elicitationSpecs,
-			List<AsyncProgressSpecification> progressSpecs,
-			List<AsyncToolListChangedSpecification> toolListChangedSpecs,
-			List<AsyncResourceListChangedSpecification> resourceListChangedSpecs,
-			List<AsyncPromptListChangedSpecification> promptListChangedSpecs) {
-		return new McpAsyncAnnotationCustomizer(samplingSpecs, loggingSpecs, elicitationSpecs, progressSpecs,
-				toolListChangedSpecs, resourceListChangedSpecs, promptListChangedSpecs);
 	}
 
 	/**

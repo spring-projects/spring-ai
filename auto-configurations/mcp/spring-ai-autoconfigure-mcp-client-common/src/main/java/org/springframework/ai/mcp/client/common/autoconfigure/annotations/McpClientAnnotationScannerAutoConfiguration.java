@@ -27,6 +27,7 @@ import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
+import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
@@ -64,8 +65,15 @@ public class McpClientAnnotationScannerAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public ClientMcpSyncHandlersRegistry mcpHandlersRegistry() {
+	public ClientMcpSyncHandlersRegistry clientMcpSyncHandlersRegistry() {
 		return new ClientMcpSyncHandlersRegistry();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry() {
+		return new ClientMcpAsyncHandlersRegistry();
 	}
 
 	@Bean

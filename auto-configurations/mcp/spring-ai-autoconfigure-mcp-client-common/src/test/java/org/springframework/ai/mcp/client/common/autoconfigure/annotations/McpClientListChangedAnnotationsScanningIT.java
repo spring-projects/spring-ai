@@ -45,8 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class McpClientListChangedAnnotationsScanningIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class,
-				McpClientSpecificationFactoryAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpClientAnnotationScannerAutoConfiguration.class));
 
 	@ParameterizedTest
 	@ValueSource(strings = { "SYNC", "ASYNC" })
