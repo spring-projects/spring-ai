@@ -91,8 +91,10 @@ spring:
         type: SYNC
         protocol: SSE  # or STDIO, STREAMABLE
         capabilities:
-          tools: true
-          logging: true
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
 ----
 
 === Document Processing Server
@@ -212,8 +214,6 @@ public class McpClientApplication {
     public static void main(String[] args) {
         SpringApplication.run(McpClientApplication.class, args);
     }
-
-
 }
 
 @Component
