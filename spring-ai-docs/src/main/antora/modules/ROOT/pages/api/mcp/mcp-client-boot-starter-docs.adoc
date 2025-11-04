@@ -667,7 +667,7 @@ If no custom converter bean is provided, the default converter is used automatic
 The MCP ToolCallback auto-configuration is enabled by default, but can be disabled with the `spring.ai.mcp.client.toolcallback.enabled=false` property.
 
 When disabled, no `ToolCallbackProvider` bean is created from the available MCP tools.
-bsafdsa
+
 == MCP Client Annotations
 
 The MCP Client Boot Starter automatically detects and registers annotated methods for handling various MCP client operations:
