@@ -72,6 +72,8 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 	private ResponseCreateParams.StreamOptions streamOptions;
 
+	private Boolean streamUsage;
+
 	private Integer seed;
 
 	private List<String> stop;
@@ -197,6 +199,14 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 	public void setStreamOptions(ResponseCreateParams.StreamOptions streamOptions) {
 		this.streamOptions = streamOptions;
+	}
+
+	public Boolean getStreamUsage() {
+		return this.streamUsage;
+	}
+
+	public void setStreamUsage(Boolean streamUsage) {
+		this.streamUsage = streamUsage;
 	}
 
 	public Integer getSeed() {
@@ -393,7 +403,8 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 				&& Objects.equals(n, options.n) && Objects.equals(outputAudio, options.outputAudio)
 				&& Objects.equals(presencePenalty, options.presencePenalty)
 				&& Objects.equals(responseFormat, options.responseFormat)
-				&& Objects.equals(streamOptions, options.streamOptions) && Objects.equals(seed, options.seed)
+				&& Objects.equals(streamOptions, options.streamOptions)
+				&& Objects.equals(streamUsage, options.streamUsage) && Objects.equals(seed, options.seed)
 				&& Objects.equals(stop, options.stop) && Objects.equals(temperature, options.temperature)
 				&& Objects.equals(topP, options.topP) && Objects.equals(tools, options.tools)
 				&& Objects.equals(toolChoice, options.toolChoice) && Objects.equals(user, options.user)
@@ -409,9 +420,9 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 	@Override
 	public int hashCode() {
 		return Objects.hash(frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, outputAudio,
-				presencePenalty, responseFormat, streamOptions, seed, stop, temperature, topP, tools, toolChoice, user,
-				parallelToolCalls, store, metadata, reasoningEffort, verbosity, serviceTier, toolCallbacks, toolNames,
-				internalToolExecutionEnabled, httpHeaders, toolContext);
+				presencePenalty, responseFormat, streamOptions, streamUsage, seed, stop, temperature, topP, tools,
+				toolChoice, user, parallelToolCalls, store, metadata, reasoningEffort, verbosity, serviceTier,
+				toolCallbacks, toolNames, internalToolExecutionEnabled, httpHeaders, toolContext);
 	}
 
 	@Override
@@ -419,13 +430,13 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 		return "OpenAiOfficialChatOptions{" + "frequencyPenalty=" + frequencyPenalty + ", logitBias=" + logitBias
 				+ ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs + ", maxTokens=" + maxTokens + ", n=" + n
 				+ ", outputAudio=" + outputAudio + ", presencePenalty=" + presencePenalty + ", responseFormat="
-				+ responseFormat + ", streamOptions=" + streamOptions + ", seed=" + seed + ", stop=" + stop
-				+ ", temperature=" + temperature + ", topP=" + topP + ", tools=" + tools + ", toolChoice=" + toolChoice
-				+ ", user='" + user + '\'' + ", parallelToolCalls=" + parallelToolCalls + ", store=" + store
-				+ ", metadata=" + metadata + ", reasoningEffort='" + reasoningEffort + '\'' + ", verbosity='"
-				+ verbosity + '\'' + ", serviceTier='" + serviceTier + '\'' + ", toolCallbacks=" + toolCallbacks
-				+ ", toolNames=" + toolNames + ", internalToolExecutionEnabled=" + internalToolExecutionEnabled
-				+ ", httpHeaders=" + httpHeaders + ", toolContext=" + toolContext + '}';
+				+ responseFormat + ", streamOptions=" + streamOptions + ", streamUsage=" + streamUsage + ", seed="
+				+ seed + ", stop=" + stop + ", temperature=" + temperature + ", topP=" + topP + ", tools=" + tools
+				+ ", toolChoice=" + toolChoice + ", user='" + user + '\'' + ", parallelToolCalls=" + parallelToolCalls
+				+ ", store=" + store + ", metadata=" + metadata + ", reasoningEffort='" + reasoningEffort + '\''
+				+ ", verbosity='" + verbosity + '\'' + ", serviceTier='" + serviceTier + '\'' + ", toolCallbacks="
+				+ toolCallbacks + ", toolNames=" + toolNames + ", internalToolExecutionEnabled="
+				+ internalToolExecutionEnabled + ", httpHeaders=" + httpHeaders + ", toolContext=" + toolContext + '}';
 	}
 
 	public static final class Builder {
@@ -446,6 +457,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			this.options.setPresencePenalty(fromOptions.getPresencePenalty());
 			this.options.setResponseFormat(fromOptions.getResponseFormat());
 			this.options.setStreamOptions(fromOptions.getStreamOptions());
+			this.options.setStreamUsage(fromOptions.getStreamUsage());
 			this.options.setSeed(fromOptions.getSeed());
 			this.options.setStop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null);
 			this.options.setTemperature(fromOptions.getTemperature());
@@ -507,6 +519,9 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			}
 			if (from.getStreamOptions() != null) {
 				this.options.setStreamOptions(from.getStreamOptions());
+			}
+			if (from.getStreamUsage() != null) {
+				this.options.setStreamUsage(from.getStreamUsage());
 			}
 			if (from.getSeed() != null) {
 				this.options.setSeed(from.getSeed());
@@ -636,6 +651,16 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 		public Builder responseFormat(ResponseFormatJsonSchema responseFormat) {
 			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder streamOptions(ResponseCreateParams.StreamOptions streamOptions) {
+			this.options.setStreamOptions(streamOptions);
+			return this;
+		}
+
+		public Builder streamUsage(Boolean streamUsage) {
+			this.options.setStreamUsage(streamUsage);
 			return this;
 		}
 

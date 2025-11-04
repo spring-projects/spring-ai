@@ -19,6 +19,7 @@ package org.springframework.ai.openaiofficial;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonArray;
+import com.openai.core.JsonField;
 import com.openai.core.JsonValue;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -61,7 +62,6 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
@@ -92,9 +92,9 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiOfficialChatModel.class);
 
-	private final OpenAIClient openAiClient;
+	private OpenAIClient openAiClient;
 
-	private final OpenAIClientAsync openAiClientAsync;
+	private OpenAIClientAsync openAiClientAsync;
 
 	private final OpenAiOfficialChatOptions options;
 
@@ -154,6 +154,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 						this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
 						this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
 						this.options.getProxy(), this.options.getCustomHeaders()));
+
 		this.openAiClientAsync = Objects.requireNonNullElseGet(openAiClientAsync,
 				() -> setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getAzureDeploymentName(),
@@ -161,6 +162,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders()));
+
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
 		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(toolExecutionEligibilityPredicate,
@@ -173,8 +175,10 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		// Before moving any further, build the final request Prompt,
-		// merging runtime and default options.
+		if (this.openAiClient == null) {
+			throw new IllegalStateException(
+					"OpenAI sync client is not configured. Have you set the 'streamUsage' option to false?");
+		}
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		return this.internalCall(requestPrompt, null);
 	}
@@ -248,8 +252,10 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		// Before moving any further, build the final request Prompt,
-		// merging runtime and default options.
+		if (this.openAiClientAsync == null) {
+			throw new IllegalStateException(
+					"OpenAI async client is not configured. Streaming is not supported with the current configuration. Have you set the 'streamUsage' option to true?");
+		}
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		return internalStream(requestPrompt, null);
 	}
@@ -273,72 +279,68 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			Flux<ChatResponse> chatResponse = Flux.empty();
-			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
-			// the function call handling logic.
-			this.openAiClientAsync.chat().completions().createStreaming(request).subscribe(chunk -> {
-				ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
-				Mono.just(chatCompletion).map(chatCompletion2 -> {
+			Flux<ChatResponse> chatResponses = Flux.create(sink -> {
+				this.openAiClientAsync.chat().completions().createStreaming(request).subscribe(chunk -> {
 					try {
+						ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
 						// If an id is not provided, set to "NO_ID" (for compatible APIs).
-						chatCompletion2.id();
-						String id = chatCompletion2.id();
+						chatCompletion.id();
+						String id = chatCompletion.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
-									roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow() : "");
-									Map<String, Object> metadata = Map.of(
-											"id", id,
-											"role", roleMap.getOrDefault(id, ""),
-											"index", choice.index(),
-											"finishReason", choice.finishReason().asString(),
-											"refusal", choice.message().refusal().isPresent() ? choice.message().refusal() : "",
-											"annotations", choice.message().annotations().isPresent() ? choice.message().annotations() : List.of());
-									return buildGeneration(choice, metadata);
-								}).toList();
+						List<Generation> generations = chatCompletion.choices().stream().map(choice -> { // @formatter:off
+								roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow() : "");
+								Map<String, Object> metadata = Map.of(
+										"id", id,
+										"role", roleMap.getOrDefault(id, ""),
+										"index", choice.index(),
+										"finishReason", choice.finishReason().asString(),
+										"refusal", choice.message().refusal().isPresent() ? choice.message().refusal() : "",
+										"annotations", choice.message().annotations().isPresent() ? choice.message().annotations() : List.of());
+								return buildGeneration(choice, metadata);
+							}).toList();
 
-								Optional<CompletionUsage> usage = chatCompletion2.usage();
-								Usage currentChatResponseUsage = usage.isPresent()? getDefaultUsage(usage.get()) : new EmptyUsage();
-								Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
-										previousChatResponse);
-								return new ChatResponse(generations, from(chatCompletion2, accumulatedUsage));
-							}
-							catch (Exception e) {
-								logger.error("Error processing chat completion", e);
-								return new ChatResponse(List.of());
-							}
-						})
-						.flux()
-						.buffer(2, 1)
-						.map(bufferList -> {
-									ChatResponse firstResponse = bufferList.get(0);
-									if (request.streamOptions().isPresent()) {
-										if (bufferList.size() == 2) {
-											ChatResponse secondResponse = bufferList.get(1);
-											if (secondResponse!=null) {
-												// This is the usage from the final Chat response for a
-												// given Chat request.
-												Usage usage = secondResponse.getMetadata().getUsage();
-												if (!UsageCalculator.isEmpty(usage)) {
-													// Store the usage from the final response to the
-													// penultimate response for accumulation.
-													return new ChatResponse(firstResponse.getResults(),
-															from(firstResponse.getMetadata(), usage));
-												}
+							Optional<CompletionUsage> usage = chatCompletion.usage();
+							Usage currentChatResponseUsage = usage.isPresent()? getDefaultUsage(usage.get()) : new EmptyUsage();
+							Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
+									previousChatResponse);
+							ChatResponse response = new ChatResponse(generations, from(chatCompletion, accumulatedUsage));
+							sink.next(response);
+						}
+						catch (Exception e) {
+							logger.error("Error processing chat completion", e);
+							sink.error(e);
+						}
+					}).onCompleteFuture().whenComplete((unused, throwable) -> {
+						if (throwable != null) {
+							sink.error(throwable);
+						} else {
+							sink.complete();
+						}
+					});
+		})
+					.buffer(2, 1)
+					.map(bufferList -> {
+								ChatResponse firstResponse = (ChatResponse) bufferList.get(0);
+								if (request.streamOptions().isPresent()) {
+									if (bufferList.size() == 2) {
+										ChatResponse secondResponse = (ChatResponse) bufferList.get(1);
+										if (secondResponse!=null) {
+											// This is the usage from the final Chat response for a
+											// given Chat request.
+											Usage usage = secondResponse.getMetadata().getUsage();
+											if (!UsageCalculator.isEmpty(usage)) {
+												// Store the usage from the final response to the
+												// penultimate response for accumulation.
+												return new ChatResponse(firstResponse.getResults(),
+														from(firstResponse.getMetadata(), usage));
 											}
 										}
 									}
-									return firstResponse;
-					});
-			})
-					.onCompleteFuture()
-					.whenComplete((unused, error) -> {
-						if (error != null) {
-							logger.error(error.getMessage(), error);
-							throw new RuntimeException(error);
-						}
+								}
+								return firstResponse;
 					});
 
-			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
+		Flux<ChatResponse> flux = chatResponses.flatMap(response -> {
 						assert prompt.getOptions() != null;
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
@@ -432,11 +434,32 @@ public class OpenAiOfficialChatModel implements ChatModel {
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
 		List<ChatCompletion.Choice> choices = chunk.choices()
 			.stream()
-			.map(chunkChoice -> ChatCompletion.Choice.builder()
+			.map(chunkChoice -> {
+				ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder()
 					.finishReason(ChatCompletion.Choice.FinishReason.of(chunkChoice.finishReason().toString()))
-				.index(chunkChoice.index())
-				.message(ChatCompletionMessage.builder().content(chunkChoice.delta().content()).build())
-				.build())
+					.index(chunkChoice.index())
+					.message(ChatCompletionMessage.builder()
+						.content(chunkChoice.delta().content())
+						.refusal(chunkChoice.delta().refusal())
+						.build());
+
+				// Handle optional logprobs
+				if (chunkChoice.logprobs().isPresent()) {
+					var logprobs = chunkChoice.logprobs().get();
+					choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
+						.content(logprobs.content())
+						.refusal(logprobs.refusal())
+						.build());
+				} else {
+					// Provide empty logprobs when not present
+					choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
+						.content(List.of())
+						.refusal(List.of())
+						.build());
+				}
+
+				return choiceBuilder.build();
+			})
 			.toList();
 
 		return ChatCompletion.builder()
@@ -444,7 +467,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 			.choices(choices)
 			.created(chunk.created())
 			.model(chunk.model())
-			.usage(Objects.requireNonNull(chunk.usage().orElse(null)))
+			.usage(chunk.usage().orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
 			.build();
 	}
 
@@ -606,7 +629,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 					.stream()
 					.map(toolResponse -> ChatCompletionMessage.builder()
 						.role(JsonValue.from(MessageType.TOOL))
-						.content(ChatCompletionMessage.builder().content(toolResponse.responseData()).build().content())
+						.content(ChatCompletionMessage.builder().content(toolResponse.responseData()).refusal(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")).build().content())
 						.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")))
 						.build())
 					.toList();
@@ -710,7 +733,12 @@ public class OpenAiOfficialChatModel implements ChatModel {
 					streamOptionsBuilder.includeObfuscation(requestOptions.getStreamOptions().includeObfuscation().get());
 				}
 				streamOptionsBuilder.additionalProperties(requestOptions.getStreamOptions()._additionalProperties());
+				streamOptionsBuilder.includeUsage(requestOptions.getStreamUsage());
 				builder.streamOptions(streamOptionsBuilder.build());
+			} else {
+				builder.streamOptions(ChatCompletionStreamOptions.builder()
+						.includeUsage(true) // Include usage by default for streaming
+						.build());
 			}
 		}
 
@@ -752,22 +780,39 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions) {
 		return toolDefinitions.stream()
-			.map(toolDefinition -> {
-				FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
-				parametersBuilder.putAdditionalProperty("type", JsonValue.from("object"));
-				if (!toolDefinition.inputSchema().isEmpty()) {
-					parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO allow to have non-strict schemas
-					parametersBuilder.putAdditionalProperty("json_schema", JsonValue.from(toolDefinition.inputSchema()));
-				}
-				FunctionDefinition functionDefinition =  FunctionDefinition.builder()
-						.name(toolDefinition.name())
-						.description(toolDefinition.description())
-						.parameters(parametersBuilder.build())
-						.build();
+				.map(toolDefinition -> {
+					FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
 
-				return ChatCompletionTool.ofFunction(ChatCompletionFunctionTool.builder().function(functionDefinition).build());
-			} )
-			.toList();
+					if (!toolDefinition.inputSchema().isEmpty()) {
+						// Parse the schema and add its properties directly
+						try {
+							com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+							@SuppressWarnings("unchecked")
+							Map<String, Object> schemaMap = mapper.readValue(toolDefinition.inputSchema(), Map.class);
+
+							// Add each property from the schema to the parameters
+							schemaMap.forEach((key, value) ->
+									parametersBuilder.putAdditionalProperty(key, JsonValue.from(value))
+							);
+
+							// Add strict mode
+							parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO allow non-strict mode
+						} catch (Exception e) {
+							logger.error("Failed to parse tool schema", e);
+						}
+					}
+
+					FunctionDefinition functionDefinition = FunctionDefinition.builder()
+							.name(toolDefinition.name())
+							.description(toolDefinition.description())
+							.parameters(parametersBuilder.build())
+							.build();
+
+					return ChatCompletionTool.ofFunction(
+							ChatCompletionFunctionTool.builder().function(functionDefinition).build()
+					);
+				})
+				.toList();
 	}
 
 	@Override
