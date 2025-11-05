@@ -30,7 +30,6 @@ import org.springaicommunity.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
-import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.aot.hint.MemberCategory;
@@ -77,19 +76,6 @@ public class McpClientAnnotationScannerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean
-	public ClientMcpAnnotatedBeans clientAnnotatedBeans() {
-		return new ClientMcpAnnotatedBeans();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public static ClientAnnotatedMethodBeanPostProcessor clientAnnotatedMethodBeanPostProcessor(
-			ClientMcpAnnotatedBeans clientMcpAnnotatedBeans, McpClientAnnotationScannerProperties properties) {
-		return new ClientAnnotatedMethodBeanPostProcessor(clientMcpAnnotatedBeans, CLIENT_MCP_ANNOTATIONS);
-	}
-
-	@Bean
 	static ClientAnnotatedBeanFactoryInitializationAotProcessor clientAnnotatedBeanFactoryInitializationAotProcessor() {
 		return new ClientAnnotatedBeanFactoryInitializationAotProcessor(CLIENT_MCP_ANNOTATIONS);
 	}
@@ -104,15 +90,6 @@ public class McpClientAnnotationScannerAutoConfiguration {
 		public ClientAnnotatedBeanFactoryInitializationAotProcessor(
 				Set<Class<? extends Annotation>> targetAnnotations) {
 			super(targetAnnotations);
-		}
-
-	}
-
-	public static class ClientAnnotatedMethodBeanPostProcessor extends AbstractAnnotatedMethodBeanPostProcessor {
-
-		public ClientAnnotatedMethodBeanPostProcessor(ClientMcpAnnotatedBeans clientMcpAnnotatedBeans,
-				Set<Class<? extends Annotation>> targetAnnotations) {
-			super(clientMcpAnnotatedBeans, targetAnnotations);
 		}
 
 	}
