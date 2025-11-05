@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.assertj.core.data.Percentage;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -751,6 +752,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
+	@Disabled("OpenAI gpt-4o-search-preview model doesn't seem to return web search annotations in streaming mode.")
 	void streamWebSearchAnnotationsTest() {
 		UserMessage userMessage = new UserMessage("What is the weather in San Francisco?");
 
