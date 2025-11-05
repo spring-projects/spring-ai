@@ -19,8 +19,7 @@ package org.springframework.ai.google.genai.text;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 import com.google.genai.Client;
 import com.google.genai.types.ContentEmbedding;
@@ -43,6 +42,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.model.EmbeddingModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
@@ -64,10 +64,8 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
-		.of(GoogleGenAiTextEmbeddingModelName.values())
-		.collect(Collectors.toMap(GoogleGenAiTextEmbeddingModelName::getName,
-				GoogleGenAiTextEmbeddingModelName::getDimensions));
+	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = EmbeddingModelDescription
+		.calculateKnownEmbeddingDimensions(GoogleGenAiTextEmbeddingModelName.class);
 
 	public final GoogleGenAiTextEmbeddingOptions defaultOptions;
 
@@ -258,8 +256,13 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
+	public Map<String, Integer> knownEmbeddingDimensions() {
+		return KNOWN_EMBEDDING_DIMENSIONS;
+	}
+
+	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.computeIfAbsent(this.defaultOptions.getModel(), model -> super.dimensions());
+		return dimensions(this, Objects.requireNonNull(this.defaultOptions.getModel()));
 	}
 
 	/**

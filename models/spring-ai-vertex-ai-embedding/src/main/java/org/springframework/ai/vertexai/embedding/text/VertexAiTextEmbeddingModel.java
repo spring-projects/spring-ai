@@ -20,8 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictRequest;
@@ -43,6 +42,7 @@ import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObserva
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
+import org.springframework.ai.model.EmbeddingModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
@@ -67,10 +67,8 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
-		.of(VertexAiTextEmbeddingModelName.values())
-		.collect(Collectors.toMap(VertexAiTextEmbeddingModelName::getName,
-				VertexAiTextEmbeddingModelName::getDimensions));
+	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = EmbeddingModelDescription
+		.calculateKnownEmbeddingDimensions(VertexAiTextEmbeddingModelName.class);
 
 	public final VertexAiTextEmbeddingOptions defaultOptions;
 
@@ -243,8 +241,13 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
+	public Map<String, Integer> knownEmbeddingDimensions() {
+		return KNOWN_EMBEDDING_DIMENSIONS;
+	}
+
+	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), super.dimensions());
+		return dimensions(this, Objects.requireNonNull(this.defaultOptions.getModel()));
 	}
 
 	/**

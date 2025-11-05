@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import com.google.cloud.aiplatform.v1.EndpointName;
 import com.google.cloud.aiplatform.v1.PredictRequest;
@@ -43,6 +41,7 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
 import org.springframework.ai.embedding.EmbeddingResultMetadata.ModalityType;
+import org.springframework.ai.model.EmbeddingModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
@@ -75,10 +74,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 	private static final List<MimeType> SUPPORTED_IMAGE_MIME_SUB_TYPES = List.of(MimeTypeUtils.IMAGE_JPEG,
 			MimeTypeUtils.IMAGE_GIF, MimeTypeUtils.IMAGE_PNG, MimeTypeUtils.parseMimeType("image/bmp"));
 
-	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
-		.of(VertexAiMultimodalEmbeddingModelName.values())
-		.collect(Collectors.toMap(VertexAiMultimodalEmbeddingModelName::getName,
-				VertexAiMultimodalEmbeddingModelName::getDimensions));
+	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = EmbeddingModelDescription
+		.calculateKnownEmbeddingDimensions(VertexAiMultimodalEmbeddingModelName.class);
 
 	public final VertexAiMultimodalEmbeddingOptions defaultOptions;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,28 @@
 
 package org.springframework.ai.model;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
  * Description of an embedding model.
  *
  * @author Christian Tzolov
+ * @author Nicolas Krier
  */
 public interface EmbeddingModelDescription extends ModelDescription {
 
 	default int getDimensions() {
 		return -1;
+	}
+
+	static <E extends Enum<E> & EmbeddingModelDescription> Map<String, Integer> calculateKnownEmbeddingDimensions(
+			Class<E> embeddingModelClass) {
+		return Stream.of(embeddingModelClass.getEnumConstants())
+			.collect(Collectors.collectingAndThen(
+					Collectors.toMap(ModelDescription::getName, EmbeddingModelDescription::getDimensions),
+					Map::copyOf));
 	}
 
 }

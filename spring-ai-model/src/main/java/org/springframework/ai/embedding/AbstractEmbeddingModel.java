@@ -71,6 +71,24 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 		}
 	}
 
+	/**
+	 * Return the dimension of the requested embedding generative name. Uses the embedding
+	 * model to retrieve its default dimensions if the generative name is unknown.
+	 * @param embeddingModel Embedding model client to determine its known embedding
+	 * dimensions and default dimensions.
+	 * @param modelName Embedding generative name to retrieve the dimensions for.
+	 * @return Returns the embedding dimensions for the model name.
+	 */
+	public static int dimensions(AbstractEmbeddingModel embeddingModel, String modelName) {
+		var dimensions = embeddingModel.knownEmbeddingDimensions().get(modelName);
+
+		if (dimensions == null) {
+			dimensions = embeddingModel.defaultDimensions();
+		}
+
+		return dimensions;
+	}
+
 	private static Map<String, Integer> loadKnownModelDimensions() {
 		try {
 			var resource = EMBEDDING_MODEL_DIMENSIONS_PROPERTIES;
@@ -82,19 +100,33 @@ public abstract class AbstractEmbeddingModel implements EmbeddingModel {
 			}
 			return properties.entrySet()
 				.stream()
-				.collect(Collectors.toMap(e -> e.getKey().toString(), e -> Integer.parseInt(e.getValue().toString())));
+				.collect(Collectors.collectingAndThen(
+						Collectors.toMap(e -> e.getKey().toString(), e -> Integer.parseInt(e.getValue().toString())),
+						Map::copyOf));
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	@Override
-	public int dimensions() {
+	private int defaultDimensions() {
 		if (this.embeddingDimensions.get() < 0) {
 			this.embeddingDimensions.set(dimensions(this, "Test", "Hello World"));
 		}
 		return this.embeddingDimensions.get();
+	}
+
+	/**
+	 * Retrieve all the known embedding dimensions.
+	 * @return The map containing the known embedding dimensions by model name
+	 */
+	public Map<String, Integer> knownEmbeddingDimensions() {
+		return KNOWN_EMBEDDING_DIMENSIONS;
+	}
+
+	@Override
+	public int dimensions() {
+		return defaultDimensions();
 	}
 
 	static class Hints implements RuntimeHintsRegistrar {
