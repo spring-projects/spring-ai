@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.mcp.annotation.spring;
 
 import java.lang.annotation.Annotation;
@@ -20,6 +36,7 @@ import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -28,6 +45,7 @@ import org.springframework.util.ReflectionUtils;
 /**
  * Base class for sync and async ClientMcpHandlerRegistries. Not intended for public use.
  *
+ * @author Daniel Garnier-Moiroux
  * @see ClientMcpAsyncHandlersRegistry
  * @see ClientMcpSyncHandlersRegistry
  */
@@ -53,7 +71,7 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 		Map<String, List<String>> samplingClientToAnnotatedBeans = new HashMap<>();
 		for (var beanName : beanFactory.getBeanDefinitionNames()) {
 			var definition = beanFactory.getBeanDefinition(beanName);
-			var foundAnnotations = scan(definition.getResolvableType().toClass());
+			var foundAnnotations = scan(getBeanClass(definition, beanFactory.getBeanClassLoader()));
 			if (!foundAnnotations.isEmpty()) {
 				this.allAnnotatedBeans.add(beanName);
 			}
@@ -98,6 +116,23 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 		this.capabilitiesPerClient = capsPerClient.entrySet()
 			.stream()
 			.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().build()));
+	}
+
+	private static Class<?> getBeanClass(BeanDefinition definition, ClassLoader beanClassLoader) {
+		if (definition.getResolvableType().resolve() != null) {
+			return definition.getResolvableType().resolve();
+		}
+		// @Component beans registered by component scanning do not have a resolvable type
+		// We try to resolve them using the beanClassName (which might be null)
+		if (beanClassLoader != null && definition.getBeanClassName() != null) {
+			try {
+				return Class.forName(definition.getBeanClassName(), false, beanClassLoader);
+			}
+			catch (ClassNotFoundException ignored) {
+
+			}
+		}
+		return null;
 	}
 
 	protected List<Annotation> scan(Class<?> beanClass) {

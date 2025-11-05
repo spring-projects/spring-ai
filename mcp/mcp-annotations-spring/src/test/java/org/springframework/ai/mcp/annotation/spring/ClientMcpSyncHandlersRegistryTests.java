@@ -265,6 +265,18 @@ class ClientMcpSyncHandlersRegistryTests {
 	}
 
 	@Test
+	void supportsNonResolvableTypes() {
+		var registry = new ClientMcpSyncHandlersRegistry();
+		var beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerBeanDefinition("myConfig",
+				BeanDefinitionBuilder.genericBeanDefinition(ClientCapabilitiesConfiguration.class.getName())
+					.getBeanDefinition());
+		registry.postProcessBeanFactory(beanFactory);
+
+		assertThat(registry.getCapabilities("client-1").elicitation()).isNotNull();
+	}
+
+	@Test
 	@Disabled
 	void missingHandler() {
 		fail("TODO");
