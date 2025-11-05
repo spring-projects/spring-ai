@@ -16,17 +16,12 @@
 
 package org.springframework.ai.mcp.annotation.spring;
 
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import io.modelcontextprotocol.spec.McpSchema;
 import org.springaicommunity.mcp.annotation.McpElicitation;
@@ -37,12 +32,7 @@ import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.util.ReflectionUtils;
 
 /**
  * Registry of methods annotated with MCP Client annotations (sampling, logging, etc.).
@@ -69,20 +59,8 @@ import org.springframework.util.ReflectionUtils;
  * @author Daniel Garnier-Moiroux
  * @since 1.1.0
  */
-public class ClientMcpSyncHandlersRegistry implements BeanFactoryPostProcessor, SmartInitializingSingleton {
-
-	private static final Class<? extends Annotation>[] CLIENT_MCP_ANNOTATIONS = new Class[] { McpSampling.class,
-			McpElicitation.class, McpLogging.class, McpProgress.class, McpToolListChanged.class,
-			McpPromptListChanged.class, McpResourceListChanged.class };
-
-	private final McpSchema.ClientCapabilities EMPTY_CAPABILITIES = new McpSchema.ClientCapabilities(null, null, null,
-			null);
-
-	private Map<String, McpSchema.ClientCapabilities> capabilitiesPerClient = new HashMap<>();
-
-	private ConfigurableListableBeanFactory beanFactory;
-
-	private final Set<String> allAnnotatedBeans = new HashSet<>();
+public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegistry
+		implements SmartInitializingSingleton {
 
 	private final Map<String, Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult>> samplingHandlers = new HashMap<>();
 
@@ -103,7 +81,7 @@ public class ClientMcpSyncHandlersRegistry implements BeanFactoryPostProcessor, 
 	 * registered with the {@link McpSampling} and {@link McpElicitation} annotations.
 	 */
 	public McpSchema.ClientCapabilities getCapabilities(String clientName) {
-		return this.capabilitiesPerClient.getOrDefault(clientName, this.EMPTY_CAPABILITIES);
+		return this.capabilitiesPerClient.getOrDefault(clientName, EMPTY_CAPABILITIES);
 	}
 
 	/**
@@ -215,89 +193,8 @@ public class ClientMcpSyncHandlersRegistry implements BeanFactoryPostProcessor, 
 	}
 
 	@Override
-	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-		this.beanFactory = beanFactory;
-		Map<String, List<String>> elicitationClientToAnnotatedBeans = new HashMap<>();
-		Map<String, List<String>> samplingClientToAnnotatedBeans = new HashMap<>();
-		for (var beanName : beanFactory.getBeanDefinitionNames()) {
-			var definition = beanFactory.getBeanDefinition(beanName);
-			var foundAnnotations = scan(definition.getResolvableType().toClass());
-			if (!foundAnnotations.isEmpty()) {
-				this.allAnnotatedBeans.add(beanName);
-			}
-			for (var foundAnnotation : foundAnnotations) {
-				if (foundAnnotation instanceof McpSampling sampling) {
-					for (var client : sampling.clients()) {
-						samplingClientToAnnotatedBeans.computeIfAbsent(client, c -> new ArrayList<>()).add(beanName);
-					}
-				}
-				else if (foundAnnotation instanceof McpElicitation elicitation) {
-					for (var client : elicitation.clients()) {
-						elicitationClientToAnnotatedBeans.computeIfAbsent(client, c -> new ArrayList<>()).add(beanName);
-					}
-				}
-			}
-		}
-
-		for (var elicitationEntry : elicitationClientToAnnotatedBeans.entrySet()) {
-			if (elicitationEntry.getValue().size() > 1) {
-				throw new IllegalArgumentException(
-						"Found 2 elicitation handlers for client [%s], found in bean with names %s. Only one @McpElicitation handler is allowed per client"
-							.formatted(elicitationEntry.getKey(), new LinkedHashSet<>(elicitationEntry.getValue())));
-			}
-		}
-		for (var samplingEntry : samplingClientToAnnotatedBeans.entrySet()) {
-			if (samplingEntry.getValue().size() > 1) {
-				throw new IllegalArgumentException(
-						"Found 2 sampling handlers for client [%s], found in bean with names %s. Only one @McpSampling handler is allowed per client"
-							.formatted(samplingEntry.getKey(), new LinkedHashSet<>(samplingEntry.getValue())));
-			}
-		}
-
-		Map<String, McpSchema.ClientCapabilities.Builder> capsPerClient = new HashMap<>();
-		for (var samplingClient : samplingClientToAnnotatedBeans.keySet()) {
-			capsPerClient.computeIfAbsent(samplingClient, ignored -> McpSchema.ClientCapabilities.builder()).sampling();
-		}
-		for (var elicitationClient : elicitationClientToAnnotatedBeans.keySet()) {
-			capsPerClient.computeIfAbsent(elicitationClient, ignored -> McpSchema.ClientCapabilities.builder())
-				.elicitation();
-		}
-
-		this.capabilitiesPerClient = capsPerClient.entrySet()
-			.stream()
-			.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().build()));
-	}
-
-	private List<Annotation> scan(Class<?> beanClass) {
-		List<Annotation> foundAnnotations = new ArrayList<>();
-
-		// Scan all methods in the bean class
-		ReflectionUtils.doWithMethods(beanClass, method -> {
-			for (var annotationType : CLIENT_MCP_ANNOTATIONS) {
-				Annotation annotation = AnnotationUtils.findAnnotation(method, annotationType);
-				if (annotation != null) {
-					foundAnnotations.add(annotation);
-				}
-			}
-		});
-		return foundAnnotations;
-	}
-
-	@Override
 	public void afterSingletonsInstantiated() {
-		// Use a set in case multiple handlers are registered in the same bean
-		Map<Class<? extends Annotation>, Set<Object>> beansByAnnotation = new HashMap<>();
-		for (var annotation : CLIENT_MCP_ANNOTATIONS) {
-			beansByAnnotation.put(annotation, new HashSet<>());
-		}
-
-		for (var beanName : this.allAnnotatedBeans) {
-			var bean = this.beanFactory.getBean(beanName);
-			var annotations = scan(bean.getClass());
-			for (var annotation : annotations) {
-				beansByAnnotation.computeIfAbsent(annotation.annotationType(), k -> new HashSet<>()).add(bean);
-			}
-		}
+		var beansByAnnotation = getBeansByAnnotationType();
 
 		var samplingSpecs = SyncMcpAnnotationProviders
 			.samplingSpecifications(new ArrayList<>(beansByAnnotation.get(McpSampling.class)));
