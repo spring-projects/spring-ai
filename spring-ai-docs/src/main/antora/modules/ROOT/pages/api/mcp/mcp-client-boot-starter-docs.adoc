@@ -181,6 +181,132 @@ The Claude Desktop format looks like this:
 }
 ----
 
+=== Windows STDIO Configuration
+
+IMPORTANT: On Windows, commands like `npx`, `npm`, and `node` are implemented as **batch files** (`.cmd`), not native executables. Java's `ProcessBuilder` cannot execute batch files directly and requires the `cmd.exe /c` wrapper.
+
+==== Why Windows Needs Special Handling
+
+When Java's `ProcessBuilder` (used internally by `StdioClientTransport`) attempts to spawn a process on Windows, it can only execute:
+
+* Native executables (`.exe` files)
+* System commands available to `cmd.exe`
+
+Windows batch files like `npx.cmd`, `npm.cmd`, and even `python.cmd` (from the Microsoft Store) require the `cmd.exe` shell to execute them.
+
+==== Solution: cmd.exe Wrapper
+
+Wrap batch file commands with `cmd.exe /c`:
+
+**Windows Configuration:**
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\username\\Desktop"
+      ]
+    }
+  }
+}
+----
+
+**Linux/macOS Configuration:**
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Desktop"
+      ]
+    }
+  }
+}
+----
+
+==== Cross-Platform Programmatic Configuration
+
+For applications that need to work across platforms without separate configuration files, use OS detection in your Spring Boot application:
+
+[source,java]
+----
+@Bean(destroyMethod = "close")
+@ConditionalOnMissingBean(McpSyncClient.class)
+public McpSyncClient mcpClient() {
+    ServerParameters stdioParams;
+
+    if (isWindows()) {
+        // Windows: cmd.exe /c npx approach
+        var winArgs = new ArrayList<>(Arrays.asList(
+            "/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "target"));
+        stdioParams = ServerParameters.builder("cmd.exe")
+                .args(winArgs)
+                .build();
+    } else {
+        // Linux/Mac: direct npx approach
+        stdioParams = ServerParameters.builder("npx")
+                .args("-y", "@modelcontextprotocol/server-filesystem", "target")
+                .build();
+    }
+
+    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonMapper.createDefault()))
+            .requestTimeout(Duration.ofSeconds(10))
+            .build()
+            .initialize();
+}
+
+private static boolean isWindows() {
+    return System.getProperty("os.name").toLowerCase().contains("win");
+}
+----
+
+NOTE: When using programmatic configuration with `@Bean`, add `@ConditionalOnMissingBean(McpSyncClient.class)` to avoid conflicts with auto-configuration from JSON files.
+
+==== Path Considerations
+
+**Relative paths** (recommended for portability):
+[source,json]
+----
+{
+  "command": "cmd.exe",
+  "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "target"]
+}
+----
+
+The MCP server resolves relative paths based on the application's working directory.
+
+**Absolute paths** (Windows requires backslashes or escaped forward slashes):
+[source,json]
+----
+{
+  "command": "cmd.exe",
+  "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\username\\project\\target"]
+}
+----
+
+==== Common Windows Batch Files Requiring cmd.exe
+
+* `npx.cmd`, `npm.cmd` - Node package managers
+* `python.cmd` - Python (Microsoft Store installation)
+* `pip.cmd` - Python package manager
+* `mvn.cmd` - Maven wrapper
+* `gradle.cmd` - Gradle wrapper
+* Custom `.cmd` or `.bat` scripts
+
+==== Reference Implementation
+
+See link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/filesystem[Spring AI Examples - Filesystem] for a complete cross-platform MCP client implementation that automatically detects the OS and configures the client appropriately.
+
 === Streamable-HTTP Transport Properties
 
 Used for connecting to Streamable-HTTP and Stateless Streamable-HTTP MCP servers.
