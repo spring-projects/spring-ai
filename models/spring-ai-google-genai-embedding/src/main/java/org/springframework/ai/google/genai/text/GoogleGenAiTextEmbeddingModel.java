@@ -259,7 +259,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), super.dimensions());
+		return KNOWN_EMBEDDING_DIMENSIONS.computeIfAbsent(this.defaultOptions.getModel(), model -> super.dimensions());
 	}
 
 	/**
