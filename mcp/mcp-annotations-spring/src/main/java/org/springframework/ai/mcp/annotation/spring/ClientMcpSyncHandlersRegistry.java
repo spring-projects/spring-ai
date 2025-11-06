@@ -24,6 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.spec.McpSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpLogging;
 import org.springaicommunity.mcp.annotation.McpProgress;
@@ -62,6 +64,8 @@ import org.springframework.beans.factory.SmartInitializingSingleton;
 public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegistry
 		implements SmartInitializingSingleton {
 
+	private static final Logger logger = LoggerFactory.getLogger(ClientMcpSyncHandlersRegistry.class);
+
 	private final Map<String, Function<McpSchema.CreateMessageRequest, McpSchema.CreateMessageResult>> samplingHandlers = new HashMap<>();
 
 	private final Map<String, Function<McpSchema.ElicitRequest, McpSchema.ElicitResult>> elicitationHandlers = new HashMap<>();
@@ -90,6 +94,8 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 * @see McpSampling
 	 */
 	public McpSchema.CreateMessageResult handleSampling(String name, McpSchema.CreateMessageRequest samplingRequest) {
+		logger.debug("Handling sampling request for client {}", name);
+
 		var handler = this.samplingHandlers.get(name);
 		if (handler != null) {
 			return handler.apply(samplingRequest);
@@ -104,6 +110,8 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 * @see McpElicitation
 	 */
 	public McpSchema.ElicitResult handleElicitation(String name, McpSchema.ElicitRequest elicitationRequest) {
+		logger.debug("Handling elicitation request for client {}", name);
+
 		var handler = this.elicitationHandlers.get(name);
 		if (handler != null) {
 			return handler.apply(elicitationRequest);
@@ -118,9 +126,10 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 * @see McpLogging
 	 */
 	public void handleLogging(String name, McpSchema.LoggingMessageNotification loggingMessageNotification) {
+		logger.debug("Handling logging notification for client {}", name);
+
 		var consumers = this.loggingHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return;
 		}
 		for (var consumer : consumers) {
@@ -134,9 +143,10 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 * @see McpProgress
 	 */
 	public void handleProgress(String name, McpSchema.ProgressNotification progressNotification) {
+		logger.debug("Handling progress notification for client {}", name);
+
 		var consumers = this.progressHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return;
 		}
 		for (var consumer : consumers) {
@@ -150,9 +160,10 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 * @see McpToolListChanged
 	 */
 	public void handleToolListChanged(String name, List<McpSchema.Tool> updatedTools) {
+		logger.debug("Handling tool list changed notification for client {}", name);
+
 		var consumers = this.toolListChangedHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return;
 		}
 		for (var consumer : consumers) {
@@ -166,9 +177,10 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 * @see McpPromptListChanged
 	 */
 	public void handlePromptListChanged(String name, List<McpSchema.Prompt> updatedPrompts) {
+		logger.debug("Handling prompt list changed notification for client {}", name);
+
 		var consumers = this.promptListChangedHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return;
 		}
 		for (var consumer : consumers) {
@@ -182,9 +194,10 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 	 * @see McpResourceListChanged
 	 */
 	public void handleResourceListChanged(String name, List<McpSchema.Resource> updatedResources) {
+		logger.debug("Handling resource list changed notification for client {}", name);
+
 		var consumers = this.resourceListChangedHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return;
 		}
 		for (var consumer : consumers) {
@@ -200,6 +213,7 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			.samplingSpecifications(new ArrayList<>(beansByAnnotation.get(McpSampling.class)));
 		for (var samplingSpec : samplingSpecs) {
 			for (var client : samplingSpec.clients()) {
+				logger.debug("Registering sampling handler for {}", client);
 				this.samplingHandlers.put(client, samplingSpec.samplingHandler());
 			}
 		}
@@ -208,6 +222,7 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			.elicitationSpecifications(new ArrayList<>(beansByAnnotation.get(McpElicitation.class)));
 		for (var elicitationSpec : elicitationSpecs) {
 			for (var client : elicitationSpec.clients()) {
+				logger.debug("Registering elicitation handler for {}", client);
 				this.elicitationHandlers.put(client, elicitationSpec.elicitationHandler());
 			}
 		}
@@ -216,6 +231,7 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			.loggingSpecifications(new ArrayList<>(beansByAnnotation.get(McpLogging.class)));
 		for (var loggingSpec : loggingSpecs) {
 			for (var client : loggingSpec.clients()) {
+				logger.debug("Registering logging handler for {}", client);
 				this.loggingHandlers.computeIfAbsent(client, k -> new ArrayList<>()).add(loggingSpec.loggingHandler());
 			}
 		}
@@ -224,6 +240,7 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			.progressSpecifications(new ArrayList<>(beansByAnnotation.get(McpProgress.class)));
 		for (var progressSpec : progressSpecs) {
 			for (var client : progressSpec.clients()) {
+				logger.debug("Registering progress handler for {}", client);
 				this.progressHandlers.computeIfAbsent(client, k -> new ArrayList<>())
 					.add(progressSpec.progressHandler());
 			}
@@ -233,6 +250,7 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			.toolListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpToolListChanged.class)));
 		for (var toolsListChangedSpec : toolsListChangedSpecs) {
 			for (var client : toolsListChangedSpec.clients()) {
+				logger.debug("Registering tool list changed handler for {}", client);
 				this.toolListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
 					.add(toolsListChangedSpec.toolListChangeHandler());
 			}
@@ -242,6 +260,7 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			.promptListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpPromptListChanged.class)));
 		for (var promptListChangedSpec : promptListChangedSpecs) {
 			for (var client : promptListChangedSpec.clients()) {
+				logger.debug("Registering prompt list changed handler for {}", client);
 				this.promptListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
 					.add(promptListChangedSpec.promptListChangeHandler());
 			}
@@ -251,6 +270,7 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 			.resourceListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpResourceListChanged.class)));
 		for (var resourceListChangedSpec : resourceListChangedSpecs) {
 			for (var client : resourceListChangedSpec.clients()) {
+				logger.debug("Registering resource list changed handler for {}", client);
 				this.resourceListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
 					.add(resourceListChangedSpec.resourceListChangeHandler());
 			}
