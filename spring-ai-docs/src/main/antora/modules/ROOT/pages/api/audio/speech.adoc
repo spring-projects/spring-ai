@@ -1,9 +1,121 @@
 [[Speech]]
 = Text-To-Speech (TTS) API
 
-Spring AI provides support for the following Text-To-Speech (TTS) providers:
+Spring AI provides a unified API for Text-To-Speech (TTS) through the `TextToSpeechModel` and `StreamingTextToSpeechModel` interfaces. This allows you to write portable code that works across different TTS providers.
+
+== Supported Providers
 
 - xref:api/audio/speech/openai-speech.adoc[OpenAI's Speech API]
 - xref:api/audio/speech/elevenlabs-speech.adoc[Eleven Labs Text-To-Speech API]
 
-Future enhancements may introduce additional providers, at which point a common `TextToSpeechModel` and `StreamingTextToSpeechModel` interface will be extracted.
+== Common Interface
+
+All TTS providers implement the following shared interfaces:
+
+=== TextToSpeechModel
+
+The `TextToSpeechModel` interface provides methods for converting text to speech:
+
+[source,java]
+----
+public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeechResponse>, StreamingTextToSpeechModel {
+
+    /**
+     * Converts text to speech with default options.
+     */
+    default byte[] call(String text) {
+        // Default implementation
+    }
+
+    /**
+     * Converts text to speech with custom options.
+     */
+    TextToSpeechResponse call(TextToSpeechPrompt prompt);
+
+    /**
+     * Returns the default options for this model.
+     */
+    default TextToSpeechOptions getDefaultOptions() {
+        // Default implementation
+    }
+}
+----
+
+=== StreamingTextToSpeechModel
+
+The `StreamingTextToSpeechModel` interface provides methods for streaming audio in real-time:
+
+[source,java]
+----
+@FunctionalInterface
+public interface StreamingTextToSpeechModel extends StreamingModel<TextToSpeechPrompt, TextToSpeechResponse> {
+
+    /**
+     * Streams text-to-speech responses with metadata.
+     */
+    Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt);
+
+    /**
+     * Streams audio bytes for the given text.
+     */
+    default Flux<byte[]> stream(String text) {
+        // Default implementation
+    }
+}
+----
+
+=== TextToSpeechPrompt
+
+The `TextToSpeechPrompt` class encapsulates the input text and options:
+
+[source,java]
+----
+TextToSpeechPrompt prompt = new TextToSpeechPrompt(
+    "Hello, this is a text-to-speech example.",
+    options
+);
+----
+
+=== TextToSpeechResponse
+
+The `TextToSpeechResponse` class contains the generated audio and metadata:
+
+[source,java]
+----
+TextToSpeechResponse response = model.call(prompt);
+byte[] audioBytes = response.getResult().getOutput();
+TextToSpeechResponseMetadata metadata = response.getMetadata();
+----
+
+== Writing Portable Code
+
+The shared interfaces allow you to write code that works with any TTS provider:
+
+[source,java]
+----
+@Service
+public class NarrationService {
+
+    private final TextToSpeechModel textToSpeechModel;
+
+    public NarrationService(TextToSpeechModel textToSpeechModel) {
+        this.textToSpeechModel = textToSpeechModel;
+    }
+
+    public byte[] narrate(String text) {
+        return textToSpeechModel.call(text);
+    }
+
+    public byte[] narrateWithOptions(String text, TextToSpeechOptions options) {
+        TextToSpeechPrompt prompt = new TextToSpeechPrompt(text, options);
+        TextToSpeechResponse response = textToSpeechModel.call(prompt);
+        return response.getResult().getOutput();
+    }
+}
+----
+
+This service works seamlessly with OpenAI, ElevenLabs, or any other TTS provider, with the actual implementation determined by your Spring Boot configuration.
+
+== Provider-Specific Features
+
+While the shared interfaces provide portability, each provider also offers specific features through provider-specific options classes (e.g., `OpenAiAudioSpeechOptions`, `ElevenLabsSpeechOptions`). These classes implement the `TextToSpeechOptions` interface while adding provider-specific capabilities.

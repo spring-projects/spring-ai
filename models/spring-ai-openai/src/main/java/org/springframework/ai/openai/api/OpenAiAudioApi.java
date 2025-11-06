@@ -396,7 +396,7 @@ public class OpenAiAudioApi {
 		@JsonProperty("input") String input,
 		@JsonProperty("voice") String voice,
 		@JsonProperty("response_format") AudioResponseFormat responseFormat,
-		@JsonProperty("speed") Float speed) {
+		@JsonProperty("speed") Double speed) {
 		// @formatter:on
 
 		public static Builder builder() {
@@ -491,7 +491,7 @@ public class OpenAiAudioApi {
 
 			private AudioResponseFormat responseFormat = AudioResponseFormat.MP3;
 
-			private Float speed;
+			private Double speed;
 
 			public Builder model(String model) {
 				this.model = model;
@@ -518,7 +518,7 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			public Builder speed(Float speed) {
+			public Builder speed(Double speed) {
 				this.speed = speed;
 				return this;
 			}

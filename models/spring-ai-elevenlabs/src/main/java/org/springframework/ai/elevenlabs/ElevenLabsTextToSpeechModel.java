@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.tts.Speech;
-import org.springframework.ai.audio.tts.StreamingTextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
@@ -35,12 +34,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 /**
- * Implementation of the {@link TextToSpeechModel} and {@link StreamingTextToSpeechModel}
- * interfaces
+ * Implementation of the {@link TextToSpeechModel} interface for ElevenLabs TTS API.
  *
  * @author Alexandros Pappas
  */
-public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, StreamingTextToSpeechModel {
+public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
