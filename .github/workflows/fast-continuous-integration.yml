@@ -181,9 +181,7 @@ jobs:
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode --no-snapshot-updates \
-            -pl vector-stores/spring-ai-opensearch-store,vector-stores/spring-ai-cassandra-store,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra \
+            -pl vector-stores/spring-ai-opensearch-store,vector-stores/spring-ai-cassandra-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
@@ -220,11 +218,7 @@ auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode --no-snapshot-updates \
-            -pl vector-stores/spring-ai-elasticsearch-store,vector-stores/spring-ai-couchbase-store,\
-vector-stores/spring-ai-mongodb-atlas-store,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas \
+            -pl vector-stores/spring-ai-elasticsearch-store,vector-stores/spring-ai-couchbase-store,vector-stores/spring-ai-mongodb-atlas-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
@@ -261,14 +255,7 @@ auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-a
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode --no-snapshot-updates \
-            -pl vector-stores/spring-ai-milvus-store,vector-stores/spring-ai-pgvector-store,\
-vector-stores/spring-ai-neo4j-store,vector-stores/spring-ai-mariadb-store,\
-vector-stores/spring-ai-oracle-store,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle \
+            -pl vector-stores/spring-ai-milvus-store,vector-stores/spring-ai-pgvector-store,vector-stores/spring-ai-neo4j-store,vector-stores/spring-ai-mariadb-store,vector-stores/spring-ai-oracle-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
@@ -305,17 +292,7 @@ auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle \
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode --no-snapshot-updates \
-            -pl models/spring-ai-google-genai,\
-auto-configurations/models/spring-ai-autoconfigure-model-google-genai,\
-mcp/common,mcp/mcp-annotations-spring,\
-auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common,\
-auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient,\
-auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux,\
-auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common,\
-auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc,\
-auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux,\
-vector-stores/spring-ai-chroma-store,\
-auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma \
+            -pl models/spring-ai-google-genai,auto-configurations/models/spring-ai-autoconfigure-model-google-genai,mcp/common,mcp/mcp-annotations-spring,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux,vector-stores/spring-ai-chroma-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
