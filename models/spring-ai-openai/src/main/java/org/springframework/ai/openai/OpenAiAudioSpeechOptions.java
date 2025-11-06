@@ -19,7 +19,7 @@ package org.springframework.ai.openai;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.springframework.ai.model.ModelOptions;
+import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
 
@@ -33,7 +33,7 @@ import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
  * @since 1.0.0-M1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class OpenAiAudioSpeechOptions implements ModelOptions {
+public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 
 	/**
 	 * ID of the model to use for generating the audio. For OpenAI's TTS API, use one of
@@ -67,7 +67,7 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 	 * 4.0 (fastest). Defaults to 1 (normal)
 	 */
 	@JsonProperty("speed")
-	private Float speed;
+	private Double speed;
 
 	public static Builder builder() {
 		return new Builder();
@@ -109,12 +109,32 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 		this.responseFormat = responseFormat;
 	}
 
-	public Float getSpeed() {
+	@Override
+	public Double getSpeed() {
 		return this.speed;
 	}
 
-	public void setSpeed(Float speed) {
+	public void setSpeed(Double speed) {
 		this.speed = speed;
+	}
+
+	// TextToSpeechOptions interface methods
+
+	@Override
+	public String getFormat() {
+		return (this.responseFormat != null) ? this.responseFormat.name().toLowerCase() : null;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	public OpenAiAudioSpeechOptions copy() {
+		return OpenAiAudioSpeechOptions.builder()
+			.model(this.model)
+			.input(this.input)
+			.voice(this.voice)
+			.responseFormat(this.responseFormat)
+			.speed(this.speed)
+			.build();
 	}
 
 	@Override
@@ -217,7 +237,7 @@ public class OpenAiAudioSpeechOptions implements ModelOptions {
 			return this;
 		}
 
-		public Builder speed(Float speed) {
+		public Builder speed(Double speed) {
 			this.options.speed = speed;
 			return this;
 		}

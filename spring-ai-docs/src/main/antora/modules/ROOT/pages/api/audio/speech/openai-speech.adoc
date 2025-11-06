@@ -102,6 +102,8 @@ TIP: All properties prefixed with `spring.ai.openai.audio.speech.options` can be
 The `OpenAiAudioSpeechOptions` class provides the options to use when making a text-to-speech request.
 On start-up, the options specified by `spring.ai.openai.audio.speech` are used but you can override these at runtime.
 
+The `OpenAiAudioSpeechOptions` class implements the `TextToSpeechOptions` interface, providing both portable and OpenAI-specific configuration options.
+
 For example:
 
 [source,java]
@@ -110,11 +112,11 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .model("gpt-4o-mini-tts")
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-    .speed(1.0f)
+    .speed(1.0)
     .build();
 
-SpeechPrompt speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
-SpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
+TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
+TextToSpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
 ----
 
 == Manual Configuration
@@ -152,15 +154,15 @@ var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi);
 
 var speechOptions = OpenAiAudioSpeechOptions.builder()
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-    .speed(1.0f)
+    .speed(1.0)
     .model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
     .build();
 
-var speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
-SpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
+var speechPrompt = new TextToSpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
+TextToSpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
 
 // Accessing metadata (rate limit info)
-OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
+OpenAiAudioSpeechResponseMetadata metadata = (OpenAiAudioSpeechResponseMetadata) response.getMetadata();
 
 byte[] responseAsBytes = response.getResult().getOutput();
 ----
@@ -168,6 +170,8 @@ byte[] responseAsBytes = response.getResult().getOutput();
 == Streaming Real-time Audio
 
 The Speech API provides support for real-time audio streaming using chunk transfer encoding. This means that the audio is able to be played before the full file has been generated and made accessible.
+
+The `OpenAiAudioSpeechModel` implements the `StreamingTextToSpeechModel` interface, providing both standard and streaming capabilities.
 
 [source,java]
 ----
@@ -179,15 +183,78 @@ var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi);
 
 OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
-    .speed(1.0f)
+    .speed(1.0)
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
     .model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
     .build();
 
-SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!", speechOptions);
+TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!", speechOptions);
 
-Flux<SpeechResponse> responseStream = openAiAudioSpeechModel.stream(speechPrompt);
+Flux<TextToSpeechResponse> responseStream = openAiAudioSpeechModel.stream(speechPrompt);
+
+// You can also stream raw audio bytes directly
+Flux<byte[]> audioByteStream = openAiAudioSpeechModel.stream("Hello, world!");
 ----
+
+== Migration Guide
+
+If you're upgrading from the deprecated `SpeechModel` and `SpeechPrompt` classes, here's what has changed:
+
+=== Updated Interfaces
+
+[cols="1,1"]
+|====
+| Deprecated (Removed) | New Interface
+
+| `SpeechModel`
+| `TextToSpeechModel`
+
+| `StreamingSpeechModel`
+| `StreamingTextToSpeechModel`
+
+| `SpeechPrompt`
+| `TextToSpeechPrompt`
+
+| `SpeechResponse`
+| `TextToSpeechResponse`
+
+| `Speech` (in `org.springframework.ai.openai.audio.speech`)
+| `Speech` (in `org.springframework.ai.audio.tts`)
+|====
+
+=== Code Changes
+
+Before (deprecated):
+[source,java]
+----
+import org.springframework.ai.openai.audio.speech.*;
+
+SpeechModel model = new OpenAiAudioSpeechModel(audioApi);
+SpeechPrompt prompt = new SpeechPrompt("Hello", options);
+SpeechResponse response = model.call(prompt);
+byte[] audio = response.getResult().getOutput();
+----
+
+After (using shared interfaces):
+[source,java]
+----
+import org.springframework.ai.audio.tts.*;
+import org.springframework.ai.openai.OpenAiAudioSpeechModel;
+
+TextToSpeechModel model = new OpenAiAudioSpeechModel(audioApi);
+TextToSpeechPrompt prompt = new TextToSpeechPrompt("Hello", options);
+TextToSpeechResponse response = model.call(prompt);
+byte[] audio = response.getResult().getOutput();
+----
+
+The `OpenAiAudioSpeechOptions` class remains unchanged and continues to work with the new interfaces.
+
+=== Benefits of the Migration
+
+- **Portability**: Write code once, switch between OpenAI, ElevenLabs, or other TTS providers easily
+- **Consistency**: Same patterns as ChatModel and other Spring AI abstractions
+- **Type Safety**: Improved type hierarchy with proper interface implementations
+- **Future-Proof**: New TTS providers will automatically work with your existing code
 
 == Example Code
 

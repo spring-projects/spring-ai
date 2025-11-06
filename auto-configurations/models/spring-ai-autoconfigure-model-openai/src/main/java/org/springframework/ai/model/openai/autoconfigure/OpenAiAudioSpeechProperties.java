@@ -38,7 +38,7 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.getValue();
 
-	private static final Float SPEED = 1.0f;
+	private static final Double SPEED = 1.0;
 
 	private static final String VOICE = OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue();
 
