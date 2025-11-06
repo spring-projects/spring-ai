@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,8 +102,8 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 		if (handler != null) {
 			return handler.apply(samplingRequest);
 		}
-		// TODO: handle null
-		return Mono.empty();
+		return Mono.error(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
+				"Sampling not supported", Map.of("reason", "Client does not have sampling capability"))));
 	}
 
 	/**
@@ -116,8 +117,8 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 		if (handler != null) {
 			return handler.apply(elicitationRequest);
 		}
-		// TODO: handle null
-		return Mono.empty();
+		return Mono.error(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
+				"Elicitation not supported", Map.of("reason", "Client does not have elicitation capability"))));
 	}
 
 	/**
@@ -129,7 +130,6 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 		logger.debug("Handling logging notification for client {}", name);
 		var consumers = this.loggingHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return Mono.empty();
 		}
 		return Flux.fromIterable(consumers).flatMap(c -> c.apply(loggingMessageNotification)).then();
@@ -144,7 +144,6 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 		logger.debug("Handling progress notification for client {}", name);
 		var consumers = this.progressHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return Mono.empty();
 		}
 		return Flux.fromIterable(consumers).flatMap(c -> c.apply(progressNotification)).then();
@@ -159,7 +158,6 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 		logger.debug("Handling tool list changed notification for client {}", name);
 		var consumers = this.toolListChangedHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return Mono.empty();
 		}
 		return Flux.fromIterable(consumers).flatMap(c -> c.apply(updatedTools)).then();
@@ -174,7 +172,6 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 		logger.debug("Handling prompt list changed notification for client {}", name);
 		var consumers = this.promptListChangedHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return Mono.empty();
 		}
 		return Flux.fromIterable(consumers).flatMap(c -> c.apply(updatedPrompts)).then();
@@ -189,7 +186,6 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 		logger.debug("Handling resource list changed notification for client {}", name);
 		var consumers = this.resourceListChangedHandlers.get(name);
 		if (consumers == null) {
-			// TODO handle
 			return Mono.empty();
 		}
 		return Flux.fromIterable(consumers).flatMap(c -> c.apply(updatedResources)).then();

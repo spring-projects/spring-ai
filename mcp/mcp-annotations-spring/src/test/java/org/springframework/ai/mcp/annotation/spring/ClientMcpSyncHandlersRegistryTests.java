@@ -21,8 +21,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpLogging;
@@ -38,7 +38,7 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 class ClientMcpSyncHandlersRegistryTests {
 
@@ -146,6 +146,25 @@ class ClientMcpSyncHandlersRegistryTests {
 	}
 
 	@Test
+	void missingElicitationHandler() {
+		var registry = new ClientMcpSyncHandlersRegistry();
+		var beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerBeanDefinition("myConfig",
+				BeanDefinitionBuilder.genericBeanDefinition(HandlersConfiguration.class).getBeanDefinition());
+		registry.postProcessBeanFactory(beanFactory);
+		registry.afterSingletonsInstantiated();
+
+		var request = McpSchema.ElicitRequest.builder().message("Elicit request").progressToken("token-12345").build();
+		assertThatThrownBy(() -> registry.handleElicitation("client-unknown", request))
+			.hasMessage("Elicitation not supported")
+			.asInstanceOf(type(McpError.class))
+			.extracting(McpError::getJsonRpcError)
+			.satisfies(error -> assertThat(error.data())
+				.isEqualTo(Map.of("reason", "Client does not have elicitation capability")))
+			.satisfies(error -> assertThat(error.code()).isEqualTo(McpSchema.ErrorCodes.METHOD_NOT_FOUND));
+	}
+
+	@Test
 	void sampling() {
 		var registry = new ClientMcpSyncHandlersRegistry();
 		var beanFactory = new DefaultListableBeanFactory();
@@ -164,6 +183,28 @@ class ClientMcpSyncHandlersRegistryTests {
 		assertThat(response.model()).isEqualTo("testgpt-42.5");
 		McpSchema.TextContent content = (McpSchema.TextContent) response.content();
 		assertThat(content.text()).isEqualTo("Tell a joke");
+	}
+
+	@Test
+	void missingSamplingHandler() {
+		var registry = new ClientMcpSyncHandlersRegistry();
+		var beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerBeanDefinition("myConfig",
+				BeanDefinitionBuilder.genericBeanDefinition(HandlersConfiguration.class).getBeanDefinition());
+		registry.postProcessBeanFactory(beanFactory);
+		registry.afterSingletonsInstantiated();
+
+		var request = McpSchema.CreateMessageRequest.builder()
+			.messages(List
+				.of(new McpSchema.SamplingMessage(McpSchema.Role.USER, new McpSchema.TextContent("Tell a joke"))))
+			.build();
+		assertThatThrownBy(() -> registry.handleSampling("client-unknown", request))
+			.hasMessage("Sampling not supported")
+			.asInstanceOf(type(McpError.class))
+			.extracting(McpError::getJsonRpcError)
+			.satisfies(error -> assertThat(error.data())
+				.isEqualTo(Map.of("reason", "Client does not have sampling capability")))
+			.satisfies(error -> assertThat(error.code()).isEqualTo(McpSchema.ErrorCodes.METHOD_NOT_FOUND));
 	}
 
 	@Test
@@ -289,12 +330,6 @@ class ClientMcpSyncHandlersRegistryTests {
 		registry.postProcessBeanFactory(beanFactory);
 
 		assertThat(registry.getCapabilities("client-1").elicitation()).isNotNull();
-	}
-
-	@Test
-	@Disabled
-	void missingHandler() {
-		fail("TODO");
 	}
 
 	static class ClientCapabilitiesConfiguration {

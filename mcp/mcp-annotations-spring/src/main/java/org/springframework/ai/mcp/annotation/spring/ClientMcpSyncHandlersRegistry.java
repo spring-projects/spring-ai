@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,8 +101,8 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 		if (handler != null) {
 			return handler.apply(samplingRequest);
 		}
-		// TODO: handle null
-		return null;
+		throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
+				"Sampling not supported", Map.of("reason", "Client does not have sampling capability")));
 	}
 
 	/**
@@ -116,8 +117,8 @@ public class ClientMcpSyncHandlersRegistry extends AbstractClientMcpHandlerRegis
 		if (handler != null) {
 			return handler.apply(elicitationRequest);
 		}
-		// TODO: handle null
-		return null;
+		throw new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
+				"Elicitation not supported", Map.of("reason", "Client does not have elicitation capability")));
 	}
 
 	/**
