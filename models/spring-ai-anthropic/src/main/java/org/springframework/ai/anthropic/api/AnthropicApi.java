@@ -176,7 +176,7 @@ public final class AnthropicApi {
 		return this.restClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
-				headers.addAll(additionalHttpHeader);
+				additionalHttpHeader.forEach(headers::addAll);
 				addDefaultHeadersIfMissing(headers);
 			})
 			.body(chatRequest)
@@ -217,7 +217,7 @@ public final class AnthropicApi {
 		return this.webClient.post()
 			.uri(this.completionsPath)
 			.headers(headers -> {
-				headers.addAll(additionalHttpHeader);
+				additionalHttpHeader.forEach(headers::addAll);
 				addDefaultHeadersIfMissing(headers);
 			}) // @formatter:off
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
@@ -256,7 +256,8 @@ public final class AnthropicApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HEADER_X_API_KEY)) {
+		List<String> apiKeyHeaders = headers.get(HEADER_X_API_KEY);
+		if (apiKeyHeaders == null) {
 			String apiKeyValue = this.apiKey.getValue();
 			if (StringUtils.hasText(apiKeyValue)) {
 				headers.add(HEADER_X_API_KEY, apiKeyValue);
