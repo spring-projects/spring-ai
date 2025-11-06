@@ -149,119 +149,8 @@ jobs:
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
 
-  test-vector-stores-slow-1:
-    name: Test Vector Stores (OpenSearch, Cassandra)
-    runs-on: ubuntu-latest
-    needs: build-all
-    if: ${{ github.repository_owner == 'spring-projects' }}
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Download Maven repository
-        uses: actions/download-artifact@v4
-        with:
-          name: maven-repo
-          path: ~/.m2/repository
-
-      - name: Configure Testcontainers
-        run: |
-          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
-
-      - name: Test OpenSearch and Cassandra vector stores
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          ./mvnw --batch-mode --no-snapshot-updates \
-            -pl vector-stores/spring-ai-opensearch-store,vector-stores/spring-ai-cassandra-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra \
-            -Pci-fast-integration-tests \
-            -Dfailsafe.rerunFailingTestsCount=3 \
-            verify
-
-  test-vector-stores-slow-2:
-    name: Test Vector Stores (Elasticsearch, Couchbase, MongoDB)
-    runs-on: ubuntu-latest
-    needs: build-all
-    if: ${{ github.repository_owner == 'spring-projects' }}
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Download Maven repository
-        uses: actions/download-artifact@v4
-        with:
-          name: maven-repo
-          path: ~/.m2/repository
-
-      - name: Configure Testcontainers
-        run: |
-          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
-
-      - name: Test Elasticsearch, Couchbase, MongoDB vector stores
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          ./mvnw --batch-mode --no-snapshot-updates \
-            -pl vector-stores/spring-ai-elasticsearch-store,vector-stores/spring-ai-couchbase-store,vector-stores/spring-ai-mongodb-atlas-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas \
-            -Pci-fast-integration-tests \
-            -Dfailsafe.rerunFailingTestsCount=3 \
-            verify
-
-  test-vector-stores-medium:
-    name: Test Vector Stores (Milvus, PgVector, Neo4j, MariaDB, Oracle)
-    runs-on: ubuntu-latest
-    needs: build-all
-    if: ${{ github.repository_owner == 'spring-projects' }}
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Download Maven repository
-        uses: actions/download-artifact@v4
-        with:
-          name: maven-repo
-          path: ~/.m2/repository
-
-      - name: Configure Testcontainers
-        run: |
-          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
-
-      - name: Test Milvus, PgVector, Neo4j, MariaDB, Oracle vector stores
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: |
-          ./mvnw --batch-mode --no-snapshot-updates \
-            -pl vector-stores/spring-ai-milvus-store,vector-stores/spring-ai-pgvector-store,vector-stores/spring-ai-neo4j-store,vector-stores/spring-ai-mariadb-store,vector-stores/spring-ai-oracle-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle \
-            -Pci-fast-integration-tests \
-            -Dfailsafe.rerunFailingTestsCount=3 \
-            verify
-
   test-remaining:
-    name: Test Remaining (MCP, Google GenAI, Chroma, etc.)
+    name: Test Remaining (MCP, Google GenAI, Chroma, PgVector)
     runs-on: ubuntu-latest
     needs: build-all
     if: ${{ github.repository_owner == 'spring-projects' }}
@@ -292,15 +181,15 @@ jobs:
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode --no-snapshot-updates \
-            -pl models/spring-ai-google-genai,auto-configurations/models/spring-ai-autoconfigure-model-google-genai,mcp/common,mcp/mcp-annotations-spring,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux,vector-stores/spring-ai-chroma-store,auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma \
+            -pl models/spring-ai-google-genai,auto-configurations/models/spring-ai-autoconfigure-model-google-genai,mcp/common,mcp/mcp-annotations-spring,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux,vector-stores/spring-ai-chroma-store,vector-stores/spring-ai-pgvector-store \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
 
-  deploy-artifacts:
-    name: Deploy artifacts
+  deploy-artifactory:
+    name: Deploy to Artifactory
     runs-on: ubuntu-latest
-    needs: [build-all, test-ollama, test-openai, test-vector-stores-slow-1, test-vector-stores-slow-2, test-vector-stores-medium, test-remaining]
+    needs: [build-all, test-ollama, test-openai, test-remaining]
     if: ${{ github.ref == 'refs/heads/main' && github.repository_owner == 'spring-projects' }}
     steps:
       - name: Checkout source code
@@ -319,6 +208,29 @@ jobs:
           name: maven-repo
           path: ~/.m2/repository
 
+      - name: Deploy to Artifactory
+        env:
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        run: |
+          ./mvnw -s settings.xml --batch-mode -DskipTests deploy
+
+  deploy-docs:
+    name: Deploy documentation
+    runs-on: ubuntu-latest
+    needs: [build-all, test-ollama, test-openai, test-remaining]
+    if: ${{ github.ref == 'refs/heads/main' && github.repository_owner == 'spring-projects' }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
       - name: Download Javadoc
         uses: actions/download-artifact@v4
         with:
@@ -333,13 +245,6 @@ jobs:
 
       - name: Capture project version
         run: echo PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
-
-      - name: Deploy to Artifactory
-        env:
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        run: |
-          ./mvnw -s settings.xml --batch-mode -DskipTests deploy
 
       - name: Setup SSH key
         env:
