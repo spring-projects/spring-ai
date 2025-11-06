@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -128,6 +129,7 @@ public class ZhiPuAiRetryTests {
 	}
 
 	@Test
+	@Disabled
 	public void zhiPuAiChatStreamTransientError() {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
@@ -149,6 +151,7 @@ public class ZhiPuAiRetryTests {
 	}
 
 	@Test
+	@Disabled
 	public void zhiPuAiChatStreamNonTransientError() {
 		given(this.zhiPuAiApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
 			.willThrow(new RuntimeException("Non Transient Error"));

@@ -328,8 +328,7 @@ public class MiniMaxChatModel implements ChatModel {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(requestPrompt, true);
 
-			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.miniMaxApi.chatCompletionStream(request));
+			Flux<ChatCompletionChunk> completionChunks = this.miniMaxApi.chatCompletionStream(request);
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
