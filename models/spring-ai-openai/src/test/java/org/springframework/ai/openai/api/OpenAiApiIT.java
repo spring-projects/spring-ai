@@ -76,11 +76,10 @@ class OpenAiApiIT {
 	}
 
 	@Test
-	@Disabled("The reasoning_effort option is only available in o1 models.")
 	void validateReasoningTokens() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(
 				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
-		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "gpt-5", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
 				null, null, null, "low", null, null);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);

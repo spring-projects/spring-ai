@@ -802,4 +802,19 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 	}
 
+	@Test
+	void testReasoningEffortWithDifferentLevels() {
+		String[] effortLevels = { "low", "medium", "high" };
+
+		for (String effort : effortLevels) {
+			OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model("gpt-5").reasoningEffort(effort).build();
+
+			Prompt prompt = new Prompt("What is 3+4?", chatOptions);
+			ChatResponse response = this.chatModel.call(prompt);
+
+			assertThat(response).isNotNull();
+			assertThat(response.getResults()).isNotEmpty();
+		}
+	}
+
 }
