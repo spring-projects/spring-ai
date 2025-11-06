@@ -40,6 +40,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 
@@ -51,6 +52,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  * @author Christian Tzolov
  * @author SriVarshan P
  * @author Seunggyu Lee
+ * @author Yanming Zhou
  */
 @AutoConfiguration
 @ConditionalOnClass(RetryUtils.class)
@@ -100,14 +102,10 @@ public class SpringAiRetryAutoConfiguration {
 				handleError(response);
 			}
 
-			@SuppressWarnings("removal")
 			public void handleError(ClientHttpResponse response) throws IOException {
-				if (!response.getStatusCode().isError()) {
-					return;
-				}
 
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-				if (error == null || error.isEmpty()) {
+				if (!StringUtils.hasLength(error)) {
 					error = "No response body available";
 				}
 
