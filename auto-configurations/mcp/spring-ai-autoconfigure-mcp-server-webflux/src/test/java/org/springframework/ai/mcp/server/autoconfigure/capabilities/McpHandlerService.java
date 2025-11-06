@@ -19,9 +19,7 @@ package org.springframework.ai.mcp.server.autoconfigure.capabilities;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpSampling;
-import org.springaicommunity.mcp.context.StructuredElicitResult;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
@@ -49,16 +47,6 @@ public class McpHandlerService {
 		return McpSchema.CreateMessageResult.builder()
 			.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
 			.build();
-	}
-
-	@McpElicitation(clients = "server1")
-	public StructuredElicitResult<ElicitInput> elicitationHandler(McpSchema.ElicitRequest request) {
-		logger.info("MCP ELICITATION: {}", request);
-		ElicitInput elicitData = new ElicitInput(request.message());
-		return StructuredElicitResult.builder().structuredContent(elicitData).build();
-	}
-
-	public record ElicitInput(String message) {
 	}
 
 }

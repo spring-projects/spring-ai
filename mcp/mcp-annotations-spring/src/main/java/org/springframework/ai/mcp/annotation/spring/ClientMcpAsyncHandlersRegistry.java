@@ -186,7 +186,7 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 
 	@Override
 	public void afterSingletonsInstantiated() {
-		var beansByAnnotation = getBeansByAnnotationType();
+		var beansByAnnotation = this.getBeansByAnnotationType();
 
 		var samplingSpecs = AsyncMcpAnnotationProviders
 			.samplingSpecifications(new ArrayList<>(beansByAnnotation.get(McpSampling.class)));

@@ -49,6 +49,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfi
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
+import org.springframework.ai.mcp.server.autoconfigure.capabilities.McpHandlerConfiguration;
 import org.springframework.ai.mcp.server.autoconfigure.capabilities.McpHandlerService;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
@@ -240,7 +241,8 @@ public class StreamableMcpAnnotationsWithLLMIT {
 				ctx.ping(); // call client ping
 
 				// call elicitation
-				var elicitationResult = ctx.elicit(e -> e.message("Test message"), McpHandlerService.ElicitInput.class);
+				var elicitationResult = ctx.elicit(e -> e.message("Test message"),
+						McpHandlerConfiguration.ElicitInput.class);
 
 				ctx.progress(p -> p.progress(0.50).total(1.0).message("elicitation completed"));
 

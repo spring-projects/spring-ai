@@ -33,6 +33,7 @@ import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpToolListChanged;
 import reactor.core.publisher.Mono;
 
+import org.springframework.aop.framework.autoproxy.AutoProxyUtils;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
@@ -275,6 +276,20 @@ class ClientMcpAsyncHandlersRegistryTests {
 					.genericBeanDefinition(
 							ClientMcpSyncHandlersRegistryTests.ClientCapabilitiesConfiguration.class.getName())
 					.getBeanDefinition());
+		registry.postProcessBeanFactory(beanFactory);
+
+		assertThat(registry.getCapabilities("client-1").elicitation()).isNotNull();
+	}
+
+	@Test
+	void supportsProxiedClass() {
+		var registry = new ClientMcpSyncHandlersRegistry();
+		var beanFactory = new DefaultListableBeanFactory();
+		var beanDefinition = BeanDefinitionBuilder.genericBeanDefinition(Object.class).getBeanDefinition();
+		beanDefinition.setAttribute(AutoProxyUtils.ORIGINAL_TARGET_CLASS_ATTRIBUTE,
+				ClientMcpSyncHandlersRegistryTests.ClientCapabilitiesConfiguration.class);
+		beanFactory.registerBeanDefinition("myConfig", beanDefinition);
+
 		registry.postProcessBeanFactory(beanFactory);
 
 		assertThat(registry.getCapabilities("client-1").elicitation()).isNotNull();

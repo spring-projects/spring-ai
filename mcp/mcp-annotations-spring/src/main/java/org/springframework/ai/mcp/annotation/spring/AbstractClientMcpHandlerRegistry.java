@@ -35,8 +35,8 @@ import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
+import org.springframework.aop.framework.autoproxy.AutoProxyUtils;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -70,8 +70,11 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 		Map<String, List<String>> elicitationClientToAnnotatedBeans = new HashMap<>();
 		Map<String, List<String>> samplingClientToAnnotatedBeans = new HashMap<>();
 		for (var beanName : beanFactory.getBeanDefinitionNames()) {
-			var definition = beanFactory.getBeanDefinition(beanName);
-			var foundAnnotations = scan(getBeanClass(definition, beanFactory.getBeanClassLoader()));
+			if (!beanFactory.getBeanDefinition(beanName).isSingleton()) {
+				// Only process singleton beans, not scoped beans
+				continue;
+			}
+			var foundAnnotations = this.scan(AutoProxyUtils.determineTargetClass(beanFactory, beanName));
 			if (!foundAnnotations.isEmpty()) {
 				this.allAnnotatedBeans.add(beanName);
 			}
@@ -118,23 +121,6 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 			.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().build()));
 	}
 
-	private static Class<?> getBeanClass(BeanDefinition definition, ClassLoader beanClassLoader) {
-		if (definition.getResolvableType().resolve() != null) {
-			return definition.getResolvableType().resolve();
-		}
-		// @Component beans registered by component scanning do not have a resolvable type
-		// We try to resolve them using the beanClassName (which might be null)
-		if (beanClassLoader != null && definition.getBeanClassName() != null) {
-			try {
-				return Class.forName(definition.getBeanClassName(), false, beanClassLoader);
-			}
-			catch (ClassNotFoundException ignored) {
-
-			}
-		}
-		return null;
-	}
-
 	protected List<Annotation> scan(Class<?> beanClass) {
 		List<Annotation> foundAnnotations = new ArrayList<>();
 
@@ -159,7 +145,7 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 
 		for (var beanName : this.allAnnotatedBeans) {
 			var bean = this.beanFactory.getBean(beanName);
-			var annotations = scan(bean.getClass());
+			var annotations = this.scan(bean.getClass());
 			for (var annotation : annotations) {
 				beansByAnnotation.computeIfAbsent(annotation.annotationType(), k -> new HashSet<>()).add(bean);
 			}
