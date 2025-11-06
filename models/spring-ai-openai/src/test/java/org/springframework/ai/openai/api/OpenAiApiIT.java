@@ -77,10 +77,11 @@ class OpenAiApiIT {
 	@Test
 	void validateReasoningTokens() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(
-				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
+				"Are there an infinite number of prime numbers such that n mod 4 == 3? Think through the steps and respond.",
+				ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "gpt-5", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
-				null, null, null, "low", null, null);
+				null, null, null, "high", null, null);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();

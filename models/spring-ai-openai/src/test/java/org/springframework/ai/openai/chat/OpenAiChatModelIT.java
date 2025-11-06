@@ -790,17 +790,29 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
-	void testReasoningEffortWithDifferentLevels() {
-		String[] effortLevels = { "low", "medium", "high" };
+	void testReasoningEffortParameter() {
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model("gpt-5").reasoningEffort("high").build();
 
-		for (String effort : effortLevels) {
-			OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model("gpt-5").reasoningEffort(effort).build();
+		Prompt prompt = new Prompt(
+				"Are there an infinite number of prime numbers such that n mod 4 == 3? Think through the steps and respond.",
+				chatOptions);
+		ChatResponse response = this.chatModel.call(prompt);
 
-			Prompt prompt = new Prompt("What is 3+4?", chatOptions);
-			ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
 
-			assertThat(response).isNotNull();
-			assertThat(response.getResults()).isNotEmpty();
+		// Verify that reasoning tokens were used
+		Usage usage = response.getMetadata().getUsage();
+		if (usage instanceof DefaultUsage defaultUsage) {
+			Object nativeUsage = defaultUsage.getNativeUsage();
+			if (nativeUsage instanceof OpenAiApi.Usage openAiUsage) {
+				OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = openAiUsage.completionTokenDetails();
+				assertThat(completionTokenDetails).isNotNull();
+				assertThat(completionTokenDetails.reasoningTokens()).isNotNull();
+				assertThat(completionTokenDetails.reasoningTokens()).isPositive();
+			}
 		}
 	}
 
