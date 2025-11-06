@@ -86,7 +86,8 @@ public class SpringAiRetryAutoConfiguration {
 				return response.getStatusCode().isError();
 			}
 
-			// On purposes commented out so that the code can compile both with Spring 6 and Spring 7
+			// On purposes commented out so that the code can compile both with Spring 6
+			// and Spring 7
 			// @Override
 			@SuppressWarnings("removal")
 			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
