@@ -1,3 +1,19 @@
+/*
+ * Copyright 2025-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.mcp.client.common.autoconfigure.configurer;
 
 import java.util.Collections;
@@ -34,33 +50,33 @@ class McpAsyncClientConfigurerTests {
 
 	@BeforeEach
 	void setUp() {
-		customizer1 = mock(McpAsyncClientCustomizer.class);
-		customizer2 = mock(McpAsyncClientCustomizer.class);
-		spec = McpClient.async(mock(McpClientTransport.class));
+		this.customizer1 = mock(McpAsyncClientCustomizer.class);
+		this.customizer2 = mock(McpAsyncClientCustomizer.class);
+		this.spec = McpClient.async(mock(McpClientTransport.class));
 	}
 
 	@Test
 	void testConfigureWithCustomizersInOrder() {
-		configurer = new McpAsyncClientConfigurer(List.of(customizer1, customizer2));
+		this.configurer = new McpAsyncClientConfigurer(List.of(this.customizer1, this.customizer2));
 
-		McpClient.AsyncSpec result = configurer.configure("asyncClientA", spec);
+		McpClient.AsyncSpec result = this.configurer.configure("asyncClientA", this.spec);
 
-		InOrder inOrder = inOrder(customizer1, customizer2);
-		inOrder.verify(customizer1).customize("asyncClientA", spec);
-		inOrder.verify(customizer2).customize("asyncClientA", spec);
+		InOrder inOrder = inOrder(this.customizer1, this.customizer2);
+		inOrder.verify(this.customizer1).customize("asyncClientA", this.spec);
+		inOrder.verify(this.customizer2).customize("asyncClientA", this.spec);
 
-		verifyNoMoreInteractions(customizer1, customizer2);
-		assertSame(spec, result);
+		verifyNoMoreInteractions(this.customizer1, this.customizer2);
+		assertSame(this.spec, result);
 	}
 
 	@Test
 	void testConfigureWithoutCustomizers() {
-		configurer = new McpAsyncClientConfigurer(Collections.emptyList());
+		this.configurer = new McpAsyncClientConfigurer(Collections.emptyList());
 
-		McpClient.AsyncSpec result = configurer.configure("asyncClientB", spec);
+		McpClient.AsyncSpec result = this.configurer.configure("asyncClientB", this.spec);
 
-		assertSame(spec, result);
-		verifyNoInteractions(customizer1, customizer2);
+		assertSame(this.spec, result);
+		verifyNoInteractions(this.customizer1, this.customizer2);
 	}
 
 }
