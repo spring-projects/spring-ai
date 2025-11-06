@@ -270,6 +270,7 @@
 
 		<!-- production dependencies -->
 		<spring-boot.version>3.5.7</spring-boot.version>
+		<spring-framework.version>6.2.12</spring-framework.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
@@ -975,6 +976,13 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
 				<version>${spring-boot.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-framework-bom</artifactId>
+				<version>${spring-framework.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
