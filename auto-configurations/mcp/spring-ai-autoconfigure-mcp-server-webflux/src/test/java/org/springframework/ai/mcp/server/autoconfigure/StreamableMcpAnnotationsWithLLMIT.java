@@ -54,6 +54,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpCli
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
@@ -88,7 +89,8 @@ public class StreamableMcpAnnotationsWithLLMIT {
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
+				McpServerStreamableHttpWebFluxAutoConfiguration.class,
 				McpServerAnnotationScannerAutoConfiguration.class,
 				McpServerSpecificationFactoryAutoConfiguration.class));
 
@@ -106,7 +108,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 		return AutoConfigurations.of(all);
 	}
 
-	private static AtomicInteger toolCouter = new AtomicInteger(0);
+	private static AtomicInteger toolCounter = new AtomicInteger(0);
 
 	@Test
 	void clientServerCapabilities() {
@@ -162,7 +164,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 						assertThat(cResponse).isNotEmpty();
 						assertThat(cResponse).contains("22");
 
-						assertThat(toolCouter.get()).isEqualTo(1);
+						assertThat(toolCounter.get()).isEqualTo(1);
 
 						// PROGRESS
 						TestMcpClientConfiguration.TestContext testContext = clientContext
@@ -234,7 +236,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 			@McpTool(description = "Provides weather information by city name")
 			public String weather(McpSyncRequestContext ctx, @McpToolParam String cityName) {
 
-				toolCouter.incrementAndGet();
+				toolCounter.incrementAndGet();
 
 				ctx.info("Weather called!");
 

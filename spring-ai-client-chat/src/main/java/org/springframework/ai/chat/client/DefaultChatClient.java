@@ -78,6 +78,7 @@ import org.springframework.util.StringUtils;
  * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
  * @author Jonatan Ivanov
+ * @author Wenli Tian
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
@@ -813,7 +814,7 @@ public class DefaultChatClient implements ChatClient {
 						this.advisorObservationConvention)
 				.defaultTemplateRenderer(this.templateRenderer)
 				.defaultToolCallbacks(this.toolCallbacks)
-				.defaultToolCallbacks(this.toolCallbackProviders.toArray(new ToolCallback[0]))
+				.defaultToolCallbacks(this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
 				.defaultToolContext(this.toolContext)
 				.defaultToolNames(StringUtils.toStringArray(this.toolNames));
 
