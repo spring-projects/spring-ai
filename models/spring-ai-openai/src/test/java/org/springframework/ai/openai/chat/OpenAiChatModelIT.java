@@ -789,19 +789,6 @@ public class OpenAiChatModelIT extends AbstractIT {
 		logger.info("Full Content: {}", fullContent);
 	}
 
-	record ActorsFilmsRecord(String actor, List<String> movies) {
-
-	}
-
-	static class MathTools {
-
-		@Tool(description = "Multiply the two numbers")
-		double multiply(double a, double b) {
-			return a * b;
-		}
-
-	}
-
 	@Test
 	void testReasoningEffortWithDifferentLevels() {
 		String[] effortLevels = { "low", "medium", "high" };
@@ -815,6 +802,19 @@ public class OpenAiChatModelIT extends AbstractIT {
 			assertThat(response).isNotNull();
 			assertThat(response.getResults()).isNotEmpty();
 		}
+	}
+
+	record ActorsFilmsRecord(String actor, List<String> movies) {
+
+	}
+
+	static class MathTools {
+
+		@Tool(description = "Multiply the two numbers")
+		double multiply(double a, double b) {
+			return a * b;
+		}
+
 	}
 
 }
