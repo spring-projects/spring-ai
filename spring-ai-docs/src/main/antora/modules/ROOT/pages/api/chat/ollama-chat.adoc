@@ -520,6 +520,50 @@ This allows you to leverage Ollama's full capabilities while using the OpenAI cl
 
 image::spring-ai-ollama-over-openai.jpg[Ollama OpenAI API compatibility, 800, 600, align="center"]
 
+=== Reasoning Content via OpenAI Compatibility
+
+Ollama's OpenAI-compatible endpoint supports the `reasoning_content` field for thinking-capable models (such as `qwen3:*-thinking`, `deepseek-r1`, `deepseek-v3.1`).
+When using the Spring AI OpenAI client with Ollama, the model's reasoning process is automatically captured and made available through the response metadata.
+
+NOTE: This is an alternative to using Ollama's native thinking mode API (documented in <<Thinking Mode (Reasoning)>> above).
+Both approaches work with Ollama's thinking models, but the OpenAI-compatible endpoint uses the `reasoning_content` field name instead of `thinking`.
+
+Here's an example of accessing reasoning content from Ollama through the OpenAI client:
+
+[source,java]
+----
+// Configure Spring AI OpenAI client to point to Ollama
+@Configuration
+class OllamaConfig {
+    @Bean
+    OpenAiChatModel ollamaChatModel() {
+        var openAiApi = new OpenAiApi("http://localhost:11434", "ollama");
+        return new OpenAiChatModel(openAiApi,
+            OpenAiChatOptions.builder()
+                .model("deepseek-r1")  // or qwen3, deepseek-v3.1, etc.
+                .build());
+    }
+}
+
+// Use the model with thinking-capable models
+ChatResponse response = chatModel.call(
+    new Prompt("How many letter 'r' are in the word 'strawberry'?"));
+
+// Access the reasoning process from metadata
+String reasoning = response.getResult().getMetadata().get("reasoningContent");
+if (reasoning != null && !reasoning.isEmpty()) {
+    System.out.println("Model's reasoning process:");
+    System.out.println(reasoning);
+}
+
+// Get the final answer
+String answer = response.getResult().getOutput().getContent();
+System.out.println("Answer: " + answer);
+----
+
+TIP: Thinking-capable models in Ollama (0.12+) automatically enable thinking mode when accessed through the OpenAI-compatible endpoint.
+The reasoning content is captured automatically without requiring additional configuration.
+
 Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
 
 == HuggingFace Models
