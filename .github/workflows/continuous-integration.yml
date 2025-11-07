@@ -1,16 +1,20 @@
 name: CI/CD build
 
 on:
-  schedule:
-    # Combined schedule covering both EST and CET working hours
-    # Morning/Early builds
-    - cron: '30 6 * * 1-5'   # 7:30 AM CET / 1:30 AM EST
-    - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM EST
-    # Midday builds
-    - cron: '30 16 * * 1-5'  # 7:30 PM CET / 11:30 AM EST
-    # Afternoon/Evening builds  
-    - cron: '30 21 * * 1-5'  # 10:30 PM CET / 4:30 PM EST
-  workflow_dispatch:
+  # DISABLED: Replaced by fast-continuous-integration.yml workflow
+  # This workflow is kept for reference but will not run automatically
+  # To re-enable, uncomment the schedule and workflow_dispatch sections below
+  workflow_call:  # Dummy trigger - workflow can only be called by other workflows (effectively disabled)
+  # schedule:
+  #   # Combined schedule covering both EST and CET working hours
+  #   # Morning/Early builds
+  #   - cron: '30 6 * * 1-5'   # 7:30 AM CET / 1:30 AM EST
+  #   - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM EST
+  #   # Midday builds
+  #   - cron: '30 16 * * 1-5'  # 7:30 PM CET / 11:30 AM EST
+  #   # Afternoon/Evening builds
+  #   - cron: '30 21 * * 1-5'  # 10:30 PM CET / 4:30 PM EST
+  # workflow_dispatch:
   # Note: If push triggers are added in the future, they should include:
   # push:
   #   paths-ignore:
