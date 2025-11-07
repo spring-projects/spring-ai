@@ -18,6 +18,7 @@ package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.util.Assert;
@@ -26,6 +27,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.support.ToolUtils;
+import org.springframework.context.ApplicationListener;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -39,7 +41,7 @@ import org.springframework.util.CollectionUtils;
  * @author YunKui Lu
  * @since 1.0.0
  */
-public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
+public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, ApplicationListener<McpToolsChangedEvent> {
 
 	private final McpToolFilter toolFilter;
 
@@ -48,6 +50,10 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	private final McpToolNamePrefixGenerator toolNamePrefixGenerator;
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
+
+	private final AtomicBoolean invalidateCache = new AtomicBoolean(true);
+
+	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
 
 	/**
 	 * Creates a provider with tool filtering.
@@ -123,30 +129,49 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		List<ToolCallback> toolCallbackList = new ArrayList<>();
+		if (this.invalidateCache.get()) {
+			synchronized (this) {
+				if (this.invalidateCache.getAndSet(false)) {
+					List<ToolCallback> toolCallbackList = new ArrayList<>();
 
-		for (McpAsyncClient mcpClient : this.mcpClients) {
+					for (McpAsyncClient mcpClient : this.mcpClients) {
 
-			ToolCallback[] toolCallbacks = mcpClient.listTools()
-				.map(response -> response.tools()
-					.stream()
-					.filter(tool -> this.toolFilter.test(connectionInfo(mcpClient), tool))
-					.map(tool -> AsyncMcpToolCallback.builder()
-						.mcpClient(mcpClient)
-						.tool(tool)
-						.prefixedToolName(
-								this.toolNamePrefixGenerator.prefixedToolName(connectionInfo(mcpClient), tool))
-						.toolContextToMcpMetaConverter(this.toolContextToMcpMetaConverter)
-						.build())
-					.toArray(ToolCallback[]::new))
-				.block();
+						ToolCallback[] toolCallbacks = mcpClient.listTools()
+							.map(response -> response.tools()
+								.stream()
+								.filter(tool -> this.toolFilter.test(connectionInfo(mcpClient), tool))
+								.<ToolCallback>map(tool -> AsyncMcpToolCallback.builder()
+									.mcpClient(mcpClient)
+									.tool(tool)
+									.prefixedToolName(this.toolNamePrefixGenerator
+										.prefixedToolName(connectionInfo(mcpClient), tool))
+									.toolContextToMcpMetaConverter(this.toolContextToMcpMetaConverter)
+									.build())
+								.toArray(ToolCallback[]::new))
+							.block();
 
-			validateToolCallbacks(toolCallbacks);
+						toolCallbackList.addAll(List.of(toolCallbacks));
+					}
 
-			toolCallbackList.addAll(List.of(toolCallbacks));
+					this.cachedToolCallbacks = toolCallbackList;
+					this.validateToolCallbacks(this.cachedToolCallbacks);
+				}
+			}
 		}
 
-		return toolCallbackList.toArray(new ToolCallback[0]);
+		return this.cachedToolCallbacks.toArray(new ToolCallback[0]);
+	}
+
+	/**
+	 * Invalidates the cached tool callbacks, forcing re-discovery on next request.
+	 */
+	public void invalidateCache() {
+		this.invalidateCache.set(true);
+	}
+
+	@Override
+	public void onApplicationEvent(McpToolsChangedEvent event) {
+		this.invalidateCache();
 	}
 
 	private static McpConnectionInfo connectionInfo(McpAsyncClient mcpClient) {
@@ -162,7 +187,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param toolCallbacks callbacks to validate
 	 * @throws IllegalStateException if duplicate names found
 	 */
-	private void validateToolCallbacks(ToolCallback[] toolCallbacks) {
+	private void validateToolCallbacks(List<ToolCallback> toolCallbacks) {
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
 		if (!duplicateToolNames.isEmpty()) {
 			throw new IllegalStateException(

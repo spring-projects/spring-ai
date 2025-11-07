@@ -37,6 +37,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.CollectionUtils;
 
@@ -120,6 +121,14 @@ public class McpClientAutoConfiguration {
 	 */
 	private String connectedClientName(String clientName, String serverConnectionName) {
 		return clientName + " - " + serverConnectionName;
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public McpSyncToolsChangeEventEmmiter mcpSyncToolChangeEventEmmiter(
+			ApplicationEventPublisher applicationEventPublisher) {
+		return new McpSyncToolsChangeEventEmmiter(applicationEventPublisher);
 	}
 
 	/**
@@ -225,6 +234,13 @@ public class McpClientAutoConfiguration {
 	}
 
 	// Async client configuration
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public McpAsyncToolsChangeEventEmmiter mcpAsyncToolChangeEventEmmiter(
+			ApplicationEventPublisher applicationEventPublisher) {
+		return new McpAsyncToolsChangeEventEmmiter(applicationEventPublisher);
+	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
