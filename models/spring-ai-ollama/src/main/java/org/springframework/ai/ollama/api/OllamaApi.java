@@ -402,7 +402,7 @@ public final class OllamaApi {
 			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("tools") List<Tool> tools,
 			@JsonProperty("options") Map<String, Object> options,
-			@JsonProperty("think") Boolean think
+			@JsonProperty("think") ThinkOption think
 	) {
 
 		public static Builder builder(String model) {
@@ -475,7 +475,7 @@ public final class OllamaApi {
 			private String keepAlive;
 			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
-			private Boolean think;
+			private ThinkOption think;
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -509,13 +509,57 @@ public final class OllamaApi {
 
 			public Builder options(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
-
-				this.options = OllamaOptions.filterNonSupportedFields(options);
+				this.options = OllamaChatOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
-			public Builder think(Boolean think) {
+			public Builder think(ThinkOption think) {
 				this.think = think;
+				return this;
+			}
+
+			/**
+			 * Enable thinking mode for the model.
+			 * @return this builder
+			 */
+			public Builder enableThinking() {
+				this.think = ThinkOption.ThinkBoolean.ENABLED;
+				return this;
+			}
+
+			/**
+			 * Disable thinking mode for the model.
+			 * @return this builder
+			 */
+			public Builder disableThinking() {
+				this.think = ThinkOption.ThinkBoolean.DISABLED;
+				return this;
+			}
+
+			/**
+			 * Set thinking level to "low" (for GPT-OSS model).
+			 * @return this builder
+			 */
+			public Builder thinkLow() {
+				this.think = ThinkOption.ThinkLevel.LOW;
+				return this;
+			}
+
+			/**
+			 * Set thinking level to "medium" (for GPT-OSS model).
+			 * @return this builder
+			 */
+			public Builder thinkMedium() {
+				this.think = ThinkOption.ThinkLevel.MEDIUM;
+				return this;
+			}
+
+			/**
+			 * Set thinking level to "high" (for GPT-OSS model).
+			 * @return this builder
+			 */
+			public Builder thinkHigh() {
+				this.think = ThinkOption.ThinkLevel.HIGH;
 				return this;
 			}
 

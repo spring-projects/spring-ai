@@ -164,6 +164,8 @@ TIP: All properties prefixed with `spring.ai.ollama.embedding.options` can be ov
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaEmbeddingOptions.java[OllamaEmbeddingOptions.java] provides the Ollama configurations, such as the model to use, the low level GPU and CPU tuning, etc.
 
+IMPORTANT: The `OllamaOptions` class has been deprecated. Use `OllamaChatOptions` for chat models and `OllamaEmbeddingOptions` for embedding models instead. The new classes provide type-safe, model-specific configuration options.
+
 The default options can be configured using the `spring.ai.ollama.embedding.options` properties as well.
 
 At start-time use the `OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions defaultOptions)` to configure the  default options used for all embedding requests.

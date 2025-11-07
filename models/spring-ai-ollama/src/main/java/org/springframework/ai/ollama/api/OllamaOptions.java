@@ -44,6 +44,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sun Yuhan
  * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
@@ -55,7 +56,8 @@ import org.springframework.util.Assert;
 @Deprecated
 public class OllamaOptions implements ToolCallingChatOptions, EmbeddingOptions {
 
-	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
+	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate",
+			"think");
 
 	// Following fields are options which must be set when the model is loaded into
 	// memory.
