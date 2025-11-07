@@ -515,6 +515,9 @@ Although this is optional for JSON Schema, it's recommended for the structured r
 Ollama is OpenAI API-compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools.
 For this, you need to configure the OpenAI base URL to your Ollama instance: `spring.ai.openai.chat.base-url=http://localhost:11434` and select one of the provided Ollama models: `spring.ai.openai.chat.options.model=mistral`.
 
+TIP: When using the OpenAI client with Ollama, you can pass Ollama-specific parameters (like `top_k`, `repeat_penalty`, `num_predict`) using the xref:api/chat/openai-chat.adoc#openai-compatible-servers[`extraBody` option].
+This allows you to leverage Ollama's full capabilities while using the OpenAI client.
+
 image::spring-ai-ollama-over-openai.jpg[Ollama OpenAI API compatibility, 800, 600, align="center"]
 
 Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.

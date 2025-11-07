@@ -42,7 +42,7 @@ class ExtraBodySerializationTest {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(), // messages
 				"gpt-4", // model
 				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
-				null, null, null, null, null, null, null, null, null, null,
+				null, null, null, null, null, null, null, null, null, null, null, null,
 				Map.of("top_k", 50, "repetition_penalty", 1.1) // extraBody
 		);
 
@@ -71,8 +71,8 @@ class ExtraBodySerializationTest {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(), // messages
 				"gpt-4", // model
 				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
-				null, null, null, null, null, null, null, null, null, null, Map.of() // empty
-																						// extraBody
+				null, null, null, null, null, null, null, null, null, null, null, null, Map.of() // empty
+		// extraBody
 		);
 
 		// Act
@@ -93,9 +93,9 @@ class ExtraBodySerializationTest {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(), // messages
 				"gpt-4", // model
 				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
-				null, null, null, null, null, null, null, null, null, null, null // extraBody
-																					// =
-																					// null
+				null, null, null, null, null, null, null, null, null, null, null, null, null // extraBody
+		// =
+		// null
 		);
 
 		// Act

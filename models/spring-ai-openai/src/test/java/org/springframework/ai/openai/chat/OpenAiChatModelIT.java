@@ -816,6 +816,19 @@ public class OpenAiChatModelIT extends AbstractIT {
 		}
 	}
 
+	@Test
+	void shouldSendPromptCacheKeyAndSafetyIdentifier() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.promptCacheKey("test-cache-" + System.currentTimeMillis())
+			.safetyIdentifier("hashed-user-123")
+			.build();
+
+		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke about Spring", options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
 	}
