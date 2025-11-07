@@ -84,38 +84,6 @@ public class MistralAiApi {
 	private final MistralAiStreamFunctionCallingHelper chunkMerger = new MistralAiStreamFunctionCallingHelper();
 
 	/**
-	 * Create a new client api with DEFAULT_BASE_URL
-	 * @param apiKey Mistral api Key.
-	 */
-	@Deprecated
-	public MistralAiApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey Mistral api Key.
-	 */
-	@Deprecated
-	public MistralAiApi(String baseUrl, String apiKey) {
-		this(baseUrl, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey Mistral api Key.
-	 * @param restClientBuilder RestClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	@Deprecated
-	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, apiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
-	}
-
-	/**
 	 * Create a new client api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey Mistral api Key.

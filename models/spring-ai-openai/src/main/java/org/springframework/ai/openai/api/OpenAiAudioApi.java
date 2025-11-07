@@ -267,10 +267,7 @@ public class OpenAiAudioApi {
 	 * recognition as well as speech translation and language identification. The Whisper
 	 * v2-large model is currently available through our API with the whisper-1 model
 	 * name.
-	 *
-	 * @deprecated See {@link TranscriptionModels#WHISPER_1}
 	 */
-	@Deprecated
 	public enum WhisperModel {
 
 		// @formatter:off
@@ -396,7 +393,7 @@ public class OpenAiAudioApi {
 		@JsonProperty("input") String input,
 		@JsonProperty("voice") String voice,
 		@JsonProperty("response_format") AudioResponseFormat responseFormat,
-		@JsonProperty("speed") Float speed) {
+		@JsonProperty("speed") Double speed) {
 		// @formatter:on
 
 		public static Builder builder() {
@@ -491,7 +488,7 @@ public class OpenAiAudioApi {
 
 			private AudioResponseFormat responseFormat = AudioResponseFormat.MP3;
 
-			private Float speed;
+			private Double speed;
 
 			public Builder model(String model) {
 				this.model = model;
@@ -518,7 +515,7 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
-			public Builder speed(Float speed) {
+			public Builder speed(Double speed) {
 				this.speed = speed;
 				return this;
 			}

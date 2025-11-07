@@ -317,6 +317,31 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	@JsonProperty("truncate")
 	private Boolean truncate;
 
+	/**
+	 * The model should think before responding, if supported.
+	 * <p>
+	 * Most models (Qwen 3, DeepSeek-v3.1, DeepSeek R1) use boolean enable/disable.
+	 * The GPT-OSS model requires string levels: "low", "medium", or "high".
+	 * <p>
+	 * <strong>Default Behavior (Ollama 0.12+):</strong>
+	 * <ul>
+	 * <li>Thinking-capable models (e.g., qwen3:*-thinking, deepseek-r1, deepseek-v3.1)
+	 * <strong>auto-enable thinking by default</strong> when this field is not set.</li>
+	 * <li>Standard models (e.g., qwen2.5:*, llama3.2) do not enable thinking by default.</li>
+	 * <li>To explicitly control behavior, use {@link Builder#enableThinking()} or
+	 * {@link Builder#disableThinking()}.</li>
+	 * </ul>
+	 * <p>
+	 * Use {@link Builder#enableThinking()}, {@link Builder#disableThinking()}, or
+	 * {@link Builder#thinkHigh()} to configure this option.
+	 *
+	 * @see ThinkOption
+	 * @see ThinkOption.ThinkBoolean
+	 * @see ThinkOption.ThinkLevel
+	 */
+	@JsonProperty("think")
+	private ThinkOption thinkOption;
+
 	@JsonIgnore
 	private Boolean internalToolExecutionEnabled;
 
@@ -364,48 +389,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				.format(fromOptions.getFormat())
 				.keepAlive(fromOptions.getKeepAlive())
 				.truncate(fromOptions.getTruncate())
-				.useNUMA(fromOptions.getUseNUMA())
-				.numCtx(fromOptions.getNumCtx())
-				.numBatch(fromOptions.getNumBatch())
-				.numGPU(fromOptions.getNumGPU())
-				.mainGPU(fromOptions.getMainGPU())
-				.lowVRAM(fromOptions.getLowVRAM())
-				.f16KV(fromOptions.getF16KV())
-				.logitsAll(fromOptions.getLogitsAll())
-				.vocabOnly(fromOptions.getVocabOnly())
-				.useMMap(fromOptions.getUseMMap())
-				.useMLock(fromOptions.getUseMLock())
-				.numThread(fromOptions.getNumThread())
-				.numKeep(fromOptions.getNumKeep())
-				.seed(fromOptions.getSeed())
-				.numPredict(fromOptions.getNumPredict())
-				.topK(fromOptions.getTopK())
-				.topP(fromOptions.getTopP())
-				.minP(fromOptions.getMinP())
-				.tfsZ(fromOptions.getTfsZ())
-				.typicalP(fromOptions.getTypicalP())
-				.repeatLastN(fromOptions.getRepeatLastN())
-				.temperature(fromOptions.getTemperature())
-				.repeatPenalty(fromOptions.getRepeatPenalty())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.mirostat(fromOptions.getMirostat())
-				.mirostatTau(fromOptions.getMirostatTau())
-				.mirostatEta(fromOptions.getMirostatEta())
-				.penalizeNewline(fromOptions.getPenalizeNewline())
-				.stop(fromOptions.getStop())
-				.toolNames(fromOptions.getToolNames())
-				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolContext(fromOptions.getToolContext()).build();
-	}
-
-	public static OllamaChatOptions fromOptions(OllamaOptions fromOptions) {
-		return builder()
-				.model(fromOptions.getModel())
-				.format(fromOptions.getFormat())
-				.keepAlive(fromOptions.getKeepAlive())
-				.truncate(fromOptions.getTruncate())
+				.thinkOption(fromOptions.getThinkOption())
 				.useNUMA(fromOptions.getUseNUMA())
 				.numCtx(fromOptions.getNumCtx())
 				.numBatch(fromOptions.getNumBatch())
@@ -745,6 +729,14 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		this.truncate = truncate;
 	}
 
+	public ThinkOption getThinkOption() {
+		return this.thinkOption;
+	}
+
+	public void setThinkOption(ThinkOption thinkOption) {
+		this.thinkOption = thinkOption;
+	}
+
 	@Override
 	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
@@ -824,17 +816,17 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		OllamaChatOptions that = (OllamaChatOptions) o;
 		return Objects.equals(this.model, that.model) && Objects.equals(this.format, that.format)
 				&& Objects.equals(this.keepAlive, that.keepAlive) && Objects.equals(this.truncate, that.truncate)
-				&& Objects.equals(this.useNUMA, that.useNUMA) && Objects.equals(this.numCtx, that.numCtx)
-				&& Objects.equals(this.numBatch, that.numBatch) && Objects.equals(this.numGPU, that.numGPU)
-				&& Objects.equals(this.mainGPU, that.mainGPU) && Objects.equals(this.lowVRAM, that.lowVRAM)
-				&& Objects.equals(this.f16KV, that.f16KV) && Objects.equals(this.logitsAll, that.logitsAll)
-				&& Objects.equals(this.vocabOnly, that.vocabOnly) && Objects.equals(this.useMMap, that.useMMap)
-				&& Objects.equals(this.useMLock, that.useMLock) && Objects.equals(this.numThread, that.numThread)
-				&& Objects.equals(this.numKeep, that.numKeep) && Objects.equals(this.seed, that.seed)
-				&& Objects.equals(this.numPredict, that.numPredict) && Objects.equals(this.topK, that.topK)
-				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.minP, that.minP)
-				&& Objects.equals(this.tfsZ, that.tfsZ) && Objects.equals(this.typicalP, that.typicalP)
-				&& Objects.equals(this.repeatLastN, that.repeatLastN)
+				&& Objects.equals(this.thinkOption, that.thinkOption) && Objects.equals(this.useNUMA, that.useNUMA)
+				&& Objects.equals(this.numCtx, that.numCtx) && Objects.equals(this.numBatch, that.numBatch)
+				&& Objects.equals(this.numGPU, that.numGPU) && Objects.equals(this.mainGPU, that.mainGPU)
+				&& Objects.equals(this.lowVRAM, that.lowVRAM) && Objects.equals(this.f16KV, that.f16KV)
+				&& Objects.equals(this.logitsAll, that.logitsAll) && Objects.equals(this.vocabOnly, that.vocabOnly)
+				&& Objects.equals(this.useMMap, that.useMMap) && Objects.equals(this.useMLock, that.useMLock)
+				&& Objects.equals(this.numThread, that.numThread) && Objects.equals(this.numKeep, that.numKeep)
+				&& Objects.equals(this.seed, that.seed) && Objects.equals(this.numPredict, that.numPredict)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.minP, that.minP) && Objects.equals(this.tfsZ, that.tfsZ)
+				&& Objects.equals(this.typicalP, that.typicalP) && Objects.equals(this.repeatLastN, that.repeatLastN)
 				&& Objects.equals(this.temperature, that.temperature)
 				&& Objects.equals(this.repeatPenalty, that.repeatPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
@@ -849,13 +841,13 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.useNUMA, this.numCtx,
-				this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly,
-				this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict, this.topK,
-				this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty,
-				this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta,
-				this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext);
+		return Objects.hash(this.model, this.format, this.keepAlive, this.truncate, this.thinkOption, this.useNUMA,
+				this.numCtx, this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll,
+				this.vocabOnly, this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict,
+				this.topK, this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature,
+				this.repeatPenalty, this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau,
+				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	public static final class Builder {
@@ -1034,6 +1026,78 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 
 		public Builder stop(List<String> stop) {
 			this.options.stop = stop;
+			return this;
+		}
+
+		/**
+		 * Enable thinking mode for the model. The model will include its reasoning
+		 * process in the response's thinking field.
+		 * <p>
+		 * Supported by models: Qwen 3, DeepSeek-v3.1, DeepSeek R1
+		 * @return this builder
+		 * @see #disableThinking()
+		 * @see #thinkLow()
+		 */
+		public Builder enableThinking() {
+			this.options.thinkOption = ThinkOption.ThinkBoolean.ENABLED;
+			return this;
+		}
+
+		/**
+		 * Disable thinking mode for the model.
+		 * @return this builder
+		 * @see #enableThinking()
+		 */
+		public Builder disableThinking() {
+			this.options.thinkOption = ThinkOption.ThinkBoolean.DISABLED;
+			return this;
+		}
+
+		/**
+		 * Set thinking level to "low" (for GPT-OSS model).
+		 * <p>
+		 * GPT-OSS requires one of: low, medium, high. Boolean enable/disable is not
+		 * supported for this model.
+		 * @return this builder
+		 * @see #thinkMedium()
+		 * @see #thinkHigh()
+		 */
+		public Builder thinkLow() {
+			this.options.thinkOption = ThinkOption.ThinkLevel.LOW;
+			return this;
+		}
+
+		/**
+		 * Set thinking level to "medium" (for GPT-OSS model).
+		 * @return this builder
+		 * @see #thinkLow()
+		 * @see #thinkHigh()
+		 */
+		public Builder thinkMedium() {
+			this.options.thinkOption = ThinkOption.ThinkLevel.MEDIUM;
+			return this;
+		}
+
+		/**
+		 * Set thinking level to "high" (for GPT-OSS model).
+		 * @return this builder
+		 * @see #thinkLow()
+		 * @see #thinkMedium()
+		 */
+		public Builder thinkHigh() {
+			this.options.thinkOption = ThinkOption.ThinkLevel.HIGH;
+			return this;
+		}
+
+		/**
+		 * Set the think option explicitly. Use {@link #enableThinking()},
+		 * {@link #disableThinking()}, {@link #thinkLow()}, {@link #thinkMedium()}, or
+		 * {@link #thinkHigh()} for more convenient alternatives.
+		 * @param thinkOption the think option
+		 * @return this builder
+		 */
+		public Builder thinkOption(ThinkOption thinkOption) {
+			this.options.thinkOption = thinkOption;
 			return this;
 		}
 

@@ -1,13 +1,16 @@
 name: Fast CI/CD build
 
 on:
+  schedule:
+    # Combined schedule covering both EST and CET working hours
+    # Morning/Early builds
+    - cron: '30 6 * * 1-5'   # 7:30 AM CET / 1:30 AM EST
+    - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM EST
+    # Midday builds
+    - cron: '30 16 * * 1-5'  # 7:30 PM CET / 11:30 AM EST
+    # Afternoon/Evening builds
+    - cron: '30 21 * * 1-5'  # 10:30 PM CET / 4:30 PM EST
   workflow_dispatch:
-  # Note: Schedule triggers commented out for initial testing
-  # schedule:
-  #   - cron: '30 6 * * 1-5'   # 7:30 AM CET / 1:30 AM EST
-  #   - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM EST
-  #   - cron: '30 16 * * 1-5'  # 7:30 PM CET / 11:30 AM EST
-  #   - cron: '30 21 * * 1-5'  # 10:30 PM CET / 4:30 PM EST
 
 jobs:
   build-all:

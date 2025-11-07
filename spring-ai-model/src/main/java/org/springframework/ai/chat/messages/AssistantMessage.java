@@ -43,30 +43,10 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	protected final List<Media> media;
 
 	public AssistantMessage(String content) {
-		this(content, Map.of());
+		this(content, Map.of(), List.of(), List.of());
 	}
 
-	/**
-	 * @deprecated in favor of {@link AssistantMessage#builder()}.
-	 */
-	@Deprecated
-	public AssistantMessage(String content, Map<String, Object> properties) {
-		this(content, properties, List.of());
-	}
-
-	/**
-	 * @deprecated in favor of {@link AssistantMessage#builder()}.
-	 */
-	@Deprecated
-	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
-		this(content, properties, toolCalls, List.of());
-	}
-
-	/**
-	 * @deprecated in favor of {@link AssistantMessage#builder()}.
-	 */
-	@Deprecated
-	public AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
+	protected AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
 			List<Media> media) {
 		super(MessageType.ASSISTANT, content, properties);
 		Assert.notNull(toolCalls, "Tool calls must not be null");

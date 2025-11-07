@@ -85,29 +85,6 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	@Deprecated
-	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi) {
-		this(mistralAiApi, MetadataMode.EMBED);
-	}
-
-	@Deprecated
-	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MetadataMode metadataMode) {
-		this(mistralAiApi, metadataMode,
-				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build(),
-				RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	@Deprecated
-	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MistralAiEmbeddingOptions options) {
-		this(mistralAiApi, MetadataMode.EMBED, options, RetryUtils.DEFAULT_RETRY_TEMPLATE);
-	}
-
-	@Deprecated
-	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MetadataMode metadataMode,
-			MistralAiEmbeddingOptions options, RetryTemplate retryTemplate) {
-		this(mistralAiApi, metadataMode, options, retryTemplate, ObservationRegistry.NOOP);
-	}
-
 	public MistralAiEmbeddingModel(MistralAiApi mistralAiApi, MetadataMode metadataMode,
 			MistralAiEmbeddingOptions options, RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		Assert.notNull(mistralAiApi, "mistralAiApi must not be null");

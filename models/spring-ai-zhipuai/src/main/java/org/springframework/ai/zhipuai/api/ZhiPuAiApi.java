@@ -100,54 +100,6 @@ public class ZhiPuAiApi {
 	private final ZhiPuAiStreamFunctionCallingHelper chunkMerger = new ZhiPuAiStreamFunctionCallingHelper();
 
 	/**
-	 * Create a new chat completion api with default base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String zhiPuAiToken) {
-		this(ZhiPuApiConstants.DEFAULT_BASE_URL, zhiPuAiToken);
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String baseUrl, String zhiPuAiToken) {
-		this(baseUrl, zhiPuAiToken, RestClient.builder());
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder) {
-		this(baseUrl, zhiPuAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, new SimpleApiKey(zhiPuAiToken), new LinkedMultiValueMap<>(), DEFAULT_COMPLETIONS_PATH,
-				DEFAULT_EMBEDDINGS_PATH, restClientBuilder, WebClient.builder(), responseErrorHandler);
-	}
-
-	/**
 	 * Create a new chat completion api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey ZhiPuAI apiKey.
@@ -158,7 +110,7 @@ public class ZhiPuAiApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	private ZhiPuAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
+	protected ZhiPuAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
 			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 		Assert.hasText(completionsPath, "Completions Path must not be null");

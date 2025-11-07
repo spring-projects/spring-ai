@@ -83,17 +83,6 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 	private final int order;
 
-	/**
-	 * Construct instance by given VectorStore
-	 * @param vectorStore the given VectorStore
-	 * @deprecated in favor of {@link #builder(VectorStore)}}
-	 */
-	@Deprecated
-	public QuestionAnswerAdvisor(VectorStore vectorStore) {
-		this(vectorStore, SearchRequest.builder().build(), DEFAULT_PROMPT_TEMPLATE, BaseAdvisor.DEFAULT_SCHEDULER,
-				DEFAULT_ORDER);
-	}
-
 	QuestionAnswerAdvisor(VectorStore vectorStore, SearchRequest searchRequest, @Nullable PromptTemplate promptTemplate,
 			@Nullable Scheduler scheduler, int order) {
 		Assert.notNull(vectorStore, "vectorStore cannot be null");

@@ -210,7 +210,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testEmptyOptions() {
-		var options = OllamaOptions.builder().build();
+		var options = OllamaChatOptions.builder().build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).isEmpty();
@@ -225,7 +225,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testNullValuesNotIncludedInMap() {
-		var options = OllamaOptions.builder().model("llama2").temperature(null).topK(null).stop(null).build();
+		var options = OllamaChatOptions.builder().model("llama2").temperature(null).topK(null).stop(null).build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("model", "llama2");
@@ -236,7 +236,7 @@ public class OllamaModelOptionsTests {
 
 	@Test
 	public void testZeroValuesIncludedInMap() {
-		var options = OllamaOptions.builder().temperature(0.0).topK(0).mainGPU(0).numGPU(0).seed(0).build();
+		var options = OllamaChatOptions.builder().temperature(0.0).topK(0).mainGPU(0).numGPU(0).seed(0).build();
 
 		var optionsMap = options.toMap();
 		assertThat(optionsMap).containsEntry("temperature", 0.0);

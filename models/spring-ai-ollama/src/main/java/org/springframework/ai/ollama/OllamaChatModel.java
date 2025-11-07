@@ -62,7 +62,6 @@ import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCall;
 import org.springframework.ai.ollama.api.OllamaApi.Message.ToolCallFunction;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
@@ -266,6 +265,7 @@ public class OllamaChatModel implements ChatModel {
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
 					generationMetadata = ChatGenerationMetadata.builder()
 						.finishReason(ollamaResponse.doneReason())
+						.metadata("thinking", ollamaResponse.message().thinking())
 						.build();
 				}
 
@@ -399,8 +399,8 @@ public class OllamaChatModel implements ChatModel {
 		// Process runtime options
 		OllamaChatOptions runtimeOptions = null;
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof OllamaOptions ollamaOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(OllamaChatOptions.fromOptions(ollamaOptions),
+			if (prompt.getOptions() instanceof OllamaChatOptions ollamaChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(OllamaChatOptions.fromOptions(ollamaChatOptions),
 						OllamaChatOptions.class, OllamaChatOptions.class);
 			}
 			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
@@ -499,13 +499,14 @@ public class OllamaChatModel implements ChatModel {
 			requestOptions = (OllamaChatOptions) prompt.getOptions();
 		}
 		else {
-			requestOptions = OllamaChatOptions.fromOptions((OllamaOptions) prompt.getOptions());
+			requestOptions = OllamaChatOptions.fromOptions((OllamaChatOptions) prompt.getOptions());
 		}
 
 		OllamaApi.ChatRequest.Builder requestBuilder = OllamaApi.ChatRequest.builder(requestOptions.getModel())
 			.stream(stream)
 			.messages(ollamaMessages)
-			.options(requestOptions);
+			.options(requestOptions)
+			.think(requestOptions.getThinkOption());
 
 		if (requestOptions.getFormat() != null) {
 			requestBuilder.format(requestOptions.getFormat());
@@ -588,12 +589,6 @@ public class OllamaChatModel implements ChatModel {
 
 		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
-			return this;
-		}
-
-		@Deprecated
-		public Builder defaultOptions(OllamaOptions defaultOptions) {
-			this.defaultOptions = OllamaChatOptions.fromOptions(defaultOptions);
 			return this;
 		}
 

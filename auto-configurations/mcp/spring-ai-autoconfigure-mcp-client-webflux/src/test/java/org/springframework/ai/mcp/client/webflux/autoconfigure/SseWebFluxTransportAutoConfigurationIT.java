@@ -30,6 +30,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -43,8 +44,8 @@ public class SseWebFluxTransportAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
 				"spring.ai.mcp.client.sse.connections.server1.url=" + host)
-		.withConfiguration(
-				AutoConfigurations.of(McpClientAutoConfiguration.class, SseWebFluxTransportAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
+				McpClientAnnotationScannerAutoConfiguration.class, SseWebFluxTransportAutoConfiguration.class));
 
 	static String host = "http://localhost:3001";
 

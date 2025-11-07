@@ -668,23 +668,6 @@ public class DefaultChatClient implements ChatClient {
 					ccr.advisorObservationConvention);
 		}
 
-		/**
-		 * @deprecated in favor of the other constructor.
-		 */
-		@Deprecated(since = "1.1.0", forRemoval = true)
-		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
-				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
-				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,
-				List<ToolCallbackProvider> toolCallbackProviders, List<Message> messages, List<String> toolNames,
-				List<Media> media, @Nullable ChatOptions chatOptions, List<Advisor> advisors,
-				Map<String, Object> advisorParams, ObservationRegistry observationRegistry,
-				@Nullable ChatClientObservationConvention chatClientObservationConvention,
-				Map<String, Object> toolContext, @Nullable TemplateRenderer templateRenderer) {
-			this(chatModel, userText, userParams, userMetadata, systemText, systemParams, systemMetadata, toolCallbacks,
-					toolCallbackProviders, messages, toolNames, media, chatOptions, advisors, advisorParams,
-					observationRegistry, chatClientObservationConvention, toolContext, templateRenderer, null);
-		}
-
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
 				Map<String, Object> userParams, Map<String, Object> userMetadata, @Nullable String systemText,
 				Map<String, Object> systemParams, Map<String, Object> systemMetadata, List<ToolCallback> toolCallbacks,

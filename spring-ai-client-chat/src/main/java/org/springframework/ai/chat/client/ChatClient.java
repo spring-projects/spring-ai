@@ -63,17 +63,7 @@ public interface ChatClient {
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry) {
-		return create(chatModel, observationRegistry, null);
-	}
-
-	/**
-	 * @deprecated in favor of
-	 * {@link #create(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
-	 */
-	@Deprecated(since = "1.1.0", forRemoval = true)
-	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
-		return create(chatModel, observationRegistry, chatClientObservationConvention, null);
+		return create(chatModel, observationRegistry, null, null);
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
@@ -86,17 +76,7 @@ public interface ChatClient {
 	}
 
 	static Builder builder(ChatModel chatModel) {
-		return builder(chatModel, ObservationRegistry.NOOP, null);
-	}
-
-	/**
-	 * @deprecated in favor of
-	 * {@link #builder(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
-	 */
-	@Deprecated(since = "1.1.0", forRemoval = true)
-	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
-		return builder(chatModel, observationRegistry, chatClientObservationConvention, null);
+		return builder(chatModel, ObservationRegistry.NOOP, null, null);
 	}
 
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,

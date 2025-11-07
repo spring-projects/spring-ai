@@ -59,16 +59,6 @@ class OllamaChatModelTests {
 	OllamaApi ollamaApi;
 
 	@Test
-	void buildOllamaChatModelWithDeprecatedConstructor() {
-		ChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build())
-			.observationRegistry(ObservationRegistry.NOOP)
-			.build();
-		assertThat(chatModel).isNotNull();
-	}
-
-	@Test
 	void buildOllamaChatModelWithConstructor() {
 		ChatModel chatModel = new OllamaChatModel(this.ollamaApi,
 				OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build(), ToolCallingManager.builder().build(),

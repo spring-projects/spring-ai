@@ -65,9 +65,7 @@ public class ToolCallingAutoConfiguration {
 	 * The default {@link ToolCallbackResolver} resolves tools by name for methods,
 	 * functions, and {@link ToolCallbackProvider} beans.
 	 * <p>
-	 * MCP providers should not be injected to avoid cyclic dependencies. If some MCP
-	 * providers are injected, we filter them out to avoid eagerly calling
-	 * #getToolCallbacks.
+	 * MCP providers are excluded, to avoid initializing them early with #listTools().
 	 */
 	@Bean
 	@ConditionalOnMissingBean

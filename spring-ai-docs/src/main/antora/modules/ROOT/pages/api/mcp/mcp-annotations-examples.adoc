@@ -252,7 +252,9 @@ public class ClientHandlers {
                 if (msg.role() == Role.USER) {
                     return new UserMessage(((TextContent) msg.content()).text());
                 } else {
-                    return new AssistantMessage(((TextContent) msg.content()).text());
+                    return AssistantMessage.builder()
+                        .content(((TextContent) msg.content()).text())
+                        .build();
                 }
             })
             .toList();

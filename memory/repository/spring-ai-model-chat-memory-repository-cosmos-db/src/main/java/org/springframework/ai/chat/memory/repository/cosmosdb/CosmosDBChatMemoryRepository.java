@@ -232,7 +232,7 @@ public final class CosmosDBChatMemoryRepository implements ChatMemoryRepository 
 		}
 
 		return switch (messageType) {
-			case ASSISTANT -> new AssistantMessage(content, metadata);
+			case ASSISTANT -> AssistantMessage.builder().content(content).properties(metadata).build();
 			case USER -> UserMessage.builder().text(content).metadata(metadata).build();
 			case SYSTEM -> SystemMessage.builder().text(content).metadata(metadata).build();
 			case TOOL -> ToolResponseMessage.builder().responses(List.of()).metadata(metadata).build();

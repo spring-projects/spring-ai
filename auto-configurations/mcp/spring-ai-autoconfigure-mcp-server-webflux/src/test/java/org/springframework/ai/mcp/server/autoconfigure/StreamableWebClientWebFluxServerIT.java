@@ -63,6 +63,7 @@ import reactor.netty.http.server.HttpServer;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
@@ -99,7 +100,8 @@ public class StreamableWebClientWebFluxServerIT {
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
-				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class));
+				McpClientAutoConfiguration.class, McpClientAnnotationScannerAutoConfiguration.class,
+				StreamableHttpWebFluxTransportAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {
@@ -521,6 +523,7 @@ public class StreamableWebClientWebFluxServerIT {
 					testContext.progressNotifications.add(progressNotification);
 					testContext.progressLatch.countDown();
 				});
+				mcpClientSpec.capabilities(McpSchema.ClientCapabilities.builder().sampling().elicitation().build());
 			};
 		}
 

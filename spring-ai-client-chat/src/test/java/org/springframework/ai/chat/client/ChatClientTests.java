@@ -682,7 +682,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenCreateAndObservationRegistryIsNullThenThrow() {
-		assertThatThrownBy(() -> ChatClient.create(this.chatModel, null, null))
+		assertThatThrownBy(() -> ChatClient.create(this.chatModel, null, null, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}
@@ -695,7 +695,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenBuilderAndObservationRegistryIsNullThenThrow() {
-		assertThatThrownBy(() -> ChatClient.builder(this.chatModel, null, null))
+		assertThatThrownBy(() -> ChatClient.builder(this.chatModel, null, null, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}

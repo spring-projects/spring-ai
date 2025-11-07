@@ -72,7 +72,6 @@ import reactor.netty.http.server.HttpServer;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
@@ -109,8 +108,7 @@ public class StreamableMcpAnnotations2IT {
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
 				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class,
-				McpClientAnnotationScannerAutoConfiguration.class,
-				McpClientSpecificationFactoryAutoConfiguration.class));
+				McpClientAnnotationScannerAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {

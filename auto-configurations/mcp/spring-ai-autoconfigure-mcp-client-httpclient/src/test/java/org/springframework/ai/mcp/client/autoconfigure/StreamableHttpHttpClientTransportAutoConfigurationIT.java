@@ -33,6 +33,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.annotation.UserConfigurations;
@@ -58,6 +59,7 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
 				"spring.ai.mcp.client.streamable-http.connections.server1.url=" + host)
 		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
+				McpClientAnnotationScannerAutoConfiguration.class,
 				StreamableHttpHttpClientTransportAutoConfiguration.class));
 
 	static String host = "http://localhost:3001";

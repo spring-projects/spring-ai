@@ -38,7 +38,7 @@ class DeepSeekAssistantMessageTests {
 	@Test
 	public void testConstructorWithContentOnly() {
 		String content = "Hello, world!";
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage(content);
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content(content).build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getReasoningContent()).isNull();
@@ -49,7 +49,9 @@ class DeepSeekAssistantMessageTests {
 	public void testConstructorWithContentAndReasoningContent() {
 		String content = "Hello, world!";
 		String reasoningContent = "This is my reasoning";
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage(content, reasoningContent);
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content(content)
+			.reasoningContent(reasoningContent)
+			.build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getReasoningContent()).isEqualTo(reasoningContent);
@@ -63,7 +65,9 @@ class DeepSeekAssistantMessageTests {
 		properties.put("key1", "value1");
 		properties.put("key2", 123);
 
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage(content, properties);
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content(content)
+			.properties(properties)
+			.build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getMetadata()).containsAllEntriesOf(properties);
@@ -79,7 +83,10 @@ class DeepSeekAssistantMessageTests {
 
 		List<ToolCall> toolCalls = List.of(new ToolCall("1", "function", "myFunction", "{}"));
 
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage(content, properties, toolCalls);
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content(content)
+			.properties(properties)
+			.toolCalls(toolCalls)
+			.build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getMetadata()).containsAllEntriesOf(properties);
@@ -97,8 +104,12 @@ class DeepSeekAssistantMessageTests {
 		properties.put("key1", "value1");
 		List<ToolCall> toolCalls = List.of(new ToolCall("1", "function", "myFunction", "{}"));
 
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage(content, reasoningContent, prefix, properties,
-				toolCalls, List.of());
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content(content)
+			.reasoningContent(reasoningContent)
+			.properties(properties)
+			.toolCalls(toolCalls)
+			.prefix(prefix)
+			.build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getReasoningContent()).isEqualTo(reasoningContent);
@@ -128,7 +139,7 @@ class DeepSeekAssistantMessageTests {
 
 	@Test
 	public void testSettersAndGetters() {
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage("test");
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().build();
 
 		String reasoningContent = "New reasoning content";
 		Boolean prefix = false;
@@ -157,7 +168,9 @@ class DeepSeekAssistantMessageTests {
 
 	@Test
 	public void testToString() {
-		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage("content", "reasoning");
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content("content")
+			.reasoningContent("reasoning")
+			.build();
 		message.setPrefix(true);
 
 		assertThatNoException().isThrownBy(message::toString);
