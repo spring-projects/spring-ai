@@ -89,6 +89,14 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("topK") Integer topK;
 
 	/**
+	 * Optional. When seed is fixed to a specific value, the model makes a best effort to provide the same response for
+	 * repeated requests. Deterministic output isn't guaranteed. Also, changing the model or parameter settings, such
+	 * as the temperature, can cause variations in the response even when you use the same seed value.
+	 * By default, a random seed value is used.
+	 */
+	private @JsonProperty("seed") Integer seed;
+
+	/**
 	 * Optional. The maximum number of tokens to generate.
 	 */
 	private @JsonProperty("candidateCount") Integer candidateCount;
@@ -183,6 +191,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		options.setToolContext(fromOptions.getToolContext());
 		options.setLogprobs(fromOptions.getLogprobs());
 		options.setResponseLogprobs(fromOptions.getResponseLogprobs());
+		options.setSeed(fromOptions.getSeed());
 		return options;
 	}
 
@@ -224,6 +233,14 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 	public void setTopK(Integer topK) {
 		this.topK = topK;
+	}
+
+	public Integer getSeed() {
+		return this.seed;
+	}
+
+	public void setSeed(Integer seed) {
+		this.seed = seed;
 	}
 
 	public Integer getCandidateCount() {
@@ -393,7 +410,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.logprobs, that.logprobs)
-				&& Objects.equals(this.responseLogprobs, that.responseLogprobs);
+				&& Objects.equals(this.responseLogprobs, that.responseLogprobs) && Objects.equals(this.seed, that.seed);
 	}
 
 	@Override
@@ -402,7 +419,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				this.frequencyPenalty, this.presencePenalty, this.maxOutputTokens, this.model, this.responseMimeType,
 				this.responseSchema, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
 				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.logprobs,
-				this.responseLogprobs);
+				this.responseLogprobs, this.seed);
 	}
 
 	@Override
@@ -414,7 +431,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 				+ ", responseMimeType='" + this.responseMimeType + '\'' + ", responseSchema='" + this.responseSchema
 				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
 				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", logProbs=" + this.logprobs
-				+ ", responseLogprobs=" + this.responseLogprobs + '}';
+				+ ", responseLogprobs=" + this.responseLogprobs + ", seed=" + this.seed + '}';
 	}
 
 	@Override
@@ -449,6 +466,11 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 		public Builder topK(Integer topK) {
 			this.options.setTopK(topK);
+			return this;
+		}
+
+		public Builder seed(Integer seed) {
+			this.options.setSeed(seed);
 			return this;
 		}
 
