@@ -92,6 +92,28 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		this.prefix = prefix;
 	}
 
+	// Constructors with name parameter
+	public DeepSeekAssistantMessage(String content, Map<String, Object> properties, String name) {
+		super(content, properties, name);
+	}
+
+	public DeepSeekAssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
+			String name) {
+		super(content, properties, toolCalls, name);
+	}
+
+	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
+			List<ToolCall> toolCalls, String name) {
+		super(content, properties, toolCalls, name);
+		this.reasoningContent = reasoningContent;
+	}
+
+	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
+			List<ToolCall> toolCalls, List<Media> media, String name) {
+		super(content, properties, toolCalls, media, name);
+		this.reasoningContent = reasoningContent;
+	}
+
 	public static DeepSeekAssistantMessage prefixAssistantMessage(String content) {
 		return prefixAssistantMessage(content, null);
 	}

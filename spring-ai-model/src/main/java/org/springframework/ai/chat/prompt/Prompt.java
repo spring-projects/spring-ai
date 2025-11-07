@@ -181,6 +181,8 @@ public class Prompt implements ModelRequest<List<Message>> {
 					.content(assistantMessage.getText())
 					.properties(assistantMessage.getMetadata())
 					.toolCalls(assistantMessage.getToolCalls())
+					.media(assistantMessage.getMedia())
+					.name(assistantMessage.getName())
 					.build());
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
