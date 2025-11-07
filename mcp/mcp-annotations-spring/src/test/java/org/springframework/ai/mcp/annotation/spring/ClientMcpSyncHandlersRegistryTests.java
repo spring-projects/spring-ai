@@ -276,14 +276,14 @@ class ClientMcpSyncHandlersRegistryTests {
 		registry.afterSingletonsInstantiated();
 		var handlers = beanFactory.getBean(HandlersConfiguration.class);
 
-		List<McpSchema.Prompt> updatedTools = List.of(
+		List<McpSchema.Prompt> updatedPrompts = List.of(
 				new McpSchema.Prompt("prompt-1", "a test prompt", Collections.emptyList()),
 				new McpSchema.Prompt("prompt-2", "another test prompt", Collections.emptyList()));
 
-		registry.handlePromptListChanged("client-1", updatedTools);
+		registry.handlePromptListChanged("client-1", updatedPrompts);
 		assertThat(handlers.getCalls()).hasSize(2)
-			.containsExactlyInAnyOrder(new HandlersConfiguration.Call("handlePromptListChanged", updatedTools),
-					new HandlersConfiguration.Call("handlePromptListChangedAgain", updatedTools));
+			.containsExactlyInAnyOrder(new HandlersConfiguration.Call("handlePromptListChanged", updatedPrompts),
+					new HandlersConfiguration.Call("handlePromptListChangedAgain", updatedPrompts));
 	}
 
 	@Test
