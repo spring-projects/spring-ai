@@ -72,7 +72,7 @@ class OpenAiStreamErrorHandlingTest {
 
 		this.mockWebServer.enqueue(new MockResponse().setResponseCode(200)
 			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-			.setBody(validChunk1 + invalidChunk + validChunk2 + "[DONE]"));
+			.setBody(validChunk1.trim() + "\n" + invalidChunk + "\n" + validChunk2.trim() + "\n[DONE]"));
 
 		this.openAiApi = OpenAiApi.builder()
 			.apiKey("test-key")
@@ -103,7 +103,7 @@ class OpenAiStreamErrorHandlingTest {
 
 		this.mockWebServer.enqueue(new MockResponse().setResponseCode(200)
 			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-			.setBody(validChunk + invalidChunk + "[DONE]"));
+			.setBody(validChunk.trim() + "\n" + invalidChunk + "\n[DONE]"));
 
 		this.openAiApi = OpenAiApi.builder()
 			.apiKey("test-key")
@@ -137,7 +137,7 @@ class OpenAiStreamErrorHandlingTest {
 
 		this.mockWebServer.enqueue(new MockResponse().setResponseCode(200)
 			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-			.setBody(validChunk1 + invalidChunk + validChunk2 + "[DONE]"));
+			.setBody(validChunk1.trim() + "\n" + invalidChunk + "\n" + validChunk2.trim() + "\n[DONE]"));
 
 		this.openAiApi = OpenAiApi.builder()
 			.apiKey("test-key")
@@ -167,7 +167,7 @@ class OpenAiStreamErrorHandlingTest {
 
 		this.mockWebServer.enqueue(new MockResponse().setResponseCode(200)
 			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-			.setBody(validChunk + invalidChunk + "[DONE]"));
+			.setBody(validChunk.trim() + "\n" + invalidChunk + "\n[DONE]"));
 
 		ChatCompletionMessage message = new ChatCompletionMessage("Test", ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(message), "gpt-3.5-turbo", 0.8, true);
@@ -191,7 +191,7 @@ class OpenAiStreamErrorHandlingTest {
 
 		this.mockWebServer.enqueue(new MockResponse().setResponseCode(200)
 			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-			.setBody(validChunk1 + validChunk2 + "[DONE]"));
+			.setBody(validChunk1.trim() + "\n" + validChunk2.trim() + "\n[DONE]"));
 
 		this.openAiApi = OpenAiApi.builder()
 			.apiKey("test-key")
@@ -243,7 +243,7 @@ class OpenAiStreamErrorHandlingTest {
 
 		this.mockWebServer.enqueue(new MockResponse().setResponseCode(200)
 			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-			.setBody(validChunk + invalidChunk + "[DONE]"));
+			.setBody(validChunk.trim() + "\n" + invalidChunk + "\n[DONE]"));
 
 		ChatCompletionMessage message = new ChatCompletionMessage("Test", ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(message), "gpt-3.5-turbo", 0.8, true);
@@ -274,7 +274,7 @@ class OpenAiStreamErrorHandlingTest {
 
 		this.mockWebServer.enqueue(new MockResponse().setResponseCode(200)
 			.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
-			.setBody(validChunk + invalidChunk + "[DONE]"));
+			.setBody(validChunk.trim() + "\n" + invalidChunk + "\n[DONE]"));
 
 		ChatCompletionMessage message = new ChatCompletionMessage("Test", ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(message), "gpt-3.5-turbo", 0.8, true);

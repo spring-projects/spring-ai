@@ -253,6 +253,10 @@ public class OpenAiApi {
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
+			// Split by newlines to handle multi-line responses (common in tests with MockWebServer)
+			.flatMap(content -> Flux.fromArray(content.split("\\r?\\n")))
+			// Filter out empty lines
+			.filter(line -> !line.trim().isEmpty())
 			// cancels the flux stream after the "[DONE]" is received.
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
