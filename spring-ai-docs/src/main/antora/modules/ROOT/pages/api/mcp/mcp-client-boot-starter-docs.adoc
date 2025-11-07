@@ -1,6 +1,6 @@
 = MCP Client Boot Starter
 
-The Spring AI MCP (Model Context Protocol) Client Boot Starter provides auto-configuration for MCP client functionality in Spring Boot applications. 
+The Spring AI MCP (Model Context Protocol) Client Boot Starter provides auto-configuration for MCP client functionality in Spring Boot applications.
 It supports both synchronous and asynchronous client implementations with various transport options.
 
 The MCP Client Boot Starter provides:
@@ -181,6 +181,132 @@ The Claude Desktop format looks like this:
 }
 ----
 
+=== Windows STDIO Configuration
+
+IMPORTANT: On Windows, commands like `npx`, `npm`, and `node` are implemented as **batch files** (`.cmd`), not native executables. Java's `ProcessBuilder` cannot execute batch files directly and requires the `cmd.exe /c` wrapper.
+
+==== Why Windows Needs Special Handling
+
+When Java's `ProcessBuilder` (used internally by `StdioClientTransport`) attempts to spawn a process on Windows, it can only execute:
+
+* Native executables (`.exe` files)
+* System commands available to `cmd.exe`
+
+Windows batch files like `npx.cmd`, `npm.cmd`, and even `python.cmd` (from the Microsoft Store) require the `cmd.exe` shell to execute them.
+
+==== Solution: cmd.exe Wrapper
+
+Wrap batch file commands with `cmd.exe /c`:
+
+**Windows Configuration:**
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "cmd.exe",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\username\\Desktop"
+      ]
+    }
+  }
+}
+----
+
+**Linux/macOS Configuration:**
+[source,json]
+----
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/username/Desktop"
+      ]
+    }
+  }
+}
+----
+
+==== Cross-Platform Programmatic Configuration
+
+For applications that need to work across platforms without separate configuration files, use OS detection in your Spring Boot application:
+
+[source,java]
+----
+@Bean(destroyMethod = "close")
+@ConditionalOnMissingBean(McpSyncClient.class)
+public McpSyncClient mcpClient() {
+    ServerParameters stdioParams;
+
+    if (isWindows()) {
+        // Windows: cmd.exe /c npx approach
+        var winArgs = new ArrayList<>(Arrays.asList(
+            "/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "target"));
+        stdioParams = ServerParameters.builder("cmd.exe")
+                .args(winArgs)
+                .build();
+    } else {
+        // Linux/Mac: direct npx approach
+        stdioParams = ServerParameters.builder("npx")
+                .args("-y", "@modelcontextprotocol/server-filesystem", "target")
+                .build();
+    }
+
+    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonMapper.createDefault()))
+            .requestTimeout(Duration.ofSeconds(10))
+            .build()
+            .initialize();
+}
+
+private static boolean isWindows() {
+    return System.getProperty("os.name").toLowerCase().contains("win");
+}
+----
+
+NOTE: When using programmatic configuration with `@Bean`, add `@ConditionalOnMissingBean(McpSyncClient.class)` to avoid conflicts with auto-configuration from JSON files.
+
+==== Path Considerations
+
+**Relative paths** (recommended for portability):
+[source,json]
+----
+{
+  "command": "cmd.exe",
+  "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "target"]
+}
+----
+
+The MCP server resolves relative paths based on the application's working directory.
+
+**Absolute paths** (Windows requires backslashes or escaped forward slashes):
+[source,json]
+----
+{
+  "command": "cmd.exe",
+  "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\username\\project\\target"]
+}
+----
+
+==== Common Windows Batch Files Requiring cmd.exe
+
+* `npx.cmd`, `npm.cmd` - Node package managers
+* `python.cmd` - Python (Microsoft Store installation)
+* `pip.cmd` - Python package manager
+* `mvn.cmd` - Maven wrapper
+* `gradle.cmd` - Gradle wrapper
+* Custom `.cmd` or `.bat` scripts
+
+==== Reference Implementation
+
+See link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/filesystem[Spring AI Examples - Filesystem] for a complete cross-platform MCP client implementation that automatically detects the OS and configures the client appropriately.
+
 === Streamable-HTTP Transport Properties
 
 Used for connecting to Streamable-HTTP and Stateless Streamable-HTTP MCP servers.
@@ -241,7 +367,7 @@ Properties for Server-Sent Events (SSE) transport are prefixed with `spring.ai.m
 |`/sse`
 |===
 
-Example configuration:
+Example configurations:
 [source,yaml]
 ----
 spring:
@@ -250,13 +376,88 @@ spring:
       client:
         sse:
           connections:
+            # Simple configuration using default /sse endpoint
+            server1:
+              url: http://localhost:8080
+            # Custom SSE endpoint
+            server2:
+              url: http://otherserver:8081
+              sse-endpoint: /custom-sse
+            # Complex URL with path and token (like MCP Hub)
+            mcp-hub:
+              url: http://localhost:3000
+              sse-endpoint: /mcp-hub/sse/cf9ec4527e3c4a2cbb149a85ea45ab01
+            # SSE endpoint with query parameters
+            api-server:
+              url: https://api.example.com
+              sse-endpoint: /v1/mcp/events?token=abc123&format=json
+----
+
+==== URL Splitting Guidelines
+
+When you have a full SSE URL, split it into base URL and endpoint path:
+
+[cols="2,2"]
+|===
+|Full URL |Configuration
+
+|`\http://localhost:3000/mcp-hub/sse/token123`
+|`url: http://localhost:3000` +
+`sse-endpoint: /mcp-hub/sse/token123`
+
+|`\https://api.service.com/v2/events?key=secret`
+|`url: https://api.service.com` +
+`sse-endpoint: /v2/events?key=secret`
+
+|`\http://localhost:8080/sse`
+|`url: http://localhost:8080` +
+`sse-endpoint: /sse` (or omit for default)
+|===
+
+==== Troubleshooting SSE Connections
+
+*404 Not Found Errors:*
+
+* Verify URL splitting: ensure the base `url` contains only the scheme, host, and port
+* Check the `sse-endpoint` starts with `/` and includes the full path and query parameters
+* Test the full URL directly in a browser or curl to confirm it's accessible
+
+=== Streamable Http Transport Properties
+
+Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client.streamable-http`:
+
+[cols="3,4,3"]
+|===
+|Property |Description | Default Value
+
+|`connections`
+|Map of named Streamable Http connection configurations
+|-
+
+|`connections.[name].url`
+|Base URL endpoint for Streamable-Http communication with the MCP server
+|-
+
+|`connections.[name].endpoint`
+|the streamable-http endpoint (as url suffix) to use for the connection
+|`/mcp`
+|===
+
+Example configuration:
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
             server1:
               url: http://localhost:8080
             server2:
               url: http://otherserver:8081
-              sse-endpoint: /custom-sse
+              endpoint: /custom-sse
 ----
-
 
 == Features
 
@@ -281,17 +482,17 @@ The auto-configuration provides extensive client spec customization capabilities
 The following customization options are available:
 
 * *Request Configuration* - Set custom request timeouts
-* link:https://modelcontextprotocol.io/specification/2025-06-18/client/sampling[*Custom Sampling Handlers*] - standardized way for servers to request LLM sampling (`completions` or `generations`) from LLMs via clients. This flow allows clients to maintain control over model access, selection, and permissions while enabling servers to leverage AI capabilities — with no server API keys necessary. 
-* link:https://modelcontextprotocol.io/specification/2025-06-18/client/roots[*File system (Roots) Access*] - standardized way for clients to expose filesystem `roots` to servers. 
-Roots define the boundaries of where servers can operate within the filesystem, allowing them to understand which directories and files they have access to. 
+* link:https://modelcontextprotocol.io/specification/2025-06-18/client/sampling[*Custom Sampling Handlers*] - standardized way for servers to request LLM sampling (`completions` or `generations`) from LLMs via clients. This flow allows clients to maintain control over model access, selection, and permissions while enabling servers to leverage AI capabilities — with no server API keys necessary.
+* link:https://modelcontextprotocol.io/specification/2025-06-18/client/roots[*File system (Roots) Access*] - standardized way for clients to expose filesystem `roots` to servers.
+Roots define the boundaries of where servers can operate within the filesystem, allowing them to understand which directories and files they have access to.
 Servers can request the list of roots from supporting clients and receive notifications when that list changes.
 * link:https://modelcontextprotocol.io/specification/2025-06-18/client/elicitation[*Elicitation Handlers*] - standardized way for servers to request additional information from users through the client during interactions.
 * *Event Handlers*  - client's handler to be notified when a certain server event occurs:
   - Tools change notifications - when the list of available server tools changes
   - Resources change notifications - when the list of available server resources changes.
   - Prompts change notifications - when the list of available server prompts changes.
-  - link:https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging[*Logging Handlers*] - standardized way for servers to send structured log messages to clients. 
-  - link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress[*Progress Handlers*] - standardized way for servers to send structured progress messages to clients. 
+  - link:https://modelcontextprotocol.io/specification/2025-06-18/server/utilities/logging[*Logging Handlers*] - standardized way for servers to send structured log messages to clients.
+  - link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress[*Progress Handlers*] - standardized way for servers to send structured progress messages to clients.
 
 Clients can control logging verbosity by setting minimum log levels
 
@@ -397,28 +598,28 @@ To implement tool filtering, create a bean that implements the `McpToolFilter` i
 ----
 @Component
 public class CustomMcpToolFilter implements McpToolFilter {
-    
+
     @Override
     public boolean test(McpConnectionInfo connectionInfo, McpSchema.Tool tool) {
         // Filter logic based on connection information and tool properties
         // Return true to include the tool, false to exclude it
-        
+
         // Example: Exclude tools from a specific client
         if (connectionInfo.clientInfo().name().equals("restricted-client")) {
             return false;
         }
-        
+
         // Example: Only include tools with specific names
         if (tool.name().startsWith("allowed_")) {
             return true;
         }
-        
+
         // Example: Filter based on tool description or other properties
-        if (tool.description() != null && 
+        if (tool.description() != null &&
             tool.description().contains("experimental")) {
             return false;
         }
-        
+
         return true; // Include all other tools by default
     }
 }
@@ -430,10 +631,10 @@ The `McpConnectionInfo` record provides access to:
 * `clientInfo` - Information about the MCP client (name and version)
 * `initializeResult` - The initialization result from the MCP server
 
-The filter is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers. 
+The filter is automatically detected and applied to both synchronous and asynchronous MCP tool callback providers.
 If no custom filter is provided, all discovered tools are included by default.
 
-Note: Only one `McpToolFilter` bean should be defined in the application context. 
+Note: Only one `McpToolFilter` bean should be defined in the application context.
 If multiple filters are needed, combine them into a single composite filter implementation.
 
 === Tool Name Prefix Generation
@@ -459,11 +660,11 @@ You can customize this behavior by providing your own implementation:
 ----
 @Component
 public class CustomToolNamePrefixGenerator implements McpToolNamePrefixGenerator {
-    
+
     @Override
     public String prefixedToolName(McpConnectionInfo connectionInfo, Tool tool) {
         // Custom logic to generate prefixed tool names
-        
+
         // Example: Use server name and version as prefix
         String serverName = connectionInfo.initializeResult().serverInfo().name();
         String serverVersion = connectionInfo.initializeResult().serverInfo().version();
@@ -491,7 +692,7 @@ To disable prefixing entirely and use raw tool names (not recommended if using m
 ----
 @Configuration
 public class McpConfiguration {
-    
+
     @Bean
     public McpToolNamePrefixGenerator mcpToolNamePrefixGenerator() {
         return McpToolNamePrefixGenerator.noPrefix();
@@ -506,7 +707,7 @@ WARNING: When using `McpToolNamePrefixGenerator.noPrefix()` with multiple MCP se
 
 === Tool Context to MCP Meta Converter
 
-The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#_tool_context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface. 
+The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#_tool_context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
 This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
 
 For example you can pass the MCP `progressToken` to your link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow] in the tool context to track the progress of long-running operations:
@@ -537,27 +738,27 @@ You can customize this behavior by providing your own implementation:
 ----
 @Component
 public class CustomToolContextToMcpMetaConverter implements ToolContextToMcpMetaConverter {
-    
+
     @Override
     public Map<String, Object> convert(ToolContext toolContext) {
         if (toolContext == null || toolContext.getContext() == null) {
             return Map.of();
         }
-        
+
         // Custom logic to convert tool context to MCP metadata
         Map<String, Object> metadata = new HashMap<>();
-        
+
         // Example: Add custom prefix to all keys
         for (Map.Entry<String, Object> entry : toolContext.getContext().entrySet()) {
             if (entry.getValue() != null) {
                 metadata.put("app_" + entry.getKey(), entry.getValue());
             }
         }
-        
+
         // Example: Add additional metadata
         metadata.put("timestamp", System.currentTimeMillis());
         metadata.put("source", "spring-ai");
-        
+
         return metadata;
     }
 }
@@ -576,7 +777,7 @@ To disable context-to-metadata conversion entirely:
 ----
 @Configuration
 public class McpConfiguration {
-    
+
     @Bean
     public ToolContextToMcpMetaConverter toolContextToMcpMetaConverter() {
         return ToolContextToMcpMetaConverter.noOp();
@@ -592,7 +793,7 @@ If no custom converter bean is provided, the default converter is used automatic
 The MCP ToolCallback auto-configuration is enabled by default, but can be disabled with the `spring.ai.mcp.client.toolcallback.enabled=false` property.
 
 When disabled, no `ToolCallbackProvider` bean is created from the available MCP tools.
-bsafdsa
+
 == MCP Client Annotations
 
 The MCP Client Boot Starter automatically detects and registers annotated methods for handling various MCP client operations:
@@ -614,7 +815,7 @@ public class McpClientHandlers {
 
     @McpLogging(clients = "server1")
     public void handleLoggingMessage(LoggingMessageNotification notification) {
-        System.out.println("Received log: " + notification.level() + 
+        System.out.println("Received log: " + notification.level() +
                           " - " + notification.data());
     }
 
@@ -622,7 +823,7 @@ public class McpClientHandlers {
     public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
         // Process the request and generate a response
         String response = generateLLMResponse(request);
-        
+
         return CreateMessageResult.builder()
             .role(Role.ASSISTANT)
             .content(new TextContent(response))
@@ -633,7 +834,7 @@ public class McpClientHandlers {
     @McpProgress(clients = "server1")
     public void handleProgressNotification(ProgressNotification notification) {
         double percentage = notification.progress() * 100;
-        System.out.println(String.format("Progress: %.2f%% - %s", 
+        System.out.println(String.format("Progress: %.2f%% - %s",
             percentage, notification.message()));
     }
 

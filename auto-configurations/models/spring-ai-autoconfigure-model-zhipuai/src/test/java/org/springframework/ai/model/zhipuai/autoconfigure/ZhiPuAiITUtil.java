@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.vertexai.autoconfigure;
+package org.springframework.ai.model.zhipuai.autoconfigure;
 
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.model.vertexai.autoconfigure.embedding.VertexAiEmbeddingConnectionAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 
 /**
- * Utility class for VertexAI integration tests.
+ * Utility class for ZhiPuAI integration tests.
  *
  * @author Pawel Potaczala
  */
-public final class VertexAiITUtil {
+public final class ZhiPuAiITUtil {
 
-	private VertexAiITUtil() {
+	private ZhiPuAiITUtil() {
 	}
 
-	public static AutoConfigurations vertexAiToolAutoConfig(Class<?>... additionalAutoConfigurations) {
-		Class<?>[] dependencies = new Class[] { SpringAiRetryAutoConfiguration.class,
+	public static AutoConfigurations zhiPuAiToolAutoConfig(Class<?>... additionalAutoConfigurations) {
+		Class<?>[] dependencies = new Class[] { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class };
 		Class<?>[] allAutoConfigurations = new Class[dependencies.length + additionalAutoConfigurations.length];
 		System.arraycopy(dependencies, 0, allAutoConfigurations, 0, dependencies.length);
@@ -42,9 +42,9 @@ public final class VertexAiITUtil {
 		return AutoConfigurations.of(allAutoConfigurations);
 	}
 
-	public static AutoConfigurations vertexAiEmbeddingAutoConfig(Class<?>... additionalAutoConfigurations) {
-		Class<?>[] dependencies = new Class[] { SpringAiRetryAutoConfiguration.class,
-				VertexAiEmbeddingConnectionAutoConfiguration.class };
+	public static AutoConfigurations zhiPuAiAutoConfig(Class<?>... additionalAutoConfigurations) {
+		Class<?>[] dependencies = new Class[] { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class };
 		Class<?>[] allAutoConfigurations = new Class[dependencies.length + additionalAutoConfigurations.length];
 		System.arraycopy(dependencies, 0, allAutoConfigurations, 0, dependencies.length);
 		System.arraycopy(additionalAutoConfigurations, 0, allAutoConfigurations, dependencies.length,

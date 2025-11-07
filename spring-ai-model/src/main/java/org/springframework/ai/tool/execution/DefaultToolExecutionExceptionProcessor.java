@@ -77,7 +77,8 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 			message = "Exception occurred in tool: " + exception.getToolDefinition().name() + " ("
 					+ cause.getClass().getSimpleName() + ")";
 		}
-		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message);
+		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message,
+				exception);
 		return message;
 	}
 
@@ -85,7 +86,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean alwaysThrow = DEFAULT_ALWAYS_THROW;
 

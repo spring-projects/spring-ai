@@ -22,6 +22,7 @@ import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -32,11 +33,14 @@ import org.springframework.web.context.support.StandardServletEnvironment;
 import org.springframework.web.servlet.function.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 
 class McpServerSseWebMvcAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class, McpServerAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class,
+				McpServerAutoConfiguration.class, McpServerObjectMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -107,13 +111,38 @@ class McpServerSseWebMvcAutoConfigurationIT {
 			public ConfigurableEnvironment getEnvironment() {
 				return new StandardServletEnvironment();
 			}
-		}).withConfiguration(
-				AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class, McpServerAutoConfiguration.class))
+		}).withConfiguration(AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class,
+				McpServerAutoConfiguration.class, McpServerObjectMapperAutoConfiguration.class))
 			.run(context -> {
 				var mcpSyncServer = context.getBean(McpSyncServer.class);
 				var field = ReflectionUtils.findField(McpSyncServer.class, "immediateExecution");
 				field.setAccessible(true);
 				assertThat(field.getBoolean(mcpSyncServer)).isTrue();
+			});
+	}
+
+	@Test
+	void routerFunctionIsCreatedFromProvider() {
+		this.contextRunner.run(context -> {
+			assertThat(context).hasSingleBean(RouterFunction.class);
+			assertThat(context).hasSingleBean(WebMvcSseServerTransportProvider.class);
+
+			// Verify that the RouterFunction is created from the provider
+			WebMvcSseServerTransportProvider serverTransport = context.getBean(WebMvcSseServerTransportProvider.class);
+			RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+			assertThat(routerFunction).isNotNull().isEqualTo(serverTransport.getRouterFunction());
+		});
+	}
+
+	@Test
+	void routerFunctionIsCustom() {
+		this.contextRunner
+			.withBean("webMvcSseServerRouterFunction", RouterFunction.class, () -> mock(RouterFunction.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(RouterFunction.class);
+
+				RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+				assertThat(mockingDetails(routerFunction).isMock()).isTrue();
 			});
 	}
 

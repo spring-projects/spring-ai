@@ -269,16 +269,15 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.5.6</spring-boot.version>
+		<spring-boot.version>3.5.7</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
-		<victools.version>4.37.0</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.31.65</bedrockruntime.version>
-		<awssdk.version>2.31.65</awssdk.version>
+		<bedrockruntime.version>2.36.3</bedrockruntime.version>
+		<awssdk.version>2.36.3</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
@@ -286,7 +285,7 @@
 		<com.google.cloud.version>26.60.0</com.google.cloud.version>
 		<com.google.genai.version>1.17.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
-		<jsonschema.version>4.37.0</jsonschema.version>
+		<jsonschema.version>4.38.0</jsonschema.version>
 		<swagger-annotations.version>2.2.30</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
@@ -332,8 +331,8 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.15.0-SNAPSHOT</mcp.sdk.version>
-		<mcp-annotations.version>0.6.0-SNAPSHOT</mcp-annotations.version>
+		<mcp.sdk.version>0.15.0</mcp.sdk.version>
+		<mcp-annotations.version>0.6.0</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -358,6 +357,7 @@
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+		<spring-javaformat-checkstyle.version>0.0.43</spring-javaformat-checkstyle.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
 		<disable.checks>false</disable.checks>
@@ -366,20 +366,6 @@
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>io.spring.javaformat</groupId>
-				<artifactId>spring-javaformat-maven-plugin</artifactId>
-				<version>${spring-javaformat-maven-plugin.version}</version>
-				<executions>
-					<execution>
-						<phase>validate</phase>
-						<inherited>true</inherited>
-						<goals>
-							<goal>validate</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
@@ -393,7 +379,7 @@
 					<dependency>
 						<groupId>io.spring.javaformat</groupId>
 						<artifactId>spring-javaformat-checkstyle</artifactId>
-						<version>0.0.43</version>
+						<version>${spring-javaformat-checkstyle.version}</version>
 					</dependency>
 				</dependencies>
 				<executions>
@@ -611,6 +597,63 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>format-check</id>
+			<activation>
+				<property>
+					<name>env.CI</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.spring.javaformat</groupId>
+						<artifactId>spring-javaformat-maven-plugin</artifactId>
+						<version>${spring-javaformat-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<phase>validate</phase>
+								<inherited>true</inherited>
+								<goals>
+									<goal>validate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+
+		</profile>
+		<profile>
+			<id>format-apply</id>
+			<activation>
+				<property>
+					<name>!env.CI</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.spring.javaformat</groupId>
+						<artifactId>spring-javaformat-maven-plugin</artifactId>
+						<version>${spring-javaformat-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<phase>process-sources</phase>
+								<inherited>true</inherited>
+								<goals>
+									<goal>apply</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+
+		</profile>
 		<profile>
 			<id>license</id>
 			<activation>
@@ -892,23 +935,23 @@
 	    </properties>
 	    <build>
 	        <plugins>
-						<plugin>
-								<groupId>org.apache.maven.plugins</groupId>
-								<artifactId>maven-gpg-plugin</artifactId>
-								<version>${maven-gpg-plugin.version}</version>
-								<executions>
-										<execution>
-												<id>sign-artifacts</id>
-												<phase>verify</phase>
-												<goals>
-														<goal>sign</goal>
-												</goals>
-										</execution>
-								</executions>
-								<configuration>
-										<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-								</configuration>
-						</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>${maven-gpg-plugin.version}</version>
+					<executions>
+						<execution>
+							<id>sign-artifacts</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>sign</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+						<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
+					</configuration>
+				</plugin>
 	            <plugin>
 	                <groupId>org.sonatype.central</groupId>
 	                <artifactId>central-publishing-maven-plugin</artifactId>
@@ -916,6 +959,7 @@
 	                <configuration>
 	                    <publishingServerId>central</publishingServerId>
 	                    <autoPublish>true</autoPublish>
+	                    <excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
 	                </configuration>
 	            </plugin>
 	        </plugins>

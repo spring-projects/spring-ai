@@ -25,7 +25,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfi
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -33,12 +33,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerResponse;
 
 /**
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@ConditionalOnClass({ McpSchema.class })
+@ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerStreamableHttpProperties.class })
 @Conditional({ McpServerStdioDisabledCondition.class,
 		McpServerAutoConfiguration.EnabledStreamableServerCondition.class })
@@ -47,9 +49,8 @@ public class McpServerStreamableHttpWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(
-			ObjectProvider<ObjectMapper> objectMapperProvider, McpServerStreamableHttpProperties serverProperties) {
-
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper,
+			McpServerStreamableHttpProperties serverProperties) {
 
 		return WebMvcStreamableServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
@@ -62,7 +63,8 @@ public class McpServerStreamableHttpWebMvcAutoConfiguration {
 	// Router function for streamable http transport used by Spring WebFlux to start an
 	// HTTP server.
 	@Bean
-	public RouterFunction<?> webMvcStreamableServerRouterFunction(
+	@ConditionalOnMissingBean(name = "webMvcStreamableServerRouterFunction")
+	public RouterFunction<ServerResponse> webMvcStreamableServerRouterFunction(
 			WebMvcStreamableServerTransportProvider webMvcProvider) {
 		return webMvcProvider.getRouterFunction();
 	}

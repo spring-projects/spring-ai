@@ -44,13 +44,13 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = Neo4jAutoConfiguration.class)
 @ConditionalOnClass({ Neo4jVectorStore.class, EmbeddingModel.class, Driver.class })
-@EnableConfigurationProperties({ Neo4jVectorStoreProperties.class })
+@EnableConfigurationProperties(Neo4jVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.NEO4J,
 		matchIfMissing = true)
 public class Neo4jVectorStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

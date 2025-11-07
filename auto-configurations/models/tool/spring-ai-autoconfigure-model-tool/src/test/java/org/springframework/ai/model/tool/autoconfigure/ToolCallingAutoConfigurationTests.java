@@ -20,6 +20,8 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.StaticToolCallbackProvider;
@@ -45,12 +47,17 @@ import org.springframework.context.annotation.Description;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link ToolCallingAutoConfiguration}.
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Yanming Zhou
  */
 class ToolCallingAutoConfigurationTests {
 
@@ -185,6 +192,27 @@ class ToolCallingAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void toolCallbackResolverDoesNotUseMcpToolCallbackProviders() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var syncMcpToolCallbackProvider = context.getBean("syncMcpToolCallbackProvider",
+						ToolCallbackProvider.class);
+				var asyncMcpToolCallbackProvider = context.getBean("asyncMcpToolCallbackProvider",
+						ToolCallbackProvider.class);
+
+				verify(syncMcpToolCallbackProvider, never()).getToolCallbacks();
+				verify(asyncMcpToolCallbackProvider, never()).getToolCallbacks();
+
+				var toolCallbackResolver = context.getBean(ToolCallbackResolver.class);
+				assertThat(toolCallbackResolver.resolve("getForecast")).isNotNull();
+
+				verify(syncMcpToolCallbackProvider, never()).getToolCallbacks();
+				verify(asyncMcpToolCallbackProvider, never()).getToolCallbacks();
+			});
+	}
+
 	static class WeatherService {
 
 		@Tool(description = "Get the weather in location. Return temperature in 36°F or 36°C format.")
@@ -265,6 +293,20 @@ class ToolCallingAutoConfigurationTests {
 				.toolMethod(toolMethod)
 				.toolObject(new WeatherService())
 				.build();
+		}
+
+		@Bean
+		public SyncMcpToolCallbackProvider syncMcpToolCallbackProvider() {
+			SyncMcpToolCallbackProvider provider = mock(SyncMcpToolCallbackProvider.class);
+			when(provider.getToolCallbacks()).thenReturn(new ToolCallback[0]);
+			return provider;
+		}
+
+		@Bean
+		public AsyncMcpToolCallbackProvider asyncMcpToolCallbackProvider() {
+			AsyncMcpToolCallbackProvider provider = mock(AsyncMcpToolCallbackProvider.class);
+			when(provider.getToolCallbacks()).thenReturn(new ToolCallback[0]);
+			return provider;
 		}
 
 		public record Request(String location) {

@@ -54,7 +54,7 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @param embedding the embedding vector, must not be null
 	 */
 	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-	public SimpleVectorStoreContent(@JsonProperty("text") @JsonAlias({ "content" }) String text,
+	public SimpleVectorStoreContent(@JsonProperty("text") @JsonAlias("content") String text,
 			@JsonProperty("embedding") float[] embedding) {
 		this(text, new HashMap<>(), embedding);
 	}

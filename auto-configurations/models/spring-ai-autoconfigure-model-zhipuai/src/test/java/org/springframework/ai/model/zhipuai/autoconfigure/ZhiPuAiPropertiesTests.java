@@ -21,13 +21,11 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
 import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Geng Rong
  * @author YunKui Lu
+ * @author Issam El-atif
  */
 public class ZhiPuAiPropertiesTests {
 
@@ -51,8 +50,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.chat.options.model=MODEL_XYZ",
 				"spring.ai.zhipuai.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(ZhiPuAiChatProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -80,8 +78,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.chat.options.model=MODEL_XYZ",
 				"spring.ai.zhipuai.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(ZhiPuAiChatProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -106,8 +103,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.api-key=abc123",
 				"spring.ai.zhipuai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(ZhiPuAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -133,8 +129,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.embedding.api-key=456",
 				"spring.ai.zhipuai.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(ZhiPuAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -157,8 +152,7 @@ public class ZhiPuAiPropertiesTests {
 						"spring.ai.zhipuai.api-key=abc123",
 						"spring.ai.zhipuai.image.options.model=MODEL_XYZ")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(ZhiPuAiImageProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -183,8 +177,7 @@ public class ZhiPuAiPropertiesTests {
 						"spring.ai.zhipuai.image.api-key=456",
 						"spring.ai.zhipuai.image.options.model=MODEL_XYZ")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(ZhiPuAiImageProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -249,8 +242,7 @@ public class ZhiPuAiPropertiesTests {
 					"spring.ai.zhipuai.chat.options.thinking.type=disabled"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(ZhiPuAiChatProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -296,8 +288,7 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.embedding.options.user=userXYZ"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
 				var embeddingProperties = context.getBean(ZhiPuAiEmbeddingProperties.class);
@@ -319,8 +310,7 @@ public class ZhiPuAiPropertiesTests {
 						"spring.ai.zhipuai.image.options.user=userXYZ"
 				)
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(ZhiPuAiImageProperties.class);
 				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
@@ -338,8 +328,7 @@ public class ZhiPuAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
 					"spring.ai.model.embedding=none")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingModel.class)).isEmpty();
@@ -347,8 +336,7 @@ public class ZhiPuAiPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingModel.class)).isNotEmpty();
@@ -357,8 +345,7 @@ public class ZhiPuAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
 					"spring.ai.model.embedding=zhipuai")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiEmbeddingModel.class)).isNotEmpty();
@@ -370,8 +357,7 @@ public class ZhiPuAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=none")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiChatModel.class)).isEmpty();
@@ -379,8 +365,7 @@ public class ZhiPuAiPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiChatModel.class)).isNotEmpty();
@@ -389,8 +374,7 @@ public class ZhiPuAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=zhipuai")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiChatModel.class)).isNotEmpty();
@@ -403,8 +387,7 @@ public class ZhiPuAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
 					"spring.ai.model.image=none")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiImageProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiImageModel.class)).isEmpty();
@@ -412,8 +395,7 @@ public class ZhiPuAiPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiImageModel.class)).isNotEmpty();
@@ -422,8 +404,7 @@ public class ZhiPuAiPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.zhipuai.api-key=API_KEY", "spring.ai.zhipuai.base-url=TEST_BASE_URL",
 					"spring.ai.model.image=zhipuai")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, ZhiPuAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ZhiPuAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ZhiPuAiImageModel.class)).isNotEmpty();

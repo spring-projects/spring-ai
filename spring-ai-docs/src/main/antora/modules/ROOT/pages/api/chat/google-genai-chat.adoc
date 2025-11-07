@@ -4,14 +4,14 @@ The https://ai.google.dev/gemini-api/docs[Google GenAI API] allows developers to
 The Google GenAI API supports multimodal prompts as input and outputs text or code.
 A multimodal model is capable of processing information from multiple modalities, including images, videos, and text. For example, you can send the model a photo of a plate of cookies and ask it to give you a recipe for those cookies.
 
-Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to link:https://ai.google.dev/gemini-api/docs/models/gemini/2-0-flash[Gemini 2.0 Flash], link:https://ai.google.dev/gemini-api/docs/models/gemini/2-0-flash-lite[Gemini 2.0 Flash-Lite], and link:https://ai.google.dev/gemini-api/docs/models/gemini-pro[Gemini Pro] models.
+Gemini is a family of generative AI models developed by Google DeepMind that is designed for multimodal use cases. The Gemini API gives you access to link:https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash[Gemini 2.0 Flash], link:https://ai.google.dev/gemini-api/docs/models#gemini-2.0-flash-lite[Gemini 2.0 Flash-Lite], and link:https://ai.google.dev/gemini-api/docs/models[Gemini Pro] models.
 
 This implementation provides two authentication modes:
 
 - **Gemini Developer API**: Use an API key for quick prototyping and development
 - **Vertex AI**: Use Google Cloud credentials for production deployments with enterprise features
 
-link:https://ai.google.dev/gemini-api/docs/reference[Gemini API Reference]
+link:https://ai.google.dev/api[Gemini API Reference]
 
 == Prerequisites
 

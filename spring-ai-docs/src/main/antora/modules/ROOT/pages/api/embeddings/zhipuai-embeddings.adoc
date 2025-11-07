@@ -10,13 +10,13 @@ You will need to create an API with ZhiPuAI to access ZhiPu AI language models.
 
 Create an account at https://open.bigmodel.cn/login[ZhiPu AI registration page] and generate the token on the https://open.bigmodel.cn/usercenter/apikeys[API Keys page].
 
-The Spring AI project defines a configuration property named `spring.ai.zhipu.api-key` that you should set to the value of the `API Key` obtained from the API Keys page.
+The Spring AI project defines a configuration property named `spring.ai.zhipuai.api-key` that you should set to the value of the `API Key` obtained from the API Keys page.
 
 You can set this configuration property in your `application.properties` file:
 
 [source,properties]
 ----
-spring.ai.zhipu.api-key=<your-zhipu-api-key>
+spring.ai.zhipuai.api-key=<your-zhipuai-api-key>
 ----
 
 For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference an environment variable:
@@ -26,14 +26,14 @@ For enhanced security when handling sensitive information like API keys, you can
 # In application.yml
 spring:
   ai:
-    zhipu:
-      api-key: ${ZHIPU_API_KEY}
+    zhipuai:
+      api-key: ${ZHIPUAI_API_KEY}
 ----
 
 [source,bash]
 ----
 # In your environment or .env file
-export ZHIPU_API_KEY=<your-zhipu-api-key>
+export ZHIPUAI_API_KEY=<your-zhipuai-api-key>
 ----
 
 You can also set this configuration programmatically in your application code:
@@ -41,7 +41,7 @@ You can also set this configuration programmatically in your application code:
 [source,java]
 ----
 // Retrieve API key from a secure source or environment variable
-String apiKey = System.getenv("ZHIPU_API_KEY");
+String apiKey = System.getenv("ZHIPUAI_API_KEY");
 ----
 
 === Add Repositories and BOM
@@ -228,7 +228,7 @@ Next, create an `ZhiPuAiEmbeddingModel` instance and use it to compute the simil
 
 [source,java]
 ----
-var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
+var zhiPuAiApi = new ZhiPuAiApi(System.getenv("ZHIPUAI_API_KEY"));
 
 var embeddingModel = new ZhiPuAiEmbeddingModel(api, MetadataMode.EMBED,
 				ZhiPuAiEmbeddingOptions.builder()

@@ -83,7 +83,7 @@ The prefix `spring.ai.openai.audio.transcription` is used as the property prefix
 | spring.ai.openai.audio.transcription.api-key    | The API Key           |  -
 | spring.ai.openai.audio.transcription.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.transcription.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.transcription.options.model  | ID of the model to use. Only whisper-1 (which is powered by our open source Whisper V2 model) is currently available. |  whisper-1
+| spring.ai.openai.audio.transcription.options.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
 | spring.ai.openai.audio.transcription.options.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. |  json
 | spring.ai.openai.audio.transcription.options.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
 | spring.ai.openai.audio.transcription.options.language | The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency. |

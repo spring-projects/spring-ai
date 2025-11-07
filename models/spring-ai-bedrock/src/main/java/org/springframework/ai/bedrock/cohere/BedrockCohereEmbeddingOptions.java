@@ -84,7 +84,7 @@ public class BedrockCohereEmbeddingOptions implements EmbeddingOptions {
 		return null;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private BedrockCohereEmbeddingOptions options = new BedrockCohereEmbeddingOptions();
 

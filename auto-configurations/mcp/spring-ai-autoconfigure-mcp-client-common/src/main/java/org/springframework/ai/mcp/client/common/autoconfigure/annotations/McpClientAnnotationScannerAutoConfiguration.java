@@ -22,7 +22,10 @@ import java.util.Set;
 import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpLogging;
 import org.springaicommunity.mcp.annotation.McpProgress;
+import org.springaicommunity.mcp.annotation.McpPromptListChanged;
+import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
+import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
@@ -41,6 +44,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 /**
  * @author Christian Tzolov
  * @author Josh Long
+ * @author Fu Jian
  */
 @AutoConfiguration
 @ConditionalOnClass(McpLogging.class)
@@ -51,7 +55,8 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 public class McpClientAnnotationScannerAutoConfiguration {
 
 	private static final Set<Class<? extends Annotation>> CLIENT_MCP_ANNOTATIONS = Set.of(McpLogging.class,
-			McpSampling.class, McpElicitation.class, McpProgress.class);
+			McpSampling.class, McpElicitation.class, McpProgress.class, McpToolListChanged.class,
+			McpResourceListChanged.class, McpPromptListChanged.class);
 
 	@Bean
 	@ConditionalOnMissingBean

@@ -49,6 +49,7 @@ import static org.mockito.Mockito.mock;
 
 /**
  * @author Filip Hrisafov
+ * @author Oleksandr Klymenko
  */
 public class AnthropicApiBuilderTests {
 
@@ -130,6 +131,80 @@ public class AnthropicApiBuilderTests {
 		assertThatThrownBy(() -> AnthropicApi.builder().responseErrorHandler(null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("responseErrorHandler cannot be null");
+	}
+
+	@Test
+	void testApiKeyStringOverload() {
+		AnthropicApi api = AnthropicApi.builder().apiKey("test-string-key").build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testInvalidAnthropicVersion() {
+		assertThatThrownBy(() -> AnthropicApi.builder().apiKey(TEST_API_KEY).anthropicVersion(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("anthropicVersion cannot be null");
+	}
+
+	@Test
+	void testInvalidAnthropicBetaFeatures() {
+		assertThatThrownBy(() -> AnthropicApi.builder().apiKey(TEST_API_KEY).anthropicBetaFeatures(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("anthropicBetaFeatures cannot be null");
+	}
+
+	@Test
+	void testDefaultValues() {
+		AnthropicApi api = AnthropicApi.builder().apiKey(TEST_API_KEY).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testBuilderIndependence() {
+		AnthropicApi.Builder builder1 = AnthropicApi.builder().apiKey("key1").baseUrl("https://api1.example.com");
+
+		AnthropicApi.Builder builder2 = AnthropicApi.builder().apiKey("key2").baseUrl("https://api2.example.com");
+
+		AnthropicApi api1 = builder1.build();
+		AnthropicApi api2 = builder2.build();
+
+		assertThat(api1).isNotNull();
+		assertThat(api2).isNotNull();
+	}
+
+	@Test
+	void testCustomAnthropicVersionAndBetaFeatures() {
+		AnthropicApi api = AnthropicApi.builder()
+			.apiKey(TEST_API_KEY)
+			.anthropicVersion("version")
+			.anthropicBetaFeatures("custom-beta-feature")
+			.build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testApiKeyStringNullValidation() {
+		assertThatThrownBy(() -> AnthropicApi.builder().apiKey((String) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("simpleApiKey cannot be null");
+	}
+
+	@Test
+	void testChainedBuilderMethods() {
+		AnthropicApi api = AnthropicApi.builder()
+			.baseUrl(TEST_BASE_URL)
+			.completionsPath(TEST_COMPLETIONS_PATH)
+			.apiKey(TEST_API_KEY)
+			.anthropicBetaFeatures("feature1,feature2")
+			.restClientBuilder(RestClient.builder())
+			.webClientBuilder(WebClient.builder())
+			.responseErrorHandler(mock(ResponseErrorHandler.class))
+			.build();
+
+		assertThat(api).isNotNull();
 	}
 
 	@Nested

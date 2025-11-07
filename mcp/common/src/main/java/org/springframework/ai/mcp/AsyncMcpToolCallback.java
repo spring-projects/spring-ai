@@ -160,7 +160,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	/**
 	 * Builder for constructing AsyncMcpToolCallback instances.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private McpAsyncClient mcpClient;
 

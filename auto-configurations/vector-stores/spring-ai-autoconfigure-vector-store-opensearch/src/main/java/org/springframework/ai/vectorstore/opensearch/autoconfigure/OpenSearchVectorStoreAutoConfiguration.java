@@ -73,7 +73,7 @@ public class OpenSearchVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
@@ -88,14 +88,19 @@ public class OpenSearchVectorStoreAutoConfiguration {
 		var mappingJson = Optional.ofNullable(properties.getMappingJson())
 			.orElse(OpenSearchVectorStore.DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION);
 
-		return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
+		var builder = OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
 			.index(indexName)
 			.mappingJson(mappingJson)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
-			.batchingStrategy(batchingStrategy)
-			.build();
+			.batchingStrategy(batchingStrategy);
+
+		Optional.ofNullable(properties.getUseApproximateKnn()).ifPresent(builder::useApproximateKnn);
+		Optional.ofNullable(properties.getDimensions()).ifPresent(builder::dimensions);
+		Optional.ofNullable(properties.getSimilarity()).ifPresent(builder::similarityFunction);
+
+		return builder.build();
 	}
 
 	@Configuration(proxyBeanMethods = false)

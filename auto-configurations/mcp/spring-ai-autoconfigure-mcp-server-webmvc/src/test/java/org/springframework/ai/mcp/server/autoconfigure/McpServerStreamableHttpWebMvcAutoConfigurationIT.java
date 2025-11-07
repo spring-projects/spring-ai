@@ -18,25 +18,29 @@ package org.springframework.ai.mcp.server.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
+import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.servlet.function.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 
-class McpServerStreamableWebFluxAutoConfigurationIT {
+class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
-		.withConfiguration(AutoConfigurations.of(McpServerStreamableHttpWebFluxAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpServerStreamableHttpWebMvcAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
 		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
 	}
@@ -44,7 +48,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	@Test
 	void objectMapperConfiguration() {
 		this.contextRunner.withBean(ObjectMapper.class, ObjectMapper::new).run(context -> {
-			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
 	}
@@ -52,7 +56,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	@Test
 	void serverDisableConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false").run(context -> {
-			assertThat(context).doesNotHaveBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).doesNotHaveBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).doesNotHaveBean(RouterFunction.class);
 		});
 	}
@@ -60,7 +64,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	@Test
 	void serverBaseUrlConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/test")
-			.run(context -> assertThat(context.getBean(WebFluxStreamableServerTransportProvider.class))
+			.run(context -> assertThat(context.getBean(WebMvcStreamableServerTransportProvider.class))
 				.extracting("mcpEndpoint")
 				.isEqualTo("/test"));
 	}
@@ -69,7 +73,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	void keepAliveIntervalConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.keep-alive-interval=PT30S")
 			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+				assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(context).hasSingleBean(RouterFunction.class);
 			});
 	}
@@ -78,7 +82,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	void disallowDeleteConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=true")
 			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+				assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(context).hasSingleBean(RouterFunction.class);
 			});
 	}
@@ -87,7 +91,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	void disallowDeleteFalseConfiguration() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=false")
 			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+				assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(context).hasSingleBean(RouterFunction.class);
 			});
 	}
@@ -96,7 +100,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	void customObjectMapperIsUsed() {
 		ObjectMapper customObjectMapper = new ObjectMapper();
 		this.contextRunner.withBean("customObjectMapper", ObjectMapper.class, () -> customObjectMapper).run(context -> {
-			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 			// Verify the custom ObjectMapper is used
 			assertThat(context.getBean(ObjectMapper.class)).isSameAs(customObjectMapper);
@@ -107,7 +111,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	void conditionalOnClassPresent() {
 		this.contextRunner.run(context -> {
 			// Verify that the configuration is loaded when required classes are present
-			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
 	}
@@ -116,16 +120,16 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	void conditionalOnMissingBeanWorks() {
 		// Test that @ConditionalOnMissingBean works by providing a custom bean
 		this.contextRunner
-			.withBean("customWebFluxProvider", WebFluxStreamableServerTransportProvider.class,
-					() -> WebFluxStreamableServerTransportProvider.builder()
+			.withBean("customWebFluxProvider", WebMvcStreamableServerTransportProvider.class,
+					() -> WebMvcStreamableServerTransportProvider.builder()
 						.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
-						.messageEndpoint("/custom")
+						.mcpEndpoint("/custom")
 						.build())
 			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+				assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 				// Should use the custom bean, not create a new one
-				WebFluxStreamableServerTransportProvider provider = context
-					.getBean(WebFluxStreamableServerTransportProvider.class);
+				WebMvcStreamableServerTransportProvider provider = context
+					.getBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(provider).extracting("mcpEndpoint").isEqualTo("/custom");
 			});
 	}
@@ -134,12 +138,26 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	void routerFunctionIsCreatedFromProvider() {
 		this.contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(RouterFunction.class);
-			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 
 			// Verify that the RouterFunction is created from the provider
+			WebMvcStreamableServerTransportProvider serverTransportProvider = context
+				.getBean(WebMvcStreamableServerTransportProvider.class);
 			RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
-			assertThat(routerFunction).isNotNull();
+			assertThat(routerFunction).isNotNull().isEqualTo(serverTransportProvider.getRouterFunction());
 		});
+	}
+
+	@Test
+	void routerFunctionIsCustom() {
+		this.contextRunner
+			.withBean("webMvcStreamableServerRouterFunction", RouterFunction.class, () -> mock(RouterFunction.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(RouterFunction.class);
+
+				RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+				assertThat(mockingDetails(routerFunction).isMock()).isTrue();
+			});
 	}
 
 	@Test
@@ -149,11 +167,11 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 					"spring.ai.mcp.server.streamable-http.keep-alive-interval=PT45S",
 					"spring.ai.mcp.server.streamable-http.disallow-delete=true")
 			.run(context -> {
-				WebFluxStreamableServerTransportProvider provider = context
-					.getBean(WebFluxStreamableServerTransportProvider.class);
+				WebMvcStreamableServerTransportProvider provider = context
+					.getBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(provider).extracting("mcpEndpoint").isEqualTo("/custom-endpoint");
 				// Verify beans are created successfully with all properties
-				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+				assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(context).hasSingleBean(RouterFunction.class);
 			});
 	}
@@ -163,7 +181,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 		// Test that when enabled property is not set, it defaults to true (matchIfMissing
 		// = true)
 		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
 	}
@@ -171,7 +189,7 @@ class McpServerStreamableWebFluxAutoConfigurationIT {
 	@Test
 	void enabledPropertyExplicitlyTrue() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=true").run(context -> {
-			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
 	}

@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link JsonSchemaGenerator}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class JsonSchemaGeneratorTests {
 

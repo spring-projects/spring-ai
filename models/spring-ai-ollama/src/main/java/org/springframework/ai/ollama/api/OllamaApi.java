@@ -330,7 +330,7 @@ public final class OllamaApi {
 
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private final Role role;
 			private String content;
@@ -466,7 +466,7 @@ public final class OllamaApi {
 			}
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private final String model;
 			private List<Message> messages = List.of();
@@ -620,7 +620,7 @@ public final class OllamaApi {
 	public record EmbeddingsRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("input") List<String> input,
-			@JsonProperty("keep_alive") Duration keepAlive,
+			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("options") Map<String, Object> options,
 			@JsonProperty("truncate") Boolean truncate) {
 
@@ -750,7 +750,7 @@ public final class OllamaApi {
 			@JsonProperty("completed") Long completed
 	) { }
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OllamaApiConstants.DEFAULT_BASE_URL;
 

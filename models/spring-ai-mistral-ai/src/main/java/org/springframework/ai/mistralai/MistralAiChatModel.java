@@ -457,18 +457,13 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	private Stream<ChatCompletionMessage> createChatCompletionMessages(Message message) {
-		switch (message.getMessageType()) {
-			case USER:
-				return Stream.of(createUserChatCompletionMessage(message));
-			case SYSTEM:
-				return Stream.of(createSystemChatCompletionMessage(message));
-			case ASSISTANT:
-				return Stream.of(createAssistantChatCompletionMessage(message));
-			case TOOL:
-				return createToolChatCompletionMessages(message);
-			default:
-				throw new IllegalStateException("Unknown message type: " + message.getMessageType());
-		}
+		return switch (message.getMessageType()) {
+			case USER -> Stream.of(createUserChatCompletionMessage(message));
+			case SYSTEM -> Stream.of(createSystemChatCompletionMessage(message));
+			case ASSISTANT -> Stream.of(createAssistantChatCompletionMessage(message));
+			case TOOL -> createToolChatCompletionMessages(message);
+			default -> throw new IllegalStateException("Unknown message type: " + message.getMessageType());
+		};
 	}
 
 	private Stream<ChatCompletionMessage> createToolChatCompletionMessages(Message message) {

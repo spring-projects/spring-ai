@@ -111,10 +111,13 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
-			AtomicLong instantSeq) implements BatchPreparedStatementSetter {
+			AtomicLong sequenceId) implements BatchPreparedStatementSetter {
 
 		private AddBatchPreparedStatement(String conversationId, List<Message> messages) {
-			this(conversationId, messages, new AtomicLong(Instant.now().toEpochMilli()));
+			// Use second-level granularity to ensure compatibility with all database
+			// timestamp precisions. The timestamp serves as a sequence number for
+			// message ordering, not as a precise temporal record.
+			this(conversationId, messages, new AtomicLong(Instant.now().getEpochSecond()));
 		}
 
 		@Override
@@ -124,7 +127,9 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
-			ps.setTimestamp(4, new Timestamp(this.instantSeq.getAndIncrement()));
+			// Convert seconds to milliseconds for Timestamp constructor.
+			// Each message gets a unique second value, ensuring proper ordering.
+			ps.setTimestamp(4, new Timestamp(this.sequenceId.getAndIncrement() * 1000L));
 		}
 
 		@Override

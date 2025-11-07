@@ -21,17 +21,23 @@ import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.server.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 
 class McpServerStatelessWebFluxAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS")
-		.withConfiguration(AutoConfigurations.of(McpServerStatelessWebFluxAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpServerStatelessWebFluxAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -135,9 +141,22 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 			assertThat(context).hasSingleBean(WebFluxStatelessServerTransport.class);
 
 			// Verify that the RouterFunction is created from the provider
+			WebFluxStatelessServerTransport serverTransport = context.getBean(WebFluxStatelessServerTransport.class);
 			RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
-			assertThat(routerFunction).isNotNull();
+			assertThat(routerFunction).isNotNull().isEqualTo(serverTransport.getRouterFunction());
 		});
+	}
+
+	@Test
+	void routerFunctionIsCustom() {
+		this.contextRunner
+			.withBean("webFluxStatelessServerRouterFunction", RouterFunction.class, () -> mock(RouterFunction.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(RouterFunction.class);
+
+				RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+				assertThat(mockingDetails(routerFunction).isMock()).isTrue();
+			});
 	}
 
 	@Test
@@ -170,6 +189,17 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 			assertThat(context).hasSingleBean(WebFluxStatelessServerTransport.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
+	}
+
+	@Configuration
+	private static class CustomRouterFunctionConfig {
+
+		@Bean
+		public RouterFunction<?> webFluxStatelessServerRouterFunction(
+				WebFluxStatelessServerTransport webFluxStatelessTransport) {
+			return mock(RouterFunction.class);
+		}
+
 	}
 
 }

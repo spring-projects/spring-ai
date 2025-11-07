@@ -106,9 +106,16 @@ final class DefaultChatClientUtils {
 
 		ChatOptions processedChatOptions = inputRequest.getChatOptions();
 
-		if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
-			if (!inputRequest.getToolNames().isEmpty() || !inputRequest.getToolCallbacks().isEmpty()
-					|| !CollectionUtils.isEmpty(inputRequest.getToolContext())) {
+		// If we have tool-related configuration but no tool or non-tool options,
+		// create ToolCallingChatOptions
+		if (!inputRequest.getToolNames().isEmpty() || !inputRequest.getToolCallbacks().isEmpty()
+				|| !inputRequest.getToolCallbackProviders().isEmpty()
+				|| !CollectionUtils.isEmpty(inputRequest.getToolContext())) {
+
+			if (processedChatOptions == null) {
+				processedChatOptions = new DefaultToolCallingChatOptions();
+			}
+			else if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
 				processedChatOptions = ModelOptionsUtils.copyToTarget(defaultChatOptions, ChatOptions.class,
 						DefaultToolCallingChatOptions.class);
 			}
@@ -120,9 +127,16 @@ final class DefaultChatClientUtils {
 					.mergeToolNames(new HashSet<>(inputRequest.getToolNames()), toolCallingChatOptions.getToolNames());
 				toolCallingChatOptions.setToolNames(toolNames);
 			}
-			if (!inputRequest.getToolCallbacks().isEmpty()) {
-				List<ToolCallback> toolCallbacks = ToolCallingChatOptions
-					.mergeToolCallbacks(inputRequest.getToolCallbacks(), toolCallingChatOptions.getToolCallbacks());
+
+			// Lazily resolve ToolCallbackProvider instances to ToolCallback instances
+			List<ToolCallback> allToolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
+			for (var provider : inputRequest.getToolCallbackProviders()) {
+				allToolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));
+			}
+
+			if (!allToolCallbacks.isEmpty()) {
+				List<ToolCallback> toolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(allToolCallbacks,
+						toolCallingChatOptions.getToolCallbacks());
 				ToolCallingChatOptions.validateToolCallbacks(toolCallbacks);
 				toolCallingChatOptions.setToolCallbacks(toolCallbacks);
 			}

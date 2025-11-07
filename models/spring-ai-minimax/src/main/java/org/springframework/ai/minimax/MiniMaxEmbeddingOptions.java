@@ -59,7 +59,7 @@ public class MiniMaxEmbeddingOptions implements EmbeddingOptions {
 		return null;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected MiniMaxEmbeddingOptions options;
 

@@ -25,24 +25,28 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
 import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.core.OrderComparator;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Default implementation for the {@link BaseAdvisorChain}. Used by the
- * {@link org.springframework.ai.chat.client.ChatClient} to delegate the call to the next
- * {@link CallAdvisor} or {@link StreamAdvisor} in the chain.
+ * Default implementation for the {@link BaseAdvisorChain}. Used by the {@link ChatClient}
+ * to delegate the call to the next {@link CallAdvisor} or {@link StreamAdvisor} in the
+ * chain.
  *
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
@@ -52,6 +56,8 @@ import org.springframework.util.CollectionUtils;
 public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	public static final AdvisorObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAdvisorObservationConvention();
+
+	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
 	private final List<CallAdvisor> originalCallAdvisors;
 
@@ -63,8 +69,10 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	private final ObservationRegistry observationRegistry;
 
+	private final AdvisorObservationConvention observationConvention;
+
 	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, Deque<CallAdvisor> callAdvisors,
-			Deque<StreamAdvisor> streamAdvisors) {
+			Deque<StreamAdvisor> streamAdvisors, @Nullable AdvisorObservationConvention observationConvention) {
 
 		Assert.notNull(observationRegistry, "the observationRegistry must be non-null");
 		Assert.notNull(callAdvisors, "the callAdvisors must be non-null");
@@ -75,6 +83,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		this.streamAdvisors = streamAdvisors;
 		this.originalCallAdvisors = List.copyOf(callAdvisors);
 		this.originalStreamAdvisors = List.copyOf(streamAdvisors);
+		this.observationConvention = observationConvention != null ? observationConvention
+				: DEFAULT_OBSERVATION_CONVENTION;
 	}
 
 	public static Builder builder(ObservationRegistry observationRegistry) {
@@ -98,8 +108,13 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			.build();
 
 		return AdvisorObservationDocumentation.AI_ADVISOR
-			.observation(null, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry)
-			.observe(() -> advisor.adviseCall(chatClientRequest, this));
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				var chatClientResponse = advisor.adviseCall(chatClientRequest, this);
+				observationContext.setChatClientResponse(chatClientResponse);
+				return chatClientResponse;
+			});
 	}
 
 	@Override
@@ -119,18 +134,38 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 				.order(advisor.getOrder())
 				.build();
 
-			var observation = AdvisorObservationDocumentation.AI_ADVISOR.observation(null,
+			var observation = AdvisorObservationDocumentation.AI_ADVISOR.observation(this.observationConvention,
 					DEFAULT_OBSERVATION_CONVENTION, () -> observationContext, this.observationRegistry);
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
 			// @formatter:off
-			return Flux.defer(() -> advisor.adviseStream(chatClientRequest, this)
+			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> advisor.adviseStream(chatClientRequest, this)
 						.doOnError(observation::error)
 						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation)));
 			// @formatter:on
+			return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,
+					observationContext::setChatClientResponse);
 		});
+	}
+
+	@Override
+	public CallAdvisorChain copy(CallAdvisor after) {
+
+		Assert.notNull(after, "The after call advisor must not be null");
+
+		List<CallAdvisor> callAdvisors = this.getCallAdvisors();
+
+		int afterAdvisorIndex = callAdvisors.indexOf(after);
+
+		if (afterAdvisorIndex < 0) {
+			throw new IllegalArgumentException("The specified advisor is not part of the chain: " + after.getName());
+		}
+
+		var remainingCallAdvisors = callAdvisors.subList(afterAdvisorIndex + 1, callAdvisors.size());
+
+		return DefaultAroundAdvisorChain.builder(this.getObservationRegistry()).pushAll(remainingCallAdvisors).build();
 	}
 
 	@Override
@@ -148,7 +183,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		return this.observationRegistry;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final ObservationRegistry observationRegistry;
 
@@ -156,10 +191,18 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 		private final Deque<StreamAdvisor> streamAdvisors;
 
+		@Nullable
+		private AdvisorObservationConvention observationConvention;
+
 		public Builder(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
 			this.callAdvisors = new ConcurrentLinkedDeque<>();
 			this.streamAdvisors = new ConcurrentLinkedDeque<>();
+		}
+
+		public Builder observationConvention(@Nullable AdvisorObservationConvention observationConvention) {
+			this.observationConvention = observationConvention;
+			return this;
 		}
 
 		public Builder push(Advisor advisor) {
@@ -210,7 +253,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		}
 
 		public DefaultAroundAdvisorChain build() {
-			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAdvisors, this.streamAdvisors);
+			return new DefaultAroundAdvisorChain(this.observationRegistry, this.callAdvisors, this.streamAdvisors,
+					this.observationConvention);
 		}
 
 	}

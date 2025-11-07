@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
 import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -273,6 +274,70 @@ public class OpenAiApiBuilderTests {
 
 		OpenAiApi api2 = OpenAiApi.builder().apiKey(() -> "supplier-key").build();
 		assertThat(api2).isNotNull();
+	}
+
+	@Test
+	void testBuilderCreatesIndependentInstances() {
+		MultiValueMap<String, String> sharedHeaders = new LinkedMultiValueMap<>();
+		sharedHeaders.add("X-Shared", "value");
+
+		OpenAiApi.Builder builder = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.baseUrl(TEST_BASE_URL)
+			.headers(sharedHeaders);
+
+		OpenAiApi api1 = builder.build();
+
+		// Modify the shared headers
+		sharedHeaders.add("X-Modified", "new-value");
+
+		OpenAiApi api2 = builder.build();
+
+		// Both APIs should have the modified headers since they share the same reference
+		assertThat(api1.getHeaders()).containsKey("X-Modified");
+		assertThat(api2.getHeaders()).containsKey("X-Modified");
+	}
+
+	@Test
+	void testMutatePreservesResponseErrorHandler() {
+		ResponseErrorHandler customHandler = mock(ResponseErrorHandler.class);
+
+		OpenAiApi original = OpenAiApi.builder().apiKey(TEST_API_KEY).responseErrorHandler(customHandler).build();
+
+		OpenAiApi mutated = original.mutate().apiKey("new-key").build();
+
+		assertThat(original.getResponseErrorHandler()).isSameAs(customHandler);
+		assertThat(mutated.getResponseErrorHandler()).isSameAs(customHandler);
+	}
+
+	@Test
+	void testMutateCreatesIndependentHeaders() {
+		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		headers.add("X-Original", "value1");
+
+		OpenAiApi original = OpenAiApi.builder().apiKey(TEST_API_KEY).headers(headers).build();
+
+		MultiValueMap<String, String> newHeaders = new LinkedMultiValueMap<>();
+		newHeaders.add("X-New", "value2");
+
+		OpenAiApi mutated = original.mutate().headers(newHeaders).build();
+
+		// Original headers should be unchanged
+		assertThat(original.getHeaders()).containsKey("X-Original");
+		assertThat(original.getHeaders()).doesNotContainKey("X-New");
+
+		// Mutated should have new headers
+		assertThat(mutated.getHeaders()).doesNotContainKey("X-Original");
+		assertThat(mutated.getHeaders()).containsKey("X-New");
+	}
+
+	@Test
+	void testNoopApiKey() {
+		OpenAiApi api = OpenAiApi.builder().apiKey(new NoopApiKey()).build();
+
+		assertThat(api).isNotNull();
+		assertThat(api.getApiKey()).isInstanceOf(NoopApiKey.class);
+		assertThat(api.getApiKey().getValue()).isEmpty();
 	}
 
 	@Nested

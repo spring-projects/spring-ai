@@ -54,10 +54,6 @@ public interface JdbcChatMemoryRepositoryDialect {
 	String getDeleteMessagesSql();
 
 	/**
-	 * Optionally, dialect can provide more advanced SQL as needed.
-	 */
-
-	/**
 	 * Detects the dialect from the DataSource.
 	 */
 	static JdbcChatMemoryRepositoryDialect from(DataSource dataSource) {
@@ -78,6 +74,9 @@ public interface JdbcChatMemoryRepositoryDialect {
 			case "MySQL", "MariaDB" -> new MysqlChatMemoryRepositoryDialect();
 			case "Microsoft SQL Server" -> new SqlServerChatMemoryRepositoryDialect();
 			case "HSQL Database Engine" -> new HsqldbChatMemoryRepositoryDialect();
+			case "SQLite" -> new SqliteChatMemoryRepositoryDialect();
+			case "H2" -> new H2ChatMemoryRepositoryDialect();
+			case "Oracle" -> new OracleChatMemoryRepositoryDialect();
 			default -> // Add more as needed
 				new PostgresChatMemoryRepositoryDialect();
 		};

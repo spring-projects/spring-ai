@@ -16,7 +16,9 @@
 
 package org.springframework.ai.openai.api;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -201,7 +203,33 @@ public class OpenAiFileApi {
 			return new Builder();
 		}
 
-		public static class Builder {
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof UploadFileRequest that)) {
+				return false;
+			}
+			return Arrays.equals(this.file, that.file) && Objects.equals(this.fileName, that.fileName)
+					&& Objects.equals(this.purpose, that.purpose);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = Arrays.hashCode(this.file);
+			result = 31 * result + Objects.hashCode(this.fileName);
+			result = 31 * result + Objects.hashCode(this.purpose);
+			return result;
+		}
+
+		@Override
+		public String toString() {
+			return "UploadFileRequest{file=" + Arrays.toString(this.file) + ", fileName="
+					+ Objects.toString(this.fileName) + ", purpose=" + Objects.toString(this.purpose) + "}";
+		}
+
+		public static final class Builder {
 
 			private byte[] file;
 
@@ -253,7 +281,7 @@ public class OpenAiFileApi {
 			return new Builder();
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String after;
 
@@ -326,7 +354,7 @@ public class OpenAiFileApi {
 		// @formatter:on
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 

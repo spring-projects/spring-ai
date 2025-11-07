@@ -143,7 +143,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	private Set<String> toolNames = new HashSet<>();
 
 	@JsonIgnore
-	private Map<String, Object> toolContext = new HashMap<>();;
+	private Map<String, Object> toolContext = new HashMap<>();
 
 	public static Builder builder() {
 		return new Builder();
@@ -382,7 +382,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				.build();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected DeepSeekChatOptions options;
 

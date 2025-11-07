@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
 import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
+import org.springframework.ai.anthropic.api.CitationDocument;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -60,7 +61,19 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("temperature") Double temperature;
 	private @JsonProperty("top_p") Double topP;
 	private @JsonProperty("top_k") Integer topK;
+	private @JsonProperty("tool_choice") AnthropicApi.ToolChoice toolChoice;
 	private @JsonProperty("thinking") ChatCompletionRequest.ThinkingConfig thinking;
+
+	/**
+	 * Documents to be used for citation-based responses. These documents will be
+	 * converted to ContentBlocks and included in the first user message of the request.
+	 * Citations indicating which parts of these documents were used in the response will
+	 * be returned in the response metadata under the "citations" key.
+	 * @see CitationDocument
+	 * @see Citation
+	 */
+	@JsonIgnore
+	private List<CitationDocument> citationDocuments = new ArrayList<>();
 
 	@JsonIgnore
 	private AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.DISABLED;
@@ -117,6 +130,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.temperature(fromOptions.getTemperature())
 			.topP(fromOptions.getTopP())
 			.topK(fromOptions.getTopK())
+			.toolChoice(fromOptions.getToolChoice())
 			.thinking(fromOptions.getThinking())
 			.toolCallbacks(
 					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
@@ -125,6 +139,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
 			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
 			.cacheOptions(fromOptions.getCacheOptions())
+			.citationDocuments(fromOptions.getCitationDocuments() != null
+					? new ArrayList<>(fromOptions.getCitationDocuments()) : null)
 			.build();
 	}
 
@@ -188,6 +204,14 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 	public void setTopK(Integer topK) {
 		this.topK = topK;
+	}
+
+	public AnthropicApi.ToolChoice getToolChoice() {
+		return this.toolChoice;
+	}
+
+	public void setToolChoice(AnthropicApi.ToolChoice toolChoice) {
+		this.toolChoice = toolChoice;
 	}
 
 	public ChatCompletionRequest.ThinkingConfig getThinking() {
@@ -273,6 +297,34 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		this.httpHeaders = httpHeaders;
 	}
 
+	public List<CitationDocument> getCitationDocuments() {
+		return this.citationDocuments;
+	}
+
+	public void setCitationDocuments(List<CitationDocument> citationDocuments) {
+		Assert.notNull(citationDocuments, "Citation documents cannot be null");
+		this.citationDocuments = citationDocuments;
+	}
+
+	/**
+	 * Validate that all citation documents have consistent citation settings. Anthropic
+	 * requires all documents to have citations enabled if any do.
+	 */
+	public void validateCitationConsistency() {
+		if (this.citationDocuments.isEmpty()) {
+			return;
+		}
+
+		boolean hasEnabledCitations = this.citationDocuments.stream().anyMatch(CitationDocument::isCitationsEnabled);
+		boolean hasDisabledCitations = this.citationDocuments.stream().anyMatch(doc -> !doc.isCitationsEnabled());
+
+		if (hasEnabledCitations && hasDisabledCitations) {
+			throw new IllegalArgumentException(
+					"Anthropic Citations API requires all documents to have consistent citation settings. "
+							+ "Either enable citations for all documents or disable for all documents.");
+		}
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public AnthropicChatOptions copy() {
@@ -291,23 +343,26 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.metadata, that.metadata)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
-				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.thinking, that.thinking)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.toolChoice, that.toolChoice)
+				&& Objects.equals(this.thinking, that.thinking)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
-				&& Objects.equals(this.cacheOptions, that.cacheOptions);
+				&& Objects.equals(this.cacheOptions, that.cacheOptions)
+				&& Objects.equals(this.citationDocuments, that.citationDocuments);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
-				this.topK, this.thinking, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.toolContext, this.httpHeaders, this.cacheOptions);
+				this.topK, this.toolChoice, this.thinking, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.toolContext, this.httpHeaders, this.cacheOptions,
+				this.citationDocuments);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final AnthropicChatOptions options = new AnthropicChatOptions();
 
@@ -348,6 +403,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 
 		public Builder topK(Integer topK) {
 			this.options.topK = topK;
+			return this;
+		}
+
+		public Builder toolChoice(AnthropicApi.ToolChoice toolChoice) {
+			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
@@ -409,7 +469,40 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
+		/**
+		 * Set citation documents for the request.
+		 * @param citationDocuments List of documents to include for citations
+		 * @return Builder for method chaining
+		 */
+		public Builder citationDocuments(List<CitationDocument> citationDocuments) {
+			this.options.setCitationDocuments(citationDocuments);
+			return this;
+		}
+
+		/**
+		 * Set citation documents from variable arguments.
+		 * @param documents Variable number of CitationDocument objects
+		 * @return Builder for method chaining
+		 */
+		public Builder citationDocuments(CitationDocument... documents) {
+			Assert.notNull(documents, "Citation documents cannot be null");
+			this.options.citationDocuments.addAll(Arrays.asList(documents));
+			return this;
+		}
+
+		/**
+		 * Add a single citation document.
+		 * @param document Citation document to add
+		 * @return Builder for method chaining
+		 */
+		public Builder addCitationDocument(CitationDocument document) {
+			Assert.notNull(document, "Citation document cannot be null");
+			this.options.citationDocuments.add(document);
+			return this;
+		}
+
 		public AnthropicChatOptions build() {
+			this.options.validateCitationConsistency();
 			return this.options;
 		}
 

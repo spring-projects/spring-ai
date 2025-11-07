@@ -44,4 +44,13 @@ public interface CallAdvisorChain extends AdvisorChain {
 	 */
 	List<CallAdvisor> getCallAdvisors();
 
+	/**
+	 * Creates a new CallAdvisorChain copy that contains all advisors after the specified
+	 * advisor.
+	 * @param after the CallAdvisor after which to copy the chain
+	 * @return a new CallAdvisorChain containing all advisors after the specified advisor
+	 * @throws IllegalArgumentException if the specified advisor is not part of the chain
+	 */
+	CallAdvisorChain copy(CallAdvisor after);
+
 }

@@ -573,7 +573,7 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 				this.temperature, this.topP);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected AzureOpenAiChatOptions options;
 

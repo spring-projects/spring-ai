@@ -22,12 +22,10 @@
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" checks="Javadoc*" />
 	<suppress files=".*Tests\.java" checks="Javadoc*" />
 	<suppress files="generated-sources" checks="[a-zA-Z0-9]*" />
+	<suppress files="vectorstore[\\/]filter[\\/]antlr4.*" checks="[a-zA-Z0-9]*"/>
 	<suppress files="org[\\/]eclipse[\\/]jdt[\\/]internal[\\/]formatter[\\/]linewrap[\\/]WrapPreparator\.java" checks="[a-zA-Z0-9]*" />
 
 	<suppress files=".*BeanOutputConverterTest\.java$" checks="RegexpSinglelineJava"/>
-	<suppress files="FiltersParser\.java" checks="AvoidNestedBlocks"/>
-	<suppress files="FiltersParser\.java" checks="MultipleVariableDeclarations"/>
-	<suppress files="FiltersLexer\.java" checks="MultipleVariableDeclarations"/>
 	<suppress  files="BaseOllamaIT.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="BaseOCIGenAITest.java" checks="HideUtilityClassConstructor"/>
 	<suppress  files="OpenAiApiBuilderTests.java" checks="RegexpSinglelineJava"/>

@@ -63,22 +63,20 @@ public enum GoogleGenAiTrafficType {
 		String typeStr = trafficType.toString().toUpperCase();
 
 		// Map SDK values to our enum values
-		switch (typeStr) {
-			case "ON_DEMAND":
-				return ON_DEMAND;
-			case "PROVISIONED_THROUGHPUT":
-				return PROVISIONED_THROUGHPUT;
-			case "TRAFFIC_TYPE_UNSPECIFIED":
-				return UNKNOWN;
-			default:
+		return switch (typeStr) {
+			case "ON_DEMAND" -> ON_DEMAND;
+			case "PROVISIONED_THROUGHPUT" -> PROVISIONED_THROUGHPUT;
+			case "TRAFFIC_TYPE_UNSPECIFIED" -> UNKNOWN;
+			default -> {
 				// Try exact match
 				for (GoogleGenAiTrafficType type : values()) {
 					if (type.value.equals(typeStr)) {
-						return type;
+						yield type;
 					}
 				}
-				return UNKNOWN;
-		}
+				yield UNKNOWN;
+			}
+		};
 	}
 
 	/**

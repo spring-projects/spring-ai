@@ -89,7 +89,7 @@ public class SystemMessage extends AbstractMessage {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		@Nullable
 		private String textContent;

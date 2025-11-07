@@ -85,7 +85,7 @@ The prefix `spring.ai.openai.audio.speech` is used as the property prefix that l
 | spring.ai.openai.audio.speech.api-key    | The API Key           |  -
 | spring.ai.openai.audio.speech.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.speech.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.speech.options.model  | ID of the model to use for generating the audio. For OpenAI's TTS API, use one of the available models: tts-1 or tts-1-hd. |  tts-1
+| spring.ai.openai.audio.speech.options.model  | ID of the model to use for generating the audio. Available models: `gpt-4o-mini-tts` (default, optimized for speed and cost), `gpt-4o-tts` (higher quality), `tts-1` (legacy, optimized for speed), or `tts-1-hd` (legacy, optimized for quality). |  gpt-4o-mini-tts
 | spring.ai.openai.audio.speech.options.voice | The voice to use for synthesis. For OpenAI's TTS API, One of the available voices for the chosen model: alloy, echo, fable, onyx, nova, and shimmer. | alloy
 | spring.ai.openai.audio.speech.options.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
 | spring.ai.openai.audio.speech.options.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
@@ -95,7 +95,7 @@ NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai
 The `spring.ai.openai.audio.speech.base-url`, `spring.ai.openai.audio.speech.api-key`, `spring.ai.openai.audio.speech.organization-id` and `spring.ai.openai.audio.speech.project-id` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.image.options` can be overridden at runtime.
+TIP: All properties prefixed with `spring.ai.openai.audio.speech.options` can be overridden at runtime.
 
 == Runtime Options [[speech-options]]
 
@@ -107,7 +107,7 @@ For example:
 [source,java]
 ----
 OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
-    .model("tts-1")
+    .model("gpt-4o-mini-tts")
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
     .speed(1.0f)
@@ -153,7 +153,7 @@ var openAiAudioSpeechModel = new OpenAiAudioSpeechModel(openAiAudioApi);
 var speechOptions = OpenAiAudioSpeechOptions.builder()
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
     .speed(1.0f)
-    .model(OpenAiAudioApi.TtsModel.TTS_1.value)
+    .model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
     .build();
 
 var speechPrompt = new SpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
@@ -181,7 +181,7 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
     .speed(1.0f)
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
-    .model(OpenAiAudioApi.TtsModel.TTS_1.value)
+    .model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
     .build();
 
 SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!", speechOptions);

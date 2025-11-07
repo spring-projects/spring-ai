@@ -19,7 +19,7 @@ package org.springframework.ai.model.vertexai.autoconfigure.gemini;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.model.vertexai.autoconfigure.VertexAiITUtil;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit Tests for OpenAI auto configurations' conditional enabling of models.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  */
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
 @EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
@@ -42,7 +43,7 @@ public class VertexAiModelConfigurationTests {
 	void chatModelActivation() {
 
 		this.contextRunner
-			.withConfiguration(VertexAiITUtil.vertexAiToolAutoConfig(VertexAiGeminiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiGeminiChatProperties.class)).isEmpty();
@@ -50,7 +51,7 @@ public class VertexAiModelConfigurationTests {
 			});
 
 		this.contextRunner
-			.withConfiguration(VertexAiITUtil.vertexAiToolAutoConfig(VertexAiGeminiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=vertexai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiGeminiChatProperties.class)).isNotEmpty();

@@ -38,30 +38,19 @@ public class CouchbaseAiSearchFilterExpressionConverter extends AbstractFilterEx
 	}
 
 	private String getOperationSymbol(Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " AND ";
-			case OR:
-				return " OR ";
-			case EQ:
-				return " == ";
-			case NE:
-				return " != ";
-			case LT:
-				return " < ";
-			case LTE:
-				return " <= ";
-			case GT:
-				return " > ";
-			case GTE:
-				return " >= ";
-			case IN:
-				return " IN ";
-			case NIN:
-				return " NOT IN ";
-			default:
-				throw new RuntimeException("Not supported expression type: " + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> " AND ";
+			case OR -> " OR ";
+			case EQ -> " == ";
+			case NE -> " != ";
+			case LT -> " < ";
+			case LTE -> " <= ";
+			case GT -> " > ";
+			case GTE -> " >= ";
+			case IN -> " IN ";
+			case NIN -> " NOT IN ";
+			default -> throw new RuntimeException("Not supported expression type: " + exp.type());
+		};
 	}
 
 	@Override

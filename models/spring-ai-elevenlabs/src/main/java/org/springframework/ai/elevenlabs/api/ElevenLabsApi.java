@@ -223,7 +223,7 @@ public final class ElevenLabsApi {
 				@JsonProperty("version_id") String versionId) {
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private String text;
 
@@ -325,7 +325,7 @@ public final class ElevenLabsApi {
 	/**
 	 * Builder to construct {@link ElevenLabsApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 

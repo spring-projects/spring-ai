@@ -45,7 +45,7 @@ public interface McpToolNamePrefixGenerator {
 	 * @return a prefix generator that returns the tool name as-is
 	 */
 	static McpToolNamePrefixGenerator noPrefix() {
-		return (mcpConnectinInfo, tool) -> tool.name();
+		return (mcpConnectionInfo, tool) -> tool.name();
 	}
 
 }
