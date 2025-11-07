@@ -34,7 +34,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.image.observation.ImageModelObservationDocumentation.HighCardinalityKeyNames;
@@ -105,7 +106,7 @@ public class OpenAiImageModelObservationIT {
 		public OpenAiImageModel openAiImageModel(OpenAiImageApi openAiImageApi,
 				TestObservationRegistry observationRegistry) {
 			return new OpenAiImageModel(openAiImageApi, OpenAiImageOptions.builder().build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+					new RetryTemplate(RetryPolicy.withDefaults()), observationRegistry);
 		}
 
 	}

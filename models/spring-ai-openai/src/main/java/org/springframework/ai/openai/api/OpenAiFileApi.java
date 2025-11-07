@@ -49,8 +49,8 @@ public class OpenAiFileApi {
 
 	private final RestClient restClient;
 
-	public OpenAiFileApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public OpenAiFileApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 		Consumer<HttpHeaders> authHeaders = h -> h.addAll(headers);
 
 		this.restClient = restClientBuilder.clone()
@@ -63,6 +63,10 @@ public class OpenAiFileApi {
 				}
 			})
 			.build();
+	}
+
+	public OpenAiFileApi(RestClient restClient) {
+		this.restClient = restClient;
 	}
 
 	public static Builder builder() {
@@ -360,7 +364,7 @@ public class OpenAiFileApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -384,7 +388,7 @@ public class OpenAiFileApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

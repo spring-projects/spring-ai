@@ -31,8 +31,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -60,7 +58,7 @@ public class OpenAiImageApi {
 	 * @param restClientBuilder the rest client builder to use.
 	 * @param responseErrorHandler the response error handler to use.
 	 */
-	public OpenAiImageApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String imagesPath,
+	public OpenAiImageApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String imagesPath,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		// @formatter:off
@@ -68,7 +66,7 @@ public class OpenAiImageApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(h -> {
 				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
+				h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			})
 			.defaultStatusHandler(responseErrorHandler)
 			.defaultRequest(requestHeadersSpec -> {
@@ -79,6 +77,16 @@ public class OpenAiImageApi {
 			.build();
 		// @formatter:on
 
+		this.imagesPath = imagesPath;
+	}
+
+	/**
+	 * Create a new OpenAI Image API with the provided rest client.
+	 * @param restClient the rest client instance to use.
+	 * @param imagesPath the images path to use.
+	 */
+	public OpenAiImageApi(RestClient restClient, String imagesPath) {
+		this.restClient = restClient;
 		this.imagesPath = imagesPath;
 	}
 
@@ -168,7 +176,7 @@ public class OpenAiImageApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -200,7 +208,7 @@ public class OpenAiImageApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

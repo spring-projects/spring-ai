@@ -37,7 +37,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
@@ -111,7 +112,7 @@ public class OpenAiEmbeddingModelObservationIT {
 		public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiApi openAiApi,
 				TestObservationRegistry observationRegistry) {
 			return new OpenAiEmbeddingModel(openAiApi, MetadataMode.EMBED, OpenAiEmbeddingOptions.builder().build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+					new RetryTemplate(RetryPolicy.withDefaults()), observationRegistry);
 		}
 
 	}

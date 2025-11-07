@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import org.junit.jupiter.api.Test;
@@ -46,8 +47,7 @@ class McpServerSseWebFluxAutoConfigurationTests {
 			ObjectMapper objectMapper = context.getBean("mcpServerObjectMapper", ObjectMapper.class);
 
 			// Verify that the ObjectMapper is configured to ignore unknown properties
-			assertThat(objectMapper.getDeserializationConfig()
-				.isEnabled(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
+			assertThat(objectMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
 
 			// Test with a JSON payload containing unknown fields
 			// CHECKSTYLE:OFF

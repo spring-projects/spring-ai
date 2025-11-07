@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.http.HttpHeaders;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -88,12 +88,12 @@ class OpenAiChatModelMutateTests {
 
 	@Test
 	void mutateHeadersCreatesDistinctHeaders() {
-		OpenAiApi mutatedApi = this.baseApi.mutate()
-			.headers(new LinkedMultiValueMap<>(java.util.Map.of("X-Test", java.util.List.of("value"))))
-			.build();
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("X-Test", "value");
+		OpenAiApi mutatedApi = this.baseApi.mutate().headers(headers).build();
 
-		assertThat(mutatedApi.getHeaders()).containsKey("X-Test");
-		assertThat(this.baseApi.getHeaders()).doesNotContainKey("X-Test");
+		assertThat(mutatedApi.getHeaders().get("X-Test")).isNotNull();
+		assertThat(this.baseApi.getHeaders().get("X-Test")).isNull();
 	}
 
 	@Test
@@ -129,7 +129,7 @@ class OpenAiChatModelMutateTests {
 
 	@Test
 	void testApiMutateWithComplexHeaders() {
-		LinkedMultiValueMap<String, String> complexHeaders = new LinkedMultiValueMap<>();
+		HttpHeaders complexHeaders = new HttpHeaders();
 		complexHeaders.add("Authorization", "Bearer custom-token");
 		complexHeaders.add("X-Custom-Header", "value1");
 		complexHeaders.add("X-Custom-Header", "value2");
@@ -137,9 +137,9 @@ class OpenAiChatModelMutateTests {
 
 		OpenAiApi mutatedApi = this.baseApi.mutate().headers(complexHeaders).build();
 
-		assertThat(mutatedApi.getHeaders()).containsKey("Authorization");
-		assertThat(mutatedApi.getHeaders()).containsKey("X-Custom-Header");
-		assertThat(mutatedApi.getHeaders()).containsKey("User-Agent");
+		assertThat(mutatedApi.getHeaders().get("Authorization")).isNotNull();
+		assertThat(mutatedApi.getHeaders().get("X-Custom-Header")).isNotNull();
+		assertThat(mutatedApi.getHeaders().get("User-Agent")).isNotNull();
 		assertThat(mutatedApi.getHeaders().get("X-Custom-Header")).hasSize(2);
 	}
 
@@ -155,11 +155,11 @@ class OpenAiChatModelMutateTests {
 
 	@Test
 	void testApiMutateWithEmptyHeaders() {
-		LinkedMultiValueMap<String, String> emptyHeaders = new LinkedMultiValueMap<>();
+		HttpHeaders emptyHeaders = new HttpHeaders();
 
 		OpenAiApi mutatedApi = this.baseApi.mutate().headers(emptyHeaders).build();
 
-		assertThat(mutatedApi.getHeaders()).isEmpty();
+		assertThat(mutatedApi.getHeaders().isEmpty()).isTrue();
 	}
 
 	@Test
