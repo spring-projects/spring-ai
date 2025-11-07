@@ -36,6 +36,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -852,7 +853,7 @@ class DefaultChatClientTests {
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null).build();
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null).build();
 		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt("my question");
 		DefaultChatClient.DefaultCallResponseSpec spec = (DefaultChatClient.DefaultCallResponseSpec) chatClientRequestSpec
@@ -1398,7 +1399,7 @@ class DefaultChatClientTests {
 		given(chatModel.stream(promptCaptor.capture()))
 			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
 
-		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null).build();
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null).build();
 		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
 			.prompt("my question");
 		DefaultChatClient.DefaultStreamResponseSpec spec = (DefaultChatClient.DefaultStreamResponseSpec) chatClientRequestSpec
@@ -2176,8 +2177,10 @@ class DefaultChatClientTests {
 		var chatModel = mock(ChatModel.class);
 		var observationRegistry = mock(ObservationRegistry.class);
 		var observationConvention = mock(ChatClientObservationConvention.class);
+		var advisorObservationConvention = mock(AdvisorObservationConvention.class);
 
-		var builder = new DefaultChatClientBuilder(chatModel, observationRegistry, observationConvention);
+		var builder = new DefaultChatClientBuilder(chatModel, observationRegistry, observationConvention,
+				advisorObservationConvention);
 
 		assertThat(builder).isNotNull();
 	}

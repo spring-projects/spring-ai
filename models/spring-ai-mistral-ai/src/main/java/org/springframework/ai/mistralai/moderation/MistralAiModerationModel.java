@@ -56,19 +56,6 @@ public class MistralAiModerationModel implements ModerationModel {
 
 	private final MistralAiModerationOptions defaultOptions;
 
-	@Deprecated
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE,
-				MistralAiModerationOptions.builder()
-					.model(MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue())
-					.build());
-	}
-
-	@Deprecated
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, MistralAiModerationOptions options) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE, options);
-	}
-
 	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, RetryTemplate retryTemplate,
 			MistralAiModerationOptions options) {
 		Assert.notNull(mistralAiModerationApi, "mistralAiModerationApi must not be null");

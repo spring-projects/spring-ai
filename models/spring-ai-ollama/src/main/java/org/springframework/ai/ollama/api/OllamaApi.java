@@ -563,13 +563,6 @@ public final class OllamaApi {
 				return this;
 			}
 
-			@Deprecated
-			public Builder options(OllamaOptions options) {
-				Objects.requireNonNull(options, "The options can not be null.");
-				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
-				return this;
-			}
-
 			public Builder options(OllamaChatOptions options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 				this.options = OllamaChatOptions.filterNonSupportedFields(options.toMap());

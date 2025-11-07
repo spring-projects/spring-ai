@@ -58,17 +58,7 @@ public class DefaultChatClientBuilder implements Builder {
 	protected final DefaultChatClientRequestSpec defaultRequest;
 
 	DefaultChatClientBuilder(ChatModel chatModel) {
-		this(chatModel, ObservationRegistry.NOOP, null);
-	}
-
-	/**
-	 * @deprecated in favor of
-	 * {@link #DefaultChatClientBuilder(ChatModel, ObservationRegistry, ChatClientObservationConvention, AdvisorObservationConvention)}.
-	 */
-	@Deprecated(since = "1.1.0", forRemoval = true)
-	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention chatClientObservationConvention) {
-		this(chatModel, observationRegistry, chatClientObservationConvention, null);
+		this(chatModel, ObservationRegistry.NOOP, null, null);
 	}
 
 	public DefaultChatClientBuilder(ChatModel chatModel, ObservationRegistry observationRegistry,

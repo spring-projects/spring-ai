@@ -33,7 +33,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -180,7 +180,7 @@ class PostgresMlEmbeddingModelIT {
 		embeddingModel.afterPropertiesSet();
 
 		var request1 = new EmbeddingRequest(List.of("Hello World!", "Spring AI!", "LLM!"),
-				EmbeddingOptionsBuilder.builder().build());
+				EmbeddingOptions.builder().build());
 
 		EmbeddingResponse embeddingResponse = embeddingModel.call(request1);
 

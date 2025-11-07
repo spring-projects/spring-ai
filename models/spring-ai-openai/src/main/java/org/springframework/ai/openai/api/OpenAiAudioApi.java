@@ -267,10 +267,7 @@ public class OpenAiAudioApi {
 	 * recognition as well as speech translation and language identification. The Whisper
 	 * v2-large model is currently available through our API with the whisper-1 model
 	 * name.
-	 *
-	 * @deprecated See {@link TranscriptionModels#WHISPER_1}
 	 */
-	@Deprecated
 	public enum WhisperModel {
 
 		// @formatter:off

@@ -34,57 +34,6 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	private String reasoningContent;
 
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content) {
-		super(content);
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, String reasoningContent) {
-		super(content);
-		this.reasoningContent = reasoningContent;
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, Map<String, Object> properties) {
-		super(content, properties);
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls) {
-		super(content, properties, toolCalls);
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
-			List<ToolCall> toolCalls) {
-		this(content, reasoningContent, properties, toolCalls, List.of());
-	}
-
-	/**
-	 * @deprecated in favor of {@link DeepSeekAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public DeepSeekAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
-			List<ToolCall> toolCalls, List<Media> media) {
-		this(content, reasoningContent, null, properties, toolCalls, media);
-	}
-
 	protected DeepSeekAssistantMessage(String content, String reasoningContent, Boolean prefix,
 			Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
 		super(content, properties, toolCalls, media);
