@@ -40,11 +40,11 @@ public class McpToolsChangedEvent extends ApplicationEvent {
 	}
 
 	public String getConnectionName() {
-		return connectionName;
+		return this.connectionName;
 	}
 
 	public List<Tool> getTools() {
-		return tools;
+		return this.tools;
 	}
 
 }
