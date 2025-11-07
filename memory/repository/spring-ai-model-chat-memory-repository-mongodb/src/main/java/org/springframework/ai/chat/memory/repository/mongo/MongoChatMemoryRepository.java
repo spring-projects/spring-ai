@@ -85,7 +85,10 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 				.text(conversation.message().content())
 				.metadata(conversation.message().metadata())
 				.build();
-			case "ASSISTANT" -> AssistantMessage.builder().content(conversation.message().content()).build();
+			case "ASSISTANT" -> AssistantMessage.builder()
+				.content(conversation.message().content())
+				.properties(conversation.message().metadata())
+				.build();
 			case "SYSTEM" -> SystemMessage.builder()
 				.text(conversation.message().content())
 				.metadata(conversation.message().metadata())
