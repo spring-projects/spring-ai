@@ -38,6 +38,7 @@ import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -47,6 +48,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  *
  * @author Christian Tzolov
  * @author SriVarshan P
+ * @author Yanming Zhou
  */
 @AutoConfiguration
 @ConditionalOnClass(RetryUtils.class)
@@ -88,12 +90,9 @@ public class SpringAiRetryAutoConfiguration {
 
 			@Override
 			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
-				if (!response.getStatusCode().isError()) {
-					return;
-				}
 
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-				if (error == null || error.isEmpty()) {
+				if (!StringUtils.hasLength(error)) {
 					error = "No response body available";
 				}
 
