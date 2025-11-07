@@ -40,6 +40,7 @@ import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -59,6 +60,7 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  * @author Yanming Zhou
  */
+@SpringBootTest(classes = ToolCallingAutoConfiguration.class) // required for AOT tests
 class ToolCallingAutoConfigurationTests {
 
 	@Test

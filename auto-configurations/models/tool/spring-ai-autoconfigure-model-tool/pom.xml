@@ -21,6 +21,27 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
+	<build>
+		<plugins>
+			<plugin>
+				<!--
+				Invoking the Spring Boot AOT processing for testing only
+				-->
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>${spring-boot.version}</version>
+				<executions>
+					<execution>
+						<id>process-test-aot</id>
+						<goals>
+							<goal>process-test-aot</goal>
+						</goals>
+						<phase>process-test-classes</phase>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 
 	<dependencies>
 
