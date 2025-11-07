@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -34,6 +35,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +43,6 @@ import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.lang.NonNull;
 
 import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
@@ -105,7 +106,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	public BeanOutputConverter(Class<T> clazz, ObjectMapper objectMapper, ResponseTextCleaner textCleaner) {
+	public BeanOutputConverter(Class<T> clazz, @Nullable ObjectMapper objectMapper,
+			@Nullable ResponseTextCleaner textCleaner) {
 		this(ParameterizedTypeReference.forType(clazz), objectMapper, textCleaner);
 	}
 
@@ -135,8 +137,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, ObjectMapper objectMapper,
-			ResponseTextCleaner textCleaner) {
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable ObjectMapper objectMapper,
+			@Nullable ResponseTextCleaner textCleaner) {
 		this(typeRef.getType(), objectMapper, textCleaner);
 	}
 
@@ -148,7 +150,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	private BeanOutputConverter(Type type, ObjectMapper objectMapper, ResponseTextCleaner textCleaner) {
+	private BeanOutputConverter(Type type, @Nullable ObjectMapper objectMapper,
+			@Nullable ResponseTextCleaner textCleaner) {
 		Objects.requireNonNull(type, "Type cannot be null;");
 		this.type = type;
 		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
@@ -219,14 +222,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param text The LLM output in string format.
 	 * @return The parsed output in the desired target type.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
-	public T convert(@NonNull String text) {
+	public T convert(String text) {
 		try {
 			// Clean the text using the configured text cleaner
 			text = this.textCleaner.clean(text);
 
-			return (T) this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
+			return this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
 		}
 		catch (JsonProcessingException e) {
 			logger.error(SENSITIVE_DATA_MARKER,
@@ -274,12 +276,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	public Map<String, Object> getJsonSchemaMap() {
 		try {
-			return this.objectMapper.readValue(this.jsonSchema, Map.class);
+			return this.objectMapper.readValue(this.jsonSchema, new MapTypeReference());
 		}
 		catch (JsonProcessingException ex) {
 			logger.error("Could not parse the JSON Schema to a Map object", ex);
 			throw new IllegalStateException(ex);
 		}
+	}
+
+	private static final class MapTypeReference extends TypeReference<Map<String, Object>> {
+
 	}
 
 }
