@@ -70,6 +70,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class OpenAiApi {
 
+	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(OpenAiApi.class);
+
 	public static final String HTTP_USER_AGENT_HEADER = "User-Agent";
 
 	public static final String SPRING_AI_USER_AGENT = "spring-ai";
@@ -115,6 +117,8 @@ public class OpenAiApi {
 	private final WebClient webClient;
 
 	private OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
+
+	private StreamErrorHandlingStrategy streamErrorHandlingStrategy = StreamErrorHandlingStrategy.SKIP;
 
 	/**
 	 * Create a new chat completion api.
@@ -245,16 +249,29 @@ public class OpenAiApi {
 			.headers(headers -> {
 				headers.addAll(additionalHttpHeader);
 				addDefaultHeadersIfMissing(headers);
-			}) // @formatter:on
+			})
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
+			// Split by newlines to handle multi-line responses (common in tests with MockWebServer)
+			.flatMap(content -> Flux.fromArray(content.split("\\r?\\n")))
+			// Filter out empty lines
+			.filter(line -> !line.trim().isEmpty())
 			// cancels the flux stream after the "[DONE]" is received.
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-			// Detect is the chunk is part of a streaming function call.
+			// Parse JSON string to ChatCompletionChunk with error handling
+			.flatMap(content -> {
+				try {
+					ChatCompletionChunk chunk = ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class);
+					return Mono.just(chunk);
+				}
+				catch (Exception e) {
+					return handleParseError(content, e);
+				}
+			})
+			// Detect if the chunk is part of a streaming function call.
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 					isInsideTool.set(true);
@@ -276,12 +293,52 @@ public class OpenAiApi {
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
 						(previous, current) -> this.chunkMerger.merge(previous, current));
 				return List.of(monoChunk);
 			})
 			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
 			.flatMap(mono -> mono);
+		// @formatter:on
+	}
+
+	/**
+	 * Handles parsing errors when processing streaming chat completion chunks. The
+	 * behavior depends on the configured {@link StreamErrorHandlingStrategy}.
+	 * @param content the raw content that failed to parse
+	 * @param e the exception that occurred during parsing
+	 * @return a Mono that either emits nothing (skip), emits an error, or logs and
+	 * continues
+	 */
+	private Mono<ChatCompletionChunk> handleParseError(String content, Exception e) {
+		String errorMessage = String.format(
+				"Failed to parse ChatCompletionChunk from streaming response. "
+						+ "Raw content: [%s]. This may indicate malformed JSON from the LLM. Error: %s",
+				content, e.getMessage());
+
+		switch (this.streamErrorHandlingStrategy) {
+			case FAIL_FAST:
+				logger.error(errorMessage, e);
+				return Mono.error(new ChatCompletionParseException("Invalid JSON chunk received from LLM", content, e));
+
+			case LOG_AND_CONTINUE:
+				logger.warn(errorMessage);
+				logger.debug("Full stack trace for JSON parsing error:", e);
+				return Mono.empty();
+
+			case SKIP:
+			default:
+				logger.warn("Skipping invalid chunk in streaming response. Raw content: [{}]. Error: {}", content,
+						e.getMessage());
+				return Mono.empty();
+		}
+	}
+
+	/**
+	 * Sets the error handling strategy for streaming chat completion parsing errors.
+	 * @param strategy the strategy to use when encountering JSON parsing errors
+	 */
+	public void setStreamErrorHandlingStrategy(StreamErrorHandlingStrategy strategy) {
+		this.streamErrorHandlingStrategy = strategy != null ? strategy : StreamErrorHandlingStrategy.SKIP;
 	}
 
 	/**
@@ -2006,6 +2063,7 @@ public class OpenAiApi {
 			this.restClientBuilder = api.restClient != null ? api.restClient.mutate() : RestClient.builder();
 			this.webClientBuilder = api.webClient != null ? api.webClient.mutate() : WebClient.builder();
 			this.responseErrorHandler = api.getResponseErrorHandler();
+			this.streamErrorHandlingStrategy = api.streamErrorHandlingStrategy;
 		}
 
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
@@ -2023,6 +2081,8 @@ public class OpenAiApi {
 		private WebClient.Builder webClientBuilder = WebClient.builder();
 
 		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		private StreamErrorHandlingStrategy streamErrorHandlingStrategy = StreamErrorHandlingStrategy.SKIP;
 
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
@@ -2077,10 +2137,18 @@ public class OpenAiApi {
 			return this;
 		}
 
+		public Builder streamErrorHandlingStrategy(StreamErrorHandlingStrategy streamErrorHandlingStrategy) {
+			Assert.notNull(streamErrorHandlingStrategy, "streamErrorHandlingStrategy cannot be null");
+			this.streamErrorHandlingStrategy = streamErrorHandlingStrategy;
+			return this;
+		}
+
 		public OpenAiApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath, this.embeddingsPath,
-					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+			OpenAiApi api = new OpenAiApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath,
+					this.embeddingsPath, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+			api.setStreamErrorHandlingStrategy(this.streamErrorHandlingStrategy);
+			return api;
 		}
 
 	}
