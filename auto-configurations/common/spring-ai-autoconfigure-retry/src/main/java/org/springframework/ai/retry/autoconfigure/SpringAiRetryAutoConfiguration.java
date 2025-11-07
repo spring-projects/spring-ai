@@ -36,8 +36,10 @@ import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.retry.support.RetryTemplateBuilder;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -47,10 +49,11 @@ import org.springframework.web.client.ResponseErrorHandler;
  *
  * @author Christian Tzolov
  * @author SriVarshan P
+ * @author Seunggyu Lee
  */
 @AutoConfiguration
 @ConditionalOnClass(RetryUtils.class)
-@EnableConfigurationProperties(SpringAiRetryProperties.class)
+@EnableConfigurationProperties({ SpringAiRetryProperties.class })
 public class SpringAiRetryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringAiRetryAutoConfiguration.class);
@@ -58,9 +61,10 @@ public class SpringAiRetryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public RetryTemplate retryTemplate(SpringAiRetryProperties properties) {
-		return RetryTemplate.builder()
+		RetryTemplateBuilder builder = RetryTemplate.builder()
 			.maxAttempts(properties.getMaxAttempts())
 			.retryOn(TransientAiException.class)
+			.retryOn(ResourceAccessException.class)
 			.exponentialBackoff(properties.getBackoff().getInitialInterval(), properties.getBackoff().getMultiplier(),
 					properties.getBackoff().getMaxInterval())
 			.withListener(new RetryListener() {
@@ -71,8 +75,21 @@ public class SpringAiRetryAutoConfiguration {
 					logger.warn("Retry error. Retry count: {}, Exception: {}", context.getRetryCount(),
 							throwable.getMessage(), throwable);
 				}
-			})
-			.build();
+			});
+
+		// Optionally add WebFlux pre-response network errors if present
+		try {
+			Class<?> webClientRequestEx = Class
+				.forName("org.springframework.web.reactive.function.client.WebClientRequestException");
+			@SuppressWarnings("unchecked")
+			Class<? extends Throwable> exClass = (Class<? extends Throwable>) webClientRequestEx;
+			builder.retryOn(exClass);
+		}
+		catch (ClassNotFoundException ignore) {
+			// WebFlux not on classpath; skip
+		}
+
+		return builder.build();
 	}
 
 	@Bean
