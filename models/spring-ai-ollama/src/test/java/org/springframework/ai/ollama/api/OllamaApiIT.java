@@ -130,7 +130,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 						.content("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.options(OllamaOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.9).build())
 			.think(true)
 			.build();
 

@@ -400,48 +400,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				.toolContext(fromOptions.getToolContext()).build();
 	}
 
-	public static OllamaChatOptions fromOptions(OllamaOptions fromOptions) {
-		return builder()
-				.model(fromOptions.getModel())
-				.format(fromOptions.getFormat())
-				.keepAlive(fromOptions.getKeepAlive())
-				.truncate(fromOptions.getTruncate())
-				.useNUMA(fromOptions.getUseNUMA())
-				.numCtx(fromOptions.getNumCtx())
-				.numBatch(fromOptions.getNumBatch())
-				.numGPU(fromOptions.getNumGPU())
-				.mainGPU(fromOptions.getMainGPU())
-				.lowVRAM(fromOptions.getLowVRAM())
-				.f16KV(fromOptions.getF16KV())
-				.logitsAll(fromOptions.getLogitsAll())
-				.vocabOnly(fromOptions.getVocabOnly())
-				.useMMap(fromOptions.getUseMMap())
-				.useMLock(fromOptions.getUseMLock())
-				.numThread(fromOptions.getNumThread())
-				.numKeep(fromOptions.getNumKeep())
-				.seed(fromOptions.getSeed())
-				.numPredict(fromOptions.getNumPredict())
-				.topK(fromOptions.getTopK())
-				.topP(fromOptions.getTopP())
-				.minP(fromOptions.getMinP())
-				.tfsZ(fromOptions.getTfsZ())
-				.typicalP(fromOptions.getTypicalP())
-				.repeatLastN(fromOptions.getRepeatLastN())
-				.temperature(fromOptions.getTemperature())
-				.repeatPenalty(fromOptions.getRepeatPenalty())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.mirostat(fromOptions.getMirostat())
-				.mirostatTau(fromOptions.getMirostatTau())
-				.mirostatEta(fromOptions.getMirostatEta())
-				.penalizeNewline(fromOptions.getPenalizeNewline())
-				.stop(fromOptions.getStop())
-				.toolNames(fromOptions.getToolNames())
-				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolContext(fromOptions.getToolContext()).build();
-	}
-
 	// -------------------
 	// Getters and Setters
 	// -------------------

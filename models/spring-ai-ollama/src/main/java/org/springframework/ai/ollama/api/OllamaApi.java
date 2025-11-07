@@ -510,19 +510,12 @@ public final class OllamaApi {
 			public Builder options(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
 
-				this.options = OllamaOptions.filterNonSupportedFields(options);
+				this.options = OllamaChatOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
 			public Builder think(Boolean think) {
 				this.think = think;
-				return this;
-			}
-
-			@Deprecated
-			public Builder options(OllamaOptions options) {
-				Objects.requireNonNull(options, "The options can not be null.");
-				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 

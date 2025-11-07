@@ -276,7 +276,7 @@ public String deepSeekReasonerMultiRoundExample() {
     String reasoningContent = deepSeekAssistantMessage.getReasoningContent();
     String text = deepSeekAssistantMessage.getText();
 
-    messages.add(new AssistantMessage(Objects.requireNonNull(text)));
+    messages.add(AssistantMessage.builder().content(Objects.requireNonNull(text)).build());
     messages.add(new UserMessage("How many Rs are there in the word 'strawberry'?"));
     Prompt prompt2 = new Prompt(messages, promptOptions);
     ChatResponse response2 = chatModel.call(prompt2);

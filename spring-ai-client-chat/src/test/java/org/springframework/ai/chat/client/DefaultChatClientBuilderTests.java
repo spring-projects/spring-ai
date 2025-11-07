@@ -59,7 +59,7 @@ class DefaultChatClientBuilderTests {
 
 	@Test
 	void whenObservationRegistryIsNullThenThrows() {
-		assertThatThrownBy(() -> new DefaultChatClientBuilder(mock(ChatModel.class), null, null))
+		assertThatThrownBy(() -> new DefaultChatClientBuilder(mock(ChatModel.class), null, null, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("the io.micrometer.observation.ObservationRegistry must be non-null");
 	}

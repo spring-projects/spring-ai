@@ -31,7 +31,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
@@ -160,7 +159,7 @@ class OllamaRetryTests {
 	@Test
 	void ollamaChatWithCustomOptions() {
 		String promptText = "Custom temperature request";
-		OllamaOptions customOptions = OllamaOptions.builder().model(MODEL).temperature(0.1).topP(0.9).build();
+		OllamaChatOptions customOptions = OllamaChatOptions.builder().model(MODEL).temperature(0.1).topP(0.9).build();
 
 		var expectedChatResponse = new OllamaApi.ChatResponse("CHAT_COMPLETION_ID", Instant.now(),
 				OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT).content("Deterministic response").build(),

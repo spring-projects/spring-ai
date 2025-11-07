@@ -38,7 +38,7 @@ class ZhiPuAiAssistantMessageTests {
 	@Test
 	public void testConstructorWithContentOnly() {
 		String content = "Hello, world!";
-		ZhiPuAiAssistantMessage message = new ZhiPuAiAssistantMessage(content);
+		ZhiPuAiAssistantMessage message = new ZhiPuAiAssistantMessage.Builder().content(content).build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getReasoningContent()).isNull();
@@ -53,8 +53,12 @@ class ZhiPuAiAssistantMessageTests {
 		List<ToolCall> toolCalls = List.of(new ToolCall("1", "function", "myFunction", "{}"));
 		List<Media> media = List.of();
 
-		ZhiPuAiAssistantMessage message = new ZhiPuAiAssistantMessage(content, reasoningContent, properties, toolCalls,
-				media);
+		ZhiPuAiAssistantMessage message = new ZhiPuAiAssistantMessage.Builder().content(content)
+			.reasoningContent(reasoningContent)
+			.properties(properties)
+			.toolCalls(toolCalls)
+			.media(media)
+			.build();
 
 		assertThat(message.getText()).isEqualTo(content);
 		assertThat(message.getReasoningContent()).isEqualTo(reasoningContent);
@@ -64,7 +68,7 @@ class ZhiPuAiAssistantMessageTests {
 
 	@Test
 	public void testSettersAndGetters() {
-		ZhiPuAiAssistantMessage message = new ZhiPuAiAssistantMessage("test");
+		ZhiPuAiAssistantMessage message = new ZhiPuAiAssistantMessage.Builder().content("test").build();
 
 		String reasoningContent = "New reasoning content";
 

@@ -34,7 +34,7 @@ import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -158,8 +158,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		List<String> contents = new ArrayList<>();
 		List<float[]> embeddings = new ArrayList<>();
 
-		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents,
-				EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
+				this.batchingStrategy);
 
 		for (Document document : documents) {
 			ids.add(document.getId());

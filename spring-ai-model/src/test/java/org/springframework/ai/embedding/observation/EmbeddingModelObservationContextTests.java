@@ -21,7 +21,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +36,7 @@ class EmbeddingModelObservationContextTests {
 	@Test
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("supermodel").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("supermodel").build()))
 			.provider("superprovider")
 			.build();
 
@@ -54,7 +53,7 @@ class EmbeddingModelObservationContextTests {
 
 	@Test
 	void whenBuilderWithNullProviderThenThrowsException() {
-		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("test-model").build());
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
 
 		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
@@ -64,7 +63,7 @@ class EmbeddingModelObservationContextTests {
 
 	@Test
 	void whenBuilderWithEmptyProviderThenThrowsException() {
-		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("test-model").build());
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
 
 		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
@@ -74,7 +73,7 @@ class EmbeddingModelObservationContextTests {
 
 	@Test
 	void whenValidRequestAndProviderThenBuildsSuccessfully() {
-		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("test-model").build());
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
@@ -86,7 +85,7 @@ class EmbeddingModelObservationContextTests {
 
 	@Test
 	void whenBuilderWithBlankProviderThenThrowsException() {
-		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("test-model").build());
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
 
 		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
@@ -108,8 +107,7 @@ class EmbeddingModelObservationContextTests {
 
 	@Test
 	void whenEmbeddingRequestWithEmptyInputListThenBuildsSuccessfully() {
-		var embeddingRequest = new EmbeddingRequest(List.of(),
-				EmbeddingOptionsBuilder.builder().model("test-model").build());
+		var embeddingRequest = new EmbeddingRequest(List.of(), EmbeddingOptions.builder().model("test-model").build());
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)

@@ -61,7 +61,7 @@ class MistralAiChatCompletionRequestTests {
 	private static final Media IMAGE_MEDIA = new Media(Media.Format.IMAGE_PNG, URI.create(IMAGE_URL));
 
 	private final MistralAiChatModel chatModel = MistralAiChatModel.builder()
-		.mistralAiApi(new MistralAiApi(BASE_URL, API_KEY))
+		.mistralAiApi(MistralAiApi.builder().baseUrl(BASE_URL).apiKey(API_KEY).build())
 		.build();
 
 	@Test
@@ -100,7 +100,7 @@ class MistralAiChatCompletionRequestTests {
 			.build();
 
 		MistralAiChatModel anotherChatModel = MistralAiChatModel.builder()
-			.mistralAiApi(new MistralAiApi(BASE_URL, API_KEY))
+			.mistralAiApi(MistralAiApi.builder().baseUrl(BASE_URL).apiKey(API_KEY).build())
 			.defaultOptions(defaultOptions)
 			.build();
 

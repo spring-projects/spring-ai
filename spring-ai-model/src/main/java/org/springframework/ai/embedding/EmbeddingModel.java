@@ -64,7 +64,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 */
 	default List<float[]> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()))
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.builder().build()))
 			.getResults()
 			.stream()
 			.map(Embedding::getOutput)
@@ -105,7 +105,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 */
 	default EmbeddingResponse embedForResponse(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()));
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.builder().build()));
 	}
 
 	/**
