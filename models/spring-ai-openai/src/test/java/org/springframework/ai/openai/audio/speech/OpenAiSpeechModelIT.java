@@ -47,10 +47,12 @@ class OpenAiSpeechModelIT extends AbstractIT {
 
 	@Test
 	void shouldSuccessfullyStreamAudioBytesForEmptyMessage() {
-		Flux<byte[]> response = this.speechModel.stream("Today is a wonderful day to build something people love!");
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!");
+		Flux<TextToSpeechResponse> response = this.speechModel.stream(prompt);
 		assertThat(response).isNotNull();
-		assertThat(response.collectList().block()).isNotNull();
-		System.out.println(response.collectList().block());
+		List<TextToSpeechResponse> responses = response.collectList().block();
+		assertThat(responses).isNotNull();
+		System.out.println("Received " + responses.size() + " audio chunks");
 	}
 
 	@Test
