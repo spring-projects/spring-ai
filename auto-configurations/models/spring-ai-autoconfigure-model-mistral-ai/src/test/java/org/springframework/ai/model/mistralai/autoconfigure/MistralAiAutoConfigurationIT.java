@@ -31,6 +31,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  * @since 0.8.1
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
@@ -50,45 +52,49 @@ public class MistralAiAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		this.contextRunner.withConfiguration(BaseMistralAiIT.mistralAiChatAutoConfig()).run(context -> {
-			MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
-			String response = chatModel.call("Hello");
-			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
-		});
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiChatAutoConfiguration.class))
+			.run(context -> {
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				String response = chatModel.call("Hello");
+				assertThat(response).isNotEmpty();
+				logger.info("Response: " + response);
+			});
 	}
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(BaseMistralAiIT.mistralAiChatAutoConfig()).run(context -> {
-			MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
-			Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
-			String response = responseFlux.collectList()
-				.block()
-				.stream()
-				.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
-				.collect(Collectors.joining());
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiChatAutoConfiguration.class))
+			.run(context -> {
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
+				String response = responseFlux.collectList()
+					.block()
+					.stream()
+					.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
+					.collect(Collectors.joining());
 
-			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
-		});
+				assertThat(response).isNotEmpty();
+				logger.info("Response: " + response);
+			});
 	}
 
 	@Test
 	void embedding() {
-		this.contextRunner.withConfiguration(BaseMistralAiIT.mistralAiEmbeddingAutoConfig()).run(context -> {
-			MistralAiEmbeddingModel embeddingModel = context.getBean(MistralAiEmbeddingModel.class);
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				MistralAiEmbeddingModel embeddingModel = context.getBean(MistralAiEmbeddingModel.class);
 
-			EmbeddingResponse embeddingResponse = embeddingModel
-				.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-			assertThat(embeddingResponse.getResults()).hasSize(2);
-			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
-			assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-			assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+				EmbeddingResponse embeddingResponse = embeddingModel
+					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				assertThat(embeddingResponse.getResults()).hasSize(2);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+				assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
-		});
+				assertThat(embeddingModel.dimensions()).isEqualTo(1024);
+			});
 	}
 
 }

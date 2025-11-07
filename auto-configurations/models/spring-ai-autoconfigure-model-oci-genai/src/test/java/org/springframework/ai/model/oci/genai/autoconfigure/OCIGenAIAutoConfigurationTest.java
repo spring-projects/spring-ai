@@ -27,7 +27,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.oci.cohere.OCICohereChatModel;
 import org.springframework.ai.oci.cohere.OCICohereChatOptions;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,9 +56,7 @@ class OCIGenAIAutoConfigurationTest {
 				"spring.ai.oci.genai.cohere.chat.options.frequencyPenalty=0.1",
 				"spring.ai.oci.genai.cohere.chat.options.presencePenalty=0.2"
 				// @formatter:on
-		)
-			.withConfiguration(AutoConfigurations.of(OCIGenAiInferenceClientAutoConfiguration.class,
-					OCIGenAiChatAutoConfiguration.class));
+		).withConfiguration(SpringAiTestAutoConfigurations.of(OCIGenAiChatAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 			OCICohereChatModel chatModel = context.getBean(OCICohereChatModel.class);

@@ -40,6 +40,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
+import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
 
@@ -63,10 +64,10 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	};
 
 	/**
-	 * Set the order close to Ordered.LOWEST_PRECEDENCE to ensure an advisor is executed
-	 * toward the last (but before the model call) in the chain (last for request
+	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
+	 * executed toward the last (but before the model call) in the chain (last for request
 	 * processing, first for response processing).
-	 *
+	 * <p>
 	 * https://docs.spring.io/spring-ai/reference/api/advisors.html#_advisor_order
 	 */
 	private final int advisorOrder;
@@ -223,10 +224,10 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	public final static class Builder {
 
 		/**
-		 * Set the order close to Ordered.LOWEST_PRECEDENCE to ensure an advisor is
-		 * executed toward the last (but before the model call) in the chain (last for
+		 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor
+		 * is executed toward the last (but before the model call) in the chain (last for
 		 * request processing, first for response processing).
-		 *
+		 * <p>
 		 * https://docs.spring.io/spring-ai/reference/api/advisors.html#_advisor_order
 		 */
 		private int advisorOrder = BaseAdvisor.LOWEST_PRECEDENCE - 2000;
