@@ -18,7 +18,8 @@ package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 
@@ -49,9 +50,11 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
-	private final AtomicBoolean invalidateCache = new AtomicBoolean(true);
+	private volatile boolean invalidateCache = true;
 
 	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
+
+	private final Lock lock = new ReentrantLock();
 
 	/**
 	 * Creates a provider with MCP clients and tool filter.
@@ -121,9 +124,10 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		if (this.invalidateCache.get()) {
-			synchronized (this) {
-				if (this.invalidateCache.getAndSet(false)) {
+		if (this.invalidateCache) {
+			this.lock.lock();
+			try {
+				if (this.invalidateCache) {
 					this.cachedToolCallbacks = this.mcpClients.stream()
 						.flatMap(mcpClient -> mcpClient.listTools()
 							.tools()
@@ -139,7 +143,11 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 						.toList();
 
 					this.validateToolCallbacks(this.cachedToolCallbacks);
+					this.invalidateCache = false;
 				}
+			}
+			finally {
+				this.lock.unlock();
 			}
 		}
 
@@ -150,7 +158,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	 * Invalidates the cached tool callbacks, forcing re-discovery on next request.
 	 */
 	public void invalidateCache() {
-		this.invalidateCache.set(true);
+		this.invalidateCache = true;
 	}
 
 	@Override

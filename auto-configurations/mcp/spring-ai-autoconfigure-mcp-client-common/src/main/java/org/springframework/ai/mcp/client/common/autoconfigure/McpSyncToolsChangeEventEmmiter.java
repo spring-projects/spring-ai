@@ -40,9 +40,8 @@ public class McpSyncToolsChangeEventEmmiter implements McpSyncClientCustomizer {
 
 	@Override
 	public void customize(String connectionName, SyncSpec spec) {
-		spec.toolsChangeConsumer(tools -> {
-			this.applicationEventPublisher.publishEvent(new McpToolsChangedEvent(connectionName, tools));
-		});
+		spec.toolsChangeConsumer(
+				tools -> this.applicationEventPublisher.publishEvent(new McpToolsChangedEvent(connectionName, tools)));
 
 	}
 
