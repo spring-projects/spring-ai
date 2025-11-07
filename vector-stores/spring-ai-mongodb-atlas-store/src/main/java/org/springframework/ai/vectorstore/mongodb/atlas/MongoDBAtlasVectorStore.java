@@ -261,8 +261,11 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
 				this.batchingStrategy);
 		for (Document document : documents) {
-			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+			org.bson.Document mdbDocument = new org.bson.Document();
+			mdbDocument.put(ID_FIELD_NAME, document.getId());
+			mdbDocument.put(CONTENT_FIELD_NAME, document.getText());
+			mdbDocument.put(METADATA_FIELD_NAME, document.getMetadata());
+			mdbDocument.put(this.pathName, EmbeddingUtils.toList(embeddings.get(documents.indexOf(document))));
 			this.mongoTemplate.save(mdbDocument, this.collectionName);
 		}
 	}
