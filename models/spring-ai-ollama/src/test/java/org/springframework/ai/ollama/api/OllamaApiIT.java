@@ -87,7 +87,6 @@ public class OllamaApiIT extends BaseOllamaIT {
 				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
 			.options(OllamaChatOptions.builder().temperature(0.9).build().toMap())
-			.enableThinking()
 			.build();
 
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
