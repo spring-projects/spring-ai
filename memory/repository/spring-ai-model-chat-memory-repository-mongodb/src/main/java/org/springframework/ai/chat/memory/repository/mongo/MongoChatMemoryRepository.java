@@ -32,7 +32,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.lang.Nullable;
 
 /**
  * An implementation of {@link ChatMemoryRepository} for MongoDB.
@@ -80,14 +79,23 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 		this.mongoTemplate.remove(Query.query(Criteria.where("conversationId").is(conversationId)), Conversation.class);
 	}
 
-	public static @Nullable Message mapMessage(Conversation conversation) {
+	public static Message mapMessage(Conversation conversation) {
 		return switch (conversation.message().type()) {
-			case "USER" -> new UserMessage(conversation.message().content());
-			case "ASSISTANT" -> new AssistantMessage(conversation.message().content());
-			case "SYSTEM" -> new SystemMessage(conversation.message().content());
+			case "USER" -> UserMessage.builder()
+				.text(conversation.message().content())
+				.metadata(conversation.message().metadata())
+				.build();
+			case "ASSISTANT" -> AssistantMessage.builder()
+				.content(conversation.message().content())
+				.properties(conversation.message().metadata())
+				.build();
+			case "SYSTEM" -> SystemMessage.builder()
+				.text(conversation.message().content())
+				.metadata(conversation.message().metadata())
+				.build();
 			default -> {
 				logger.warn("Unsupported message type: {}", conversation.message().type());
-				yield null;
+				throw new IllegalStateException("Unsupported message type: " + conversation.message().type());
 			}
 		};
 	}
