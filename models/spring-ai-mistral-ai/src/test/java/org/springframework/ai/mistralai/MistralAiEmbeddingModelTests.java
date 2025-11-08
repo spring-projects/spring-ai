@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -28,11 +29,13 @@ import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link MistralAiEmbeddingModel}.
  *
+ * @author Mark Pollack
  * @author Nicolas Krier
  */
 class MistralAiEmbeddingModelTests {
@@ -77,7 +80,7 @@ class MistralAiEmbeddingModelTests {
 	void testDimensionsFallbackForUnknownModel() {
 		MistralAiApi mockApi = createMockApiWithEmbeddingResponse(512);
 
-		// Use a model name that doesn't exist in KNOWN_EMBEDDING_DIMENSIONS
+		// Use a model name that doesn't exist in knownEmbeddingDimensions.
 		MistralAiEmbeddingOptions options = MistralAiEmbeddingOptions.builder().withModel("unknown-model").build();
 
 		MistralAiEmbeddingModel model = MistralAiEmbeddingModel.builder()
@@ -87,17 +90,23 @@ class MistralAiEmbeddingModelTests {
 			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.build();
 
-		// Should fall back to super.dimensions() which detects dimensions from the API
-		// response
+		// For the first call, it should fall back to super.dimensions() which detects
+		// dimensions from the API response.
 		assertThat(model.dimensions()).isEqualTo(512);
+
+		// For the second call, it should use the cache mechanism.
+		assertThat(model.dimensions()).isEqualTo(512);
+
+		// Verify that super.dimensions() has been called once.
+		verify(mockApi).embeddings(any());
 	}
 
 	@Test
 	void testAllEmbeddingModelsHaveDimensionMapping() {
-		// This test ensures that KNOWN_EMBEDDING_DIMENSIONS map stays in sync with the
-		// EmbeddingModel enum
+		// This test ensures that knownEmbeddingDimensions map stays in sync with the
+		// EmbeddingModel enum.
 		// If a new model is added to the enum but not to the dimensions map, this test
-		// will help catch it
+		// will help catch it.
 
 		for (MistralAiApi.EmbeddingModel embeddingModel : MistralAiApi.EmbeddingModel.values()) {
 			MistralAiApi mockApi = createMockApiWithEmbeddingResponse(1024);
@@ -138,16 +147,13 @@ class MistralAiEmbeddingModelTests {
 
 		// Create a mock embedding response with the specified dimensions
 		float[] embedding = new float[dimensions];
-		for (int i = 0; i < dimensions; i++) {
-			embedding[i] = 0.1f;
-		}
+		Arrays.fill(embedding, 0.1f);
 
 		MistralAiApi.Embedding embeddingData = new MistralAiApi.Embedding(0, embedding, "embedding");
 
 		MistralAiApi.Usage usage = new MistralAiApi.Usage(10, 0, 10);
 
-		MistralAiApi.EmbeddingList embeddingList = new MistralAiApi.EmbeddingList("object", List.of(embeddingData),
-				"model", usage);
+		var embeddingList = new MistralAiApi.EmbeddingList<>("object", List.of(embeddingData), "model", usage);
 
 		when(mockApi.embeddings(any())).thenReturn(ResponseEntity.ok(embeddingList));
 
