@@ -30,6 +30,14 @@
 	<name>Spring AI MongoDB Chat Memory</name>
 	<description>Spring AI MongoDB Chat Memory implementation</description>
 
+	<url>https://github.com/spring-projects/spring-ai</url>
+
+	<scm>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
+	</scm>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
