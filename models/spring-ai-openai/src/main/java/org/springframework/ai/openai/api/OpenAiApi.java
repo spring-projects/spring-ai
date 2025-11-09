@@ -935,7 +935,7 @@ public class OpenAiApi {
 			public Function(String description, String name, Map<String, Object> parameters, Boolean strict) {
 				this.description = description;
 				this.name = name;
-				this.parameters = parameters;
+				this.parameters = ensureValidParametersSchema(parameters);
 				this.strict = strict;
 			}
 
@@ -946,7 +946,39 @@ public class OpenAiApi {
 			 * @param jsonSchema tool function schema as json.
 			 */
 			public Function(String description, String name, String jsonSchema) {
-				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema), null);
+				this.description = description;
+				this.name = name;
+				this.parameters = ensureValidParametersSchema(
+						jsonSchema != null ? ModelOptionsUtils.jsonToMap(jsonSchema) : null);
+				this.strict = null;
+			}
+
+			/**
+			 * Ensures that the parameters schema is valid for OpenAI API. OpenAI requires
+			 * that the parameters object must have a "properties" field, even if it's
+			 * empty.
+			 * @param parameters the parameters map from JSON schema
+			 * @return a valid parameters map with required fields
+			 */
+			private static Map<String, Object> ensureValidParametersSchema(Map<String, Object> parameters) {
+				if (parameters == null) {
+					parameters = new java.util.HashMap<>();
+					parameters.put("type", "object");
+					parameters.put("properties", new java.util.HashMap<>());
+					return parameters;
+				}
+
+				// Ensure "type" field exists
+				if (!parameters.containsKey("type")) {
+					parameters.put("type", "object");
+				}
+
+				// Ensure "properties" field exists for object types
+				if ("object".equals(parameters.get("type")) && !parameters.containsKey("properties")) {
+					parameters.put("properties", new java.util.HashMap<>());
+				}
+
+				return parameters;
 			}
 
 			public String getDescription() {
