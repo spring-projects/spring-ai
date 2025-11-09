@@ -16,13 +16,6 @@
 
 package org.springframework.ai.vectorstore.opensearch;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +35,13 @@ import org.opensearch.client.opensearch.core.BulkResponse;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for OpenSearchVectorStore.doAdd() method.
@@ -64,9 +64,9 @@ class OpenSearchVectorStoreTest {
 	@BeforeEach
 	void setUp() throws IOException {
 		// Use lenient to avoid UnnecessaryStubbingException
-		lenient().when(mockEmbeddingModel.dimensions()).thenReturn(3);
-		lenient().when(mockOpenSearchClient.bulk(any(BulkRequest.class))).thenReturn(mockBulkResponse);
-		lenient().when(mockBulkResponse.errors()).thenReturn(false);
+		lenient().when(this.mockEmbeddingModel.dimensions()).thenReturn(3);
+		lenient().when(this.mockOpenSearchClient.bulk(any(BulkRequest.class))).thenReturn(this.mockBulkResponse);
+		lenient().when(this.mockBulkResponse.errors()).thenReturn(false);
 	}
 
 	@ParameterizedTest(name = "manageDocumentIds={0}")
@@ -74,7 +74,7 @@ class OpenSearchVectorStoreTest {
 	@DisplayName("Should handle document ID management setting correctly")
 	void shouldHandleDocumentIdManagementSetting(boolean manageDocumentIds) throws IOException {
 		// Given
-		when(mockEmbeddingModel.embed(any(), any(), any()))
+		when(this.mockEmbeddingModel.embed(any(), any(), any()))
 			.thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }, new float[] { 0.4f, 0.5f, 0.6f }));
 
 		OpenSearchVectorStore vectorStore = createVectorStore(manageDocumentIds);
@@ -95,7 +95,7 @@ class OpenSearchVectorStoreTest {
 	@DisplayName("Should handle single document correctly")
 	void shouldHandleSingleDocumentCorrectly() throws IOException {
 		// Given
-		when(mockEmbeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }));
+		when(this.mockEmbeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }));
 
 		OpenSearchVectorStore vectorStore = createVectorStore(true);
 		Document document = new Document("test-id", "test content", Map.of("key", "value"));
@@ -116,7 +116,7 @@ class OpenSearchVectorStoreTest {
 	@DisplayName("Should handle multiple documents with explicit IDs")
 	void shouldHandleMultipleDocumentsWithExplicitIds() throws IOException {
 		// Given
-		when(mockEmbeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f },
+		when(this.mockEmbeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f },
 				new float[] { 0.4f, 0.5f, 0.6f }, new float[] { 0.7f, 0.8f, 0.9f }));
 
 		OpenSearchVectorStore vectorStore = createVectorStore(true);
@@ -141,7 +141,7 @@ class OpenSearchVectorStoreTest {
 	@DisplayName("Should handle multiple documents without explicit IDs")
 	void shouldHandleMultipleDocumentsWithoutExplicitIds() throws IOException {
 		// Given
-		when(mockEmbeddingModel.embed(any(), any(), any()))
+		when(this.mockEmbeddingModel.embed(any(), any(), any()))
 			.thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }, new float[] { 0.4f, 0.5f, 0.6f }));
 
 		OpenSearchVectorStore vectorStore = createVectorStore(false);
@@ -165,7 +165,7 @@ class OpenSearchVectorStoreTest {
 	@DisplayName("Should handle embedding model error")
 	void shouldHandleEmbeddingModelError() {
 		// Given
-		when(mockEmbeddingModel.embed(any(), any(), any())).thenThrow(new RuntimeException("Embedding failed"));
+		when(this.mockEmbeddingModel.embed(any(), any(), any())).thenThrow(new RuntimeException("Embedding failed"));
 
 		OpenSearchVectorStore vectorStore = createVectorStore(true);
 		List<Document> documents = List.of(new Document("doc1", "content", Map.of()));
@@ -178,14 +178,14 @@ class OpenSearchVectorStoreTest {
 	// Helper methods
 
 	private OpenSearchVectorStore createVectorStore(boolean manageDocumentIds) {
-		return OpenSearchVectorStore.builder(mockOpenSearchClient, mockEmbeddingModel)
+		return OpenSearchVectorStore.builder(this.mockOpenSearchClient, this.mockEmbeddingModel)
 			.manageDocumentIds(manageDocumentIds)
 			.build();
 	}
 
 	private BulkRequest captureBulkRequest() throws IOException {
 		ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
-		verify(mockOpenSearchClient).bulk(captor.capture());
+		verify(this.mockOpenSearchClient).bulk(captor.capture());
 		return captor.getValue();
 	}
 
