@@ -41,6 +41,7 @@ import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 
@@ -67,6 +68,8 @@ class McpToolsConfigurationTests {
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:0",
 					"spring.ai.mcp.client.initialized=false")
 			.withConfiguration(AutoConfigurations.of(
+					// WebClientFactory
+					DefaultWebClientFactory.class,
 					// Transport
 					StreamableHttpWebFluxTransportAutoConfiguration.class,
 					// MCP clients
@@ -180,16 +183,16 @@ class McpToolsConfigurationTests {
 
 		// Ignored by the resolver
 		@Bean
-		SyncMcpToolCallbackProvider mcpToolCallbackProvider() {
+		SyncMcpToolCallbackProvider mcpToolCallbackProvider(@Lazy ToolCallbackResolver resolver) {
 			var tcp = mock(SyncMcpToolCallbackProvider.class);
 			when(tcp.getToolCallbacks())
 				.thenThrow(new RuntimeException("mcpToolCallbackProvider#getToolCallbacks should not be called"));
 			return tcp;
 		}
 
-		// Ignored by the resolver
+		// This bean depends on the resolver, to ensure there are no cyclic dependencies
 		@Bean
-		CustomMcpToolCallbackProvider customMcpToolCallbackProvider() {
+		CustomMcpToolCallbackProvider customMcpToolCallbackProvider(@Lazy ToolCallbackResolver resolver) {
 			return new CustomMcpToolCallbackProvider();
 		}
 
