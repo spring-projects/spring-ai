@@ -1,7 +1,7 @@
 = OpenAI Image Generation
 
 
-Spring AI supports DALL-E, the Image generation model from OpenAI.
+Spring AI supports OpenAI's image generation models including GPT-Image-1, GPT-Image-1-Mini, DALL-E 3, and DALL-E 2.
 
 == Prerequisites
 
@@ -133,15 +133,21 @@ The prefix `spring.ai.openai.image` is the property prefix that lets you configu
 | spring.ai.openai.image.api-key               | Optional overrides the spring.ai.openai.api-key to provide chat specific api-key |  -
 | spring.ai.openai.image.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.image.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
-| spring.ai.openai.image.options.model        | The model to use for image generation.  | OpenAiImageApi.DEFAULT_IMAGE_MODEL
-| spring.ai.openai.image.options.quality      | The quality of the image that will be generated. HD creates images with finer details and greater consistency across the image. This parameter is only supported for dall-e-3. | -
-| spring.ai.openai.image.options.response_format | The format in which the generated images are returned. Must be one of URL or b64_json. | -
-| `spring.ai.openai.image.options.size`       | The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models. | -
+| spring.ai.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3 and gpt-image models, only n=1 is supported.  | -
+| spring.ai.openai.image.options.model        | The model to use for image generation. Available models: `dall-e-3` (default), `dall-e-2`, `gpt-image-1`, `gpt-image-1-mini`.  | dall-e-3
+| spring.ai.openai.image.options.quality      | The quality of the image. For gpt-image-1: `high`, `medium`, `low`, or `auto` (default). For dall-e-3: `hd` or `standard`. | -
+| spring.ai.openai.image.options.response_format | The format in which the generated images are returned. Must be one of `url` or `b64_json`. Only supported for dall-e-2 and dall-e-3. GPT-Image models always return base64-encoded images. | -
+| `spring.ai.openai.image.options.size`       | The size of the generated images. For gpt-image-1: `1024x1024`, `1536x1024`, `1024x1536`, or `auto` (default). For dall-e-2: `256x256`, `512x512`, or `1024x1024`. For dall-e-3: `1024x1024`, `1792x1024`, or `1024x1792`. | -
 | `spring.ai.openai.image.options.size_width` | The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.  | -
 | `spring.ai.openai.image.options.size_height`| The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2. | -
-| `spring.ai.openai.image.options.style`      | The style of the generated images. Must be one of vivid or natural. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This parameter is only supported for dall-e-3. | -
+| `spring.ai.openai.image.options.style`      | The style of the generated images. Must be one of `vivid` or `natural`. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This parameter is only supported for dall-e-3. | -
 | `spring.ai.openai.image.options.user`       | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
+| `spring.ai.openai.image.options.background` | The background type for the generated image. Must be one of `transparent`, `opaque`, or `auto` (default). Only supported for GPT-Image models. | -
+| `spring.ai.openai.image.options.moderation` | The level of content moderation to apply. Must be one of `low` or `auto` (default). Only supported for GPT-Image models. | -
+| `spring.ai.openai.image.options.output_compression` | The compression level for the output image. Integer between 0-100. Only supported for GPT-Image models. NOTE: Compression less than 100 is not supported for PNG output format. | -
+| `spring.ai.openai.image.options.output_format` | The format of the output image. Must be one of `png`, `jpeg`, or `webp`. Only supported for GPT-Image models. | -
+| `spring.ai.openai.image.options.partial_images` | The number of partial images to generate during streaming. Must be between 0 and 3. Only supported for GPT-Image models with streaming enabled. NOTE: Partial images are only supported with streaming (`stream=true`). | -
+| `spring.ai.openai.image.options.stream`     | Enable streaming image generation. When `true`, partial images are sent as they are generated. Only supported for GPT-Image models. | false
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
@@ -164,7 +170,7 @@ For example to override the OpenAI specific options such as quality and the numb
 ImageResponse response = openaiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
         OpenAiImageOptions.builder()
-                .quality("hd")
+                .model("dall-e-2")  // dall-e-2 supports generating multiple images
                 .N(4)
                 .height(1024)
                 .width(1024).build())
@@ -172,4 +178,94 @@ ImageResponse response = openaiImageModel.call(
 );
 ----
 
+NOTE: Only DALL-E 2 supports generating multiple images (n > 1). For DALL-E 3 and GPT-Image models, n must be 1.
+
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiImageOptions.java[OpenAiImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].
+
+== Streaming Image Generation
+
+The GPT-Image models (`gpt-image-1` and `gpt-image-1-mini`) support streaming image generation, which allows you to receive partial images as they are being generated. This provides a better user experience by showing progressive refinement of the image.
+
+NOTE: Streaming is only supported for GPT-Image models. DALL-E models do not support streaming.
+
+=== Basic Streaming Example
+
+[source,java]
+----
+OpenAiImageOptions options = OpenAiImageOptions.builder()
+    .model("gpt-image-1-mini")
+    .stream(true)
+    .partialImages(2)  // Request 2 partial images before the final image
+    .size("1024x1024")
+    .build();
+
+ImagePrompt prompt = new ImagePrompt("A serene mountain landscape", options);
+
+// Stream the image generation
+Flux<ImageResponse> imageStream = openAiImageModel.stream(prompt);
+
+// Subscribe and handle partial + final images
+imageStream.subscribe(response -> {
+    Image image = response.getResult().getOutput();
+    String b64Json = image.getB64Json();
+    // Display or save the partial/final image
+    displayImage(b64Json);
+});
+----
+
+=== Streaming Parameters
+
+[cols="3,5,1"]
+|====
+| Parameter | Description | Default
+
+| `stream` | Enable streaming mode. Must be `true` for streaming. | false
+| `partialImages` | Number of partial images to send during generation. Must be between 0 and 3. Only valid when `stream=true`. | 0
+| `outputCompression` | Compression level for streamed images (0-100). Lower values mean faster streaming but larger file sizes. | -
+| `outputFormat` | Format for streamed images: `png`, `jpeg`, or `webp`. | -
+|====
+
+IMPORTANT: The `partialImages` parameter must be between 0 and 3. Values above 3 will result in an error.
+
+IMPORTANT: Partial images are only supported with streaming enabled (`stream=true`). Setting `partialImages` without `stream=true` will result in an error.
+
+IMPORTANT: Compression levels below 100 are not supported for PNG output format. Use JPEG or WebP format if you need compression below 100.
+
+=== Understanding Partial Images
+
+- **partialImages = 0**: Only the final completed image is streamed
+- **partialImages = 1**: One intermediate image is sent, followed by the final image
+- **partialImages = 2**: Two intermediate images are sent, followed by the final image
+- **partialImages = 3**: Three intermediate images are sent, followed by the final image (maximum)
+
+Each partial image shows progressive refinement, allowing you to display an increasingly detailed preview to users before the final high-quality image is ready.
+
+=== Advanced Streaming Example
+
+[source,java]
+----
+OpenAiImageOptions options = OpenAiImageOptions.builder()
+    .model("gpt-image-1")
+    .stream(true)
+    .partialImages(3)
+    .size("1536x1024")
+    .quality("high")
+    .background("transparent")
+    .outputFormat("jpeg")
+    .outputCompression(85)
+    .build();
+
+ImagePrompt prompt = new ImagePrompt("A futuristic cityscape at sunset", options);
+
+Flux<ImageResponse> imageStream = openAiImageModel.stream(prompt);
+
+// Handle each image progressively
+imageStream
+    .doOnNext(response -> {
+        Image image = response.getResult().getOutput();
+        System.out.println("Received image chunk");
+        updatePreview(image.getB64Json());
+    })
+    .doOnComplete(() -> System.out.println("Image generation complete"))
+    .subscribe();
+----
