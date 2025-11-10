@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
-import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -215,6 +214,171 @@ class JsonSchemaGeneratorTests {
 	@Test
 	void generateSchemaForMethodWithNullableAnnotations() throws Exception {
 		Method method = TestMethods.class.getDeclaredMethod("nullableMethod", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithNullableAnnotations_FromJavax() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("nullableMethod_FromJavax", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithNullableAnnotations_FromJakarta() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("nullableMethod_FromJakarta", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithNullableAnnotations_FromReactor() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("nullableMethod_FromReactor", String.class, String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithNullableAnnotations_FromMicrometerContext() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("nullableMethod_FromMicrometerContext", String.class,
+				String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithNullableAnnotations_FromMicrometerCommonLang() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("nullableMethod_FromMicrometerCommonLang", String.class,
+				String.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		String expectedJsonSchema = """
+				{
+				    "$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "username": {
+				            "type": "string"
+				        },
+				        "password": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "password"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithNullableAnnotations_FromMicrometerCoreLang() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("nullableMethod_FromMicrometerCoreLang", String.class,
+				String.class);
 
 		String schema = JsonSchemaGenerator.generateForMethodInput(method);
 		String expectedJsonSchema = """
@@ -560,7 +724,187 @@ class JsonSchemaGeneratorTests {
 
 	@Test
 	void generateSchemaForTypeWithNullableAnnotation() {
-		String schema = JsonSchemaGenerator.generateForType(JacksonPerson.class);
+		String schema = JsonSchemaGenerator.generateForType(NullablePerson.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithNullableAnnotation_FromJavax() {
+		String schema = JsonSchemaGenerator.generateForType(NullablePerson_FromJavax.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithNullableAnnotation_FromJakarta() {
+		String schema = JsonSchemaGenerator.generateForType(NullablePerson_FromJakarta.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithNullableAnnotation_FromReactor() {
+		String schema = JsonSchemaGenerator.generateForType(NullablePerson_FromReactor.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithNullableAnnotation_FromMicrometerContext() {
+		String schema = JsonSchemaGenerator.generateForType(NullablePerson_FromMicrometerContext.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithNullableAnnotation_FromMicrometerCommonLang() {
+		String schema = JsonSchemaGenerator.generateForType(NullablePerson_FromMicrometerCommonLang.class);
+		String expectedJsonSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+				    "type": "object",
+				    "properties": {
+				        "email": {
+				            "type": "string"
+				        },
+				        "id": {
+				            "type": "integer",
+				            "format": "int32"
+				        },
+				        "name": {
+				            "type": "string"
+				        }
+				    },
+				    "required": [
+				        "id",
+				        "name"
+				    ],
+				    "additionalProperties": false
+				}
+				""";
+
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithNullableAnnotation_FromMicrometerCoreLang() {
+		String schema = JsonSchemaGenerator.generateForType(NullablePerson_FromMicrometerCoreLang.class);
 		String expectedJsonSchema = """
 				{
 					"$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -702,7 +1046,28 @@ class JsonSchemaGeneratorTests {
 				@JsonProperty(required = true) String password) {
 		}
 
-		public void nullableMethod(@Nullable String username, String password) {
+		public void nullableMethod(@org.springframework.lang.Nullable String username, String password) {
+		}
+
+		public void nullableMethod_FromJavax(@javax.annotation.Nullable String username, String password) {
+		}
+
+		public void nullableMethod_FromJakarta(@jakarta.annotation.Nullable String username, String password) {
+		}
+
+		public void nullableMethod_FromReactor(@reactor.util.annotation.Nullable String username, String password) {
+		}
+
+		public void nullableMethod_FromMicrometerContext(@io.micrometer.context.Nullable String username,
+				String password) {
+		}
+
+		public void nullableMethod_FromMicrometerCommonLang(@io.micrometer.common.lang.Nullable String username,
+				String password) {
+		}
+
+		public void nullableMethod_FromMicrometerCoreLang(@io.micrometer.core.lang.Nullable String username,
+				String password) {
 		}
 
 		public void complexMethod(List<String> items, TestData data, MoreTestData moreData) {
@@ -742,7 +1107,32 @@ class JsonSchemaGeneratorTests {
 
 	}
 
-	record NullablePerson(int id, String name, @Nullable String email) {
+	record NullablePerson(int id, String name, @org.springframework.lang.Nullable String email) {
+
+	}
+
+	record NullablePerson_FromJavax(int id, String name, @javax.annotation.Nullable String email) {
+
+	}
+
+	record NullablePerson_FromJakarta(int id, String name, @jakarta.annotation.Nullable String email) {
+
+	}
+
+	record NullablePerson_FromReactor(int id, String name, @reactor.util.annotation.Nullable String email) {
+
+	}
+
+	record NullablePerson_FromMicrometerContext(int id, String name, @io.micrometer.context.Nullable String email) {
+
+	}
+
+	record NullablePerson_FromMicrometerCommonLang(int id, String name,
+			@io.micrometer.common.lang.Nullable String email) {
+
+	}
+
+	record NullablePerson_FromMicrometerCoreLang(int id, String name, @io.micrometer.core.lang.Nullable String email) {
 
 	}
 
