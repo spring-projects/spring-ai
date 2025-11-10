@@ -16,10 +16,10 @@
 
 package org.springframework.ai.openai.api;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,7 +50,7 @@ class FunctionToolParametersTest {
 		assertThat(function.getParameters().get("properties")).isInstanceOf(Map.class);
 
 		// Verify serialization produces valid JSON
-		String json = objectMapper.writeValueAsString(function);
+		String json = this.objectMapper.writeValueAsString(function);
 		assertThat(json).contains("\"properties\"");
 	}
 
@@ -72,7 +72,7 @@ class FunctionToolParametersTest {
 		assertThat(function.getParameters().get("properties")).isNotNull();
 
 		// Verify serialization produces valid JSON
-		String json = objectMapper.writeValueAsString(function);
+		String json = this.objectMapper.writeValueAsString(function);
 		assertThat(json).contains("\"properties\"");
 	}
 
@@ -105,7 +105,7 @@ class FunctionToolParametersTest {
 		assertThat(properties).containsKey("param1");
 
 		// Verify serialization produces valid JSON
-		String json = objectMapper.writeValueAsString(function);
+		String json = this.objectMapper.writeValueAsString(function);
 		assertThat(json).contains("\"properties\"");
 		assertThat(json).contains("\"param1\"");
 	}
@@ -123,7 +123,7 @@ class FunctionToolParametersTest {
 		assertThat(function.getParameters().get("properties")).isNotNull();
 
 		// Verify serialization produces valid JSON
-		String json = objectMapper.writeValueAsString(function);
+		String json = this.objectMapper.writeValueAsString(function);
 		assertThat(json).contains("\"properties\"");
 	}
 
@@ -149,7 +149,7 @@ class FunctionToolParametersTest {
 		assertThat(function.getParameters().get("properties")).isInstanceOf(Map.class);
 
 		// Verify serialization produces valid JSON for OpenAI API
-		String json = objectMapper.writeValueAsString(function);
+		String json = this.objectMapper.writeValueAsString(function);
 		assertThat(json).contains("\"properties\"");
 	}
 
