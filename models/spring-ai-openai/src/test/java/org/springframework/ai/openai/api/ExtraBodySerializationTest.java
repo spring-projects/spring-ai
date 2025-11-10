@@ -49,20 +49,10 @@ class ExtraBodySerializationTest {
 		// Act: Serialize to JSON
 		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
 
-		// Debug: Print the actual JSON
-		System.out.println("=== JSON Output (with @JsonAnyGetter) ===");
-		System.out.println(json);
-
 		// Assert: Verify @JsonAnyGetter flattens fields to top level
 		assertThat(json).contains("\"top_k\" : 50");
 		assertThat(json).contains("\"repetition_penalty\" : 1.1");
 		assertThat(json).doesNotContain("\"extra_body\"");
-
-		System.out.println("\n=== Analysis ===");
-		System.out.println("✓ Fields are FLATTENED to top level (correct!)");
-		System.out.println("  Format: { \"model\": \"gpt-4\", \"top_k\": 50, \"repetition_penalty\": 1.1 }");
-		System.out.println("  This matches official OpenAI SDK and LangChain4j behavior");
-		System.out.println("  This is CORRECT for vLLM, Ollama, and other OpenAI-compatible servers");
 	}
 
 	@Test
@@ -77,10 +67,6 @@ class ExtraBodySerializationTest {
 
 		// Act
 		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
-
-		// Debug
-		System.out.println("\n=== JSON Output (empty extraBody map) ===");
-		System.out.println(json);
 
 		// Assert: No extra fields should appear
 		assertThat(json).doesNotContain("extra_body");
@@ -101,13 +87,125 @@ class ExtraBodySerializationTest {
 		// Act
 		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
 
-		// Debug
-		System.out.println("\n=== JSON Output (null extraBody) ===");
-		System.out.println(json);
-
 		// Assert: extra_body should not appear in JSON when null
 		assertThat(json).doesNotContain("extra_body");
 		assertThat(json).doesNotContain("top_k");
+	}
+
+	@Test
+	void testExtraBodyDeserialization() throws Exception {
+		// Arrange: JSON with extra fields (simulating proxy server receiving request)
+		String json = """
+				{
+					"model": "gpt-4",
+					"messages": [],
+					"stream": false,
+					"top_k": 50,
+					"repetition_penalty": 1.1,
+					"custom_param": "test_value"
+				}
+				""";
+
+		// Act: Deserialize JSON to ChatCompletionRequest
+		ChatCompletionRequest request = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+
+		// Assert: Extra fields should be captured in extraBody map
+		assertThat(request.extraBody()).isNotNull();
+		assertThat(request.extraBody()).containsEntry("top_k", 50);
+		assertThat(request.extraBody()).containsEntry("repetition_penalty", 1.1);
+		assertThat(request.extraBody()).containsEntry("custom_param", "test_value");
+
+		// Assert: Standard fields should be set correctly
+		assertThat(request.model()).isEqualTo("gpt-4");
+		assertThat(request.messages()).isEmpty();
+		assertThat(request.stream()).isFalse();
+	}
+
+	@Test
+	void testRoundTripSerializationDeserialization() throws Exception {
+		// Arrange: Create request with extraBody
+		ChatCompletionRequest originalRequest = new ChatCompletionRequest(List.of(), // messages
+				"gpt-4", // model
+				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
+				null, null, null, null, null, null, null, null, null, null, null, null,
+				Map.of("top_k", 50, "min_p", 0.05, "stop_token_ids", List.of(128001, 128009)) // extraBody
+		);
+
+		// Act: Serialize to JSON
+		String json = this.objectMapper.writeValueAsString(originalRequest);
+
+		// Act: Deserialize back to object
+		ChatCompletionRequest deserializedRequest = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+
+		// Assert: All extraBody fields should survive round trip
+		assertThat(deserializedRequest.extraBody()).isNotNull();
+		assertThat(deserializedRequest.extraBody()).containsEntry("top_k", 50);
+		assertThat(deserializedRequest.extraBody()).containsEntry("min_p", 0.05);
+		assertThat(deserializedRequest.extraBody()).containsKey("stop_token_ids");
+
+		// Assert: Standard fields should match
+		assertThat(deserializedRequest.model()).isEqualTo(originalRequest.model());
+		assertThat(deserializedRequest.stream()).isEqualTo(originalRequest.stream());
+	}
+
+	@Test
+	void testDeserializationWithNullExtraBody() throws Exception {
+		// Arrange: JSON without any extra fields (standard OpenAI request)
+		String json = """
+				{
+					"model": "gpt-4",
+					"messages": [],
+					"stream": false,
+					"temperature": 0.7
+				}
+				""";
+
+		// Act: Deserialize
+		ChatCompletionRequest request = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+
+		// Assert: extraBody should be null or empty when no extra fields present
+		// (depending on Jackson configuration and constructor behavior)
+		if (request.extraBody() != null) {
+			assertThat(request.extraBody()).isEmpty();
+		}
+
+		// Assert: Standard fields should work
+		assertThat(request.model()).isEqualTo("gpt-4");
+		assertThat(request.temperature()).isEqualTo(0.7);
+	}
+
+	@Test
+	void testDeserializationWithComplexExtraFields() throws Exception {
+		// Arrange: JSON with real vLLM extra fields (complex types)
+		String json = """
+				{
+					"model": "deepseek-r1",
+					"messages": [],
+					"stream": false,
+					"top_k": 50,
+					"min_p": 0.05,
+					"best_of": 3,
+					"guided_json": "{\\"type\\": \\"object\\", \\"properties\\": {\\"name\\": {\\"type\\": \\"string\\"}}}",
+					"stop_token_ids": [128001, 128009],
+					"skip_special_tokens": true
+				}
+				""";
+
+		// Act: Deserialize
+		ChatCompletionRequest request = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+
+		// Assert: Real vLLM extra fields should be captured
+		assertThat(request.extraBody()).isNotNull();
+		assertThat(request.extraBody()).containsEntry("top_k", 50);
+		assertThat(request.extraBody()).containsEntry("min_p", 0.05);
+		assertThat(request.extraBody()).containsEntry("best_of", 3);
+		assertThat(request.extraBody()).containsKey("guided_json");
+		assertThat(request.extraBody()).containsKey("stop_token_ids");
+		assertThat(request.extraBody()).containsEntry("skip_special_tokens", true);
+
+		// Assert: Complex types should be preserved as String/List
+		assertThat(request.extraBody().get("guided_json")).isInstanceOf(String.class);
+		assertThat(request.extraBody().get("stop_token_ids")).isInstanceOf(List.class);
 	}
 
 }

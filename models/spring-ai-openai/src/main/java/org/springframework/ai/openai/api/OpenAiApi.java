@@ -26,6 +26,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -1136,6 +1137,16 @@ public class OpenAiApi {
 			Map<String, Object> extraBody) {
 
 		/**
+		 * Compact constructor that ensures extraBody is initialized as a mutable HashMap
+		 * when null, enabling @JsonAnySetter to populate it during deserialization.
+		 */
+		public ChatCompletionRequest {
+			if (extraBody == null) {
+				extraBody = new java.util.HashMap<>();
+			}
+		}
+
+		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
 		 *
 		 * @param messages A list of messages comprising the conversation so far.
@@ -1229,6 +1240,20 @@ public class OpenAiApi {
 		@JsonAnyGetter
 		public Map<String, Object> extraBody() {
 			return this.extraBody;
+		}
+
+		/**
+		 * Handles deserialization of unknown properties into the extraBody map.
+		 * This enables JSON with extra fields to be deserialized into ChatCompletionRequest,
+		 * which is useful for implementing OpenAI API proxy servers with @RestController.
+		 * @param key The property name
+		 * @param value The property value
+		 */
+		@JsonAnySetter
+		private void setExtraBodyProperty(String key, Object value) {
+			if (this.extraBody != null) {
+				this.extraBody.put(key, value);
+			}
 		}
 
 		/**
