@@ -20,7 +20,7 @@ import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemory
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Configuration properties for CosmosDB chat memory.
+ * Configuration properties for CosmosDB Chat Memory Repository.
  *
  * @author Theo van Kraay
  * @since 1.1.0
@@ -30,16 +30,35 @@ public class CosmosDBChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.cosmosdb";
 
+	/**
+	 * Azure Cosmos DB endpoint URI. Required for auto-configuration.
+	 */
 	private String endpoint;
 
+	/**
+	 * Azure Cosmos DB primary or secondary key. If not provided, Azure Identity
+	 * authentication will be used.
+	 */
 	private String key;
 
+	/**
+	 * Connection mode for Cosmos DB client (direct or gateway).
+	 */
 	private String connectionMode = "gateway";
 
+	/**
+	 * Name of the Cosmos DB database.
+	 */
 	private String databaseName = CosmosDBChatMemoryRepositoryConfig.DEFAULT_DATABASE_NAME;
 
+	/**
+	 * Name of the Cosmos DB container.
+	 */
 	private String containerName = CosmosDBChatMemoryRepositoryConfig.DEFAULT_CONTAINER_NAME;
 
+	/**
+	 * Partition key path for the container.
+	 */
 	private String partitionKeyPath = CosmosDBChatMemoryRepositoryConfig.DEFAULT_PARTITION_KEY_PATH;
 
 	public String getEndpoint() {
@@ -91,3 +110,4 @@ public class CosmosDBChatMemoryRepositoryProperties {
 	}
 
 }
+

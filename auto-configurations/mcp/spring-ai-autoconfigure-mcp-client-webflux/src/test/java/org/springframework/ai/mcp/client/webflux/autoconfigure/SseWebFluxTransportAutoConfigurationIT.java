@@ -43,8 +43,8 @@ public class SseWebFluxTransportAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
 				"spring.ai.mcp.client.sse.connections.server1.url=" + host)
-		.withConfiguration(
-				AutoConfigurations.of(McpClientAutoConfiguration.class, SseWebFluxTransportAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(DefaultWebClientFactory.class, McpClientAutoConfiguration.class,
+				SseWebFluxTransportAutoConfiguration.class));
 
 	static String host = "http://localhost:3001";
 

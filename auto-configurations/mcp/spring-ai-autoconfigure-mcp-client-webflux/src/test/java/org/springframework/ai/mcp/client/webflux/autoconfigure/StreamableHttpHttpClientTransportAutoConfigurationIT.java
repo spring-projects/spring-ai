@@ -44,7 +44,7 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
 				"spring.ai.mcp.client.streamable-http.connections.server1.url=" + host)
-		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
+		.withConfiguration(AutoConfigurations.of(DefaultWebClientFactory.class, McpClientAutoConfiguration.class,
 				StreamableHttpWebFluxTransportAutoConfiguration.class));
 
 	static String host = "http://localhost:3001";
