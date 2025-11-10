@@ -62,9 +62,6 @@ public class ElevenLabsPropertiesTests {
 			assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
 			assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
 			assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.5f);
-
-			// enabled is true by default
-			assertThat(speechProperties.isEnabled()).isTrue();
 		});
 	}
 
@@ -123,7 +120,7 @@ public class ElevenLabsPropertiesTests {
 
 		// Explicitly enable the text-to-speech autoconfiguration.
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.elevenlabs.tts.enabled=true")
+			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.model.audio.speech=elevenlabs")
 			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isNotEmpty();
@@ -132,7 +129,7 @@ public class ElevenLabsPropertiesTests {
 
 		// Explicitly disable the text-to-speech autoconfiguration.
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.elevenlabs.tts.enabled=false")
+			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.model.audio.speech=none")
 			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isEmpty();
