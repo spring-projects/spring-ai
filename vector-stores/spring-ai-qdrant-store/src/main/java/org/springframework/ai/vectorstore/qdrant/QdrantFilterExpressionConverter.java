@@ -73,26 +73,17 @@ class QdrantFilterExpressionConverter {
 	protected Condition parseComparison(Key key, Value value, Expression exp) {
 
 		ExpressionType type = exp.type();
-		switch (type) {
-			case EQ:
-				return buildEqCondition(key, value);
-			case NE:
-				return buildNeCondition(key, value);
-			case GT:
-				return buildGtCondition(key, value);
-			case GTE:
-				return buildGteCondition(key, value);
-			case LT:
-				return buildLtCondition(key, value);
-			case LTE:
-				return buildLteCondition(key, value);
-			case IN:
-				return buildInCondition(key, value);
-			case NIN:
-				return buildNInCondition(key, value);
-			default:
-				throw new RuntimeException("Unsupported expression type: " + type);
-		}
+		return switch (type) {
+			case EQ -> buildEqCondition(key, value);
+			case NE -> buildNeCondition(key, value);
+			case GT -> buildGtCondition(key, value);
+			case GTE -> buildGteCondition(key, value);
+			case LT -> buildLtCondition(key, value);
+			case LTE -> buildLteCondition(key, value);
+			case IN -> buildInCondition(key, value);
+			case NIN -> buildNInCondition(key, value);
+			default -> throw new RuntimeException("Unsupported expression type: " + type);
+		};
 	}
 
 	protected Condition buildEqCondition(Key key, Value value) {

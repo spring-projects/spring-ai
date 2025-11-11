@@ -218,7 +218,7 @@ public final class ExtractedTextFormatter {
 	 *
 	 * @see ExtractedTextFormatter
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean leftAlignment = false;
 

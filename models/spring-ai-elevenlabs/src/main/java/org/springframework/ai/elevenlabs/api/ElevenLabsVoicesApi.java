@@ -393,7 +393,7 @@ public class ElevenLabsVoicesApi {
 	/**
 	 * Builder to construct {@link ElevenLabsVoicesApi} instance.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 

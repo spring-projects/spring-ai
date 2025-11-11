@@ -42,7 +42,9 @@
 		<module>advisors/spring-ai-advisors-vector-store</module>
 
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-cosmos-db</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
 
 
@@ -88,7 +90,9 @@
 
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cosmos-db</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
 
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
@@ -119,7 +123,9 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
 
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
@@ -188,6 +194,8 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
@@ -206,6 +214,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
@@ -213,10 +222,11 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
-
+		
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
+		<module>mcp/mcp-annotations-spring</module>
 	</modules>
 
 	<organization>
@@ -262,29 +272,28 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 
 		<!-- production dependencies -->
-		<spring-boot.version>3.5.0</spring-boot.version>
+		<spring-boot.version>3.5.7</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
-		<victools.version>4.37.0</victools.version>
 		<kotlin.version>1.9.25</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.31.65</bedrockruntime.version>
-		<awssdk.version>2.31.65</awssdk.version>
+		<bedrockruntime.version>2.36.3</bedrockruntime.version>
+		<awssdk.version>2.36.3</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.60.0</com.google.cloud.version>
-		<com.google.genai.version>1.10.0</com.google.genai.version>
+		<com.google.genai.version>1.17.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
-		<jsonschema.version>4.37.0</jsonschema.version>
-		<swagger-annotations.version>2.2.25</swagger-annotations.version>
+		<jsonschema.version>4.38.0</jsonschema.version>
+		<swagger-annotations.version>2.2.30</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
 
-		<jsoup.version>1.21.1</jsoup.version>
+		<jsoup.version>1.21.2</jsoup.version>
 
 		<!-- Protobuf -->
 		<protobuf-java.version>3.25.8</protobuf-java.version>
@@ -317,7 +326,7 @@
 		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
 
-		<couchbase.version>3.8.0</couchbase.version>
+		<couchbase.version>3.9.1</couchbase.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
 
 		<!-- testing dependencies -->
@@ -325,7 +334,8 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.11.0</mcp.sdk.version>
+		<mcp.sdk.version>0.15.0</mcp.sdk.version>
+		<mcp-annotations.version>0.6.0</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -350,27 +360,15 @@
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+		<spring-javaformat-checkstyle.version>0.0.43</spring-javaformat-checkstyle.version>
+		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
-		<disable.checks>true</disable.checks>
+		<disable.checks>false</disable.checks>
 
 	</properties>
 
 	<build>
 		<plugins>
-			<plugin>
-				<groupId>io.spring.javaformat</groupId>
-				<artifactId>spring-javaformat-maven-plugin</artifactId>
-				<version>${spring-javaformat-maven-plugin.version}</version>
-				<executions>
-					<execution>
-						<phase>validate</phase>
-						<inherited>true</inherited>
-						<goals>
-							<goal>validate</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
@@ -384,7 +382,7 @@
 					<dependency>
 						<groupId>io.spring.javaformat</groupId>
 						<artifactId>spring-javaformat-checkstyle</artifactId>
-						<version>0.0.43</version>
+						<version>${spring-javaformat-checkstyle.version}</version>
 					</dependency>
 				</dependencies>
 				<executions>
@@ -602,6 +600,63 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<id>format-check</id>
+			<activation>
+				<property>
+					<name>env.CI</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.spring.javaformat</groupId>
+						<artifactId>spring-javaformat-maven-plugin</artifactId>
+						<version>${spring-javaformat-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<phase>validate</phase>
+								<inherited>true</inherited>
+								<goals>
+									<goal>validate</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+
+		</profile>
+		<profile>
+			<id>format-apply</id>
+			<activation>
+				<property>
+					<name>!env.CI</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.spring.javaformat</groupId>
+						<artifactId>spring-javaformat-maven-plugin</artifactId>
+						<version>${spring-javaformat-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<phase>process-sources</phase>
+								<inherited>true</inherited>
+								<goals>
+									<goal>apply</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
+
+		</profile>
 		<profile>
 			<id>license</id>
 			<activation>
@@ -883,22 +938,23 @@
 	    </properties>
 	    <build>
 	        <plugins>
-						<plugin>
-								<groupId>org.apache.maven.plugins</groupId>
-								<artifactId>maven-gpg-plugin</artifactId>
-								<executions>
-										<execution>
-												<id>sign-artifacts</id>
-												<phase>verify</phase>
-												<goals>
-														<goal>sign</goal>
-												</goals>
-										</execution>
-								</executions>
-								<configuration>
-										<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-								</configuration>
-						</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-gpg-plugin</artifactId>
+					<version>${maven-gpg-plugin.version}</version>
+					<executions>
+						<execution>
+							<id>sign-artifacts</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>sign</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+						<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
+					</configuration>
+				</plugin>
 	            <plugin>
 	                <groupId>org.sonatype.central</groupId>
 	                <artifactId>central-publishing-maven-plugin</artifactId>
@@ -906,6 +962,7 @@
 	                <configuration>
 	                    <publishingServerId>central</publishingServerId>
 	                    <autoPublish>true</autoPublish>
+	                    <excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
 	                </configuration>
 	            </plugin>
 	        </plugins>

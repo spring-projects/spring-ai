@@ -41,8 +41,8 @@ import org.springframework.context.annotation.Import;
  * @author Ilayaperumal Gopinathan
  */
 @AutoConfiguration
-@ConditionalOnClass({ AzureOpenAiEmbeddingModel.class })
-@EnableConfigurationProperties({ AzureOpenAiEmbeddingProperties.class })
+@ConditionalOnClass(AzureOpenAiEmbeddingModel.class)
+@EnableConfigurationProperties(AzureOpenAiEmbeddingProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.AZURE_OPENAI,
 		matchIfMissing = true)
 @Import(AzureOpenAiClientBuilderConfiguration.class)

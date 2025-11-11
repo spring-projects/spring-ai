@@ -56,6 +56,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -235,8 +236,17 @@ class OpenAiChatClientIT extends AbstractIT {
 				.stream()
 				.filter(cr -> cr.getResult() != null)
 				.map(cr -> cr.getResult().getOutput().getText())
+				.filter(text -> text != null && !text.trim().isEmpty()) // Filter out empty/null text
 				.collect(Collectors.joining());
 		// @formatter:on
+
+		// Add debugging to understand what text we're trying to parse
+		logger.debug("Aggregated streaming text: {}", generationTextFromStream);
+
+		// Ensure we have valid JSON before attempting conversion
+		if (generationTextFromStream.trim().isEmpty()) {
+			fail("Empty aggregated text from streaming response - this indicates a problem with streaming aggregation");
+		}
 
 		ActorsFilms actorsFilms = outputConverter.convert(generationTextFromStream);
 

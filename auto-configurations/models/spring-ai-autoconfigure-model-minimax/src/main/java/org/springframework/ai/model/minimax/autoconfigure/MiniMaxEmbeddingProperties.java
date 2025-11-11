@@ -37,14 +37,12 @@ public class MiniMaxEmbeddingProperties extends MiniMaxParentProperties {
 	private MetadataMode metadataMode = MetadataMode.EMBED;
 
 	@NestedConfigurationProperty
-	private MiniMaxEmbeddingOptions options = MiniMaxEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build();
+	private final MiniMaxEmbeddingOptions options = MiniMaxEmbeddingOptions.builder()
+		.model(DEFAULT_EMBEDDING_MODEL)
+		.build();
 
 	public MiniMaxEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(MiniMaxEmbeddingOptions options) {
-		this.options = options;
 	}
 
 	public MetadataMode getMetadataMode() {

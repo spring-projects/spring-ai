@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,13 +58,14 @@ public class ZhiPuAiStreamFunctionCallingHelper {
 		String systemFingerprint = (current.systemFingerprint() != null ? current.systemFingerprint()
 				: previous.systemFingerprint());
 		String object = (current.object() != null ? current.object() : previous.object());
+		ZhiPuAiApi.Usage usage = (current.usage() != null ? current.usage() : previous.usage());
 
 		ChunkChoice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
-		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object);
+		return new ChatCompletionChunk(id, chunkChoices, created, model, systemFingerprint, object, usage);
 	}
 
 	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
@@ -85,6 +86,8 @@ public class ZhiPuAiStreamFunctionCallingHelper {
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
 		String content = (current.content() != null ? current.content()
 				: (previous.content() != null) ? previous.content() : "");
+		String reasoningContent = (current.reasoningContent() != null ? current.reasoningContent()
+				: (previous.reasoningContent() != null ? previous.reasoningContent() : ""));
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (current.name() != null ? current.name() : previous.name());
@@ -118,7 +121,7 @@ public class ZhiPuAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, reasoningContent);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {

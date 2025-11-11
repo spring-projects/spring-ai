@@ -25,7 +25,6 @@ import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -47,6 +46,7 @@ import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfig
  * @author Stefan Vassilev
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
@@ -54,8 +54,6 @@ import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfig
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_SPEECH_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiAudioSpeechProperties.class })
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class })
 public class OpenAiAudioSpeechAutoConfiguration {
 
 	@Bean

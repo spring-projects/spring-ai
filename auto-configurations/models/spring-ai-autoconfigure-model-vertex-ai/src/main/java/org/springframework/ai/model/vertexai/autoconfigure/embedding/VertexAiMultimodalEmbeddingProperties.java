@@ -18,6 +18,7 @@ package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Vertex AI Gemini Chat.
@@ -33,16 +34,13 @@ public class VertexAiMultimodalEmbeddingProperties {
 	/**
 	 * Vertex AI Text Embedding API options.
 	 */
-	private VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
+	@NestedConfigurationProperty
+	private final VertexAiMultimodalEmbeddingOptions options = VertexAiMultimodalEmbeddingOptions.builder()
 		.model(VertexAiMultimodalEmbeddingOptions.DEFAULT_MODEL_NAME)
 		.build();
 
 	public VertexAiMultimodalEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(VertexAiMultimodalEmbeddingOptions options) {
-		this.options = options;
 	}
 
 }

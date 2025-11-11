@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.Module;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.KotlinDetector;
-import org.springframework.util.ClassUtils;
 
 /**
  * Utility methods for Jackson.
@@ -43,8 +42,8 @@ public abstract class JacksonUtils {
 	public static List<Module> instantiateAvailableModules() {
 		List<Module> modules = new ArrayList<>();
 		try {
-			Class<? extends com.fasterxml.jackson.databind.Module> jdk8ModuleClass = (Class<? extends Module>) ClassUtils
-				.forName("com.fasterxml.jackson.datatype.jdk8.Jdk8Module", null);
+			Class<? extends com.fasterxml.jackson.databind.Module> jdk8ModuleClass = (Class<? extends Module>) Class
+				.forName("com.fasterxml.jackson.datatype.jdk8.Jdk8Module");
 			com.fasterxml.jackson.databind.Module jdk8Module = BeanUtils.instantiateClass(jdk8ModuleClass);
 			modules.add(jdk8Module);
 		}
@@ -53,8 +52,8 @@ public abstract class JacksonUtils {
 		}
 
 		try {
-			Class<? extends com.fasterxml.jackson.databind.Module> javaTimeModuleClass = (Class<? extends Module>) ClassUtils
-				.forName("com.fasterxml.jackson.datatype.jsr310.JavaTimeModule", null);
+			Class<? extends com.fasterxml.jackson.databind.Module> javaTimeModuleClass = (Class<? extends Module>) Class
+				.forName("com.fasterxml.jackson.datatype.jsr310.JavaTimeModule");
 			com.fasterxml.jackson.databind.Module javaTimeModule = BeanUtils.instantiateClass(javaTimeModuleClass);
 			modules.add(javaTimeModule);
 		}
@@ -63,8 +62,8 @@ public abstract class JacksonUtils {
 		}
 
 		try {
-			Class<? extends com.fasterxml.jackson.databind.Module> parameterNamesModuleClass = (Class<? extends Module>) ClassUtils
-				.forName("com.fasterxml.jackson.module.paramnames.ParameterNamesModule", null);
+			Class<? extends com.fasterxml.jackson.databind.Module> parameterNamesModuleClass = (Class<? extends Module>) Class
+				.forName("com.fasterxml.jackson.module.paramnames.ParameterNamesModule");
 			com.fasterxml.jackson.databind.Module parameterNamesModule = BeanUtils
 				.instantiateClass(parameterNamesModuleClass);
 			modules.add(parameterNamesModule);
@@ -76,8 +75,8 @@ public abstract class JacksonUtils {
 		// Kotlin present?
 		if (KotlinDetector.isKotlinPresent()) {
 			try {
-				Class<? extends com.fasterxml.jackson.databind.Module> kotlinModuleClass = (Class<? extends Module>) ClassUtils
-					.forName("com.fasterxml.jackson.module.kotlin.KotlinModule", null);
+				Class<? extends com.fasterxml.jackson.databind.Module> kotlinModuleClass = (Class<? extends Module>) Class
+					.forName("com.fasterxml.jackson.module.kotlin.KotlinModule");
 				Module kotlinModule = BeanUtils.instantiateClass(kotlinModuleClass);
 				modules.add(kotlinModule);
 			}

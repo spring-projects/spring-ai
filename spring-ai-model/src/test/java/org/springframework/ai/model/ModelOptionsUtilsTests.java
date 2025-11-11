@@ -19,6 +19,7 @@ package org.springframework.ai.model;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -176,6 +177,114 @@ public class ModelOptionsUtilsTests {
 		}
 		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).hasSize(2);
 		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).containsExactly("field1", "field2");
+	}
+
+	@Test
+	public void enumCoercion_emptyStringAsNull() throws JsonProcessingException {
+		// Test direct enum deserialization with empty string
+		ColorEnum colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"\"", ColorEnum.class);
+		assertThat(colorEnum).isNull();
+
+		// Test direct enum deserialization with valid value
+		colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"RED\"", ColorEnum.class);
+		assertThat(colorEnum).isEqualTo(ColorEnum.RED);
+
+		// Test direct enum deserialization with invalid value should throw exception
+		final String jsonInvalid = "\"Invalid\"";
+		assertThatThrownBy(() -> ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonInvalid, ColorEnum.class))
+			.isInstanceOf(JsonProcessingException.class);
+	}
+
+	@Test
+	public void enumCoercion_objectMapperConfiguration() throws JsonProcessingException {
+		// Test that ModelOptionsUtils.OBJECT_MAPPER has the correct coercion
+		// configuration
+		// This validates that our static configuration block is working
+
+		// Empty string should coerce to null for enums
+		ColorEnum colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"\"", ColorEnum.class);
+		assertThat(colorEnum).isNull();
+
+		// Null should remain null
+		colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("null", ColorEnum.class);
+		assertThat(colorEnum).isNull();
+
+		// Valid enum values should deserialize correctly
+		colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"BLUE\"", ColorEnum.class);
+		assertThat(colorEnum).isEqualTo(ColorEnum.BLUE);
+	}
+
+	@Test
+	public void enumCoercion_apiResponseWithFinishReason() throws JsonProcessingException {
+		// Test case 1: Empty string finish_reason should deserialize to null
+		String jsonWithEmptyFinishReason = """
+				{
+					"id": "test-123",
+					"finish_reason": ""
+				}
+				""";
+
+		TestApiResponse response = ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithEmptyFinishReason,
+				TestApiResponse.class);
+		assertThat(response.id()).isEqualTo("test-123");
+		assertThat(response.finishReason()).isNull();
+
+		// Test case 2: Valid finish_reason should deserialize correctly (using JSON
+		// property value)
+		String jsonWithValidFinishReason = """
+				{
+					"id": "test-456",
+					"finish_reason": "stop"
+				}
+				""";
+
+		response = ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithValidFinishReason, TestApiResponse.class);
+		assertThat(response.id()).isEqualTo("test-456");
+		assertThat(response.finishReason()).isEqualTo(TestFinishReason.STOP);
+
+		// Test case 3: Null finish_reason should remain null
+		String jsonWithNullFinishReason = """
+				{
+					"id": "test-789",
+					"finish_reason": null
+				}
+				""";
+
+		response = ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithNullFinishReason, TestApiResponse.class);
+		assertThat(response.id()).isEqualTo("test-789");
+		assertThat(response.finishReason()).isNull();
+
+		// Test case 4: Invalid finish_reason should throw exception
+		String jsonWithInvalidFinishReason = """
+				{
+					"id": "test-error",
+					"finish_reason": "INVALID_VALUE"
+				}
+				""";
+
+		assertThatThrownBy(
+				() -> ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithInvalidFinishReason, TestApiResponse.class))
+			.isInstanceOf(JsonProcessingException.class)
+			.hasMessageContaining("INVALID_VALUE");
+	}
+
+	public enum ColorEnum {
+
+		RED, GREEN, BLUE
+
+	}
+
+	public enum TestFinishReason {
+
+		@JsonProperty("stop")
+		STOP, @JsonProperty("length")
+		LENGTH, @JsonProperty("content_filter")
+		CONTENT_FILTER
+
+	}
+
+	public record TestApiResponse(@JsonProperty("id") String id,
+			@JsonProperty("finish_reason") TestFinishReason finishReason) {
 	}
 
 	public static class Person {

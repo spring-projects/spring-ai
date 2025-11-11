@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
@@ -56,6 +55,7 @@ import static org.mockito.BDDMockito.given;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author Jason Smith
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -87,9 +87,10 @@ public class MistralAiRetryTests {
 				.build())
 			.retryTemplate(this.retryTemplate)
 			.build();
-		this.embeddingModel = new MistralAiEmbeddingModel(this.mistralAiApi, MetadataMode.EMBED,
-				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build(),
-				this.retryTemplate);
+		this.embeddingModel = MistralAiEmbeddingModel.builder()
+			.mistralAiApi(this.mistralAiApi)
+			.retryTemplate(this.retryTemplate)
+			.build();
 	}
 
 	@Test
@@ -176,6 +177,19 @@ public class MistralAiRetryTests {
 			.willThrow(new RuntimeException("Non Transient Error"));
 		assertThrows(RuntimeException.class, () -> this.embeddingModel
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
+	}
+
+	@Test
+	public void mistralAiChatMixedTransientAndNonTransientErrors() {
+		given(this.mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error"))
+			.willThrow(new RuntimeException("Non Transient Error"));
+
+		// Should fail immediately on non-transient error, no further retries
+		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
+
+		// Should have 1 retry attempt before hitting non-transient error
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
 	private static class TestRetryListener implements RetryListener {

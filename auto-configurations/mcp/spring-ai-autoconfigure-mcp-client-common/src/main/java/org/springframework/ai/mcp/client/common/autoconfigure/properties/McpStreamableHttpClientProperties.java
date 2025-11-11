@@ -31,7 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * <p>
  * Example configuration: <pre>
  * spring.ai.mcp.client.streamable-http:
- *   connections-http:
+ *   connections:
  *     server1:
  *       url: http://localhost:8080/events
  *     server2:

@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -93,7 +92,7 @@ class EmbeddingModelMeterObservationHandlerTests {
 
 	private EmbeddingModelObservationContext generateObservationContext() {
 		return EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("mistral").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 	}

@@ -24,6 +24,8 @@ import org.springframework.util.StringUtils;
 
 /**
  * Utilities to work with advisors.
+ *
+ * @author Christian Tzolov
  */
 public final class AdvisorUtils {
 

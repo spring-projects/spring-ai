@@ -16,12 +16,13 @@
 
 package org.springframework.ai.mcp.client.autoconfigure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -30,9 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.ReflectionUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link SseHttpClientTransportAutoConfiguration}.

@@ -111,10 +111,13 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
-			AtomicLong instantSeq) implements BatchPreparedStatementSetter {
+			AtomicLong sequenceId) implements BatchPreparedStatementSetter {
 
 		private AddBatchPreparedStatement(String conversationId, List<Message> messages) {
-			this(conversationId, messages, new AtomicLong(Instant.now().toEpochMilli()));
+			// Use second-level granularity to ensure compatibility with all database
+			// timestamp precisions. The timestamp serves as a sequence number for
+			// message ordering, not as a precise temporal record.
+			this(conversationId, messages, new AtomicLong(Instant.now().getEpochSecond()));
 		}
 
 		@Override
@@ -124,7 +127,9 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 			ps.setString(1, this.conversationId);
 			ps.setString(2, message.getText());
 			ps.setString(3, message.getMessageType().name());
-			ps.setTimestamp(4, new Timestamp(this.instantSeq.getAndIncrement()));
+			// Convert seconds to milliseconds for Timestamp constructor.
+			// Each message gets a unique second value, ensuring proper ordering.
+			ps.setTimestamp(4, new Timestamp(this.sequenceId.getAndIncrement() * 1000L));
 		}
 
 		@Override
@@ -148,7 +153,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 				// The content is always stored empty for ToolResponseMessages.
 				// If we want to capture the actual content, we need to extend
 				// AddBatchPreparedStatement to support it.
-				case TOOL -> new ToolResponseMessage(List.of());
+				case TOOL -> ToolResponseMessage.builder().responses(List.of()).build();
 			};
 		}
 
@@ -218,12 +223,7 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 		private JdbcChatMemoryRepositoryDialect resolveDialect(DataSource dataSource) {
 			if (this.dialect == null) {
-				try {
-					return JdbcChatMemoryRepositoryDialect.from(dataSource);
-				}
-				catch (Exception ex) {
-					throw new IllegalStateException("Could not detect dialect from datasource", ex);
-				}
+				return JdbcChatMemoryRepositoryDialect.from(dataSource);
 			}
 			else {
 				warnIfDialectMismatch(dataSource, this.dialect);
@@ -236,15 +236,10 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		 * from the DataSource.
 		 */
 		private void warnIfDialectMismatch(DataSource dataSource, JdbcChatMemoryRepositoryDialect explicitDialect) {
-			try {
-				JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
-				if (!detected.getClass().equals(explicitDialect.getClass())) {
-					logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
-							explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
-				}
-			}
-			catch (Exception ex) {
-				logger.debug("Could not detect dialect from datasource", ex);
+			JdbcChatMemoryRepositoryDialect detected = JdbcChatMemoryRepositoryDialect.from(dataSource);
+			if (!detected.getClass().equals(explicitDialect.getClass())) {
+				logger.warn("Explicitly set dialect {} will be used instead of detected dialect {} from datasource",
+						explicitDialect.getClass().getSimpleName(), detected.getClass().getSimpleName());
 			}
 		}
 

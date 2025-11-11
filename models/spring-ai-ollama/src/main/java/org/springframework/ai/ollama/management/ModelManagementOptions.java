@@ -41,7 +41,7 @@ public record ModelManagementOptions(PullModelStrategy pullModelStrategy, List<S
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private PullModelStrategy pullModelStrategy = PullModelStrategy.NEVER;
 

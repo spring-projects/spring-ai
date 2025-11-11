@@ -123,4 +123,144 @@ class UserMessageTests {
 		assertThat(userMessage3.getMetadata()).hasSize(2).isNotSameAs(metadata1);
 	}
 
+	@Test
+	void userMessageWithEmptyText() {
+		UserMessage message = new UserMessage("");
+		assertThat(message.getText()).isEmpty();
+		assertThat(message.getMedia()).isEmpty();
+		assertThat(message.getMetadata()).hasSize(1).containsEntry(MESSAGE_TYPE, MessageType.USER);
+	}
+
+	@Test
+	void userMessageWithWhitespaceText() {
+		String text = "   \t\n   ";
+		UserMessage message = new UserMessage(text);
+		assertThat(message.getText()).isEqualTo(text);
+		assertThat(message.getMedia()).isEmpty();
+		assertThat(message.getMetadata()).hasSize(1).containsEntry(MESSAGE_TYPE, MessageType.USER);
+	}
+
+	@Test
+	void userMessageBuilderWithNullText() {
+		assertThatThrownBy(() -> UserMessage.builder().text((String) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Content must not be null for SYSTEM or USER messages");
+	}
+
+	@Test
+	void userMessageBuilderWithEmptyMediaList() {
+		String text = "No media attached";
+		UserMessage message = UserMessage.builder().text(text).build();
+
+		assertThat(message.getText()).isEqualTo(text);
+		assertThat(message.getMedia()).isEmpty();
+		assertThat(message.getMetadata()).hasSize(1).containsEntry(MESSAGE_TYPE, MessageType.USER);
+	}
+
+	@Test
+	void userMessageBuilderWithEmptyMetadata() {
+		String text = "Test message";
+		UserMessage message = UserMessage.builder().text(text).metadata(Map.of()).build();
+
+		assertThat(message.getText()).isEqualTo(text);
+		assertThat(message.getMetadata()).hasSize(1).containsEntry(MESSAGE_TYPE, MessageType.USER);
+	}
+
+	@Test
+	void userMessageBuilderOverwriteMetadata() {
+		String text = "Test message";
+		UserMessage message = UserMessage.builder()
+			.text(text)
+			.metadata(Map.of("key1", "value1"))
+			.metadata(Map.of("key2", "value2"))
+			.build();
+
+		assertThat(message.getMetadata()).hasSize(2)
+			.containsEntry(MESSAGE_TYPE, MessageType.USER)
+			.containsEntry("key2", "value2")
+			.doesNotContainKey("key1");
+	}
+
+	@Test
+	void userMessageCopyWithNoMedia() {
+		String text = "Simple message";
+		Map<String, Object> metadata = Map.of("key", "value");
+		UserMessage original = UserMessage.builder().text(text).metadata(metadata).build();
+
+		UserMessage copy = original.copy();
+
+		assertThat(copy).isNotSameAs(original);
+		assertThat(copy.getText()).isEqualTo(text);
+		assertThat(copy.getMedia()).isEmpty();
+		assertThat(copy.getMetadata()).isNotSameAs(original.getMetadata()).isEqualTo(original.getMetadata());
+	}
+
+	@Test
+	void userMessageMutateAddMedia() {
+		String text = "Original message";
+		UserMessage original = UserMessage.builder().text(text).build();
+
+		Media newMedia = new Media(MimeTypeUtils.TEXT_PLAIN, new ClassPathResource("prompt-user.txt"));
+		UserMessage mutated = original.mutate().media(newMedia).build();
+
+		assertThat(original.getMedia()).isEmpty();
+		assertThat(mutated.getMedia()).hasSize(1).contains(newMedia);
+		assertThat(mutated.getText()).isEqualTo(text);
+	}
+
+	@Test
+	void userMessageMutateChaining() {
+		UserMessage original = UserMessage.builder().text("Original").build();
+
+		Media media = new Media(MimeTypeUtils.TEXT_PLAIN, new ClassPathResource("prompt-user.txt"));
+		UserMessage result = original.mutate().text("Updated").media(media).metadata(Map.of("key", "value")).build();
+
+		assertThat(result.getText()).isEqualTo("Updated");
+		assertThat(result.getMedia()).hasSize(1).contains(media);
+		assertThat(result.getMetadata()).hasSize(2)
+			.containsEntry(MESSAGE_TYPE, MessageType.USER)
+			.containsEntry("key", "value");
+	}
+
+	@Test
+	void userMessageEqualsAndHashCode() {
+		String text = "Test message";
+		Media media = new Media(MimeTypeUtils.TEXT_PLAIN, new ClassPathResource("prompt-user.txt"));
+		Map<String, Object> metadata = Map.of("key", "value");
+
+		UserMessage message1 = UserMessage.builder().text(text).media(media).metadata(metadata).build();
+
+		UserMessage message2 = UserMessage.builder().text(text).media(media).metadata(metadata).build();
+
+		assertThat(message1).isEqualTo(message2);
+		assertThat(message1.hashCode()).isEqualTo(message2.hashCode());
+	}
+
+	@Test
+	void userMessageNotEqualsWithDifferentText() {
+		UserMessage message1 = new UserMessage("Text 1");
+		UserMessage message2 = new UserMessage("Text 2");
+
+		assertThat(message1).isNotEqualTo(message2);
+	}
+
+	@Test
+	void userMessageToString() {
+		String text = "Test message";
+		UserMessage message = new UserMessage(text);
+
+		String toString = message.toString();
+		assertThat(toString).contains("UserMessage").contains(text).contains("USER");
+	}
+
+	@Test
+	void userMessageToStringWithMedia() {
+		String text = "Test with media";
+		Media media = new Media(MimeTypeUtils.TEXT_PLAIN, new ClassPathResource("prompt-user.txt"));
+		UserMessage message = UserMessage.builder().text(text).media(media).build();
+
+		String toString = message.toString();
+		assertThat(toString).contains("UserMessage").contains(text).contains("media");
+	}
+
 }

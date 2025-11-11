@@ -208,4 +208,22 @@ class OpenAiUsageTests {
 		assertThat(nativeUsage.promptTokensDetails().cachedTokens()).isEqualTo(15);
 	}
 
+	@Test
+	void whenAllTokenCountsAreZero() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(0, 0, 0);
+		DefaultUsage usage = getDefaultUsage(openAiUsage);
+		assertThat(usage.getPromptTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokens()).isEqualTo(0);
+		assertThat(usage.getTotalTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void whenAllTokenCountsAreNull() {
+		OpenAiApi.Usage openAiUsage = new OpenAiApi.Usage(null, null, null);
+		DefaultUsage usage = getDefaultUsage(openAiUsage);
+		assertThat(usage.getPromptTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokens()).isEqualTo(0);
+		assertThat(usage.getTotalTokens()).isEqualTo(0);
+	}
+
 }

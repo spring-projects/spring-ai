@@ -54,4 +54,9 @@ The following service connection factories are provided in the `spring-ai-spring
 
 | `WeaviateConnectionDetails`
 | Containers named `semitechnologies/weaviate`, `cr.weaviate.io/semitechnologies/weaviate`
+
+| `McpSseClientConnectionDetails`
+| Containers named `docker/mcp-gateway`
 |====
+
+More service connections are provided by the spring boot module `spring-boot-docker-compose`. Refer to the https://docs.spring.io/spring-boot/reference/features/dev-services.html#features.dev-services.docker-compose[Docker Compose Support] documentation page for the full list.

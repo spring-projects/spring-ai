@@ -27,11 +27,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 
+import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
 import org.springframework.ai.chat.client.ChatClient;
@@ -191,7 +191,7 @@ public class BedrockNovaChatClientIT {
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@ParameterizedTest
-	@ValueSource(strings = { "amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
+	@ValueSource(strings = { "us.amazon.nova-pro-v1:0", "us.anthropic.claude-3-7-sonnet-20250219-v1:0" })
 	void toolAnnotationWeatherForecastStreaming(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
@@ -262,7 +262,7 @@ public class BedrockNovaChatClientIT {
 		@Bean
 		public BedrockProxyChatModel bedrockConverseChatModel() {
 
-			String modelId = "amazon.nova-pro-v1:0";
+			String modelId = "us.amazon.nova-pro-v1:0";
 			// String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 			return BedrockProxyChatModel.builder()
@@ -284,7 +284,7 @@ public class BedrockNovaChatClientIT {
 	public static class DummyWeatherForecastTools {
 
 		@Tool(description = "Get the current weather forecast in Amsterdam")
-		String getCurrentDateTime() {
+		String getCurrentWeather() {
 			return "Weather is hot and sunny with a temperature of 20 degrees";
 		}
 

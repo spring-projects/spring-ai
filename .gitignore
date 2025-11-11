@@ -1,3 +1,4 @@
+.checkstyle
 target
 .classpath
 .project
@@ -48,3 +49,10 @@ CLAUDE.md
 .devcontainer
 
 qodana.yaml
+__pycache__/
+*.pyc
+tmp
+
+
+plans
+

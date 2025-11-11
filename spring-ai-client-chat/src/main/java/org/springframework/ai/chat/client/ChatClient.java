@@ -26,6 +26,7 @@ import io.micrometer.observation.ObservationRegistry;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
@@ -62,25 +63,29 @@ public interface ChatClient {
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry) {
-		return create(chatModel, observationRegistry, null);
+		return create(chatModel, observationRegistry, null, null);
 	}
 
 	static ChatClient create(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention observationConvention) {
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		return builder(chatModel, observationRegistry, observationConvention).build();
+		return builder(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention)
+			.build();
 	}
 
 	static Builder builder(ChatModel chatModel) {
-		return builder(chatModel, ObservationRegistry.NOOP, null);
+		return builder(chatModel, ObservationRegistry.NOOP, null, null);
 	}
 
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
-			@Nullable ChatClientObservationConvention customObservationConvention) {
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
-		return new DefaultChatClientBuilder(chatModel, observationRegistry, customObservationConvention);
+		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
+				advisorObservationConvention);
 	}
 
 	ChatClientRequestSpec prompt();
@@ -190,24 +195,6 @@ public interface ChatClient {
 
 	}
 
-	interface CallPromptResponseSpec {
-
-		String content();
-
-		List<String> contents();
-
-		ChatResponse chatResponse();
-
-	}
-
-	interface StreamPromptResponseSpec {
-
-		Flux<ChatResponse> chatResponse();
-
-		Flux<String> content();
-
-	}
-
 	interface ChatClientRequestSpec {
 
 		/**
@@ -269,7 +256,7 @@ public interface ChatClient {
 	 */
 	interface Builder {
 
-		Builder defaultAdvisors(Advisor... advisor);
+		Builder defaultAdvisors(Advisor... advisors);
 
 		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);
 

@@ -16,16 +16,17 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.template.NoOpTemplateRenderer;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

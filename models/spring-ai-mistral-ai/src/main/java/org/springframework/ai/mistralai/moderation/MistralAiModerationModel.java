@@ -44,6 +44,7 @@ import static org.springframework.ai.mistralai.api.MistralAiModerationApi.Mistra
 
 /**
  * @author Ricken Bazolo
+ * @author Jason Smith
  */
 public class MistralAiModerationModel implements ModerationModel {
 
@@ -54,17 +55,6 @@ public class MistralAiModerationModel implements ModerationModel {
 	private final RetryTemplate retryTemplate;
 
 	private final MistralAiModerationOptions defaultOptions;
-
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE,
-				MistralAiModerationOptions.builder()
-					.model(MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue())
-					.build());
-	}
-
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, MistralAiModerationOptions options) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE, options);
-	}
 
 	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, RetryTemplate retryTemplate,
 			MistralAiModerationOptions options) {
@@ -166,6 +156,41 @@ public class MistralAiModerationModel implements ModerationModel {
 			mistralAiModerationOptionsBuilder.model(runtimeModerationOptions.getModel());
 		}
 		return mistralAiModerationOptionsBuilder.build();
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private MistralAiModerationApi mistralAiModerationApi;
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private MistralAiModerationOptions options = MistralAiModerationOptions.builder()
+			.model(MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue())
+			.build();
+
+		public Builder mistralAiModerationApi(MistralAiModerationApi mistralAiModerationApi) {
+			this.mistralAiModerationApi = mistralAiModerationApi;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public Builder options(MistralAiModerationOptions options) {
+			this.options = options;
+			return this;
+		}
+
+		public MistralAiModerationModel build() {
+			return new MistralAiModerationModel(this.mistralAiModerationApi, this.retryTemplate, this.options);
+		}
+
 	}
 
 }

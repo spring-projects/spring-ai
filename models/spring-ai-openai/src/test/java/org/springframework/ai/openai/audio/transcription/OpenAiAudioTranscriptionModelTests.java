@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.audio.transcription;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.TranscriptionModel;
@@ -54,12 +55,13 @@ class OpenAiAudioTranscriptionModelTests {
 
 	@Test
 	void transcribeRequestReturnsResponseCorrectly() {
+		// CHECKSTYLE:OFF
 		String mockResponse = """
 				{
 				  "text": "All your bases are belong to us"
 				}
 				""".stripIndent();
-
+		// CHECKSTYLE:ON
 		this.server.expect(requestTo("https://api.openai.com/v1/audio/transcriptions"))
 			.andExpect(method(HttpMethod.POST))
 			.andRespond(withSuccess(mockResponse, MediaType.APPLICATION_JSON));
@@ -72,11 +74,13 @@ class OpenAiAudioTranscriptionModelTests {
 
 	@Test
 	void callWithDefaultOptions() {
+		// CHECKSTYLE:OFF
 		String mockResponse = """
 				{
 				  "text": "Hello, this is a test transcription."
 				}
 				""".stripIndent();
+		// CHECKSTYLE:ON
 
 		this.server.expect(requestTo("https://api.openai.com/v1/audio/transcriptions"))
 			.andExpect(method(HttpMethod.POST))
@@ -91,11 +95,13 @@ class OpenAiAudioTranscriptionModelTests {
 
 	@Test
 	void transcribeWithOptions() {
+		// CHECKSTYLE:OFF
 		String mockResponse = """
 				{
 				  "text": "Hello, this is a test transcription with options."
 				}
 				""".stripIndent();
+		// CHECKSTYLE:ON
 
 		this.server.expect(requestTo("https://api.openai.com/v1/audio/transcriptions"))
 			.andExpect(method(HttpMethod.POST))

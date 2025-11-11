@@ -16,22 +16,29 @@
 
 package org.springframework.ai.ollama.api;
 
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.ollama.BaseOllamaIT;
-import org.springframework.ai.ollama.api.OllamaApi.*;
-import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
-import reactor.core.publisher.Flux;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+
+import org.springframework.ai.ollama.BaseOllamaIT;
+import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
+import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
+import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
+import org.springframework.ai.ollama.api.OllamaApi.Message;
+import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Sun Yuhan
  */
 public class OllamaApiIT extends BaseOllamaIT {
 
@@ -39,7 +46,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 
 	private static final String EMBEDDING_MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();
 
-	private static final String THINKING_MODEL = OllamaModel.QWEN3_4B.getName();
+	private static final String THINKING_MODEL = OllamaModel.QWEN3_4B_THINKING.getName();
 
 	@BeforeAll
 	public static void beforeAll() throws IOException, InterruptedException {
@@ -58,7 +65,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 						.content("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.options(OllamaOptions.builder().temperature(0.9).build())
+			.options(OllamaChatOptions.builder().temperature(0.9).build())
 			.build();
 
 		ChatResponse response = getOllamaApi().chat(request);
@@ -79,7 +86,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 			.messages(List.of(Message.builder(Role.USER)
 				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
 				.build()))
-			.options(OllamaOptions.builder().temperature(0.9).build().toMap())
+			.options(OllamaChatOptions.builder().temperature(0.9).build().toMap())
 			.build();
 
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
@@ -125,8 +132,8 @@ public class OllamaApiIT extends BaseOllamaIT {
 						.content("What is the capital of Bulgaria and what is the size? "
 								+ "What it the national anthem?")
 						.build()))
-			.options(OllamaOptions.builder().temperature(0.9).build())
-			.think(true)
+			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.enableThinking()
 			.build();
 
 		ChatResponse response = getOllamaApi().chat(request);
@@ -139,6 +146,90 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.message().role()).isEqualTo(Role.ASSISTANT);
 		assertThat(response.message().content()).contains("Sofia");
 		assertThat(response.message().thinking()).isNotEmpty();
+	}
+
+	@Test
+	public void chatWithThinking() {
+		var request = ChatRequest.builder(THINKING_MODEL)
+			.stream(true)
+			.messages(List.of(Message.builder(Role.USER)
+				.content("What is the capital of Bulgaria and what is the size? " + "What it the national anthem?")
+				.build()))
+			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.enableThinking()
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().thinking())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
+	}
+
+	@Test
+	public void streamChatWithThinking() {
+		var request = ChatRequest.builder(THINKING_MODEL)
+			.stream(true)
+			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
+			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.enableThinking()
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().thinking())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("solar");
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
+	}
+
+	@Test
+	public void streamChatWithoutThinking() {
+		var request = ChatRequest.builder(THINKING_MODEL)
+			.stream(true)
+			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
+			.options(OllamaChatOptions.builder().temperature(0.9).build())
+			.disableThinking()
+			.build();
+
+		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
+
+		List<ChatResponse> responses = response.collectList().block();
+		System.out.println(responses);
+
+		assertThat(responses).isNotNull();
+
+		assertThat(responses.stream()
+			.filter(r -> r.message() != null)
+			.map(r -> r.message().content())
+			.collect(Collectors.joining(System.lineSeparator()))).contains("Earth");
+
+		assertThat(responses.stream().filter(r -> r.message() != null).allMatch(r -> r.message().thinking() == null))
+			.isTrue();
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+		assertThat(lastResponse.message().content()).isEmpty();
+		assertNull(lastResponse.message().thinking());
+		assertThat(lastResponse.done()).isTrue();
 	}
 
 }

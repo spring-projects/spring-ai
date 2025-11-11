@@ -90,4 +90,61 @@ public class CoherenceFilterExpressionConverterTests {
 		return new ChainedExtractor(new UniversalExtractor<>("metadata"), new UniversalExtractor<>(property));
 	}
 
+	@Test
+	void testBooleanValues() {
+		final Expression e1 = new FilterExpressionTextParser().parse("active == true");
+		final Expression e2 = new FilterExpressionTextParser().parse("deleted == false");
+
+		assertThat(CONVERTER.convert(e1)).isEqualTo(Filters.equal(extractor("active"), true));
+		assertThat(CONVERTER.convert(e2)).isEqualTo(Filters.equal(extractor("deleted"), false));
+	}
+
+	@Test
+	void testNumericValues() {
+		final Expression intExpr = new FilterExpressionTextParser().parse("count == 42");
+		final Expression doubleExpr = new FilterExpressionTextParser().parse("rating == 4.5");
+		final Expression negativeExpr = new FilterExpressionTextParser().parse("temperature == -10");
+
+		assertThat(CONVERTER.convert(intExpr)).isEqualTo(Filters.equal(extractor("count"), 42));
+		assertThat(CONVERTER.convert(doubleExpr)).isEqualTo(Filters.equal(extractor("rating"), 4.5));
+		assertThat(CONVERTER.convert(negativeExpr)).isEqualTo(Filters.equal(extractor("temperature"), -10));
+	}
+
+	@Test
+	void testStringWithSpecialCharacters() {
+		final Expression e = new FilterExpressionTextParser().parse("description == 'This has \"quotes\" and spaces'");
+		assertThat(CONVERTER.convert(e))
+			.isEqualTo(Filters.equal(extractor("description"), "This has \"quotes\" and spaces"));
+	}
+
+	@Test
+	void testEmptyStringValue() {
+		final Expression e = new FilterExpressionTextParser().parse("comment == ''");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.equal(extractor("comment"), ""));
+	}
+
+	@Test
+	void testINWithMixedTypes() {
+		final Expression e = new FilterExpressionTextParser().parse("status in [1, 'active', true]");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.in(extractor("status"), 1, "active", true));
+	}
+
+	@Test
+	void testINWithSingleValue() {
+		final Expression e = new FilterExpressionTextParser().parse("category in ['category1']");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.in(extractor("category"), "category1"));
+	}
+
+	@Test
+	void testNINWithSingleValue() {
+		final Expression e = new FilterExpressionTextParser().parse("category nin ['inactive']");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.not(Filters.in(extractor("category"), "inactive")));
+	}
+
+	@Test
+	void testCategoryWithNumericComparison() {
+		final Expression e = new FilterExpressionTextParser().parse("categoryId >= 5");
+		assertThat(CONVERTER.convert(e)).isEqualTo(Filters.greaterEqual(extractor("categoryId"), 5));
+	}
+
 }

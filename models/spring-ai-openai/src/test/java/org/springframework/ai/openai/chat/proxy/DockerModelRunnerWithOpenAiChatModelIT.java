@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.SocatContainer;
+import org.testcontainers.containers.DockerModelRunnerContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
@@ -77,7 +77,7 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	private static final String DEFAULT_MODEL = "ai/gemma3:4B-F16";
 
 	@Container
-	private static final SocatContainer socat = new SocatContainer().withTarget(80, "model-runner.docker.internal");
+	private static final DockerModelRunnerContainer DMR = new DockerModelRunnerContainer("alpine/socat:1.7.4.3-r0");
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -89,7 +89,7 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 	public static void beforeAll() throws IOException, InterruptedException {
 		logger.info("Start pulling the '" + DEFAULT_MODEL + "' generative ... would take several minutes ...");
 
-		String baseUrl = "http://%s:%d".formatted(socat.getHost(), socat.getMappedPort(80));
+		String baseUrl = "http://%s:%d".formatted(DMR.getHost(), DMR.getMappedPort(80));
 
 		RestAssured.given().baseUri(baseUrl).body("""
 				{
@@ -352,8 +352,7 @@ class DockerModelRunnerWithOpenAiChatModelIT {
 
 		@Bean
 		public OpenAiApi chatCompletionApi() {
-			var baseUrl = "http://%s:%d/engines".formatted(socat.getHost(), socat.getMappedPort(80));
-			return OpenAiApi.builder().baseUrl(baseUrl).apiKey("test").build();
+			return OpenAiApi.builder().baseUrl(DMR.getOpenAIEndpoint()).apiKey("test").build();
 		}
 
 		@Bean

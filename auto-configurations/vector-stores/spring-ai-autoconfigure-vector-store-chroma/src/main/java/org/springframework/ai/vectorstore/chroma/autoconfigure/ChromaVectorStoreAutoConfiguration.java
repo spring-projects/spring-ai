@@ -82,7 +82,7 @@ public class ChromaVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy chromaBatchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

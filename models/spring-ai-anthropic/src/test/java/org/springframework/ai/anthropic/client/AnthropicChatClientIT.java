@@ -16,8 +16,6 @@
 
 package org.springframework.ai.anthropic.client;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
@@ -31,6 +29,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.api.AnthropicApi;
@@ -55,7 +55,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.util.MimeTypeUtils;
 
-import reactor.core.publisher.Flux;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = AnthropicTestConfiguration.class, properties = "spring.ai.retry.on-http-codes=429")
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
@@ -327,7 +327,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET)
+				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
@@ -339,10 +339,6 @@ class AnthropicChatClientIT {
 
 		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
-	}
-
-	record ActorsFilms(String actor, List<String> movies) {
-
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
@@ -377,6 +373,10 @@ class AnthropicChatClientIT {
 		String getCurrentDateTime(String cityName) {
 			return "For " + cityName + " Weather is hot and sunny with a temperature of 20 degrees";
 		}
+
+	}
+
+	record ActorsFilms(String actor, List<String> movies) {
 
 	}
 

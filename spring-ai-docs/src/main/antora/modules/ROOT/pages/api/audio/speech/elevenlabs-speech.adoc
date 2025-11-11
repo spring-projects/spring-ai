@@ -48,16 +48,27 @@ The prefix `spring.ai.elevenlabs` is used as the property prefix for *all* Eleve
 
 === Configuration Properties
 
+[NOTE]
+====
+Enabling and disabling of the audio speech auto-configurations are now configured via top level properties with the prefix `spring.ai.model.audio.speech`.
+
+To enable, spring.ai.model.audio.speech=elevenlabs (It is enabled by default)
+
+To disable, spring.ai.model.audio.speech=none (or any value which doesn't match elevenlabs)
+
+This change is done to allow configuration of multiple models.
+====
+
 The prefix `spring.ai.elevenlabs.tts` is used as the property prefix to configure the ElevenLabs Text-to-Speech client, specifically. This is defined in `ElevenLabsSpeechProperties`.
 
 [cols="3,5,2"]
 |====
 | Property | Description | Default
 
+| spring.ai.model.audio.speech   | Enable Audio Speech Model |  elevenlabs
 | spring.ai.elevenlabs.tts.options.model-id | The ID of the model to use. | eleven_turbo_v2_5
 | spring.ai.elevenlabs.tts.options.voice-id | The ID of the voice to use.  This is the *voice ID*, not the voice name. | 9BWtsMINqrJLrRacOk9x
 | spring.ai.elevenlabs.tts.options.output-format |  The output format for the generated audio. See xref:#output-formats[Output Formats] below. | mp3_22050_32
-| spring.ai.elevenlabs.tts.enabled | Enable or disable the ElevenLabs Text-to-Speech client. | true
 |====
 
 NOTE: The base URL and API key can also be configured *specifically* for TTS using `spring.ai.elevenlabs.tts.base-url` and `spring.ai.elevenlabs.tts.api-key`. However, it is generally recommended to use the global `spring.ai.elevenlabs` prefix for simplicity, unless you have a specific reason to use different credentials for different ElevenLabs services. The more specific `tts` properties will override the global ones.

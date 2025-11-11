@@ -198,7 +198,7 @@ public class ElasticsearchVectorStoreObservationIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class Config {
 
 		@Bean

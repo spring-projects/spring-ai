@@ -112,7 +112,7 @@ public class StabilityAiApi {
 
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			List<TextPrompts> textPrompts;
 

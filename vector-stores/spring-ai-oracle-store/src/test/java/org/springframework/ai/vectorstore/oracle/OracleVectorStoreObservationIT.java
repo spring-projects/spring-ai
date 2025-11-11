@@ -176,7 +176,7 @@ public class OracleVectorStoreObservationIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class Config {
 
 		@Bean

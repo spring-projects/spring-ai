@@ -137,8 +137,7 @@ public class StabilityAiImageModel implements ImageModel {
 			.seed(defaultOptions.getSeed())
 			.steps(defaultOptions.getSteps())
 			.stylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStylePreset()));
-		if (runtimeOptions instanceof StabilityAiImageOptions) {
-			StabilityAiImageOptions stabilityOptions = (StabilityAiImageOptions) runtimeOptions;
+		if (runtimeOptions instanceof StabilityAiImageOptions stabilityOptions) {
 			// Handle Stability AI specific image options
 			builder
 				.cfgScale(ModelOptionsUtils.mergeOption(stabilityOptions.getCfgScale(), defaultOptions.getCfgScale()))

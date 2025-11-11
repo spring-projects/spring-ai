@@ -50,6 +50,7 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Laura Trotta
  * @author Jihoon Kim
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class TokenCountBatchingStrategy implements BatchingStrategy {
@@ -153,15 +154,15 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 			documentTokens.put(document, tokenCount);
 		}
 
-		for (Document document : documentTokens.keySet()) {
-			Integer tokenCount = documentTokens.get(document);
-			if (currentSize + tokenCount > this.maxInputTokenCount) {
+		for (Map.Entry<Document, Integer> entry : documentTokens.entrySet()) {
+			Document document = entry.getKey();
+			currentSize += entry.getValue();
+			if (currentSize > this.maxInputTokenCount) {
 				batches.add(currentBatch);
 				currentBatch = new ArrayList<>();
 				currentSize = 0;
 			}
 			currentBatch.add(document);
-			currentSize += tokenCount;
 		}
 		if (!currentBatch.isEmpty()) {
 			batches.add(currentBatch);

@@ -34,8 +34,8 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.retry.RetryUtils;
 
@@ -59,19 +59,9 @@ class OllamaChatModelTests {
 	OllamaApi ollamaApi;
 
 	@Test
-	void buildOllamaChatModelWithDeprecatedConstructor() {
-		ChatModel chatModel = OllamaChatModel.builder()
-			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaOptions.builder().model(OllamaModel.MISTRAL).build())
-			.observationRegistry(ObservationRegistry.NOOP)
-			.build();
-		assertThat(chatModel).isNotNull();
-	}
-
-	@Test
 	void buildOllamaChatModelWithConstructor() {
 		ChatModel chatModel = new OllamaChatModel(this.ollamaApi,
-				OllamaOptions.builder().model(OllamaModel.MISTRAL).build(), ToolCallingManager.builder().build(),
+				OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build(), ToolCallingManager.builder().build(),
 				ObservationRegistry.NOOP, ModelManagementOptions.builder().build());
 		assertThat(chatModel).isNotNull();
 	}
@@ -87,7 +77,7 @@ class OllamaChatModelTests {
 		Exception exception = assertThrows(IllegalArgumentException.class,
 				() -> OllamaChatModel.builder()
 					.ollamaApi(this.ollamaApi)
-					.defaultOptions(OllamaOptions.builder().model(OllamaModel.LLAMA2).build())
+					.defaultOptions(OllamaChatOptions.builder().model(OllamaModel.LLAMA2).build())
 					.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 					.modelManagementOptions(null)
 					.build());
@@ -185,7 +175,11 @@ class OllamaChatModelTests {
 
 	@Test
 	void buildOllamaChatModelWithAllBuilderOptions() {
-		OllamaOptions options = OllamaOptions.builder().model(OllamaModel.CODELLAMA).temperature(0.7).topK(50).build();
+		OllamaChatOptions options = OllamaChatOptions.builder()
+			.model(OllamaModel.CODELLAMA)
+			.temperature(0.7)
+			.topK(50)
+			.build();
 
 		ToolCallingManager toolManager = ToolCallingManager.builder().build();
 		ModelManagementOptions managementOptions = ModelManagementOptions.builder().build();
@@ -244,7 +238,7 @@ class OllamaChatModelTests {
 	@ValueSource(strings = { "LLAMA2", "MISTRAL", "CODELLAMA", "LLAMA3", "GEMMA" })
 	void buildOllamaChatModelWithDifferentModels(String modelName) {
 		OllamaModel model = OllamaModel.valueOf(modelName);
-		OllamaOptions options = OllamaOptions.builder().model(model).build();
+		OllamaChatOptions options = OllamaChatOptions.builder().model(model).build();
 
 		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
 
@@ -313,7 +307,7 @@ class OllamaChatModelTests {
 	@Test
 	void buildOllamaChatModelImmutability() {
 		// Test that the builder creates immutable instances
-		OllamaOptions options = OllamaOptions.builder().model(OllamaModel.MISTRAL).temperature(0.5).build();
+		OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL).temperature(0.5).build();
 
 		ChatModel chatModel1 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).defaultOptions(options).build();
 
@@ -323,6 +317,30 @@ class OllamaChatModelTests {
 		assertThat(chatModel1).isNotSameAs(chatModel2);
 		assertThat(chatModel1).isNotNull();
 		assertThat(chatModel2).isNotNull();
+	}
+
+	@Test
+	void buildChatResponseMetadataWithZeroValues() {
+		// Test with all zero/minimal values
+		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse("model", Instant.now(), null, null, null, 0L, 0L,
+				0, 0L, 0, 0L);
+
+		ChatResponseMetadata metadata = OllamaChatModel.from(response, null);
+
+		assertEquals(Duration.ZERO, metadata.get("eval-duration"));
+		assertEquals(Integer.valueOf(0), metadata.get("eval-count"));
+		assertEquals(Duration.ZERO, metadata.get("prompt-eval-duration"));
+		assertEquals(Integer.valueOf(0), metadata.get("prompt-eval-count"));
+		assertThat(metadata.getUsage()).isEqualTo(new DefaultUsage(0, 0));
+	}
+
+	@Test
+	void buildOllamaChatModelWithMinimalConfiguration() {
+		// Test building with only required parameters
+		ChatModel chatModel = OllamaChatModel.builder().ollamaApi(this.ollamaApi).build();
+
+		assertThat(chatModel).isNotNull();
+		assertThat(chatModel).isInstanceOf(OllamaChatModel.class);
 	}
 
 }

@@ -127,6 +127,23 @@ public class TokenTextSplitterTest {
 		// Ensure we found chunks from both documents
 		assertThat(foundDoc1Chunks).isTrue();
 		assertThat(foundDoc2Chunks).isTrue();
+    
+    // Verify that the original metadata is copied to all chunks (including
+		// chunk-specific fields)
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(1).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(3).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
+
+		// Verify chunk indices are correct
+		assertThat(chunks.get(0).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(1).getMetadata().get("chunk_index")).isEqualTo(1);
+		assertThat(chunks.get(2).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(3).getMetadata().get("chunk_index")).isEqualTo(1);
 	}
 
 	@Test

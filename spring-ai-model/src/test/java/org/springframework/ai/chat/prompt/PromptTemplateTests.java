@@ -26,6 +26,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.template.NoOpTemplateRenderer;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -304,6 +305,19 @@ class PromptTemplateTests {
 		PromptTemplate promptTemplate = PromptTemplate.builder().resource(templateResource).variables(vars).build();
 
 		assertThat(promptTemplate.render()).isEqualTo("Hello Builder from Resource!");
+	}
+
+	@Test
+	void renderWithResourceFile() {
+		Resource resource = new ClassPathResource("prompt-user.txt");
+
+		// Build PromptTemplate: bind the Resource to "name" in this.variables
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template("How {name}")
+			.variables(Map.of("name", resource))
+			.build();
+
+		assertThat(promptTemplate.render(Map.of())).isEqualTo("How Hello, world!");
 	}
 
 	// Helper Custom Renderer for testing

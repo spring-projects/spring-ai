@@ -84,7 +84,7 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		@Nullable
 		private String textContent;

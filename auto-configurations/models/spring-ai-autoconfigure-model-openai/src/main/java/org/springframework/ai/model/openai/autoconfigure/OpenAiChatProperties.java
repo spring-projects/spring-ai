@@ -34,17 +34,13 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 	private String completionsPath = DEFAULT_COMPLETIONS_PATH;
 
 	@NestedConfigurationProperty
-	private OpenAiChatOptions options = OpenAiChatOptions.builder()
+	private final OpenAiChatOptions options = OpenAiChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
 		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public OpenAiChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(OpenAiChatOptions options) {
-		this.options = options;
 	}
 
 	public String getCompletionsPath() {

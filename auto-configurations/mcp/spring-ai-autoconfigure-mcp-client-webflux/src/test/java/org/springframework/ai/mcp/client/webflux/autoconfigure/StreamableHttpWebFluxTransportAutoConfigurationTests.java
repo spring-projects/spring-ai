@@ -16,12 +16,13 @@
 
 package org.springframework.ai.mcp.client.webflux.autoconfigure;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.lang.reflect.Field;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
@@ -31,9 +32,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link StreamableHttpWebFluxTransportAutoConfiguration}.
@@ -48,7 +47,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	@Test
 	void webFluxClientTransportsPresentIfWebClientStreamableHttpTransportPresent() {
 		this.applicationContext
-			.run(context -> assertThat(context.containsBean("streamableHttpwebFluxClientTransports")).isTrue());
+			.run(context -> assertThat(context.containsBean("streamableHttpWebFluxClientTransports")).isTrue());
 	}
 
 	@Test
@@ -56,19 +55,19 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 		this.applicationContext
 			.withClassLoader(new FilteredClassLoader(
 					"io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport"))
-			.run(context -> assertThat(context.containsBean("streamableHttpwebFluxClientTransports")).isFalse());
+			.run(context -> assertThat(context.containsBean("streamableHttpWebFluxClientTransports")).isFalse());
 	}
 
 	@Test
 	void webFluxClientTransportsNotPresentIfMcpClientDisabled() {
 		this.applicationContext.withPropertyValues("spring.ai.mcp.client.enabled", "false")
-			.run(context -> assertThat(context.containsBean("streamableHttpwebFluxClientTransports")).isFalse());
+			.run(context -> assertThat(context.containsBean("streamableHttpWebFluxClientTransports")).isFalse());
 	}
 
 	@Test
 	void noTransportsCreatedWithEmptyConnections() {
 		this.applicationContext.run(context -> {
-			List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+			List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 					List.class);
 			assertThat(transports).isEmpty();
 		});
@@ -79,7 +78,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 		this.applicationContext
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
-				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(1);
 				assertThat(transports.get(0).name()).isEqualTo("server1");
@@ -93,7 +92,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
 					"spring.ai.mcp.client.streamable-http.connections.server2.url=http://otherserver:8081")
 			.run(context -> {
-				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(2);
 				assertThat(transports).extracting("name").containsExactlyInAnyOrder("server1", "server2");
@@ -113,7 +112,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
 					"spring.ai.mcp.client.streamable-http.connections.server1.endpoint=/custom-mcp")
 			.run(context -> {
-				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(1);
 				assertThat(transports.get(0).name()).isEqualTo("server1");
@@ -130,7 +129,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
 				assertThat(context.getBean(WebClient.Builder.class)).isNotNull();
-				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(1);
 			});
@@ -142,7 +141,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
 				assertThat(context.getBean(ObjectMapper.class)).isNotNull();
-				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(1);
 			});
@@ -153,7 +152,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 		this.applicationContext
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
-				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(1);
 				assertThat(transports.get(0).name()).isEqualTo("server1");
@@ -170,7 +169,7 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 					"spring.ai.mcp.client.streamable-http.connections.server1.endpoint=/custom-mcp",
 					"spring.ai.mcp.client.streamable-http.connections.server2.url=http://otherserver:8081")
 			.run(context -> {
-				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpwebFluxClientTransports",
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(2);
 				assertThat(transports).extracting("name").containsExactlyInAnyOrder("server1", "server2");

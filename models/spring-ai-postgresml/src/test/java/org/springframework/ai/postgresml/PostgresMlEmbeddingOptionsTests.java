@@ -21,7 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +62,7 @@ public class PostgresMlEmbeddingOptionsTests {
 		var jdbcTemplate = Mockito.mock(JdbcTemplate.class);
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(jdbcTemplate);
 
-		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptionsBuilder.builder().build());
+		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptions.builder().build());
 
 		// Default options
 		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);
@@ -201,6 +201,69 @@ public class PostgresMlEmbeddingOptionsTests {
 		assertThat(options.getTransformer()).isEqualTo("model-2");
 		assertThat(options.getKwargs()).containsEntry("key2", "value2");
 		assertThat(options.getKwargs()).doesNotContainKey("key1");
+	}
+
+	@Test
+	public void settersModifyOptions() {
+		PostgresMlEmbeddingOptions options = new PostgresMlEmbeddingOptions();
+
+		options.setVectorType(PostgresMlEmbeddingModel.VectorType.PG_VECTOR);
+		options.setKwargs(Map.of("key", "value"));
+		options.setMetadataMode(org.springframework.ai.document.MetadataMode.NONE);
+
+		assertThat(options.getVectorType()).isEqualTo(PostgresMlEmbeddingModel.VectorType.PG_VECTOR);
+		assertThat(options.getKwargs()).containsEntry("key", "value");
+		assertThat(options.getMetadataMode()).isEqualTo(org.springframework.ai.document.MetadataMode.NONE);
+	}
+
+	@Test
+	public void getModelReturnsNull() {
+		PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder().build();
+
+		assertThat(options.getModel()).isNull();
+	}
+
+	@Test
+	public void getDimensionsReturnsNull() {
+		PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder().build();
+
+		assertThat(options.getDimensions()).isNull();
+	}
+
+	@Test
+	public void builderReturnsSameInstance() {
+		PostgresMlEmbeddingOptions.Builder builder = PostgresMlEmbeddingOptions.builder().transformer("model-1");
+
+		PostgresMlEmbeddingOptions options1 = builder.build();
+		PostgresMlEmbeddingOptions options2 = builder.build();
+
+		// Builder returns the same instance on multiple build() calls
+		assertThat(options1).isSameAs(options2);
+		assertThat(options1.getTransformer()).isEqualTo(options2.getTransformer());
+	}
+
+	@Test
+	public void modifyingBuilderAfterBuildAffectsPreviousInstance() {
+		PostgresMlEmbeddingOptions.Builder builder = PostgresMlEmbeddingOptions.builder().transformer("model-1");
+
+		PostgresMlEmbeddingOptions options1 = builder.build();
+
+		// Modifying builder after build
+		builder.transformer("model-2");
+		PostgresMlEmbeddingOptions options2 = builder.build();
+
+		// Both instances are the same and have the updated value
+		assertThat(options1).isSameAs(options2);
+		assertThat(options1.getTransformer()).isEqualTo("model-2");
+		assertThat(options2.getTransformer()).isEqualTo("model-2");
+	}
+
+	@Test
+	public void setAdditionalParametersAcceptsNull() {
+		PostgresMlEmbeddingOptions options = new PostgresMlEmbeddingOptions();
+		options.setKwargs(null);
+
+		assertThat(options.getKwargs()).isNull();
 	}
 
 }

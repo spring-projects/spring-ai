@@ -148,7 +148,7 @@ public class VertexAiMultimodalEmbeddingOptions implements EmbeddingOptions {
 		this.videoIntervalSec = videoIntervalSec;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected VertexAiMultimodalEmbeddingOptions options;
 

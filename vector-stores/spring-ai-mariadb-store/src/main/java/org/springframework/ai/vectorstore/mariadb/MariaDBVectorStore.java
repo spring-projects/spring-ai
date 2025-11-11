@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -251,7 +251,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public void doAdd(List<Document> documents) {
 		// Batch the documents based on the batching strategy
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		List<List<MariaDBDocument>> batchedDocuments = batchDocuments(documents, embeddings);
@@ -364,7 +364,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 				this.idFieldName, this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
 				getFullyQualifiedTableName(), jsonPathFilter);
 
-		logger.debug("SQL query: " + sql);
+		logger.debug("SQL query: {}", sql);
 
 		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), embedding, distance,
 				request.getTopK());

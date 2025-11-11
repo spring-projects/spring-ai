@@ -16,10 +16,10 @@
 
 package org.springframework.ai.util.json;
 
+import java.lang.reflect.Type;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Type;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

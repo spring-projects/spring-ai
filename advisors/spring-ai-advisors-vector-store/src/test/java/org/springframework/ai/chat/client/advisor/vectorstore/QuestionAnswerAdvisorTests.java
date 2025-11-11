@@ -151,8 +151,6 @@ public class QuestionAnswerAdvisorTests {
 
 		Message systemMessage = this.promptCaptor.getValue().getInstructions().get(0);
 
-		System.out.println(systemMessage.getText());
-
 		assertThat(systemMessage.getText()).isEqualToIgnoringWhitespace("""
 				Default system text.
 				""");
@@ -243,4 +241,163 @@ public class QuestionAnswerAdvisorTests {
 		Assertions.assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
 	}
 
+	@Test
+	public void qaAdvisorWithMultipleFilterParameters() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Filtered response"))),
+						ChatResponseMetadata.builder().build()));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+				.willReturn(List.of(new Document("doc1"), new Document("doc2")));
+
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+				.searchRequest(SearchRequest.builder().topK(10).build())
+				.build();
+
+		var chatClient = ChatClient.builder(this.chatModel)
+				.defaultAdvisors(qaAdvisor)
+				.build();
+
+		chatClient.prompt()
+				.user("Complex query")
+				.advisors(a -> a.param(QuestionAnswerAdvisor.FILTER_EXPRESSION, "type == 'Documentation' AND status == 'Published'"))
+				.call()
+				.chatResponse();
+
+		var capturedFilter = this.vectorSearchCaptor.getValue().getFilterExpression();
+		assertThat(capturedFilter).isNotNull();
+		// The filter should be properly constructed with AND operation
+		assertThat(capturedFilter.toString()).contains("type");
+		assertThat(capturedFilter.toString()).contains("Documentation");
+	}
+
+	@Test
+	public void qaAdvisorWithDifferentSimilarityThresholds() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("High threshold response"))),
+						ChatResponseMetadata.builder().build()));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+				.willReturn(List.of(new Document("relevant doc")));
+
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+				.searchRequest(SearchRequest.builder().similarityThreshold(0.95).topK(3).build())
+				.build();
+
+		var chatClient = ChatClient.builder(this.chatModel)
+				.defaultAdvisors(qaAdvisor)
+				.build();
+
+		chatClient.prompt()
+				.user("Specific question requiring high similarity")
+				.call()
+				.chatResponse();
+
+		assertThat(this.vectorSearchCaptor.getValue().getSimilarityThreshold()).isEqualTo(0.95);
+		assertThat(this.vectorSearchCaptor.getValue().getTopK()).isEqualTo(3);
+	}
+
+	@Test
+	public void qaAdvisorWithComplexParameterizedTemplate() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Complex template response"))),
+						ChatResponseMetadata.builder().build()));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+				.willReturn(List.of(new Document("template doc")));
+
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+				.searchRequest(SearchRequest.builder().build())
+				.build();
+
+		var chatClient = ChatClient.builder(this.chatModel)
+				.defaultAdvisors(qaAdvisor)
+				.build();
+
+		var complexTemplate = "Please analyze {topic} considering {aspect1} and {aspect2} for user {userId}";
+		chatClient.prompt()
+				.user(u -> u.text(complexTemplate)
+						.param("topic", "machine learning")
+						.param("aspect1", "performance")
+						.param("aspect2", "scalability")
+						.param("userId", "user1"))
+				.call()
+				.chatResponse();
+
+		var expectedQuery = "Please analyze machine learning considering performance and scalability for user user1";
+		assertThat(this.vectorSearchCaptor.getValue().getQuery()).isEqualTo(expectedQuery);
+
+		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(userMessage.getText()).contains(expectedQuery);
+		assertThat(userMessage.getText()).doesNotContain("{topic}");
+		assertThat(userMessage.getText()).doesNotContain("{aspect1}");
+		assertThat(userMessage.getText()).doesNotContain("{aspect2}");
+		assertThat(userMessage.getText()).doesNotContain("{userId}");
+	}
+
+	@Test
+	public void qaAdvisorWithDocumentsContainingMetadata() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Metadata response"))),
+						ChatResponseMetadata.builder().build()));
+
+		var docWithMetadata1 = new Document("First document content", Map.of("source", "wiki", "author", "John"));
+		var docWithMetadata2 = new Document("Second document content", Map.of("source", "manual", "version", "2.1"));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+				.willReturn(List.of(docWithMetadata1, docWithMetadata2));
+
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+				.searchRequest(SearchRequest.builder().topK(2).build())
+				.build();
+
+		var chatClient = ChatClient.builder(this.chatModel)
+				.defaultAdvisors(qaAdvisor)
+				.build();
+
+		chatClient.prompt()
+				.user("Question about documents with metadata")
+				.call()
+				.chatResponse();
+
+		Message userMessage = this.promptCaptor.getValue().getInstructions().get(0);
+		assertThat(userMessage.getText()).contains("First document content");
+		assertThat(userMessage.getText()).contains("Second document content");
+	}
+
+	@Test
+	public void qaAdvisorBuilderValidation() {
+		// Test that builder validates required parameters
+		Assertions.assertThatThrownBy(() -> QuestionAnswerAdvisor.builder(null))
+				.isInstanceOf(IllegalArgumentException.class);
+
+		// Test successful builder creation
+		var advisor = QuestionAnswerAdvisor.builder(this.vectorStore).build();
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	public void qaAdvisorWithZeroTopK() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Zero docs response"))),
+						ChatResponseMetadata.builder().build()));
+
+		given(this.vectorStore.similaritySearch(this.vectorSearchCaptor.capture()))
+				.willReturn(List.of());
+
+		var qaAdvisor = QuestionAnswerAdvisor.builder(this.vectorStore)
+				.searchRequest(SearchRequest.builder().topK(0).build())
+				.build();
+
+		var chatClient = ChatClient.builder(this.chatModel)
+				.defaultAdvisors(qaAdvisor)
+				.build();
+
+		chatClient.prompt()
+				.user("Question with zero topK")
+				.call()
+				.chatResponse();
+
+		assertThat(this.vectorSearchCaptor.getValue().getTopK()).isEqualTo(0);
+	}
 }

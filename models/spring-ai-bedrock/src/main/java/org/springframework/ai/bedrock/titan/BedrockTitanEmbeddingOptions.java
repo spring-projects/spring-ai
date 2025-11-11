@@ -62,14 +62,9 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 		return null;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private BedrockTitanEmbeddingOptions options = new BedrockTitanEmbeddingOptions();
-
-		@Deprecated
-		public Builder withInputType(InputType inputType) {
-			return this.inputType(inputType);
-		}
 
 		public Builder inputType(InputType inputType) {
 			Assert.notNull(inputType, "input type can not be null.");

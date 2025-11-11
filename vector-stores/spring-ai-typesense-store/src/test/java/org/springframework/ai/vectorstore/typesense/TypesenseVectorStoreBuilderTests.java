@@ -112,4 +112,22 @@ class TypesenseVectorStoreBuilderTests {
 			.hasMessage("BatchingStrategy must not be null");
 	}
 
+	@Test
+	void minimumValidEmbeddingDimensionShouldBeAccepted() {
+		TypesenseVectorStore vectorStore = TypesenseVectorStore.builder(this.client, this.embeddingModel)
+			.embeddingDimension(1)
+			.build();
+
+		assertThat(vectorStore).hasFieldOrPropertyWithValue("embeddingDimension", 1);
+	}
+
+	@Test
+	void singleCharacterCollectionNameShouldBeAccepted() {
+		TypesenseVectorStore vectorStore = TypesenseVectorStore.builder(this.client, this.embeddingModel)
+			.collectionName("a")
+			.build();
+
+		assertThat(vectorStore).hasFieldOrPropertyWithValue("collectionName", "a");
+	}
+
 }

@@ -16,15 +16,20 @@
 
 package org.springframework.ai.reader;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -99,6 +104,106 @@ public class TextReaderTests {
 			.isEqualTo("Byte array resource [Custom byte array resource]");
 
 		assertThat(customDocument.getText()).isEqualTo("Another test content");
+	}
+
+	@Test
+	void loadEmptyText() {
+		Resource emptyResource = new ByteArrayResource("".getBytes(StandardCharsets.UTF_8));
+		TextReader textReader = new TextReader(emptyResource);
+
+		List<Document> documents = textReader.get();
+
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getText()).isEmpty();
+		assertThat(documents.get(0).getMetadata().get(TextReader.CHARSET_METADATA)).isEqualTo("UTF-8");
+	}
+
+	@Test
+	void loadTextWithOnlyWhitespace() {
+		Resource whitespaceResource = new ByteArrayResource("   \n\t\r\n   ".getBytes(StandardCharsets.UTF_8));
+		TextReader textReader = new TextReader(whitespaceResource);
+
+		List<Document> documents = textReader.get();
+
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getText()).isEqualTo("   \n\t\r\n   ");
+	}
+
+	@Test
+	void loadTextWithMultipleNewlines() {
+		String content = "Line 1\n\n\nLine 4\r\nLine 5\r\n\r\nLine 7";
+		Resource resource = new ByteArrayResource(content.getBytes(StandardCharsets.UTF_8));
+		TextReader textReader = new TextReader(resource);
+
+		List<Document> documents = textReader.get();
+
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getText()).isEqualTo(content);
+	}
+
+	@Test
+	void customMetadataIsPreserved() {
+		Resource resource = new ByteArrayResource("Test".getBytes(StandardCharsets.UTF_8));
+		TextReader textReader = new TextReader(resource);
+
+		// Add multiple custom metadata entries
+		textReader.getCustomMetadata().put("author", "Author");
+		textReader.getCustomMetadata().put("version", "1.0");
+		textReader.getCustomMetadata().put("category", "test");
+
+		List<Document> documents = textReader.get();
+
+		assertThat(documents).hasSize(1);
+		Document document = documents.get(0);
+		assertThat(document.getMetadata()).containsEntry("author", "Author");
+		assertThat(document.getMetadata()).containsEntry("version", "1.0");
+		assertThat(document.getMetadata()).containsEntry("category", "test");
+	}
+
+	@Test
+	void resourceDescriptionHandling(@TempDir File tempDir) throws IOException {
+		// Test with file resource
+		File testFile = new File(tempDir, "test-file.txt");
+		try (FileWriter writer = new FileWriter(testFile, StandardCharsets.UTF_8)) {
+			writer.write("File content");
+		}
+
+		TextReader fileReader = new TextReader(new FileSystemResource(testFile));
+		List<Document> documents = fileReader.get();
+
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getMetadata().get(TextReader.SOURCE_METADATA)).isEqualTo("test-file.txt");
+	}
+
+	@Test
+	void multipleCallsToGetReturnSameResult() {
+		Resource resource = new ByteArrayResource("Consistent content".getBytes(StandardCharsets.UTF_8));
+		TextReader textReader = new TextReader(resource);
+		textReader.getCustomMetadata().put("test", "value");
+
+		List<Document> firstCall = textReader.get();
+		List<Document> secondCall = textReader.get();
+
+		assertThat(firstCall).hasSize(1);
+		assertThat(secondCall).hasSize(1);
+		assertThat(firstCall.get(0).getText()).isEqualTo(secondCall.get(0).getText());
+		assertThat(firstCall.get(0).getMetadata()).isEqualTo(secondCall.get(0).getMetadata());
+	}
+
+	@Test
+	void resourceWithoutExtension(@TempDir File tempDir) throws IOException {
+		// Test file without extension
+		File noExtFile = new File(tempDir, "no-extension-file");
+		try (FileWriter writer = new FileWriter(noExtFile, StandardCharsets.UTF_8)) {
+			writer.write("Content without extension");
+		}
+
+		TextReader textReader = new TextReader(new FileSystemResource(noExtFile));
+		List<Document> documents = textReader.get();
+
+		assertThat(documents).hasSize(1);
+		assertThat(documents.get(0).getText()).isEqualTo("Content without extension");
+		assertThat(documents.get(0).getMetadata().get(TextReader.SOURCE_METADATA)).isEqualTo("no-extension-file");
 	}
 
 }

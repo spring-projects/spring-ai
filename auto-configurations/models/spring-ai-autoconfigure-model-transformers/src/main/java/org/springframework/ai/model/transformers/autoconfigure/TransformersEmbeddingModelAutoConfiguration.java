@@ -38,7 +38,7 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ TransformersEmbeddingModelProperties.class })
+@EnableConfigurationProperties(TransformersEmbeddingModelProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.TRANSFORMERS,
 		matchIfMissing = true)
 @ConditionalOnClass({ OrtSession.class, HuggingFaceTokenizer.class, TransformersEmbeddingModel.class })

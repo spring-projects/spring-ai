@@ -82,9 +82,22 @@ public class TextSplitterTests {
 		assertThat(chunks.get(3).getText())
 			.isEqualTo("choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.");
 
-		// Verify that the same, merged metadata is copied to all chunks.
-		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());
-		assertThat(chunks.get(2).getMetadata()).isEqualTo(chunks.get(3).getMetadata());
+		// Verify that the original metadata is copied to all chunks (including
+		// chunk-specific fields)
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(1).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(3).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
+
+		// Verify chunk indices are correct
+		assertThat(chunks.get(0).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(1).getMetadata().get("chunk_index")).isEqualTo(1);
+		assertThat(chunks.get(2).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(3).getMetadata().get("chunk_index")).isEqualTo(1);
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
 		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
 
@@ -148,7 +161,6 @@ public class TextSplitterTests {
 	@Test
 	public void pageWithChunkSplit() {
 		// given
-
 		var doc1 = new Document("1In the end, writing arises when man realizes that memory is not enough."
 				+ "1The most oppressive thing about the labyrinth is that you are constantly "
 				+ "1being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
@@ -236,13 +248,137 @@ public class TextSplitterTests {
 		assertThat(chunks.get(0).getText()).isEqualTo("In the end, writing arises when man");
 		assertThat(chunks.get(1).getText()).isEqualTo(" realizes that memory is not enough.");
 
-		// Verify that the same, merged metadata is copied to all chunks.
-		assertThat(chunks.get(0).getMetadata()).isEqualTo(chunks.get(1).getMetadata());
-		assertThat(chunks.get(1).getMetadata()).containsKeys("key1");
+		// Verify that the original metadata is copied to all chunks (with chunk-specific
+		// fields)
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(1).getMetadata()).containsKeys("key1", "parent_document_id", "chunk_index",
+				"total_chunks");
+
+		// Verify chunk indices are different
+		assertThat(chunks.get(0).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(1).getMetadata().get("chunk_index")).isEqualTo(1);
 
 		// Verify that the content formatters are copied from the parents to the chunks.
 		assertThat(chunks.get(0).getContentFormatter()).isSameAs(contentFormatter);
 		assertThat(chunks.get(1).getContentFormatter()).isSameAs(contentFormatter);
+	}
+
+	@Test
+	public void testScorePreservation() {
+		// given
+		Double originalScore = 0.95;
+		var doc = Document.builder()
+			.text("This is a test document that will be split into multiple chunks.")
+			.metadata(Map.of("source", "test.txt"))
+			.score(originalScore)
+			.build();
+
+		// when
+		List<Document> chunks = testTextSplitter.apply(List.of(doc));
+
+		// then
+		assertThat(chunks).hasSize(2);
+		assertThat(chunks.get(0).getScore()).isEqualTo(originalScore);
+		assertThat(chunks.get(1).getScore()).isEqualTo(originalScore);
+	}
+
+	@Test
+	public void testParentDocumentTracking() {
+		// given
+		var doc1 = new Document("First document content for testing splitting functionality.",
+				Map.of("source", "doc1.txt"));
+		var doc2 = new Document("Second document content for testing splitting functionality.",
+				Map.of("source", "doc2.txt"));
+
+		String originalId1 = doc1.getId();
+		String originalId2 = doc2.getId();
+
+		// when
+		List<Document> chunks = testTextSplitter.apply(List.of(doc1, doc2));
+
+		// then
+		assertThat(chunks).hasSize(4);
+
+		// Verify parent document tracking for doc1 chunks
+		assertThat(chunks.get(0).getMetadata().get("parent_document_id")).isEqualTo(originalId1);
+		assertThat(chunks.get(1).getMetadata().get("parent_document_id")).isEqualTo(originalId1);
+
+		// Verify parent document tracking for doc2 chunks
+		assertThat(chunks.get(2).getMetadata().get("parent_document_id")).isEqualTo(originalId2);
+		assertThat(chunks.get(3).getMetadata().get("parent_document_id")).isEqualTo(originalId2);
+	}
+
+	@Test
+	public void testChunkMetadataInformation() {
+		// given
+		var doc = new Document("This is a longer document that will be split into exactly two chunks for testing.",
+				Map.of("source", "test.txt"));
+
+		// when
+		List<Document> chunks = testTextSplitter.apply(List.of(doc));
+
+		// then
+		assertThat(chunks).hasSize(2);
+
+		// Verify chunk index and total chunks for first chunk
+		assertThat(chunks.get(0).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(0).getMetadata().get("total_chunks")).isEqualTo(2);
+
+		// Verify chunk index and total chunks for second chunk
+		assertThat(chunks.get(1).getMetadata().get("chunk_index")).isEqualTo(1);
+		assertThat(chunks.get(1).getMetadata().get("total_chunks")).isEqualTo(2);
+
+		// Verify original metadata is preserved
+		assertThat(chunks.get(0).getMetadata().get("source")).isEqualTo("test.txt");
+		assertThat(chunks.get(1).getMetadata().get("source")).isEqualTo("test.txt");
+	}
+
+	@Test
+	public void testEnhancedMetadataWithMultipleDocuments() {
+		// given
+		var doc1 = Document.builder()
+			.text("First document with score and metadata.")
+			.metadata(Map.of("type", "article", "priority", "high"))
+			.score(0.8)
+			.build();
+
+		var doc2 = Document.builder()
+			.text("Second document with different score.")
+			.metadata(Map.of("type", "report", "priority", "medium"))
+			.score(0.6)
+			.build();
+
+		String originalId1 = doc1.getId();
+		String originalId2 = doc2.getId();
+
+		// when
+		List<Document> chunks = testTextSplitter.apply(List.of(doc1, doc2));
+
+		// then
+		assertThat(chunks).hasSize(4);
+
+		// Verify first document chunks
+		for (int i = 0; i < 2; i++) {
+			Document chunk = chunks.get(i);
+			assertThat(chunk.getScore()).isEqualTo(0.8);
+			assertThat(chunk.getMetadata().get("parent_document_id")).isEqualTo(originalId1);
+			assertThat(chunk.getMetadata().get("chunk_index")).isEqualTo(i);
+			assertThat(chunk.getMetadata().get("total_chunks")).isEqualTo(2);
+			assertThat(chunk.getMetadata().get("type")).isEqualTo("article");
+			assertThat(chunk.getMetadata().get("priority")).isEqualTo("high");
+		}
+
+		// Verify second document chunks
+		for (int i = 2; i < 4; i++) {
+			Document chunk = chunks.get(i);
+			assertThat(chunk.getScore()).isEqualTo(0.6);
+			assertThat(chunk.getMetadata().get("parent_document_id")).isEqualTo(originalId2);
+			assertThat(chunk.getMetadata().get("chunk_index")).isEqualTo(i - 2);
+			assertThat(chunk.getMetadata().get("total_chunks")).isEqualTo(2);
+			assertThat(chunk.getMetadata().get("type")).isEqualTo("report");
+			assertThat(chunk.getMetadata().get("priority")).isEqualTo("medium");
+		}
 	}
 
 }

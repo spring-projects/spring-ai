@@ -20,12 +20,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests for {@link MistralAiChatOptions}.

@@ -287,7 +287,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.builder()
 				.onChunk(chunk -> {
 					try {
-						logger.debug("Received chunk: " + chunk.bytes().asString(StandardCharsets.UTF_8));
+						logger.debug("Received chunk: {}", chunk.bytes().asString(StandardCharsets.UTF_8));
 						SO response = this.objectMapper.readValue(chunk.bytes().asByteArray(), clazz);
 						eventSink.emitNext(response, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
@@ -297,7 +297,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 					}
 				})
 				.onDefault(event -> {
-					logger.error("Unknown or unhandled event: " + event.toString());
+					logger.error("Unknown or unhandled event: {}", event.toString());
 					eventSink.emitError(new Throwable("Unknown or unhandled event: " + event.toString()), DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.build();
@@ -310,7 +310,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 							logger.info("Completed streaming response.");
 						})
 				.onError(error -> {
-					logger.error("\n\nError streaming response: " + error.getMessage());
+					logger.error("\n\nError streaming response: {}", error.getMessage());
 					eventSink.emitError(error, DEFAULT_EMIT_FAILURE_HANDLER);
 				})
 				.onEventStream(stream -> stream.subscribe(

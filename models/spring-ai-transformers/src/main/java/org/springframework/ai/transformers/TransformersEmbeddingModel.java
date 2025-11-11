@@ -44,7 +44,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
@@ -276,7 +276,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 	@Override
 	public List<float[]> embed(List<String> texts) {
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()))
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.builder().build()))
 			.getResults()
 			.stream()
 			.map(e -> e.getOutput())

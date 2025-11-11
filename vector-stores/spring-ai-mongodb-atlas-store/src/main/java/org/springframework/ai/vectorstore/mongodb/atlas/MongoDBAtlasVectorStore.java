@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -258,7 +258,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		for (Document document : documents) {
 			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getText(),
@@ -282,7 +282,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			BasicQuery query = new BasicQuery(nativeFilterExpression);
 			DeleteResult deleteResult = this.mongoTemplate.remove(query, this.collectionName);
 
-			logger.debug("Deleted " + deleteResult.getDeletedCount() + " documents matching filter expression");
+			logger.debug("Deleted {} documents matching filter expression", deleteResult.getDeletedCount());
 		}
 		catch (Exception e) {
 			throw new IllegalStateException("Failed to delete documents by filter", e);

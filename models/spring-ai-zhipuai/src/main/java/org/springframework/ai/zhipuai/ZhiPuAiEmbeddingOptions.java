@@ -66,7 +66,7 @@ public class ZhiPuAiEmbeddingOptions implements EmbeddingOptions {
 		return this.dimensions;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected ZhiPuAiEmbeddingOptions options;
 

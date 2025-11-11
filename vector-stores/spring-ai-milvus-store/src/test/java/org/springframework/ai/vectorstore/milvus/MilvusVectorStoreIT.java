@@ -345,21 +345,6 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
-	static class LogAppender extends AppenderBase<ILoggingEvent> {
-
-		private final List<String> capturedLogs = new ArrayList<>();
-
-		@Override
-		protected void append(ILoggingEvent eventObject) {
-			capturedLogs.add(eventObject.getFormattedMessage());
-		}
-
-		public List<String> getCapturedLogs() {
-			return capturedLogs;
-		}
-
-	}
-
 	@Test
 	void getNativeClientTest() {
 		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.milvus.metricType=COSINE").run(context -> {
@@ -370,7 +355,7 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Value("${test.spring.ai.vectorstore.milvus.metricType}")
@@ -402,6 +387,21 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 			// return new OpenAiEmbeddingModel(new
 			// OpenAiApi(System.getenv("OPENAI_API_KEY")), MetadataMode.EMBED,
 			// OpenAiEmbeddingOptions.builder().withModel("text-embedding-ada-002").build());
+		}
+
+	}
+
+	static class LogAppender extends AppenderBase<ILoggingEvent> {
+
+		private final List<String> capturedLogs = new ArrayList<>();
+
+		@Override
+		protected void append(ILoggingEvent eventObject) {
+			this.capturedLogs.add(eventObject.getFormattedMessage());
+		}
+
+		public List<String> getCapturedLogs() {
+			return this.capturedLogs;
 		}
 
 	}

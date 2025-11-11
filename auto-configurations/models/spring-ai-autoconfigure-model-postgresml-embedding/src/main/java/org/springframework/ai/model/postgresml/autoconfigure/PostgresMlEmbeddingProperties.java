@@ -23,7 +23,6 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.util.Assert;
 
 /**
  * Configuration properties for Postgres ML.
@@ -42,7 +41,7 @@ public class PostgresMlEmbeddingProperties {
 	private boolean createExtension;
 
 	@NestedConfigurationProperty
-	private PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
+	private final PostgresMlEmbeddingOptions options = PostgresMlEmbeddingOptions.builder()
 		.transformer(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL)
 		.vectorType(PostgresMlEmbeddingModel.VectorType.PG_ARRAY)
 		.kwargs(Map.of())
@@ -51,16 +50,6 @@ public class PostgresMlEmbeddingProperties {
 
 	public PostgresMlEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(PostgresMlEmbeddingOptions options) {
-		Assert.notNull(options, "options must not be null.");
-		Assert.notNull(options.getTransformer(), "transformer must not be null.");
-		Assert.notNull(options.getVectorType(), "vectorType must not be null.");
-		Assert.notNull(options.getKwargs(), "kwargs must not be null.");
-		Assert.notNull(options.getMetadataMode(), "metadataMode must not be null.");
-
-		this.options = options;
 	}
 
 	public boolean isCreateExtension() {

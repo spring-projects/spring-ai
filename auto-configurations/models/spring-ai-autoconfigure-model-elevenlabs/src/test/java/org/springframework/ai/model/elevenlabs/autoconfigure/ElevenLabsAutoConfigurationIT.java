@@ -18,18 +18,20 @@ package org.springframework.ai.model.elevenlabs.autoconfigure;
 
 import java.util.Arrays;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechModel;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for the {@link ElevenLabsAutoConfiguration}.
  *
  * @author Alexandros Pappas
+ * @author Issam El-atif
  */
 @EnabledIfEnvironmentVariable(named = "ELEVEN_LABS_API_KEY", matches = ".*")
 public class ElevenLabsAutoConfigurationIT {
@@ -39,7 +41,7 @@ public class ElevenLabsAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.elevenlabs.api-key=" + System.getenv("ELEVEN_LABS_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(ElevenLabsAutoConfiguration.class));
+		.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class));
 
 	@Test
 	void speech() {

@@ -28,7 +28,7 @@ public class AzureOpenAiEmbeddingProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.embedding";
 
 	@NestedConfigurationProperty
-	private AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
+	private final AzureOpenAiEmbeddingOptions options = AzureOpenAiEmbeddingOptions.builder()
 		.deploymentName("text-embedding-ada-002")
 		.build();
 
@@ -36,11 +36,6 @@ public class AzureOpenAiEmbeddingProperties {
 
 	public AzureOpenAiEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(AzureOpenAiEmbeddingOptions options) {
-		Assert.notNull(options, "Options must not be null");
-		this.options = options;
 	}
 
 	public MetadataMode getMetadataMode() {

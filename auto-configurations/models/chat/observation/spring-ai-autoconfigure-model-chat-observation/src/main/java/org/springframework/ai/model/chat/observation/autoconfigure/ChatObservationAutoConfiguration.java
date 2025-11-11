@@ -53,9 +53,9 @@ import org.springframework.context.annotation.Configuration;
  * @since 1.0.0
  */
 @AutoConfiguration(
-		afterName = { "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration" })
+		afterName = "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration")
 @ConditionalOnClass(ChatModel.class)
-@EnableConfigurationProperties({ ChatObservationProperties.class })
+@EnableConfigurationProperties(ChatObservationProperties.class)
 public class ChatObservationAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChatObservationAutoConfiguration.class);

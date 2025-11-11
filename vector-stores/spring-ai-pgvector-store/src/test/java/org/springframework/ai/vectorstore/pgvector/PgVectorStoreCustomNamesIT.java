@@ -179,7 +179,7 @@ public class PgVectorStoreCustomNamesIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Value("${test.spring.ai.vectorstore.pgvector.vectorTableName:}")

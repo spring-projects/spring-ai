@@ -78,4 +78,22 @@ class QueryTests {
 		assertThat(query).isNotEqualTo(null);
 	}
 
+	@Test
+	void whenCompareQueryToDifferentTypeThenNotEqual() {
+		Query query = new Query("Test query");
+		String notAQuery = "Test query";
+
+		assertThat(query).isNotEqualTo(notAQuery);
+	}
+
+	@Test
+	void toStringReturnsExpectedFormat() {
+		Query query = new Query("Test query text");
+		String toString = query.toString();
+
+		assertThat(toString).contains("Query");
+		assertThat(toString).contains("text");
+		assertThat(toString).contains("Test query text");
+	}
+
 }

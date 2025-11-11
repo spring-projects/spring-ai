@@ -81,18 +81,14 @@ public final class MessageToPromptConverter {
 	}
 
 	protected String messageToString(Message message) {
-		switch (message.getMessageType()) {
-			case SYSTEM:
-				return message.getText();
-			case USER:
-				return this.humanPrompt + " " + message.getText();
-			case ASSISTANT:
-				return this.assistantPrompt + " " + message.getText();
-			case TOOL:
+		return switch (message.getMessageType()) {
+			case SYSTEM -> message.getText();
+			case USER -> this.humanPrompt + " " + message.getText();
+			case ASSISTANT -> this.assistantPrompt + " " + message.getText();
+			case TOOL ->
 				throw new IllegalArgumentException("Tool execution results are not supported for Bedrock models");
-		}
+		};
 
-		throw new IllegalArgumentException("Unknown message type: " + message.getMessageType());
 	}
 
 }

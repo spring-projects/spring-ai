@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.azure;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,7 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -75,6 +76,7 @@ import org.springframework.util.StringUtils;
  * @author Josh Long
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Jinwoo Lee
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -158,7 +160,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			return; // nothing to do;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		final var searchDocuments = documents.stream().map(document -> {
@@ -239,10 +241,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 				final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
 
-				Map<String, Object> metadata = (StringUtils.hasText(entry.metadata()))
-						? JSONObject.parseObject(entry.metadata(), new TypeReference<>() {
-
-						}) : Map.of();
+				Map<String, Object> metadata = parseMetadataToMutable(entry.metadata());
 
 				metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - result.getScore());
 
@@ -304,7 +303,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
 
-		logger.info("Created search index: " + index.getName());
+		logger.info("Created search index: {}", index.getName());
 
 		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 	}
@@ -323,6 +322,21 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		@SuppressWarnings("unchecked")
 		T client = (T) this.searchClient;
 		return Optional.of(client);
+	}
+
+	static Map<String, Object> parseMetadataToMutable(@Nullable String metadataJson) {
+		if (!StringUtils.hasText(metadataJson)) {
+			return new HashMap<>();
+		}
+		try {
+			Map<String, Object> parsed = JSONObject.parseObject(metadataJson, new TypeReference<Map<String, Object>>() {
+			});
+			return (parsed == null) ? new HashMap<>() : new HashMap<>(parsed);
+		}
+		catch (Exception ex) {
+			logger.warn("Failed to parse metadata JSON. Using empty metadata. json={}", metadataJson, ex);
+			return new HashMap<>();
+		}
 	}
 
 	public record MetadataField(String name, SearchFieldDataType fieldType) {

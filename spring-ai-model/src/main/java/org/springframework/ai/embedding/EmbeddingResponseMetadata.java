@@ -28,6 +28,7 @@ import org.springframework.ai.model.ResponseMetadata;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Mengqi Xu
  */
 public class EmbeddingResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
@@ -45,9 +46,7 @@ public class EmbeddingResponseMetadata extends AbstractResponseMetadata implemen
 	public EmbeddingResponseMetadata(String model, Usage usage, Map<String, Object> metadata) {
 		this.model = model;
 		this.usage = usage;
-		for (Map.Entry<String, Object> entry : metadata.entrySet()) {
-			this.map.put(entry.getKey(), entry.getValue());
-		}
+		this.map.putAll(metadata);
 	}
 
 	/**

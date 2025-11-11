@@ -38,6 +38,12 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	private String password;
 
+	private Boolean useApproximateKnn;
+
+	private Integer dimensions;
+
+	private String similarity;
+
 	private String mappingJson;
 
 	/**
@@ -98,6 +104,30 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	public String getMappingJson() {
 		return this.mappingJson;
+	}
+
+	public Boolean getUseApproximateKnn() {
+		return this.useApproximateKnn;
+	}
+
+	public void setUseApproximateKnn(Boolean useApproximateKnn) {
+		this.useApproximateKnn = useApproximateKnn;
+	}
+
+	public Integer getDimensions() {
+		return this.dimensions;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
+	}
+
+	public String getSimilarity() {
+		return this.similarity;
+	}
+
+	public void setSimilarity(String similarity) {
+		this.similarity = similarity;
 	}
 
 	public void setMappingJson(String mappingJson) {

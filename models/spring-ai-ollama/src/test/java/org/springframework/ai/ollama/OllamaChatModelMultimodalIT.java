@@ -16,15 +16,19 @@
 
 package org.springframework.ai.ollama;
 
+import java.time.Duration;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -36,9 +40,6 @@ import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.MimeTypeUtils;
-
-import java.time.Duration;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -107,7 +108,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 				.build();
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaOptions.builder().model(MODEL).temperature(0.9).build())
+				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
 				.retryTemplate(retryTemplate)
 				.build();
 		}

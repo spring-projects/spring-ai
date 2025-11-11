@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -176,7 +176,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		try {
 
 			// Compute and assign an embedding to the document.
-			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					this.batchingStrategy);
 
 			List<PointStruct> points = documents.stream()

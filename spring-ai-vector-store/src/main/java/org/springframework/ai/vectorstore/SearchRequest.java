@@ -138,7 +138,7 @@ public class SearchRequest {
 	/**
 	 * SearchRequest Builder.
 	 */
-	public static class Builder {
+	public static final class Builder {
 
 		private final SearchRequest searchRequest = new SearchRequest();
 

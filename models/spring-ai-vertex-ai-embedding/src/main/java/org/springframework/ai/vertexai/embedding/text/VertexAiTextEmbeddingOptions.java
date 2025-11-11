@@ -169,7 +169,7 @@ public class VertexAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected VertexAiTextEmbeddingOptions options;
 

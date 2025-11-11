@@ -174,7 +174,7 @@ class GoogleGenAiTextEmbeddingModelIT {
 				// This needs to be verified with the SDK documentation
 				.build();
 
-			EmbedContentResponse response = genAiClient.models.embedContent("text-embedding-005", text, config);
+			EmbedContentResponse response = this.genAiClient.models.embedContent("text-embedding-005", text, config);
 
 			if (response.embeddings().isPresent() && !response.embeddings().get().isEmpty()) {
 				ContentEmbedding embedding = response.embeddings().get().get(0);

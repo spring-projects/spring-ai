@@ -35,7 +35,7 @@ import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +45,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Hyunsang Han
+ * @author Issam El-atif
  */
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
 // @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
@@ -55,7 +57,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+		.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

@@ -48,7 +48,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class MariaDbStoreAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy mariaDbStoreBatchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

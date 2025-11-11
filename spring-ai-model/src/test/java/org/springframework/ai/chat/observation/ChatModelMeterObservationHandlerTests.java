@@ -93,6 +93,88 @@ class ChatModelMeterObservationHandlerTests {
 			.meters()).hasSize(1);
 	}
 
+	@Test
+	void shouldHandleNullUsageGracefully() {
+		var observationContext = generateObservationContext();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("test"))),
+				ChatResponseMetadata.builder().model("model").usage(null).build()));
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.getMeters())
+			.noneMatch(meter -> meter.getId().getName().equals(AiObservationMetricNames.TOKEN_USAGE.value()));
+	}
+
+	@Test
+	void shouldHandleNullResponseMetadata() {
+		var observationContext = generateObservationContext();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("test"))), null));
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.getMeters())
+			.noneMatch(meter -> meter.getId().getName().equals(AiObservationMetricNames.TOKEN_USAGE.value()));
+	}
+
+	@Test
+	void shouldHandleEmptyGenerations() {
+		var observationContext = generateObservationContext();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observationContext.setResponse(new ChatResponse(List.of(),
+				ChatResponseMetadata.builder().model("model").usage(new TestUsage()).build()));
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(3);
+	}
+
+	@Test
+	void shouldHandleMultipleGenerations() {
+		var observationContext = generateObservationContext();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		var generations = List.of(new Generation(new AssistantMessage("response1")),
+				new Generation(new AssistantMessage("response2")), new Generation(new AssistantMessage("response3")));
+
+		observationContext.setResponse(new ChatResponse(generations,
+				ChatResponseMetadata.builder().model("model").usage(new TestUsage()).build()));
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).hasSize(3);
+	}
+
+	@Test
+	void shouldHandleObservationWithoutResponse() {
+		var observationContext = generateObservationContext();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.getMeters())
+			.noneMatch(meter -> meter.getId().getName().equals(AiObservationMetricNames.TOKEN_USAGE.value()));
+	}
+
 	private ChatModelObservationContext generateObservationContext() {
 		return ChatModelObservationContext.builder()
 			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.google.genai;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,6 +107,29 @@ public class GoogleGenAiChatOptionsTest {
 	}
 
 	@Test
+	public void testEqualsAndHashCodeWithLabels() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.labels(Map.of("org", "my-org"))
+			.build();
+
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.labels(Map.of("org", "my-org"))
+			.build();
+
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.labels(Map.of("org", "other-org"))
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+	}
+
+	@Test
 	public void testToStringWithThinkingBudget() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
@@ -114,6 +139,32 @@ public class GoogleGenAiChatOptionsTest {
 		String toString = options.toString();
 		assertThat(toString).contains("thinkingBudget=12853");
 		assertThat(toString).contains("test-model");
+	}
+
+	@Test
+	public void testToStringWithLabels() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.labels(Map.of("org", "my-org"))
+			.build();
+
+		String toString = options.toString();
+		assertThat(toString).contains("labels={org=my-org}");
+		assertThat(toString).contains("test-model");
+	}
+
+	@Test
+	public void testThinkingBudgetWithZeroValue() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().thinkingBudget(0).build();
+
+		assertThat(options.getThinkingBudget()).isEqualTo(0);
+	}
+
+	@Test
+	public void testLabelsWithEmptyMap() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().labels(Map.of()).build();
+
+		assertThat(options.getLabels()).isEmpty();
 	}
 
 }

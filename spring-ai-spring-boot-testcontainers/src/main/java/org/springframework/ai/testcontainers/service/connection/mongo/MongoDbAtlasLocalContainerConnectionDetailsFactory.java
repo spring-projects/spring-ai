@@ -16,6 +16,7 @@
 
 package org.springframework.ai.testcontainers.service.connection.mongo;
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 
 import com.mongodb.ConnectionString;
@@ -41,6 +42,7 @@ import org.springframework.util.ReflectionUtils;
  *
  * @author Eddú Meléndez
  * @author Soby Chacko
+ * @author Yanming Zhou
  * @since 1.0.0
  * @see ContainerConnectionDetailsFactory
  * @see MongoConnectionDetails
@@ -80,7 +82,16 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactory
 		// Conditional implementation based on whether the method exists
 		public SslBundle getSslBundle() {
 			if (GET_SSL_BUNDLE_METHOD != null) { // Boot 3.5.x+
-				return (SslBundle) ReflectionUtils.invokeMethod(GET_SSL_BUNDLE_METHOD, this);
+				try {
+					return (SslBundle) MethodHandles.lookup()
+						.in(GET_SSL_BUNDLE_METHOD.getDeclaringClass())
+						.unreflectSpecial(GET_SSL_BUNDLE_METHOD, GET_SSL_BUNDLE_METHOD.getDeclaringClass())
+						.bindTo(this)
+						.invokeWithArguments();
+				}
+				catch (Throwable e) {
+					throw new RuntimeException(e);
+				}
 			}
 			return null; // Boot 3.4.x (No-Op)
 		}

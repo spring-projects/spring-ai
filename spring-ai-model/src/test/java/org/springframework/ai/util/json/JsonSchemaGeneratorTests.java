@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link JsonSchemaGenerator}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class JsonSchemaGeneratorTests {
 
@@ -62,8 +63,7 @@ class JsonSchemaGeneratorTests {
 				            "type": "string"
 				        },
 				        "age": {
-				            "type": "integer",
-				            "format": "int32"
+				            "type": "integer"
 				        }
 				    },
 				    "required": [
@@ -265,8 +265,7 @@ class JsonSchemaGeneratorTests {
 				            "type": "STRING"
 				        },
 				        "age": {
-				            "type": "INTEGER",
-				            "format": "int32"
+				            "type": "INTEGER"
 				        }
 				    },
 				    "required": [
@@ -348,16 +347,13 @@ class JsonSchemaGeneratorTests {
 				    "type": "object",
 				    "properties": {
 				        "duration": {
-				            "type": "string",
-				            "format": "duration"
+				            "type": "string"
 				        },
 				        "localDateTime": {
-				            "type": "string",
-				            "format": "date-time"
+				            "type": "string"
 				        },
 				        "instant": {
-				            "type": "string",
-				            "format": "date-time"
+				            "type": "string"
 				        }
 				    },
 				    "required": [
@@ -387,8 +383,7 @@ class JsonSchemaGeneratorTests {
 				            "type": "string"
 				        },
 				        "expectedDelivery": {
-				            "type": "string",
-				            "format": "date-time"
+				            "type": "string"
 				        }
 				    },
 				    "required": [

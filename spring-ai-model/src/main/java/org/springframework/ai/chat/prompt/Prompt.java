@@ -177,12 +177,17 @@ public class Prompt implements ModelRequest<List<Message>> {
 				messagesCopy.add(systemMessage.copy());
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
-				messagesCopy.add(new AssistantMessage(assistantMessage.getText(), assistantMessage.getMetadata(),
-						assistantMessage.getToolCalls()));
+				messagesCopy.add(AssistantMessage.builder()
+					.content(assistantMessage.getText())
+					.properties(assistantMessage.getMetadata())
+					.toolCalls(assistantMessage.getToolCalls())
+					.build());
 			}
 			else if (message instanceof ToolResponseMessage toolResponseMessage) {
-				messagesCopy.add(new ToolResponseMessage(new ArrayList<>(toolResponseMessage.getResponses()),
-						new HashMap<>(toolResponseMessage.getMetadata())));
+				messagesCopy.add(ToolResponseMessage.builder()
+					.responses(new ArrayList<>(toolResponseMessage.getResponses()))
+					.metadata(new HashMap<>(toolResponseMessage.getMetadata()))
+					.build());
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getClass().getName());
@@ -267,7 +272,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		@Nullable
 		private String content;

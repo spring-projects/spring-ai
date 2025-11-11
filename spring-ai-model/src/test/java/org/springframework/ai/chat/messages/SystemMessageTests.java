@@ -110,4 +110,116 @@ class SystemMessageTests {
 		assertThat(systemMessage3.getMetadata()).hasSize(2).isNotSameAs(systemMessage2.getMetadata());
 	}
 
+	@Test
+	void systemMessageWithEmptyText() {
+		SystemMessage message = new SystemMessage("");
+		assertEquals("", message.getText());
+		assertEquals(MessageType.SYSTEM, message.getMetadata().get(MESSAGE_TYPE));
+	}
+
+	@Test
+	void systemMessageWithWhitespaceText() {
+		String text = "   \t\n   ";
+		SystemMessage message = new SystemMessage(text);
+		assertEquals(text, message.getText());
+		assertEquals(MessageType.SYSTEM, message.getMetadata().get(MESSAGE_TYPE));
+	}
+
+	@Test
+	void systemMessageBuilderWithNullText() {
+		assertThrows(IllegalArgumentException.class, () -> SystemMessage.builder().text((String) null).build());
+	}
+
+	@Test
+	void systemMessageBuilderWithNullResource() {
+		assertThrows(IllegalArgumentException.class, () -> SystemMessage.builder().text((Resource) null).build());
+	}
+
+	@Test
+	void systemMessageBuilderWithEmptyMetadata() {
+		String text = "Test message";
+		SystemMessage message = SystemMessage.builder().text(text).metadata(Map.of()).build();
+		assertEquals(text, message.getText());
+		assertThat(message.getMetadata()).hasSize(1).containsEntry(MESSAGE_TYPE, MessageType.SYSTEM);
+	}
+
+	@Test
+	void systemMessageBuilderOverwriteMetadata() {
+		String text = "Test message";
+		SystemMessage message = SystemMessage.builder()
+			.text(text)
+			.metadata(Map.of("key1", "value1"))
+			.metadata(Map.of("key2", "value2"))
+			.build();
+
+		assertThat(message.getMetadata()).hasSize(2)
+			.containsEntry(MESSAGE_TYPE, MessageType.SYSTEM)
+			.containsEntry("key2", "value2")
+			.doesNotContainKey("key1");
+	}
+
+	@Test
+	void systemMessageCopyPreservesImmutability() {
+		String text = "Original text";
+		Map<String, Object> originalMetadata = Map.of("key", "value");
+		SystemMessage original = SystemMessage.builder().text(text).metadata(originalMetadata).build();
+
+		SystemMessage copy = original.copy();
+
+		// Verify they are different instances
+		assertThat(copy).isNotSameAs(original);
+		assertThat(copy.getMetadata()).isNotSameAs(original.getMetadata());
+
+		// Verify content is equal
+		assertThat(copy.getText()).isEqualTo(original.getText());
+		assertThat(copy.getMetadata()).isEqualTo(original.getMetadata());
+	}
+
+	@Test
+	void systemMessageMutateWithNewMetadata() {
+		String originalText = "Original text";
+		SystemMessage original = SystemMessage.builder().text(originalText).metadata(Map.of("key1", "value1")).build();
+
+		SystemMessage mutated = original.mutate().metadata(Map.of("key2", "value2")).build();
+
+		assertThat(mutated.getText()).isEqualTo(originalText);
+		assertThat(mutated.getMetadata()).hasSize(2)
+			.containsEntry(MESSAGE_TYPE, MessageType.SYSTEM)
+			.containsEntry("key2", "value2")
+			.doesNotContainKey("key1");
+	}
+
+	@Test
+	void systemMessageMutateChaining() {
+		SystemMessage original = SystemMessage.builder().text("Original").metadata(Map.of("key1", "value1")).build();
+
+		SystemMessage result = original.mutate().text("Updated").metadata(Map.of("key2", "value2")).build();
+
+		assertThat(result.getText()).isEqualTo("Updated");
+		assertThat(result.getMetadata()).hasSize(2)
+			.containsEntry(MESSAGE_TYPE, MessageType.SYSTEM)
+			.containsEntry("key2", "value2");
+	}
+
+	@Test
+	void systemMessageEqualsAndHashCode() {
+		String text = "Test message";
+		Map<String, Object> metadata = Map.of("key", "value");
+
+		SystemMessage message1 = SystemMessage.builder().text(text).metadata(metadata).build();
+
+		SystemMessage message2 = SystemMessage.builder().text(text).metadata(metadata).build();
+
+		assertThat(message1).isEqualTo(message2);
+		assertThat(message1.hashCode()).isEqualTo(message2.hashCode());
+	}
+
+	@Test
+	void systemMessageNotEqualsWithDifferentText() {
+		SystemMessage message1 = new SystemMessage("Text 1");
+		SystemMessage message2 = new SystemMessage("Text 2");
+
+		assertThat(message1).isNotEqualTo(message2);
+	}
+
 }

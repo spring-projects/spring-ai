@@ -35,7 +35,7 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatModel;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +47,7 @@ public class FunctionCallbackInPromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.apiKey=" + System.getenv("OPENAI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class));
+		.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {

@@ -95,8 +95,10 @@ public class ChromaVectorStoreAutoConfigurationIT {
 
 			var response = ChatClientResponse.builder()
 				.chatResponse(ChatResponse.builder()
-					.generations(List
-						.of(new Generation(new AssistantMessage("AssistantMessage", Map.of("annotations", List.of())))))
+					.generations(List.of(new Generation(AssistantMessage.builder()
+						.content("AssistantMessage")
+						.properties(Map.of("annotations", List.of()))
+						.build())))
 					.build())
 				.build();
 			var res2 = advisor.after(response, null);

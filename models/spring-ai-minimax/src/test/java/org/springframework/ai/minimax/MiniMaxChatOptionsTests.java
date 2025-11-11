@@ -16,12 +16,13 @@
 
 package org.springframework.ai.minimax;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.minimax.api.MiniMaxApi;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.minimax.api.MiniMaxApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

@@ -26,7 +26,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -53,7 +52,6 @@ import org.springframework.web.client.RestClient;
 @ConditionalOnClass(MistralAiApi.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.MISTRAL,
 		matchIfMissing = true)
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class })
 public class MistralAiEmbeddingAutoConfiguration {
 
 	@Bean
@@ -68,9 +66,13 @@ public class MistralAiEmbeddingAutoConfiguration {
 				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
-		var embeddingModel = new MistralAiEmbeddingModel(mistralAiApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var embeddingModel = MistralAiEmbeddingModel.builder()
+			.mistralAiApi(mistralAiApi)
+			.metadataMode(embeddingProperties.getMetadataMode())
+			.options(embeddingProperties.getOptions())
+			.retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
@@ -86,7 +88,12 @@ public class MistralAiEmbeddingAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
-		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
+		return MistralAiApi.builder()
+			.baseUrl(resoledBaseUrl)
+			.apiKey(resolvedApiKey)
+			.restClientBuilder(restClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

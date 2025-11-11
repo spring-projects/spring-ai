@@ -141,7 +141,8 @@ public class VertexAiGeminiChatModelToolCallingIT {
 	public void functionCallTestInferredOpenApiSchemaStream() {
 
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius.");
+				"What's the weather like in San Francisco, Paris and in Tokyo? Return the temperature in Celsius."
+						+ "You must call the getCurrentWeather tool once for each city and return the temperatures in Celsius as plain numbers.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 

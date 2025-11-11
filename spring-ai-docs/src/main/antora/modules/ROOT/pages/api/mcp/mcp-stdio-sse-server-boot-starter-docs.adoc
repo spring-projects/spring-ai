@@ -1,0 +1,446 @@
+
+== STDIO and SSE MCP Servers
+
+The STDIO and SSE MCP Servers support multiple transport mechanisms, each with its dedicated starter.
+
+TIP: Use the xref:api/mcp/mcp-client-boot-starter-docs#_stdio_transport_properties[STDIO clients]  or xref:api/mcp/mcp-client-boot-starter-docs#_sse_transport_properties[SSE clients] to connect to the STDIO and SSE servers.
+
+=== STDIO MCP Server
+
+Full MCP Server feature support with `STDIO` server transport.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server</artifactId>
+</dependency>
+----
+
+* Suitable for command-line and desktop tools
+* No additional web dependencies required
+* Configuration of basic server components
+* Handling of tool, resource, and prompt specifications
+* Management of server capabilities and change notifications
+* Support for both sync and async server implementations
+
+=== SSE WebMVC Server
+
+Full MCP Server feature support with `SSE` (Server-Sent Events) server transport based on Spring MVC and an optional `STDIO` transport.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+</dependency>
+----
+
+* HTTP-based transport using Spring MVC (`WebMvcSseServerTransportProvider`)
+* Automatically configured SSE endpoints
+* Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
+* Includes `spring-boot-starter-web` and `mcp-spring-webmvc` dependencies
+
+=== SSE WebFlux Server
+
+Full MCP Server feature support with `SSE` (Server-Sent Events) server transport based on Spring WebFlux and an optional `STDIO` transport.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+</dependency>
+----
+
+The starter activates the `McpWebFluxServerAutoConfiguration` and `McpServerAutoConfiguration` auto-configurations to provide:
+
+* Reactive transport using Spring WebFlux (`WebFluxSseServerTransportProvider`)
+* Automatically configured reactive SSE endpoints
+* Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
+* Includes `spring-boot-starter-webflux` and `mcp-spring-webflux` dependencies
+
+[NOTE]
+====
+Due to Spring Boot's default behavior, when both `org.springframework.web.servlet.DispatcherServlet` and `org.springframework.web.reactive.DispatcherHandler` are present on the classpath, Spring Boot will prioritize `DispatcherServlet`. As a result, if your project uses `spring-boot-starter-web`, it is recommended to use `spring-ai-starter-mcp-server-webmvc` instead of `spring-ai-starter-mcp-server-webflux`.
+====
+
+== Configuration Properties
+
+=== Common Properties
+
+All Common properties are prefixed with `spring.ai.mcp.server`:
+
+[options="header"]
+|===
+|Property |Description |Default
+|`enabled` |Enable/disable the MCP server |`true`
+|`tool-callback-converter` |Enable/disable the conversion of Spring AI ToolCallbacks into MCP Tool specs |`true`
+|`stdio` |Enable/disable STDIO transport |`false`
+|`name` |Server name for identification |`mcp-server`
+|`version` |Server version |`1.0.0`
+|`instructions` |Optional instructions to provide guidance to the client on how to interact with this server |`null`
+|`type` |Server type (SYNC/ASYNC) |`SYNC`
+|`capabilities.resource` |Enable/disable resource capabilities |`true`
+|`capabilities.tool` |Enable/disable tool capabilities |`true`
+|`capabilities.prompt` |Enable/disable prompt capabilities |`true`
+|`capabilities.completion` |Enable/disable completion capabilities |`true`
+|`resource-change-notification` |Enable resource change notifications |`true`
+|`prompt-change-notification` |Enable prompt change notifications |`true`
+|`tool-change-notification` |Enable tool change notifications |`true`
+|`tool-response-mime-type` |Optional response MIME type per tool name. For example, `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will associate the `image/png` MIME type with the `generateImage()` tool name |`-`
+|`request-timeout` |Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations |`20 seconds`
+|===
+
+=== MCP Annotations Properties
+
+MCP Server Annotations provide a declarative way to implement MCP server handlers using Java annotations.
+
+The server mcp-annotations properties are prefixed with `spring.ai.mcp.server.annotation-scanner`:
+
+[cols="3,4,3"]
+|===
+|Property |Description |Default Value
+
+|`enabled`
+|Enable/disable the MCP server annotations auto-scanning
+|`true`
+
+|===
+
+=== SSE Properties
+
+All SSE properties are prefixed with `spring.ai.mcp.server`:
+
+[options="header"]
+|===
+|Property |Description |Default
+|`sse-message-endpoint` |Custom SSE message endpoint path for web transport to be used by the client to send messages |`/mcp/message`
+|`sse-endpoint` |Custom SSE endpoint path for web transport |`/sse`
+|`base-url` |Optional URL prefix. For example, `base-url=/api/v1` means that the client should access the SSE endpoint at `/api/v1` + `sse-endpoint` and the message endpoint is `/api/v1` + `sse-message-endpoint` |`-`
+|`keep-alive-interval` |Connection keep-alive interval |`null` (disabled)
+|===
+
+NOTE: For backward compatibility reasons, the SSE properties do not have additional suffix (like `.sse`).
+
+== Features and Capabilities
+
+The MCP Server Boot Starter allows servers to expose tools, resources, and prompts to clients.
+It automatically converts custom capability handlers registered as Spring beans to sync/async specifications based on the server type:
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/tools/[Tools]
+Allows servers to expose tools that can be invoked by language models. The MCP Server Boot Starter provides:
+
+* Change notification support
+* xref:api/tools.adoc[Spring AI Tools] are automatically converted to sync/async specifications based on the server type
+* Automatic tool specification through Spring beans:
+
+[source,java]
+----
+@Bean
+public ToolCallbackProvider myTools(...) {
+    List<ToolCallback> tools = ...
+    return ToolCallbackProvider.from(tools);
+}
+----
+
+or using the low-level API:
+
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncToolSpecification> myTools(...) {
+    List<McpServerFeatures.SyncToolSpecification> tools = ...
+    return tools;
+}
+----
+
+
+The auto-configuration will automatically detect and register all tool callbacks from:
+
+- Individual `ToolCallback` beans
+- Lists of `ToolCallback` beans
+- `ToolCallbackProvider` beans
+
+Tools are de-duplicated by name, with the first occurrence of each tool name being used.
+
+TIP: You can disable the automatic detection and registration of all tool callbacks by setting the `tool-callback-converter` to `false`.
+
+==== Tool Context Support
+
+The xref:api/tools.adoc#_tool_context[ToolContext] is supported, allowing contextual information to be passed to tool calls. It contains an `McpSyncServerExchange` instance under the `exchange` key, accessible via `McpToolUtils.getMcpExchange(toolContext)`. See this https://github.com/spring-projects/spring-ai-examples/blob/3fab8483b8deddc241b1e16b8b049616604b7767/model-context-protocol/sampling/mcp-weather-webmvc-server/src/main/java/org/springframework/ai/mcp/sample/server/WeatherService.java#L59-L126[example] demonstrating `exchange.loggingNotification(...)` and `exchange.createMessage(...)`.
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/resources/[Resources]
+
+Provides a standardized way for servers to expose resources to clients.
+
+* Static and dynamic resource specifications
+* Optional change notifications
+* Support for resource templates
+* Automatic conversion between sync/async resource specifications
+* Automatic resource specification through Spring beans:
+
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncResourceSpecification> myResources(...) {
+    var systemInfoResource = new McpSchema.Resource(...);
+    var resourceSpecification = new McpServerFeatures.SyncResourceSpecification(systemInfoResource, (exchange, request) -> {
+        try {
+            var systemInfo = Map.of(...);
+            String jsonContent = new ObjectMapper().writeValueAsString(systemInfo);
+            return new McpSchema.ReadResourceResult(
+                    List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Failed to generate system info", e);
+        }
+    });
+
+    return List.of(resourceSpecification);
+}
+----
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/prompts/[Prompts]
+
+Provides a standardized way for servers to expose prompt templates to clients.
+
+* Change notification support
+* Template versioning
+* Automatic conversion between sync/async prompt specifications
+* Automatic prompt specification through Spring beans:
+
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncPromptSpecification> myPrompts() {
+    var prompt = new McpSchema.Prompt("greeting", "A friendly greeting prompt",
+        List.of(new McpSchema.PromptArgument("name", "The name to greet", true)));
+
+    var promptSpecification = new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, getPromptRequest) -> {
+        String nameArgument = (String) getPromptRequest.arguments().get("name");
+        if (nameArgument == null) { nameArgument = "friend"; }
+        var userMessage = new PromptMessage(Role.USER, new TextContent("Hello " + nameArgument + "! How can I assist you today?"));
+        return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+    });
+
+    return List.of(promptSpecification);
+}
+----
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/completions/[Completions]
+
+Provides a standardized way for servers to expose completion capabilities to clients.
+
+* Support for both sync and async completion specifications
+* Automatic registration through Spring beans:
+
+[source,java]
+----
+@Bean
+public List<McpServerFeatures.SyncCompletionSpecification> myCompletions() {
+    var completion = new McpServerFeatures.SyncCompletionSpecification(
+        new McpSchema.PromptReference(
+					"ref/prompt", "code-completion", "Provides code completion suggestions"),
+        (exchange, request) -> {
+            // Implementation that returns completion suggestions
+            return new McpSchema.CompleteResult(List.of("python", "pytorch", "pyside"), 10, true);
+        }
+    );
+
+    return List.of(completion);
+}
+----
+
+=== link:https://modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/[Logging]
+
+Provides a standardized way for servers to send structured log messages to clients. 
+From within the tool, resource, prompt or completion call handler use the provided `McpSyncServerExchange`/`McpAsyncServerExchange` `exchange` object to send logging messages:
+
+[source,java]
+----
+(exchange, request) -> {
+        exchange.loggingNotification(LoggingMessageNotification.builder()
+            .level(LoggingLevel.INFO)
+            .logger("test-logger")
+            .data("This is a test log message")
+            .build());
+}
+----
+
+On the MCP client you can register xref::api/mcp/mcp-client-boot-starter-docs#_customization_types[logging consumers] to handle these messages:
+
+[source,java]
+----
+mcpClientSpec.loggingConsumer((McpSchema.LoggingMessageNotification log) -> {
+    // Handle log messages
+});
+----
+
+=== link:https://modelcontextprotocol.io/specification/2025-03-26/basic/utilities/progress[Progress]
+
+Provides a standardized way for servers to send progress updates to clients.
+From within the tool, resource, prompt or completion call handler use the provided `McpSyncServerExchange`/`McpAsyncServerExchange` `exchange` object to send progress notifications:
+
+[source,java]
+----
+(exchange, request) -> {
+        exchange.progressNotification(ProgressNotification.builder()
+            .progressToken("test-progress-token")
+            .progress(0.25)
+            .total(1.0)
+            .message("tool call in progress")
+            .build());
+}
+----
+
+The Mcp Client can receive progress notifications and update its UI accordingly.
+For this it needs to register a progress consumer.
+
+[source,java]
+----
+mcpClientSpec.progressConsumer((McpSchema.ProgressNotification progress) -> {
+    // Handle progress notifications
+});
+----
+
+=== link:https://spec.modelcontextprotocol.io/specification/2024-11-05/client/roots/#root-list-changes[Root List Changes]
+
+When roots change, clients that support `listChanged` send a root change notification.
+
+* Support for monitoring root changes
+* Automatic conversion to async consumers for reactive applications
+* Optional registration through Spring beans
+
+[source,java]
+----
+@Bean
+public BiConsumer<McpSyncServerExchange, List<McpSchema.Root>> rootsChangeHandler() {
+    return (exchange, roots) -> {
+        logger.info("Registering root resources: {}", roots);
+    };
+}
+----
+
+=== link:https://modelcontextprotocol.io/specification/2025-03-26/basic/utilities/ping/[Ping]
+
+Ping mechanism for the server to verify that its clients are still alive.
+From within the tool, resource, prompt or completion call handler use the provided `McpSyncServerExchange`/`McpAsyncServerExchange` `exchange` object to send ping messages:
+
+[source,java]
+----
+(exchange, request) -> {
+        exchange.ping();
+}
+----
+
+=== Keep Alive
+
+Server can optionally, periodically issue pings to connected clients to verify connection health.
+
+By default, keep-alive is disabled. 
+To enable keep-alive, set the `keep-alive-interval` property in your configuration:
+
+```yaml
+spring:
+  ai:
+    mcp:
+      server:
+        keep-alive-interval: 30s
+```
+
+== Usage Examples
+
+=== Standard STDIO Server Configuration
+[source,yaml]
+----
+# Using spring-ai-starter-mcp-server
+spring:
+  ai:
+    mcp:
+      server:
+        name: stdio-mcp-server
+        version: 1.0.0
+        type: SYNC
+----
+
+=== WebMVC Server Configuration
+[source,yaml]
+----
+# Using spring-ai-starter-mcp-server-webmvc
+spring:
+  ai:
+    mcp:
+      server:
+        name: webmvc-mcp-server
+        version: 1.0.0
+        type: SYNC
+        instructions: "This server provides weather information tools and resources"
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
+        # sse properties
+        sse-message-endpoint: /mcp/messages
+        keep-alive-interval: 30s
+----
+
+=== WebFlux Server Configuration
+[source,yaml]
+----
+# Using spring-ai-starter-mcp-server-webflux
+spring:
+  ai:
+    mcp:
+      server:
+        name: webflux-mcp-server
+        version: 1.0.0
+        type: ASYNC  # Recommended for reactive applications
+        instructions: "This reactive server provides weather information tools and resources"
+        capabilities:
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
+        # sse properties
+        sse-message-endpoint: /mcp/messages
+        keep-alive-interval: 30s
+----
+
+=== Creating a Spring Boot Application with MCP Server
+
+[source,java]
+----
+@Service
+public class WeatherService {
+
+    @Tool(description = "Get weather information by city name")
+    public String getWeather(String cityName) {
+        // Implementation
+    }
+}
+
+@SpringBootApplication
+public class McpServerApplication {
+
+    private static final Logger logger = LoggerFactory.getLogger(McpServerApplication.class);
+
+    public static void main(String[] args) {
+        SpringApplication.run(McpServerApplication.class, args);
+    }
+
+	@Bean
+	public ToolCallbackProvider weatherTools(WeatherService weatherService) {
+		return MethodToolCallbackProvider.builder().toolObjects(weatherService).build();
+	}
+}
+----
+
+The auto-configuration will automatically register the tool callbacks as MCP tools.
+You can have multiple beans producing ToolCallbacks, and the auto-configuration will merge them.
+
+== Example Applications
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-webflux-server[Weather Server (WebFlux)] - Spring AI MCP Server Boot Starter with WebFlux transport
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/starter-stdio-server[Weather Server (STDIO)] - Spring AI MCP Server Boot Starter with STDIO transport
+* link:https://github.com/spring-projects/spring-ai-examples/tree/main/model-context-protocol/weather/manual-webflux-server[Weather Server Manual Configuration] - Spring AI MCP Server Boot Starter that doesn't use auto-configuration but uses the Java SDK to configure the server manually

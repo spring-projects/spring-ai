@@ -54,7 +54,7 @@ public class GemFireVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

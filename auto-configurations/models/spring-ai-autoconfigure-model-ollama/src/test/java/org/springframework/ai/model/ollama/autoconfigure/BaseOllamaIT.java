@@ -17,6 +17,9 @@
 package org.springframework.ai.model.ollama.autoconfigure;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -27,6 +30,8 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.util.Assert;
 
 @Testcontainers
@@ -99,8 +104,7 @@ public abstract class BaseOllamaIT {
 	}
 
 	public String getBaseUrl() {
-		String baseUrl = SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
-		return baseUrl;
+		return SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
 	}
 
 	private static void ensureModelIsPresent(final OllamaApi ollamaApi, final String model) {
@@ -110,6 +114,12 @@ public abstract class BaseOllamaIT {
 			.build();
 		final var ollamaModelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
+	}
+
+	public static AutoConfigurations ollamaAutoConfig(Class<?>... additionalAutoConfigurations) {
+		List<Class<?>> autoConfigurations = new ArrayList<>(Arrays.asList(additionalAutoConfigurations));
+		autoConfigurations.add(OllamaApiAutoConfiguration.class);
+		return SpringAiTestAutoConfigurations.of(autoConfigurations.toArray(new Class<?>[0]));
 	}
 
 }

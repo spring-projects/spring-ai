@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.ollama.api.OllamaModel;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -36,10 +35,10 @@ import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT;
 import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.OllamaChatModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -65,7 +64,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
 				// @formatter:on
-		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class))
+		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@BeforeAll
@@ -85,7 +84,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
-					OllamaOptions.builder().toolCallbacks(ToolCallbacks.from(myTools)).build()));
+					OllamaChatOptions.builder().toolCallbacks(ToolCallbacks.from(myTools)).build()));
 
 			logger.info("Response: {}", response);
 
@@ -104,7 +103,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaOptions.builder().toolNames("weatherInfo").build()));
+				.call(new Prompt(List.of(userMessage), OllamaChatOptions.builder().toolNames("weatherInfo").build()));
 
 			logger.info("Response: {}", response);
 
@@ -122,7 +121,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
 
 			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OllamaOptions.builder().toolNames("weatherInfo").build()));
+				.stream(new Prompt(List.of(userMessage), OllamaChatOptions.builder().toolNames("weatherInfo").build()));
 
 			String content = response.collectList()
 				.block()

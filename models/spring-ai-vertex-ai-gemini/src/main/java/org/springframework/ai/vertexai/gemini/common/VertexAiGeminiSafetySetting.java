@@ -16,7 +16,7 @@
 
 package org.springframework.ai.vertexai.gemini.common;
 
-public class VertexAiGeminiSafetySetting {
+public final class VertexAiGeminiSafetySetting {
 
 	public static Builder builder() {
 		return new Builder();
@@ -139,7 +139,7 @@ public class VertexAiGeminiSafetySetting {
 		return result;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private HarmCategory category = HarmCategory.HARM_CATEGORY_UNSPECIFIED;
 

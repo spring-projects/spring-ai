@@ -20,13 +20,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
-import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
-import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.prompt.Prompt
+import org.springframework.ai.model.ollama.autoconfigure.BaseOllamaIT
+import org.springframework.ai.model.ollama.autoconfigure.OllamaChatAutoConfiguration
 import org.springframework.ai.model.tool.ToolCallingChatOptions
 import org.springframework.ai.ollama.OllamaChatModel
-import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -55,22 +54,23 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 			"spring.ai.ollama.chat.options.temperature=0.5",
 			"spring.ai.ollama.chat.options.topK=10"
 		)
-		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration::class.java))
+		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration::class.java))
 		.withUserConfiguration(Config::class.java)
 
 	@Test
 	fun toolCallTest() {
-		this.contextRunner.run {context ->
+		this.contextRunner.run { context ->
 
 			val chatModel = context.getBean(OllamaChatModel::class.java)
 
 			val userMessage = UserMessage(
-				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
+				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations."
+			)
 
 			val functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build()
 
 			val response = chatModel
-					.call(Prompt(listOf(userMessage), functionOptions))
+				.call(Prompt(listOf(userMessage), functionOptions))
 
 			logger.info("Response: $response")
 
@@ -86,7 +86,8 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 
 			// Test weatherFunction
 			val userMessage = UserMessage(
-				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.")
+				"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations."
+			)
 
 			val functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build()
 

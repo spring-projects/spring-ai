@@ -38,7 +38,7 @@ import org.springframework.context.annotation.Import;
  * @author Ilayaperumal Gopinathan
  */
 @AutoConfiguration
-@ConditionalOnClass({ AzureOpenAiAudioTranscriptionModel.class })
+@ConditionalOnClass(AzureOpenAiAudioTranscriptionModel.class)
 @EnableConfigurationProperties(AzureOpenAiAudioTranscriptionProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_TRANSCRIPTION_MODEL,
 		havingValue = SpringAIModels.AZURE_OPENAI, matchIfMissing = true)

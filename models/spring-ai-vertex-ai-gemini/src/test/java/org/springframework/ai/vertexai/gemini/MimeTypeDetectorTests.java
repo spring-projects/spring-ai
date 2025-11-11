@@ -22,15 +22,17 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import org.springframework.core.io.PathResource;
 import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.vertexai.gemini.MimeTypeDetector.GEMINI_MIME_TYPES;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * @author YunKui Lu
@@ -38,7 +40,9 @@ import static org.springframework.ai.vertexai.gemini.MimeTypeDetector.GEMINI_MIM
 class MimeTypeDetectorTests {
 
 	private static Stream<Arguments> provideMimeTypes() {
-		return GEMINI_MIME_TYPES.entrySet().stream().map(entry -> Arguments.of(entry.getKey(), entry.getValue()));
+		return org.springframework.ai.vertexai.gemini.MimeTypeDetector.GEMINI_MIME_TYPES.entrySet()
+			.stream()
+			.map(entry -> Arguments.of(entry.getKey(), entry.getValue()));
 	}
 
 	@ParameterizedTest
@@ -87,6 +91,29 @@ class MimeTypeDetectorTests {
 		String path = "test." + extension;
 		MimeType mimeType = MimeTypeDetector.getMimeType(path);
 		assertThat(mimeType).isEqualTo(expectedMimeType);
+	}
+
+	@Test
+	void getMimeTypeWithEmptyString() {
+		assertThatThrownBy(() -> MimeTypeDetector.getMimeType("")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Unable to detect the MIME type");
+	}
+
+	@Test
+	void getMimeTypeWithMultipleDots() {
+		// Should use the last extension
+		MimeType expectedPng = MimeTypeUtils.IMAGE_PNG;
+		assertThat(MimeTypeDetector.getMimeType("test.backup.png")).isEqualTo(expectedPng);
+		assertThat(MimeTypeDetector.getMimeType(new File("archive.tar.gz.png"))).isEqualTo(expectedPng);
+	}
+
+	@Test
+	void getMimeTypeWithQueryParameters() throws MalformedURLException {
+		MimeType expectedJpg = MimeTypeUtils.IMAGE_JPEG;
+		URI uri = URI.create("https://example.com/image.jpg?version=1.2&cache=false");
+
+		assertThat(MimeTypeDetector.getMimeType(uri)).isEqualTo(expectedJpg);
+		assertThat(MimeTypeDetector.getMimeType(uri.toURL())).isEqualTo(expectedJpg);
 	}
 
 }

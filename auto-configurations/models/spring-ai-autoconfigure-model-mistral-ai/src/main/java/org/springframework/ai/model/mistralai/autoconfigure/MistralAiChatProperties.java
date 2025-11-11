@@ -44,7 +44,7 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 	private static final Boolean IS_ENABLED = false;
 
 	@NestedConfigurationProperty
-	private MistralAiChatOptions options = MistralAiChatOptions.builder()
+	private final MistralAiChatOptions options = MistralAiChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
 		.temperature(DEFAULT_TEMPERATURE)
 		.safePrompt(!IS_ENABLED)
@@ -57,10 +57,6 @@ public class MistralAiChatProperties extends MistralAiParentProperties {
 
 	public MistralAiChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(MistralAiChatOptions options) {
-		this.options = options;
 	}
 
 }

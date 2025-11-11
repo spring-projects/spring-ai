@@ -34,14 +34,10 @@ public class ZhiPuAiImageProperties extends ZhiPuAiParentProperties {
 	 * Options for ZhiPuAI Image API.
 	 */
 	@NestedConfigurationProperty
-	private ZhiPuAiImageOptions options = ZhiPuAiImageOptions.builder().build();
+	private final ZhiPuAiImageOptions options = ZhiPuAiImageOptions.builder().build();
 
 	public ZhiPuAiImageOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(ZhiPuAiImageOptions options) {
-		this.options = options;
 	}
 
 }

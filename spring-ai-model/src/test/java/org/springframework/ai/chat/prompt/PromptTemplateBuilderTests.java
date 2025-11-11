@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -134,14 +135,8 @@ class PromptTemplateBuilderTests {
 			.template("Processing {item} with {type} at {level}")
 			.build();
 
-		try {
-			promptTemplate.render();
-			Assertions.fail("Expected IllegalStateException was not thrown.");
-		}
-		catch (IllegalStateException e) {
-			assertThat(e.getMessage()).contains("Not all variables were replaced in the template");
-			assertThat(e.getMessage()).contains("item", "type", "level");
-		}
+		assertThatIllegalStateException().isThrownBy(promptTemplate::render)
+			.withMessageContainingAll("Not all variables were replaced in the template", "item", "type", "level");
 	}
 
 	@Test
@@ -155,13 +150,8 @@ class PromptTemplateBuilderTests {
 			.variables(variables)
 			.build();
 
-		try {
-			promptTemplate.render();
-			Assertions.fail("Expected IllegalStateException was not thrown.");
-		}
-		catch (IllegalStateException e) {
-			assertThat(e.getMessage()).contains("Missing variable names are: [type]");
-		}
+		assertThatIllegalStateException().isThrownBy(promptTemplate::render)
+			.withMessageContaining("Missing variable names are: [type]");
 	}
 
 	@Test

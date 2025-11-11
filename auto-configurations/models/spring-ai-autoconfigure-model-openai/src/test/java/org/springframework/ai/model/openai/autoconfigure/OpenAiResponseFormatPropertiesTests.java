@@ -25,7 +25,7 @@ import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.ResponseFormat;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,8 +34,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit Tests for {@link OpenAiChatProperties} #options#responseFormat support.
  *
  * @author Christian Tzolov
+ * @author Issam El-atif
  */
 public class OpenAiResponseFormatPropertiesTests {
+
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
 
 	@Test
 	public void responseFormatJsonSchema() {
@@ -53,7 +56,7 @@ public class OpenAiResponseFormatPropertiesTests {
 				}
 				""";
 
-		new ApplicationContextRunner().withPropertyValues(
+		this.contextRunner.withPropertyValues(
 		// @formatter:off
 				"spring.ai.openai.api-key=API_KEY",
 
@@ -63,7 +66,7 @@ public class OpenAiResponseFormatPropertiesTests {
 				"spring.ai.openai.chat.options.response-format.strict=true"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -78,11 +81,11 @@ public class OpenAiResponseFormatPropertiesTests {
 	@Test
 	public void responseFormatJsonObject() {
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY",
 					"spring.ai.openai.chat.options.response-format.type=JSON_OBJECT")
 
-			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 
@@ -94,9 +97,9 @@ public class OpenAiResponseFormatPropertiesTests {
 	@Test
 	public void emptyResponseFormat() {
 
-		new ApplicationContextRunner().withPropertyValues("spring.ai.openai.api-key=API_KEY")
+		this.contextRunner.withPropertyValues("spring.ai.openai.api-key=API_KEY")
 
-			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiChatProperties.class);
 
@@ -107,7 +110,7 @@ public class OpenAiResponseFormatPropertiesTests {
 	@Test
 	public void transcriptionOptionsTest() {
 
-		new ApplicationContextRunner().withPropertyValues(
+		this.contextRunner.withPropertyValues(
 		// @formatter:off
 						"spring.ai.openai.api-key=API_KEY",
 						"spring.ai.openai.base-url=TEST_BASE_URL",
@@ -119,7 +122,7 @@ public class OpenAiResponseFormatPropertiesTests {
 						"spring.ai.openai.audio.transcription.options.temperature=0.55"
 				)
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.run(context -> {
 				var transcriptionProperties = context.getBean(OpenAiAudioTranscriptionProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -138,7 +141,7 @@ public class OpenAiResponseFormatPropertiesTests {
 	@Test
 	public void embeddingOptionsTest() {
 
-		new ApplicationContextRunner().withPropertyValues(
+		this.contextRunner.withPropertyValues(
 		// @formatter:off
 				"spring.ai.openai.api-key=API_KEY",
 				"spring.ai.openai.base-url=TEST_BASE_URL",
@@ -148,7 +151,7 @@ public class OpenAiResponseFormatPropertiesTests {
 				"spring.ai.openai.embedding.options.user=userXYZ"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
 				var embeddingProperties = context.getBean(OpenAiEmbeddingProperties.class);
@@ -164,7 +167,7 @@ public class OpenAiResponseFormatPropertiesTests {
 
 	@Test
 	public void imageOptionsTest() {
-		new ApplicationContextRunner().withPropertyValues(
+		this.contextRunner.withPropertyValues(
 		// @formatter:off
 						"spring.ai.openai.api-key=API_KEY",
 						"spring.ai.openai.base-url=TEST_BASE_URL",
@@ -180,7 +183,7 @@ public class OpenAiResponseFormatPropertiesTests {
 						"spring.ai.openai.image.options.user=userXYZ"
 				)
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
@@ -203,27 +206,27 @@ public class OpenAiResponseFormatPropertiesTests {
 	@Test
 	void embeddingActivation() {
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.embedding=none")
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.embedding=openai")
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
@@ -232,27 +235,27 @@ public class OpenAiResponseFormatPropertiesTests {
 
 	@Test
 	void chatActivation() {
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=none")
-			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=openai")
-			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
@@ -262,27 +265,27 @@ public class OpenAiResponseFormatPropertiesTests {
 
 	@Test
 	void imageActivation() {
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.image=none")
-			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.image=openai")
-			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
@@ -292,27 +295,27 @@ public class OpenAiResponseFormatPropertiesTests {
 
 	@Test
 	void audioSpeechActivation() {
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.audio.speech=none")
-			.withConfiguration(AutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isNotEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.audio.speech=openai")
-			.withConfiguration(AutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isNotEmpty();
@@ -322,27 +325,27 @@ public class OpenAiResponseFormatPropertiesTests {
 
 	@Test
 	void audioTranscriptionActivation() {
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.audio.transcription=none")
-			.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isNotEmpty();
 			});
 
-		new ApplicationContextRunner()
+		this.contextRunner
 			.withPropertyValues("spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
 					"spring.ai.model.audio.transcription=openai")
-			.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isNotEmpty();

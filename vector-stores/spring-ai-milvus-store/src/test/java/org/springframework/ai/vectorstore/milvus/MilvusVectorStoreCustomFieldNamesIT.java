@@ -204,7 +204,7 @@ class MilvusVectorStoreCustomFieldNamesIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
+	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	static class TestApplication {
 
 		@Value("${test.spring.ai.vectorstore.milvus.metricType}")

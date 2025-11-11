@@ -143,6 +143,19 @@ public class VertexAiTextEmbeddingRetryTests {
 		verify(this.mockPredictionServiceClient, times(1)).predict(any());
 	}
 
+	@Test
+	public void vertexAiEmbeddingWithEmptyTextList() {
+		PredictResponse emptyResponse = PredictResponse.newBuilder().build();
+		given(this.mockPredictionServiceClient.predict(any())).willReturn(emptyResponse);
+
+		EmbeddingOptions options = VertexAiTextEmbeddingOptions.builder().model("model").build();
+		EmbeddingResponse result = this.embeddingModel.call(new EmbeddingRequest(List.of(), options));
+
+		assertThat(result).isNotNull();
+		// Behavior depends on implementation - might be empty results or exception
+		verify(this.mockPredictionServiceClient, times(1)).predict(any());
+	}
+
 	private static class TestRetryListener implements RetryListener {
 
 		int onErrorRetryCount = 0;

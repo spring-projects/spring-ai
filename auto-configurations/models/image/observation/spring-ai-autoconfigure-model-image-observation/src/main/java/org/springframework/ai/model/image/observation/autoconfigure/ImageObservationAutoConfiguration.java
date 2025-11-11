@@ -44,7 +44,7 @@ import org.springframework.context.annotation.Configuration;
 @AutoConfiguration(
 		afterName = "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration.class")
 @ConditionalOnClass(ImageModel.class)
-@EnableConfigurationProperties({ ImageObservationProperties.class })
+@EnableConfigurationProperties(ImageObservationProperties.class)
 public class ImageObservationAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(ImageObservationAutoConfiguration.class);

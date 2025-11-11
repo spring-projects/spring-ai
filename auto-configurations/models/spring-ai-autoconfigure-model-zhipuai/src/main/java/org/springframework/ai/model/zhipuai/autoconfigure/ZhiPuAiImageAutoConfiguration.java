@@ -22,6 +22,7 @@ import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration
 import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -51,8 +52,8 @@ public class ZhiPuAiImageAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ZhiPuAiImageModel zhiPuAiImageModel(ZhiPuAiConnectionProperties commonProperties,
-			ZhiPuAiImageProperties imageProperties, RestClient.Builder restClientBuilder, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler) {
+			ZhiPuAiImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler) {
 
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -63,7 +64,9 @@ public class ZhiPuAiImageAutoConfiguration {
 		Assert.hasText(apiKey, "ZhiPuAI API key must be set");
 		Assert.hasText(baseUrl, "ZhiPuAI base URL must be set");
 
-		var zhiPuAiImageApi = new ZhiPuAiImageApi(baseUrl, apiKey, restClientBuilder, responseErrorHandler);
+		// TODO add ZhiPuAiApi support for image
+		var zhiPuAiImageApi = new ZhiPuAiImageApi(baseUrl, apiKey,
+				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		return new ZhiPuAiImageModel(zhiPuAiImageApi, imageProperties.getOptions(), retryTemplate);
 	}

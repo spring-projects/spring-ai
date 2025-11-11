@@ -61,7 +61,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

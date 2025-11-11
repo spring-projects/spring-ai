@@ -42,10 +42,10 @@ import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObserva
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
+import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -259,7 +259,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.defaultOptions.getModel(), super.dimensions());
+		return KNOWN_EMBEDDING_DIMENSIONS.computeIfAbsent(this.defaultOptions.getModel(), model -> super.dimensions());
 	}
 
 	/**

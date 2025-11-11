@@ -18,13 +18,14 @@ package org.springframework.ai.model.azure.openai.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
+ * @author Issam El-atif
  * @since 0.8.0
  */
 public class AzureOpenAiAutoConfigurationPropertyTests {
@@ -36,7 +37,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 			.withPropertyValues("spring.ai.azure.openai.api-key=TEST_API_KEY",
 					"spring.ai.azure.openai.endpoint=TEST_ENDPOINT",
 					"spring.ai.azure.openai.embedding.options.deployment-name=MODEL_XYZ")
-			.withConfiguration(AutoConfigurations.of(AzureOpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(AzureOpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiEmbeddingProperties.class);
 				var connectionProperties = context.getBean(AzureOpenAiConnectionProperties.class);
@@ -68,7 +69,7 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				"spring.ai.azure.openai.chat.options.user=userXYZ"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
+			.withConfiguration(SpringAiTestAutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
 					AzureOpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AzureOpenAiChatProperties.class);

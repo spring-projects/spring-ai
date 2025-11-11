@@ -33,7 +33,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +45,7 @@ public class AnthropicChatAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(AnthropicChatAutoConfiguration.class));
+		.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class));
 
 	@Test
 	void call() {
@@ -60,8 +60,8 @@ public class AnthropicChatAutoConfigurationIT {
 	@Test
 	void callWith8KResponseContext() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.anthropic.beta-version=" + AnthropicApi.BETA_MAX_TOKENS,
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_SONNET.getValue())
+			.withPropertyValues(
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue())
 			.run(context -> {
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 				var options = AnthropicChatOptions.builder().maxTokens(8192).build();

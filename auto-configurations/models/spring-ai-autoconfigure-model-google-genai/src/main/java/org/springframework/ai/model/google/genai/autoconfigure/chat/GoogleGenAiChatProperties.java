@@ -39,7 +39,7 @@ public class GoogleGenAiChatProperties {
 	 * Google GenAI API generative options.
 	 */
 	@NestedConfigurationProperty
-	private GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+	private final GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 		.temperature(0.7)
 		.candidateCount(1)
 		.model(DEFAULT_MODEL)
@@ -47,10 +47,6 @@ public class GoogleGenAiChatProperties {
 
 	public GoogleGenAiChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(GoogleGenAiChatOptions options) {
-		this.options = options;
 	}
 
 }

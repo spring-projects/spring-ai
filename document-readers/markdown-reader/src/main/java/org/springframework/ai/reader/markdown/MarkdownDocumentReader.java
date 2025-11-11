@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,8 @@ import org.commonmark.parser.Parser;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
 import org.springframework.ai.reader.markdown.config.MarkdownDocumentReaderConfig;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
  * Reads the given Markdown resource and groups headers, paragraphs, or text divided by
@@ -51,9 +51,9 @@ import org.springframework.core.io.Resource;
 public class MarkdownDocumentReader implements DocumentReader {
 
 	/**
-	 * The resource points to the Markdown document.
+	 * The resources read by this document reader.
 	 */
-	private final Resource markdownResource;
+	private final Resource[] markdownResources;
 
 	/**
 	 * Configuration to a parsing process.
@@ -67,29 +67,50 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 	/**
 	 * Create a new {@link MarkdownDocumentReader} instance.
-	 * @param markdownResource the resource to read
+	 * @param markdownResources the resources to read, will be resolved via
+	 * {@link PathMatchingResourcePatternResolver}
 	 */
-	public MarkdownDocumentReader(String markdownResource) {
-		this(new DefaultResourceLoader().getResource(markdownResource), MarkdownDocumentReaderConfig.defaultConfig());
+	public MarkdownDocumentReader(String markdownResources) {
+		this(markdownResources, MarkdownDocumentReaderConfig.defaultConfig());
 	}
 
 	/**
 	 * Create a new {@link MarkdownDocumentReader} instance.
-	 * @param markdownResource the resource to read
+	 * @param markdownResources the resources to read, will be resolved via
+	 * {@link PathMatchingResourcePatternResolver}
 	 * @param config the configuration to use
 	 */
-	public MarkdownDocumentReader(String markdownResource, MarkdownDocumentReaderConfig config) {
-		this(new DefaultResourceLoader().getResource(markdownResource), config);
+	public MarkdownDocumentReader(String markdownResources, MarkdownDocumentReaderConfig config) {
+		this(resolveResources(markdownResources), config);
 	}
 
 	/**
-	 * Create a new {@link MarkdownDocumentReader} instance.
+	 * Create a new {@link MarkdownDocumentReader} instance using a single
+	 * {@link Resource}.
 	 * @param markdownResource the resource to read
 	 */
 	public MarkdownDocumentReader(Resource markdownResource, MarkdownDocumentReaderConfig config) {
-		this.markdownResource = markdownResource;
+		this(List.of(markdownResource), config);
+	}
+
+	/**
+	 * Create a new {@link MarkdownDocumentReader} instance using already resolved
+	 * {@link Resource resources}.
+	 * @param markdownResources the resources to read
+	 */
+	public MarkdownDocumentReader(List<Resource> markdownResources, MarkdownDocumentReaderConfig config) {
+		this.markdownResources = markdownResources.toArray(new Resource[0]);
 		this.config = config;
 		this.parser = Parser.builder().build();
+	}
+
+	private static List<Resource> resolveResources(String markdownResources) {
+		try {
+			return List.of(new PathMatchingResourcePatternResolver().getResources(markdownResources));
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	/**
@@ -98,17 +119,20 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 */
 	@Override
 	public List<Document> get() {
-		try (var input = this.markdownResource.getInputStream()) {
-			Node node = this.parser.parseReader(new InputStreamReader(input));
-
+		List<Document> documents = new ArrayList<>();
+		for (Resource markdownResource : this.markdownResources) {
 			DocumentVisitor documentVisitor = new DocumentVisitor(this.config);
-			node.accept(documentVisitor);
+			try (var input = markdownResource.getInputStream()) {
+				Node node = this.parser.parseReader(new InputStreamReader(input));
 
-			return documentVisitor.getDocuments();
+				node.accept(documentVisitor);
+				documents.addAll(documentVisitor.getDocuments());
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
+		return documents;
 	}
 
 	/**

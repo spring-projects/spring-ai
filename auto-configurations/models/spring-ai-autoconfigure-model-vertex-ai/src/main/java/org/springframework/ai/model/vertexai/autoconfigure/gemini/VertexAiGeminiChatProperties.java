@@ -39,7 +39,7 @@ public class VertexAiGeminiChatProperties {
 	 * Vertex AI Gemini API generative options.
 	 */
 	@NestedConfigurationProperty
-	private VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
+	private final VertexAiGeminiChatOptions options = VertexAiGeminiChatOptions.builder()
 		.temperature(0.7)
 		.candidateCount(1)
 		.model(DEFAULT_MODEL)
@@ -47,10 +47,6 @@ public class VertexAiGeminiChatProperties {
 
 	public VertexAiGeminiChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(VertexAiGeminiChatOptions options) {
-		this.options = options;
 	}
 
 }

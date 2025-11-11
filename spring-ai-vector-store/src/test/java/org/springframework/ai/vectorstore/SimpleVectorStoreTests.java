@@ -275,4 +275,48 @@ class SimpleVectorStoreTests {
 				exception.getMessage());
 	}
 
+	@Test
+	void shouldHandleDocumentWithoutId() {
+		Document doc = Document.builder().text("content without id").build();
+
+		this.vectorStore.add(List.of(doc));
+
+		List<Document> results = this.vectorStore.similaritySearch("content");
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isNotEmpty();
+	}
+
+	@Test
+	void shouldHandleDocumentWithEmptyText() {
+		Document doc = Document.builder().id("1").text("").build();
+
+		assertDoesNotThrow(() -> this.vectorStore.add(List.of(doc)));
+
+		List<Document> results = this.vectorStore.similaritySearch("anything");
+		assertThat(results).hasSize(1);
+	}
+
+	@Test
+	void shouldReplaceDocumentWithSameId() {
+		Document doc1 = Document.builder().id("1").text("original").metadata(Map.of("version", "1")).build();
+		Document doc2 = Document.builder().id("1").text("updated").metadata(Map.of("version", "2")).build();
+
+		this.vectorStore.add(List.of(doc1));
+		this.vectorStore.add(List.of(doc2));
+
+		List<Document> results = this.vectorStore.similaritySearch("updated");
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getText()).isEqualTo("updated");
+		assertThat(results.get(0).getMetadata()).containsEntry("version", "2");
+	}
+
+	@Test
+	void shouldHandleSearchWithEmptyQuery() {
+		Document doc = Document.builder().id("1").text("content").build();
+		this.vectorStore.add(List.of(doc));
+
+		List<Document> results = this.vectorStore.similaritySearch("");
+		assertThat(results).hasSize(1);
+	}
+
 }

@@ -102,7 +102,7 @@ The prefix `spring.ai.stabilityai.image` is the property prefix that lets you co
 
 | spring.ai.stabilityai.image.enabled (Removed and no longer valid) | Enable Stability AI image model.  | true
 | spring.ai.model.image | Enable Stability AI image model.  | stabilityai
-| spring.ai.stabilityai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide a specific url |  `https://api.stability.ai/v1`
+| spring.ai.stabilityai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide a specific url |  `+https://api.stability.ai/v1+`
 | spring.ai.stabilityai.image.api-key              | Optional overrides the spring.ai.openai.api-key to provide a specific api-key |  -
 | spring.ai.stabilityai.image.option.n               | The number of images to be generated. Must be between 1 and 10.                                                            | 1
 | spring.ai.stabilityai.image.option.model                 | The engine/model to use in Stability AI. The model is passed in the URL as a path parameter.          | `stable-diffusion-v1-6`

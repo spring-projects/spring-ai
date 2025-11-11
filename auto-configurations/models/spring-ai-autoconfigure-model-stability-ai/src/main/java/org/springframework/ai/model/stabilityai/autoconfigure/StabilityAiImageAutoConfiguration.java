@@ -40,7 +40,7 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class })
+@AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(StabilityAiApi.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.STABILITY_AI,
 		matchIfMissing = true)

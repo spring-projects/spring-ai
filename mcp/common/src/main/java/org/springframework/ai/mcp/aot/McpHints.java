@@ -16,14 +16,11 @@
 
 package org.springframework.ai.mcp.aot;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import io.modelcontextprotocol.spec.McpSchema;
 
+import org.springframework.ai.aot.AiRuntimeHints;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -65,45 +62,10 @@ public class McpHints implements RuntimeHintsRegistrar {
 	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
 
-		for (var tr : innerClasses(McpSchema.class)) {
+		Set<TypeReference> typeReferences = AiRuntimeHints.findInnerClassesFor(McpSchema.class);
+		for (var tr : typeReferences) {
 			hints.reflection().registerType(tr, mcs);
 		}
-	}
-
-	/**
-	 * Discovers all inner classes of a given class.
-	 * <p>
-	 * This method recursively finds all nested classes (both declared and inherited) of
-	 * the provided class and converts them to type references.
-	 * @param clazz the class to find inner classes for
-	 * @return a set of type references for all discovered inner classes
-	 */
-	private Set<TypeReference> innerClasses(Class<?> clazz) {
-		var indent = new HashSet<String>();
-		this.findNestedClasses(clazz, indent);
-		return indent.stream().map(TypeReference::of).collect(Collectors.toSet());
-	}
-
-	/**
-	 * Recursively finds all nested classes of a given class.
-	 * <p>
-	 * This method:
-	 * <ol>
-	 * <li>Collects both declared and inherited nested classes</li>
-	 * <li>Recursively processes each nested class</li>
-	 * <li>Adds the class names to the provided set</li>
-	 * </ol>
-	 * @param clazz the class to find nested classes for
-	 * @param indent the set to collect class names in
-	 */
-	private void findNestedClasses(Class<?> clazz, Set<String> indent) {
-		var classes = new ArrayList<Class<?>>();
-		classes.addAll(Arrays.asList(clazz.getDeclaredClasses()));
-		classes.addAll(Arrays.asList(clazz.getClasses()));
-		for (var nestedClass : classes) {
-			this.findNestedClasses(nestedClass, indent);
-		}
-		indent.addAll(classes.stream().map(Class::getName).toList());
 	}
 
 }

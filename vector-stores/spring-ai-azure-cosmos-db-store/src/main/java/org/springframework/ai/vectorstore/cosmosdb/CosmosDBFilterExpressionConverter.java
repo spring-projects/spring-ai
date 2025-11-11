@@ -34,7 +34,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
  * Cosmos DB NoSQL API where clauses.
  *
  * @author Theo van Kraay
- * @since 1.0.0
+ * @since 1.1.0
  */
 class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
@@ -112,30 +112,19 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 	}
 
 	private String getOperationSymbol(Filter.Expression exp) {
-		switch (exp.type()) {
-			case AND:
-				return " AND ";
-			case OR:
-				return " OR ";
-			case EQ:
-				return " = ";
-			case NE:
-				return " != ";
-			case LT:
-				return " < ";
-			case LTE:
-				return " <= ";
-			case GT:
-				return " > ";
-			case GTE:
-				return " >= ";
-			case IN:
-				return " IN ";
-			case NIN:
-				return " !IN ";
-			default:
-				throw new RuntimeException("Not supported expression type:" + exp.type());
-		}
+		return switch (exp.type()) {
+			case AND -> " AND ";
+			case OR -> " OR ";
+			case EQ -> " = ";
+			case NE -> " != ";
+			case LT -> " < ";
+			case LTE -> " <= ";
+			case GT -> " > ";
+			case GTE -> " >= ";
+			case IN -> " IN ";
+			case NIN -> " !IN ";
+			default -> throw new RuntimeException("Not supported expression type:" + exp.type());
+		};
 	}
 
 }

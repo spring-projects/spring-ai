@@ -26,7 +26,6 @@ public enum SpringAiKind {
 
 	// @formatter:off
 
-	// Please, keep the alphabetical sorting.
 	/**
 	 * Spring AI kind for advisor.
 	 */

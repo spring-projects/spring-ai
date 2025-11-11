@@ -200,7 +200,8 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 				int x = (int) page.getMediaBox().getLowerLeftX();
 				int w = (int) page.getMediaBox().getWidth();
-				int y, h;
+				int y;
+				int h;
 
 				if (pageNumber == startPage && pageNumber == endPage) {
 					y = toPos;

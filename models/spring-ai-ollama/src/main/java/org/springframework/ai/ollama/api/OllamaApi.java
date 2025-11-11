@@ -330,7 +330,7 @@ public final class OllamaApi {
 
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private final Role role;
 			private String content;
@@ -384,8 +384,8 @@ public final class OllamaApi {
 	 * @param keepAlive Controls how long the model will stay loaded into memory following this request (default: 5m).
 	 * @param tools List of tools the model has access to.
 	 * @param options Model-specific options. For example, "temperature" can be set through this field, if the model supports it.
-	 * You can use the {@link OllamaOptions} builder to create the options then {@link OllamaOptions#toMap()} to convert the options into a map.
 	 * @param think Think controls whether thinking/reasoning models will think before responding.
+	 * You can use the {@link OllamaChatOptions} builder to create the options then {@link OllamaChatOptions#toMap()} to convert the options into a map.
 	 *
 	 * @see <a href=
 	 * "https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion">Chat
@@ -402,7 +402,7 @@ public final class OllamaApi {
 			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("tools") List<Tool> tools,
 			@JsonProperty("options") Map<String, Object> options,
-			@JsonProperty("think") Boolean think
+			@JsonProperty("think") ThinkOption think
 	) {
 
 		public static Builder builder(String model) {
@@ -466,7 +466,7 @@ public final class OllamaApi {
 			}
 		}
 
-		public static class Builder {
+		public static final class Builder {
 
 			private final String model;
 			private List<Message> messages = List.of();
@@ -475,7 +475,7 @@ public final class OllamaApi {
 			private String keepAlive;
 			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
-			private Boolean think;
+			private ThinkOption think;
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -509,19 +509,63 @@ public final class OllamaApi {
 
 			public Builder options(Map<String, Object> options) {
 				Objects.requireNonNull(options, "The options can not be null.");
-
-				this.options = OllamaOptions.filterNonSupportedFields(options);
+				this.options = OllamaChatOptions.filterNonSupportedFields(options);
 				return this;
 			}
 
-			public Builder options(OllamaOptions options) {
-				Objects.requireNonNull(options, "The options can not be null.");
-				this.options = OllamaOptions.filterNonSupportedFields(options.toMap());
-				return this;
-			}
-
-			public Builder think(Boolean think) {
+			public Builder think(ThinkOption think) {
 				this.think = think;
+				return this;
+			}
+
+			/**
+			 * Enable thinking mode for the model.
+			 * @return this builder
+			 */
+			public Builder enableThinking() {
+				this.think = ThinkOption.ThinkBoolean.ENABLED;
+				return this;
+			}
+
+			/**
+			 * Disable thinking mode for the model.
+			 * @return this builder
+			 */
+			public Builder disableThinking() {
+				this.think = ThinkOption.ThinkBoolean.DISABLED;
+				return this;
+			}
+
+			/**
+			 * Set thinking level to "low" (for GPT-OSS model).
+			 * @return this builder
+			 */
+			public Builder thinkLow() {
+				this.think = ThinkOption.ThinkLevel.LOW;
+				return this;
+			}
+
+			/**
+			 * Set thinking level to "medium" (for GPT-OSS model).
+			 * @return this builder
+			 */
+			public Builder thinkMedium() {
+				this.think = ThinkOption.ThinkLevel.MEDIUM;
+				return this;
+			}
+
+			/**
+			 * Set thinking level to "high" (for GPT-OSS model).
+			 * @return this builder
+			 */
+			public Builder thinkHigh() {
+				this.think = ThinkOption.ThinkLevel.HIGH;
+				return this;
+			}
+
+			public Builder options(OllamaChatOptions options) {
+				Objects.requireNonNull(options, "The options can not be null.");
+				this.options = OllamaChatOptions.filterNonSupportedFields(options.toMap());
 				return this;
 			}
 
@@ -613,7 +657,7 @@ public final class OllamaApi {
 	public record EmbeddingsRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("input") List<String> input,
-			@JsonProperty("keep_alive") Duration keepAlive,
+			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("options") Map<String, Object> options,
 			@JsonProperty("truncate") Boolean truncate) {
 
@@ -743,7 +787,7 @@ public final class OllamaApi {
 			@JsonProperty("completed") Long completed
 	) { }
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = OllamaApiConstants.DEFAULT_BASE_URL;
 

@@ -63,18 +63,22 @@ public abstract class TextSplitter implements DocumentTransformer {
 		List<String> texts = new ArrayList<>();
 		List<Map<String, Object>> metadataList = new ArrayList<>();
 		List<ContentFormatter> formatters = new ArrayList<>();
+		List<Double> scores = new ArrayList<>();
+		List<String> originalIds = new ArrayList<>();
 
 		for (Document doc : documents) {
 			texts.add(doc.getText());
 			metadataList.add(doc.getMetadata());
 			formatters.add(doc.getContentFormatter());
+			scores.add(doc.getScore());
+			originalIds.add(doc.getId());
 		}
 
-		return createDocuments(texts, formatters, metadataList);
+		return createDocuments(texts, formatters, metadataList, scores, originalIds);
 	}
 
 	private List<Document> createDocuments(List<String> texts, List<ContentFormatter> formatters,
-			List<Map<String, Object>> metadataList) {
+			List<Map<String, Object>> metadataList, List<Double> scores, List<String> originalIds) {
 
 		// Process the data in a column oriented way and recreate the Document
 		List<Document> documents = new ArrayList<>();
@@ -82,25 +86,38 @@ public abstract class TextSplitter implements DocumentTransformer {
 		for (int i = 0; i < texts.size(); i++) {
 			String text = texts.get(i);
 			Map<String, Object> metadata = metadataList.get(i);
+			Double originalScore = scores.get(i);
+			String originalId = originalIds.get(i);
+
 			List<String> chunks = splitText(text);
 			if (chunks.size() > 1) {
-				logger.info("Splitting up document into " + chunks.size() + " chunks.");
+				logger.info("Splitting up document into {} chunks.", chunks.size());
 			}
-			for (String chunk : chunks) {
-				// only primitive values are in here -
-				Map<String, Object> metadataCopy = metadata.entrySet()
+
+			for (int chunkIndex = 0; chunkIndex < chunks.size(); chunkIndex++) {
+				String chunk = chunks.get(chunkIndex);
+
+				Map<String, Object> enhancedMetadata = metadata.entrySet()
 					.stream()
 					.filter(e -> e.getKey() != null && e.getValue() != null)
 					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-				Document newDoc = new Document(chunk, metadataCopy);
+
+				enhancedMetadata.put("parent_document_id", originalId);
+				enhancedMetadata.put("chunk_index", chunkIndex);
+				enhancedMetadata.put("total_chunks", chunks.size());
+
+				Document newDoc = Document.builder()
+					.text(chunk)
+					.metadata(enhancedMetadata)
+					.score(originalScore)
+					.build();
 
 				if (this.copyContentFormatter) {
 					// Transfer the content-formatter of the parent to the chunked
-					// documents it was slit into.
+					// documents it was split into.
 					newDoc.setContentFormatter(formatters.get(i));
 				}
 
-				// TODO copy over other properties.
 				documents.add(newDoc);
 			}
 		}

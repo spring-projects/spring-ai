@@ -33,7 +33,7 @@ jobs:
 
       - name: Generate assembly
         working-directory: spring-ai-docs
-        run: ./mvnw --batch-mode assembly:single
+        run: mvn --batch-mode assembly:single
 
       - name: Setup SSH key
         env:

@@ -49,17 +49,13 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 	private String betaPrefixPath = DEFAULT_BETA_PREFIX_PATH;
 
 	@NestedConfigurationProperty
-	private DeepSeekChatOptions options = DeepSeekChatOptions.builder()
+	private final DeepSeekChatOptions options = DeepSeekChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
 		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public DeepSeekChatOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(DeepSeekChatOptions options) {
-		this.options = options;
 	}
 
 	public boolean isEnabled() {

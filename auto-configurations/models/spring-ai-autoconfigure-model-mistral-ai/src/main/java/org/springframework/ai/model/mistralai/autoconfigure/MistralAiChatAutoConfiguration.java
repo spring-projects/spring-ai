@@ -30,7 +30,6 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -60,8 +59,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MISTRAL,
 		matchIfMissing = true)
 @ConditionalOnClass(MistralAiApi.class)
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 public class MistralAiChatAutoConfiguration {
 
 	@Bean
@@ -104,8 +101,13 @@ public class MistralAiChatAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
 		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
 
-		return new MistralAiApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+		return MistralAiApi.builder()
+			.baseUrl(resoledBaseUrl)
+			.apiKey(resolvedApiKey)
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

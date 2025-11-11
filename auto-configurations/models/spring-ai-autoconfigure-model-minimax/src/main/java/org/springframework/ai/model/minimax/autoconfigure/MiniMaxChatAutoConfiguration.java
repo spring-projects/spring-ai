@@ -30,7 +30,6 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,6 +47,7 @@ import org.springframework.web.client.RestClient;
  *
  * @author Geng Rong
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
@@ -55,8 +55,6 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({ MiniMaxConnectionProperties.class, MiniMaxChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MINIMAX,
 		matchIfMissing = true)
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class })
 public class MiniMaxChatAutoConfiguration {
 
 	@Bean

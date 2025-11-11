@@ -57,4 +57,11 @@ class MessageUtilsTests {
 			.hasMessageContaining("charset cannot be null");
 	}
 
+	@Test
+	void readResourceWithCharsetWhenResourceNull() {
+		assertThatThrownBy(() -> MessageUtils.readResource(null, StandardCharsets.UTF_8))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("resource cannot be null");
+	}
+
 }

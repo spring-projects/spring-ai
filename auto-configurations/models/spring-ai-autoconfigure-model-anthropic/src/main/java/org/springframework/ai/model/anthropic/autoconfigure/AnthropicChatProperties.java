@@ -39,7 +39,7 @@ public class AnthropicChatProperties {
 	 * generative's defaults.
 	 */
 	@NestedConfigurationProperty
-	private AnthropicChatOptions options = AnthropicChatOptions.builder()
+	private final AnthropicChatOptions options = AnthropicChatOptions.builder()
 		.model(AnthropicChatModel.DEFAULT_MODEL_NAME)
 		.maxTokens(AnthropicChatModel.DEFAULT_MAX_TOKENS)
 		.temperature(AnthropicChatModel.DEFAULT_TEMPERATURE)

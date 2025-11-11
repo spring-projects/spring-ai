@@ -94,15 +94,11 @@ public GemFireVectorStore vectorStore(EmbeddingModel embeddingModel) {
         .host("localhost")
         .port(7071)
         .indexName("my-vector-index")
+        .fields(new String[] {"country", "year", "activationDate"}) // Optional: fields for metadata filtering
         .initializeSchema(true)
         .build();
 }
 ----
-
-[NOTE]
-====
-The GemFire VectorStore does not yet support xref:api/vectordbs.adoc#metadata-filters[metadata filters].
-====
 
 [NOTE]
 ====
@@ -143,4 +139,82 @@ List<Document> results = vectorStore.similaritySearch(
    SearchRequest.builder().query("Spring").topK(5)
       .similarityThreshold(0.5d).build());
 ----
+
+== Metadata Filtering
+
+You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with GemFire VectorStore as well.
+
+For example, you can use either the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(5)
+        .similarityThreshold(0.7)
+        .filterExpression("country == 'BG' && year >= 2020").build());
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(SearchRequest.builder()
+        .query("The World")
+        .topK(5)
+        .similarityThreshold(0.7)
+        .filterExpression(b.and(
+                b.eq("country", "BG"),
+                b.gte("year", 2020)).build()).build());
+----
+
+NOTE: Those (portable) filter expressions get automatically converted into the proprietary GemFire VectorDB query format.
+
+For example, this portable filter expression:
+
+[source,sql]
+----
+country == 'BG' && year >= 2020
+----
+
+is converted into the proprietary GemFire VectorDB filter format:
+
+----
+country:BG AND year:[2020 TO *]
+----
+
+The GemFire VectorStore supports a wide range of filter operations:
+
+* **Equality**: `country == 'BG'` → `country:BG`
+* **Inequality**: `city != 'Sofia'` → `city: NOT Sofia`
+* **Greater Than**: `year > 2020` → `year:{2020 TO *]`
+* **Greater Than or Equal**: `year >= 2020` → `year:[2020 TO *]`
+* **Less Than**: `year < 2025` → `year:[* TO 2025}`
+* **Less Than or Equal**: `year <= 2025` → `year:[* TO 2025]`
+* **IN**: `country in ['BG', 'NL']` → `country:(BG OR NL)`
+* **NOT IN**: `country nin ['BG', 'NL']` → `NOT country:(BG OR NL)`
+* **AND/OR**: Logical operators for combining conditions
+* **Grouping**: Use parentheses for complex expressions
+* **Date Filtering**: Date values in ISO 8601 format (e.g., `2024-01-07T14:29:12Z`)
+
+[IMPORTANT]
+====
+To use metadata filtering with GemFire VectorStore, you must specify the metadata fields that can be filtered when creating the vector store. This is done using the `fields` parameter in the builder:
+
+[source,java]
+----
+GemFireVectorStore.builder(embeddingModel)
+    .fields(new String[] {"country", "year", "activationDate"})
+    .build();
+----
+
+Or via configuration properties:
+
+[source,properties]
+----
+spring.ai.vectorstore.gemfire.fields=country,year,activationDate
+----
+====
 

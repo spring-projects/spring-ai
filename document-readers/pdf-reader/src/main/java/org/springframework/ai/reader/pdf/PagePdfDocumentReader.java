@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ import org.springframework.util.StringUtils;
  * pageBottomMargin = 0
  *
  * @author Christian Tzolov
+ * @author Fu Jian
  */
 public class PagePdfDocumentReader implements DocumentReader {
 
@@ -96,74 +98,70 @@ public class PagePdfDocumentReader implements DocumentReader {
 		try {
 			var pdfTextStripper = new PDFLayoutTextStripperByArea();
 
-			int pageNumber = 0;
-			int pagesPerDocument = 0;
-			int startPageNumber = pageNumber;
+			int pageNumber = 1;
+			int startPageNumber = 1;
 
 			List<String> pageTextGroupList = new ArrayList<>();
 
-			int totalPages = this.document.getDocumentCatalog().getPages().getCount();
-			int logFrequency = totalPages > 10 ? totalPages / 10 : 1; // if less than 10
-			// pages, print
-			// each iteration
-			int counter = 0;
+			PDPageTree pages = this.document.getDocumentCatalog().getPages();
+			int totalPages = pages.getCount();
+			int logFrequency = totalPages > 10 ? totalPages / 10 : 1;
 
-			PDPage lastPage = this.document.getDocumentCatalog().getPages().iterator().next();
-			for (PDPage page : this.document.getDocumentCatalog().getPages()) {
-				lastPage = page;
-				if (counter % logFrequency == 0 && counter / logFrequency < 10) {
-					logger.info("Processing PDF page: {}", (counter + 1));
+			int pagesPerDocument = getPagesPerDocument(totalPages);
+			for (PDPage page : pages) {
+				if ((pageNumber - 1) % logFrequency == 0) {
+					logger.info("Processing PDF page: {}", pageNumber);
 				}
-				counter++;
 
-				pagesPerDocument++;
+				handleSinglePage(page, pageNumber, pdfTextStripper, pageTextGroupList);
 
-				if (this.config.pagesPerDocument != PdfDocumentReaderConfig.ALL_PAGES
-						&& pagesPerDocument >= this.config.pagesPerDocument) {
-					pagesPerDocument = 0;
-
-					var aggregatedPageTextGroup = pageTextGroupList.stream().collect(Collectors.joining());
-					if (StringUtils.hasText(aggregatedPageTextGroup)) {
-						readDocuments.add(toDocument(page, aggregatedPageTextGroup, startPageNumber, pageNumber));
+				if (pageNumber % pagesPerDocument == 0 || pageNumber == totalPages) {
+					if (!CollectionUtils.isEmpty(pageTextGroupList)) {
+						readDocuments.add(toDocument(pageTextGroupList.stream().collect(Collectors.joining()),
+								startPageNumber, pageNumber));
+						pageTextGroupList.clear();
 					}
-					pageTextGroupList.clear();
-
 					startPageNumber = pageNumber + 1;
 				}
-				int x0 = (int) page.getMediaBox().getLowerLeftX();
-				int xW = (int) page.getMediaBox().getWidth();
 
-				int y0 = (int) page.getMediaBox().getLowerLeftY() + this.config.pageTopMargin;
-				int yW = (int) page.getMediaBox().getHeight()
-						- (this.config.pageTopMargin + this.config.pageBottomMargin);
-
-				pdfTextStripper.addRegion(PDF_PAGE_REGION, new Rectangle(x0, y0, xW, yW));
-				pdfTextStripper.extractRegions(page);
-				var pageText = pdfTextStripper.getTextForRegion(PDF_PAGE_REGION);
-
-				if (StringUtils.hasText(pageText)) {
-
-					pageText = this.config.pageExtractedTextFormatter.format(pageText, pageNumber);
-
-					pageTextGroupList.add(pageText);
-				}
 				pageNumber++;
-				pdfTextStripper.removeRegion(PDF_PAGE_REGION);
 			}
-			if (!CollectionUtils.isEmpty(pageTextGroupList)) {
-				readDocuments.add(toDocument(lastPage, pageTextGroupList.stream().collect(Collectors.joining()),
-						startPageNumber, pageNumber));
-			}
-			logger.info("Processing {} pages", totalPages);
-			return readDocuments;
 
+			logger.info("Processed total {} pages", totalPages);
+			return readDocuments;
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected Document toDocument(PDPage page, String docText, int startPageNumber, int endPageNumber) {
+	private void handleSinglePage(PDPage page, int pageNumber, PDFLayoutTextStripperByArea pdfTextStripper,
+			List<String> pageTextGroupList) throws IOException {
+		int x0 = (int) page.getMediaBox().getLowerLeftX();
+		int xW = (int) page.getMediaBox().getWidth();
+
+		int y0 = (int) page.getMediaBox().getLowerLeftY() + this.config.pageTopMargin;
+		int yW = (int) page.getMediaBox().getHeight() - (this.config.pageTopMargin + this.config.pageBottomMargin);
+
+		pdfTextStripper.addRegion(PDF_PAGE_REGION, new Rectangle(x0, y0, xW, yW));
+		pdfTextStripper.extractRegions(page);
+		var pageText = pdfTextStripper.getTextForRegion(PDF_PAGE_REGION);
+
+		if (StringUtils.hasText(pageText)) {
+			pageText = this.config.pageExtractedTextFormatter.format(pageText, pageNumber);
+			pageTextGroupList.add(pageText);
+		}
+		pdfTextStripper.removeRegion(PDF_PAGE_REGION);
+	}
+
+	private int getPagesPerDocument(int totalPages) {
+		if (this.config.pagesPerDocument == PdfDocumentReaderConfig.ALL_PAGES) {
+			return totalPages;
+		}
+		return this.config.pagesPerDocument;
+	}
+
+	protected Document toDocument(String docText, int startPageNumber, int endPageNumber) {
 		Document doc = new Document(docText);
 		doc.getMetadata().put(METADATA_START_PAGE_NUMBER, startPageNumber);
 		if (startPageNumber != endPageNumber) {

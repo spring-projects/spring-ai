@@ -208,7 +208,6 @@ public interface StreamAdvisorChain extends AdvisorChain {
 }
 ```
 
-
 == Implementing an Advisor
 
 To create an advisor, implement either `CallAdvisor` or `StreamAdvisor` (or both). The key method to implement is `nextCall()` for non-streaming or `nextStream()` for streaming advisors.
@@ -435,7 +434,7 @@ public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest
 * The `StreamResponseMode`, previously part of `ResponseAdvisor`, has been removed.
 * In 1.0.0 these interfaces have been replaced:
 ** `CallAroundAdvisor` -> `CallAdvisor`, `StreamAroundAdvisor` -> `StreamAdvisor`, `CallAroundAdvisorChain` -> `CallAdvisorChain` and `StreamAroundAdvisorChain` -> `StreamAdvisorChain`. 
-** `AdvisedRequest` -> `ChatClientRequest` are `AdivsedResponse` -> `ChatClientResponse`.
+** `AdvisedRequest` -> `ChatClientRequest` and `AdivsedResponse` -> `ChatClientResponse`.
 
 === Context Map Handling
 

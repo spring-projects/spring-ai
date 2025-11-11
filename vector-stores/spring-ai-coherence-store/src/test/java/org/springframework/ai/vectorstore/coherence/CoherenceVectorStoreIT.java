@@ -39,7 +39,6 @@ import com.oracle.bedrock.runtime.options.DisplayName;
 import com.oracle.bedrock.testsupport.junit.TestLogsExtension;
 import com.tangosol.net.Coherence;
 import com.tangosol.net.Session;
-import org.junit.Assert;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -64,6 +63,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.CollectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 @Disabled("Crashes on github actions run")
 public class CoherenceVectorStoreIT {
@@ -132,7 +132,7 @@ public class CoherenceVectorStoreIT {
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
 
 				// Remove all documents from the store
-				vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
+				vectorStore.delete(this.documents.stream().map(Document::getId).toList());
 
 				List<Document> results2 = vectorStore
 					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
@@ -204,15 +204,10 @@ public class CoherenceVectorStoreIT {
 
 				assertThat(results).hasSize(1);
 				assertThat(results.get(0).getId()).isEqualTo(bgDocument2.getId());
-
-				try {
-					vectorStore
-						.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build());
-					Assert.fail("Invalid filter expression should have been cached!");
-				}
-				catch (FilterExpressionTextParser.FilterExpressionParseException e) {
-					assertThat(e.getMessage()).contains("Line: 1:17, Error: no viable alternative at input 'NL'");
-				}
+				assertThatExceptionOfType(FilterExpressionTextParser.FilterExpressionParseException.class)
+					.isThrownBy(() -> vectorStore
+						.similaritySearch(SearchRequest.from(searchRequest).filterExpression("country == NL").build()))
+					.withMessageContaining("Line: 1:17, Error: no viable alternative at input 'NL'");
 
 				// Remove all documents from the store
 				truncateMap(context, ((CoherenceVectorStore) vectorStore).getMapName());
