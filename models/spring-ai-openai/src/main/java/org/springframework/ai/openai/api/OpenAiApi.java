@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonEnumDefaultValue;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -759,8 +760,15 @@ public class OpenAiApi {
 	public enum ChatCompletionFinishReason {
 
 		/**
+		 * Handles, empty, NULL and unknown values
+		 */
+		@JsonEnumDefaultValue
+		@JsonProperty("")
+		UNKNOWN,
+		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
+		@JsonEnumDefaultValue
 		@JsonProperty("stop")
 		STOP,
 		/**
