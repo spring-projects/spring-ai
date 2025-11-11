@@ -258,8 +258,7 @@ public class ChromaApi {
 			if (isNotFoundError(e, "Collection", collectionName)) {
 				String errorMessage = this.getErrorMessage(e);
 				if (StringUtils.hasText(errorMessage)) {
-					logger.debug(
-							"Collection [{}] in database [{}] and tenant [{}] does not exist: {}, returning null",
+					logger.debug("Collection [{}] in database [{}] and tenant [{}] does not exist: {}, returning null",
 							collectionName, databaseName, tenantName, errorMessage);
 				}
 				else {
@@ -372,21 +371,21 @@ public class ChromaApi {
 		if (StringUtils.hasText(responseBody)) {
 			try {
 				ErrorResponse errorResponse = this.objectMapper.readValue(responseBody, ErrorResponse.class);
-                String error = errorResponse.error();
-                // Check for NotFoundError('message') format
-                if (NOT_FOUND_ERROR_PATTERN.matcher(error).find()) {
-                    return true;
-                }
-                // Check for "Resource [name] not found." format
-                String expectedPattern = String.format("%s [%s] not found.", resourceType, resourceName);
-                if (error.startsWith(expectedPattern)) {
-                    return true;
-                }
-                // Check if error contains "not found" (case insensitive)
-                if (error.toLowerCase().contains("not found")) {
-                    return true;
-                }
-            }
+				String error = errorResponse.error();
+				// Check for NotFoundError('message') format
+				if (NOT_FOUND_ERROR_PATTERN.matcher(error).find()) {
+					return true;
+				}
+				// Check for "Resource [name] not found." format
+				String expectedPattern = String.format("%s [%s] not found.", resourceType, resourceName);
+				if (error.startsWith(expectedPattern)) {
+					return true;
+				}
+				// Check if error contains "not found" (case insensitive)
+				if (error.toLowerCase().contains("not found")) {
+					return true;
+				}
+			}
 			catch (JsonProcessingException ex) {
 				// If JSON parsing fails, check the response body directly
 				String expectedPattern = String.format("%s [%s] not found.", resourceType, resourceName);
@@ -419,14 +418,14 @@ public class ChromaApi {
 		if (StringUtils.hasText(responseBody)) {
 			try {
 				ErrorResponse errorResponse = this.objectMapper.readValue(responseBody, ErrorResponse.class);
-                // Extract error message from NotFoundError('message') format
-                Matcher notFoundErrorMatcher = NOT_FOUND_ERROR_PATTERN.matcher(errorResponse.error());
-                if (notFoundErrorMatcher.find()) {
-                    return notFoundErrorMatcher.group(1);
-                }
-                // Return the error as-is if it doesn't match NotFoundError pattern
-                return errorResponse.error();
-            }
+				// Extract error message from NotFoundError('message') format
+				Matcher notFoundErrorMatcher = NOT_FOUND_ERROR_PATTERN.matcher(errorResponse.error());
+				if (notFoundErrorMatcher.find()) {
+					return notFoundErrorMatcher.group(1);
+				}
+				// Return the error as-is if it doesn't match NotFoundError pattern
+				return errorResponse.error();
+			}
 			catch (JsonProcessingException ex) {
 				// If JSON parsing fails, return the response body as-is if it's not empty
 				if (StringUtils.hasText(responseBody.trim())) {
