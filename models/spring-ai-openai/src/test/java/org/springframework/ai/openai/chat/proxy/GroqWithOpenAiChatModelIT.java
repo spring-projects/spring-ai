@@ -73,7 +73,7 @@ class GroqWithOpenAiChatModelIT {
 
 	private static final String GROQ_BASE_URL = "https://api.groq.com/openai";
 
-	private static final String DEFAULT_GROQ_MODEL = "llama3-70b-8192";
+	private static final String DEFAULT_GROQ_MODEL = "llama-3.1-8b-instant";
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -373,7 +373,7 @@ class GroqWithOpenAiChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "llama3-8b-8192", "llama3-70b-8192", "mixtral-8x7b-32768", "gemma-7b-it" })
+	@ValueSource(strings = { "meta-llama/llama-4-scout-17b-16e-instruct" })
 	void validateCallResponseMetadata(String model) {
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
