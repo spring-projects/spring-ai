@@ -33,6 +33,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
@@ -95,7 +96,8 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		return DefaultToolDefinition.builder()
 			.name(this.prefixedToolName)
 			.description(this.tool.description())
-			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
+			.inputSchema(
+					JsonSchemaUtils.ensureValidInputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema())))
 			.build();
 	}
 
