@@ -70,7 +70,7 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
+			List<ToolCallback> toolCallbacks, ObjectProvider<ToolCallbackProvider> tcbProviders) {
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
 		tcbProviders.stream()
 			.filter(pr -> !isMcpToolCallbackProvider(ResolvableType.forInstance(pr)))
