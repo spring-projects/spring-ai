@@ -759,6 +759,11 @@ public class OpenAiApi {
 	public enum ChatCompletionFinishReason {
 
 		/**
+		 * Handles, empty, NULL and unknown values
+		 */
+		@JsonProperty("")
+		UNKNOWN,
+		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
 		@JsonProperty("stop")

@@ -428,7 +428,7 @@ public class OpenAiChatModel implements ChatModel {
 		List<Media> media = new ArrayList<>();
 		String textContent = choice.message().content();
 		var audioOutput = choice.message().audioOutput();
-		if (audioOutput != null) {
+		if (audioOutput != null && StringUtils.hasText(audioOutput.data()) && request.audioParameters() != null) {
 			String mimeType = String.format("audio/%s", request.audioParameters().format().name().toLowerCase());
 			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
 			Resource resource = new ByteArrayResource(audioData);
