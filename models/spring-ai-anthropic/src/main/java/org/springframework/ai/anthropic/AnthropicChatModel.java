@@ -608,17 +608,9 @@ public class AnthropicChatModel implements ChatModel {
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 
 		// Get caching strategy and options from the request
-		logger.debug("DEBUGINFO: prompt.getOptions() type: {}, value: {}",
-				prompt.getOptions() != null ? prompt.getOptions().getClass().getName() : "null", prompt.getOptions());
-
 		AnthropicChatOptions requestOptions = null;
 		if (prompt.getOptions() instanceof AnthropicChatOptions) {
 			requestOptions = (AnthropicChatOptions) prompt.getOptions();
-			logger.debug("DEBUGINFO: Found AnthropicChatOptions - cacheOptions {}", requestOptions.getCacheOptions());
-		}
-		else {
-			logger.debug("DEBUGINFO: Options is NOT AnthropicChatOptions, it's: {}",
-					prompt.getOptions() != null ? prompt.getOptions().getClass().getName() : "null");
 		}
 
 		AnthropicCacheOptions cacheOptions = requestOptions != null ? requestOptions.getCacheOptions()
