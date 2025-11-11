@@ -69,10 +69,24 @@ public class ToolCallingAutoConfiguration {
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
+	ToolCallbackResolver toolCallbackResolver(
+			GenericApplicationContext applicationContext, // @formatter:off
+			List<ToolCallback> toolCallbacks,
+			// Deprecated in favor of the tcbProviders. Kept for backward compatibility.
+			ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders) { // @formatter:on
+
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
-		tcbProviders.stream()
+
+		// Merge ToolCallbackProviders from both ObjectProviders.
+		List<ToolCallbackProvider> totalToolCallbackProviders = new ArrayList<>(
+				tcbProviderList.stream().flatMap(List::stream).toList());
+		totalToolCallbackProviders.addAll(tcbProviders.stream().toList());
+
+		// De-duplicate ToolCallbackProviders
+		totalToolCallbackProviders = totalToolCallbackProviders.stream().distinct().toList();
+
+		totalToolCallbackProviders.stream()
 			.filter(pr -> !isMcpToolCallbackProvider(ResolvableType.forInstance(pr)))
 			.map(pr -> List.of(pr.getToolCallbacks()))
 			.forEach(allFunctionAndToolCallbacks::addAll);
