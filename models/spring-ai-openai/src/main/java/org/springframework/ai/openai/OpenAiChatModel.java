@@ -429,32 +429,20 @@ public class OpenAiChatModel implements ChatModel {
 		String textContent = choice.message().content();
 		var audioOutput = choice.message().audioOutput();
 		if (audioOutput != null && StringUtils.hasText(audioOutput.data()) && request.audioParameters() != null) {
-			try {
-				String mimeType = String.format("audio/%s", request.audioParameters().format().name().toLowerCase());
-				byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
-				Resource resource = new ByteArrayResource(audioData);
-				Media.builder()
-					.mimeType(MimeTypeUtils.parseMimeType(mimeType))
-					.data(resource)
-					.id(audioOutput.id())
-					.build();
-				media.add(Media.builder()
-					.mimeType(MimeTypeUtils.parseMimeType(mimeType))
-					.data(resource)
-					.id(audioOutput.id())
-					.build());
-				if (!StringUtils.hasText(textContent)) {
-					textContent = audioOutput.transcript();
-				}
-				generationMetadataBuilder.metadata("audioId", audioOutput.id());
-				generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
+			String mimeType = String.format("audio/%s", request.audioParameters().format().name().toLowerCase());
+			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
+			Resource resource = new ByteArrayResource(audioData);
+			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
+			media.add(Media.builder()
+				.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+				.data(resource)
+				.id(audioOutput.id())
+				.build());
+			if (!StringUtils.hasText(textContent)) {
+				textContent = audioOutput.transcript();
 			}
-			catch (IllegalArgumentException e) {
-				// If it fails to decode the audio data, log the error and continue
-				// without audio.
-				// The text content will still be returned.
-				logger.error("Error decoding audio output data", e);
-			}
+			generationMetadataBuilder.metadata("audioId", audioOutput.id());
+			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
 		}
 
 		if (Boolean.TRUE.equals(request.logprobs())) {
