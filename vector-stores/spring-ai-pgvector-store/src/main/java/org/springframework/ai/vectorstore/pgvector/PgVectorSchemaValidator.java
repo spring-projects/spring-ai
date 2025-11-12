@@ -33,13 +33,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class PgVectorSchemaValidator {
+class PgVectorSchemaValidator {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorSchemaValidator.class);
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
+	PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -64,7 +64,7 @@ public class PgVectorSchemaValidator {
 
 	}
 
-	public boolean isTableExists(String schemaName, String tableName) {
+	boolean isTableExists(String schemaName, String tableName) {
 		String sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
