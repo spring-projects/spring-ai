@@ -20,16 +20,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.memory.repository.mongo.Conversation;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
-import org.springframework.stereotype.Component;
 
 /**
- * Class responsible for creating MongoDB proper indices for the ChatMemory. Creates a
+ * Class responsible for creating proper MongoDB indices for the ChatMemory. Creates a
  * main index on the conversationId and timestamp fields, and a TTL index on the timestamp
  * field if the TTL is set in properties.
  *
@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component;
  * @see MongoChatMemoryProperties
  * @since 1.1.0
  */
-@Component
+@AutoConfiguration
 @ConditionalOnProperty(value = "spring.ai.chat.memory.repository.mongo.create-indices", havingValue = "true")
 public class MongoChatMemoryIndexCreator {
 
