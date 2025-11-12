@@ -34,6 +34,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.ai.retry.openai.OpenAiErrorMessageImprover;
 
 /**
  * RetryUtils is a utility class for configuring and handling retry operations. It
@@ -62,7 +63,8 @@ public abstract class RetryUtils {
 		public void handleError(@NonNull ClientHttpResponse response) throws IOException {
 			if (response.getStatusCode().isError()) {
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-				String message = String.format("%s - %s", response.getStatusCode().value(), error);
+				String message = OpenAiErrorMessageImprover.improveErrorMessage(error, response.getStatusCode());
+
 				/**
 				 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
 				 * 401 - You must be a member of an organization to use the API, 429 -
