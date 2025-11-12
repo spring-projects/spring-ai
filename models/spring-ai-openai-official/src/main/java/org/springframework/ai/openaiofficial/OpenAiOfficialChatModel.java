@@ -18,8 +18,6 @@ package org.springframework.ai.openaiofficial;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
-import com.openai.core.JsonArray;
-import com.openai.core.JsonField;
 import com.openai.core.JsonValue;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -65,7 +63,6 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -76,7 +73,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static org.springframework.ai.openaiofficial.setup.OpenAiOfficialSetup.setupAsyncClient;
 import static org.springframework.ai.openaiofficial.setup.OpenAiOfficialSetup.setupSyncClient;
 
@@ -707,8 +703,8 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		if (requestOptions.getPresencePenalty() != null) {
 			builder.presencePenalty(requestOptions.getPresencePenalty());
 		}
-		if (requestOptions.getResponseFormat() != null) {
-			builder.responseFormat(requestOptions.getResponseFormat());
+		if (requestOptions.getResponseFormatJsonSchema() != null) {
+			builder.responseFormat(requestOptions.getResponseFormatJsonSchema());
 		}
 		if (requestOptions.getSeed() != null) {
 			builder.seed(requestOptions.getSeed());
