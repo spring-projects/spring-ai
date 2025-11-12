@@ -64,4 +64,6 @@ public final class SpringAIVectorStoreTypes {
 
 	public static final String WEAVIATE = "weaviate";
 
+	public static final String S3 = "S3";
+
 }
