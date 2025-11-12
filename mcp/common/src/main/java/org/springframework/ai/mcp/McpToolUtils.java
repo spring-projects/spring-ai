@@ -39,6 +39,9 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
+import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -62,6 +65,7 @@ import org.springframework.util.MimeType;
  * </ul>
  *
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 public final class McpToolUtils {
 
@@ -224,6 +228,20 @@ public final class McpToolUtils {
 		return McpStatelessServerFeatures.SyncToolSpecification.builder()
 			.tool(sharedSpec.tool())
 			.callHandler((exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request))
+			.build();
+	}
+
+	/**
+	 * Creates a Spring AI ToolDefinition from an MCP Tool.
+	 * @param prefixedToolName the prefixed name for the tool
+	 * @param tool the MCP tool
+	 * @return a ToolDefinition with normalized input schema
+	 */
+	public static ToolDefinition createToolDefinition(String prefixedToolName, McpSchema.Tool tool) {
+		return DefaultToolDefinition.builder()
+			.name(prefixedToolName)
+			.description(tool.description())
+			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(ModelOptionsUtils.toJsonString(tool.inputSchema())))
 			.build();
 	}
 

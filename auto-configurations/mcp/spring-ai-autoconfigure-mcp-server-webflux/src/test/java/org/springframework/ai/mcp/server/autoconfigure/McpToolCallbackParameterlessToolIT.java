@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.autoconfigure;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -118,11 +119,11 @@ class McpToolCallbackParameterlessToolIT {
 				McpServerFeatures.SyncToolSpecification toolSpec = new McpServerFeatures.SyncToolSpecification(
 						parameterlessTool, (exchange, arguments) -> {
 							McpSchema.TextContent content = new McpSchema.TextContent(
-									"Current time: 2025-11-11T12:00:00Z");
+									"Current time: " + Instant.now().toString());
 							return new McpSchema.CallToolResult(List.of(content), false, null);
 						}, (exchange, request) -> {
 							McpSchema.TextContent content = new McpSchema.TextContent(
-									"Current time: 2025-11-11T12:00:00Z");
+									"Current time: " + Instant.now().toString());
 							return new McpSchema.CallToolResult(List.of(content), false, null);
 						});
 
@@ -179,9 +180,14 @@ class McpToolCallbackParameterlessToolIT {
 						Map<String, Object> properties = (Map<String, Object>) schemaMap.get("properties");
 						assertThat(properties).isEmpty();
 
+						// Verify that additionalProperties is preserved after
+						// normalization
+						assertThat(schemaMap).containsKey("additionalProperties");
+						assertThat(schemaMap.get("additionalProperties")).isEqualTo(false);
+
 						// Test that the callback can be called successfully
 						String result = toolCallback.call("{}");
-						assertThat(result).isNotNull().contains("2025-11-11");
+						assertThat(result).isNotNull().contains("Current time:");
 					});
 
 				stopHttpServer(httpServer);
