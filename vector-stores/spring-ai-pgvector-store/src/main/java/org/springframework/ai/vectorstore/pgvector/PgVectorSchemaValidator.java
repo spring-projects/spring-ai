@@ -32,6 +32,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  *
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 class PgVectorSchemaValidator {
@@ -77,7 +78,7 @@ class PgVectorSchemaValidator {
 		}
 	}
 
-	void validateTableSchema(String schemaName, String tableName) {
+	void validateTableSchema(String schemaName, String tableName, int dimensions) {
 
 		if (!isValidNameForDatabaseObject(schemaName)) {
 			throw new IllegalArgumentException(
@@ -105,8 +106,7 @@ class PgVectorSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT column_name, data_type FROM information_schema.columns "
 					+ "WHERE table_schema = ? AND table_name = ?";
-			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query,
-					new Object[] { schemaName, tableName });
+			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query, schemaName, tableName);
 
 			if (columns.isEmpty()) {
 				throw new IllegalStateException("Error while validating table schema, Table " + tableName
@@ -130,9 +130,32 @@ class PgVectorSchemaValidator {
 				throw new IllegalStateException("Missing fields " + expectedColumns);
 			}
 
+			// Query the actual dimensions
+			query = """
+					SELECT
+						a.atttypmod
+					FROM
+						pg_attribute a
+					JOIN
+						pg_class c ON a.attrelid = c.oid
+					JOIN
+						pg_namespace n ON c.relnamespace = n.oid
+					WHERE
+						n.nspname = ?
+						AND c.relname = ?
+						AND a.attname = ?
+						AND a.attnum > 0
+						AND NOT a.attisdropped
+					""";
+			Integer actualDimensions = this.jdbcTemplate.queryForObject(query, Integer.class, schemaName, tableName,
+					"embedding");
+			if (actualDimensions == null || actualDimensions != dimensions) {
+				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
+						+ ", required vector dimensions is " + dimensions);
+			}
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema{}", e.getMessage());
+			logger.error("Error while validating table schema: {}", e.getMessage());
 			logger
 				.error("Failed to operate with the specified table in the database. To resolve this issue, please ensure the following steps are completed:\n"
 						+ "1. Ensure the necessary PostgreSQL extensions are enabled. Run the following SQL commands:\n"
