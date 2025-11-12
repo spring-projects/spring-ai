@@ -49,18 +49,10 @@ public class ToolCallbackConverterAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public List<McpServerFeatures.SyncToolSpecification> syncTools(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
 			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
 
-		// Merge ToolCallbackProviders from both ObjectProviders.
-		List<ToolCallbackProvider> totalToolCallbackProviders = new ArrayList<>(
-				tcbProviderList.stream().flatMap(List::stream).toList());
-		totalToolCallbackProviders.addAll(tcbProviders.stream().toList());
-
-		// De-duplicate ToolCallbackProviders
-		totalToolCallbackProviders = totalToolCallbackProviders.stream().distinct().toList();
-
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbacksList, tcbProviderList,
+		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, tcbProviderList,
 				tcbProviders);
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
@@ -121,7 +113,7 @@ public class ToolCallbackConverterAutoConfiguration {
 	}
 
 	private List<ToolCallback> aggregateToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
 			ObjectProvider<ToolCallbackProvider> tcbProviders) {
 
 		// Merge ToolCallbackProviders from both ObjectProviders.
@@ -134,8 +126,8 @@ public class ToolCallbackConverterAutoConfiguration {
 
 		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
 
-		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
-			tools.addAll(toolCallbacksList);
+		if (!CollectionUtils.isEmpty(toolCallbackList)) {
+			tools.addAll(toolCallbackList);
 		}
 
 		List<ToolCallback> providerToolCallbacks = totalToolCallbackProviders.stream()

@@ -111,7 +111,7 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 	}
 
 	private List<ToolCallback> aggregateToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
 			ObjectProvider<ToolCallbackProvider> tcbProviders) {
 
 		// Merge ToolCallbackProviders from both ObjectProviders.
@@ -124,8 +124,8 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 
 		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
 
-		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
-			tools.addAll(toolCallbacksList);
+		if (!CollectionUtils.isEmpty(toolCallbackList)) {
+			tools.addAll(toolCallbackList);
 		}
 
 		List<ToolCallback> providerToolCallbacks = totalToolCallbackProviders.stream()
