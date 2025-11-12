@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.lang.Nullable;
@@ -41,6 +40,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class SyncMcpToolCallback implements ToolCallback {
@@ -89,11 +89,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return DefaultToolDefinition.builder()
-			.name(this.prefixedToolName)
-			.description(this.tool.description())
-			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
-			.build();
+		return McpToolUtils.createToolDefinition(this.prefixedToolName, this.tool);
 	}
 
 	/**

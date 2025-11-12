@@ -30,7 +30,6 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.lang.Nullable;
@@ -45,6 +44,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Ilayaperumal Gopinathan
  */
 public class AsyncMcpToolCallback implements ToolCallback {
 
@@ -92,11 +92,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return DefaultToolDefinition.builder()
-			.name(this.prefixedToolName)
-			.description(this.tool.description())
-			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
-			.build();
+		return McpToolUtils.createToolDefinition(this.prefixedToolName, this.tool);
 	}
 
 	public String getOriginalToolName() {
