@@ -1011,6 +1011,37 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenMultipleGenerationsWithFirstContentNull() {
+		// Test case for Bedrock Converse API with openai.gpt-oss models
+		// which return multiple generations where the first one has null content
+		// (reasoning output)
+		// and the second one contains the actual response
+		ChatModel chatModel = mock(ChatModel.class);
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage(null)), // First
+																								// generation
+																								// with
+																								// null
+																								// content
+					new Generation(new AssistantMessage("Hello! How can I help you today?")) // Second
+																								// generation
+																								// with
+																								// actual
+																								// content
+			)));
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt("Hello");
+		DefaultChatClient.DefaultCallResponseSpec spec = (DefaultChatClient.DefaultCallResponseSpec) chatClientRequestSpec
+			.call();
+
+		String content = spec.content();
+		assertThat(content).isEqualTo("Hello! How can I help you today?");
+	}
+
+	@Test
 	void whenResponseEntityWithParameterizedTypeIsNull() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
 		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
