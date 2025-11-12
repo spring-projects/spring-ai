@@ -23,6 +23,7 @@ import com.openai.core.JsonField;
 import com.openai.core.JsonValue;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
+import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.*;
 import com.openai.models.completions.CompletionUsage;
 import io.micrometer.observation.Observation;
@@ -561,6 +562,15 @@ public class OpenAiOfficialChatModel implements ChatModel {
 								parts.add(ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
 										.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(text).build())
 										.build()));
+								} else if (media.getData() instanceof byte[] bytes) {
+								// Assume the bytes are an image. So, convert the bytes to a base64 encoded
+								ChatCompletionContentPartImage.ImageUrl.Builder imageUrlBuilder = ChatCompletionContentPartImage.ImageUrl.builder();
+
+								imageUrlBuilder.url("data:" + mimeType + ";base64,"
+										+ Base64.getEncoder().encodeToString(bytes));
+								parts.add(ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
+										.imageUrl(imageUrlBuilder.build())
+										.build()));
 							} else {
 								logger.info("Could not process image media with data of type: {}. Only java.net.URI is supported for image URLs.",
 										media.getData().getClass().getSimpleName());
@@ -645,7 +655,6 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				return ChatCompletionMessageParam.ofTool(builder
 								.toolCallId(callId)
 								.content(callResponse)
-								.role(JsonValue.from(MessageType.TOOL.getValue()))
 						.build());
 			}
 			else {
@@ -724,6 +733,13 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		if (requestOptions.getParallelToolCalls() != null) {
 			builder.parallelToolCalls(requestOptions.getParallelToolCalls());
 		}
+		if (requestOptions.getReasoningEffort() != null) {
+			builder.reasoningEffort(ReasoningEffort.of(requestOptions.getReasoningEffort().toLowerCase()));
+		}
+		if (requestOptions.getVerbosity() != null) {
+			builder.verbosity(ChatCompletionCreateParams.Verbosity.of(requestOptions.getVerbosity()));
+		}
+
 		if (requestOptions.getStore() != null) {
 			builder.store(requestOptions.getStore());
 		}
