@@ -19,6 +19,7 @@ package org.springframework.ai.image.observation;
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
+import org.springframework.ai.image.ImageResponseFormat;
 import org.springframework.util.StringUtils;
 
 /**
@@ -84,10 +85,11 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 	// Request
 
 	protected KeyValues requestImageFormat(KeyValues keyValues, ImageModelObservationContext context) {
-		if (StringUtils.hasText(context.getRequest().getOptions().getResponseFormat())) {
+		ImageResponseFormat responseFormat = context.getRequest().getOptions().getResponseFormatAsEnum();
+		if (responseFormat != null) {
 			return keyValues.and(
 					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),
-					context.getRequest().getOptions().getResponseFormat());
+					responseFormat.getValue());
 		}
 		return keyValues;
 	}

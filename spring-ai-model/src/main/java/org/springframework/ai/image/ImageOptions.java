@@ -18,6 +18,7 @@ package org.springframework.ai.image;
 
 import org.springframework.ai.model.ModelOptions;
 import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 /**
  * ImageOptions represent the common options, portable across different image generation
@@ -39,6 +40,14 @@ public interface ImageOptions extends ModelOptions {
 
 	@Nullable
 	String getResponseFormat();
+
+	default @Nullable ImageResponseFormat getResponseFormatAsEnum() {
+		String responseFormat = getResponseFormat();
+		if (!StringUtils.hasText(responseFormat)) {
+			return null;
+		}
+		return ImageResponseFormat.fromValue(responseFormat);
+	}
 
 	@Nullable
 	String getStyle();
