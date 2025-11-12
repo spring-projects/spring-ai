@@ -64,6 +64,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -74,6 +75,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.springframework.ai.openaiofficial.setup.OpenAiOfficialSetup.setupAsyncClient;
 import static org.springframework.ai.openaiofficial.setup.OpenAiOfficialSetup.setupSyncClient;
 
@@ -532,51 +534,57 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 	ChatCompletionCreateParams createRequest(Prompt prompt, boolean stream) {
 
-		List<ChatCompletionMessage> chatCompletionMessage = prompt.getInstructions().stream().map(message -> {
+		List<ChatCompletionMessageParam> chatCompletionMessageParams = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
 				// Handle simple text content for user and system messages
-				ChatCompletionMessage.Builder builder = ChatCompletionMessage.builder();
+				ChatCompletionUserMessageParam.Builder builder = ChatCompletionUserMessageParam.builder();
 
 				if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
 					// Handle media content (images, audio, files)
-					List<String> contentParts = new ArrayList<>();
+					List<ChatCompletionContentPart> parts = new ArrayList<>();
 
 					if (!message.getText().isEmpty()) {
-						contentParts.add(ChatCompletionContentPartText.builder().text(message.getText()).build().text());
+						parts.add(ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder().text(message.getText()).build()));
 					}
 
 					// Add media content parts
 					userMessage.getMedia().forEach(media -> {
 						String mimeType = media.getMimeType().toString();
 						if (mimeType.startsWith("image/")) {
-							if (media.getData() instanceof java.net.URI) {
-								contentParts.add(ChatCompletionContentPartImage.builder()
-									.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder()
-										.url(media.getData().toString())
-										.build())
-									.build().imageUrl().url());
+							if (media.getData() instanceof java.net.URI uri) {
+								parts.add(ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
+										.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(uri.toString()).build())
+										.build()));
+								} else if (media.getData() instanceof String text) {
+								// The org.springframework.ai.content.Media object should store the URL as a java.net.URI but it transforms it to String somewhere along the way,
+								// for example in its Builder class. So, we accept String as well here for image URLs.
+								parts.add(ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
+										.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(text).build())
+										.build()));
 							} else {
 								logger.info("Could not process image media with data of type: {}. Only java.net.URI is supported for image URLs.",
 										media.getData().getClass().getSimpleName());
 							}
 						}
 						else if (mimeType.startsWith("audio/")) {
-							contentParts.add(ChatCompletionContentPartInputAudio.builder()
-								.inputAudio(ChatCompletionContentPartInputAudio.InputAudio
-									.builder()
-									.data(fromAudioData(media.getData()))
-									.format(mimeType.contains("mp3")
-											? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
-											: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
-									.build())
-								.build().inputAudio().data());
+							parts.add(ChatCompletionContentPart.ofInputAudio(ChatCompletionContentPartInputAudio.builder()
+									.inputAudio(ChatCompletionContentPartInputAudio.builder()
+											.inputAudio(ChatCompletionContentPartInputAudio.InputAudio.builder()
+													.data(fromAudioData(media.getData()))
+													.format(mimeType.contains("mp3")
+															? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
+															: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
+													.build())
+											.build()
+											.inputAudio())
+									.build()));
 						}
 						else {
 							// Assume it's a file or other media type represented as a data URL
-							contentParts.add(fromMediaData(media.getMimeType(), media.getData()));
+							parts.add(ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder().text(fromMediaData(media.getMimeType(), media.getData())).build()));
 						}
 					});
-					builder.content(JsonArray.of(contentParts).asString());
+					builder.contentOfArrayOfContentParts(parts);
 				}
 				else {
 					// Simple text message
@@ -584,26 +592,24 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				}
 
 				if (message.getMessageType() == MessageType.USER) {
-					builder.role(JsonValue.from(MessageType.USER));
+					builder.role(JsonValue.from(MessageType.USER.getValue()));
 				}
 				else {
-					builder.role(JsonValue.from(MessageType.SYSTEM));
+					builder.role(JsonValue.from(MessageType.SYSTEM.getValue()));
 				}
-				builder.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")));
-				return List.of(builder.build());
+
+				return ChatCompletionMessageParam.ofUser(builder.build());
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				var assistantMessage = (AssistantMessage) message;
-				ChatCompletionMessage.Builder builder = ChatCompletionMessage.builder()
-					.role(JsonValue.from(MessageType.ASSISTANT));
+				ChatCompletionAssistantMessageParam.Builder builder = ChatCompletionAssistantMessageParam.builder()
+					.role(JsonValue.from(MessageType.ASSISTANT.getValue()));
 
 				if (assistantMessage.getText() != null) {
-					builder.content(ChatCompletionMessage.builder()
+					builder.content(ChatCompletionAssistantMessageParam.builder()
 							.content(assistantMessage.getText())
-							.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")))
 							.build().content());
 				}
-				builder.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")));
 
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					List<ChatCompletionMessageToolCall> toolCalls = assistantMessage.getToolCalls()
@@ -617,33 +623,39 @@ public class OpenAiOfficialChatModel implements ChatModel {
 													.build())
 									)
 						.toList();
+
 					builder.toolCalls(toolCalls);
 				}
 
-				return List.of(builder.build());
+				return ChatCompletionMessageParam.ofAssistant(builder.build());
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
-				return toolMessage.getResponses()
-					.stream()
-					.map(toolResponse -> ChatCompletionMessage.builder()
-						.role(JsonValue.from(MessageType.TOOL))
-						.content(ChatCompletionMessage.builder().content(toolResponse.responseData()).refusal(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")).build().content())
-						.refusal(JsonValue.from(Optional.ofNullable(message.getMetadata().get("refusal")).map(Object::toString).orElse("")))
-						.build())
-					.toList();
+				ChatCompletionToolMessageParam.Builder builder = ChatCompletionToolMessageParam.builder();
+				builder.content(toolMessage.getText() != null ? toolMessage.getText() : "");
+				builder.role(JsonValue.from(MessageType.TOOL.getValue()));
+
+				if (toolMessage.getResponses().isEmpty()) {
+					return ChatCompletionMessageParam.ofTool(builder.build());
+				}
+				String callId = toolMessage.getResponses().get(0).id();
+				String callResponse = toolMessage.getResponses().get(0).responseData();
+
+				return ChatCompletionMessageParam.ofTool(builder
+								.toolCallId(callId)
+								.content(callResponse)
+								.role(JsonValue.from(MessageType.TOOL.getValue()))
+						.build());
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 			}
-		}).flatMap(List::stream).toList();
+		}).toList();
 
 		ChatCompletionCreateParams.Builder builder = ChatCompletionCreateParams.builder();
 
-		chatCompletionMessage.forEach(message -> {
-			builder.addMessage(message);
-		});
+		chatCompletionMessageParams.forEach(builder::addMessage);
 
 		OpenAiOfficialChatOptions requestOptions = (OpenAiOfficialChatOptions) prompt.getOptions();
 

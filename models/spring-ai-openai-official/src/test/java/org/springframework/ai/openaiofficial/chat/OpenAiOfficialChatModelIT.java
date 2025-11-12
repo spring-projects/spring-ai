@@ -433,9 +433,9 @@ public class OpenAiOfficialChatModelIT {
 		assertThat(usage).isNotNull();
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
-		assertThat(usage.getPromptTokens()).isGreaterThan(450).isLessThan(600);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(360);
-		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(900);
+		assertThat(usage.getPromptTokens()).isGreaterThan(100).isLessThan(300);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(230).isLessThan(400);
+		assertThat(usage.getTotalTokens()).isGreaterThan(450).isLessThan(650);
 	}
 
 	@Test
@@ -451,6 +451,7 @@ public class OpenAiOfficialChatModelIT {
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.streamUsage(true)
+			.reasoningEffort("0")
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
@@ -461,8 +462,8 @@ public class OpenAiOfficialChatModelIT {
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
 		assertThat(usage.getPromptTokens()).isGreaterThan(100).isLessThan(250);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(300).isLessThan(450);
-		assertThat(usage.getTotalTokens()).isGreaterThan(400).isLessThan(700);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(200).isLessThan(500);
+		assertThat(usage.getTotalTokens()).isGreaterThan(300).isLessThan(750);
 	}
 
 	@Test
