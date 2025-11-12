@@ -36,7 +36,7 @@ jobs:
 
       - name: Build all modules with unit tests
         run: |
-          ./mvnw -T 1C --batch-mode --update-snapshots clean install
+          ./mvnw --batch-mode --update-snapshots clean install
 
       - name: Upload Maven repository
         uses: actions/upload-artifact@v4
