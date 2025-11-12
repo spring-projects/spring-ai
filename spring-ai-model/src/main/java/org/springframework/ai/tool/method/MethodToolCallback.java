@@ -24,8 +24,10 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -96,6 +98,10 @@ public final class MethodToolCallback implements ToolCallback {
 
 	@Override
 	public String call(String toolInput, @Nullable ToolContext toolContext) {
+		return callReactive(toolInput, toolContext).block();
+	}
+
+	public Mono<String> callReactive(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
 		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
@@ -106,13 +112,13 @@ public final class MethodToolCallback implements ToolCallback {
 
 		Object[] methodArguments = buildMethodArguments(toolArguments, toolContext);
 
-		Object result = callMethod(methodArguments);
+		return callMethod(methodArguments).map(result -> {
+			logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
 
-		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
+			Type returnType = this.toolMethod.getGenericReturnType();
 
-		Type returnType = this.toolMethod.getGenericReturnType();
-
-		return this.toolCallResultConverter.convert(result, returnType);
+			return this.toolCallResultConverter.convert(result, returnType);
+		});
 	}
 
 	private void validateToolContextSupport(@Nullable ToolContext toolContext) {
@@ -155,15 +161,16 @@ public final class MethodToolCallback implements ToolCallback {
 		return JsonParser.fromJson(json, type);
 	}
 
-	@Nullable
-	private Object callMethod(Object[] methodArguments) {
+	private Mono<Object> callMethod(Object[] methodArguments) {
 		if (isObjectNotPublic() || isMethodNotPublic()) {
 			this.toolMethod.setAccessible(true);
 		}
 
-		Object result;
+		final Mono<Object> result;
 		try {
-			result = this.toolMethod.invoke(this.toolObject, methodArguments);
+			result = Publisher.class.isAssignableFrom(this.toolMethod.getReturnType())
+					? Mono.from((Publisher<Object>) this.toolMethod.invoke(this.toolObject, methodArguments))
+					: Mono.justOrEmpty(this.toolMethod.invoke(this.toolObject, methodArguments));
 		}
 		catch (IllegalAccessException ex) {
 			throw new IllegalStateException("Could not access method: " + ex.getMessage(), ex);
