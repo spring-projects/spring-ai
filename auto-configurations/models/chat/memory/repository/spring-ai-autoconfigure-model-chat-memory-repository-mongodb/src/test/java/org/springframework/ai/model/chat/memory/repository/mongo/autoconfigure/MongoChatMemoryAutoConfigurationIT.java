@@ -37,7 +37,7 @@ import org.springframework.test.context.TestPropertySource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = { MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-		MongoChatMemoryAutoConfiguration.class, MongoChatMemoryIndexCreator.class })
+		MongoChatMemoryAutoConfiguration.class, MongoChatMemoryIndexCreatorAutoConfiguration.class })
 @TestPropertySource(properties = { "spring.ai.chat.memory.repository.mongo.create-indices=true" })
 class MongoChatMemoryAutoConfigurationIT {
 
