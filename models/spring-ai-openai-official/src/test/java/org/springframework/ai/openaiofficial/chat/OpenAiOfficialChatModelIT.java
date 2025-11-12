@@ -16,11 +16,10 @@
 
 package org.springframework.ai.openaiofficial.chat;
 
+import com.openai.models.ReasoningEffort;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -221,7 +220,11 @@ public class OpenAiOfficialChatModelIT {
 
 	@Test
 	void streamingWithTokenUsage() {
-		var promptOptions = OpenAiOfficialChatOptions.builder().streamUsage(true).reasoningEffort("0").seed(1).build();
+		var promptOptions = OpenAiOfficialChatOptions.builder()
+			.streamUsage(true)
+			.reasoningEffort(ReasoningEffort.MINIMAL.toString())
+			.seed(1)
+			.build();
 
 		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
@@ -451,7 +454,7 @@ public class OpenAiOfficialChatModelIT {
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.streamUsage(true)
-			.reasoningEffort("0")
+			.reasoningEffort(ReasoningEffort.MINIMAL.toString())
 			.build();
 
 		Flux<ChatResponse> response = this.chatModel.stream(new Prompt(messages, promptOptions));
@@ -462,8 +465,8 @@ public class OpenAiOfficialChatModelIT {
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
 		assertThat(usage.getPromptTokens()).isGreaterThan(100).isLessThan(250);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(200).isLessThan(500);
-		assertThat(usage.getTotalTokens()).isGreaterThan(300).isLessThan(750);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(100).isLessThan(300);
+		assertThat(usage.getTotalTokens()).isGreaterThan(250).isLessThan(500);
 	}
 
 	@Test
