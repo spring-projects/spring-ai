@@ -133,8 +133,10 @@ public class OpenAiOfficialChatModelIT {
 		CountDownLatch latch = new CountDownLatch(1);
 
 		Flux<ChatResponse> chatResponseFlux = this.chatModel.stream(prompt).doOnNext(chatResponse -> {
-			String responseContent = chatResponse.getResults().get(0).getOutput().getText();
-			answer.append(responseContent);
+			if (!chatResponse.getResults().isEmpty()) {
+				String responseContent = chatResponse.getResults().get(0).getOutput().getText();
+				answer.append(responseContent);
+			}
 		}).doOnComplete(() -> {
 			logger.info(answer.toString());
 			latch.countDown();

@@ -21,6 +21,7 @@ import org.springframework.ai.document.MetadataMode;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 
+import static org.springframework.ai.openaiofficial.OpenAiOfficialChatOptions.DEFAULT_CHAT_MODEL;
 import static org.springframework.ai.openaiofficial.OpenAiOfficialEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
 import static org.springframework.ai.openaiofficial.OpenAiOfficialImageOptions.DEFAULT_IMAGE_MODEL;
 
@@ -49,4 +50,9 @@ public class OpenAiOfficialTestConfigurationWithObservability {
 				observationRegistry);
 	}
 
+	@Bean
+	public OpenAiOfficialChatModel openAiChatModel(TestObservationRegistry observationRegistry) {
+		return new OpenAiOfficialChatModel(OpenAiOfficialChatOptions.builder().model(DEFAULT_CHAT_MODEL).build(),
+				observationRegistry);
+	}
 }
