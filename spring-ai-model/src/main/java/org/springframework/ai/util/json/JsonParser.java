@@ -34,23 +34,54 @@ import org.springframework.util.ClassUtils;
 /**
  * Utilities to perform parsing operations between JSON and Java.
  */
-public final class JsonParser {
+public class JsonParser {
 
-	private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+	// Static mapper for backward compatibility
+	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = JsonMapper.builder()
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 		.addModules(JacksonUtils.instantiateAvailableModules())
 		.build();
 
+	// Spring-managed mapper (when available)
+	private static volatile ObjectMapper CONFIGURED_OBJECT_MAPPER = null;
+
+	// Instance mapper for bean usage
+	private final ObjectMapper objectMapper;
+
+	// Private constructor for utility class usage
 	private JsonParser() {
+		this.objectMapper = null;
+	}
+
+	// Constructor for Spring bean
+	public JsonParser(ObjectMapper objectMapper) {
+		this.objectMapper = objectMapper;
+	}
+
+	/**
+	 * Returns the active ObjectMapper instance. Priority: Spring-configured > Default
+	 * static
+	 */
+	private static ObjectMapper getActiveMapper() {
+		return CONFIGURED_OBJECT_MAPPER != null ? CONFIGURED_OBJECT_MAPPER : DEFAULT_OBJECT_MAPPER;
+	}
+
+	/**
+	 * Sets the Spring-managed ObjectMapper. Called by auto-configuration.
+	 */
+	public static void setConfiguredObjectMapper(ObjectMapper objectMapper) {
+		CONFIGURED_OBJECT_MAPPER = objectMapper;
 	}
 
 	/**
 	 * Returns a Jackson {@link ObjectMapper} instance tailored for JSON-parsing
 	 * operations for tool calling and structured output.
+	 * @deprecated Use dependency injection instead
 	 */
+	@Deprecated(since = "1.1.0", forRemoval = false)
 	public static ObjectMapper getObjectMapper() {
-		return OBJECT_MAPPER;
+		return getActiveMapper();
 	}
 
 	/**
@@ -61,7 +92,7 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return OBJECT_MAPPER.readValue(json, type);
+			return getActiveMapper().readValue(json, type);
 		}
 		catch (JsonProcessingException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getName()), ex);
@@ -76,7 +107,8 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return OBJECT_MAPPER.readValue(json, OBJECT_MAPPER.constructType(type));
+			ObjectMapper mapper = getActiveMapper();
+			return mapper.readValue(json, mapper.constructType(type));
 		}
 		catch (JsonProcessingException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getTypeName()), ex);
@@ -91,7 +123,7 @@ public final class JsonParser {
 		Assert.notNull(type, "type cannot be null");
 
 		try {
-			return OBJECT_MAPPER.readValue(json, type);
+			return getActiveMapper().readValue(json, type);
 		}
 		catch (JsonProcessingException ex) {
 			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getType().getTypeName()),
@@ -104,7 +136,7 @@ public final class JsonParser {
 	 */
 	private static boolean isValidJson(String input) {
 		try {
-			OBJECT_MAPPER.readTree(input);
+			getActiveMapper().readTree(input);
 			return true;
 		}
 		catch (JsonProcessingException e) {
@@ -120,7 +152,7 @@ public final class JsonParser {
 			return str;
 		}
 		try {
-			return OBJECT_MAPPER.writeValueAsString(object);
+			return getActiveMapper().writeValueAsString(object);
 		}
 		catch (JsonProcessingException ex) {
 			throw new IllegalStateException("Conversion from Object to JSON failed", ex);

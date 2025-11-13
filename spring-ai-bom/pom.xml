@@ -490,6 +490,13 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Json Parser autoconfiguration-->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-json-parser</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Chat client autoconfiguration -->
 
 			<dependency>

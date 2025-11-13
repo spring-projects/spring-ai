@@ -67,7 +67,8 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class ModelOptionsUtils {
 
-	public static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
+	// Default static mapper (fallback)
+	private static final ObjectMapper DEFAULT_OBJECT_MAPPER = JsonMapper.builder()
 		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 		.addModules(JacksonUtils.instantiateAvailableModules())
@@ -78,7 +79,33 @@ public abstract class ModelOptionsUtils {
 		// Configure coercion for empty strings to null for Enum types
 		// This fixes the issue where empty string finish_reason values cause
 		// deserialization failures
-		OBJECT_MAPPER.coercionConfigFor(Enum.class).setCoercion(CoercionInputShape.EmptyString, CoercionAction.AsNull);
+		DEFAULT_OBJECT_MAPPER.coercionConfigFor(Enum.class)
+			.setCoercion(CoercionInputShape.EmptyString, CoercionAction.AsNull);
+	}
+
+	// Spring-managed mapper (when available)
+	private static volatile ObjectMapper CONFIGURED_OBJECT_MAPPER = null;
+
+	/**
+	 * The default ObjectMapper for backward compatibility.
+	 * @deprecated Use dependency injection instead of accessing the ObjectMapper directly
+	 */
+	@Deprecated(since = "1.1.0", forRemoval = false)
+	public static final ObjectMapper OBJECT_MAPPER = DEFAULT_OBJECT_MAPPER;
+
+	/**
+	 * Returns the active ObjectMapper instance. Priority: Spring-configured > Default
+	 * static
+	 */
+	private static ObjectMapper getActiveMapper() {
+		return CONFIGURED_OBJECT_MAPPER != null ? CONFIGURED_OBJECT_MAPPER : DEFAULT_OBJECT_MAPPER;
+	}
+
+	/**
+	 * Sets the Spring-managed ObjectMapper. Called by auto-configuration.
+	 */
+	public static void setConfiguredObjectMapper(ObjectMapper objectMapper) {
+		CONFIGURED_OBJECT_MAPPER = objectMapper;
 	}
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
@@ -98,7 +125,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> jsonToMap(String json) {
-		return jsonToMap(json, OBJECT_MAPPER);
+		return jsonToMap(json, getActiveMapper());
 	}
 
 	/**
@@ -126,7 +153,7 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static <T> T jsonToObject(String json, Class<T> type) {
 		try {
-			return OBJECT_MAPPER.readValue(json, type);
+			return getActiveMapper().readValue(json, type);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to json: " + json, e);
@@ -140,7 +167,7 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static String toJsonString(Object object) {
 		try {
-			return OBJECT_MAPPER.writeValueAsString(object);
+			return getActiveMapper().writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -154,7 +181,7 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static String toJsonStringPrettyPrinter(Object object) {
 		try {
-			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+			return getActiveMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -231,8 +258,9 @@ public abstract class ModelOptionsUtils {
 			return new HashMap<>();
 		}
 		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
+			ObjectMapper mapper = getActiveMapper();
+			String json = mapper.writeValueAsString(source);
+			return mapper.readValue(json, new TypeReference<Map<String, Object>>() {
 
 			})
 				.entrySet()
@@ -254,8 +282,9 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static <T> T mapToClass(Map<String, Object> source, Class<T> clazz) {
 		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, clazz);
+			ObjectMapper mapper = getActiveMapper();
+			String json = mapper.writeValueAsString(source);
+			return mapper.readValue(json, clazz);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
