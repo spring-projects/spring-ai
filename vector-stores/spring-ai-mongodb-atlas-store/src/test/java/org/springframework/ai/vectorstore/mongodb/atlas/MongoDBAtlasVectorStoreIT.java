@@ -340,7 +340,10 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 			assertThat(savedDocument).isNotNull();
 			assertThat(savedDocument.containsKey(customPathName)).isTrue();
 			assertThat(savedDocument.get(customPathName)).isNotNull();
-			assertThat(savedDocument.containsKey("embedding")).isFalse(); // Should not have default field name
+			assertThat(savedDocument.containsKey("embedding")).isFalse(); // Should not
+																			// have
+																			// default
+																			// field name
 
 			// Verify similarity search still works with custom pathName
 			List<Document> results = vectorStore
