@@ -68,7 +68,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 	private Double presencePenalty;
 
-	private ResponseFormatJsonSchema responseFormatJsonSchema;
+	private OpenAiOfficialChatResponseFormat responseFormat;
 
 	private ResponseCreateParams.StreamOptions streamOptions;
 
@@ -185,12 +185,12 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 		this.presencePenalty = presencePenalty;
 	}
 
-	public ResponseFormatJsonSchema getResponseFormatJsonSchema() {
-		return this.responseFormatJsonSchema;
+	public OpenAiOfficialChatResponseFormat getResponseFormat() {
+		return this.responseFormat;
 	}
 
-	public void setResponseFormatJsonSchema(ResponseFormatJsonSchema responseFormatJsonSchema) {
-		this.responseFormatJsonSchema = responseFormatJsonSchema;
+	public void setResponseFormat(OpenAiOfficialChatResponseFormat responseFormat) {
+		this.responseFormat = responseFormat;
 	}
 
 	public ResponseCreateParams.StreamOptions getStreamOptions() {
@@ -402,7 +402,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 				&& Objects.equals(topLogprobs, options.topLogprobs) && Objects.equals(maxTokens, options.maxTokens)
 				&& Objects.equals(n, options.n) && Objects.equals(outputAudio, options.outputAudio)
 				&& Objects.equals(presencePenalty, options.presencePenalty)
-				&& Objects.equals(responseFormatJsonSchema, options.responseFormatJsonSchema)
+				&& Objects.equals(responseFormat, options.responseFormat)
 				&& Objects.equals(streamOptions, options.streamOptions)
 				&& Objects.equals(streamUsage, options.streamUsage) && Objects.equals(seed, options.seed)
 				&& Objects.equals(stop, options.stop) && Objects.equals(temperature, options.temperature)
@@ -420,7 +420,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 	@Override
 	public int hashCode() {
 		return Objects.hash(frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, outputAudio,
-				presencePenalty, responseFormatJsonSchema, streamOptions, streamUsage, seed, stop, temperature, topP, tools,
+				presencePenalty, responseFormat, streamOptions, streamUsage, seed, stop, temperature, topP, tools,
 				toolChoice, user, parallelToolCalls, store, metadata, reasoningEffort, verbosity, serviceTier,
 				toolCallbacks, toolNames, internalToolExecutionEnabled, httpHeaders, toolContext);
 	}
@@ -429,8 +429,8 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 	public String toString() {
 		return "OpenAiOfficialChatOptions{" + "frequencyPenalty=" + frequencyPenalty + ", logitBias=" + logitBias
 				+ ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs + ", maxTokens=" + maxTokens + ", n=" + n
-				+ ", outputAudio=" + outputAudio + ", presencePenalty=" + presencePenalty + ", responseFormatJsonSchema="
-				+ responseFormatJsonSchema + ", streamOptions=" + streamOptions + ", streamUsage=" + streamUsage + ", seed="
+				+ ", outputAudio=" + outputAudio + ", presencePenalty=" + presencePenalty + ", responseFormat="
+				+ responseFormat + ", streamOptions=" + streamOptions + ", streamUsage=" + streamUsage + ", seed="
 				+ seed + ", stop=" + stop + ", temperature=" + temperature + ", topP=" + topP + ", tools=" + tools
 				+ ", toolChoice=" + toolChoice + ", user='" + user + '\'' + ", parallelToolCalls=" + parallelToolCalls
 				+ ", store=" + store + ", metadata=" + metadata + ", reasoningEffort='" + reasoningEffort + '\''
@@ -455,7 +455,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			this.options.setN(fromOptions.getN());
 			this.options.setOutputAudio(fromOptions.getOutputAudio());
 			this.options.setPresencePenalty(fromOptions.getPresencePenalty());
-			this.options.setResponseFormatJsonSchema(fromOptions.getResponseFormatJsonSchema());
+			this.options.setResponseFormat(fromOptions.getResponseFormat());
 			this.options.setStreamOptions(fromOptions.getStreamOptions());
 			this.options.setStreamUsage(fromOptions.getStreamUsage());
 			this.options.setSeed(fromOptions.getSeed());
@@ -514,8 +514,8 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			if (from.getPresencePenalty() != null) {
 				this.options.setPresencePenalty(from.getPresencePenalty());
 			}
-			if (from.getResponseFormatJsonSchema() != null) {
-				this.options.setResponseFormatJsonSchema(from.getResponseFormatJsonSchema());
+			if (from.getResponseFormat() != null) {
+				this.options.setResponseFormat(from.getResponseFormat());
 			}
 			if (from.getStreamOptions() != null) {
 				this.options.setStreamOptions(from.getStreamOptions());
@@ -649,8 +649,8 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			return this;
 		}
 
-		public Builder responseFormatJsonSchema(ResponseFormatJsonSchema responseFormatJsonSchema) {
-			this.options.setResponseFormatJsonSchema(responseFormatJsonSchema);
+		public Builder responseFormat(OpenAiOfficialChatResponseFormat responseFormat) {
+			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 

@@ -22,6 +22,9 @@ import com.openai.core.JsonValue;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
+import com.openai.models.ResponseFormatJsonObject;
+import com.openai.models.ResponseFormatJsonSchema;
+import com.openai.models.ResponseFormatText;
 import com.openai.models.chat.completions.*;
 import com.openai.models.completions.CompletionUsage;
 import io.micrometer.observation.Observation;
@@ -703,8 +706,33 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		if (requestOptions.getPresencePenalty() != null) {
 			builder.presencePenalty(requestOptions.getPresencePenalty());
 		}
-		if (requestOptions.getResponseFormatJsonSchema() != null) {
-			builder.responseFormat(requestOptions.getResponseFormatJsonSchema());
+		if (requestOptions.getResponseFormat() != null) {
+			OpenAiOfficialChatResponseFormat responseFormat = requestOptions.getResponseFormat();
+			if (responseFormat.getType().equals(OpenAiOfficialChatResponseFormat.Type.TEXT)) {
+				builder.responseFormat(ResponseFormatText.builder().build());
+			} else if (responseFormat.getType().equals(OpenAiOfficialChatResponseFormat.Type.JSON_OBJECT)) {
+				builder.responseFormat(ResponseFormatJsonObject.builder().build());
+			} else if (responseFormat.getType().equals(OpenAiOfficialChatResponseFormat.Type.JSON_SCHEMA)) {
+				String jsonSchemaString = responseFormat.getJsonSchema() != null ? responseFormat.getJsonSchema() : "";
+				try {
+					com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+					ResponseFormatJsonSchema.JsonSchema.Builder jsonSchemaBuilder = ResponseFormatJsonSchema.JsonSchema.builder();
+					jsonSchemaBuilder.name("json_schema");
+					jsonSchemaBuilder.strict(true);
+
+					ResponseFormatJsonSchema.JsonSchema.Schema schema = mapper.readValue(jsonSchemaString, ResponseFormatJsonSchema.JsonSchema.Schema.class);
+
+					jsonSchemaBuilder.schema(schema);
+
+					builder.responseFormat(ResponseFormatJsonSchema.builder()
+							.jsonSchema(jsonSchemaBuilder.build())
+							.build());
+				} catch (Exception e) {
+					throw new IllegalArgumentException("Failed to parse JSON schema: " + jsonSchemaString, e);
+				}
+			} else {
+				throw new IllegalArgumentException("Unsupported response format type: " + responseFormat.getType());
+			}
 		}
 		if (requestOptions.getSeed() != null) {
 			builder.seed(requestOptions.getSeed());

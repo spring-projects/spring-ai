@@ -55,4 +55,5 @@ public class OpenAiOfficialTestConfigurationWithObservability {
 		return new OpenAiOfficialChatModel(OpenAiOfficialChatOptions.builder().model(DEFAULT_CHAT_MODEL).build(),
 				observationRegistry);
 	}
+
 }

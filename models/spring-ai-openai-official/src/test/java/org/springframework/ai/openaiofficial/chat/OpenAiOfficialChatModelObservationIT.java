@@ -43,8 +43,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
 import static org.springframework.ai.openaiofficial.OpenAiOfficialChatOptions.DEFAULT_CHAT_MODEL;
 
 /**
- * Integration tests for observation instrumentation in
- * {@link OpenAiOfficialChatModel}.
+ * Integration tests for observation instrumentation in {@link OpenAiOfficialChatModel}.
  *
  * @author Julien Dubois
  */
@@ -66,9 +65,7 @@ public class OpenAiOfficialChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 
-		var options = OpenAiOfficialChatOptions.builder()
-			.model(DEFAULT_CHAT_MODEL)
-			.build();
+		var options = OpenAiOfficialChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
@@ -83,10 +80,7 @@ public class OpenAiOfficialChatModelObservationIT {
 
 	@Test
 	void observationForStreamingChatOperation() {
-		var options = OpenAiOfficialChatOptions.builder()
-			.model(DEFAULT_CHAT_MODEL)
-			.streamUsage(true)
-			.build();
+		var options = OpenAiOfficialChatOptions.builder().model(DEFAULT_CHAT_MODEL).streamUsage(true).build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
@@ -117,9 +111,9 @@ public class OpenAiOfficialChatModelObservationIT {
 			.that()
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI_OFFICIAL.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					DEFAULT_CHAT_MODEL)
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					AiProvider.OPENAI_OFFICIAL.value())
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), DEFAULT_CHAT_MODEL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
@@ -132,4 +126,5 @@ public class OpenAiOfficialChatModelObservationIT {
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}
+
 }
