@@ -467,15 +467,4 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	}
 
-	/**
-	 * The representation of {@link Document} along with its embedding.
-	 *
-	 * @param id The id of the document
-	 * @param content The content of the document
-	 * @param metadata The metadata of the document
-	 * @param embedding The vectors representing the content of the document
-	 */
-	public record MongoDBDocument(String id, String content, Map<String, Object> metadata, float[] embedding) {
-	}
-
 }
