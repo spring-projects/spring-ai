@@ -34,6 +34,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.retry.support.RetryTemplate;
@@ -46,6 +47,7 @@ import org.springframework.retry.support.RetryTemplate;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
+ * @author Nicolas Krier
  * @since 0.8.0
  */
 @AutoConfiguration(after = { OllamaApiAutoConfiguration.class, ToolCallingAutoConfiguration.class })
@@ -82,6 +84,12 @@ public class OllamaChatAutoConfiguration {
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
+	}
+
+	@Bean
+	@ConfigurationPropertiesBinding
+	public static ThinkOptionConverter thinkOptionConverter() {
+		return new ThinkOptionConverter();
 	}
 
 }
