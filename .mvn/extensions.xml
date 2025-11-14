@@ -21,4 +21,9 @@
       <artifactId>maven-profiler</artifactId>
       <version>3.2</version>
     </extension>
+	<extension>
+		<groupId>org.apache.maven.extensions</groupId>
+		<artifactId>maven-build-cache-extension</artifactId>
+		<version>1.2.1</version>
+	</extension>
 </extensions>
