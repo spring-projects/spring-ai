@@ -76,6 +76,7 @@ import org.springframework.util.CollectionUtils;
  * backed by {@link DeepSeekApi}.
  *
  * @author Geng Rong
+ * @last Updated By : Kuntal Maity
  */
 public class DeepSeekChatModel implements ChatModel {
 
@@ -193,8 +194,11 @@ public class DeepSeekChatModel implements ChatModel {
 				}).toList();
 
 				// Current usage
-				DeepSeekApi.Usage usage = completionEntity.getBody().usage();
-				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
+				DeepSeekApi.Usage usage = null;
+				if (completionEntity != null && completionEntity.getBody() != null) {
+					usage = chatCompletion.usage();
+				}
+				Usage currentChatResponseUsage = toUsageOrEmpty(usage);
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 						previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
@@ -216,6 +220,8 @@ public class DeepSeekChatModel implements ChatModel {
 					.build();
 			}
 			else {
+				// Reset tool choice to AUTO to prevent forcing repeated tool calls.
+				resetToolChoiceToAuto(prompt);
 				// Send the tool execution result back to the model.
 				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 						response);
@@ -272,7 +278,7 @@ public class DeepSeekChatModel implements ChatModel {
 							return buildGeneration(choice, metadata);
 						}).toList();
 						DeepSeekApi.Usage usage = chatCompletion2.usage();
-						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+						Usage currentUsage = toUsageOrEmpty(usage);
 						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 
 						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
@@ -305,6 +311,8 @@ public class DeepSeekChatModel implements ChatModel {
 									.build());
 						}
 						else {
+							// Reset tool choice to AUTO to prevent forcing repeated tool calls.
+							resetToolChoiceToAuto(prompt);
 							// Send the tool execution result back to the model.
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									response);
@@ -388,6 +396,28 @@ public class DeepSeekChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(DeepSeekApi.Usage usage) {
 		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
+	}
+
+	/**
+	 * Convert {@link DeepSeekApi.Usage} to a non-null {@link Usage} instance. Returns
+	 * {@link EmptyUsage} when the given usage is null.
+	 * @param usage the API usage, can be null
+	 * @return non-null {@link Usage}
+	 * @author Kuntal Maity
+	 */
+	private Usage toUsageOrEmpty(DeepSeekApi.Usage usage) {
+		return (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+	}
+
+	/**
+	 * Reset tool choice to AUTO to prevent forcing repeated tool calls.
+	 * @param prompt the prompt that carries the options
+	 * @author Kuntal Maity
+	 */
+	private void resetToolChoiceToAuto(Prompt prompt) {
+		if (prompt.getOptions() instanceof DeepSeekChatOptions options) {
+			options.setToolChoice(ChatCompletionRequest.ToolChoiceBuilder.AUTO);
+		}
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
