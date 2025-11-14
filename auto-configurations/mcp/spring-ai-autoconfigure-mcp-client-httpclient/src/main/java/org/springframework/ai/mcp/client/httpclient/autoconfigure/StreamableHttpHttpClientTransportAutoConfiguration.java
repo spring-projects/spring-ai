@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.httpclient.autoconfigure;
 
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.log.LogAccessor;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Auto-configuration for Streamable HTTP client transport in the Model Context Protocol
@@ -115,6 +117,17 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 				.endpoint(streamableHttpEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
 				.jsonMapper(new JacksonMcpJsonMapper(objectMapper));
+
+			Map<String, List<String>> headers = serverParameters.getValue().headers();
+			if (!CollectionUtils.isEmpty(headers)) {
+				HttpRequest.Builder requestBuilder = HttpRequest.newBuilder();
+				for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
+					for (String value : entry.getValue()) {
+						requestBuilder = requestBuilder.header(entry.getKey(), value);
+					}
+				}
+				transportBuilder = transportBuilder.requestBuilder(requestBuilder);
+			}
 
 			asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
 			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);

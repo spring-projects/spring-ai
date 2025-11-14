@@ -46,7 +46,7 @@ class DockerMcpGatewayContainerConnectionDetailsFactoryIT {
 	@Test
 	void test() {
 		assertThat(this.connectionDetails.getConnections()).containsEntry("gateway",
-				new McpSseClientProperties.SseParameters(MCP_GATEWAY.getEndpoint(), "/sse"));
+				new McpSseClientProperties.SseParameters(MCP_GATEWAY.getEndpoint(), "/sse", null));
 	}
 
 	@Configuration(proxyBeanMethods = false)
