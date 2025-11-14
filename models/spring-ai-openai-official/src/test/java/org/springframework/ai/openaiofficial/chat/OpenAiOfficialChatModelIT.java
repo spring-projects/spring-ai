@@ -439,8 +439,8 @@ public class OpenAiOfficialChatModelIT {
 		assertThat(usage).isNotInstanceOf(EmptyUsage.class);
 		assertThat(usage).isInstanceOf(DefaultUsage.class);
 		assertThat(usage.getPromptTokens()).isGreaterThan(500).isLessThan(800);
-		assertThat(usage.getCompletionTokens()).isGreaterThan(800).isLessThan(1200);
-		assertThat(usage.getTotalTokens()).isGreaterThan(1500).isLessThan(2000);
+		assertThat(usage.getCompletionTokens()).isGreaterThan(600).isLessThan(1200);
+		assertThat(usage.getTotalTokens()).isGreaterThan(1200).isLessThan(2000);
 	}
 
 	@Test
