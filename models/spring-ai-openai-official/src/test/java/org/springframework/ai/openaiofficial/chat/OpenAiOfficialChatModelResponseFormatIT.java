@@ -21,9 +21,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openai.models.ResponseFormatJsonSchema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -89,7 +87,7 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchema() throws JsonMappingException, JsonProcessingException {
+	void jsonSchema() {
 
 		var jsonSchema = """
 				{
@@ -160,9 +158,6 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 				}
 				""";
 
-		ResponseFormatJsonSchema.JsonSchema.Schema responseSchema = MAPPER.readValue(jsonSchema,
-				ResponseFormatJsonSchema.JsonSchema.Schema.class);
-
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiOfficialChatOptions.builder()
 					.model(DEFAULT_CHAT_MODEL)
@@ -181,7 +176,7 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchemaBeanConverter() throws JsonMappingException, JsonProcessingException {
+	void jsonSchemaBeanConverter() {
 
 		@JsonPropertyOrder({ "steps", "final_answer" })
 		record MathReasoning(@JsonProperty(required = true, value = "steps") Steps steps,
