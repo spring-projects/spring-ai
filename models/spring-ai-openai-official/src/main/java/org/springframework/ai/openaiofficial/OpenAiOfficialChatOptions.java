@@ -17,7 +17,6 @@
 package org.springframework.ai.openaiofficial;
 
 import com.openai.models.FunctionDefinition;
-import com.openai.models.ResponseFormatJsonSchema;
 import com.openai.models.chat.completions.ChatCompletionAudioParam;
 import com.openai.models.chat.completions.ChatCompletionToolChoiceOption;
 import com.openai.models.responses.ResponseCreateParams;
@@ -68,7 +67,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 	private Double presencePenalty;
 
-	private OpenAiOfficialChatResponseFormat responseFormat;
+	private OpenAiOfficialChatModel.ResponseFormat responseFormat;
 
 	private ResponseCreateParams.StreamOptions streamOptions;
 
@@ -185,11 +184,11 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 		this.presencePenalty = presencePenalty;
 	}
 
-	public OpenAiOfficialChatResponseFormat getResponseFormat() {
+	public OpenAiOfficialChatModel.ResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(OpenAiOfficialChatResponseFormat responseFormat) {
+	public void setResponseFormat(OpenAiOfficialChatModel.ResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
@@ -649,7 +648,7 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 			return this;
 		}
 
-		public Builder responseFormat(OpenAiOfficialChatResponseFormat responseFormat) {
+		public Builder responseFormat(OpenAiOfficialChatModel.ResponseFormat responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
