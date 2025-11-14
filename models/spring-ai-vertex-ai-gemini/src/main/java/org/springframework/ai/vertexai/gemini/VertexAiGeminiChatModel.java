@@ -725,6 +725,9 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		if (options.getTopK() != null) {
 			generationConfigBuilder.setTopK(options.getTopK());
 		}
+		if (options.getSeed() != null) {
+			generationConfigBuilder.setSeed(options.getSeed());
+		}
 		if (options.getTopP() != null) {
 			generationConfigBuilder.setTopP(options.getTopP().floatValue());
 		}
