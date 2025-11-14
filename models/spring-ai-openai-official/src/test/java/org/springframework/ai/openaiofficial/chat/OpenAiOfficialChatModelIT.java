@@ -126,7 +126,7 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void streamCompletenessTest() throws InterruptedException {
 		UserMessage userMessage = new UserMessage(
-				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any.");
+				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any. Print the full list here, one after another.");
 		Prompt prompt = new Prompt(List.of(userMessage));
 
 		StringBuilder answer = new StringBuilder();
@@ -366,7 +366,7 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -387,12 +387,11 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = OpenAiOfficialChatOptions.builder()
-			// .withModel(OpenAiApi.ChatModel.GPT_4_TURBO_PREVIEW.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -409,6 +408,7 @@ public class OpenAiOfficialChatModelIT {
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
+
 		logger.info("Response: {}", content);
 
 		assertThat(content).containsAnyOf("30.0", "30");
@@ -419,7 +419,7 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void functionCallUsageTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -446,7 +446,7 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void streamFunctionCallUsageTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris?");
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
