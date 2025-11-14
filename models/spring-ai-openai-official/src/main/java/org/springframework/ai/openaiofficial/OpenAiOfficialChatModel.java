@@ -707,12 +707,12 @@ public class OpenAiOfficialChatModel implements ChatModel {
 			builder.presencePenalty(requestOptions.getPresencePenalty());
 		}
 		if (requestOptions.getResponseFormat() != null) {
-			OpenAiOfficialChatResponseFormat responseFormat = requestOptions.getResponseFormat();
-			if (responseFormat.getType().equals(OpenAiOfficialChatResponseFormat.Type.TEXT)) {
+			ResponseFormat responseFormat = requestOptions.getResponseFormat();
+			if (responseFormat.getType().equals(ResponseFormat.Type.TEXT)) {
 				builder.responseFormat(ResponseFormatText.builder().build());
-			} else if (responseFormat.getType().equals(OpenAiOfficialChatResponseFormat.Type.JSON_OBJECT)) {
+			} else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_OBJECT)) {
 				builder.responseFormat(ResponseFormatJsonObject.builder().build());
-			} else if (responseFormat.getType().equals(OpenAiOfficialChatResponseFormat.Type.JSON_SCHEMA)) {
+			} else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_SCHEMA)) {
 				String jsonSchemaString = responseFormat.getJsonSchema() != null ? responseFormat.getJsonSchema() : "";
 				try {
 					com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
@@ -881,4 +881,80 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		this.observationConvention = observationConvention;
 	}
 
+	/**
+	 * Response format (text, json_object, json_schema) for OpenAiOfficialChatModel responses.
+	 *
+	 * @author Julien Dubois
+	 */
+	public static class ResponseFormat {
+
+		private Type type = Type.TEXT;
+
+		private String jsonSchema;
+
+		public Type getType() {
+			return type;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		public String getJsonSchema() {
+			return jsonSchema;
+		}
+
+		public void setJsonSchema(String jsonSchema) {
+			this.jsonSchema = jsonSchema;
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		public static final class Builder {
+
+			private final ResponseFormat responseFormat = new ResponseFormat();
+
+			private Builder() {
+			}
+
+			public Builder type(Type type) {
+				this.responseFormat.setType(type);
+				return this;
+			}
+
+			public Builder jsonSchema(String jsonSchema) {
+				this.responseFormat.setType(Type.JSON_SCHEMA);
+				this.responseFormat.setJsonSchema(jsonSchema);
+				return this;
+			}
+
+			public ResponseFormat build() {
+				return this.responseFormat;
+			}
+
+		}
+
+		public enum Type {
+
+			/**
+			 * Generates a text response. (default)
+			 */
+			TEXT,
+
+			/**
+			 * Enables JSON mode, which guarantees the message the model generates is valid
+			 * JSON.
+			 */
+			JSON_OBJECT,
+
+			/**
+			 * Enables Structured Outputs which guarantees the model will match your supplied
+			 * JSON schema.
+			 */
+			JSON_SCHEMA
+
+		}
+	}
 }
