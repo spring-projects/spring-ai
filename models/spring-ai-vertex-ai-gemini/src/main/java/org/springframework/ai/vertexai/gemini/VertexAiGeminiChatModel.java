@@ -61,7 +61,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -404,9 +403,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
-					Usage currentUsage = (usage != null)
-							? new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount())
-							: new EmptyUsage();
+					Usage currentUsage = new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount());
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 
@@ -520,7 +517,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					GenerateContentResponse.UsageMetadata usage = response.getUsageMetadata();
-					Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+					Usage currentUsage = getDefaultUsage(usage);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 					return Flux.just(chatResponse);

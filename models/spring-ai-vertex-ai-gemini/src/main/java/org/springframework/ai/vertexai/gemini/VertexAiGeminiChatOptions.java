@@ -379,7 +379,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 		if (!(o instanceof VertexAiGeminiChatOptions that)) {
 			return false;
 		}
-		return this.googleSearchRetrieval == that.googleSearchRetrieval
+		return Objects.equals(this.googleSearchRetrieval, that.googleSearchRetrieval)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
 				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.candidateCount, that.candidateCount)

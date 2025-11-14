@@ -306,6 +306,7 @@ class Neo4jChatMemoryRepositoryIT {
 	}
 
 	@Test
+	@SuppressWarnings("DoubleBraceInitialization")
 	void saveAndFindSystemMessageWithMetadata() {
 		var conversationId = UUID.randomUUID().toString();
 		Map<String, Object> customMetadata = Map.of("priority", "high", "source", "test");
