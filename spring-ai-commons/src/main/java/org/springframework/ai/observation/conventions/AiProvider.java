@@ -86,6 +86,11 @@ public enum AiProvider {
 	OPENAI("openai"),
 
 	/**
+	 * AI system provided by Replicate
+	 */
+	REPLICATE("replicate"),
+
+	/**
 	 * AI system provided by Spring AI.
 	 */
 	SPRING_AI("spring_ai"),
