@@ -16,9 +16,15 @@
 
 package org.springframework.ai.model.bedrock.autoconfigure;
 
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.AwsCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.profiles.ProfileFile;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 
@@ -63,7 +69,8 @@ public class BedrockAwsConnectionConfigurationIT {
 	public void autoConfigureWithCustomAWSCredentialAndRegionProvider() {
 		BedrockTestUtils.getContextRunner()
 			.withConfiguration(AutoConfigurations.of(TestAutoConfiguration.class,
-					CustomAwsCredentialsProviderAndAwsRegionProviderAutoConfiguration.class))
+					CustomAwsCredentialsProviderAutoConfiguration.class,
+					CustomAwsRegionProviderAutoConfiguration.class))
 			.run(context -> {
 				var awsCredentialsProvider = context.getBean(AwsCredentialsProvider.class);
 				var awsRegionProvider = context.getBean(AwsRegionProvider.class);
@@ -80,6 +87,30 @@ public class BedrockAwsConnectionConfigurationIT {
 			});
 	}
 
+	@Test
+	public void autoConfigureWithCustomAWSProfileCredentialAndRegionProvider() {
+		BedrockTestUtils.getContextRunner()
+			.withConfiguration(AutoConfigurations.of(TestAutoConfiguration.class,
+					CustomAwsProfileCredentialsProviderAutoConfiguration.class,
+					CustomAwsRegionProviderAutoConfiguration.class))
+			.run(context -> {
+				var awsCredentialsProvider = context.getBean(AwsCredentialsProvider.class);
+				var awsRegionProvider = context.getBean(AwsRegionProvider.class);
+
+				assertThat(awsCredentialsProvider).isNotNull();
+				assertThat(awsRegionProvider).isNotNull();
+
+				assertThat(awsCredentialsProvider).isInstanceOf(ProfileCredentialsProvider.class);
+				// aws sdk2.x does not provide method to get profileName, use reflection
+				// to get
+				Field field = ProfileCredentialsProvider.class.getDeclaredField("profileName");
+				field.setAccessible(true);
+				assertThat(field.get(awsCredentialsProvider)).isEqualTo("CUSTOM_PROFILE_NAME");
+
+				assertThat(awsRegionProvider.getRegion()).isEqualTo(Region.AWS_GLOBAL);
+			});
+	}
+
 	@EnableConfigurationProperties(BedrockAwsConnectionProperties.class)
 	@Import(BedrockAwsConnectionConfiguration.class)
 	static class TestAutoConfiguration {
@@ -87,7 +118,42 @@ public class BedrockAwsConnectionConfigurationIT {
 	}
 
 	@AutoConfiguration
-	static class CustomAwsCredentialsProviderAndAwsRegionProviderAutoConfiguration {
+	static class CustomAwsProfileCredentialsProviderAutoConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean
+		public AwsCredentialsProvider credentialsProvider() {
+			String credentialsPath = "CUSTOM_CREDENTIALS_PATH";
+			String configurationPath = "CUSTOM_CONFIGURATION_PATH";
+			boolean hasCredentials = Files.exists(Paths.get(credentialsPath));
+			boolean hasConfig = Files.exists(Paths.get(configurationPath));
+			ProfileCredentialsProvider.Builder providerBuilder = ProfileCredentialsProvider.builder();
+			if (hasCredentials || hasConfig) {
+				ProfileFile.Aggregator aggregator = ProfileFile.aggregator();
+				if (hasCredentials) {
+					ProfileFile profileFile = ProfileFile.builder()
+						.content(Paths.get(credentialsPath))
+						.type(ProfileFile.Type.CREDENTIALS)
+						.build();
+					aggregator.addFile(profileFile);
+				}
+				if (hasConfig) {
+					ProfileFile configFile = ProfileFile.builder()
+						.content(Paths.get(configurationPath))
+						.type(ProfileFile.Type.CONFIGURATION)
+						.build();
+					aggregator.addFile(configFile);
+				}
+				ProfileFile aggregatedProfileFile = aggregator.build();
+				providerBuilder.profileFile(aggregatedProfileFile);
+			}
+			return providerBuilder.profileName("CUSTOM_PROFILE_NAME").build();
+		}
+
+	}
+
+	@AutoConfiguration
+	static class CustomAwsCredentialsProviderAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
@@ -113,6 +179,11 @@ public class BedrockAwsConnectionConfigurationIT {
 
 			};
 		}
+
+	}
+
+	@AutoConfiguration
+	static class CustomAwsRegionProviderAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
