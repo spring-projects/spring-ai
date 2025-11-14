@@ -245,6 +245,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("prompt_cache_key") String promptCacheKey;
 
 	/**
+	 * Retention policy for the prompt cache. Set to "24h" for extended caching (up to 24 hours).
+	 * Default is "in_memory" (5-10 minutes of inactivity, up to 1 hour).
+	 * <p>
+	 * Extended prompt caching is supported by GPT-5.1, GPT-5, and GPT-4.1 models.
+	 * <a href="https://platform.openai.com/docs/guides/prompt-caching">Learn more</a>.
+	 */
+	private @JsonProperty("prompt_cache_retention") String promptCacheRetention;
+
+	/**
 	 * A stable identifier to help OpenAI detect users violating usage policies.
 	 * Should be a hashed value (e.g., hashed username or email). Replaces the deprecated {@code user} field for safety tracking.
 	 * <a href="https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers">Learn more</a>.
@@ -339,6 +348,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.promptCacheKey(fromOptions.getPromptCacheKey())
 			.safetyIdentifier(fromOptions.getSafetyIdentifier())
 			.extraBody(fromOptions.getExtraBody())
+			.promptCacheRetention(fromOptions.getPromptCacheRetention())
 			.build();
 	}
 
@@ -675,6 +685,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.safetyIdentifier = safetyIdentifier;
 	}
 
+	public String getPromptCacheRetention() {
+		return this.promptCacheRetention;
+	}
+
+	public void setPromptCacheRetention(String promptCacheRetention) {
+		this.promptCacheRetention = promptCacheRetention;
+	}
+
 	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
@@ -688,7 +706,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
 				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.verbosity,
-				this.serviceTier, this.promptCacheKey, this.safetyIdentifier, this.extraBody);
+				this.serviceTier, this.promptCacheKey, this.safetyIdentifier, this.extraBody,
+				this.promptCacheRetention);
 	}
 
 	@Override
@@ -726,7 +745,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.serviceTier, other.serviceTier)
 				&& Objects.equals(this.promptCacheKey, other.promptCacheKey)
 				&& Objects.equals(this.safetyIdentifier, other.safetyIdentifier)
-				&& Objects.equals(this.extraBody, other.extraBody);
+				&& Objects.equals(this.extraBody, other.extraBody)
+				&& Objects.equals(this.promptCacheRetention, other.promptCacheRetention);
 	}
 
 	@Override
@@ -1006,6 +1026,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder extraBody(Map<String, Object> extraBody) {
 			this.options.extraBody = extraBody;
+			return this;
+		}
+
+		public Builder promptCacheRetention(String promptCacheRetention) {
+			this.options.promptCacheRetention = promptCacheRetention;
 			return this;
 		}
 

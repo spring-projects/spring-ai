@@ -43,8 +43,7 @@ class ExtraBodySerializationTest {
 				"gpt-4", // model
 				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
 				null, null, null, null, null, null, null, null, null, null, null, null,
-				Map.of("top_k", 50, "repetition_penalty", 1.1) // extraBody
-		);
+				Map.of("top_k", 50, "repetition_penalty", 1.1), null);
 
 		// Act: Serialize to JSON
 		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
@@ -61,9 +60,7 @@ class ExtraBodySerializationTest {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(), // messages
 				"gpt-4", // model
 				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
-				null, null, null, null, null, null, null, null, null, null, null, null, Map.of() // empty
-		// extraBody
-		);
+				null, null, null, null, null, null, null, null, null, null, null, null, Map.of(), null);
 
 		// Act
 		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
@@ -79,10 +76,7 @@ class ExtraBodySerializationTest {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(), // messages
 				"gpt-4", // model
 				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
-				null, null, null, null, null, null, null, null, null, null, null, null, null // extraBody
-		// =
-		// null
-		);
+				null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 
 		// Act
 		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
@@ -128,8 +122,7 @@ class ExtraBodySerializationTest {
 				"gpt-4", // model
 				null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,
 				null, null, null, null, null, null, null, null, null, null, null, null,
-				Map.of("top_k", 50, "min_p", 0.05, "stop_token_ids", List.of(128001, 128009)) // extraBody
-		);
+				Map.of("top_k", 50, "min_p", 0.05, "stop_token_ids", List.of(128001, 128009)), null);
 
 		// Act: Serialize to JSON
 		String json = this.objectMapper.writeValueAsString(originalRequest);
