@@ -33,7 +33,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.openaiofficial.OpenAiOfficialChatModel;
 import org.springframework.ai.openaiofficial.OpenAiOfficialChatOptions;
-import org.springframework.ai.openaiofficial.OpenAiOfficialChatResponseFormat;
 import org.springframework.ai.openaiofficial.OpenAiOfficialTestConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -73,8 +72,8 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("List 8 planets. Use JSON response",
 				OpenAiOfficialChatOptions.builder()
-					.responseFormat(OpenAiOfficialChatResponseFormat.builder()
-						.type(OpenAiOfficialChatResponseFormat.Type.JSON_OBJECT)
+					.responseFormat(OpenAiOfficialChatModel.ResponseFormat.builder()
+						.type(OpenAiOfficialChatModel.ResponseFormat.Type.JSON_OBJECT)
 						.build())
 					.build());
 
@@ -118,7 +117,10 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiOfficialChatOptions.builder()
 					.model(DEFAULT_CHAT_MODEL)
-					.responseFormat(OpenAiOfficialChatResponseFormat.builder().jsonSchema(jsonSchema).build())
+					.responseFormat(OpenAiOfficialChatModel.ResponseFormat.builder()
+							.type(OpenAiOfficialChatModel.ResponseFormat.Type.JSON_SCHEMA)
+							.jsonSchema(jsonSchema)
+							.build())
 					.build());
 
 		ChatResponse response = this.chatModel.call(prompt);
@@ -164,7 +166,7 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiOfficialChatOptions.builder()
 					.model(DEFAULT_CHAT_MODEL)
-					.responseFormat(OpenAiOfficialChatResponseFormat.builder().jsonSchema(jsonSchema).build())
+					.responseFormat(OpenAiOfficialChatModel.ResponseFormat.builder().jsonSchema(jsonSchema).build())
 					.build());
 
 		ChatResponse response = this.chatModel.call(prompt);
@@ -245,7 +247,7 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiOfficialChatOptions.builder()
 					.model(DEFAULT_CHAT_MODEL)
-					.responseFormat(OpenAiOfficialChatResponseFormat.builder().jsonSchema(jsonSchema1).build())
+					.responseFormat(OpenAiOfficialChatModel.ResponseFormat.builder().jsonSchema(jsonSchema1).build())
 					.build());
 
 		ChatResponse response = this.chatModel.call(prompt);
