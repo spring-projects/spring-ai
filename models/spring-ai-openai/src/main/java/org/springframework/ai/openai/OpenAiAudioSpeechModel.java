@@ -17,6 +17,7 @@
 package org.springframework.ai.openai;
 
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +75,12 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	private final OpenAiAudioApi audioApi;
 
 	/**
+	 * Models that support separate style/tone instructions in the speech request.
+	 */
+	private static final Set<String> INSTRUCTIONS_SUPPORTED_MODELS = Set
+		.of(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.getValue());
+
+	/**
 	 * Initializes a new instance of the OpenAiAudioSpeechModel class with the provided
 	 * OpenAiAudioApi. It uses the model tts-1, response format mp3, voice alloy, and the
 	 * default speed of 1.0.
@@ -112,7 +119,7 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			RetryTemplate retryTemplate) {
 		Assert.notNull(audioApi, "OpenAiAudioApi must not be null");
 		Assert.notNull(options, "OpenAiSpeechOptions must not be null");
-		Assert.notNull(options, "RetryTemplate must not be null");
+		Assert.notNull(retryTemplate, "RetryTemplate must not be null");
 		this.audioApi = audioApi;
 		this.defaultOptions = options;
 		this.retryTemplate = retryTemplate;
@@ -180,6 +187,16 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			.responseFormat(options.getResponseFormat())
 			.speed(options.getSpeed());
 
+		String instructions = options.getInstructions();
+		if (StringUtils.hasText(instructions)) {
+			if (INSTRUCTIONS_SUPPORTED_MODELS.contains(options.getModel())) {
+				requestBuilder.instructions(instructions);
+			}
+			else {
+				logger.warn("Model '{}' does not support 'instructions'; ignoring.", options.getModel());
+			}
+		}
+
 		return requestBuilder.build();
 	}
 
@@ -197,6 +214,8 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		mergedBuilder.responseFormat(
 				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
 		mergedBuilder.speed(source.getSpeed() != null ? source.getSpeed() : target.getSpeed());
+		mergedBuilder
+			.instructions(source.getInstructions() != null ? source.getInstructions() : target.getInstructions());
 
 		return mergedBuilder.build();
 	}
