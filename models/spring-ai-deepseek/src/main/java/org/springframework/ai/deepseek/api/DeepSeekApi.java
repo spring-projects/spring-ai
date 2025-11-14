@@ -94,7 +94,7 @@ public class DeepSeekApi {
 		Consumer<HttpHeaders> finalHeaders = h -> {
 			h.setBearerAuth(apiKey.getValue());
 			h.setContentType(MediaType.APPLICATION_JSON);
-			h.addAll(headers);
+			headers.forEach(h::addAll);
 		};
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
@@ -153,7 +153,7 @@ public class DeepSeekApi {
 
 		return this.webClient.post()
 			.uri(this.getEndpoint(chatRequest))
-			.headers(headers -> headers.addAll(additionalHttpHeader))
+			.headers(headers -> additionalHttpHeader.forEach(headers::addAll))
 			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
 			.retrieve()
 			.bodyToFlux(String.class)
