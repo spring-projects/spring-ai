@@ -169,12 +169,21 @@ import org.springframework.util.StringUtils;
  * <li>NUMERIC: For range queries on numerical data</li>
  * </ul>
  *
+ * <p>
+ * Introspection:
+ * </p>
+ * <ul>
+ * <li>{@link #getMetadataFields()} can be used to inspect which metadata fields are
+ * registered in the store.</li>
+ * </ul>
+ *
  * @author Julien Ruaux
  * @author Christian Tzolov
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author Dongha Koo
  * @see VectorStore
  * @see EmbeddingModel
  * @since 1.0.0
@@ -469,6 +478,14 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		@SuppressWarnings("unchecked")
 		T client = (T) this.jedis;
 		return Optional.of(client);
+	}
+
+	/**
+	 * Returns the metadata fields used by this RedisVectorStore.
+	 * @return list of configured metadata fields
+	 */
+	public List<MetadataField> getMetadataFields() {
+		return this.metadataFields;
 	}
 
 	public static Builder builder(JedisPooled jedis, EmbeddingModel embeddingModel) {
