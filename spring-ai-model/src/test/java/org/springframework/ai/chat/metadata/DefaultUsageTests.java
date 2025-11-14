@@ -183,6 +183,7 @@ public class DefaultUsageTests {
 	}
 
 	@Test
+	@SuppressWarnings("SelfAssertion")
 	void testEqualsAndHashCode() {
 		DefaultUsage usage1 = new DefaultUsage(Integer.valueOf(100), Integer.valueOf(50), Integer.valueOf(150));
 		DefaultUsage usage2 = new DefaultUsage(Integer.valueOf(100), Integer.valueOf(50), Integer.valueOf(150));
