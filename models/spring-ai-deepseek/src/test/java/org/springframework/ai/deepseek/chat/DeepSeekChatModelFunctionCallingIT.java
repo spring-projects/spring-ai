@@ -155,10 +155,9 @@ class DeepSeekChatModelFunctionCallingIT {
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
 		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput());
+		assertThat(chatResponse.getResult().getOutput()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("San Francisco");
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30");
-		// 这个 total token 是第一次 chat 以及 tool call 之后的两次请求 token 总和
 
 		// the total token is first chat and tool call request
 		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(700).isGreaterThan(280);

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.moderation;
 
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -59,7 +60,6 @@ public class OpenAiModerationModelIT extends AbstractIT {
 		assertThat(moderation.getId()).isNotEmpty();
 		assertThat(moderation.getResults()).isNotNull();
 		assertThat(moderation.getResults().size()).isNotZero();
-		System.out.println(moderation.getResults().toString());
 
 		assertThat(moderation.getId()).isNotNull();
 		assertThat(moderation.getModel()).isNotNull();
@@ -68,30 +68,11 @@ public class OpenAiModerationModelIT extends AbstractIT {
 		assertThat(result.isFlagged()).isTrue();
 		Categories categories = result.getCategories();
 		assertThat(categories).isNotNull();
-		assertThat(categories.isSexual()).isNotNull();
-		assertThat(categories.isHate()).isNotNull();
-		assertThat(categories.isHarassment()).isNotNull();
-		assertThat(categories.isSelfHarm()).isNotNull();
-		assertThat(categories.isSexualMinors()).isNotNull();
-		assertThat(categories.isHateThreatening()).isNotNull();
-		assertThat(categories.isViolenceGraphic()).isNotNull();
-		assertThat(categories.isSelfHarmIntent()).isNotNull();
-		assertThat(categories.isSelfHarmInstructions()).isNotNull();
-		assertThat(categories.isHarassmentThreatening()).isNotNull();
 		assertThat(categories.isViolence()).isTrue();
 
 		CategoryScores scores = result.getCategoryScores();
-		assertThat(scores.getSexual()).isNotNull();
-		assertThat(scores.getHate()).isNotNull();
-		assertThat(scores.getHarassment()).isNotNull();
-		assertThat(scores.getSelfHarm()).isNotNull();
-		assertThat(scores.getSexualMinors()).isNotNull();
-		assertThat(scores.getHateThreatening()).isNotNull();
-		assertThat(scores.getViolenceGraphic()).isNotNull();
-		assertThat(scores.getSelfHarmIntent()).isNotNull();
-		assertThat(scores.getSelfHarmInstructions()).isNotNull();
-		assertThat(scores.getHarassmentThreatening()).isNotNull();
-		assertThat(scores.getViolence()).isNotNull();
+		assertThat(scores.getSexual()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getViolence()).isCloseTo(1.0d, Offset.offset(0.2d));
 
 	}
 
@@ -113,7 +94,6 @@ public class OpenAiModerationModelIT extends AbstractIT {
 		assertThat(moderation.getId()).isNotEmpty();
 		assertThat(moderation.getResults()).isNotNull();
 		assertThat(moderation.getResults().size()).isNotZero();
-		System.out.println(moderation.getResults().toString());
 
 		assertThat(moderation.getId()).isNotNull();
 		assertThat(moderation.getModel()).isNotNull();
@@ -134,17 +114,17 @@ public class OpenAiModerationModelIT extends AbstractIT {
 		assertThat(categories.isViolence()).isFalse();
 
 		CategoryScores scores = result.getCategoryScores();
-		assertThat(scores.getSexual()).isNotNull();
-		assertThat(scores.getHate()).isNotNull();
-		assertThat(scores.getHarassment()).isNotNull();
-		assertThat(scores.getSelfHarm()).isNotNull();
-		assertThat(scores.getSexualMinors()).isNotNull();
-		assertThat(scores.getHateThreatening()).isNotNull();
-		assertThat(scores.getViolenceGraphic()).isNotNull();
-		assertThat(scores.getSelfHarmIntent()).isNotNull();
-		assertThat(scores.getSelfHarmInstructions()).isNotNull();
-		assertThat(scores.getHarassmentThreatening()).isNotNull();
-		assertThat(scores.getViolence()).isNotNull();
+		assertThat(scores.getSexual()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getHate()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getHarassment()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getSelfHarm()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getSexualMinors()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getHateThreatening()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getViolenceGraphic()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getSelfHarmIntent()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getSelfHarmInstructions()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getHarassmentThreatening()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getViolence()).isCloseTo(0.0d, Offset.offset(0.1d));
 
 	}
 

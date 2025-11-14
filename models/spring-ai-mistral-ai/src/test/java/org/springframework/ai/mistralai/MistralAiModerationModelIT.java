@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -64,15 +65,8 @@ public class MistralAiModerationModelIT {
 		assertThat(result.isFlagged()).isTrue();
 
 		CategoryScores scores = result.getCategoryScores();
-		assertThat(scores.getSexual()).isNotNull();
-		assertThat(scores.getHate()).isNotNull();
-		assertThat(scores.getViolence()).isNotNull();
-		assertThat(scores.getDangerousAndCriminalContent()).isNotNull();
-		assertThat(scores.getSelfHarm()).isNotNull();
-		assertThat(scores.getHealth()).isNotNull();
-		assertThat(scores.getFinancial()).isNotNull();
-		assertThat(scores.getLaw()).isNotNull();
-		assertThat(scores.getPii()).isNotNull();
+		assertThat(scores.getSexual()).isCloseTo(0.0d, Offset.offset(0.1d));
+		assertThat(scores.getViolence()).isCloseTo(1.0d, Offset.offset(0.2d));
 	}
 
 }

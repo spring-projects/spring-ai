@@ -293,6 +293,7 @@ class OpenAiChatOptionsTests {
 	}
 
 	@Test
+	@SuppressWarnings("SelfAssertion")
 	void testEqualsAndHashCode() {
 		OpenAiChatOptions options1 = OpenAiChatOptions.builder()
 			.model("test-model")

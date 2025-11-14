@@ -229,7 +229,7 @@ class DeepSeekChatModelIT {
 			.build();
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getText().equals(",2,3]}}"));
+		assertThat(response.getResult().getOutput().getText()).isEqualTo(",2,3]}}");
 	}
 
 	/**

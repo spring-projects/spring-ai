@@ -152,6 +152,7 @@ class OpenAiImageOptionsTests {
 	}
 
 	@Test
+	@SuppressWarnings("SelfAssertion")
 	void testEqualsAndHashCode() {
 		OpenAiImageOptions options1 = OpenAiImageOptions.builder()
 			.N(2)

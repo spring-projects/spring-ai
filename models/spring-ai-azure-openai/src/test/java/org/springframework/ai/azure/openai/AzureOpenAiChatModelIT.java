@@ -123,7 +123,7 @@ class AzureOpenAiChatModelIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(counter.get()).isGreaterThan(8).as("More than 8 chuncks because there are 8 planets");
+		assertThat(counter.get()).withFailMessage("More than 8 chunks because there are 8 planets").isGreaterThan(8);
 
 		assertThat(content).contains("Earth", "Mars", "Jupiter");
 	}

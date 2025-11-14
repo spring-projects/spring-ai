@@ -317,7 +317,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 				.collect(Collectors.joining());
 			logger.info("Response: {}", content);
 
-			assertThat(content).isNotEmpty().withFailMessage("Content returned from OpenAI model is empty");
+			assertThat(content).withFailMessage("Content returned from OpenAI model is empty").isNotEmpty();
 			assertThat(content).contains("30", "10", "15");
 
 		});

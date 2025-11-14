@@ -183,6 +183,7 @@ class ZhiPuAiChatOptionsTests {
 	}
 
 	@Test
+	@SuppressWarnings("SelfAssertion")
 	void testEqualsAndHashCode() {
 		ZhiPuAiChatOptions options1 = ZhiPuAiChatOptions.builder()
 			.model("test-model")
