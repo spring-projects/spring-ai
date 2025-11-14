@@ -531,6 +531,64 @@ public class OpenAiApi {
 		GPT_5_CHAT_LATEST("gpt-5-chat-latest"),
 
 		/**
+		 * <b>GPT-5.1</b> is the flagship model for coding and agentic tasks with
+		 * configurable reasoning and non-reasoning effort. It accepts both text and image
+		 * inputs, and produces text and image outputs.
+		 * <p>
+		 * Context window: 400,000 tokens. Max output tokens: 128,000 tokens. Knowledge
+		 * cutoff: September 30, 2024.
+		 * <p>
+		 * Model ID: gpt-5.1
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-5.1">gpt-5.1</a>
+		 */
+		GPT_5_1("gpt-5.1"),
+
+		/**
+		 * <b>GPT-5.1 Codex</b> is a version of GPT-5.1 optimized for agentic coding tasks
+		 * in Codex or similar environments. It's available in the Responses API only and
+		 * the underlying model snapshot will be regularly updated.
+		 * <p>
+		 * Context window: 400,000 tokens. Max output tokens: 128,000 tokens. Knowledge
+		 * cutoff: September 30, 2024.
+		 * <p>
+		 * Model ID: gpt-5.1-codex
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5.1-codex">gpt-5.1-codex</a>
+		 */
+		GPT_5_1_CODEX("gpt-5.1-codex"),
+
+		/**
+		 * <b>GPT-5.1 Codex mini</b> is a smaller, more cost-effective, less-capable
+		 * version of GPT-5.1-Codex. It accepts both text and image inputs, and produces
+		 * text and image outputs.
+		 * <p>
+		 * Context window: 400,000 tokens. Max output tokens: 128,000 tokens. Knowledge
+		 * cutoff: September 30, 2024.
+		 * <p>
+		 * Model ID: gpt-5.1-codex-mini
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5.1-codex-mini">gpt-5.1-codex-mini</a>
+		 */
+		GPT_5_1_CODEX_MINI("gpt-5.1-codex-mini"),
+
+		/**
+		 * <b>GPT-5.1 Chat</b> points to the GPT-5.1 snapshot currently used in ChatGPT.
+		 * It accepts both text and image inputs, and produces text outputs.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: September 30, 2024.
+		 * <p>
+		 * Model ID: gpt-5.1-chat-latest
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5.1-chat-latest">gpt-5.1-chat-latest</a>
+		 */
+		GPT_5_1_CHAT_LATEST("gpt-5.1-chat-latest"),
+
+		/**
 		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
 		 * model. It accepts both text and image inputs, and produces text outputs
 		 * (including Structured Outputs). It is considered the best model for most tasks,
