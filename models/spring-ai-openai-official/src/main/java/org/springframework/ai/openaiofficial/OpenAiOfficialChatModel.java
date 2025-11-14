@@ -607,7 +607,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 					builder.role(JsonValue.from(MessageType.SYSTEM.getValue()));
 				}
 
-				return ChatCompletionMessageParam.ofUser(builder.build());
+				return List.of(ChatCompletionMessageParam.ofUser(builder.build()));
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				var assistantMessage = (AssistantMessage) message;
@@ -636,7 +636,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 					builder.toolCalls(toolCalls);
 				}
 
-				return ChatCompletionMessageParam.ofAssistant(builder.build());
+				return List.of(ChatCompletionMessageParam.ofAssistant(builder.build()));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -646,20 +646,22 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				builder.role(JsonValue.from(MessageType.TOOL.getValue()));
 
 				if (toolMessage.getResponses().isEmpty()) {
-					return ChatCompletionMessageParam.ofTool(builder.build());
+					return List.of(ChatCompletionMessageParam.ofTool(builder.build()));
 				}
-				String callId = toolMessage.getResponses().get(0).id();
-				String callResponse = toolMessage.getResponses().get(0).responseData();
+				return toolMessage.getResponses().stream().map(response -> {
+					String callId = response.id();
+					String callResponse = response.responseData();
 
-				return ChatCompletionMessageParam.ofTool(builder
-								.toolCallId(callId)
-								.content(callResponse)
-						.build());
+					return ChatCompletionMessageParam.ofTool(builder
+							.toolCallId(callId)
+							.content(callResponse)
+							.build());
+				}).toList();
 			}
 			else {
 				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 			}
-		}).toList();
+		}).flatMap(List::stream).toList();
 
 		ChatCompletionCreateParams.Builder builder = ChatCompletionCreateParams.builder();
 
