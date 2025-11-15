@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,11 @@
 
 package org.springframework.ai.model.huggingface.autoconfigure;
 
+import org.springframework.ai.huggingface.HuggingfaceChatOptions;
+import org.springframework.ai.huggingface.api.HuggingfaceApi;
+import org.springframework.ai.huggingface.api.common.HuggingfaceApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Hugging Face chat model.
@@ -25,6 +29,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Josh Long
  * @author Mark Pollack
  * @author Thomas Vitale
+ * @author Myeongdeok Kang
  */
 @ConfigurationProperties(HuggingfaceChatProperties.CONFIG_PREFIX)
 public class HuggingfaceChatProperties {
@@ -32,21 +37,31 @@ public class HuggingfaceChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.huggingface.chat";
 
 	/**
-	 * API Key to authenticate with the Inference Endpoint.
+	 * Enable HuggingFace chat model autoconfiguration.
 	 */
-	private String apiKey;
+	private boolean enabled = true;
 
 	/**
-	 * URL of the Inference Endpoint.
+	 * Base URL for the HuggingFace Chat API (OpenAI-compatible endpoint).
 	 */
-	private String url;
+	private String url = HuggingfaceApiConstants.DEFAULT_CHAT_BASE_URL;
 
-	public String getApiKey() {
-		return this.apiKey;
+	/**
+	 * Client-level HuggingFace chat options. Use this property to configure the model,
+	 * temperature, max_tokens, and other parameters. Null values are ignored, defaulting
+	 * to the API defaults.
+	 */
+	@NestedConfigurationProperty
+	private final HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+		.model(HuggingfaceApi.DEFAULT_CHAT_MODEL)
+		.build();
+
+	public boolean isEnabled() {
+		return this.enabled;
 	}
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
 	}
 
 	public String getUrl() {
@@ -55,6 +70,18 @@ public class HuggingfaceChatProperties {
 
 	public void setUrl(String url) {
 		this.url = url;
+	}
+
+	public String getModel() {
+		return this.options.getModel();
+	}
+
+	public void setModel(String model) {
+		this.options.setModel(model);
+	}
+
+	public HuggingfaceChatOptions getOptions() {
+		return this.options;
 	}
 
 }
