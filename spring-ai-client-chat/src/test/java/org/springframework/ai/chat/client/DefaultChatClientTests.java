@@ -62,6 +62,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -821,6 +822,19 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenUseCallResponseSpecTwiceThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt("question");
+		DefaultChatClient.DefaultCallResponseSpec spec = (DefaultChatClient.DefaultCallResponseSpec) chatClientRequestSpec
+			.call();
+
+		assertThatNoException().isThrownBy(() -> spec.content());
+		assertThatThrownBy(() -> spec.content()).isInstanceOf(IllegalStateException.class)
+			.hasMessage("The CallResponseSpec instance can only be used once.");
+	}
+
+	@Test
 	void whenSimplePromptThenChatClientResponse() {
 		ChatModel chatModel = mock(ChatModel.class);
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
@@ -1364,6 +1378,19 @@ class DefaultChatClientTests {
 				mock(BaseAdvisorChain.class), mock(ObservationRegistry.class), null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationConvention cannot be null");
+	}
+
+	@Test
+	void whenUseStreamResponseSpecTwiceThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mock(ChatModel.class)).build();
+		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt("question");
+		DefaultChatClient.DefaultStreamResponseSpec spec = (DefaultChatClient.DefaultStreamResponseSpec) chatClientRequestSpec
+			.stream();
+
+		assertThatNoException().isThrownBy(() -> spec.content());
+		assertThatThrownBy(() -> spec.content()).isInstanceOf(IllegalStateException.class)
+			.hasMessage("The StreamResponseSpec instance can only be used once.");
 	}
 
 	@Test
