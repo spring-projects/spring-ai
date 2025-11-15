@@ -70,7 +70,7 @@ public final class ElevenLabsApi {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.set("xi-api-key", apiKey.getValue());
 			}
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -80,6 +80,16 @@ public final class ElevenLabsApi {
 			.build();
 
 		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+	}
+
+	/**
+	 * Create a new ElevenLabs API client.
+	 * @param restClient Spring RestClient instance.
+	 * @param webClient Spring WebClient instance.
+	 */
+	public ElevenLabsApi(RestClient restClient, WebClient webClient) {
+		this.restClient = restClient;
+		this.webClient = webClient;
 	}
 
 	public static Builder builder() {

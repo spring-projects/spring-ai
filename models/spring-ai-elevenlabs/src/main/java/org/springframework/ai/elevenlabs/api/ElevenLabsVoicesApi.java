@@ -62,7 +62,7 @@ public class ElevenLabsVoicesApi {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.set("xi-api-key", apiKey.getValue());
 			}
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -71,6 +71,14 @@ public class ElevenLabsVoicesApi {
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
+	}
+
+	/**
+	 * Create a new ElevenLabs Voices API client.
+	 * @param restClient Spring RestClient instance.
+	 */
+	public ElevenLabsVoicesApi(RestClient restClient) {
+		this.restClient = restClient;
 	}
 
 	public static Builder builder() {
