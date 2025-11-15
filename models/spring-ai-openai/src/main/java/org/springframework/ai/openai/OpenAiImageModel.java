@@ -21,6 +21,7 @@ import java.util.List;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
@@ -29,6 +30,7 @@ import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
+import org.springframework.ai.image.StreamingImageModel;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
@@ -43,16 +45,26 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
- * OpenAiImageModel is a class that implements the ImageModel interface. It provides a
- * client for calling the OpenAI image generation API.
+ * OpenAiImageModel is a class that implements the ImageModel and StreamingImageModel
+ * interfaces. It provides a client for calling the OpenAI image generation API with both
+ * synchronous and streaming capabilities.
+ *
+ * <p>
+ * Streaming image generation is supported for GPT-Image models (gpt-image-1,
+ * gpt-image-1-mini) and allows receiving partial images as they are generated. DALL-E
+ * models do not support streaming.
+ * </p>
  *
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Hyunjoon Choi
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  * @since 0.8.0
+ * @see ImageModel
+ * @see StreamingImageModel
  */
-public class OpenAiImageModel implements ImageModel {
+public class OpenAiImageModel implements ImageModel, StreamingImageModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiImageModel.class);
 
@@ -203,6 +215,51 @@ public class OpenAiImageModel implements ImageModel {
 			.build();
 
 		return new ImagePrompt(imagePrompt.getInstructions(), requestOptions);
+	}
+
+	@Override
+	public Flux<ImageResponse> stream(ImagePrompt imagePrompt) {
+		// Before moving any further, build the final request ImagePrompt,
+		// merging runtime and default options.
+		ImagePrompt requestImagePrompt = buildRequestImagePrompt(imagePrompt);
+
+		OpenAiImageApi.OpenAiImageRequest imageRequest = createRequest(requestImagePrompt);
+
+		// Validate that streaming is only used with GPT-Image models
+		String model = imageRequest.model();
+		if (model != null && !model.startsWith("gpt-image-")) {
+			return Flux.error(new IllegalArgumentException(
+					"Streaming is only supported for GPT-Image models (gpt-image-1, gpt-image-1-mini). "
+							+ "Current model: " + model));
+		}
+
+		// Ensure stream is set to true
+		if (imageRequest.stream() == null || !imageRequest.stream()) {
+			imageRequest = new OpenAiImageApi.OpenAiImageRequest(imageRequest.prompt(), imageRequest.model(),
+					imageRequest.n(), imageRequest.quality(), imageRequest.responseFormat(), imageRequest.size(),
+					imageRequest.style(), imageRequest.user(), imageRequest.background(), imageRequest.moderation(),
+					imageRequest.outputCompression(), imageRequest.outputFormat(), imageRequest.partialImages(), true);
+		}
+
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt)
+			.provider(OpenAiApiConstants.PROVIDER_NAME)
+			.build();
+
+		OpenAiImageApi.OpenAiImageRequest finalImageRequest = imageRequest;
+
+		// Stream the image generation events
+		Flux<OpenAiImageApi.OpenAiImageStreamEvent> eventStream = this.openAiImageApi.streamImage(finalImageRequest);
+
+		// Convert streaming events to ImageResponse
+		return eventStream.map(event -> {
+			Image image = new Image(null, event.b64Json());
+			OpenAiImageGenerationMetadata metadata = new OpenAiImageGenerationMetadata(null);
+			ImageGeneration generation = new ImageGeneration(image, metadata);
+			ImageResponseMetadata responseMetadata = event.createdAt() != null
+					? new ImageResponseMetadata(event.createdAt()) : new ImageResponseMetadata(null);
+			return new ImageResponse(List.of(generation), responseMetadata);
+		});
 	}
 
 	/**

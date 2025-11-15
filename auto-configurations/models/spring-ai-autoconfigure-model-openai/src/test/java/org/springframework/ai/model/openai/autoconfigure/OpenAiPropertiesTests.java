@@ -535,6 +535,46 @@ public class OpenAiPropertiesTests {
 	}
 
 	@Test
+	public void imageGptImageOptionsTest() {
+		this.contextRunner.withPropertyValues(
+		// @formatter:off
+					"spring.ai.openai.api-key=API_KEY",
+					"spring.ai.openai.base-url=TEST_BASE_URL",
+
+					"spring.ai.openai.image.options.model=gpt-image-1",
+					"spring.ai.openai.image.options.quality=high",
+					"spring.ai.openai.image.options.size=1024x1024",
+					"spring.ai.openai.image.options.background=transparent",
+					"spring.ai.openai.image.options.moderation=low",
+					"spring.ai.openai.image.options.output_compression=85",
+					"spring.ai.openai.image.options.output_format=png",
+					"spring.ai.openai.image.options.partial_images=2",
+					"spring.ai.openai.image.options.stream=true",
+					"spring.ai.openai.image.options.user=userXYZ"
+			)
+			// @formatter:on
+			.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.run(context -> {
+				var imageProperties = context.getBean(OpenAiImageProperties.class);
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
+
+				assertThat(imageProperties.getOptions().getModel()).isEqualTo("gpt-image-1");
+				assertThat(imageProperties.getOptions().getQuality()).isEqualTo("high");
+				assertThat(imageProperties.getOptions().getSize()).isEqualTo("1024x1024");
+				assertThat(imageProperties.getOptions().getBackground()).isEqualTo("transparent");
+				assertThat(imageProperties.getOptions().getModeration()).isEqualTo("low");
+				assertThat(imageProperties.getOptions().getOutputCompression()).isEqualTo(85);
+				assertThat(imageProperties.getOptions().getOutputFormat()).isEqualTo("png");
+				assertThat(imageProperties.getOptions().getPartialImages()).isEqualTo(2);
+				assertThat(imageProperties.getOptions().getStream()).isTrue();
+				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
+			});
+	}
+
+	@Test
 	void embeddingActivation() {
 
 		this.contextRunner
