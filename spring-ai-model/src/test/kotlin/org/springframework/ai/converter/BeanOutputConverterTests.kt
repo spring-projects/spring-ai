@@ -22,7 +22,7 @@ class KotlinBeanOutputConverterTests {
 		val required = schemaNode["required"]
 		assertThat(required).isNotNull
 		assertThat(required.toString()).contains("bar")
-		assertThat(required.toString()).doesNotContain("baz")
+		assertThat(required.toString()).contains("baz")
 
 		val properties = schemaNode["properties"]
 		assertThat(properties["bar"]["type"].asText()).isEqualTo("string")
@@ -47,7 +47,7 @@ class KotlinBeanOutputConverterTests {
 		val required = schemaNode["required"]
 		assertThat(required).isNotNull
 		assertThat(required.toString()).contains("bar")
-		assertThat(required.toString()).doesNotContain("baz")
+		assertThat(required.toString()).contains("baz")
 
 		val properties = schemaNode["properties"]
 		assertThat(properties["bar"]["type"].asText()).isEqualTo("string")

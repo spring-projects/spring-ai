@@ -16,32 +16,23 @@
 
 package org.springframework.ai.chat.client;
 
+import java.util.function.Consumer;
+
 /**
- * Common attributes used in {@link ChatClient} context.
+ * Configuration options for the ChatClient request.
  *
- * @author Thomas Vitale
- * @since 1.0.0
+ * Preset advisors parameters that can be passed as configuration options to the Advisor
+ * context.
+ *
+ * @author Christian Tzolov
  */
-public enum ChatClientAttributes {
 
-	//@formatter:off
+public final class AdvisorParams {
 
-	OUTPUT_FORMAT("spring.ai.chat.client.output.format"),
-
-	STRUCTURED_OUTPUT_SCHEMA("spring.ai.chat.client.structured.output.schema"),
-
-	STRUCTURED_OUTPUT_NATIVE("spring.ai.chat.client.structured.output.native");
-
-	//@formatter:on
-
-	private final String key;
-
-	ChatClientAttributes(String key) {
-		this.key = key;
+	private AdvisorParams() {
 	}
 
-	public String getKey() {
-		return this.key;
-	}
+	public static final Consumer<ChatClient.AdvisorSpec> ENABLE_NATIVE_STRUCTURED_OUTPUT = a -> a
+		.param(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true);
 
 }
