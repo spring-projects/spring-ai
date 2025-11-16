@@ -433,8 +433,16 @@ public class DefaultChatClient implements ChatClient {
 
 		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> outputConverter) {
 			Assert.notNull(outputConverter, "structuredOutputConverter cannot be null");
-			var chatResponse = doGetObservableChatClientResponse(this.request, outputConverter.getFormat())
-				.chatResponse();
+
+			this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
+
+			if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
+				this.request.context()
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), beanOutputConverter.getJsonSchema());
+			}
+
+			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
 			var responseContent = getContentFromChatResponse(chatResponse);
 			if (responseContent == null) {
 				return new ResponseEntity<>(chatResponse, null);
@@ -467,8 +475,19 @@ public class DefaultChatClient implements ChatClient {
 
 		@Nullable
 		private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
-			var chatResponse = doGetObservableChatClientResponse(this.request, outputConverter.getFormat())
-				.chatResponse();
+			if (outputConverter != null && StringUtils.hasText(outputConverter.getFormat())) {
+				this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
+
+				if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+						&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
+					this.request.context()
+						.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(),
+								beanOutputConverter.getJsonSchema());
+				}
+			}
+
+			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
+
 			var stringResponse = getContentFromChatResponse(chatResponse);
 			if (stringResponse == null) {
 				return null;
@@ -495,15 +514,9 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest) {
-			return doGetObservableChatClientResponse(chatClientRequest, null);
-		}
 
-		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest,
-				@Nullable String outputFormat) {
-
-			if (outputFormat != null) {
-				chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputFormat);
-			}
+			String outputFormat = (String) chatClientRequest.context()
+				.getOrDefault(ChatClientAttributes.OUTPUT_FORMAT.getKey(), null);
 
 			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 				.request(chatClientRequest)

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -53,6 +54,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -205,6 +207,62 @@ class VertexAiGeminiChatModelIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecords() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void listOutputConverterBean() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void listOutputConverterBean2() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecords2() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -436,7 +494,7 @@ class VertexAiGeminiChatModelIT {
 			.call()
 			.content();
 
-		assertThat(response).contains("set an alarm for 11:10 AM.");
+		assertThat(response).contains("I have set an alarm for 11:10 AM.");
 		assertThat(alarmTools.getAlarm()).isEqualTo("2025-05-08T11:10:10+02:00");
 	}
 
