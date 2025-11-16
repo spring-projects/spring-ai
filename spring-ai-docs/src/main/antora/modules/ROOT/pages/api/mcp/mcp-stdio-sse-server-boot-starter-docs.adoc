@@ -254,7 +254,7 @@ public List<McpServerFeatures.SyncCompletionSpecification> myCompletions() {
 
 === link:https://modelcontextprotocol.io/specification/2025-03-26/server/utilities/logging/[Logging]
 
-Provides a standardized way for servers to send structured log messages to clients. 
+Provides a standardized way for servers to send structured log messages to clients.
 From within the tool, resource, prompt or completion call handler use the provided `McpSyncServerExchange`/`McpAsyncServerExchange` `exchange` object to send logging messages:
 
 [source,java]
@@ -338,16 +338,17 @@ From within the tool, resource, prompt or completion call handler use the provid
 
 Server can optionally, periodically issue pings to connected clients to verify connection health.
 
-By default, keep-alive is disabled. 
+By default, keep-alive is disabled.
 To enable keep-alive, set the `keep-alive-interval` property in your configuration:
 
-```yaml
+[source,yaml]
+----
 spring:
   ai:
     mcp:
       server:
         keep-alive-interval: 30s
-```
+----
 
 == Usage Examples
 

@@ -104,9 +104,10 @@ To get started, follow these steps to create a deployment with the default setti
 This Azure configuration aligns with the default configurations of the Spring Boot Azure AI Starter and its Autoconfiguration feature.
 If you use a different Deployment Name, make sure to update the configuration property accordingly:
 
-```
+[source,properties]
+----
 spring.ai.azure.openai.chat.options.deployment-name=<my deployment name>
-```
+----
 
 The different deployment structures of Azure OpenAI and OpenAI leads to a property in the Azure OpenAI client library named `deploymentOrModelName`.
 This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
