@@ -19,6 +19,7 @@ package org.springframework.ai.huggingface;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.huggingface.api.HuggingfaceApi;
+import org.springframework.ai.huggingface.api.common.HuggingfaceApiConstants;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -62,14 +63,22 @@ public abstract class BaseHuggingfaceIT {
 	static class Config {
 
 		@Bean
-		public HuggingfaceApi huggingfaceApi() {
-			return HuggingfaceApi.builder().apiKey(getApiKey()).build();
+		public HuggingfaceApi huggingfaceChatApi() {
+			return HuggingfaceApi.builder().baseUrl(HuggingfaceApiConstants.DEFAULT_CHAT_BASE_URL).apiKey(getApiKey()).build();
 		}
 
 		@Bean
-		public HuggingfaceChatModel huggingfaceChatModel(HuggingfaceApi huggingfaceApi) {
+		public HuggingfaceApi huggingfaceEmbeddingApi() {
+			return HuggingfaceApi.builder()
+				.baseUrl(HuggingfaceApiConstants.DEFAULT_EMBEDDING_BASE_URL)
+				.apiKey(getApiKey())
+				.build();
+		}
+
+		@Bean
+		public HuggingfaceChatModel huggingfaceChatModel(HuggingfaceApi huggingfaceChatApi) {
 			return HuggingfaceChatModel.builder()
-				.huggingfaceApi(huggingfaceApi)
+				.huggingfaceApi(huggingfaceChatApi)
 				.defaultOptions(HuggingfaceChatOptions.builder().model(DEFAULT_CHAT_MODEL).temperature(0.7).build())
 				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.observationRegistry(ObservationRegistry.NOOP)
@@ -77,9 +86,9 @@ public abstract class BaseHuggingfaceIT {
 		}
 
 		@Bean
-		public HuggingfaceEmbeddingModel huggingfaceEmbeddingModel(HuggingfaceApi huggingfaceApi) {
+		public HuggingfaceEmbeddingModel huggingfaceEmbeddingModel(HuggingfaceApi huggingfaceEmbeddingApi) {
 			return HuggingfaceEmbeddingModel.builder()
-				.huggingfaceApi(huggingfaceApi)
+				.huggingfaceApi(huggingfaceEmbeddingApi)
 				.defaultOptions(HuggingfaceEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build())
 				.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 				.observationRegistry(ObservationRegistry.NOOP)

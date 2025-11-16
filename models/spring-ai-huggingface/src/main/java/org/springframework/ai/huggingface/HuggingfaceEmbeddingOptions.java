@@ -42,18 +42,35 @@ public class HuggingfaceEmbeddingOptions implements EmbeddingOptions {
 	private String model;
 
 	/**
-	 * The number of dimensions for the embedding vectors. Note: Not all HuggingFace
-	 * models support this option. If specified but not supported by the model, it will be
-	 * ignored.
-	 */
-	@JsonProperty("dimensions")
-	private Integer dimensions;
-
-	/**
 	 * Whether to normalize the embedding vectors.
 	 */
 	@JsonProperty("normalize")
 	private Boolean normalize;
+
+	/**
+	 * The name of a predefined prompt from the model configuration to apply to the input
+	 * text.
+	 * <p>
+	 * For example, setting this to "query" might prepend "query: " to your input text,
+	 * which can improve retrieval performance for query-document matching tasks.
+	 */
+	@JsonProperty("prompt_name")
+	private String promptName;
+
+	/**
+	 * Whether to truncate input text that exceeds the model's maximum sequence length.
+	 */
+	@JsonProperty("truncate")
+	private Boolean truncate;
+
+	/**
+	 * Which side of the text to truncate when it exceeds the maximum length. Must be
+	 * either "left" or "right".
+	 * <p>
+	 * Only meaningful when truncate is set to true.
+	 */
+	@JsonProperty("truncation_direction")
+	private String truncationDirection;
 
 	/**
 	 * Create a new builder for HuggingfaceEmbeddingOptions.
@@ -70,8 +87,10 @@ public class HuggingfaceEmbeddingOptions implements EmbeddingOptions {
 	 */
 	public static HuggingfaceEmbeddingOptions fromOptions(HuggingfaceEmbeddingOptions fromOptions) {
 		return builder().model(fromOptions.getModel())
-			.dimensions(fromOptions.getDimensions())
 			.normalize(fromOptions.getNormalize())
+			.promptName(fromOptions.getPromptName())
+			.truncate(fromOptions.getTruncate())
+			.truncationDirection(fromOptions.getTruncationDirection())
 			.build();
 	}
 
@@ -87,11 +106,7 @@ public class HuggingfaceEmbeddingOptions implements EmbeddingOptions {
 	@Override
 	@JsonIgnore
 	public Integer getDimensions() {
-		return this.dimensions;
-	}
-
-	public void setDimensions(Integer dimensions) {
-		this.dimensions = dimensions;
+		return null;
 	}
 
 	public Boolean getNormalize() {
@@ -100,6 +115,30 @@ public class HuggingfaceEmbeddingOptions implements EmbeddingOptions {
 
 	public void setNormalize(Boolean normalize) {
 		this.normalize = normalize;
+	}
+
+	public String getPromptName() {
+		return this.promptName;
+	}
+
+	public void setPromptName(String promptName) {
+		this.promptName = promptName;
+	}
+
+	public Boolean getTruncate() {
+		return this.truncate;
+	}
+
+	public void setTruncate(Boolean truncate) {
+		this.truncate = truncate;
+	}
+
+	public String getTruncationDirection() {
+		return this.truncationDirection;
+	}
+
+	public void setTruncationDirection(String truncationDirection) {
+		this.truncationDirection = truncationDirection;
 	}
 
 	/**
@@ -128,19 +167,21 @@ public class HuggingfaceEmbeddingOptions implements EmbeddingOptions {
 			return false;
 		}
 		HuggingfaceEmbeddingOptions that = (HuggingfaceEmbeddingOptions) o;
-		return Objects.equals(this.model, that.model) && Objects.equals(this.dimensions, that.dimensions)
-				&& Objects.equals(this.normalize, that.normalize);
+		return Objects.equals(this.model, that.model) && Objects.equals(this.normalize, that.normalize)
+				&& Objects.equals(this.promptName, that.promptName) && Objects.equals(this.truncate, that.truncate)
+				&& Objects.equals(this.truncationDirection, that.truncationDirection);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.dimensions, this.normalize);
+		return Objects.hash(this.model, this.normalize, this.promptName, this.truncate, this.truncationDirection);
 	}
 
 	@Override
 	public String toString() {
-		return "HuggingfaceEmbeddingOptions{" + "model='" + this.model + '\'' + ", dimensions=" + this.dimensions
-				+ ", normalize=" + this.normalize + '}';
+		return "HuggingfaceEmbeddingOptions{" + "model='" + this.model + '\'' + ", normalize=" + this.normalize
+				+ ", promptName='" + this.promptName + '\'' + ", truncate=" + this.truncate + ", truncationDirection='"
+				+ this.truncationDirection + '\'' + '}';
 	}
 
 	/**
@@ -164,22 +205,42 @@ public class HuggingfaceEmbeddingOptions implements EmbeddingOptions {
 		}
 
 		/**
-		 * Set the number of dimensions for embedding vectors.
-		 * @param dimensions The number of dimensions.
-		 * @return This builder.
-		 */
-		public Builder dimensions(Integer dimensions) {
-			this.options.dimensions = dimensions;
-			return this;
-		}
-
-		/**
 		 * Set whether to normalize the embedding vectors.
 		 * @param normalize True to normalize, false otherwise.
 		 * @return This builder.
 		 */
 		public Builder normalize(Boolean normalize) {
 			this.options.normalize = normalize;
+			return this;
+		}
+
+		/**
+		 * Set the name of a predefined prompt to apply to the input text.
+		 * @param promptName The prompt name from the model configuration.
+		 * @return This builder.
+		 */
+		public Builder promptName(String promptName) {
+			this.options.promptName = promptName;
+			return this;
+		}
+
+		/**
+		 * Set whether to truncate input text that exceeds the model's maximum length.
+		 * @param truncate True to truncate, false otherwise.
+		 * @return This builder.
+		 */
+		public Builder truncate(Boolean truncate) {
+			this.options.truncate = truncate;
+			return this;
+		}
+
+		/**
+		 * Set which side of the text to truncate when it exceeds the maximum length.
+		 * @param truncationDirection Either "Left" or "Right".
+		 * @return This builder.
+		 */
+		public Builder truncationDirection(String truncationDirection) {
+			this.options.truncationDirection = truncationDirection;
 			return this;
 		}
 

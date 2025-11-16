@@ -92,7 +92,10 @@ class HuggingfaceEmbeddingModelObservationIT {
 		@Bean
 		public HuggingfaceApi huggingfaceApi() {
 			String apiKey = System.getenv("HUGGINGFACE_API_KEY");
-			return HuggingfaceApi.builder().apiKey(apiKey).build();
+			return HuggingfaceApi.builder()
+				.baseUrl("https://router.huggingface.co/hf-inference/models")
+				.apiKey(apiKey)
+				.build();
 		}
 
 		@Bean

@@ -18,12 +18,14 @@ package org.springframework.ai.huggingface;
 
 import java.util.List;
 
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.huggingface.api.HuggingfaceApi;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,6 +95,8 @@ class HuggingfaceEmbeddingModelIT extends BaseHuggingfaceIT {
 		assertThat(this.embeddingModel).isNotNull();
 
 		// For sentence-transformers/all-MiniLM-L6-v2, the dimension should be 384
+		// Note: The dimensions() method returns the model's native dimensions,
+		// not a configurable parameter
 		Integer dimensions = this.embeddingModel.dimensions();
 		assertThat(dimensions).isNotNull();
 		assertThat(dimensions).isEqualTo(384);
@@ -155,6 +159,76 @@ class HuggingfaceEmbeddingModelIT extends BaseHuggingfaceIT {
 		double similarity = cosineSimilarity(embedding1, embedding2);
 		assertThat(similarity).isGreaterThan(0.7); // Similar texts should have high
 													// similarity
+	}
+
+	@Test
+	void embeddingWithNormalizeOption() {
+		// Note: The normalize, prompt_name, truncate, and truncation_direction parameters
+		// are only available on Text Embeddings Inference (TEI) servers, not on the
+		// standard HuggingFace Inference API. The standard API appears to normalize
+		// embeddings by default.
+		//
+		// This test verifies that:
+		// 1. The normalize option can be set and sent to the API (via toMap())
+		// 2. The API accepts the parameter without throwing errors
+		// 3. The resulting embeddings are normalized (magnitude ≈ 1.0)
+
+		HuggingfaceEmbeddingOptions optionsWithNormalize = HuggingfaceEmbeddingOptions.builder()
+			.model("sentence-transformers/all-MiniLM-L6-v2")
+			.normalize(true)
+			.build();
+
+		// Verify the option is included in the request
+		assertThat(optionsWithNormalize.getNormalize()).isTrue();
+		assertThat(optionsWithNormalize.toMap()).containsEntry("normalize", true);
+
+		EmbeddingResponse response = this.embeddingModel
+			.call(new EmbeddingRequest(List.of("Test normalize option"), optionsWithNormalize));
+
+		assertThat(response.getResults()).hasSize(1);
+		float[] embedding = response.getResults().get(0).getOutput();
+		assertThat(embedding).isNotEmpty();
+
+		// The standard HuggingFace Inference API normalizes embeddings by default,
+		// so the magnitude should be close to 1.0 regardless of the normalize parameter
+		double magnitude = calculateMagnitude(embedding);
+		assertThat(magnitude).isCloseTo(1.0, Offset.offset(0.01));
+	}
+
+	@Test
+	void embeddingWithWrongBaseUrl() {
+		HuggingfaceApi wrongApi = HuggingfaceApi.builder()
+			.baseUrl("https://router.huggingface.co/v1")
+			.apiKey(getApiKey())
+			.build();
+
+		HuggingfaceEmbeddingModel wrongEmbeddingModel = HuggingfaceEmbeddingModel.builder()
+			.huggingfaceApi(wrongApi)
+			.defaultOptions(HuggingfaceEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build())
+			.retryTemplate(org.springframework.ai.retry.RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.observationRegistry(io.micrometer.observation.ObservationRegistry.NOOP)
+			.build();
+
+		org.junit.jupiter.api.Assertions.assertThrows(org.springframework.web.client.HttpClientErrorException.class,
+				() -> wrongEmbeddingModel.call(new EmbeddingRequest(List.of("Test with wrong URL"),
+						HuggingfaceEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build())));
+	}
+
+	@Test
+	void embeddingWithCorrectBaseUrl() {
+		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(
+				List.of("Verify correct baseURL usage"), HuggingfaceEmbeddingOptions.builder().build()));
+
+		assertThat(embeddingResponse.getResults()).hasSize(1);
+		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+	}
+
+	private double calculateMagnitude(float[] vector) {
+		double sum = 0.0;
+		for (float v : vector) {
+			sum += v * v;
+		}
+		return Math.sqrt(sum);
 	}
 
 	private double cosineSimilarity(float[] vectorA, float[] vectorB) {

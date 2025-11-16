@@ -40,7 +40,6 @@ public class HuggingfaceEmbeddingAutoConfigurationTests {
 					"spring.ai.huggingface.api-key=TEST_API_KEY",
 					"spring.ai.huggingface.embedding.url=https://test.huggingface.co/hf-inference/models",
 					"spring.ai.huggingface.embedding.options.model=sentence-transformers/all-MiniLM-L6-v2",
-					"spring.ai.huggingface.embedding.options.dimensions=384",
 					"spring.ai.huggingface.embedding.options.normalize=true"
 					// @formatter:on
 		)

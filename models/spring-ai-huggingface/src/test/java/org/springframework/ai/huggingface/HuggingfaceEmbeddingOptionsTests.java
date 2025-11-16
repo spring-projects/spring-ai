@@ -33,20 +33,24 @@ class HuggingfaceEmbeddingOptionsTests {
 	void testBuilderWithAllFields() {
 		HuggingfaceEmbeddingOptions options = HuggingfaceEmbeddingOptions.builder()
 			.model("sentence-transformers/all-MiniLM-L6-v2")
-			.dimensions(384)
 			.normalize(true)
+			.promptName("query")
+			.truncate(true)
+			.truncationDirection("Right")
 			.build();
 
-		assertThat(options).extracting("model", "dimensions", "normalize")
-			.containsExactly("sentence-transformers/all-MiniLM-L6-v2", 384, true);
+		assertThat(options).extracting("model", "normalize", "promptName", "truncate", "truncationDirection")
+			.containsExactly("sentence-transformers/all-MiniLM-L6-v2", true, "query", true, "Right");
 	}
 
 	@Test
 	void testCopy() {
 		HuggingfaceEmbeddingOptions originalOptions = HuggingfaceEmbeddingOptions.builder()
 			.model("test-model")
-			.dimensions(512)
 			.normalize(false)
+			.promptName("passage")
+			.truncate(false)
+			.truncationDirection("Left")
 			.build();
 
 		HuggingfaceEmbeddingOptions copiedOptions = originalOptions.copy();
@@ -59,12 +63,16 @@ class HuggingfaceEmbeddingOptionsTests {
 		HuggingfaceEmbeddingOptions options = new HuggingfaceEmbeddingOptions();
 
 		options.setModel("test-model");
-		options.setDimensions(256);
 		options.setNormalize(true);
+		options.setPromptName("query");
+		options.setTruncate(true);
+		options.setTruncationDirection("Right");
 
 		assertThat(options.getModel()).isEqualTo("test-model");
-		assertThat(options.getDimensions()).isEqualTo(256);
 		assertThat(options.getNormalize()).isTrue();
+		assertThat(options.getPromptName()).isEqualTo("query");
+		assertThat(options.getTruncate()).isTrue();
+		assertThat(options.getTruncationDirection()).isEqualTo("Right");
 	}
 
 	@Test
@@ -72,16 +80,20 @@ class HuggingfaceEmbeddingOptionsTests {
 		HuggingfaceEmbeddingOptions options = new HuggingfaceEmbeddingOptions();
 
 		assertThat(options.getModel()).isNull();
-		assertThat(options.getDimensions()).isNull();
 		assertThat(options.getNormalize()).isNull();
+		assertThat(options.getPromptName()).isNull();
+		assertThat(options.getTruncate()).isNull();
+		assertThat(options.getTruncationDirection()).isNull();
 	}
 
 	@Test
 	void testFromOptions() {
 		HuggingfaceEmbeddingOptions originalOptions = HuggingfaceEmbeddingOptions.builder()
 			.model("original-model")
-			.dimensions(768)
 			.normalize(true)
+			.promptName("document")
+			.truncate(true)
+			.truncationDirection("Left")
 			.build();
 
 		HuggingfaceEmbeddingOptions copiedOptions = HuggingfaceEmbeddingOptions.fromOptions(originalOptions);
@@ -93,29 +105,37 @@ class HuggingfaceEmbeddingOptionsTests {
 	void testToMap() {
 		HuggingfaceEmbeddingOptions options = HuggingfaceEmbeddingOptions.builder()
 			.model("test-model")
-			.dimensions(512)
 			.normalize(true)
+			.promptName("query")
+			.truncate(false)
+			.truncationDirection("Right")
 			.build();
 
 		Map<String, Object> map = options.toMap();
 
 		assertThat(map).containsEntry("model", "test-model")
-			.containsEntry("dimensions", 512)
-			.containsEntry("normalize", true);
+			.containsEntry("normalize", true)
+			.containsEntry("prompt_name", "query")
+			.containsEntry("truncate", false)
+			.containsEntry("truncation_direction", "Right");
 	}
 
 	@Test
 	void testEqualsAndHashCode() {
 		HuggingfaceEmbeddingOptions options1 = HuggingfaceEmbeddingOptions.builder()
 			.model("test-model")
-			.dimensions(384)
 			.normalize(false)
+			.promptName("passage")
+			.truncate(true)
+			.truncationDirection("Left")
 			.build();
 
 		HuggingfaceEmbeddingOptions options2 = HuggingfaceEmbeddingOptions.builder()
 			.model("test-model")
-			.dimensions(384)
 			.normalize(false)
+			.promptName("passage")
+			.truncate(true)
+			.truncationDirection("Left")
 			.build();
 
 		assertThat(options1).isEqualTo(options2);
@@ -126,54 +146,64 @@ class HuggingfaceEmbeddingOptionsTests {
 	void testToString() {
 		HuggingfaceEmbeddingOptions options = HuggingfaceEmbeddingOptions.builder()
 			.model("test-model")
-			.dimensions(512)
 			.normalize(true)
+			.promptName("query")
+			.truncate(false)
+			.truncationDirection("Right")
 			.build();
 
 		String result = options.toString();
 
-		assertThat(result).contains("test-model", "512", "true");
+		assertThat(result).contains("test-model", "true", "query", "false", "Right");
 	}
 
 	@Test
 	void testBuilderWithNullValues() {
 		HuggingfaceEmbeddingOptions options = HuggingfaceEmbeddingOptions.builder()
 			.model(null)
-			.dimensions(null)
 			.normalize(null)
+			.promptName(null)
+			.truncate(null)
+			.truncationDirection(null)
 			.build();
 
 		assertThat(options.getModel()).isNull();
-		assertThat(options.getDimensions()).isNull();
 		assertThat(options.getNormalize()).isNull();
+		assertThat(options.getPromptName()).isNull();
+		assertThat(options.getTruncate()).isNull();
+		assertThat(options.getTruncationDirection()).isNull();
 	}
 
 	@Test
 	void testCopyChangeIndependence() {
 		HuggingfaceEmbeddingOptions originalOptions = HuggingfaceEmbeddingOptions.builder()
 			.model("original-model")
-			.dimensions(384)
 			.normalize(true)
+			.promptName("query")
 			.build();
 
 		HuggingfaceEmbeddingOptions copiedOptions = originalOptions.copy();
 
 		// Modify original
 		originalOptions.setModel("modified-model");
-		originalOptions.setDimensions(768);
+		originalOptions.setNormalize(false);
 
 		// Copy should retain original values
 		assertThat(copiedOptions.getModel()).isEqualTo("original-model");
-		assertThat(copiedOptions.getDimensions()).isEqualTo(384);
+		assertThat(copiedOptions.getNormalize()).isTrue();
 		assertThat(originalOptions.getModel()).isEqualTo("modified-model");
-		assertThat(originalOptions.getDimensions()).isEqualTo(768);
+		assertThat(originalOptions.getNormalize()).isFalse();
 	}
 
 	@Test
 	void testBuilderChaining() {
 		HuggingfaceEmbeddingOptions.Builder builder = HuggingfaceEmbeddingOptions.builder();
 
-		HuggingfaceEmbeddingOptions.Builder result = builder.model("test-model").dimensions(512).normalize(true);
+		HuggingfaceEmbeddingOptions.Builder result = builder.model("test-model")
+			.normalize(true)
+			.promptName("query")
+			.truncate(true)
+			.truncationDirection("Right");
 
 		assertThat(result).isSameAs(builder);
 	}

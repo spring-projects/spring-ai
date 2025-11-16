@@ -47,8 +47,7 @@ public final class HuggingfaceApi {
 	// API Endpoint Paths
 	public static final String CHAT_COMPLETIONS_PATH = "/chat/completions";
 
-	public static final String EMBEDDING_PATH_TEMPLATE = HuggingfaceApiConstants.DEFAULT_EMBEDDING_BASE_URL
-			+ "/%s/pipeline/feature-extraction";
+	public static final String EMBEDDING_PATH_TEMPLATE = "/%s/pipeline/feature-extraction";
 
 	// Default Models
 	public static final String DEFAULT_CHAT_MODEL = "meta-llama/Llama-3.2-3B-Instruct";
@@ -373,13 +372,24 @@ public final class HuggingfaceApi {
 	/**
 	 * Internal request body sent to the HuggingFace API for embeddings. The API doesn't
 	 * expect a "model" field in the body since it's in the URL path.
+	 * <p>
+	 * Options are flattened at the top level alongside inputs, as per the HuggingFace API
+	 * specification. Example request body: <pre>
+	 * {
+	 *   "inputs": ["text1", "text2"],
+	 *   "normalize": true,
+	 *   "dimensions": 256,
+	 *   "prompt_name": "query"
+	 * }
+	 * </pre>
 	 *
 	 * @param inputs The text inputs.
-	 * @param options Additional options (optional).
+	 * @param options Additional options (dimensions, normalize, prompt_name, etc.) that
+	 * get flattened at the top level.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	record EmbeddingsRequestBody(@JsonProperty("inputs") List<String> inputs,
-			@JsonProperty("options") Map<String, Object> options) {
+			@com.fasterxml.jackson.annotation.JsonUnwrapped Map<String, Object> options) {
 	}
 
 	/**

@@ -139,11 +139,13 @@ The prefix `spring.ai.huggingface.embedding` is property prefix that configures 
 | spring.ai.huggingface.embedding.enabled | Enable HuggingFace embedding model (deprecated, use spring.ai.model.embedding instead) | true
 | spring.ai.huggingface.embedding.url   | Base URL for the HuggingFace Inference API Feature Extraction endpoint | +https://router.huggingface.co/hf-inference/models+
 | spring.ai.huggingface.embedding.options.model      | The model to use for embeddings      | sentence-transformers/all-MiniLM-L6-v2
-| spring.ai.huggingface.embedding.options.dimensions   | The number of dimensions the resulting output embeddings should have (if supported by model)  | -
-| spring.ai.huggingface.embedding.options.normalize   | Whether to normalize embeddings to unit length (if supported by model)  | -
+| spring.ai.huggingface.embedding.options.normalize   | Whether to normalize embeddings to unit length  | -
+| spring.ai.huggingface.embedding.options.prompt-name   | Name of a predefined prompt from model config to apply  | -
+| spring.ai.huggingface.embedding.options.truncate   | Whether to truncate text exceeding model's max length  | -
+| spring.ai.huggingface.embedding.options.truncation-direction   | Which side to truncate: "left" or "right"  | -
 |====
 
-NOTE: HuggingFace Embedding uses the Feature Extraction pipeline. The `dimensions` and `normalize` options may not be supported by all models. Check your model's documentation on HuggingFace Hub.
+NOTE: HuggingFace Embedding uses the Feature Extraction API. The options `normalize`, `prompt_name`, `truncate`, and `truncation_direction` are part of the standard Feature Extraction API specification.
 
 TIP: All properties prefixed with `spring.ai.huggingface.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
@@ -164,6 +166,29 @@ EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         HuggingfaceEmbeddingOptions.builder()
             .model("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        .build()));
+----
+
+=== Using Advanced Options
+
+You can use advanced options to customize the embedding behavior:
+
+[source,java]
+----
+EmbeddingResponse queryEmbedding = embeddingModel.call(
+    new EmbeddingRequest(List.of("What is machine learning?"),
+        HuggingfaceEmbeddingOptions.builder()
+            .promptName("query")  // Apply "query" prompt from model config
+            .truncate(true)       // Truncate long text
+            .truncationDirection("right")  // Truncate from the right
+            .normalize(true)      // Normalize embeddings to unit length
+        .build()));
+
+EmbeddingResponse documentEmbedding = embeddingModel.call(
+    new EmbeddingRequest(List.of("Machine learning is a subset of AI..."),
+        HuggingfaceEmbeddingOptions.builder()
+            .promptName("passage")  // Apply "passage" prompt for documents
+            .normalize(true)
         .build()));
 ----
 

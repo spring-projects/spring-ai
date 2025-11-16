@@ -108,11 +108,13 @@ public class HuggingfaceEmbeddingAutoConfigurationIT {
 	void embeddingProperties() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.huggingface.embedding.options.model=" + MODEL_NAME,
-					"spring.ai.huggingface.embedding.options.dimensions=384")
+					"spring.ai.huggingface.embedding.options.normalize=true",
+					"spring.ai.huggingface.embedding.options.prompt-name=query")
 			.run(context -> {
 				var embeddingProperties = context.getBean(HuggingfaceEmbeddingProperties.class);
 				assertThat(embeddingProperties.getOptions().getModel()).isEqualTo(MODEL_NAME);
-				assertThat(embeddingProperties.getOptions().getDimensions()).isEqualTo(384);
+				assertThat(embeddingProperties.getOptions().getNormalize()).isTrue();
+				assertThat(embeddingProperties.getOptions().getPromptName()).isEqualTo("query");
 			});
 	}
 

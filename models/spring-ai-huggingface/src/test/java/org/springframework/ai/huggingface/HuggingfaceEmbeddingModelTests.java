@@ -220,8 +220,10 @@ class HuggingfaceEmbeddingModelTests {
 	void builderWithAllOptions() {
 		HuggingfaceEmbeddingOptions options = HuggingfaceEmbeddingOptions.builder()
 			.model("test-model")
-			.dimensions(384)
 			.normalize(true)
+			.promptName("query")
+			.truncate(true)
+			.truncationDirection("Right")
 			.build();
 
 		var embeddingModel = HuggingfaceEmbeddingModel.builder()
