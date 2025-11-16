@@ -1,5 +1,6 @@
 package org.springframework.ai.cohere.api;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.cohere.CohereTestConfiguration;
@@ -48,6 +49,19 @@ class CohereApiIT extends AbstractIT {
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
+	}
+
+	@Test
+	void embeddings() {
+		ResponseEntity<CohereApi.EmbeddingResponse> response = this.cohereApi
+				.embeddings(CohereApi.EmbeddingRequest.<String>builder()
+						.texts("Hello world")
+						.build());
+
+		assertThat(response).isNotNull();
+		Assertions.assertNotNull(response.getBody());
+		assertThat(response.getBody().getFloatEmbeddings()).hasSize(1);
+		assertThat(response.getBody().getFloatEmbeddings().get(0)).hasSize(1536);
 	}
 
 }
