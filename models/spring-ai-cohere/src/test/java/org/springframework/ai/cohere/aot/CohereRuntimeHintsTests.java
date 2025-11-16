@@ -19,6 +19,7 @@ package org.springframework.ai.cohere.aot;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.chat.CohereChatOptions;
+import org.springframework.ai.cohere.embedding.CohereEmbeddingOptions;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
@@ -52,6 +53,7 @@ class CohereRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(CohereApi.LogProbs.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(CohereApi.ChatCompletionFinishReason.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(CohereChatOptions.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(CohereEmbeddingOptions.class))).isTrue();
 	}
 
 	@Test
@@ -127,7 +129,7 @@ class CohereRuntimeHintsTests {
 
 		// Ensure critical API classes are registered for GraalVM native image reflection
 		String[] criticalClasses = { "CohereApi$ChatCompletionRequest", "CohereApi$ChatCompletionMessage",
-				"CohereApi$EmbeddingRequest", "CohereApi$EmbeddingList", "CohereApi$Usage" };
+				"CohereApi$EmbeddingRequest", "CohereApi$EmbeddingModel", "CohereApi$Usage" };
 
 		for (String className : criticalClasses) {
 			assertThat(registeredTypes.stream()
@@ -213,8 +215,8 @@ class CohereRuntimeHintsTests {
 		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
 
 		// Verify response wrapper types are registered
-		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("EmbeddingList")))
-			.as("EmbeddingList response type should be registered")
+		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("EmbeddingResponse")))
+			.as("EmbeddingResponse type should be registered")
 			.isTrue();
 
 		assertThat(registeredTypes.stream().anyMatch(tr -> tr.getName().contains("ChatCompletion")))
