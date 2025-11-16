@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.cohere.api;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -26,8 +42,8 @@ import java.util.function.Predicate;
 
 /**
  * Java Client library for Cohere Platform. Provides implementation for the
- * <a href="https://docs.cohere.com/reference/chat"> Chat
- * and <a href="https://docs.cohere.com/reference/chat-stream"> Chat Stream
+ * <a href="https://docs.cohere.com/reference/chat"> Chat and
+ * <a href="https://docs.cohere.com/reference/chat-stream"> Chat Stream
  * <a href="https://docs.cohere.com/reference/embed">Embedding API</a>.
  * <p>
  * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion and supports latest
@@ -64,7 +80,8 @@ public class CohereApi {
 	 * @param cohereApiKey Cohere api Key.
 	 */
 	public CohereApi(String baseUrl, String cohereApiKey) {
-		this(baseUrl, cohereApiKey, RestClient.builder(),  WebClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+		this(baseUrl, cohereApiKey, RestClient.builder(), WebClient.builder(),
+				RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 	}
 
 	/**
@@ -74,8 +91,8 @@ public class CohereApi {
 	 * @param restClientBuilder RestClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public CohereApi(String baseUrl, String cohereApiKey, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-					 ResponseErrorHandler responseErrorHandler) {
+	public CohereApi(String baseUrl, String cohereApiKey, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
 			headers.setBearerAuth(cohereApiKey);
@@ -83,26 +100,33 @@ public class CohereApi {
 		};
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
-				.defaultHeaders(jsonContentHeaders)
-				.defaultStatusHandler(responseErrorHandler)
-				.build();
+			.defaultHeaders(jsonContentHeaders)
+			.defaultStatusHandler(responseErrorHandler)
+			.build();
 
 		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
 	}
 
 	/**
-	 * <a href="https://docs.cohere.com/docs/models">List of well-known Cohere chat
-	 * models.</a>
+	 * List of well-known Cohere chat models.
 	 *
-	 * <p>
-	 * Cohere provides Command family of models includes: Command A, Command R7B, Command
-	 * R+, Command R, and Command.
+	 * @see <a href="https://docs.cohere.com/docs/models">Cohere Models Overview</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
-		COMMAND_A("command-a-03-2025"), COMMAND_R7B("command-r7b-12-2024"),
-		COMMAND_R_PLUS_08_2024("command-r-plus-08-2024"), COMMAND_R_PLUS("command-r-plus"), COMMAND_R("command-r"),
-		COMMAND_03_2024("command-r-03-2024");
+		COMMAND_A("command-a-03-2025"),
+
+		COMMAND_A_REASONING("command-a-reasoning-08-2025"),
+
+		COMMAND_A_TRANSLATE("command-a-translate-08-2025"),
+
+		COMMAND_A_VISION("command-a-vision-07-2025"),
+
+		COMMAND_A_R7B("command-r7b-12-2024"),
+
+		COMMAND_R_PLUS("command-r-plus-08-2024"),
+
+		COMMAND_R("command-r-08-2024");
 
 		private final String value;
 
@@ -135,8 +159,8 @@ public class CohereApi {
 		 * @param classifications The number of billed classifications units.
 		 */
 		public record BilledUnits(@JsonProperty("input_tokens") Integer inputTokens,
-								  @JsonProperty("output_tokens") Integer outputTokens, @JsonProperty("search_units") Double searchUnits,
-								  @JsonProperty("classifications") Double classifications) {
+				@JsonProperty("output_tokens") Integer outputTokens, @JsonProperty("search_units") Double searchUnits,
+				@JsonProperty("classifications") Double classifications) {
 		}
 
 		/**
@@ -146,7 +170,7 @@ public class CohereApi {
 		 * @param outputTokens The number of tokens produced by the model.
 		 */
 		public record Tokens(@JsonProperty("input_tokens") Integer inputTokens,
-							 @JsonProperty("output_tokens") Integer outputTokens) {
+				@JsonProperty("output_tokens") Integer outputTokens) {
 		}
 	}
 
@@ -212,17 +236,17 @@ public class CohereApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletionRequest(@JsonProperty("model") String model,
-										@JsonProperty("messages") List<ChatCompletionMessage> messages,
-										@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("documents") List<Document> documents,
-										@JsonProperty("citation_options") CitationOptions citationOptions,
-										@JsonProperty("response_format") ResponseFormat responseFormat,
-										@JsonProperty("safety_mode") SafetyMode safetyMode, @JsonProperty("max_tokens") Integer maxTokens,
-										@JsonProperty("stop_sequences") List<String> stopSequences, @JsonProperty("temperature") Double temperature,
-										@JsonProperty("seed") Integer seed, @JsonProperty("frequency_penalty") Double frequencyPenalty,
-										@JsonProperty("stream") Boolean stream, @JsonProperty("k") Integer k, @JsonProperty("p") Double p,
-										@JsonProperty("logprobs") Boolean logprobs, @JsonProperty("tool_choice") ToolChoice toolChoice,
-										@JsonProperty("strict_tools") Boolean strictTools,
-										@JsonProperty("presence_penalty") Double presencePenalty) {
+			@JsonProperty("messages") List<ChatCompletionMessage> messages,
+			@JsonProperty("tools") List<FunctionTool> tools, @JsonProperty("documents") List<Document> documents,
+			@JsonProperty("citation_options") CitationOptions citationOptions,
+			@JsonProperty("response_format") ResponseFormat responseFormat,
+			@JsonProperty("safety_mode") SafetyMode safetyMode, @JsonProperty("max_tokens") Integer maxTokens,
+			@JsonProperty("stop_sequences") List<String> stopSequences, @JsonProperty("temperature") Double temperature,
+			@JsonProperty("seed") Integer seed, @JsonProperty("frequency_penalty") Double frequencyPenalty,
+			@JsonProperty("stream") Boolean stream, @JsonProperty("k") Integer k, @JsonProperty("p") Double p,
+			@JsonProperty("logprobs") Boolean logprobs, @JsonProperty("tool_choice") ToolChoice toolChoice,
+			@JsonProperty("strict_tools") Boolean strictTools,
+			@JsonProperty("presence_penalty") Double presencePenalty) {
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and
@@ -232,8 +256,8 @@ public class CohereApi {
 		 * @param model ID or name of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model, messages, null, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null, null, 0.3,
-					null, null, false, 0, 0.75, false, null, false, null);
+			this(model, messages, null, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null,
+					null, 0.3, null, null, false, 0, 0.75, false, null, false, null);
 		}
 
 		/**
@@ -247,9 +271,9 @@ public class CohereApi {
 		 * sent
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
-									 boolean stream) {
-			this(model, messages, null, null, new CitationOptions(CitationMode.FAST),  null, SafetyMode.CONTEXTUAL, null, null,
-					temperature, null, null, stream, 0, 0.75, false, null, false, null);
+				boolean stream) {
+			this(model, messages, null, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null,
+					null, temperature, null, null, stream, 0, 0.75, false, null, false, null);
 		}
 
 		/**
@@ -262,8 +286,8 @@ public class CohereApi {
 		 *
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(model, messages, null, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null, null,
-					temperature, null, null, false, 0, 0.75, false, null, false, null);
+			this(model, messages, null, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null,
+					null, temperature, null, null, false, 0, 0.75, false, null, false, null);
 		}
 
 		/**
@@ -277,9 +301,9 @@ public class CohereApi {
 		 * @param toolChoice Controls which (if any) function is called by the model.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
-									 ToolChoice toolChoice) {
-			this(model, messages, tools, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null, null, 0.75,
-					null, null, false, 0, 0.75, false, toolChoice, false, null);
+				ToolChoice toolChoice) {
+			this(model, messages, tools, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL,
+					null, null, 0.75, null, null, false, 0, 0.75, false, toolChoice, false, null);
 		}
 
 		/**
@@ -287,8 +311,8 @@ public class CohereApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(null, messages, null, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null, null, 0.75,
-					null, null, stream, 0, 0.75, false, null, false, null);
+			this(null, messages, null, null, new CitationOptions(CitationMode.FAST), null, SafetyMode.CONTEXTUAL, null,
+					null, 0.75, null, null, stream, 0, 0.75, false, null, false, null);
 		}
 
 		/**
@@ -299,7 +323,7 @@ public class CohereApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ResponseFormat(@JsonProperty("type") String type,
-									 @JsonProperty("json_schema") Map<String, Object> jsonSchema) {
+				@JsonProperty("json_schema") Map<String, Object> jsonSchema) {
 		}
 
 		/**
@@ -323,17 +347,14 @@ public class CohereApi {
 	 * Applicable only for {@link Role#ASSISTANT} role and null otherwise.
 	 * @param toolPlan A chain-of-thought style reflection and plan that the model
 	 * generates when working with Tools.
-	 * @param rawContent The contents of the message. Can be either a {@link MediaContent} or
-	 * a {@link MessageContent}.
+	 * @param rawContent The contents of the message. Can be either a {@link MediaContent}
+	 * or a {@link MessageContent}.
 	 * @param citations Tool call that this message is responding to. Only applicable for
 	 * the {@link ChatCompletionFinishReason#TOOL_CALL} role and null otherwise.
 	 */
-	public record ChatCompletionMessage(
-			@JsonProperty("content") Object rawContent,
-			@JsonProperty("role") Role role,
-			//@JsonProperty("name") String name,
-			@JsonProperty("tool_plan") String toolPlan,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+	public record ChatCompletionMessage(@JsonProperty("content") Object rawContent, @JsonProperty("role") Role role,
+			// @JsonProperty("name") String name,
+			@JsonProperty("tool_plan") String toolPlan, @JsonProperty("tool_calls") List<ToolCall> toolCalls,
 			@JsonProperty("citations") List<ChatCompletionCitation> citations) {
 
 		public ChatCompletionMessage(Object content, Role role) {
@@ -354,7 +375,7 @@ public class CohereApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record MediaContent(@JsonProperty("type") String type, @JsonProperty("text") String text,
-								   @JsonProperty("image_url") ImageUrl imageUrl) {
+				@JsonProperty("image_url") ImageUrl imageUrl) {
 
 			/**
 			 * Shortcut constructor for a text rawContent.
@@ -385,7 +406,6 @@ public class CohereApi {
 			}
 		}
 
-
 		/**
 		 * Message rawContent that can be either a text or a value.
 		 *
@@ -393,10 +413,9 @@ public class CohereApi {
 		 * @param text The text rawContent of the message.
 		 * @param value The value of the thinking, which can be any object.
 		 */
-		public record MessageContent(
-				@JsonProperty("type") String type,
-				@JsonProperty("text") String text,
-				@JsonProperty("value") Object value) {}
+		public record MessageContent(@JsonProperty("type") String type, @JsonProperty("text") String text,
+				@JsonProperty("value") Object value) {
+		}
 
 		/**
 		 * The role of the author of this message.
@@ -438,7 +457,7 @@ public class CohereApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
-							   @JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
+				@JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
 		}
 
 		/**
@@ -450,7 +469,7 @@ public class CohereApi {
 		 */
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		public record ChatCompletionFunction(@JsonProperty("name") String name,
-											 @JsonProperty("arguments") String arguments) {
+				@JsonProperty("arguments") String arguments) {
 		}
 
 		public record ChatCompletionCitation(
@@ -485,18 +504,15 @@ public class CohereApi {
 			 * @param document map from strings to any Optional if type == document
 			 */
 			public record Source(@JsonProperty("type") String type, @JsonProperty("id") String id,
-								 @JsonProperty("tool_output") Map<String, Object> toolOutput,
-								 @JsonProperty("document") Map<String, Object> document) {
+					@JsonProperty("tool_output") Map<String, Object> toolOutput,
+					@JsonProperty("document") Map<String, Object> document) {
 			}
 		}
 
-		public record Provider(
-				@JsonProperty("content") List<MessageContent> content,
-				@JsonProperty("role") Role role,
-				@JsonProperty("tool_plan") String toolPlan,
-				@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-				@JsonProperty("citations") List<ChatCompletionCitation> citations
-		) {}
+		public record Provider(@JsonProperty("content") List<MessageContent> content, @JsonProperty("role") Role role,
+				@JsonProperty("tool_plan") String toolPlan, @JsonProperty("tool_calls") List<ToolCall> toolCalls,
+				@JsonProperty("citations") List<ChatCompletionCitation> citations) {
+		}
 	}
 
 	/**
@@ -520,7 +536,8 @@ public class CohereApi {
 	 * Note: command-r7b-12-2024 and command-a-03-2025 only support "fast" and "off"
 	 * modes. The default is "fast".
 	 */
-	public record CitationOptions(@JsonProperty("mode") CitationMode mode) {}
+	public record CitationOptions(@JsonProperty("mode") CitationMode mode) {
+	}
 
 	/**
 	 * Options for controlling citation generation. Defaults to "accurate". Dictates the
@@ -706,10 +723,10 @@ public class CohereApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ChatCompletion(@JsonProperty("id") String id,
-								 @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-								 @JsonProperty("message") ChatCompletionMessage.Provider message,
-								 @JsonProperty("logprobs") LogProbs logprobs,
-								 @JsonProperty("usage") Usage usage) { }
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+			@JsonProperty("message") ChatCompletionMessage.Provider message,
+			@JsonProperty("logprobs") LogProbs logprobs, @JsonProperty("usage") Usage usage) {
+	}
 
 	/**
 	 * The reason the model stopped generating tokens.
@@ -754,7 +771,7 @@ public class CohereApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record LogProbs(@JsonProperty("token_ids") List<Integer> tokenIds, @JsonProperty("text") String text,
-						   @JsonProperty("logprobs") List<Double> logprobs) {
+			@JsonProperty("logprobs") List<Double> logprobs) {
 
 	}
 
@@ -788,54 +805,7 @@ public class CohereApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
 
-		return this.restClient.post()
-				.uri("/v2/chat/")
-				.body(chatRequest)
-				.retrieve()
-				.toEntity(ChatCompletion.class);
-	}
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
-		return this.webClient.post()
-				.uri("/v2/chat/")
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(String.class)
-				.takeUntil(SSE_DONE_PREDICATE)
-				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-				.map(chunk -> {
-					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-						isInsideTool.set(true);
-					}
-					return chunk;
-				})
-				.windowUntil(chunk -> {
-					if (isInsideTool.get() && this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-						isInsideTool.set(false);
-						return true;
-					}
-					return !isInsideTool.get();
-				})
-				.concatMapIterable(window -> {
-					Mono<ChatCompletionChunk> mono1 = window.reduce(
-							new ChatCompletionChunk(null, null, null, null, null, null),
-							(previous, current) -> this.chunkMerger.merge(previous, current));
-					return List.of(mono1);
-				})
-				.flatMap(mono -> mono);
+		return this.restClient.post().uri("/v2/chat/").body(chatRequest).retrieve().toEntity(ChatCompletion.class);
 	}
 
 	/**
@@ -854,7 +824,7 @@ public class CohereApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionChunk(
-			// @formatter:off
+	// @formatter:off
 			@JsonProperty("id") String id,
 			@JsonProperty("object") String object,
 			@JsonProperty("created") Long created,
@@ -874,7 +844,7 @@ public class CohereApi {
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(
-				// @formatter:off
+		// @formatter:off
 				@JsonProperty("index") Integer index,
 				@JsonProperty("delta") ChatCompletionMessage delta,
 				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
@@ -884,5 +854,113 @@ public class CohereApi {
 
 	}
 
+	/**
+	 * List of well-known Cohere embedding models.
+	 *
+	 * @see <a href="https://docs.cohere.com/docs/models">Cohere Models Overview</a>
+	 */
+	public enum EmbeddingModel {
+
+		// @formatter:off
+
+		/**
+		 * A model that allows for text and images to be classified or turned into embeddings
+		 * dimensional - [256, 512, 1024, 1536 (default)]
+		 */
+		EMBED("embed-v4.0"),
+		/**
+		 * Embed v3 Multilingual model for text embeddings.
+		 * Produces 1024-dimensional embeddings suitable for multilingual semantic search,
+		 * clustering, and other text similarity tasks.
+		 */
+		EMBED_MULTILINGUAL_V3("embed-multilingual-v3.0"),
+
+		/**
+		 * Embed v3 English model for text embeddings.
+		 * Produces 1024-dimensional embeddings optimized for English text.
+		 */
+		EMBED_ENGLISH_V3("embed-english-v3.0"),
+
+		/**
+		 * Embed v3 Multilingual Light model.
+		 * Smaller and faster variant with 1024 dimensions.
+		 */
+		EMBED_MULTILINGUAL_LIGHT_V3("embed-multilingual-light-v3.0"),
+
+		/**
+		 * Embed v3 English Light model.
+		 * Smaller and faster English-only variant with 1024 dimensions.
+		 */
+		EMBED_ENGLISH_LIGHT_V3("embed-english-light-v3.0");
+		// @formatter:on
+
+		private final String value;
+
+		EmbeddingModel(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder for creating CohereApi instances.
+	 */
+	public static class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public CohereApi build() {
+			Assert.hasText(this.apiKey, "Cohere API key must be set");
+			Assert.hasText(this.baseUrl, "Cohere base URL must be set");
+			Assert.notNull(this.restClientBuilder, "RestClient.Builder must not be null");
+			Assert.notNull(this.webClientBuilder, "WebClient.Builder must not be null");
+			Assert.notNull(this.responseErrorHandler, "ResponseErrorHandler must not be null");
+
+			return new CohereApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.webClientBuilder,
+					this.responseErrorHandler);
+		}
+
+	}
 
 }

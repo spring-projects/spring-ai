@@ -46,6 +46,11 @@ public enum AiProvider {
 	BEDROCK_CONVERSE("bedrock_converse"),
 
 	/**
+	 * AI system provided by Cohere.
+	 */
+	COHERE("cohere"),
+
+	/**
 	 * AI system provided by DeepSeek.
 	 */
 	DEEPSEEK("deepseek"),
@@ -98,11 +103,7 @@ public enum AiProvider {
 	/**
 	 * AI system provided by Zhipuai.
 	 */
-	ZHIPUAI("zhipuai"),
-	/**
-	 * AI system provided by Cohere.
-	 */
-	COHERE("cohere");
+	ZHIPUAI("zhipuai");
 
 	private final String value;
 

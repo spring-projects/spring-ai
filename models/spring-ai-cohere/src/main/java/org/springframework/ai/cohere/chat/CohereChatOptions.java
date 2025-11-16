@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.ai.cohere.chat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -123,8 +139,7 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	 * function via {"type: "function", "function": {"name": "my_function"}} forces the
 	 * model to call that function. none is the default when no functions are present.
 	 * auto is the default if functions are present. Use the
-	 * {@link CohereApi.ToolChoiceBuilder} to create
-	 * a tool choice object.
+	 * {@link CohereApi.ToolChoiceBuilder} to create a tool choice object.
 	 */
 	private @JsonProperty("tool_choice") ToolChoice toolChoice;
 
@@ -365,24 +380,25 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 
 	public static CohereChatOptions fromOptions(CohereChatOptions fromOptions) {
 		return CohereChatOptions.builder()
-				.model(fromOptions.getModel())
-				.temperature(fromOptions.getTemperature())
-				.maxTokens(fromOptions.getMaxTokens())
-				.topP(fromOptions.getTopP())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.topK(fromOptions.getTopK())
-				.tools(fromOptions.getTools())
-				.responseFormat(fromOptions.getResponseFormat())
-				.safetyMode(fromOptions.getSafetyMode())
-				.stop(fromOptions.getStopSequences())
-				.seed(fromOptions.getSeed())
-				.logprobs(fromOptions.getLogprobs())
-				.toolChoice(fromOptions.getToolChoice())
-				.strictTools(fromOptions.getStrictTools())
-				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolNames(fromOptions.getToolNames())
-				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled()).build();
+			.model(fromOptions.getModel())
+			.temperature(fromOptions.getTemperature())
+			.maxTokens(fromOptions.getMaxTokens())
+			.topP(fromOptions.getTopP())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.topK(fromOptions.getTopK())
+			.tools(fromOptions.getTools())
+			.responseFormat(fromOptions.getResponseFormat())
+			.safetyMode(fromOptions.getSafetyMode())
+			.stop(fromOptions.getStopSequences())
+			.seed(fromOptions.getSeed())
+			.logprobs(fromOptions.getLogprobs())
+			.toolChoice(fromOptions.getToolChoice())
+			.strictTools(fromOptions.getStrictTools())
+			.toolCallbacks(fromOptions.getToolCallbacks())
+			.toolNames(fromOptions.getToolNames())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.build();
 	}
 
 	public static class Builder {

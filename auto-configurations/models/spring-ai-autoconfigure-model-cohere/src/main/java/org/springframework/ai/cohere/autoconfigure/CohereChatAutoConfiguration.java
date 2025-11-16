@@ -44,27 +44,26 @@ public class CohereChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CohereChatModel chereChatModel(CohereCommonProperties commonProperties,
-										  CohereChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-										  ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
-										  RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
-										  ObjectProvider<ObservationRegistry> observationRegistry,
-										  ObjectProvider<ChatModelObservationConvention> observationConvention,
-										  ObjectProvider<ToolExecutionEligibilityPredicate> cohereToolExecutionEligibilityPredicate) {
-		var cohereApi = cohereApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
-				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+	public CohereChatModel chereChatModel(CohereCommonProperties commonProperties, CohereChatProperties chatProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention,
+			ObjectProvider<ToolExecutionEligibilityPredicate> cohereToolExecutionEligibilityPredicate) {
+		var cohereApi = cohereApi(chatProperties.getApiKey(), commonProperties.getApiKey(), chatProperties.getBaseUrl(),
+				commonProperties.getBaseUrl(), restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		var chatModel = CohereChatModel.builder()
-				.cohereApi(cohereApi)
-				.defaultOptions(chatProperties.getOptions())
-				.toolCallingManager(toolCallingManager)
-				.toolExecutionEligibilityPredicate(cohereToolExecutionEligibilityPredicate
-						.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
-				.retryTemplate(retryTemplate)
-				.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-				.build();
+			.cohereApi(cohereApi)
+			.defaultOptions(chatProperties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.toolExecutionEligibilityPredicate(
+					cohereToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
@@ -72,8 +71,8 @@ public class CohereChatAutoConfiguration {
 	}
 
 	private CohereApi cohereApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-									  RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-									  ResponseErrorHandler responseErrorHandler) {
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -81,8 +80,7 @@ public class CohereChatAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Cohere API key must be set");
 		Assert.hasText(resoledBaseUrl, "Cohere base URL must be set");
 
-		return new CohereApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder,
-				responseErrorHandler);
+		return new CohereApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder, responseErrorHandler);
 	}
 
 }

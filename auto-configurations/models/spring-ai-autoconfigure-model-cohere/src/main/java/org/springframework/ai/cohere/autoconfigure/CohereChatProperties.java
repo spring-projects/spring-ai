@@ -15,7 +15,7 @@ public class CohereChatProperties extends CohereParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.cohere.chat";
 
-	public static final String DEFAULT_CHAT_MODEL = CohereApi.ChatModel.COMMAND_R7B.getValue();
+	public static final String DEFAULT_CHAT_MODEL = CohereApi.ChatModel.COMMAND_A_R7B.getValue();
 
 	private static final Double DEFAULT_TEMPERATURE = 0.3;
 
@@ -23,13 +23,13 @@ public class CohereChatProperties extends CohereParentProperties {
 
 	@NestedConfigurationProperty
 	private CohereChatOptions options = CohereChatOptions.builder()
-			.model(DEFAULT_CHAT_MODEL)
-			.temperature(DEFAULT_TEMPERATURE)
-			.topP(DEFAULT_TOP_P)
-			.presencePenalty(0.0)
-			.frequencyPenalty(0.0)
-			.logprobs(false)
-			.build();
+		.model(DEFAULT_CHAT_MODEL)
+		.temperature(DEFAULT_TEMPERATURE)
+		.topP(DEFAULT_TOP_P)
+		.presencePenalty(0.0)
+		.frequencyPenalty(0.0)
+		.logprobs(false)
+		.build();
 
 	public CohereChatProperties() {
 		super.setBaseUrl(CohereCommonProperties.DEFAULT_BASE_URL);

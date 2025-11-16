@@ -19,17 +19,16 @@ public class CohereAutoConfigurationIT {
 	private static final Log logger = LogFactory.getLog(CohereAutoConfigurationIT.class);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.cohere.apiKey=" + System.getenv("COHERE_API_KEY"));
+		.withPropertyValues("spring.ai.cohere.apiKey=" + System.getenv("COHERE_API_KEY"));
 
 	@Test
 	void generate() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(CohereChatAutoConfiguration.class))
-				.run(context -> {
-					CohereChatModel chatModel = context.getBean(CohereChatModel.class);
-					String response = chatModel.call("Hello");
-					assertThat(response).isNotEmpty();
-					logger.info("Response: " + response);
-				});
+		this.contextRunner.withConfiguration(AutoConfigurations.of(CohereChatAutoConfiguration.class)).run(context -> {
+			CohereChatModel chatModel = context.getBean(CohereChatModel.class);
+			String response = chatModel.call("Hello");
+			assertThat(response).isNotEmpty();
+			logger.info("Response: " + response);
+		});
 	}
 
 }
