@@ -142,16 +142,15 @@ NOTE: Default values shown below for numeric options (e.g., temperature, frequen
 |====
 | Property | Description | Default
 
-| spring.ai.huggingface.chat.enabled (Removed and no longer valid) | Enable HuggingFace chat model.  | true
 | spring.ai.model.chat | Enable HuggingFace chat model.  | huggingface
 | spring.ai.huggingface.chat.url   | Base URL for the HuggingFace Inference API Chat endpoint | +https://router.huggingface.co/v1+
 | spring.ai.huggingface.chat.options.model | The model to use. Examples: `meta-llama/Llama-3.2-3B-Instruct`, `mistralai/Mistral-7B-Instruct-v0.3`, `google/gemma-2-9b-it` | meta-llama/Llama-3.2-3B-Instruct
-| spring.ai.huggingface.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. | 0.7
+| spring.ai.huggingface.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. | -
 | spring.ai.huggingface.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. | -
 | spring.ai.huggingface.chat.options.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. | -
 | spring.ai.huggingface.chat.options.top-k | The number of highest probability vocabulary tokens to keep for top-k-filtering. | -
-| spring.ai.huggingface.chat.options.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0
-| spring.ai.huggingface.chat.options.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | 0.0
+| spring.ai.huggingface.chat.options.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | -
+| spring.ai.huggingface.chat.options.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
 | spring.ai.huggingface.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.huggingface.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel for function calling. | -
 | spring.ai.huggingface.chat.options.internal-tool-execution-enabled | If false, Spring AI will not handle the tool calls internally, but will proxy them to the client. If true (the default), Spring AI will handle the function calls internally. | true
@@ -344,8 +343,8 @@ The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai
 
 The `HuggingfaceApi` supports:
 
-* **OpenAI-compatible Chat Completions**: Accessible via `/v1/chat/completions` endpoint
-* **Feature Extraction for Embeddings**: Accessible via `/models/{model}/pipeline/feature-extraction` endpoint
+* **OpenAI-compatible Chat Completions**: Accessible via `/v1/chat/completions` endpoint (relative to chat base URL)
+* **Feature Extraction for Embeddings**: Accessible via `/{model}/pipeline/feature-extraction` endpoint (relative to embedding base URL: `https://router.huggingface.co/hf-inference/models`)
 
 Here's a simple example of how to use the `HuggingfaceApi` directly for chat completions:
 
@@ -361,13 +360,14 @@ HuggingfaceApi.Message userMessage = new HuggingfaceApi.Message(
     "user",
     "Explain quantum computing in simple terms");
 
-// Create chat request
+// Create chat request with options
+Map<String, Object> options = new HashMap<>();
+options.put("temperature", 0.7);
+
 HuggingfaceApi.ChatRequest chatRequest = new HuggingfaceApi.ChatRequest(
     "meta-llama/Llama-3.2-3B-Instruct",
     List.of(userMessage),
-    0.7,
-    null,  // maxTokens
-    false); // stream
+    options);
 
 // Call the API
 HuggingfaceApi.ChatResponse response = huggingfaceApi.chat(chatRequest);

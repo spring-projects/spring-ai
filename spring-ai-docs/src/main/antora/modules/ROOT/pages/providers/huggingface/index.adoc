@@ -27,7 +27,6 @@ The xref:api/chat/huggingface.adoc[HuggingFace Chat integration] enables you to 
 * OpenAI-compatible API endpoint (`/v1/chat/completions`)
 * Support for thousands of instruction-tuned models (Llama, Mistral, Gemma, Qwen, etc.)
 * Function/tool calling capabilities (model-dependent)
-* Streaming responses
 * Full observability and metrics support
 
 **Example Configuration:**
