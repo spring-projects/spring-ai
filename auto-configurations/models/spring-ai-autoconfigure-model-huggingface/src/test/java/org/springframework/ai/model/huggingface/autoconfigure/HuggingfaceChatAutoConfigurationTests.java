@@ -83,4 +83,28 @@ public class HuggingfaceChatAutoConfigurationTests {
 				.hasSingleBean(org.springframework.ai.huggingface.HuggingfaceChatModel.class));
 	}
 
+	@Test
+	public void newParametersTest() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+					"spring.ai.huggingface.api-key=TEST_API_KEY",
+					"spring.ai.huggingface.chat.options.seed=42",
+					"spring.ai.huggingface.chat.options.tool-prompt=You have access to tools:",
+					"spring.ai.huggingface.chat.options.logprobs=true",
+					"spring.ai.huggingface.chat.options.top-logprobs=3"
+					// @formatter:on
+		)
+			.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(HuggingfaceApiAutoConfiguration.class,
+					HuggingfaceChatAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(HuggingfaceChatProperties.class);
+
+				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(42);
+				assertThat(chatProperties.getOptions().getToolPrompt()).isEqualTo("You have access to tools:");
+				assertThat(chatProperties.getOptions().getLogprobs()).isTrue();
+				assertThat(chatProperties.getOptions().getTopLogprobs()).isEqualTo(3);
+			});
+	}
+
 }

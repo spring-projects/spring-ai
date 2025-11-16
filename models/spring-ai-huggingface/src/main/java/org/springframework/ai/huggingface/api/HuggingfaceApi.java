@@ -87,7 +87,11 @@ public final class HuggingfaceApi {
 
 	/**
 	 * Generate chat completion using the specified model (OpenAI-compatible endpoint).
-	 * @param chatRequest Chat request containing the model and messages.
+	 * Supports parameters from the Chat Completion API specification:
+	 * https://huggingface.co/docs/inference-providers/tasks/chat-completion
+	 * @param chatRequest Chat request containing the model, messages, and optional
+	 * parameters (temperature, max_tokens, top_p, frequency_penalty, presence_penalty,
+	 * stop, seed, response_format, tool_prompt, logprobs, top_logprobs, etc.)
 	 * @return Chat response containing the generated text.
 	 */
 	public ChatResponse chat(ChatRequest chatRequest) {

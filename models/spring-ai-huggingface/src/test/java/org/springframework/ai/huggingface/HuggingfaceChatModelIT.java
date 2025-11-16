@@ -16,6 +16,8 @@
 
 package org.springframework.ai.huggingface;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -250,6 +252,71 @@ class HuggingfaceChatModelIT extends BaseHuggingfaceIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResults()).isNotEmpty();
 		assertThat(response.getResult().getOutput().getText()).contains("4");
+	}
+
+	@Test
+	void testStopSequences() {
+		List<String> stopSequences = Arrays.asList("STOP", "END");
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model(DEFAULT_CHAT_MODEL)
+			.temperature(0.7)
+			.maxTokens(100)
+			.stopSequences(stopSequences)
+			.build();
+
+		Prompt prompt = new Prompt("Count from 1 to 10. When you see STOP, stop counting.", options);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+		// The response should be limited by stop sequences
+	}
+
+	@Test
+	void testSeedForReproducibility() {
+		int seed = 42;
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model(DEFAULT_CHAT_MODEL)
+			.temperature(0.7)
+			.seed(seed)
+			.build();
+
+		Prompt prompt = new Prompt("Tell me a random number between 1 and 100", options);
+
+		// Call twice with the same seed
+		ChatResponse response1 = this.chatModel.call(prompt);
+		ChatResponse response2 = this.chatModel.call(prompt);
+
+		assertThat(response1).isNotNull();
+		assertThat(response2).isNotNull();
+		assertThat(response1.getResult().getOutput().getText()).isNotEmpty();
+		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
+		// With the same seed, responses should be deterministic (same or very similar)
+	}
+
+	@Test
+	void testResponseFormatJsonObject() {
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model(DEFAULT_CHAT_MODEL)
+			.temperature(0.7)
+			.maxTokens(200)
+			.responseFormat(responseFormat)
+			.build();
+
+		Prompt prompt = new Prompt(
+				"Generate a JSON object with fields: name (string), age (number), city (string). Make up the values.",
+				options);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		String output = response.getResult().getOutput().getText();
+		assertThat(output).isNotEmpty();
+		// The output should be valid JSON when response_format is json_object
+		assertThat(output).contains("{");
+		assertThat(output).contains("}");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

@@ -69,12 +69,6 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 	private Double topP;
 
 	/**
-	 * The number of highest probability vocabulary tokens to keep for top-k sampling.
-	 */
-	@JsonProperty("top_k")
-	private Integer topK;
-
-	/**
 	 * Number between -2.0 and 2.0. Positive values penalize new tokens based on their
 	 * existing frequency in the text so far.
 	 */
@@ -87,6 +81,49 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 	 */
 	@JsonProperty("presence_penalty")
 	private Double presencePenalty;
+
+	/**
+	 * Up to 4 sequences where the API will stop generating further tokens.
+	 */
+	@JsonProperty("stop")
+	private List<String> stop;
+
+	/**
+	 * Integer seed for reproducibility. This makes repeated requests with the same seed
+	 * and parameters return the same result.
+	 */
+	@JsonProperty("seed")
+	private Integer seed;
+
+	/**
+	 * An object specifying the format that the model must output. Setting to {"type":
+	 * "json_object"} enables JSON mode, which guarantees the message the model generates
+	 * is valid JSON. Setting to {"type": "json_schema", "json_schema": {...}} enables
+	 * Structured Outputs which ensures the model will match your supplied JSON schema.
+	 */
+	@JsonProperty("response_format")
+	private Map<String, Object> responseFormat;
+
+	/**
+	 * A prompt to be appended before the tools.
+	 */
+	@JsonProperty("tool_prompt")
+	private String toolPrompt;
+
+	/**
+	 * Whether to return log probabilities of the output tokens or not. If true, returns
+	 * the log probabilities of each output token returned in the content of message.
+	 */
+	@JsonProperty("logprobs")
+	private Boolean logprobs;
+
+	/**
+	 * An integer between 0 and 5 specifying the number of most likely tokens to return at
+	 * each token position, each with an associated log probability. logprobs must be set
+	 * to true if this parameter is used.
+	 */
+	@JsonProperty("top_logprobs")
+	private Integer topLogprobs;
 
 	/**
 	 * Tool callbacks to be registered with the ChatModel.
@@ -169,20 +206,56 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public Integer getTopK() {
-		return this.topK;
-	}
-
-	public void setTopK(Integer topK) {
-		this.topK = topK;
+		return null;
 	}
 
 	@Override
 	public List<String> getStopSequences() {
-		return null;
+		return this.stop;
 	}
 
 	public void setStopSequences(List<String> stopSequences) {
-		// No-op: HuggingfaceChatOptions does not support stop sequences
+		this.stop = stopSequences;
+	}
+
+	public Integer getSeed() {
+		return this.seed;
+	}
+
+	public void setSeed(Integer seed) {
+		this.seed = seed;
+	}
+
+	public Map<String, Object> getResponseFormat() {
+		return this.responseFormat;
+	}
+
+	public void setResponseFormat(Map<String, Object> responseFormat) {
+		this.responseFormat = responseFormat;
+	}
+
+	public String getToolPrompt() {
+		return this.toolPrompt;
+	}
+
+	public void setToolPrompt(String toolPrompt) {
+		this.toolPrompt = toolPrompt;
+	}
+
+	public Boolean getLogprobs() {
+		return this.logprobs;
+	}
+
+	public void setLogprobs(Boolean logprobs) {
+		this.logprobs = logprobs;
+	}
+
+	public Integer getTopLogprobs() {
+		return this.topLogprobs;
+	}
+
+	public void setTopLogprobs(Integer topLogprobs) {
+		this.topLogprobs = topLogprobs;
 	}
 
 	@Override
@@ -241,9 +314,14 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 			.temperature(fromOptions.getTemperature())
 			.maxTokens(fromOptions.getMaxTokens())
 			.topP(fromOptions.getTopP())
-			.topK(fromOptions.getTopK())
 			.frequencyPenalty(fromOptions.getFrequencyPenalty())
 			.presencePenalty(fromOptions.getPresencePenalty())
+			.stopSequences(fromOptions.getStopSequences())
+			.seed(fromOptions.getSeed())
+			.responseFormat(fromOptions.getResponseFormat())
+			.toolPrompt(fromOptions.getToolPrompt())
+			.logprobs(fromOptions.getLogprobs())
+			.topLogprobs(fromOptions.getTopLogprobs())
 			.toolCallbacks(fromOptions.getToolCallbacks())
 			.toolNames(fromOptions.getToolNames())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
@@ -271,8 +349,11 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 		HuggingfaceChatOptions that = (HuggingfaceChatOptions) o;
 		return Objects.equals(this.model, that.model) && Objects.equals(this.temperature, that.temperature)
 				&& Objects.equals(this.maxTokens, that.maxTokens) && Objects.equals(this.topP, that.topP)
-				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
-				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty) && Objects.equals(this.stop, that.stop)
+				&& Objects.equals(this.seed, that.seed) && Objects.equals(this.responseFormat, that.responseFormat)
+				&& Objects.equals(this.toolPrompt, that.toolPrompt) && Objects.equals(this.logprobs, that.logprobs)
+				&& Objects.equals(this.topLogprobs, that.topLogprobs)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
@@ -281,8 +362,9 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.temperature, this.maxTokens, this.topP, this.topK, this.frequencyPenalty,
-				this.presencePenalty, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
+		return Objects.hash(this.model, this.temperature, this.maxTokens, this.topP, this.frequencyPenalty,
+				this.presencePenalty, this.stop, this.seed, this.responseFormat, this.toolPrompt, this.logprobs,
+				this.topLogprobs, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
 				this.toolContext);
 	}
 
@@ -317,11 +399,6 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 			return this;
 		}
 
-		public Builder topK(Integer topK) {
-			this.options.setTopK(topK);
-			return this;
-		}
-
 		public Builder frequencyPenalty(Double frequencyPenalty) {
 			this.options.setFrequencyPenalty(frequencyPenalty);
 			return this;
@@ -329,6 +406,36 @@ public class HuggingfaceChatOptions implements ToolCallingChatOptions {
 
 		public Builder presencePenalty(Double presencePenalty) {
 			this.options.setPresencePenalty(presencePenalty);
+			return this;
+		}
+
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder seed(Integer seed) {
+			this.options.setSeed(seed);
+			return this;
+		}
+
+		public Builder responseFormat(Map<String, Object> responseFormat) {
+			this.options.setResponseFormat(responseFormat);
+			return this;
+		}
+
+		public Builder toolPrompt(String toolPrompt) {
+			this.options.setToolPrompt(toolPrompt);
+			return this;
+		}
+
+		public Builder logprobs(Boolean logprobs) {
+			this.options.setLogprobs(logprobs);
+			return this;
+		}
+
+		public Builder topLogprobs(Integer topLogprobs) {
+			this.options.setTopLogprobs(topLogprobs);
 			return this;
 		}
 

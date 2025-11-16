@@ -16,7 +16,10 @@
 
 package org.springframework.ai.huggingface;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
@@ -87,7 +90,7 @@ class HuggingfaceChatRequestTests {
 	@Test
 	void createRequestWithPromptPortableChatOptions() {
 		// Portable runtime options.
-		ChatOptions portablePromptOptions = ChatOptions.builder().temperature(0.9).topK(100).topP(0.6).build();
+		ChatOptions portablePromptOptions = ChatOptions.builder().temperature(0.9).topP(0.6).build();
 		var prompt = this.chatModel.buildChatRequest(new Prompt("Test message content", portablePromptOptions));
 
 		assertThat(prompt.getInstructions()).hasSize(1);
@@ -95,7 +98,6 @@ class HuggingfaceChatRequestTests {
 		HuggingfaceChatOptions options = (HuggingfaceChatOptions) prompt.getOptions();
 		assertThat(options.getModel()).isEqualTo("meta-llama/Llama-3.2-3B-Instruct");
 		assertThat(options.getTemperature()).isEqualTo(0.9);
-		assertThat(options.getTopK()).isEqualTo(100);
 		assertThat(options.getTopP()).isEqualTo(0.6);
 		assertThat(options.getMaxTokens()).isEqualTo(100); // default value maintained
 	}
@@ -204,7 +206,6 @@ class HuggingfaceChatRequestTests {
 			.temperature(0.8)
 			.maxTokens(500)
 			.topP(0.95)
-			.topK(50)
 			.frequencyPenalty(0.5)
 			.presencePenalty(0.3)
 			.build();
@@ -216,9 +217,110 @@ class HuggingfaceChatRequestTests {
 		assertThat(options.getTemperature()).isEqualTo(0.8);
 		assertThat(options.getMaxTokens()).isEqualTo(500);
 		assertThat(options.getTopP()).isEqualTo(0.95);
-		assertThat(options.getTopK()).isEqualTo(50);
 		assertThat(options.getFrequencyPenalty()).isEqualTo(0.5);
 		assertThat(options.getPresencePenalty()).isEqualTo(0.3);
+	}
+
+	@Test
+	void createRequestWithStopSequences() {
+		List<String> stopSequences = Arrays.asList("STOP", "END", "DONE");
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("meta-llama/Llama-3.2-3B-Instruct")
+			.stopSequences(stopSequences)
+			.build();
+
+		var prompt = this.chatModel.buildChatRequest(new Prompt("Test message", options));
+
+		HuggingfaceChatOptions resultOptions = (HuggingfaceChatOptions) prompt.getOptions();
+		assertThat(resultOptions.getStopSequences()).isEqualTo(stopSequences);
+	}
+
+	@Test
+	void createRequestWithSeed() {
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("meta-llama/Llama-3.2-3B-Instruct")
+			.seed(42)
+			.build();
+
+		var prompt = this.chatModel.buildChatRequest(new Prompt("Test message", options));
+
+		HuggingfaceChatOptions resultOptions = (HuggingfaceChatOptions) prompt.getOptions();
+		assertThat(resultOptions.getSeed()).isEqualTo(42);
+	}
+
+	@Test
+	void createRequestWithResponseFormat() {
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("meta-llama/Llama-3.2-3B-Instruct")
+			.responseFormat(responseFormat)
+			.build();
+
+		var prompt = this.chatModel.buildChatRequest(new Prompt("Test message", options));
+
+		HuggingfaceChatOptions resultOptions = (HuggingfaceChatOptions) prompt.getOptions();
+		assertThat(resultOptions.getResponseFormat()).isEqualTo(responseFormat);
+	}
+
+	@Test
+	void createRequestWithToolPrompt() {
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("meta-llama/Llama-3.2-3B-Instruct")
+			.toolPrompt("You have access to these tools:")
+			.build();
+
+		var prompt = this.chatModel.buildChatRequest(new Prompt("Test message", options));
+
+		HuggingfaceChatOptions resultOptions = (HuggingfaceChatOptions) prompt.getOptions();
+		assertThat(resultOptions.getToolPrompt()).isEqualTo("You have access to these tools:");
+	}
+
+	@Test
+	void createRequestWithLogprobs() {
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("meta-llama/Llama-3.2-3B-Instruct")
+			.logprobs(true)
+			.topLogprobs(3)
+			.build();
+
+		var prompt = this.chatModel.buildChatRequest(new Prompt("Test message", options));
+
+		HuggingfaceChatOptions resultOptions = (HuggingfaceChatOptions) prompt.getOptions();
+		assertThat(resultOptions.getLogprobs()).isTrue();
+		assertThat(resultOptions.getTopLogprobs()).isEqualTo(3);
+	}
+
+	@Test
+	void createRequestWithAllNewParameters() {
+		List<String> stopSequences = Arrays.asList("STOP");
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("meta-llama/Llama-3.2-3B-Instruct")
+			.temperature(0.7)
+			.maxTokens(200)
+			.stopSequences(stopSequences)
+			.seed(12345)
+			.responseFormat(responseFormat)
+			.toolPrompt("Tools available:")
+			.logprobs(true)
+			.topLogprobs(5)
+			.build();
+
+		var prompt = this.chatModel.buildChatRequest(new Prompt("Test message", options));
+
+		HuggingfaceChatOptions resultOptions = (HuggingfaceChatOptions) prompt.getOptions();
+		assertThat(resultOptions.getModel()).isEqualTo("meta-llama/Llama-3.2-3B-Instruct");
+		assertThat(resultOptions.getTemperature()).isEqualTo(0.7);
+		assertThat(resultOptions.getMaxTokens()).isEqualTo(200);
+		assertThat(resultOptions.getStopSequences()).isEqualTo(stopSequences);
+		assertThat(resultOptions.getSeed()).isEqualTo(12345);
+		assertThat(resultOptions.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(resultOptions.getToolPrompt()).isEqualTo("Tools available:");
+		assertThat(resultOptions.getLogprobs()).isTrue();
+		assertThat(resultOptions.getTopLogprobs()).isEqualTo(5);
 	}
 
 	private static List<Message> createMessagesWithAllMessageTypes() {

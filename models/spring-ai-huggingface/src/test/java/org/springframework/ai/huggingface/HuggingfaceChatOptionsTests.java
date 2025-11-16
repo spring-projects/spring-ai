@@ -16,6 +16,9 @@
 
 package org.springframework.ai.huggingface;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -176,17 +179,194 @@ class HuggingfaceChatOptionsTests {
 	}
 
 	@Test
-	void testUnsupportedTopK() {
-		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder().model("test-model").temperature(0.7).build();
+	void testStopSequences() {
+		List<String> stopSequences = Arrays.asList("STOP", "END");
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.stopSequences(stopSequences)
+			.build();
 
-		assertThat(options.getTopK()).isNull();
+		assertThat(options.getStopSequences()).isEqualTo(stopSequences);
 	}
 
 	@Test
-	void testUnsupportedStopSequences() {
-		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder().model("test-model").temperature(0.7).build();
+	void testSeed() {
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder().model("test-model").seed(12345).build();
 
-		assertThat(options.getStopSequences()).isNull();
+		assertThat(options.getSeed()).isEqualTo(12345);
+	}
+
+	@Test
+	void testResponseFormat() {
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.responseFormat(responseFormat)
+			.build();
+
+		assertThat(options.getResponseFormat()).isEqualTo(responseFormat);
+	}
+
+	@Test
+	void testToolPrompt() {
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.toolPrompt("You have access to the following tools:")
+			.build();
+
+		assertThat(options.getToolPrompt()).isEqualTo("You have access to the following tools:");
+	}
+
+	@Test
+	void testLogprobs() {
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder().model("test-model").logprobs(true).build();
+
+		assertThat(options.getLogprobs()).isTrue();
+	}
+
+	@Test
+	void testTopLogprobs() {
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.logprobs(true)
+			.topLogprobs(5)
+			.build();
+
+		assertThat(options.getTopLogprobs()).isEqualTo(5);
+	}
+
+	@Test
+	void testBuilderWithAllNewParameters() {
+		List<String> stopSequences = Arrays.asList("STOP", "END");
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.temperature(0.7)
+			.maxTokens(100)
+			.topP(0.9)
+			.frequencyPenalty(0.5)
+			.presencePenalty(0.8)
+			.stopSequences(stopSequences)
+			.seed(12345)
+			.responseFormat(responseFormat)
+			.toolPrompt("You have access to tools:")
+			.logprobs(true)
+			.topLogprobs(3)
+			.build();
+
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getStopSequences()).isEqualTo(stopSequences);
+		assertThat(options.getSeed()).isEqualTo(12345);
+		assertThat(options.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(options.getToolPrompt()).isEqualTo("You have access to tools:");
+		assertThat(options.getLogprobs()).isTrue();
+		assertThat(options.getTopLogprobs()).isEqualTo(3);
+	}
+
+	@Test
+	void testFromOptionsWithNewParameters() {
+		List<String> stopSequences = Arrays.asList("STOP");
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+
+		HuggingfaceChatOptions originalOptions = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.stopSequences(stopSequences)
+			.seed(999)
+			.responseFormat(responseFormat)
+			.toolPrompt("Tools:")
+			.logprobs(true)
+			.topLogprobs(2)
+			.build();
+
+		HuggingfaceChatOptions copiedOptions = HuggingfaceChatOptions.fromOptions(originalOptions);
+
+		assertThat(copiedOptions.getStopSequences()).isEqualTo(stopSequences);
+		assertThat(copiedOptions.getSeed()).isEqualTo(999);
+		assertThat(copiedOptions.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(copiedOptions.getToolPrompt()).isEqualTo("Tools:");
+		assertThat(copiedOptions.getLogprobs()).isTrue();
+		assertThat(copiedOptions.getTopLogprobs()).isEqualTo(2);
+	}
+
+	@Test
+	void testToMapWithNewParameters() {
+		List<String> stopSequences = Arrays.asList("STOP", "END");
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.temperature(0.7)
+			.stopSequences(stopSequences)
+			.seed(12345)
+			.responseFormat(responseFormat)
+			.toolPrompt("Tools:")
+			.logprobs(true)
+			.topLogprobs(3)
+			.build();
+
+		Map<String, Object> map = options.toMap();
+
+		assertThat(map).containsEntry("model", "test-model")
+			.containsEntry("temperature", 0.7)
+			.containsEntry("stop", stopSequences)
+			.containsEntry("seed", 12345)
+			.containsEntry("response_format", responseFormat)
+			.containsEntry("tool_prompt", "Tools:")
+			.containsEntry("logprobs", true)
+			.containsEntry("top_logprobs", 3);
+	}
+
+	@Test
+	void testEqualsAndHashCodeWithNewParameters() {
+		List<String> stopSequences = Arrays.asList("STOP");
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+
+		HuggingfaceChatOptions options1 = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.stopSequences(stopSequences)
+			.seed(999)
+			.responseFormat(responseFormat)
+			.logprobs(true)
+			.build();
+
+		HuggingfaceChatOptions options2 = HuggingfaceChatOptions.builder()
+			.model("test-model")
+			.stopSequences(stopSequences)
+			.seed(999)
+			.responseFormat(responseFormat)
+			.logprobs(true)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+	}
+
+	@Test
+	void testSettersForNewParameters() {
+		HuggingfaceChatOptions options = new HuggingfaceChatOptions();
+		List<String> stopSequences = Arrays.asList("STOP");
+		Map<String, Object> responseFormat = new HashMap<>();
+		responseFormat.put("type", "json_object");
+
+		options.setStopSequences(stopSequences);
+		options.setSeed(777);
+		options.setResponseFormat(responseFormat);
+		options.setToolPrompt("Tools available:");
+		options.setLogprobs(true);
+		options.setTopLogprobs(4);
+
+		assertThat(options.getStopSequences()).isEqualTo(stopSequences);
+		assertThat(options.getSeed()).isEqualTo(777);
+		assertThat(options.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(options.getToolPrompt()).isEqualTo("Tools available:");
+		assertThat(options.getLogprobs()).isTrue();
+		assertThat(options.getTopLogprobs()).isEqualTo(4);
 	}
 
 }

@@ -148,9 +148,14 @@ NOTE: Default values shown below for numeric options (e.g., temperature, frequen
 | spring.ai.huggingface.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. | -
 | spring.ai.huggingface.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. | -
 | spring.ai.huggingface.chat.options.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. | -
-| spring.ai.huggingface.chat.options.top-k | The number of highest probability vocabulary tokens to keep for top-k-filtering. | -
 | spring.ai.huggingface.chat.options.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | -
 | spring.ai.huggingface.chat.options.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
+| spring.ai.huggingface.chat.options.stop | Up to 4 sequences where the API will stop generating further tokens. | -
+| spring.ai.huggingface.chat.options.seed | Integer seed for reproducibility. Makes repeated requests with the same seed and parameters return the same result. | -
+| spring.ai.huggingface.chat.options.response-format | An object specifying the format that the model must output. Setting to `{"type": "json_object"}` enables JSON mode. Can be configured as a Map with type and optional schema fields. | -
+| spring.ai.huggingface.chat.options.tool-prompt | A prompt to be appended before the tools when using function calling. | -
+| spring.ai.huggingface.chat.options.logprobs | Whether to return log probabilities of the output tokens. If true, returns the log probabilities of each output token. | -
+| spring.ai.huggingface.chat.options.top-logprobs | An integer between 0 and 5 specifying the number of most likely tokens to return at each token position. Requires logprobs to be set to true. | -
 | spring.ai.huggingface.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.huggingface.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel for function calling. | -
 | spring.ai.huggingface.chat.options.internal-tool-execution-enabled | If false, Spring AI will not handle the tool calls internally, but will proxy them to the client. If true (the default), Spring AI will handle the function calls internally. | true
@@ -179,6 +184,44 @@ ChatResponse response = chatModel.call(
         HuggingfaceChatOptions.builder()
             .model("mistralai/Mistral-7B-Instruct-v0.3")
             .temperature(0.4)
+        .build()
+    ));
+----
+
+=== Advanced Options
+
+You can use additional parameters for more control over the model's behavior:
+
+[source,java]
+----
+// Using stop sequences to limit generation
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Count from 1 to 10",
+        HuggingfaceChatOptions.builder()
+            .model("meta-llama/Llama-3.2-3B-Instruct")
+            .stopSequences(Arrays.asList("5", "STOP"))
+        .build()
+    ));
+
+// Using seed for reproducible outputs
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate a random story",
+        HuggingfaceChatOptions.builder()
+            .seed(42)  // Same seed produces same results
+            .temperature(0.7)
+        .build()
+    ));
+
+// Using JSON response format
+Map<String, Object> responseFormat = new HashMap<>();
+responseFormat.put("type", "json_object");
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate a JSON object with fields: name, age, city",
+        HuggingfaceChatOptions.builder()
+            .responseFormat(responseFormat)
         .build()
     ));
 ----
