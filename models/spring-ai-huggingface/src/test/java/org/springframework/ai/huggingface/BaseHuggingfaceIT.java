@@ -64,7 +64,10 @@ public abstract class BaseHuggingfaceIT {
 
 		@Bean
 		public HuggingfaceApi huggingfaceChatApi() {
-			return HuggingfaceApi.builder().baseUrl(HuggingfaceApiConstants.DEFAULT_CHAT_BASE_URL).apiKey(getApiKey()).build();
+			return HuggingfaceApi.builder()
+				.baseUrl(HuggingfaceApiConstants.DEFAULT_CHAT_BASE_URL)
+				.apiKey(getApiKey())
+				.build();
 		}
 
 		@Bean
