@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -49,7 +50,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
+public class GoogleGenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	// https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerationConfig
 
@@ -96,6 +97,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	 * - application/json: JSON response in the candidates.
 	 */
 	private @JsonProperty("responseMimeType") String responseMimeType;
+
+	/**
+	 * Optional. Geminie response schema.
+	 */
+	private @JsonProperty("responseSchema") String responseSchema;
 
 	/**
 	 * Optional. Frequency penalties.
@@ -199,8 +205,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setModel(fromOptions.getModel());
 		options.setToolCallbacks(fromOptions.getToolCallbacks());
 		options.setResponseMimeType(fromOptions.getResponseMimeType());
+		options.setResponseSchema(fromOptions.getResponseSchema());
 		options.setToolNames(fromOptions.getToolNames());
-		options.setResponseMimeType(fromOptions.getResponseMimeType());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
@@ -293,6 +299,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 	public void setResponseMimeType(String mimeType) {
 		this.responseMimeType = mimeType;
+	}
+
+	public String getResponseSchema() {
+		return this.responseSchema;
+	}
+
+	public void setResponseSchema(String responseSchema) {
+		this.responseSchema = responseSchema;
 	}
 
 	@Override
@@ -434,6 +448,18 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public String getOutputSchema() {
+		return this.getResponseSchema();
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String jsonSchemaText) {
+		this.setResponseSchema(jsonSchemaText);
+		this.setResponseMimeType("application/json");
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -450,6 +476,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.thinkingBudget, that.thinkingBudget)
 				&& Objects.equals(this.maxOutputTokens, that.maxOutputTokens) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
+				&& Objects.equals(this.responseSchema, that.responseSchema)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
@@ -461,8 +488,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
-				this.responseMimeType, this.toolCallbacks, this.toolNames, this.googleSearchRetrieval,
-				this.safetySettings, this.internalToolExecutionEnabled, this.toolContext, this.labels);
+				this.responseMimeType, this.responseSchema, this.toolCallbacks, this.toolNames,
+				this.googleSearchRetrieval, this.safetySettings, this.internalToolExecutionEnabled, this.toolContext,
+				this.labels);
 	}
 
 	@Override
@@ -545,6 +573,16 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		public Builder responseMimeType(String mimeType) {
 			Assert.notNull(mimeType, "mimeType must not be null");
 			this.options.setResponseMimeType(mimeType);
+			return this;
+		}
+
+		public Builder responseSchema(String responseSchema) {
+			this.options.setResponseSchema(responseSchema);
+			return this;
+		}
+
+		public Builder outputSchema(String jsonSchema) {
+			this.options.setOutputSchema(jsonSchema);
 			return this;
 		}
 
