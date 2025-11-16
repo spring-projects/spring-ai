@@ -6,7 +6,7 @@ link:https://docs.trychroma.com/[Chroma] is the open-source embedding database. 
 
 == Prerequisites
 
-1. Access to ChromaDB. Compatible with link:https://trychroma.com/signup[Chroma Cloud], or  <<run Chroma Locally, setup local ChromaDB>> in the appendix shows how to set up a DB locally with a Docker container.
+1. Access to ChromaDB. Compatible with link:https://trychroma.com/signup[Chroma Cloud], or  <<run-chroma-locally, setup local ChromaDB>> in the appendix shows how to set up a DB locally with a Docker container.
    - For Chroma Cloud: You'll need your API key, tenant name, and database name from your Chroma Cloud dashboard.
    - For local ChromaDB: No additional configuration required beyond starting the container.
 
@@ -94,7 +94,7 @@ spring.ai.vectorstore.chroma.collection-name=<your collection name>
 spring.ai.openai.api.key=<OpenAI Api-key>
 ----
 
-Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
+Please have a look at the list of <<configuration-properties, configuration parameters>> for the vector store to learn about the default values and configuration options.
 
 Now you can auto-wire the Chroma Vector Store in your application and use it
 
@@ -116,6 +116,7 @@ vectorStore.add(documents);
 List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
+[[configuration-properties]]
 === Configuration properties
 
 You can use the following properties in your Spring Boot configuration to customize the vector store.
@@ -207,18 +208,20 @@ NOTE: Those (portable) filter expressions get automatically converted into the p
 
 For example, this portable filter expression:
 
-```sql
+[source,sql]
+----
 author in ['john', 'jill'] && article_type == 'blog'
-```
+----
 
 is converted into the proprietary Chroma format
 
-```json
+[source,json]
+----
 {"$and":[
 	{"author": {"$in": ["john", "jill"]}},
 	{"article_type":{"$eq":"blog"}}]
 }
-```
+----
 
 
 == Manual Configuration
@@ -310,11 +313,12 @@ List<Document> results = vectorStore.similaritySearch("Spring");
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
 
-
+[[run-chroma-locally]]
 === Run Chroma Locally
 
-```shell
+[source,shell]
+----
 docker run -it --rm --name chroma -p 8000:8000 ghcr.io/chroma-core/chroma:1.0.0
-```
+----
 
 Starts a chroma store at <http://localhost:8000/api/v1>
