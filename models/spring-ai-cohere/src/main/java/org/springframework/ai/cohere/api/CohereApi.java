@@ -20,23 +20,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.embedding.Embedding;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -867,7 +867,7 @@ public class CohereApi {
 		 * A model that allows for text and images to be classified or turned into embeddings
 		 * dimensional - [256, 512, 1024, 1536 (default)]
 		 */
-		EMBED("embed-v4.0"),
+		EMBED_V4("embed-v4.0"),
 		/**
 		 * Embed v3 Multilingual model for text embeddings.
 		 * Produces 1024-dimensional embeddings suitable for multilingual semantic search,
@@ -904,6 +904,266 @@ public class CohereApi {
 			return this.value;
 		}
 
+	}
+
+
+	/**
+	 * Embedding type
+	 */
+	public enum EmbeddingType {
+		/**
+		 * Use this when you want to get back the default float embeddings. Supported with all Embed models.
+		 */
+		@JsonProperty("float")
+		FLOAT,
+
+		/**
+		 * Use this when you want to get back signed int8 embeddings. Supported with Embed v3.0 and newer Embed models.
+		 */
+		@JsonProperty("int8")
+		INT8,
+
+		/**
+		 * Use this when you want to get back unsigned int8 embeddings. Supported with Embed v3.0 and newer Embed models.
+		 */
+		@JsonProperty("uint8")
+		UINT8,
+
+		/**
+		 * Use this when you want to get back signed binary embeddings. Supported with Embed v3.0 and newer Embed models.
+		 */
+		@JsonProperty("binary")
+		BINARY,
+
+		/**
+		 * Use this when you want to get back unsigned binary embeddings. Supported with Embed v3.0 and newer Embed models.
+		 */
+		@JsonProperty("ubinary")
+		UBINARY,
+
+		/**
+		 * Use this when you want to get back base64 embeddings. Supported with Embed v3.0 and newer Embed models.
+		 */
+		@JsonProperty("base64")
+		BASE64
+	}
+
+	/**
+	 * Embedding request.
+	 *
+	 * @param texts An array of strings to embed.
+	 * @param model The model to use for embedding.
+	 * @param inputType The type of input (search_document, search_query, classification,
+	 * clustering).
+	 * @param embeddingTypes The types of embeddings to return (float, int8, uint8,
+	 * binary, ubinary).
+	 * @param truncate How to handle inputs longer than the maximum token length (NONE,
+	 * START, END).
+	 * @param <T> Type of the input (String or List of tokens).
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public record EmbeddingRequest<T>(
+			// @formatter:off
+			@JsonProperty("texts") List<T> texts,
+			@JsonProperty("model") String model,
+			@JsonProperty("input_type") InputType inputType,
+			@JsonProperty("embedding_types") List<EmbeddingType> embeddingTypes,
+			@JsonProperty("truncate") Truncate truncate) {
+		// @formatter:on
+
+		public static <T> Builder<T> builder() {
+			return new Builder<>();
+		}
+
+		public static final class Builder<T> {
+
+			private String model = EmbeddingModel.EMBED_V4.getValue();
+			private List<T> texts;
+			private InputType inputType = InputType.SEARCH_DOCUMENT;
+			private List<EmbeddingType> embeddingTypes = List.of(EmbeddingType.FLOAT);
+			private Truncate truncate = Truncate.END;
+
+			public Builder<T> model(String model) {
+				this.model = model;
+				return this;
+			}
+
+			public Builder<T> texts(Object raw) {
+				if (raw == null) {
+					this.texts = null;
+					return this;
+				}
+
+				if (raw instanceof List<?> list) {
+					this.texts = (List<T>) list;
+				} else {
+					this.texts = List.of((T) raw);
+				}
+				return this;
+			}
+
+			public Builder<T> inputType(InputType inputType) {
+				this.inputType = inputType;
+				return this;
+			}
+
+			public Builder<T> embeddingTypes(List<EmbeddingType> embeddingTypes) {
+				this.embeddingTypes = embeddingTypes;
+				return this;
+			}
+
+			public Builder<T> truncate(Truncate truncate) {
+				this.truncate = truncate;
+				return this;
+			}
+
+			public EmbeddingRequest<T> build() {
+				return new EmbeddingRequest<>(
+						texts,
+						model,
+						inputType,
+						embeddingTypes,
+						truncate
+				);
+			}
+		}
+
+		/**
+		 * Input type for embeddings.
+		 */
+		public enum InputType {
+
+			// @formatter:off
+			@JsonProperty("search_document")
+			SEARCH_DOCUMENT,
+			@JsonProperty("search_query")
+			SEARCH_QUERY,
+			@JsonProperty("classification")
+			CLASSIFICATION,
+			@JsonProperty("clustering")
+			CLUSTERING,
+			@JsonProperty("image")
+			IMAGE
+			// @formatter:on
+		}
+
+		/**
+		 * Truncation strategy for inputs longer than maximum token length.
+		 */
+		public enum Truncate {
+
+			// @formatter:off
+			@JsonProperty("NONE")
+			NONE,
+			@JsonProperty("START")
+			START,
+			@JsonProperty("END")
+			END
+			// @formatter:on
+
+		}
+
+	}
+
+	/**
+	 * Embedding response.
+	 *
+	 * @param id Unique identifier for the embedding request.
+	 * @param embeddings The embeddings
+	 * @param texts The texts that were embedded.
+	 * @param responseType The type of response ("embeddings_floats" or "embeddings_by_type").
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record EmbeddingResponse(
+			// @formatter:off
+			@JsonProperty("id") String id,
+			@JsonProperty("embeddings") Object embeddings,
+			@JsonProperty("texts") List<String> texts,
+			@JsonProperty("response_type") String responseType) {
+		// @formatter:on
+
+		/**
+		 * Extracts float embeddings from the response.
+		 * Handles both response formats:
+		 * - "embeddings_floats": embeddings is List&lt;List&lt;Double&gt;&gt;
+		 * - "embeddings_by_type": embeddings is Map with "float" key containing List&lt;List&lt;Double&gt;&gt;
+		 * @return List of float arrays representing the embeddings
+		 */
+		@JsonIgnore
+		@SuppressWarnings("unchecked")
+		public List<float[]> getFloatEmbeddings() {
+			if (this.embeddings == null) {
+				return List.of();
+			}
+
+			// Handle "embeddings_floats" format: embeddings is directly List<List<Double>>
+			if (this.embeddings instanceof List<?> embeddingsList) {
+				return embeddingsList.stream()
+						.map(embedding -> {
+							if (embedding instanceof List<?> embeddingVector) {
+								float[] floatArray = new float[embeddingVector.size()];
+								for (int i = 0; i < embeddingVector.size(); i++) {
+									Object value = embeddingVector.get(i);
+									floatArray[i] = (value instanceof Number number) ? number.floatValue() : 0f;
+								}
+								return floatArray;
+							}
+							return new float[0];
+						})
+						.toList();
+			}
+
+			// Handle "embeddings_by_type" format: embeddings is Map<String, Object>
+			if (this.embeddings instanceof Map<?, ?> embeddingsMap) {
+				Object floatEmbeddings = embeddingsMap.get("float");
+				if (floatEmbeddings instanceof List<?> embeddingsList) {
+					return embeddingsList.stream()
+							.map(embedding -> {
+								if (embedding instanceof List<?> embeddingVector) {
+									float[] floatArray = new float[embeddingVector.size()];
+									for (int i = 0; i < embeddingVector.size(); i++) {
+										Object value = embeddingVector.get(i);
+										floatArray[i] = (value instanceof Number number) ? number.floatValue() : 0f;
+									}
+									return floatArray;
+								}
+								return new float[0];
+							})
+							.toList();
+				}
+			}
+
+			return List.of();
+		}
+
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns {@link EmbeddingResponse} with embeddings data.
+	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
+	 * {@link List} of tokens (e.g. Integers). For embedding multiple inputs in a single
+	 * request, You can pass a {@link List} of {@link String} or {@link List} of
+	 * {@link List} of tokens. For example:
+	 *
+	 * <pre>{@code List.of("text1", "text2", "text3")} </pre>
+	 */
+	public <T> ResponseEntity<EmbeddingResponse> embeddings(EmbeddingRequest<T> embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts), "The texts list can not be empty.");
+		Assert.isTrue(embeddingRequest.texts.size() <= 96, "The list must be 96 items or less");
+
+		return this.restClient.post()
+				.uri("/v2/embed")
+				.body(embeddingRequest)
+				.retrieve()
+				.toEntity(new ParameterizedTypeReference<>() {
+
+				});
 	}
 
 	public static Builder builder() {
