@@ -164,9 +164,8 @@ class HuggingfaceEmbeddingModelIT extends BaseHuggingfaceIT {
 	@Test
 	void embeddingWithNormalizeOption() {
 		// Note: The normalize, prompt_name, truncate, and truncation_direction parameters
-		// are only available on Text Embeddings Inference (TEI) servers, not on the
-		// standard HuggingFace Inference API. The standard API appears to normalize
-		// embeddings by default.
+		// are part of the HuggingFace Inference API Feature Extraction specification:
+		// https://huggingface.co/docs/inference-providers/tasks/feature-extraction
 		//
 		// This test verifies that:
 		// 1. The normalize option can be set and sent to the API (via toMap())

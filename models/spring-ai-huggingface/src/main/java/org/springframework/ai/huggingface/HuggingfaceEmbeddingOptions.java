@@ -236,7 +236,7 @@ public class HuggingfaceEmbeddingOptions implements EmbeddingOptions {
 
 		/**
 		 * Set which side of the text to truncate when it exceeds the maximum length.
-		 * @param truncationDirection Either "Left" or "Right".
+		 * @param truncationDirection Either "left" or "right" (case-sensitive).
 		 * @return This builder.
 		 */
 		public Builder truncationDirection(String truncationDirection) {
