@@ -80,7 +80,13 @@ public class CohereChatAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Cohere API key must be set");
 		Assert.hasText(resoledBaseUrl, "Cohere base URL must be set");
 
-		return new CohereApi(resoledBaseUrl, resolvedApiKey, restClientBuilder, webClientBuilder, responseErrorHandler);
+		return CohereApi.builder()
+				.baseUrl(resoledBaseUrl)
+				.apiKey(resolvedApiKey)
+				.restClientBuilder(restClientBuilder)
+				.webClientBuilder(webClientBuilder)
+				.responseErrorHandler(responseErrorHandler)
+				.build();
 	}
 
 }
