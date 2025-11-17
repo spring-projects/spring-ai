@@ -475,15 +475,20 @@ public class DefaultChatClient implements ChatClient {
 
 		@Nullable
 		private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
-			if (outputConverter != null && StringUtils.hasText(outputConverter.getFormat())) {
-				this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
 
-				if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
-						&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
-					this.request.context()
-						.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(),
-								beanOutputConverter.getJsonSchema());
-				}
+			if (StringUtils.hasText(outputConverter.getFormat())) {
+				// Used for default struectured output format support, based on prompt
+				// instructions.
+				this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
+			}
+
+			if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
+				// Used for native structured output support, e.g. AI model API shoudl
+				// provide structured output support.
+				this.request.context()
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), beanOutputConverter.getJsonSchema());
+
 			}
 
 			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();

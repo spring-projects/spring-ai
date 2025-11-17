@@ -200,7 +200,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
-				.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 				.user("Generate the filmography for a random actor.")
 				.call()
 				.entity(ActorsFilms.class);
@@ -230,7 +230,7 @@ class OpenAiChatClientIT extends AbstractIT {
 
 		// @formatter:off
 		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
-				.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 				.user("Generate the filmography of 5 movies for Tom Hanks.")
 				.call()
 				.entity(ActorsFilms.class);

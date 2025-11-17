@@ -243,7 +243,7 @@ class VertexAiGeminiChatModelIT {
 
 		// @formatter:off
 		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
-				.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
 				.entity(new ParameterizedTypeReference<>() {
@@ -259,7 +259,7 @@ class VertexAiGeminiChatModelIT {
 		var chatClient = ChatClient.builder(this.chatModel).build();
 
 		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
-			.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.call()
 			.entity(ActorsFilmsRecord.class);
 

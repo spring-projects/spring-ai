@@ -285,13 +285,13 @@ List<ActorFilms> actorFilms = chatClient.prompt()
 
 ==== Native Structured Output
 
-As more AI models support structured output natively, you can take advantage of this feature by using the `AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT` advisor parameter when calling the `ChatClient`.
+As more AI models support structured output natively, you can take advantage of this feature by using the `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT` advisor parameter when calling the `ChatClient`.
 You can use the `defaultAdvisors()` method on the `ChatClient.Builder` to set this parameter globally for all calls or set it per call as shown below:
 
 [source,java]
 ----
 ActorFilms actorFilms = chatClient.prompt()
-    .advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
     .user("Generate the filmography for a random actor.")
     .call()
     .entity(ActorFilms.class);

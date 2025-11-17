@@ -124,7 +124,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
-				.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 				.options(AnthropicChatOptions.builder()
 					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 					.build())

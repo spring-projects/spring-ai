@@ -62,22 +62,23 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 	}
 
 	private static ChatClientRequest augmentWithFormatInstructions(ChatClientRequest chatClientRequest) {
+
 		String outputFormat = (String) chatClientRequest.context().get(ChatClientAttributes.OUTPUT_FORMAT.getKey());
 
-		if (!StringUtils.hasText(outputFormat)) {
+		String outputSchema = (String) chatClientRequest.context()
+			.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
+
+		if (!StringUtils.hasText(outputFormat) && !StringUtils.hasText(outputSchema)) {
 			return chatClientRequest;
 		}
 
-		if (chatClientRequest.prompt().getOptions() instanceof StructuredOutputChatOptions structuredOutputChatOptions
-				&& chatClientRequest.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())) {
+		if (chatClientRequest.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+				&& StringUtils.hasText(outputSchema) && chatClientRequest.prompt()
+					.getOptions() instanceof StructuredOutputChatOptions structuredOutputChatOptions) {
 
-			String outputSchema = (String) chatClientRequest.context()
-				.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
+			structuredOutputChatOptions.setOutputSchema(outputSchema);
 
-			if (StringUtils.hasText(outputSchema)) {
-				structuredOutputChatOptions.setOutputSchema(outputSchema);
-				return chatClientRequest;
-			}
+			return chatClientRequest;
 		}
 
 		Prompt augmentedPrompt = chatClientRequest.prompt()

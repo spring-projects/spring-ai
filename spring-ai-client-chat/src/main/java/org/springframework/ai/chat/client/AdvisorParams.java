@@ -32,7 +32,7 @@ public final class AdvisorParams {
 	private AdvisorParams() {
 	}
 
-	public static final Consumer<ChatClient.AdvisorSpec> WITH_NATIVE_STRUCTURED_OUTPUT = a -> a
+	public static final Consumer<ChatClient.AdvisorSpec> ENABLE_NATIVE_STRUCTURED_OUTPUT = a -> a
 		.param(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true);
 
 }

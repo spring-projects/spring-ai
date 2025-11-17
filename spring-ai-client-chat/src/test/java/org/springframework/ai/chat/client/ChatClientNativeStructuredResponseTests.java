@@ -111,7 +111,7 @@ public class ChatClientNativeStructuredResponseTests {
 			.build()
 			.prompt()
 			.options(this.structuredOutputChatOptions)
-			.advisors(AdvisorParams.WITH_NATIVE_STRUCTURED_OUTPUT)
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
 			.call()
