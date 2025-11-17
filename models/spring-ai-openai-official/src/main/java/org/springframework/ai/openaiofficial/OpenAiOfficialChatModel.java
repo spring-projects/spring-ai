@@ -285,19 +285,17 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				this.openAiClientAsync.chat().completions().createStreaming(request).subscribe(chunk -> {
 					try {
 						ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
-						// If an id is not provided, set to "NO_ID" (for compatible APIs).
-						chatCompletion.id();
 						String id = chatCompletion.id();
-
-						List<Generation> generations = chatCompletion.choices().stream().map(choice -> { // @formatter:off
+						List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
 								roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow() : "");
 								Map<String, Object> metadata = Map.of(
 										"id", id,
 										"role", roleMap.getOrDefault(id, ""),
 										"index", choice.index(),
-										"finishReason", choice.finishReason().asString(),
+										"finishReason", choice.finishReason().value(),
 										"refusal", choice.message().refusal().isPresent() ? choice.message().refusal() : "",
 										"annotations", choice.message().annotations().isPresent() ? choice.message().annotations() : List.of());
+
 								return buildGeneration(choice, metadata);
 							}).toList();
 
@@ -437,8 +435,13 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		List<ChatCompletion.Choice> choices = chunk.choices()
 			.stream()
 			.map(chunkChoice -> {
+				ChatCompletion.Choice.FinishReason finishReason = ChatCompletion.Choice.FinishReason.of("");
+				if (chunkChoice.finishReason().isPresent()) {
+					finishReason = ChatCompletion.Choice.FinishReason.of(chunkChoice.finishReason().get().value().name().toLowerCase());
+				}
+
 				ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder()
-					.finishReason(ChatCompletion.Choice.FinishReason.of(chunkChoice.finishReason().toString()))
+					.finishReason(finishReason)
 					.index(chunkChoice.index())
 					.message(ChatCompletionMessage.builder()
 						.content(chunkChoice.delta().content())
