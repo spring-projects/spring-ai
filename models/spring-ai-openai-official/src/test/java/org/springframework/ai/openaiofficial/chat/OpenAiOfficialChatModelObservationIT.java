@@ -63,7 +63,7 @@ public class OpenAiOfficialChatModelObservationIT {
 	}
 
 	@Test
-	void observationForChatOperation() {
+	void observationForChatOperation() throws InterruptedException {
 
 		var options = OpenAiOfficialChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
 
@@ -79,7 +79,7 @@ public class OpenAiOfficialChatModelObservationIT {
 	}
 
 	@Test
-	void observationForStreamingChatOperation() {
+	void observationForStreamingChatOperation() throws InterruptedException {
 		var options = OpenAiOfficialChatOptions.builder().model(DEFAULT_CHAT_MODEL).streamUsage(true).build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -104,7 +104,9 @@ public class OpenAiOfficialChatModelObservationIT {
 		validate(responseMetadata);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
+	private void validate(ChatResponseMetadata responseMetadata) throws InterruptedException {
+		Thread.sleep(100); // Wait for observation to be recorded
+
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
