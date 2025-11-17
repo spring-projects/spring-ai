@@ -16,11 +16,14 @@
 
 package org.springframework.ai.cohere.chat;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.api.CohereApi.FunctionTool;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletion;
@@ -52,6 +55,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -61,11 +65,14 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a Cohere Chat Model.
@@ -169,7 +176,167 @@ public class CohereChatModel implements ChatModel {
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
-		return Flux.error(new UnsupportedOperationException("Streaming is not supported yet"));
+		return this.internalStream(requestPrompt, null);
+	}
+
+	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+		return Flux.deferContextual(contextView -> {
+			var request = createRequest(prompt, true);
+
+			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+					.prompt(prompt)
+					.provider(CohereApi.PROVIDER_NAME)
+					.build();
+
+			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry);
+
+			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
+			Flux<CohereApi.ChatCompletionChunk> completionChunks = this.retryTemplate
+					.execute(ctx -> this.cohereApi.chatCompletionStream(request));
+
+			// For chunked responses, only the first chunk contains the role.
+			// The rest of the chunks with same ID share the same role.
+			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+
+			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
+			// the function call handling logic.
+			Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion)
+					.filter(chatCompletion -> chatCompletion != null && chatCompletion.message() != null)
+					.switchMap(chatCompletion -> Mono.just(chatCompletion).map(completion -> {
+						try {
+							@SuppressWarnings("null")
+							String id = completion.id();
+							ChatCompletionMessage.Provider message = completion.message();
+
+							// Store the role for this completion ID
+							if (message.role() != null) {
+								roleMap.putIfAbsent(id, message.role().name());
+							}
+
+							// @formatter:off
+							List<Generation> generations = message.content().stream().map(content -> {
+								Map<String, Object> metadata = Map.of(
+										"id", completion.id() != null ? completion.id() : "",
+										"role", roleMap.getOrDefault(id, ""),
+										"finishReason", completion.finishReason() != null ? completion.finishReason().name() : "");
+								return buildGeneration(content, completion, metadata);
+							}).toList();
+							// @formatter:on
+
+							if (completion.usage() != null) {
+								DefaultUsage usage = getDefaultUsage(completion.usage());
+								Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
+								return new ChatResponse(generations, from(completion, cumulativeUsage));
+							}
+							else {
+								return new ChatResponse(generations);
+							}
+						}
+						catch (Exception e) {
+							logger.error("Error processing chat completion", e);
+							return new ChatResponse(List.of());
+						}
+					}));
+
+			// @formatter:off
+			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
+						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+							return Flux.deferContextual(ctx -> {
+								ToolExecutionResult toolExecutionResult;
+								try {
+									ToolCallReactiveContextHolder.setContext(ctx);
+									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+								}
+								finally {
+									ToolCallReactiveContextHolder.clearContext();
+								}
+								if (toolExecutionResult.returnDirect()) {
+									// Return tool execution result directly to the client.
+									return Flux.just(ChatResponse.builder().from(response)
+											.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+											.build());
+								}
+								else {
+									// Send the tool execution result back to the model.
+									return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+											response);
+								}
+							}).subscribeOn(Schedulers.boundedElastic());
+						}
+						else {
+							return Flux.just(response);
+						}
+					})
+					.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			// @formatter:on;
+
+			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+		});
+
+	}
+
+	private ChatCompletion toChatCompletion(CohereApi.ChatCompletionChunk chunk) {
+		if (chunk == null || chunk.delta() == null) {
+			return null;
+		}
+
+		CohereApi.ChatCompletionChunk.ChunkDelta delta = chunk.delta();
+		ChatCompletionMessage message = delta.message();
+
+		ChatCompletionMessage.Provider provider = null;
+		if (message != null) {
+
+			List<ChatCompletionMessage.MessageContent> content = extractMessageContent(message.rawContent());
+
+			provider = new ChatCompletionMessage.Provider(
+				content,
+				message.role(),
+				message.toolPlan(),
+				message.toolCalls(),
+				message.citations()
+			);
+		}
+
+		return new CohereApi.ChatCompletion(
+			chunk.id(),
+			delta.finishReason(),
+			provider,
+			null,
+			delta.usage()
+		);
+	}
+
+	private List<ChatCompletionMessage.MessageContent> extractMessageContent(Object rawContent) {
+		if (rawContent == null) {
+			return List.of();
+		}
+
+		if (rawContent instanceof String text) {
+			return List.of(new ChatCompletionMessage.MessageContent("text", text, null));
+		}
+
+		if (rawContent instanceof List<?> list) {
+			List<ChatCompletionMessage.MessageContent> messageContents = new ArrayList<>();
+			for (Object item : list) {
+				if (item instanceof ChatCompletionMessage.MessageContent mc) {
+					messageContents.add(mc);
+				}
+				else if (item instanceof Map<?, ?> map) {
+					String type = (String) map.get("type");
+					String text = (String) map.get("text");
+					Object value = map.get("value");
+					messageContents.add(new ChatCompletionMessage.MessageContent(type, text, value));
+				}
+			}
+			return messageContents;
+		}
+
+		return List.of();
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {

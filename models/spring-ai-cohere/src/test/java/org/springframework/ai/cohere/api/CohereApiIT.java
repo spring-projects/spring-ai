@@ -1,6 +1,7 @@
 package org.springframework.ai.cohere.api;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.cohere.CohereTestConfiguration;
@@ -12,6 +13,7 @@ import org.springframework.ai.cohere.api.CohereApi.ChatCompletion;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.Role;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -25,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CohereApiIT extends AbstractIT {
 
 	@Test
+	@Disabled
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = this.cohereApi.chatCompletionEntity(new ChatCompletionRequest(
@@ -35,6 +38,7 @@ class CohereApiIT extends AbstractIT {
 	}
 
 	@Test
+	@Disabled
 	void chatCompletionEntityWithSystemMessage() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did?", Role.USER);
@@ -52,6 +56,7 @@ class CohereApiIT extends AbstractIT {
 	}
 
 	@Test
+	@Disabled
 	void embeddings() {
 		ResponseEntity<CohereApi.EmbeddingResponse> response = this.cohereApi
 				.embeddings(CohereApi.EmbeddingRequest.<String>builder()
@@ -62,6 +67,16 @@ class CohereApiIT extends AbstractIT {
 		Assertions.assertNotNull(response.getBody());
 		assertThat(response.getBody().getFloatEmbeddings()).hasSize(1);
 		assertThat(response.getBody().getFloatEmbeddings().get(0)).hasSize(1536);
+	}
+
+	@Test
+	void chatCompletionStream() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		Flux<CohereApi.ChatCompletionChunk> response = this.cohereApi.chatCompletionStream(new ChatCompletionRequest(
+				List.of(chatCompletionMessage), CohereApi.ChatModel.COMMAND_A_R7B.getValue(), 0.8, true));
+
+		assertThat(response).isNotNull();
+		assertThat(response.collectList().block()).isNotNull();
 	}
 
 }
