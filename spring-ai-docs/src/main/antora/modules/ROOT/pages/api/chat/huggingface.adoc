@@ -281,7 +281,29 @@ public class ChatController {
 }
 ----
 
-NOTE: HuggingFace function calling support varies by model. Models like Llama 3.2 and Mistral support tool calling, but not all models on HuggingFace Hub have this capability. Check your model's documentation for tool calling support.
+IMPORTANT: Function calling support in HuggingFace requires both a compatible model AND provider. Not all models or providers support this feature.
+
+**Model and Provider Requirements:**
+
+* **Provider Suffix Required:** Function-calling models typically require a provider suffix in the model name (e.g., `meta-llama/Llama-3.2-3B-Instruct:together`)
+* **Supported Providers:** Common providers include `together`, `fastest`, and others depending on the model
+* **Compatible Models:** See the link:https://huggingface.co/collections/MarketAgents/function-calling-models-tool-use[HuggingFace Function Calling Models Collection] for a curated list
+
+**Configuration Example:**
+
+[source,yaml]
+----
+spring:
+  ai:
+    huggingface:
+      chat:
+        options:
+          model: meta-llama/Llama-3.2-3B-Instruct:together  # Note the :together provider suffix
+----
+
+For more details about function calling with HuggingFace, see the link:https://huggingface.co/docs/inference-providers/guides/function-calling[HuggingFace Function Calling Guide].
+
+NOTE: Streaming function calling is not yet supported in this release. Non-streaming function calling (using `ChatModel.call()`) works as expected.
 
 == Sample Controller
 

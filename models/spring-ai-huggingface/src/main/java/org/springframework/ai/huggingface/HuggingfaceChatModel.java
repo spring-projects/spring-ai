@@ -20,8 +20,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -38,12 +43,15 @@ import org.springframework.ai.huggingface.api.HuggingfaceApi;
 import org.springframework.ai.huggingface.api.common.HuggingfaceApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -58,6 +66,8 @@ import org.springframework.util.StringUtils;
  * @author Myeongdeok Kang
  */
 public class HuggingfaceChatModel implements ChatModel {
+
+	private static final Logger logger = LoggerFactory.getLogger(HuggingfaceChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -143,12 +153,16 @@ public class HuggingfaceChatModel implements ChatModel {
 				HuggingfaceApi.ChatResponse apiResponse = this.retryTemplate
 					.execute(ctx -> this.huggingfaceApi.chat(apiRequest));
 
-				List<Generation> generations = apiResponse.choices()
-					.stream()
-					.map(choice -> new Generation(
-							AssistantMessage.builder().content(choice.message().content()).build(),
-							ChatGenerationMetadata.builder().finishReason(choice.finishReason()).build()))
-					.collect(Collectors.toList());
+				List<Generation> generations = apiResponse.choices().stream().map(choice -> {
+					List<AssistantMessage.ToolCall> toolCalls = extractToolCalls(choice.message().toolCalls());
+					AssistantMessage.Builder messageBuilder = AssistantMessage.builder()
+						.content(choice.message().content());
+					if (toolCalls != null) {
+						messageBuilder.toolCalls(toolCalls);
+					}
+					return new Generation(messageBuilder.build(),
+							ChatGenerationMetadata.builder().finishReason(choice.finishReason()).build());
+				}).collect(Collectors.toList());
 
 				ChatResponseMetadata metadata = ChatResponseMetadata.builder()
 					.model(apiResponse.model())
@@ -192,13 +206,33 @@ public class HuggingfaceChatModel implements ChatModel {
 		// Process runtime options
 		HuggingfaceChatOptions runtimeOptions = null;
 		if (chatRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(chatRequest.getOptions(), ChatOptions.class,
-					HuggingfaceChatOptions.class);
+			if (chatRequest.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						HuggingfaceChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(chatRequest.getOptions(), ChatOptions.class,
+						HuggingfaceChatOptions.class);
+			}
 		}
 
 		// Merge runtime and default options
 		HuggingfaceChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
 				HuggingfaceChatOptions.class);
+
+		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
+		// Jackson, used by ModelOptionsUtils.
+		if (runtimeOptions != null) {
+			requestOptions.setInternalToolExecutionEnabled(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
+							this.defaultOptions.getInternalToolExecutionEnabled()));
+			requestOptions.setToolNames(ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(),
+					this.defaultOptions.getToolNames()));
+			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
+					this.defaultOptions.getToolCallbacks()));
+			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
+					this.defaultOptions.getToolContext()));
+		}
 
 		// Validate
 		if (!StringUtils.hasText(requestOptions.getModel())) {
@@ -218,10 +252,80 @@ public class HuggingfaceChatModel implements ChatModel {
 
 		List<HuggingfaceApi.Message> messages = prompt.getInstructions()
 			.stream()
-			.map(message -> new HuggingfaceApi.Message(message.getMessageType().getValue(), message.getText()))
+			.flatMap(message -> toHuggingfaceMessage(message).stream())
 			.toList();
 
+		// Add tool definitions to the request if present
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);
+
+		if (!CollectionUtils.isEmpty(toolDefinitions)) {
+			List<HuggingfaceApi.FunctionTool> tools = getFunctionTools(toolDefinitions);
+			return new HuggingfaceApi.ChatRequest(options.getModel(), messages, tools, "auto", options.toMap());
+		}
+
 		return new HuggingfaceApi.ChatRequest(options.getModel(), messages, options.toMap());
+	}
+
+	/**
+	 * Convert Spring AI message to HuggingFace API message(s). Tool response messages may
+	 * produce multiple API messages (one per tool response).
+	 * @param message The Spring AI message.
+	 * @return The list of HuggingFace API messages.
+	 */
+	private List<HuggingfaceApi.Message> toHuggingfaceMessage(Message message) {
+		if (message.getMessageType() == MessageType.TOOL) {
+			// Tool response messages need special handling
+			ToolResponseMessage toolMessage = (ToolResponseMessage) message;
+			return toolMessage.getResponses()
+				.stream()
+				.map(response -> new HuggingfaceApi.Message(response.responseData(), MessageType.TOOL.getValue(),
+						response.name(), response.id()))
+				.toList();
+		}
+		else if (message instanceof AssistantMessage assistantMessage && assistantMessage.getToolCalls() != null
+				&& !assistantMessage.getToolCalls().isEmpty()) {
+			// Assistant message with tool calls
+			List<HuggingfaceApi.ToolCall> toolCalls = assistantMessage.getToolCalls()
+				.stream()
+				.map(toolCall -> new HuggingfaceApi.ToolCall(toolCall.id(), toolCall.type(),
+						new HuggingfaceApi.ChatCompletionFunction(toolCall.name(), toolCall.arguments())))
+				.toList();
+			return List
+				.of(new HuggingfaceApi.Message(message.getMessageType().getValue(), message.getText(), toolCalls));
+		}
+		else {
+			// Regular user/system/assistant message
+			return List.of(new HuggingfaceApi.Message(message.getMessageType().getValue(), message.getText()));
+		}
+	}
+
+	/**
+	 * Convert tool definitions to HuggingFace API function tools.
+	 * @param toolDefinitions The tool definitions.
+	 * @return The list of function tools.
+	 */
+	private List<HuggingfaceApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
+		return toolDefinitions.stream().map(toolDefinition -> {
+			var function = new HuggingfaceApi.FunctionTool.Function(toolDefinition.description(), toolDefinition.name(),
+					ModelOptionsUtils.jsonToMap(toolDefinition.inputSchema()));
+			return new HuggingfaceApi.FunctionTool(function);
+		}).toList();
+	}
+
+	/**
+	 * Extract tool calls from HuggingFace API response and convert to Spring AI format.
+	 * @param apiToolCalls The tool calls from the API response.
+	 * @return The list of tool calls in Spring AI format, or null if no tool calls.
+	 */
+	private List<AssistantMessage.ToolCall> extractToolCalls(List<HuggingfaceApi.ToolCall> apiToolCalls) {
+		if (apiToolCalls == null || apiToolCalls.isEmpty()) {
+			return null;
+		}
+
+		return apiToolCalls.stream()
+			.map(apiToolCall -> new AssistantMessage.ToolCall(apiToolCall.id(), apiToolCall.type(),
+					apiToolCall.function().name(), apiToolCall.function().arguments()))
+			.toList();
 	}
 
 	/**
