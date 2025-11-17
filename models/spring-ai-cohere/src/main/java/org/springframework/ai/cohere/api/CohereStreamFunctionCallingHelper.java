@@ -21,6 +21,7 @@ import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.Role;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.ToolCall;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,12 +76,14 @@ public class CohereStreamFunctionCallingHelper {
 				? previousMessage.citations()
 				: (currentMessage != null ? currentMessage.citations() : null);
 
+
 		ChatCompletionMessage mergedMessage = new ChatCompletionMessage(
 				mergedText,
 				role,
 				toolPlan,
 				toolCalls,
-				citations
+				citations,
+				null
 		);
 
 		var finishReason = (currentDelta != null && currentDelta.finishReason() != null)
@@ -134,7 +137,7 @@ public class CohereStreamFunctionCallingHelper {
 				: (previous.content() != null) ? previous.content() : "");
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT);
-		//String name = (current.name() != null ? current.name() : previous.name());
+		String toolPlan = (current.toolPlan() != null ? current.toolPlan() : previous.toolPlan());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -164,7 +167,7 @@ public class CohereStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, toolCalls);
+		return new ChatCompletionMessage(content, role, toolCalls, toolPlan);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {
@@ -198,8 +201,12 @@ public class CohereStreamFunctionCallingHelper {
 	 * @return true if the ChatCompletionChunk is a streaming tool function call.
 	 */
 	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
+		var delta = chatCompletion.delta();
+		if (delta == null) {
+			return false;
+		}
 
-		return false;
+		return !CollectionUtils.isEmpty(delta.message().toolCalls());
 	}
 
 	/**
@@ -209,7 +216,13 @@ public class CohereStreamFunctionCallingHelper {
 	 */
 	public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
 
-		return false;
+		var delta = chatCompletion.delta();
+
+		if (delta == null) {
+			return false;
+		}
+
+		return delta.finishReason() == CohereApi.ChatCompletionFinishReason.TOOL_CALLS;
 	}
 
 }

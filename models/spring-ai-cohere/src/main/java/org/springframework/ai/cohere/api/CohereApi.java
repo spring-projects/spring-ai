@@ -356,16 +356,19 @@ public class CohereApi {
 	 * the {@link ChatCompletionFinishReason#TOOL_CALL} role and null otherwise.
 	 */
 	public record ChatCompletionMessage(@JsonProperty("content") Object rawContent, @JsonProperty("role") Role role,
-			// @JsonProperty("name") String name,
 			@JsonProperty("tool_plan") String toolPlan, @JsonProperty("tool_calls") List<ToolCall> toolCalls,
-			@JsonProperty("citations") List<ChatCompletionCitation> citations) {
+			@JsonProperty("citations") List<ChatCompletionCitation> citations, @JsonProperty("tool_call_id") String toolCallId) {
 
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
+			this(content, role, null, null, null, null);
 		}
 
 		public ChatCompletionMessage(Object content, Role role, List<ToolCall> toolCalls) {
-			this(content, role, null, toolCalls, null);
+			this(content, role, null, toolCalls, null, null);
+		}
+
+		public ChatCompletionMessage(Object content, Role role, List<ToolCall> toolCalls, String toolPlan) {
+			this(content, role, toolPlan, toolCalls, null, null);
 		}
 
 		/**
