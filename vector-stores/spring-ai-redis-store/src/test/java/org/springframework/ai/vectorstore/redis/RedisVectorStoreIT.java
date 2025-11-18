@@ -68,7 +68,8 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(DataRedisAutoConfiguration.class))
 		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI());
+		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI())
+		.withPropertyValues("spring.data.redis.client-type=jedis");
 
 	List<Document> documents = List.of(
 			new Document("1", getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
