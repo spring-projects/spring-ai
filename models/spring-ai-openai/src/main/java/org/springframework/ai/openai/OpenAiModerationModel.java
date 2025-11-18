@@ -77,34 +77,28 @@ public class OpenAiModerationModel implements ModerationModel {
 
 	@Override
 	public ModerationResponse call(ModerationPrompt moderationPrompt) {
-		try {
-			return this.retryTemplate.execute(() -> {
+		return RetryUtils.execute(this.retryTemplate, () -> {
 
-				String instructions = moderationPrompt.getInstructions().getText();
+			String instructions = moderationPrompt.getInstructions().getText();
 
-				OpenAiModerationApi.OpenAiModerationRequest moderationRequest = new OpenAiModerationApi.OpenAiModerationRequest(
-						instructions);
+			OpenAiModerationApi.OpenAiModerationRequest moderationRequest = new OpenAiModerationApi.OpenAiModerationRequest(
+					instructions);
 
-				if (this.defaultOptions != null) {
-					moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
-							OpenAiModerationApi.OpenAiModerationRequest.class);
-				}
+			if (this.defaultOptions != null) {
+				moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
+						OpenAiModerationApi.OpenAiModerationRequest.class);
+			}
 
-				if (moderationPrompt.getOptions() != null) {
-					moderationRequest = ModelOptionsUtils.merge(
-							toOpenAiModerationOptions(moderationPrompt.getOptions()), moderationRequest,
-							OpenAiModerationApi.OpenAiModerationRequest.class);
-				}
+			if (moderationPrompt.getOptions() != null) {
+				moderationRequest = ModelOptionsUtils.merge(toOpenAiModerationOptions(moderationPrompt.getOptions()),
+						moderationRequest, OpenAiModerationApi.OpenAiModerationRequest.class);
+			}
 
-				ResponseEntity<OpenAiModerationApi.OpenAiModerationResponse> moderationResponseEntity = this.openAiModerationApi
-					.createModeration(moderationRequest);
+			ResponseEntity<OpenAiModerationApi.OpenAiModerationResponse> moderationResponseEntity = this.openAiModerationApi
+				.createModeration(moderationRequest);
 
-				return convertResponse(moderationResponseEntity, moderationRequest);
-			});
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Error calling OpenAI moderation API", e);
-		}
+			return convertResponse(moderationResponseEntity, moderationRequest);
+		});
 	}
 
 	private ModerationResponse convertResponse(

@@ -70,7 +70,6 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -261,18 +260,8 @@ public class ZhiPuAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = null;
-				try {
-					completionEntity = this.retryTemplate.execute(() -> this.zhiPuAiApi.chatCompletionEntity(request));
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
-					else {
-						throw new RuntimeException(e.getCause());
-					}
-				}
+				ResponseEntity<ChatCompletion> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.zhiPuAiApi.chatCompletionEntity(request));
 
 				var chatCompletion = completionEntity.getBody();
 
@@ -330,18 +319,8 @@ public class ZhiPuAiChatModel implements ChatModel {
 			Prompt requestPrompt = buildRequestPrompt(prompt);
 			ChatCompletionRequest request = createRequest(requestPrompt, true);
 
-			Flux<ChatCompletionChunk> completionChunks = null;
-			try {
-				completionChunks = this.retryTemplate.execute(() -> this.zhiPuAiApi.chatCompletionStream(request));
-			}
-			catch (RetryException e) {
-				if (e.getCause() instanceof RuntimeException r) {
-					throw r;
-				}
-				else {
-					throw new RuntimeException(e.getCause());
-				}
-			}
+			Flux<ChatCompletionChunk> completionChunks = RetryUtils.execute(this.retryTemplate,
+					() -> this.zhiPuAiApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.

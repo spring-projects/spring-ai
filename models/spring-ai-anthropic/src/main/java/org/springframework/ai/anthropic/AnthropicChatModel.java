@@ -78,7 +78,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -194,19 +193,8 @@ public class AnthropicChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletionResponse> completionEntity = null;
-				try {
-					completionEntity = this.retryTemplate.execute(() -> this.anthropicApi.chatCompletionEntity(request,
-							this.getAdditionalHttpHeaders(prompt)));
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
-					else {
-						throw new RuntimeException(e.getCause());
-					}
-				}
+				ResponseEntity<ChatCompletionResponse> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.anthropicApi.chatCompletionEntity(request, this.getAdditionalHttpHeaders(prompt)));
 
 				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
 				AnthropicApi.Usage usage = completionResponse.usage();

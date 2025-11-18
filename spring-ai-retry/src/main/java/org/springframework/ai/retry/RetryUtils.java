@@ -22,9 +22,11 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
@@ -153,6 +155,23 @@ public abstract class RetryUtils {
 			}
 		});
 		return retryTemplate;
+	}
+
+	/**
+	 * Generic execute method to run retryable operations with the provided RetryTemplate.
+	 * @param <R> the return type
+	 * @param retryTemplate the RetryTemplate to use for executing the retryable operation
+	 * @param retryable the operation to be retried
+	 * @return the result of the retryable operation
+	 */
+	public static <R extends @Nullable Object> R execute(RetryTemplate retryTemplate, Retryable<R> retryable) {
+		try {
+			return retryTemplate.execute(retryable);
+		}
+		catch (RetryException e) {
+			throw (e.getCause() instanceof RuntimeException runtime) ? runtime
+					: new RuntimeException(e.getMessage(), e.getCause());
+		}
 	}
 
 }

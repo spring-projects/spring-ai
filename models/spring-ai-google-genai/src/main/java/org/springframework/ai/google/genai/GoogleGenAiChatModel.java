@@ -87,7 +87,6 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
@@ -406,39 +405,31 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				try {
-					return this.retryTemplate.execute(() -> {
 
-						var geminiRequest = createGeminiRequest(prompt);
+				return RetryUtils.execute(this.retryTemplate, () -> {
 
-						GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
+					var geminiRequest = createGeminiRequest(prompt);
 
-						List<Generation> generations = generateContentResponse.candidates()
-							.orElse(List.of())
-							.stream()
-							.map(this::responseCandidateToGeneration)
-							.flatMap(List::stream)
-							.toList();
+					GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
 
-						var usage = generateContentResponse.usageMetadata();
-						GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
-						Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
-								: getDefaultUsage(null, options);
-						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-						ChatResponse chatResponse = new ChatResponse(generations,
-								toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
+					List<Generation> generations = generateContentResponse.candidates()
+						.orElse(List.of())
+						.stream()
+						.map(this::responseCandidateToGeneration)
+						.flatMap(List::stream)
+						.toList();
 
-						observationContext.setResponse(chatResponse);
-						return chatResponse;
-					});
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
+					var usage = generateContentResponse.usageMetadata();
+					GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+					Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
+							: getDefaultUsage(null, options);
+					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+					ChatResponse chatResponse = new ChatResponse(generations,
+							toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
 
-					throw new RuntimeException(e);
-				}
+					observationContext.setResponse(chatResponse);
+					return chatResponse;
+				});
 			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {

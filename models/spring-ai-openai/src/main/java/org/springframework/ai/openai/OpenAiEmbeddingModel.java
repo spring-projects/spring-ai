@@ -164,14 +164,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse;
-				try {
-					apiEmbeddingResponse = this.retryTemplate
-						.execute(() -> this.openAiApi.embeddings(apiRequest).getBody());
-				}
-				catch (Exception e) {
-					throw new RuntimeException("Error calling OpenAI embedding API", e);
-				}
+				EmbeddingList<OpenAiApi.Embedding> apiEmbeddingResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.openAiApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);

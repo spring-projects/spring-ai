@@ -40,7 +40,6 @@ import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.minimax.api.MiniMaxApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -166,19 +165,8 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				MiniMaxApi.EmbeddingList apiEmbeddingResponse = null;
-				try {
-					apiEmbeddingResponse = this.retryTemplate
-						.execute(() -> this.miniMaxApi.embeddings(apiRequest).getBody());
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
-					else {
-						throw new RuntimeException(e.getCause());
-					}
-				}
+				MiniMaxApi.EmbeddingList apiEmbeddingResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.miniMaxApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);

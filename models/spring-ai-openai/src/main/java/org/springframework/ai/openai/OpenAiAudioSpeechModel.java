@@ -129,13 +129,8 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(prompt);
 
-		ResponseEntity<byte[]> speechEntity;
-		try {
-			speechEntity = this.retryTemplate.execute(() -> this.audioApi.createSpeech(speechRequest));
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Error calling OpenAI audio speech API", e);
-		}
+		ResponseEntity<byte[]> speechEntity = RetryUtils.execute(this.retryTemplate,
+				() -> this.audioApi.createSpeech(speechRequest));
 
 		var speech = speechEntity.getBody();
 
@@ -161,13 +156,8 @@ public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(prompt);
 
-		Flux<ResponseEntity<byte[]>> speechEntity;
-		try {
-			speechEntity = this.retryTemplate.execute(() -> this.audioApi.stream(speechRequest));
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Error calling OpenAI audio speech streaming API", e);
-		}
+		Flux<ResponseEntity<byte[]>> speechEntity = RetryUtils.execute(this.retryTemplate,
+				() -> this.audioApi.stream(speechRequest));
 
 		return speechEntity.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())),
 				new OpenAiAudioSpeechResponseMetadata(OpenAiResponseHeaderExtractor.extractAiResponseHeaders(entity))));

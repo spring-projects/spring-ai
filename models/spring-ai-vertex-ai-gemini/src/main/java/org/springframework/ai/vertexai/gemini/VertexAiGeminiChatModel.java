@@ -91,7 +91,6 @@ import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting
 import org.springframework.ai.vertexai.gemini.schema.VertexAiSchemaConverter;
 import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
@@ -391,43 +390,29 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				try {
-					return this.retryTemplate.execute(() -> {
 
-						var geminiRequest = createGeminiRequest(prompt);
+				return RetryUtils.execute(this.retryTemplate, () -> {
 
-						GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
+					var geminiRequest = createGeminiRequest(prompt);
 
-						List<Generation> generations = generateContentResponse.getCandidatesList()
-							.stream()
-							.map(this::responseCandidateToGeneration)
-							.flatMap(List::stream)
-							.toList();
+					GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
 
-						GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
-						Usage currentUsage = (usage != null)
-								? new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount())
-								: new EmptyUsage();
-						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-						ChatResponse chatResponse = new ChatResponse(generations,
-								toChatResponseMetadata(cumulativeUsage));
+					List<Generation> generations = generateContentResponse.getCandidatesList()
+						.stream()
+						.map(this::responseCandidateToGeneration)
+						.flatMap(List::stream)
+						.toList();
 
-						observationContext.setResponse(chatResponse);
-						return chatResponse;
-					});
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
+					GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
+					Usage currentUsage = (usage != null)
+							? new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount())
+							: new EmptyUsage();
+					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
-					else {
-						throw new RuntimeException(e.getCause());
-					}
-				}
+					observationContext.setResponse(chatResponse);
+					return chatResponse;
+				});
 			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {

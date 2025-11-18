@@ -141,14 +141,8 @@ public class OpenAiImageModel implements ImageModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity;
-				try {
-					imageResponseEntity = this.retryTemplate
-						.execute(() -> this.openAiImageApi.createImage(imageRequest));
-				}
-				catch (Exception e) {
-					throw new RuntimeException("Error calling OpenAI image API", e);
-				}
+				ResponseEntity<OpenAiImageApi.OpenAiImageResponse> imageResponseEntity = RetryUtils
+					.execute(this.retryTemplate, () -> this.openAiImageApi.createImage(imageRequest));
 
 				ImageResponse imageResponse = convertResponse(imageResponseEntity, imageRequest);
 

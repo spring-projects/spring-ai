@@ -68,7 +68,6 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -254,18 +253,8 @@ public class MiniMaxChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = null;
-				try {
-					completionEntity = this.retryTemplate.execute(() -> this.miniMaxApi.chatCompletionEntity(request));
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
-					else {
-						throw new RuntimeException(e.getCause());
-					}
-				}
+				ResponseEntity<ChatCompletion> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.miniMaxApi.chatCompletionEntity(request));
 
 				var chatCompletion = completionEntity.getBody();
 
@@ -339,18 +328,8 @@ public class MiniMaxChatModel implements ChatModel {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(requestPrompt, true);
 
-			Flux<ChatCompletionChunk> completionChunks = null;
-			try {
-				completionChunks = this.retryTemplate.execute(() -> this.miniMaxApi.chatCompletionStream(request));
-			}
-			catch (RetryException e) {
-				if (e.getCause() instanceof RuntimeException r) {
-					throw r;
-				}
-				else {
-					throw new RuntimeException(e.getCause());
-				}
-			}
+			Flux<ChatCompletionChunk> completionChunks = RetryUtils.execute(this.retryTemplate,
+					() -> this.miniMaxApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.

@@ -46,7 +46,6 @@ import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -169,19 +168,8 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				// Call the embedding API with retry
-				EmbedContentResponse embeddingResponse = null;
-				try {
-					embeddingResponse = this.retryTemplate
-						.execute(() -> this.genAiClient.models.embedContent(modelName, validTexts, config));
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
-					else {
-						throw new RuntimeException(e.getCause());
-					}
-				}
+				EmbedContentResponse embeddingResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.genAiClient.models.embedContent(modelName, validTexts, config));
 
 				// Process the response
 				// Note: We need to handle the case where some texts were filtered out

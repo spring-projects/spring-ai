@@ -41,7 +41,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
-import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
@@ -167,19 +166,8 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				ResponseEntity<ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding>> embeddingResponse = null;
-				try {
-					embeddingResponse = this.retryTemplate
-						.execute(() -> this.zhiPuAiApi.embeddings(zhipuEmbeddingRequest));
-				}
-				catch (RetryException e) {
-					if (e.getCause() instanceof RuntimeException r) {
-						throw r;
-					}
-					else {
-						throw new RuntimeException(e.getCause());
-					}
-				}
+				ResponseEntity<ZhiPuAiApi.EmbeddingList<ZhiPuAiApi.Embedding>> embeddingResponse = RetryUtils
+					.execute(this.retryTemplate, () -> this.zhiPuAiApi.embeddings(zhipuEmbeddingRequest));
 
 				if (embeddingResponse == null || embeddingResponse.getBody() == null
 						|| CollectionUtils.isEmpty(embeddingResponse.getBody().data())) {

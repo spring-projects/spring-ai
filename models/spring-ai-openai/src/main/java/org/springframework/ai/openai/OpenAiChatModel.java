@@ -195,14 +195,8 @@ public class OpenAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity;
-				try {
-					completionEntity = this.retryTemplate
-						.execute(() -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
-				}
-				catch (Exception e) {
-					throw new RuntimeException("Error calling OpenAI chat completion API", e);
-				}
+				ResponseEntity<ChatCompletion> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.openAiApi.chatCompletionEntity(request, getAdditionalHttpHeaders(prompt)));
 
 				var chatCompletion = completionEntity.getBody();
 
