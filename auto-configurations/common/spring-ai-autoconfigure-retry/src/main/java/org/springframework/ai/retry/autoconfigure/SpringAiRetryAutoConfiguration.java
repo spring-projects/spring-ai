@@ -41,6 +41,7 @@ import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
 
 /**
@@ -65,6 +66,7 @@ public class SpringAiRetryAutoConfiguration {
 		RetryPolicy retryPolicy = RetryPolicy.builder()
 			.maxAttempts(properties.getMaxAttempts())
 			.includes(TransientAiException.class)
+			.includes(ResourceAccessException.class)
 			.delay(properties.getBackoff().getInitialInterval())
 			.multiplier(properties.getBackoff().getMultiplier())
 			.maxDelay(properties.getBackoff().getMaxInterval())
