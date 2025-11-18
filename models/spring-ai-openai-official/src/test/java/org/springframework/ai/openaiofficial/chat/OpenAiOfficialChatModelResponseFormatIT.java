@@ -116,9 +116,9 @@ public class OpenAiOfficialChatModelResponseFormatIT {
 				OpenAiOfficialChatOptions.builder()
 					.model(DEFAULT_CHAT_MODEL)
 					.responseFormat(OpenAiOfficialChatModel.ResponseFormat.builder()
-							.type(OpenAiOfficialChatModel.ResponseFormat.Type.JSON_SCHEMA)
-							.jsonSchema(jsonSchema)
-							.build())
+						.type(OpenAiOfficialChatModel.ResponseFormat.Type.JSON_SCHEMA)
+						.jsonSchema(jsonSchema)
+						.build())
 					.build());
 
 		ChatResponse response = this.chatModel.call(prompt);
