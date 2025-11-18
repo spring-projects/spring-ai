@@ -28,40 +28,48 @@ import java.util.Optional;
  */
 public class OpenAiOfficialImageGenerationMetadata implements ImageGenerationMetadata {
 
-	private final String revisedPrompt;
+    private final String revisedPrompt;
 
-	public OpenAiOfficialImageGenerationMetadata(Optional<String> revisedPrompt) {
-		if (revisedPrompt.isPresent()) {
-			this.revisedPrompt = revisedPrompt.get();
-		}
-		else {
-			this.revisedPrompt = null;
-		}
-	}
+    /**
+     * Creates a new OpenAiOfficialImageGenerationMetadata.
+     * @param revisedPrompt the revised prompt used for generation
+     */
+    public OpenAiOfficialImageGenerationMetadata(Optional<String> revisedPrompt) {
+        if (revisedPrompt.isPresent()) {
+            this.revisedPrompt = revisedPrompt.get();
+        }
+        else {
+            this.revisedPrompt = null;
+        }
+    }
 
-	public String getRevisedPrompt() {
-		return this.revisedPrompt;
-	}
+    /**
+     * Gets the revised prompt that was used for image generation.
+     * @return the revised prompt, or null if not available
+     */
+    public String getRevisedPrompt() {
+        return this.revisedPrompt;
+    }
 
-	@Override
-	public String toString() {
-		return "OpenAiOfficialImageGenerationMetadata{" + "revisedPrompt='" + revisedPrompt + '\'' + '}';
-	}
+    @Override
+    public String toString() {
+        return "OpenAiOfficialImageGenerationMetadata{" + "revisedPrompt='" + revisedPrompt + '\'' + '}';
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof OpenAiOfficialImageGenerationMetadata that)) {
-			return false;
-		}
-		return Objects.equals(this.revisedPrompt, that.revisedPrompt);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof OpenAiOfficialImageGenerationMetadata that)) {
+            return false;
+        }
+        return Objects.equals(this.revisedPrompt, that.revisedPrompt);
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.revisedPrompt);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.revisedPrompt);
+    }
 
 }

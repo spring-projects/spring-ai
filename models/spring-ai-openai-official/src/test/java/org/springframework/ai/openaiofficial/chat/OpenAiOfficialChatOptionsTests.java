@@ -710,4 +710,5 @@ public class OpenAiOfficialChatOptionsTests {
 		// TopK is not supported by OpenAI, should always return null
 		assertThat(options.getTopK()).isNull();
 	}
+
 }

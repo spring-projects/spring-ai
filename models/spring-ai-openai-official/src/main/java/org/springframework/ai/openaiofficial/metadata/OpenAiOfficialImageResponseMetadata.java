@@ -29,41 +29,50 @@ import java.util.Objects;
  */
 public class OpenAiOfficialImageResponseMetadata extends ImageResponseMetadata {
 
-	private final Long created;
+    private final Long created;
 
-	protected OpenAiOfficialImageResponseMetadata(Long created) {
-		this.created = created;
-	}
+    /**
+     * Creates a new OpenAiOfficialImageResponseMetadata.
+     * @param created the creation timestamp
+     */
+    protected OpenAiOfficialImageResponseMetadata(Long created) {
+        this.created = created;
+    }
 
-	public static OpenAiOfficialImageResponseMetadata from(ImagesResponse imagesResponse) {
-		Assert.notNull(imagesResponse, "imagesResponse must not be null");
-		return new OpenAiOfficialImageResponseMetadata(imagesResponse.created());
-	}
+    /**
+     * Creates metadata from an ImagesResponse.
+     * @param imagesResponse the OpenAI images response
+     * @return the metadata instance
+     */
+    public static OpenAiOfficialImageResponseMetadata from(ImagesResponse imagesResponse) {
+        Assert.notNull(imagesResponse, "imagesResponse must not be null");
+        return new OpenAiOfficialImageResponseMetadata(imagesResponse.created());
+    }
 
-	@Override
-	public Long getCreated() {
-		return this.created;
-	}
+    @Override
+    public Long getCreated() {
+        return this.created;
+    }
 
-	@Override
-	public String toString() {
-		return "OpenAiOfficialImageResponseMetadata{" + "created=" + created + '}';
-	}
+    @Override
+    public String toString() {
+        return "OpenAiOfficialImageResponseMetadata{" + "created=" + created + '}';
+    }
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof OpenAiOfficialImageResponseMetadata that)) {
-			return false;
-		}
-		return Objects.equals(this.created, that.created);
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof OpenAiOfficialImageResponseMetadata that)) {
+            return false;
+        }
+        return Objects.equals(this.created, that.created);
+    }
 
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.created);
-	}
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.created);
+    }
 
 }
