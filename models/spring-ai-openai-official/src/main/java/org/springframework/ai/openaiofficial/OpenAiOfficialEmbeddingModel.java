@@ -52,160 +52,209 @@ import static org.springframework.ai.openaiofficial.setup.OpenAiOfficialSetup.se
  */
 public class OpenAiOfficialEmbeddingModel extends AbstractEmbeddingModel {
 
-	private static final String DEFAULT_MODEL_NAME = OpenAiOfficialEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
+    private static final String DEFAULT_MODEL_NAME = OpenAiOfficialEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
 
-	private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
+    private static final EmbeddingModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultEmbeddingModelObservationConvention();
 
-	private static final Logger logger = LoggerFactory.getLogger(OpenAiOfficialEmbeddingModel.class);
+    private static final Logger logger = LoggerFactory.getLogger(OpenAiOfficialEmbeddingModel.class);
 
-	private final OpenAIClient openAiClient;
+    private final OpenAIClient openAiClient;
 
-	private final OpenAiOfficialEmbeddingOptions options;
+    private final OpenAiOfficialEmbeddingOptions options;
 
-	private final MetadataMode metadataMode;
+    private final MetadataMode metadataMode;
 
-	private final ObservationRegistry observationRegistry;
+    private final ObservationRegistry observationRegistry;
 
-	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+    private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
-	public OpenAiOfficialEmbeddingModel() {
-		this(null, null, null, null);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with default options.
+     */
+    public OpenAiOfficialEmbeddingModel() {
+        this(null, null, null, null);
+    }
 
-	public OpenAiOfficialEmbeddingModel(OpenAiOfficialEmbeddingOptions options) {
-		this(null, null, options, null);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with the given options.
+     * @param options the embedding options
+     */
+    public OpenAiOfficialEmbeddingModel(OpenAiOfficialEmbeddingOptions options) {
+        this(null, null, options, null);
+    }
 
-	public OpenAiOfficialEmbeddingModel(MetadataMode metadataMode, OpenAiOfficialEmbeddingOptions options) {
-		this(null, metadataMode, options, null);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with the given metadata mode and options.
+     * @param metadataMode the metadata mode
+     * @param options the embedding options
+     */
+    public OpenAiOfficialEmbeddingModel(MetadataMode metadataMode, OpenAiOfficialEmbeddingOptions options) {
+        this(null, metadataMode, options, null);
+    }
 
-	public OpenAiOfficialEmbeddingModel(OpenAiOfficialEmbeddingOptions options,
-			ObservationRegistry observationRegistry) {
-		this(null, null, options, observationRegistry);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with the given options and observation registry.
+     * @param options the embedding options
+     * @param observationRegistry the observation registry
+     */
+    public OpenAiOfficialEmbeddingModel(OpenAiOfficialEmbeddingOptions options,
+            ObservationRegistry observationRegistry) {
+        this(null, null, options, observationRegistry);
+    }
 
-	public OpenAiOfficialEmbeddingModel(MetadataMode metadataMode, OpenAiOfficialEmbeddingOptions options,
-			ObservationRegistry observationRegistry) {
-		this(null, metadataMode, options, observationRegistry);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with the given metadata mode, options, and observation registry.
+     * @param metadataMode the metadata mode
+     * @param options the embedding options
+     * @param observationRegistry the observation registry
+     */
+    public OpenAiOfficialEmbeddingModel(MetadataMode metadataMode, OpenAiOfficialEmbeddingOptions options,
+            ObservationRegistry observationRegistry) {
+        this(null, metadataMode, options, observationRegistry);
+    }
 
-	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient) {
-		this(openAiClient, null, null, null);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with the given OpenAI client.
+     * @param openAiClient the OpenAI client
+     */
+    public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient) {
+        this(openAiClient, null, null, null);
+    }
 
-	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode) {
-		this(openAiClient, metadataMode, null, null);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with the given OpenAI client and metadata mode.
+     * @param openAiClient the OpenAI client
+     * @param metadataMode the metadata mode
+     */
+    public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode) {
+        this(openAiClient, metadataMode, null, null);
+    }
 
-	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
-			OpenAiOfficialEmbeddingOptions options) {
-		this(openAiClient, metadataMode, options, null);
-	}
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with all configuration options.
+     * @param openAiClient the OpenAI client
+     * @param metadataMode the metadata mode
+     * @param options the embedding options
+     */
+    public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
+            OpenAiOfficialEmbeddingOptions options) {
+        this(openAiClient, metadataMode, options, null);
+    }
 
-	public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
-			OpenAiOfficialEmbeddingOptions options, ObservationRegistry observationRegistry) {
+    /**
+     * Creates a new OpenAiOfficialEmbeddingModel with all configuration options.
+     * @param openAiClient the OpenAI client
+     * @param metadataMode the metadata mode
+     * @param options the embedding options
+     * @param observationRegistry the observation registry
+     */
+    public OpenAiOfficialEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
+            OpenAiOfficialEmbeddingOptions options, ObservationRegistry observationRegistry) {
 
-		if (options == null) {
-			this.options = OpenAiOfficialEmbeddingOptions.builder().model(DEFAULT_MODEL_NAME).build();
-		}
-		else {
-			this.options = options;
-		}
-		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
-				() -> setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(), this.options.getCredential(),
-						this.options.getAzureDeploymentName(), this.options.getAzureOpenAIServiceVersion(),
-						this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
-						this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
-						this.options.getProxy(), this.options.getCustomHeaders()));
-		this.metadataMode = Objects.requireNonNullElse(metadataMode, MetadataMode.EMBED);
-		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
-	}
+        if (options == null) {
+            this.options = OpenAiOfficialEmbeddingOptions.builder().model(DEFAULT_MODEL_NAME).build();
+        }
+        else {
+            this.options = options;
+        }
+        this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
+                () -> setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(), this.options.getCredential(),
+                        this.options.getAzureDeploymentName(), this.options.getAzureOpenAIServiceVersion(),
+                        this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
+                        this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
+                        this.options.getProxy(), this.options.getCustomHeaders()));
+        this.metadataMode = Objects.requireNonNullElse(metadataMode, MetadataMode.EMBED);
+        this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
+    }
 
-	@Override
-	public float[] embed(Document document) {
-		EmbeddingResponse response = this
-			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
+    @Override
+    public float[] embed(Document document) {
+        EmbeddingResponse response = this
+            .call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
 
-		if (CollectionUtils.isEmpty(response.getResults())) {
-			return new float[0];
-		}
-		return response.getResults().get(0).getOutput();
-	}
+        if (CollectionUtils.isEmpty(response.getResults())) {
+            return new float[0];
+        }
+        return response.getResults().get(0).getOutput();
+    }
 
-	@Override
-	public EmbeddingResponse call(EmbeddingRequest embeddingRequest) {
-		OpenAiOfficialEmbeddingOptions options = OpenAiOfficialEmbeddingOptions.builder()
-			.from(this.options)
-			.merge(embeddingRequest.getOptions())
-			.build();
+    @Override
+    public EmbeddingResponse call(EmbeddingRequest embeddingRequest) {
+        OpenAiOfficialEmbeddingOptions options = OpenAiOfficialEmbeddingOptions.builder()
+            .from(this.options)
+            .merge(embeddingRequest.getOptions())
+            .build();
 
-		EmbeddingRequest embeddingRequestWithMergedOptions = new EmbeddingRequest(embeddingRequest.getInstructions(),
-				options);
+        EmbeddingRequest embeddingRequestWithMergedOptions = new EmbeddingRequest(embeddingRequest.getInstructions(),
+                options);
 
-		EmbeddingCreateParams embeddingCreateParams = options
-			.toOpenAiCreateParams(embeddingRequestWithMergedOptions.getInstructions());
+        EmbeddingCreateParams embeddingCreateParams = options
+            .toOpenAiCreateParams(embeddingRequestWithMergedOptions.getInstructions());
 
-		if (logger.isTraceEnabled()) {
-			logger.trace("OpenAiOfficialEmbeddingModel call {} with the following options : {} ", options.getModel(),
-					embeddingCreateParams);
-		}
+        if (logger.isTraceEnabled()) {
+            logger.trace("OpenAiOfficialEmbeddingModel call {} with the following options : {} ", options.getModel(),
+                    embeddingCreateParams);
+        }
 
-		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(embeddingRequestWithMergedOptions)
-			.provider(AiProvider.OPENAI_OFFICIAL.value())
-			.build();
+        var observationContext = EmbeddingModelObservationContext.builder()
+            .embeddingRequest(embeddingRequestWithMergedOptions)
+            .provider(AiProvider.OPENAI_OFFICIAL.value())
+            .build();
 
-		return Objects.requireNonNull(
-				EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
-					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-							this.observationRegistry)
-					.observe(() -> {
-						CreateEmbeddingResponse response = this.openAiClient.embeddings().create(embeddingCreateParams);
+        return Objects.requireNonNull(
+                EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
+                    .observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+                            this.observationRegistry)
+                    .observe(() -> {
+                        CreateEmbeddingResponse response = this.openAiClient.embeddings().create(embeddingCreateParams);
 
-						var embeddingResponse = generateEmbeddingResponse(response);
-						observationContext.setResponse(embeddingResponse);
-						return embeddingResponse;
-					}));
-	}
+                        var embeddingResponse = generateEmbeddingResponse(response);
+                        observationContext.setResponse(embeddingResponse);
+                        return embeddingResponse;
+                    }));
+    }
 
-	private EmbeddingResponse generateEmbeddingResponse(CreateEmbeddingResponse response) {
+    private EmbeddingResponse generateEmbeddingResponse(CreateEmbeddingResponse response) {
 
-		List<Embedding> data = generateEmbeddingList(response.data());
-		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
-		metadata.setModel(response.model());
-		metadata.setUsage(getDefaultUsage(response.usage()));
-		return new EmbeddingResponse(data, metadata);
-	}
+        List<Embedding> data = generateEmbeddingList(response.data());
+        EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
+        metadata.setModel(response.model());
+        metadata.setUsage(getDefaultUsage(response.usage()));
+        return new EmbeddingResponse(data, metadata);
+    }
 
-	private DefaultUsage getDefaultUsage(CreateEmbeddingResponse.Usage nativeUsage) {
-		return new DefaultUsage(Math.toIntExact(nativeUsage.promptTokens()), 0,
-				Math.toIntExact(nativeUsage.totalTokens()), nativeUsage);
-	}
+    private DefaultUsage getDefaultUsage(CreateEmbeddingResponse.Usage nativeUsage) {
+        return new DefaultUsage(Math.toIntExact(nativeUsage.promptTokens()), 0,
+                Math.toIntExact(nativeUsage.totalTokens()), nativeUsage);
+    }
 
-	private List<Embedding> generateEmbeddingList(List<com.openai.models.embeddings.Embedding> nativeData) {
-		List<Embedding> data = new ArrayList<>();
-		for (com.openai.models.embeddings.Embedding nativeDatum : nativeData) {
-			List<Float> nativeDatumEmbedding = nativeDatum.embedding();
-			long nativeIndex = nativeDatum.index();
-			Embedding embedding = new Embedding(EmbeddingUtils.toPrimitive(nativeDatumEmbedding),
-					Math.toIntExact(nativeIndex));
-			data.add(embedding);
-		}
-		return data;
-	}
+    private List<Embedding> generateEmbeddingList(List<com.openai.models.embeddings.Embedding> nativeData) {
+        List<Embedding> data = new ArrayList<>();
+        for (com.openai.models.embeddings.Embedding nativeDatum : nativeData) {
+            List<Float> nativeDatumEmbedding = nativeDatum.embedding();
+            long nativeIndex = nativeDatum.index();
+            Embedding embedding = new Embedding(EmbeddingUtils.toPrimitive(nativeDatumEmbedding),
+                    Math.toIntExact(nativeIndex));
+            data.add(embedding);
+        }
+        return data;
+    }
 
-	public OpenAiOfficialEmbeddingOptions getOptions() {
-		return this.options;
-	}
+    /**
+     * Gets the embedding options for this model.
+     * @return the embedding options
+     */
+    public OpenAiOfficialEmbeddingOptions getOptions() {
+        return this.options;
+    }
 
-	/**
-	 * Use the provided convention for reporting observation data
-	 * @param observationConvention The provided convention
-	 */
-	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
-		Assert.notNull(observationConvention, "observationConvention cannot be null");
-		this.observationConvention = observationConvention;
-	}
+    /**
+     * Use the provided convention for reporting observation data
+     * @param observationConvention The provided convention
+     */
+    public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+        Assert.notNull(observationConvention, "observationConvention cannot be null");
+        this.observationConvention = observationConvention;
+    }
 
 }

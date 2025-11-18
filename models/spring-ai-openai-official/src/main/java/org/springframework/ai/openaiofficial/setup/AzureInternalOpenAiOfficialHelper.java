@@ -31,9 +31,9 @@ import com.openai.credential.Credential;
  */
 class AzureInternalOpenAiOfficialHelper {
 
-	static Credential getAzureCredential() {
-		return BearerTokenCredential.create(AuthenticationUtil.getBearerTokenSupplier(
-				new DefaultAzureCredentialBuilder().build(), "https://cognitiveservices.azure.com/.default"));
-	}
+    static Credential getAzureCredential() {
+        return BearerTokenCredential.create(AuthenticationUtil.getBearerTokenSupplier(
+                new DefaultAzureCredentialBuilder().build(), "https://cognitiveservices.azure.com/.default"));
+    }
 
 }

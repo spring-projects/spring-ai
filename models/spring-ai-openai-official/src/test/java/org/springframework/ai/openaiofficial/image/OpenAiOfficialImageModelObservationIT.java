@@ -58,7 +58,7 @@ public class OpenAiOfficialImageModelObservationIT {
 	}
 
 	@Test
-	void observationForImageOperation() {
+	void observationForImageOperation() throws InterruptedException {
 		var options = OpenAiOfficialImageOptions.builder()
 			.model(DALL_E_3.asString())
 			.height(1024)
@@ -75,6 +75,8 @@ public class OpenAiOfficialImageModelObservationIT {
 
 		ImageResponse imageResponse = this.imageModel.call(imagePrompt);
 		assertThat(imageResponse.getResults()).hasSize(1);
+
+		Thread.sleep(100); // Wait for observation to be recorded
 
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
