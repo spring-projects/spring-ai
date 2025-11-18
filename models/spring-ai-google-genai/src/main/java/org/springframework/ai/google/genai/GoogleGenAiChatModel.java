@@ -707,6 +707,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (requestOptions.getResponseMimeType() != null) {
 			configBuilder.responseMimeType(requestOptions.getResponseMimeType());
 		}
+		if (requestOptions.getResponseSchema() != null) {
+			configBuilder.responseJsonSchema(jsonToSchema(requestOptions.getResponseSchema()));
+		}
 		if (requestOptions.getFrequencyPenalty() != null) {
 			configBuilder.frequencyPenalty(requestOptions.getFrequencyPenalty().floatValue());
 		}

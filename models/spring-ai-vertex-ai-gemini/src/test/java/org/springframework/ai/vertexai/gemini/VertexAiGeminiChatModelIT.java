@@ -20,9 +20,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import io.micrometer.observation.ObservationRegistry;
@@ -37,6 +39,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -46,9 +49,11 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
+import org.springframework.ai.vertexai.gemini.schema.JsonSchemaConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -212,11 +217,67 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	@Test
+	void beanOutputConverterRecordsWithResponseSchema() {
+
+		// Use the Google GenAI API to set the response schema
+		beanOutputConverterRecordsWithStructuredOutput(jsonSchemaText -> {
+			ObjectNode jsonSchema = JsonSchemaConverter.fromJson(jsonSchemaText);
+			ObjectNode openApiSchema = JsonSchemaConverter.convertToOpenApiSchema(jsonSchema);
+			JsonSchemaGenerator.convertTypeValuesToUpperCase(openApiSchema);
+
+			return VertexAiGeminiChatOptions.builder()
+				.responseSchema(openApiSchema.toString())
+				.responseMimeType("application/json")
+				.build();
+		});
+	}
+
+	@Test
+	void beanOutputConverterRecordsWithOutputSchema() {
+		// Use the unified Spring AI API (StructuredOutputChatOptions) to set the output
+		// schema.
+		beanOutputConverterRecordsWithStructuredOutput(
+				jsonSchema -> VertexAiGeminiChatOptions.builder().outputSchema(jsonSchema).build());
+	}
+
+	private void beanOutputConverterRecordsWithStructuredOutput(Function<String, ChatOptions> chatOptionsProvider) {
+
+		BeanOutputConverter<ActorsFilmsRecord> outputConvert = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+
+		String schema = outputConvert.getJsonSchema();
+
+		Prompt prompt = Prompt.builder()
+			.content("Generate the filmography of 5 movies for Tom Hanks.")
+			.chatOptions(chatOptionsProvider.apply(schema))
+			.build();
+
+		Generation generation = this.chatModel.call(prompt).getResult();
+
+		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
 	void chatClientBeanOutputConverterRecords() {
 
 		var chatClient = ChatClient.builder(this.chatModel).build();
 
 		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecordsNative() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.call()
 			.entity(ActorsFilmsRecord.class);
 
@@ -239,7 +300,7 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	@Test
-	void listOutputConverterBean2() {
+	void listOutputConverterBeanNative() {
 
 		// @formatter:off
 		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
@@ -251,20 +312,6 @@ class VertexAiGeminiChatModelIT {
 		// @formatter:on
 
 		assertThat(actorsFilms).hasSize(2);
-	}
-
-	@Test
-	void chatClientBeanOutputConverterRecords2() {
-
-		var chatClient = ChatClient.builder(this.chatModel).build();
-
-		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
-			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
-			.call()
-			.entity(ActorsFilmsRecord.class);
-
-		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
-		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
