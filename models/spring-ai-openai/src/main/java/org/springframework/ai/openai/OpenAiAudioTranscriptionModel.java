@@ -20,10 +20,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.audio.transcription.AudioTranscription;
+import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.TranscriptionModel;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResponseMetadata;
@@ -166,18 +168,14 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	}
 
 	OpenAiAudioApi.TranscriptionRequest createRequest(AudioTranscriptionPrompt transcriptionPrompt) {
-
-		OpenAiAudioTranscriptionOptions options = this.defaultOptions;
-
+		OpenAiAudioTranscriptionOptions runtimeOptions = null;
 		if (transcriptionPrompt.getOptions() != null) {
-			if (transcriptionPrompt.getOptions() instanceof OpenAiAudioTranscriptionOptions runtimeOptions) {
-				options = this.merge(runtimeOptions, options);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type TranscriptionOptions: "
-						+ transcriptionPrompt.getOptions().getClass().getSimpleName());
-			}
+			runtimeOptions = ModelOptionsUtils.copyToTarget(transcriptionPrompt.getOptions(),
+					AudioTranscriptionOptions.class, OpenAiAudioTranscriptionOptions.class);
 		}
+
+		OpenAiAudioTranscriptionOptions options = runtimeOptions == null ? this.defaultOptions
+				: ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions, OpenAiAudioTranscriptionOptions.class);
 
 		Resource instructions = transcriptionPrompt.getInstructions();
 		return OpenAiAudioApi.TranscriptionRequest.builder()
@@ -199,25 +197,6 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		catch (Exception e) {
 			throw new IllegalArgumentException("Failed to read resource: " + resource, e);
 		}
-	}
-
-	private OpenAiAudioTranscriptionOptions merge(OpenAiAudioTranscriptionOptions source,
-			OpenAiAudioTranscriptionOptions target) {
-
-		if (source == null) {
-			source = new OpenAiAudioTranscriptionOptions();
-		}
-
-		OpenAiAudioTranscriptionOptions merged = new OpenAiAudioTranscriptionOptions();
-		merged.setLanguage(source.getLanguage() != null ? source.getLanguage() : target.getLanguage());
-		merged.setModel(source.getModel() != null ? source.getModel() : target.getModel());
-		merged.setPrompt(source.getPrompt() != null ? source.getPrompt() : target.getPrompt());
-		merged.setResponseFormat(
-				source.getResponseFormat() != null ? source.getResponseFormat() : target.getResponseFormat());
-		merged.setTemperature(source.getTemperature() != null ? source.getTemperature() : target.getTemperature());
-		merged.setGranularityType(
-				source.getGranularityType() != null ? source.getGranularityType() : target.getGranularityType());
-		return merged;
 	}
 
 }
