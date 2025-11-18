@@ -396,10 +396,12 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 		if (o == null || getClass() != o.getClass())
 			return false;
 		OpenAiOfficialChatOptions options = (OpenAiOfficialChatOptions) o;
-		return Objects.equals(frequencyPenalty, options.frequencyPenalty)
+		return Objects.equals(getModel(), options.getModel())
+				&& Objects.equals(frequencyPenalty, options.frequencyPenalty)
 				&& Objects.equals(logitBias, options.logitBias) && Objects.equals(logprobs, options.logprobs)
 				&& Objects.equals(topLogprobs, options.topLogprobs) && Objects.equals(maxTokens, options.maxTokens)
-				&& Objects.equals(n, options.n) && Objects.equals(outputAudio, options.outputAudio)
+				&& Objects.equals(maxCompletionTokens, options.maxCompletionTokens) && Objects.equals(n, options.n)
+				&& Objects.equals(outputAudio, options.outputAudio)
 				&& Objects.equals(presencePenalty, options.presencePenalty)
 				&& Objects.equals(responseFormat, options.responseFormat)
 				&& Objects.equals(streamOptions, options.streamOptions)
@@ -418,16 +420,17 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, n, outputAudio,
-				presencePenalty, responseFormat, streamOptions, streamUsage, seed, stop, temperature, topP, tools,
-				toolChoice, user, parallelToolCalls, store, metadata, reasoningEffort, verbosity, serviceTier,
+		return Objects.hash(getModel(), frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens, maxCompletionTokens, n,
+				outputAudio, presencePenalty, responseFormat, streamOptions, streamUsage, seed, stop, temperature, topP,
+				tools, toolChoice, user, parallelToolCalls, store, metadata, reasoningEffort, verbosity, serviceTier,
 				toolCallbacks, toolNames, internalToolExecutionEnabled, httpHeaders, toolContext);
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiOfficialChatOptions{" + "frequencyPenalty=" + frequencyPenalty + ", logitBias=" + logitBias
-				+ ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs + ", maxTokens=" + maxTokens + ", n=" + n
+		return "OpenAiOfficialChatOptions{" + "model='" + getModel() + ", frequencyPenalty=" + frequencyPenalty
+				+ ", logitBias=" + logitBias + ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs
+				+ ", maxTokens=" + maxTokens + ", maxCompletionTokens=" + maxCompletionTokens + ", n=" + n
 				+ ", outputAudio=" + outputAudio + ", presencePenalty=" + presencePenalty + ", responseFormat="
 				+ responseFormat + ", streamOptions=" + streamOptions + ", streamUsage=" + streamUsage + ", seed="
 				+ seed + ", stop=" + stop + ", temperature=" + temperature + ", topP=" + topP + ", tools=" + tools
@@ -611,22 +614,24 @@ public class OpenAiOfficialChatOptions extends AbstractOpenAiOfficialOptions imp
 
 		public Builder maxTokens(Integer maxTokens) {
 			if (maxTokens != null && this.options.getMaxCompletionTokens() != null) {
-				logger
-					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
-							+ "The previously set maxCompletionTokens ({}) will be cleared and maxTokens ({}) will be used.",
-							this.options.getMaxCompletionTokens(), maxTokens);
-				this.options.setMaxCompletionTokens(null);
+				logger.warn(
+						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+								+ "As maxToken is deprecated, we will ignore it and use maxCompletionToken ({}).",
+						this.options.getMaxCompletionTokens());
 			}
-			this.options.setMaxTokens(maxTokens);
+			else {
+				this.options.setMaxTokens(maxTokens);
+			}
 			return this;
 		}
 
 		public Builder maxCompletionTokens(Integer maxCompletionTokens) {
 			if (maxCompletionTokens != null && this.options.getMaxTokens() != null) {
-				logger
-					.warn("Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
-							+ "The previously set maxTokens ({}) will be cleared and maxCompletionTokens ({}) will be used.",
-							this.options.getMaxTokens(), maxCompletionTokens);
+				logger.warn(
+						"Both maxTokens and maxCompletionTokens are set. OpenAI API does not support setting both parameters simultaneously. "
+								+ "As maxToken is deprecated, we will use maxCompletionToken ({}).",
+						maxCompletionTokens);
+
 				this.options.setMaxTokens(null);
 			}
 			this.options.setMaxCompletionTokens(maxCompletionTokens);

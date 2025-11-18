@@ -94,9 +94,9 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiOfficialChatModel.class);
 
-	private OpenAIClient openAiClient;
+	private final OpenAIClient openAiClient;
 
-	private OpenAIClientAsync openAiClientAsync;
+	private final OpenAIClientAsync openAiClientAsync;
 
 	private final OpenAiOfficialChatOptions options;
 
@@ -263,13 +263,12 @@ public class OpenAiOfficialChatModel implements ChatModel {
 	}
 
 	public AssistantMessage safeAssistantMessage(ChatResponse response) {
-		if (response == null) return null;
+		if (response == null)
+			return null;
 		Generation gen = response.getResult();
-		if (gen == null) return null;
-		if (gen.getOutput() instanceof AssistantMessage) {
-			return (AssistantMessage) gen.getOutput();
-		}
-		return null;
+		if (gen == null)
+			return null;
+		return gen.getOutput();
 	}
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
@@ -281,8 +280,8 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				.provider(AiProvider.OPENAI_OFFICIAL.value())
 				.build();
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
-				this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-				this.observationRegistry);
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry);
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
 			Flux<ChatResponse> chatResponses = Flux.<ChatResponse>create(sink -> {
@@ -291,15 +290,14 @@ public class OpenAiOfficialChatModel implements ChatModel {
 						ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
 						String id = chatCompletion.id();
 						List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-							roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow() : "");
+							roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent()
+									? choice.message()._role().asStringOrThrow() : "");
 
-							Map<String, Object> metadata = Map.of(
-									"id", id,
-									"role", roleMap.getOrDefault(id, ""),
-									"index", choice.index(),
-									"finishReason", choice.finishReason().value(),
-									"refusal", choice.message().refusal().isPresent() ? choice.message().refusal() : "",
-									"annotations", choice.message().annotations().isPresent() ? choice.message().annotations() : List.of(),
+							Map<String, Object> metadata = Map.of("id", id, "role", roleMap.getOrDefault(id, ""),
+									"index", choice.index(), "finishReason", choice.finishReason().value(), "refusal",
+									choice.message().refusal().isPresent() ? choice.message().refusal() : "",
+									"annotations", choice.message().annotations().isPresent()
+											? choice.message().annotations() : List.of(),
 									"chunkChoice", chunk.choices().get((int) choice.index()));
 
 							return buildGeneration(choice, metadata);
@@ -315,13 +313,14 @@ public class OpenAiOfficialChatModel implements ChatModel {
 						sink.error(e);
 					}
 				}).onCompleteFuture().whenComplete((unused, throwable) -> {
-					if (throwable != null) sink.error(throwable); else sink.complete();
+					if (throwable != null)
+						sink.error(throwable);
+					else
+						sink.complete();
 				});
-			})
-			.buffer(2,1)
-			.map(buffer -> {
+			}).buffer(2, 1).map(buffer -> {
 				ChatResponse first = buffer.get(0);
-				if (request.streamOptions().isPresent() && buffer.size()==2) {
+				if (request.streamOptions().isPresent() && buffer.size() == 2) {
 					ChatResponse second = buffer.get(1);
 					if (second != null) {
 						Usage usage = second.getMetadata().getUsage();
@@ -337,15 +336,23 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			return flux.collectList().flatMapMany(list -> {
-				if (list.isEmpty()) return Flux.empty();
-				boolean hasToolCalls = list.stream().map(this::safeAssistantMessage).filter(Objects::nonNull)
+				if (list.isEmpty())
+					return Flux.empty();
+				boolean hasToolCalls = list.stream()
+					.map(this::safeAssistantMessage)
+					.filter(Objects::nonNull)
 					.anyMatch(am -> !CollectionUtils.isEmpty(am.getToolCalls()));
 				if (!hasToolCalls) {
 					if (list.size() > 2) {
-						ChatResponse penultimateResponse = list.get(list.size()-2); // Get the finish reason
-						ChatResponse lastResponse = list.get(list.size()-1); // Get the usage
+						ChatResponse penultimateResponse = list.get(list.size() - 2); // Get
+																						// the
+																						// finish
+																						// reason
+						ChatResponse lastResponse = list.get(list.size() - 1); // Get the
+																				// usage
 						Usage usage = lastResponse.getMetadata().getUsage();
-						observationContext.setResponse(new ChatResponse(penultimateResponse.getResults(), from(penultimateResponse.getMetadata(), usage)));
+						observationContext.setResponse(new ChatResponse(penultimateResponse.getResults(),
+								from(penultimateResponse.getMetadata(), usage)));
 					}
 					return Flux.fromIterable(list);
 				}
@@ -353,59 +360,85 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				StringBuilder text = new StringBuilder();
 				ChatResponseMetadata finalMetadata = null;
 				ChatGenerationMetadata finalGenMetadata = null;
-				Map<String,Object> props = new HashMap<>();
+				Map<String, Object> props = new HashMap<>();
 				for (ChatResponse chatResponse : list) {
 					AssistantMessage am = safeAssistantMessage(chatResponse);
-					if (am == null) continue;
-					if (am.getText() != null) text.append(am.getText());
-					if (am.getMetadata() != null) props.putAll(am.getMetadata());
+					if (am == null)
+						continue;
+					if (am.getText() != null)
+						text.append(am.getText());
+					if (am.getMetadata() != null)
+						props.putAll(am.getMetadata());
 					if (!CollectionUtils.isEmpty(am.getToolCalls())) {
 						Object ccObj = am.getMetadata().get("chunkChoice");
-						if (ccObj instanceof ChatCompletionChunk.Choice chunkChoice && chunkChoice.delta().toolCalls().isPresent()) {
-							List<ChatCompletionChunk.Choice.Delta.ToolCall> deltaCalls = chunkChoice.delta().toolCalls().get();
-							for (int i=0; i<am.getToolCalls().size() && i<deltaCalls.size();i++) {
+						if (ccObj instanceof ChatCompletionChunk.Choice chunkChoice
+								&& chunkChoice.delta().toolCalls().isPresent()) {
+							List<ChatCompletionChunk.Choice.Delta.ToolCall> deltaCalls = chunkChoice.delta()
+								.toolCalls()
+								.get();
+							for (int i = 0; i < am.getToolCalls().size() && i < deltaCalls.size(); i++) {
 								AssistantMessage.ToolCall tc = am.getToolCalls().get(i);
 								ChatCompletionChunk.Choice.Delta.ToolCall dtc = deltaCalls.get(i);
-								String key = chunkChoice.index()+"-"+dtc.index();
-								ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(key,k->new ToolCallBuilder());
+								String key = chunkChoice.index() + "-" + dtc.index();
+								ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(key,
+										k -> new ToolCallBuilder());
 								toolCallBuilder.merge(tc);
 							}
-						} else {
+						}
+						else {
 							for (AssistantMessage.ToolCall tc : am.getToolCalls()) {
-							  ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(tc.id(), k->new ToolCallBuilder());
-							  toolCallBuilder.merge(tc);
+								ToolCallBuilder toolCallBuilder = builders.computeIfAbsent(tc.id(),
+										k -> new ToolCallBuilder());
+								toolCallBuilder.merge(tc);
 							}
 						}
 					}
 					Generation generation = chatResponse.getResult();
-					if (generation!=null && generation.getMetadata()!=null && generation.getMetadata()!=ChatGenerationMetadata.NULL) {
+					if (generation != null && generation.getMetadata() != null
+							&& generation.getMetadata() != ChatGenerationMetadata.NULL) {
 						finalGenMetadata = generation.getMetadata();
 					}
-					if (chatResponse.getMetadata()!=null) finalMetadata = chatResponse.getMetadata();
+					if (chatResponse.getMetadata() != null)
+						finalMetadata = chatResponse.getMetadata();
 				}
-				List<AssistantMessage.ToolCall> merged = builders.values().stream().map(ToolCallBuilder::build)
+				List<AssistantMessage.ToolCall> merged = builders.values()
+					.stream()
+					.map(ToolCallBuilder::build)
 					.filter(tc -> StringUtils.hasText(tc.name()))
 					.toList();
-				AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder().content(text.toString()).properties(props);
+				AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder()
+					.content(text.toString())
+					.properties(props);
 				if (!merged.isEmpty()) {
 					assistantMessageBuilder.toolCalls(merged);
 				}
 				AssistantMessage assistantMessage = assistantMessageBuilder.build();
-				Generation finalGen = new Generation(assistantMessage, finalGenMetadata!=null? finalGenMetadata : ChatGenerationMetadata.NULL);
+				Generation finalGen = new Generation(assistantMessage,
+						finalGenMetadata != null ? finalGenMetadata : ChatGenerationMetadata.NULL);
 				ChatResponse aggregated = new ChatResponse(List.of(finalGen), finalMetadata);
 				observationContext.setResponse(aggregated);
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), aggregated)) {
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult tetoolExecutionResult;
-						try { ToolCallReactiveContextHolder.setContext(ctx); tetoolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregated);} finally { ToolCallReactiveContextHolder.clearContext(); }
-						if (tetoolExecutionResult.returnDirect()) return Flux.just(ChatResponse.builder().from(aggregated).generations(ToolExecutionResult.buildGenerations(tetoolExecutionResult)).build());
-						return this.internalStream(new Prompt(tetoolExecutionResult.conversationHistory(), prompt.getOptions()), aggregated);
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							tetoolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregated);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
+						if (tetoolExecutionResult.returnDirect())
+							return Flux.just(ChatResponse.builder()
+								.from(aggregated)
+								.generations(ToolExecutionResult.buildGenerations(tetoolExecutionResult))
+								.build());
+						return this.internalStream(
+								new Prompt(tetoolExecutionResult.conversationHistory(), prompt.getOptions()),
+								aggregated);
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
 				return Flux.just(aggregated);
-			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop());
+			}).doOnError(observation::error).doFinally(s -> observation.stop());
 		});
 	}
 
@@ -417,11 +450,15 @@ public class OpenAiOfficialChatModel implements ChatModel {
 			Object chunkChoiceObj = metadata.get("chunkChoice");
 			if (chunkChoiceObj instanceof ChatCompletionChunk.Choice chunkChoice) {
 				if (chunkChoice.delta().toolCalls().isPresent()) {
-					toolCalls = chunkChoice.delta().toolCalls().get().stream()
+					toolCalls = chunkChoice.delta()
+						.toolCalls()
+						.get()
+						.stream()
 						.filter(tc -> tc.function().isPresent())
 						.map(tc -> {
 							var funcOpt = tc.function();
-							if (funcOpt.isEmpty()) return null;
+							if (funcOpt.isEmpty())
+								return null;
 							var func = funcOpt.get();
 							String id = tc.id().orElse("");
 							String name = func.name().orElse("");
@@ -434,20 +471,19 @@ public class OpenAiOfficialChatModel implements ChatModel {
 			}
 		}
 		else {
-			toolCalls = message.toolCalls().map(list -> list.stream()
-				.filter(tc -> tc.function().isPresent())
-				.map(tc -> {
+			toolCalls = message.toolCalls()
+				.map(list -> list.stream().filter(tc -> tc.function().isPresent()).map(tc -> {
 					var opt = tc.function();
-					if (opt.isEmpty()) return null;
+					if (opt.isEmpty())
+						return null;
 					var funcCall = opt.get();
 					var functionDef = funcCall.function();
 					String id = funcCall.id();
 					String name = functionDef.name();
 					String arguments = functionDef.arguments();
 					return new AssistantMessage.ToolCall(id, "function", name, arguments);
-				})
-				.filter(Objects::nonNull)
-				.toList()).orElse(List.of());
+				}).filter(Objects::nonNull).toList())
+				.orElse(List.of());
 		}
 
 		var generationMetadataBuilder = ChatGenerationMetadata.builder()
@@ -488,47 +524,45 @@ public class OpenAiOfficialChatModel implements ChatModel {
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-		List<ChatCompletion.Choice> choices = chunk.choices()
-			.stream()
-			.map(chunkChoice -> {
-				ChatCompletion.Choice.FinishReason finishReason = ChatCompletion.Choice.FinishReason.of("");
-				if (chunkChoice.finishReason().isPresent()) {
-					finishReason = ChatCompletion.Choice.FinishReason.of(chunkChoice.finishReason().get().value().name().toLowerCase());
-				}
+		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(chunkChoice -> {
+			ChatCompletion.Choice.FinishReason finishReason = ChatCompletion.Choice.FinishReason.of("");
+			if (chunkChoice.finishReason().isPresent()) {
+				finishReason = ChatCompletion.Choice.FinishReason
+					.of(chunkChoice.finishReason().get().value().name().toLowerCase());
+			}
 
-				ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder()
-					.finishReason(finishReason)
-					.index(chunkChoice.index())
-					.message(ChatCompletionMessage.builder()
-						.content(chunkChoice.delta().content())
-						.refusal(chunkChoice.delta().refusal())
-						.build());
+			ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder()
+				.finishReason(finishReason)
+				.index(chunkChoice.index())
+				.message(ChatCompletionMessage.builder()
+					.content(chunkChoice.delta().content())
+					.refusal(chunkChoice.delta().refusal())
+					.build());
 
-				// Handle optional logprobs
-				if (chunkChoice.logprobs().isPresent()) {
-					var logprobs = chunkChoice.logprobs().get();
-					choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
-						.content(logprobs.content())
-						.refusal(logprobs.refusal())
-						.build());
-				} else {
-					// Provide empty logprobs when not present
-					choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
-						.content(List.of())
-						.refusal(List.of())
-						.build());
-				}
+			// Handle optional logprobs
+			if (chunkChoice.logprobs().isPresent()) {
+				var logprobs = chunkChoice.logprobs().get();
+				choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
+					.content(logprobs.content())
+					.refusal(logprobs.refusal())
+					.build());
+			}
+			else {
+				// Provide empty logprobs when not present
+				choiceBuilder
+					.logprobs(ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
+			}
 
-				return choiceBuilder.build();
-			})
-			.toList();
+			return choiceBuilder.build();
+		}).toList();
 
 		return ChatCompletion.builder()
 			.id(chunk.id())
 			.choices(choices)
 			.created(chunk.created())
 			.model(chunk.model())
-			.usage(chunk.usage().orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
+			.usage(chunk.usage()
+				.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
 			.build();
 	}
 
@@ -593,134 +627,158 @@ public class OpenAiOfficialChatModel implements ChatModel {
 
 	ChatCompletionCreateParams createRequest(Prompt prompt, boolean stream) {
 
-		List<ChatCompletionMessageParam> chatCompletionMessageParams = prompt.getInstructions().stream().map(message -> {
-			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				// Handle simple text content for user and system messages
-				ChatCompletionUserMessageParam.Builder builder = ChatCompletionUserMessageParam.builder();
+		List<ChatCompletionMessageParam> chatCompletionMessageParams = prompt.getInstructions()
+			.stream()
+			.map(message -> {
+				if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
+					// Handle simple text content for user and system messages
+					ChatCompletionUserMessageParam.Builder builder = ChatCompletionUserMessageParam.builder();
 
-				if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
-					// Handle media content (images, audio, files)
-					List<ChatCompletionContentPart> parts = new ArrayList<>();
+					if (message instanceof UserMessage userMessage
+							&& !CollectionUtils.isEmpty(userMessage.getMedia())) {
+						// Handle media content (images, audio, files)
+						List<ChatCompletionContentPart> parts = new ArrayList<>();
 
-					if (!message.getText().isEmpty()) {
-						parts.add(ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder().text(message.getText()).build()));
-					}
-
-					// Add media content parts
-					userMessage.getMedia().forEach(media -> {
-						String mimeType = media.getMimeType().toString();
-						if (mimeType.startsWith("image/")) {
-							if (media.getData() instanceof java.net.URI uri) {
-								parts.add(ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
-										.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(uri.toString()).build())
-										.build()));
-								} else if (media.getData() instanceof String text) {
-								// The org.springframework.ai.content.Media object should store the URL as a java.net.URI but it transforms it to String somewhere along the way,
-								// for example in its Builder class. So, we accept String as well here for image URLs.
-								parts.add(ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
-										.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(text).build())
-										.build()));
-								} else if (media.getData() instanceof byte[] bytes) {
-								// Assume the bytes are an image. So, convert the bytes to a base64 encoded
-								ChatCompletionContentPartImage.ImageUrl.Builder imageUrlBuilder = ChatCompletionContentPartImage.ImageUrl.builder();
-
-								imageUrlBuilder.url("data:" + mimeType + ";base64,"
-										+ Base64.getEncoder().encodeToString(bytes));
-								parts.add(ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
-										.imageUrl(imageUrlBuilder.build())
-										.build()));
-							} else {
-								logger.info("Could not process image media with data of type: {}. Only java.net.URI is supported for image URLs.",
-										media.getData().getClass().getSimpleName());
-							}
+						if (!message.getText().isEmpty()) {
+							parts.add(ChatCompletionContentPart
+								.ofText(ChatCompletionContentPartText.builder().text(message.getText()).build()));
 						}
-						else if (mimeType.startsWith("audio/")) {
-							parts.add(ChatCompletionContentPart.ofInputAudio(ChatCompletionContentPartInputAudio.builder()
-									.inputAudio(ChatCompletionContentPartInputAudio.builder()
+
+						// Add media content parts
+						userMessage.getMedia().forEach(media -> {
+							String mimeType = media.getMimeType().toString();
+							if (mimeType.startsWith("image/")) {
+								if (media.getData() instanceof java.net.URI uri) {
+									parts.add(ChatCompletionContentPart
+										.ofImageUrl(ChatCompletionContentPartImage.builder()
+											.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder()
+												.url(uri.toString())
+												.build())
+											.build()));
+								}
+								else if (media.getData() instanceof String text) {
+									// The org.springframework.ai.content.Media object
+									// should store the URL as a java.net.URI but it
+									// transforms it to String somewhere along the way,
+									// for example in its Builder class. So, we accept
+									// String as well here for image URLs.
+									parts.add(ChatCompletionContentPart
+										.ofImageUrl(ChatCompletionContentPartImage.builder()
+											.imageUrl(
+													ChatCompletionContentPartImage.ImageUrl.builder().url(text).build())
+											.build()));
+								}
+								else if (media.getData() instanceof byte[] bytes) {
+									// Assume the bytes are an image. So, convert the
+									// bytes to a base64 encoded
+									ChatCompletionContentPartImage.ImageUrl.Builder imageUrlBuilder = ChatCompletionContentPartImage.ImageUrl
+										.builder();
+
+									imageUrlBuilder.url("data:" + mimeType + ";base64,"
+											+ Base64.getEncoder().encodeToString(bytes));
+									parts.add(ChatCompletionContentPart
+										.ofImageUrl(ChatCompletionContentPartImage.builder()
+											.imageUrl(imageUrlBuilder.build())
+											.build()));
+								}
+								else {
+									logger.info(
+											"Could not process image media with data of type: {}. Only java.net.URI is supported for image URLs.",
+											media.getData().getClass().getSimpleName());
+								}
+							}
+							else if (mimeType.startsWith("audio/")) {
+								parts.add(ChatCompletionContentPart
+									.ofInputAudio(ChatCompletionContentPartInputAudio.builder()
+										.inputAudio(ChatCompletionContentPartInputAudio.builder()
 											.inputAudio(ChatCompletionContentPartInputAudio.InputAudio.builder()
-													.data(fromAudioData(media.getData()))
-													.format(mimeType.contains("mp3")
-															? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
-															: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
-													.build())
+												.data(fromAudioData(media.getData()))
+												.format(mimeType.contains("mp3")
+														? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
+														: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
+												.build())
 											.build()
 											.inputAudio())
+										.build()));
+							}
+							else {
+								// Assume it's a file or other media type represented as a
+								// data URL
+								parts.add(ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder()
+									.text(fromMediaData(media.getMimeType(), media.getData()))
 									.build()));
-						}
-						else {
-							// Assume it's a file or other media type represented as a data URL
-							parts.add(ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder().text(fromMediaData(media.getMimeType(), media.getData())).build()));
-						}
-					});
-					builder.contentOfArrayOfContentParts(parts);
-				}
-				else {
-					// Simple text message
-					builder.content(ChatCompletionContentPartText.builder().text(message.getText()).build().text());
-				}
+							}
+						});
+						builder.contentOfArrayOfContentParts(parts);
+					}
+					else {
+						// Simple text message
+						builder.content(ChatCompletionContentPartText.builder().text(message.getText()).build().text());
+					}
 
-				if (message.getMessageType() == MessageType.USER) {
-					builder.role(JsonValue.from(MessageType.USER.getValue()));
-				}
-				else {
-					builder.role(JsonValue.from(MessageType.SYSTEM.getValue()));
-				}
+					if (message.getMessageType() == MessageType.USER) {
+						builder.role(JsonValue.from(MessageType.USER.getValue()));
+					}
+					else {
+						builder.role(JsonValue.from(MessageType.SYSTEM.getValue()));
+					}
 
-				return List.of(ChatCompletionMessageParam.ofUser(builder.build()));
-			}
-			else if (message.getMessageType() == MessageType.ASSISTANT) {
-				var assistantMessage = (AssistantMessage) message;
-				ChatCompletionAssistantMessageParam.Builder builder = ChatCompletionAssistantMessageParam.builder()
-					.role(JsonValue.from(MessageType.ASSISTANT.getValue()));
+					return List.of(ChatCompletionMessageParam.ofUser(builder.build()));
+				}
+				else if (message.getMessageType() == MessageType.ASSISTANT) {
+					var assistantMessage = (AssistantMessage) message;
+					ChatCompletionAssistantMessageParam.Builder builder = ChatCompletionAssistantMessageParam.builder()
+						.role(JsonValue.from(MessageType.ASSISTANT.getValue()));
 
-				if (assistantMessage.getText() != null) {
-					builder.content(ChatCompletionAssistantMessageParam.builder()
+					if (assistantMessage.getText() != null) {
+						builder.content(ChatCompletionAssistantMessageParam.builder()
 							.content(assistantMessage.getText())
-							.build().content());
+							.build()
+							.content());
+					}
+
+					if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+						List<ChatCompletionMessageToolCall> toolCalls = assistantMessage.getToolCalls()
+							.stream()
+							.map(toolCall -> ChatCompletionMessageToolCall
+								.ofFunction(ChatCompletionMessageFunctionToolCall.builder()
+									.id(toolCall.id())
+									.function(ChatCompletionMessageFunctionToolCall.Function.builder()
+										.name(toolCall.name())
+										.arguments(toolCall.arguments())
+										.build())
+									.build()))
+							.toList();
+
+						builder.toolCalls(toolCalls);
+					}
+
+					return List.of(ChatCompletionMessageParam.ofAssistant(builder.build()));
 				}
+				else if (message.getMessageType() == MessageType.TOOL) {
+					ToolResponseMessage toolMessage = (ToolResponseMessage) message;
 
-				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					List<ChatCompletionMessageToolCall> toolCalls = assistantMessage.getToolCalls()
-						.stream()
-							.map(toolCall -> ChatCompletionMessageToolCall.ofFunction(
-									ChatCompletionMessageFunctionToolCall.builder()
-											.id(toolCall.id())
-											.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-													.name(toolCall.name())
-													.arguments(toolCall.arguments()).build())
-													.build())
-									)
-						.toList();
+					ChatCompletionToolMessageParam.Builder builder = ChatCompletionToolMessageParam.builder();
+					builder.content(toolMessage.getText() != null ? toolMessage.getText() : "");
+					builder.role(JsonValue.from(MessageType.TOOL.getValue()));
 
-					builder.toolCalls(toolCalls);
+					if (toolMessage.getResponses().isEmpty()) {
+						return List.of(ChatCompletionMessageParam.ofTool(builder.build()));
+					}
+					return toolMessage.getResponses().stream().map(response -> {
+						String callId = response.id();
+						String callResponse = response.responseData();
+
+						return ChatCompletionMessageParam
+							.ofTool(builder.toolCallId(callId).content(callResponse).build());
+					}).toList();
 				}
-
-				return List.of(ChatCompletionMessageParam.ofAssistant(builder.build()));
-			}
-			else if (message.getMessageType() == MessageType.TOOL) {
-				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
-
-				ChatCompletionToolMessageParam.Builder builder = ChatCompletionToolMessageParam.builder();
-				builder.content(toolMessage.getText() != null ? toolMessage.getText() : "");
-				builder.role(JsonValue.from(MessageType.TOOL.getValue()));
-
-				if (toolMessage.getResponses().isEmpty()) {
-					return List.of(ChatCompletionMessageParam.ofTool(builder.build()));
+				else {
+					throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 				}
-				return toolMessage.getResponses().stream().map(response -> {
-					String callId = response.id();
-					String callResponse = response.responseData();
-
-					return ChatCompletionMessageParam.ofTool(builder
-							.toolCallId(callId)
-							.content(callResponse)
-							.build());
-				}).toList();
-			}
-			else {
-				throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
-			}
-		}).flatMap(List::stream).toList();
+			})
+			.flatMap(List::stream)
+			.toList();
 
 		ChatCompletionCreateParams.Builder builder = ChatCompletionCreateParams.builder();
 
@@ -742,9 +800,11 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		}
 		if (requestOptions.getLogitBias() != null) {
 			builder.logitBias(ChatCompletionCreateParams.LogitBias.builder()
-					.putAllAdditionalProperties(requestOptions.getLogitBias().entrySet().stream()
-							.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue()))))
-					.build());
+				.putAllAdditionalProperties(requestOptions.getLogitBias()
+					.entrySet()
+					.stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue()))))
+				.build());
 		}
 		if (requestOptions.getLogprobs() != null) {
 			builder.logprobs(requestOptions.getLogprobs());
@@ -771,27 +831,32 @@ public class OpenAiOfficialChatModel implements ChatModel {
 			ResponseFormat responseFormat = requestOptions.getResponseFormat();
 			if (responseFormat.getType().equals(ResponseFormat.Type.TEXT)) {
 				builder.responseFormat(ResponseFormatText.builder().build());
-			} else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_OBJECT)) {
+			}
+			else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_OBJECT)) {
 				builder.responseFormat(ResponseFormatJsonObject.builder().build());
-			} else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_SCHEMA)) {
+			}
+			else if (responseFormat.getType().equals(ResponseFormat.Type.JSON_SCHEMA)) {
 				String jsonSchemaString = responseFormat.getJsonSchema() != null ? responseFormat.getJsonSchema() : "";
 				try {
 					com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-					ResponseFormatJsonSchema.JsonSchema.Builder jsonSchemaBuilder = ResponseFormatJsonSchema.JsonSchema.builder();
+					ResponseFormatJsonSchema.JsonSchema.Builder jsonSchemaBuilder = ResponseFormatJsonSchema.JsonSchema
+						.builder();
 					jsonSchemaBuilder.name("json_schema");
 					jsonSchemaBuilder.strict(true);
 
-					ResponseFormatJsonSchema.JsonSchema.Schema schema = mapper.readValue(jsonSchemaString, ResponseFormatJsonSchema.JsonSchema.Schema.class);
+					ResponseFormatJsonSchema.JsonSchema.Schema schema = mapper.readValue(jsonSchemaString,
+							ResponseFormatJsonSchema.JsonSchema.Schema.class);
 
 					jsonSchemaBuilder.schema(schema);
 
-					builder.responseFormat(ResponseFormatJsonSchema.builder()
-							.jsonSchema(jsonSchemaBuilder.build())
-							.build());
-				} catch (Exception e) {
+					builder.responseFormat(
+							ResponseFormatJsonSchema.builder().jsonSchema(jsonSchemaBuilder.build()).build());
+				}
+				catch (Exception e) {
 					throw new IllegalArgumentException("Failed to parse JSON schema: " + jsonSchemaString, e);
 				}
-			} else {
+			}
+			else {
 				throw new IllegalArgumentException("Unsupported response format type: " + responseFormat.getType());
 			}
 		}
@@ -828,11 +893,13 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		if (requestOptions.getStore() != null) {
 			builder.store(requestOptions.getStore());
 		}
-		if (requestOptions.getMetadata() != null &&  !requestOptions.getMetadata().isEmpty()) {
+		if (requestOptions.getMetadata() != null && !requestOptions.getMetadata().isEmpty()) {
 			builder.metadata(ChatCompletionCreateParams.Metadata.builder()
-					.putAllAdditionalProperties(requestOptions.getMetadata() .entrySet().stream()
-							.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue()))))
-					.build());
+				.putAllAdditionalProperties(requestOptions.getMetadata()
+					.entrySet()
+					.stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue()))))
+				.build());
 		}
 		if (requestOptions.getServiceTier() != null) {
 			builder.serviceTier(ChatCompletionCreateParams.ServiceTier.of(requestOptions.getServiceTier()));
@@ -843,15 +910,17 @@ public class OpenAiOfficialChatModel implements ChatModel {
 				ChatCompletionStreamOptions.Builder streamOptionsBuilder = ChatCompletionStreamOptions.builder();
 
 				if (requestOptions.getStreamOptions().includeObfuscation().isPresent()) {
-					streamOptionsBuilder.includeObfuscation(requestOptions.getStreamOptions().includeObfuscation().get());
+					streamOptionsBuilder
+						.includeObfuscation(requestOptions.getStreamOptions().includeObfuscation().get());
 				}
 				streamOptionsBuilder.additionalProperties(requestOptions.getStreamOptions()._additionalProperties());
 				streamOptionsBuilder.includeUsage(requestOptions.getStreamUsage());
 				builder.streamOptions(streamOptionsBuilder.build());
-			} else {
+			}
+			else {
 				builder.streamOptions(ChatCompletionStreamOptions.builder()
-						.includeUsage(true) // Include usage by default for streaming
-						.build());
+					.includeUsage(true) // Include usage by default for streaming
+					.build());
 			}
 		}
 
@@ -892,40 +961,40 @@ public class OpenAiOfficialChatModel implements ChatModel {
 	}
 
 	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions) {
-		return toolDefinitions.stream()
-				.map(toolDefinition -> {
-					FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
+		return toolDefinitions.stream().map(toolDefinition -> {
+			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
 
-					if (!toolDefinition.inputSchema().isEmpty()) {
-						// Parse the schema and add its properties directly
-						try {
-							com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-							@SuppressWarnings("unchecked")
-							Map<String, Object> schemaMap = mapper.readValue(toolDefinition.inputSchema(), Map.class);
+			if (!toolDefinition.inputSchema().isEmpty()) {
+				// Parse the schema and add its properties directly
+				try {
+					com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+					@SuppressWarnings("unchecked")
+					Map<String, Object> schemaMap = mapper.readValue(toolDefinition.inputSchema(), Map.class);
 
-							// Add each property from the schema to the parameters
-							schemaMap.forEach((key, value) ->
-									parametersBuilder.putAdditionalProperty(key, JsonValue.from(value))
-							);
+					// Add each property from the schema to the parameters
+					schemaMap
+						.forEach((key, value) -> parametersBuilder.putAdditionalProperty(key, JsonValue.from(value)));
 
-							// Add strict mode
-							parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO allow non-strict mode
-						} catch (Exception e) {
-							logger.error("Failed to parse tool schema", e);
-						}
-					}
+					// Add strict mode
+					parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO
+																								// allow
+																								// non-strict
+																								// mode
+				}
+				catch (Exception e) {
+					logger.error("Failed to parse tool schema", e);
+				}
+			}
 
-					FunctionDefinition functionDefinition = FunctionDefinition.builder()
-							.name(toolDefinition.name())
-							.description(toolDefinition.description())
-							.parameters(parametersBuilder.build())
-							.build();
+			FunctionDefinition functionDefinition = FunctionDefinition.builder()
+				.name(toolDefinition.name())
+				.description(toolDefinition.description())
+				.parameters(parametersBuilder.build())
+				.build();
 
-					return ChatCompletionTool.ofFunction(
-							ChatCompletionFunctionTool.builder().function(functionDefinition).build()
-					);
-				})
-				.toList();
+			return ChatCompletionTool
+				.ofFunction(ChatCompletionFunctionTool.builder().function(functionDefinition).build());
+		}).toList();
 	}
 
 	@Override
@@ -943,7 +1012,8 @@ public class OpenAiOfficialChatModel implements ChatModel {
 	}
 
 	/**
-	 * Response format (text, json_object, json_schema) for OpenAiOfficialChatModel responses.
+	 * Response format (text, json_object, json_schema) for OpenAiOfficialChatModel
+	 * responses.
 	 *
 	 * @author Julien Dubois
 	 */
@@ -1005,28 +1075,34 @@ public class OpenAiOfficialChatModel implements ChatModel {
 			TEXT,
 
 			/**
-			 * Enables JSON mode, which guarantees the message the model generates is valid
-			 * JSON.
+			 * Enables JSON mode, which guarantees the message the model generates is
+			 * valid JSON.
 			 */
 			JSON_OBJECT,
 
 			/**
-			 * Enables Structured Outputs which guarantees the model will match your supplied
-			 * JSON schema.
+			 * Enables Structured Outputs which guarantees the model will match your
+			 * supplied JSON schema.
 			 */
 			JSON_SCHEMA
 
 		}
+
 	}
 
 	/**
-	 * Helper class to merge streaming tool calls that arrive in pieces across multiple chunks.
-	 * In OpenAI streaming, a tool call's ID, name, and arguments can arrive in separate chunks.
+	 * Helper class to merge streaming tool calls that arrive in pieces across multiple
+	 * chunks. In OpenAI streaming, a tool call's ID, name, and arguments can arrive in
+	 * separate chunks.
 	 */
 	private static class ToolCallBuilder {
+
 		private String id = "";
+
 		private String type = "function";
+
 		private String name = "";
+
 		private StringBuilder arguments = new StringBuilder();
 
 		void merge(AssistantMessage.ToolCall toolCall) {
@@ -1047,5 +1123,7 @@ public class OpenAiOfficialChatModel implements ChatModel {
 		AssistantMessage.ToolCall build() {
 			return new AssistantMessage.ToolCall(id, type, name, arguments.toString());
 		}
+
 	}
+
 }

@@ -366,7 +366,8 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void functionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -387,7 +388,8 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void streamFunctionCallTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -419,7 +421,8 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void functionCallUsageTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -446,7 +449,8 @@ public class OpenAiOfficialChatModelIT {
 	@Test
 	void streamFunctionCallUsageTest() {
 
-		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
