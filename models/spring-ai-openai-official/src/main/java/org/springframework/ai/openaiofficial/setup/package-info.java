@@ -17,11 +17,9 @@
 /**
  * Setup and configuration utilities for OpenAI Official clients.
  * <p>
- * This package contains helper classes for configuring and setting up
- * OpenAI clients for different environments including OpenAI, Azure OpenAI,
- * and GitHub Models.
+ * This package contains helper classes for configuring and setting up OpenAI clients for
+ * different environments including OpenAI, Azure OpenAI, and GitHub Models.
  *
  * @author Julien Dubois
  */
 package org.springframework.ai.openaiofficial.setup;
-

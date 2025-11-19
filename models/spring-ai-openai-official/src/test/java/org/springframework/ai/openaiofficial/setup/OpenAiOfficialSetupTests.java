@@ -14,14 +14,16 @@ public class OpenAiOfficialSetupTests {
 
 	@Test
 	void detectModelProvider_returnsAzureOpenAI_whenAzureFlagIsTrue() {
-		OpenAiOfficialSetup.ModelProvider result = OpenAiOfficialSetup.detectModelProvider(true, false, null, null, null);
+		OpenAiOfficialSetup.ModelProvider result = OpenAiOfficialSetup.detectModelProvider(true, false, null, null,
+				null);
 
-		assertEquals(OpenAiOfficialSetup.ModelProvider.AZURE_OPENAI, result);
+		assertEquals(OpenAiOfficialSetup.ModelProvider.AZURE_OPEN_AI, result);
 	}
 
 	@Test
 	void detectModelProvider_returnsGitHubModels_whenGitHubFlagIsTrue() {
-		OpenAiOfficialSetup.ModelProvider result = OpenAiOfficialSetup.detectModelProvider(false, true, null, null, null);
+		OpenAiOfficialSetup.ModelProvider result = OpenAiOfficialSetup.detectModelProvider(false, true, null, null,
+				null);
 
 		assertEquals(OpenAiOfficialSetup.ModelProvider.GITHUB_MODELS, result);
 	}
@@ -31,7 +33,7 @@ public class OpenAiOfficialSetupTests {
 		OpenAiOfficialSetup.ModelProvider result = OpenAiOfficialSetup.detectModelProvider(false, false,
 				"https://example.openai.azure.com", null, null);
 
-		assertEquals(OpenAiOfficialSetup.ModelProvider.AZURE_OPENAI, result);
+		assertEquals(OpenAiOfficialSetup.ModelProvider.AZURE_OPEN_AI, result);
 	}
 
 	@Test
@@ -44,9 +46,10 @@ public class OpenAiOfficialSetupTests {
 
 	@Test
 	void detectModelProvider_returnsOpenAI_whenNoConditionsMatch() {
-		OpenAiOfficialSetup.ModelProvider result = OpenAiOfficialSetup.detectModelProvider(false, false, null, null, null);
+		OpenAiOfficialSetup.ModelProvider result = OpenAiOfficialSetup.detectModelProvider(false, false, null, null,
+				null);
 
-		assertEquals(OpenAiOfficialSetup.ModelProvider.OPENAI, result);
+		assertEquals(OpenAiOfficialSetup.ModelProvider.OPEN_AI, result);
 	}
 
 	@Test
@@ -69,7 +72,7 @@ public class OpenAiOfficialSetupTests {
 
 	@Test
 	void calculateBaseUrl_returnsDefaultOpenAIUrl_whenBaseUrlIsNull() {
-		String result = OpenAiOfficialSetup.calculateBaseUrl(null, OpenAiOfficialSetup.ModelProvider.OPENAI, null, null,
+		String result = OpenAiOfficialSetup.calculateBaseUrl(null, OpenAiOfficialSetup.ModelProvider.OPEN_AI, null,
 				null);
 
 		assertEquals(OpenAiOfficialSetup.OPENAI_URL, result);
@@ -77,7 +80,7 @@ public class OpenAiOfficialSetupTests {
 
 	@Test
 	void calculateBaseUrl_returnsGitHubUrl_whenModelHostIsGitHub() {
-		String result = OpenAiOfficialSetup.calculateBaseUrl(null, OpenAiOfficialSetup.ModelProvider.GITHUB_MODELS, null,
+		String result = OpenAiOfficialSetup.calculateBaseUrl(null, OpenAiOfficialSetup.ModelProvider.GITHUB_MODELS,
 				null, null);
 
 		assertEquals(OpenAiOfficialSetup.GITHUB_MODELS_URL, result);

@@ -17,10 +17,9 @@
 /**
  * Metadata classes for OpenAI Official model responses.
  * <p>
- * This package contains metadata implementations for chat, embedding,
- * and image model responses.
+ * This package contains metadata implementations for chat, embedding, and image model
+ * responses.
  *
  * @author Julien Dubois
  */
 package org.springframework.ai.openaiofficial.metadata;
-

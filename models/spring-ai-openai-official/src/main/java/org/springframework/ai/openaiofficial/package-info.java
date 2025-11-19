@@ -17,10 +17,9 @@
 /**
  * Spring AI integration with the official OpenAI Java SDK.
  * <p>
- * This package provides chat, embedding, and image model implementations
- * using the official OpenAI Java client library.
+ * This package provides chat, embedding, and image model implementations using the
+ * official OpenAI Java client library.
  *
  * @author Julien Dubois
  */
 package org.springframework.ai.openaiofficial;
-
