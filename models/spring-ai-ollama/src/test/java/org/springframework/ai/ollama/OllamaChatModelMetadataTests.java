@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Sun Yuhan
  */
-@SpringBootTest(classes = OllamaChatModelMetadataTests.Config.class)
+@SpringBootTest
 class OllamaChatModelMetadataTests extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.QWEN_3_06B.getName();
