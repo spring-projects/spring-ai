@@ -23,7 +23,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class ElasticsearchImage {
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("elasticsearch:8.18.1");
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("elasticsearch:9.2.0");
 
 	private ElasticsearchImage() {
 
