@@ -27,16 +27,16 @@ jobs:
           large-packages: false
           docker-images: false
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25' # This action actually installs several and the toolchains plugin in maven will select 25 alright, but this makes 25 the 'default'
           distribution: 'temurin'
           cache: 'maven'
 
       - name: Build all modules with unit tests
         run: |
-          ./mvnw --batch-mode --update-snapshots clean install
+          ./mvnw --batch-mode -ntp --update-snapshots clean install
 
       - name: Upload Maven repository
         uses: actions/upload-artifact@v4
@@ -62,10 +62,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25' # This action actually installs several and the toolchains plugin in maven will select 25 alright, but this makes 25 the 'default'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -84,7 +84,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          ./mvnw --batch-mode --no-snapshot-updates \
+          ./mvnw --batch-mode -ntp --no-snapshot-updates \
             -pl models/spring-ai-ollama,auto-configurations/models/spring-ai-autoconfigure-model-ollama \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
@@ -99,10 +99,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25' # This action actually installs several and the toolchains plugin in maven will select 25 alright, but this makes 25 the 'default'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -121,7 +121,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          ./mvnw --batch-mode --no-snapshot-updates \
+          ./mvnw --batch-mode -ntp --no-snapshot-updates \
             -pl models/spring-ai-openai,auto-configurations/models/spring-ai-autoconfigure-model-openai \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
@@ -136,10 +136,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25' # This action actually installs several and the toolchains plugin in maven will select 25 alright, but this makes 25 the 'default'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -158,7 +158,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          ./mvnw --batch-mode --no-snapshot-updates \
+          ./mvnw --batch-mode -ntp --no-snapshot-updates \
             -pl models/spring-ai-google-genai,auto-configurations/models/spring-ai-autoconfigure-model-google-genai,mcp/common,mcp/mcp-annotations-spring,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux,vector-stores/spring-ai-chroma-store,vector-stores/spring-ai-pgvector-store,spring-ai-integration-tests \
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
@@ -173,10 +173,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -187,11 +187,11 @@ jobs:
           path: ~/.m2/repository
 
       - name: Generate Java docs
-        run: ./mvnw --batch-mode javadoc:aggregate
+        run: ./mvnw --batch-mode -ntp javadoc:aggregate
 
       - name: Generate assembly
         working-directory: spring-ai-docs
-        run: ../mvnw --batch-mode assembly:single
+        run: ../mvnw --batch-mode -ntp assembly:single
 
       - name: Upload Javadoc
         uses: actions/upload-artifact@v4
@@ -216,10 +216,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -234,7 +234,7 @@ jobs:
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
         run: |
-          ./mvnw -s settings.xml --batch-mode -DskipTests deploy
+          ./mvnw -s settings.xml --batch-mode -ntp -DskipTests deploy
 
   deploy-docs:
     name: Deploy documentation
@@ -245,10 +245,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
 

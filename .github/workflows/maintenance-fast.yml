@@ -20,7 +20,7 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -92,4 +92,4 @@ jobs:
             echo "Check the 'Compute impacted modules' step output for debugging info"
             exit 1
           fi
-          ./mvnw -B -q -T 1C -Pintegration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
+          ./mvnw -B -ntp -q -T 1C -Pintegration-tests -DfailIfNoTests=false -pl "$MODS" -amd verify
