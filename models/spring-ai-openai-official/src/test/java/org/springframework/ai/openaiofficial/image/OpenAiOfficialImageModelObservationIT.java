@@ -76,7 +76,7 @@ public class OpenAiOfficialImageModelObservationIT {
 		ImageResponse imageResponse = this.imageModel.call(imagePrompt);
 		assertThat(imageResponse.getResults()).hasSize(1);
 
-		Thread.sleep(100); // Wait for observation to be recorded
+		Thread.sleep(200); // Wait for observation to be recorded
 
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
