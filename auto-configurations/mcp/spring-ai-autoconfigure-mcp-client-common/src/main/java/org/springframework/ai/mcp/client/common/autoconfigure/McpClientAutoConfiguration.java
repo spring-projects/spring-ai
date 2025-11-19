@@ -157,7 +157,7 @@ public class McpClientAutoConfiguration {
 	public List<McpSyncClient> mcpSyncClients(McpSyncClientConfigurer mcpSyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
 			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
-			ClientMcpSyncHandlersRegistry clientMcpSyncHandlersRegistry) {
+			ObjectProvider<ClientMcpSyncHandlersRegistry> clientMcpSyncHandlersRegistry) {
 
 		List<McpSyncClient> mcpSyncClients = new ArrayList<>();
 
@@ -172,26 +172,26 @@ public class McpClientAutoConfiguration {
 
 				McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport())
 					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout())
-					.sampling(samplingRequest -> clientMcpSyncHandlersRegistry.handleSampling(namedTransport.name(),
-							samplingRequest))
-					.elicitation(elicitationRequest -> clientMcpSyncHandlersRegistry
-						.handleElicitation(namedTransport.name(), elicitationRequest))
-					.loggingConsumer(loggingMessageNotification -> clientMcpSyncHandlersRegistry
-						.handleLogging(namedTransport.name(), loggingMessageNotification))
-					.progressConsumer(progressNotification -> clientMcpSyncHandlersRegistry
-						.handleProgress(namedTransport.name(), progressNotification))
-					.toolsChangeConsumer(newTools -> clientMcpSyncHandlersRegistry
-						.handleToolListChanged(namedTransport.name(), newTools))
-					.promptsChangeConsumer(newPrompts -> clientMcpSyncHandlersRegistry
-						.handlePromptListChanged(namedTransport.name(), newPrompts))
-					.resourcesChangeConsumer(newResources -> clientMcpSyncHandlersRegistry
-						.handleResourceListChanged(namedTransport.name(), newResources))
-					.capabilities(clientMcpSyncHandlersRegistry.getCapabilities(namedTransport.name()));
+					.requestTimeout(commonProperties.getRequestTimeout());
 
-				spec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
+				clientMcpSyncHandlersRegistry.ifAvailable(registry -> spec
+					.sampling(samplingRequest -> registry.handleSampling(namedTransport.name(), samplingRequest))
+					.elicitation(
+							elicitationRequest -> registry.handleElicitation(namedTransport.name(), elicitationRequest))
+					.loggingConsumer(loggingMessageNotification -> registry.handleLogging(namedTransport.name(),
+							loggingMessageNotification))
+					.progressConsumer(progressNotification -> registry.handleProgress(namedTransport.name(),
+							progressNotification))
+					.toolsChangeConsumer(newTools -> registry.handleToolListChanged(namedTransport.name(), newTools))
+					.promptsChangeConsumer(
+							newPrompts -> registry.handlePromptListChanged(namedTransport.name(), newPrompts))
+					.resourcesChangeConsumer(
+							newResources -> registry.handleResourceListChanged(namedTransport.name(), newResources))
+					.capabilities(registry.getCapabilities(namedTransport.name())));
 
-				var client = spec.build();
+				McpClient.SyncSpec customizedSpec = mcpSyncClientConfigurer.configure(namedTransport.name(), spec);
+
+				var client = customizedSpec.build();
 
 				if (commonProperties.isInitialized()) {
 					client.initialize();
@@ -247,7 +247,7 @@ public class McpClientAutoConfiguration {
 	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
 			McpClientCommonProperties commonProperties,
 			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
-			ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry) {
+			ObjectProvider<ClientMcpAsyncHandlersRegistry> clientMcpAsyncHandlersRegistry) {
 
 		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
@@ -259,29 +259,27 @@ public class McpClientAutoConfiguration {
 				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
 						commonProperties.getVersion());
-
 				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout())
-					.sampling(samplingRequest -> clientMcpAsyncHandlersRegistry.handleSampling(namedTransport.name(),
-							samplingRequest))
-					.elicitation(elicitationRequest -> clientMcpAsyncHandlersRegistry
-						.handleElicitation(namedTransport.name(), elicitationRequest))
-					.loggingConsumer(loggingMessageNotification -> clientMcpAsyncHandlersRegistry
-						.handleLogging(namedTransport.name(), loggingMessageNotification))
-					.progressConsumer(progressNotification -> clientMcpAsyncHandlersRegistry
-						.handleProgress(namedTransport.name(), progressNotification))
-					.toolsChangeConsumer(newTools -> clientMcpAsyncHandlersRegistry
-						.handleToolListChanged(namedTransport.name(), newTools))
-					.promptsChangeConsumer(newPrompts -> clientMcpAsyncHandlersRegistry
-						.handlePromptListChanged(namedTransport.name(), newPrompts))
-					.resourcesChangeConsumer(newResources -> clientMcpAsyncHandlersRegistry
-						.handleResourceListChanged(namedTransport.name(), newResources))
-					.capabilities(clientMcpAsyncHandlersRegistry.getCapabilities(namedTransport.name()));
+					.requestTimeout(commonProperties.getRequestTimeout());
+				clientMcpAsyncHandlersRegistry.ifAvailable(registry -> spec
+					.sampling(samplingRequest -> registry.handleSampling(namedTransport.name(), samplingRequest))
+					.elicitation(
+							elicitationRequest -> registry.handleElicitation(namedTransport.name(), elicitationRequest))
+					.loggingConsumer(loggingMessageNotification -> registry.handleLogging(namedTransport.name(),
+							loggingMessageNotification))
+					.progressConsumer(progressNotification -> registry.handleProgress(namedTransport.name(),
+							progressNotification))
+					.toolsChangeConsumer(newTools -> registry.handleToolListChanged(namedTransport.name(), newTools))
+					.promptsChangeConsumer(
+							newPrompts -> registry.handlePromptListChanged(namedTransport.name(), newPrompts))
+					.resourcesChangeConsumer(
+							newResources -> registry.handleResourceListChanged(namedTransport.name(), newResources))
+					.capabilities(registry.getCapabilities(namedTransport.name())));
 
-				spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
+				McpClient.AsyncSpec customizedSpec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
 
-				var client = spec.build();
+				var client = customizedSpec.build();
 
 				if (commonProperties.isInitialized()) {
 					client.initialize().block();
