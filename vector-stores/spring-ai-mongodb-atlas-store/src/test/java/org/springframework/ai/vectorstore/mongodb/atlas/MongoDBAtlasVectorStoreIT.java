@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -45,15 +46,12 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
-import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @author Eddú Meléndez
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -71,14 +70,13 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 	@Container
 	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(MongoDbImage.DEFAULT_IMAGE);
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(TestApplication.class)
-		.withPropertyValues("spring.data.mongodb.database=springaisample",
-				String.format("spring.data.mongodb.uri=" + container.getConnectionString()));
+	private ApplicationContextRunner getContextRunner() {
+		return new ApplicationContextRunner().withUserConfiguration(TestApplication.class);
+	}
 
 	@BeforeEach
 	public void beforeEach() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
 			mongoTemplate.getCollection("vector_store").deleteMany(new org.bson.Document());
 		});
@@ -86,7 +84,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			testFunction.accept(vectorStore);
 		});
@@ -94,7 +92,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Test
 	void vectorStoreTest() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			List<Document> documents = List.of(
@@ -131,7 +129,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Test
 	void documentUpdateTest() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
@@ -167,7 +165,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Test
 	void searchWithFilters() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
@@ -230,7 +228,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Test
 	public void searchWithThreshold() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			var documents = List.of(
@@ -269,7 +267,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Test
 	void deleteWithComplexFilterExpression() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			var doc1 = new Document("Content 1", Map.of("type", "A", "priority", 1));
@@ -303,7 +301,7 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 
 	@Test
 	void getNativeClientTest() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			MongoDBAtlasVectorStore vectorStore = context.getBean(MongoDBAtlasVectorStore.class);
 			Optional<MongoTemplate> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
@@ -321,7 +319,6 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration
 	public static class TestApplication {
 
 		@Bean
@@ -333,19 +330,20 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 		}
 
 		@Bean
-		public MongoTemplate mongoTemplate(MongoClient mongoClient, MongoCustomConversions mongoCustomConversions) {
-			MongoTemplate mongoTemplate = new MongoTemplate(mongoClient, "springaisample");
-			MappingMongoConverter converter = (MappingMongoConverter) mongoTemplate.getConverter();
-			converter.setCustomConversions(mongoCustomConversions);
-			((MongoMappingContext) converter.getMappingContext())
-				.setSimpleTypeHolder(mongoCustomConversions.getSimpleTypeHolder());
-			converter.afterPropertiesSet();
-			return mongoTemplate;
+		public EmbeddingModel embeddingModel() {
+			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 		}
 
 		@Bean
-		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
+		public MongoClient mongoClient() {
+			String baseUri = container.getConnectionString();
+			String uriWithDb = baseUri.replace("/?", "/springaisample?");
+			return MongoClients.create(uriWithDb);
+		}
+
+		@Bean
+		public MongoTemplate mongoTemplate(MongoClient mongoClient) {
+			return new MongoTemplate(mongoClient, "springaisample");
 		}
 
 		@Bean
