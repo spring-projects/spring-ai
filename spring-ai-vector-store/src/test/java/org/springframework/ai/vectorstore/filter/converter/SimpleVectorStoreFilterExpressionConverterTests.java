@@ -217,4 +217,17 @@ public class SimpleVectorStoreFilterExpressionConverterTests {
 		Assertions.assertEquals(Boolean.TRUE, parser.parseExpression(vectorExpr).getValue(context, Boolean.class));
 	}
 
+	@Test
+	void eqExpressionWithListAndKeyContainingInSpaceShouldNotUseContains() {
+		Filter.Expression expr = new Filter.Expression(
+				Filter.ExpressionType.EQ,
+				new Filter.Key("pin code"),
+				new Filter.Value(List.of("1234", "5678"))
+		);
+
+		String result = converter.convertExpression(expr);
+
+		Assertions.assertEquals("#metadata['pin code'] == {'1234','5678'}", result);
+	}
+
 }
