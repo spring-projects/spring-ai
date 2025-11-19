@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Soby Chacko
  */
-@SpringBootTest(classes = AnthropicChatModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class AnthropicChatModelObservationIT {
 

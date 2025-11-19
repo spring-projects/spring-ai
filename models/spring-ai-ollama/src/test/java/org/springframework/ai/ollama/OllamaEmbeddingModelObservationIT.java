@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Thomas Vitale
  */
-@SpringBootTest(classes = OllamaEmbeddingModelObservationIT.Config.class)
+@SpringBootTest
 public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.NOMIC_EMBED_TEXT.getName();

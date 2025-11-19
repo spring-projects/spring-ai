@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = BedrockNovaChatClientIT.Config.class)
+@SpringBootTest
 @RequiresAwsCredentials
 public class BedrockNovaChatClientIT {
 

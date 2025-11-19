@@ -51,7 +51,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  *
  * @author Geng Rong
  */
-@SpringBootTest(classes = DeepSeekChatModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 public class DeepSeekChatModelObservationIT {
 
