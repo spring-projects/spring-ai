@@ -22,9 +22,8 @@ import com.openai.credential.BearerTokenCredential;
 import com.openai.credential.Credential;
 
 /**
- * Specific configuration for authenticating on Azure.
- * This is in a separate class to avoid needing the Azure SDK dependencies
- * when not using Azure as a platform.
+ * Specific configuration for authenticating on Azure. This is in a separate class to
+ * avoid needing the Azure SDK dependencies when not using Azure as a platform.
  *
  * This code is inspired by LangChain4j's
  * `dev.langchain4j.model.openaiofficial.AzureInternalOpenAiOfficialHelper` class, which
@@ -34,9 +33,9 @@ import com.openai.credential.Credential;
  */
 class AzureInternalOpenAiOfficialHelper {
 
-    static Credential getAzureCredential() {
-        return BearerTokenCredential.create(AuthenticationUtil.getBearerTokenSupplier(
-                new DefaultAzureCredentialBuilder().build(), "https://cognitiveservices.azure.com/.default"));
-    }
+	static Credential getAzureCredential() {
+		return BearerTokenCredential.create(AuthenticationUtil.getBearerTokenSupplier(
+				new DefaultAzureCredentialBuilder().build(), "https://cognitiveservices.azure.com/.default"));
+	}
 
 }
