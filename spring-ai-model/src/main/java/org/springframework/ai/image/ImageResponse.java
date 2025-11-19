@@ -18,6 +18,7 @@ package org.springframework.ai.image;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.util.CollectionUtils;
@@ -89,6 +90,24 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	@Override
 	public ImageResponseMetadata getMetadata() {
 		return this.imageResponseMetadata;
+	}
+
+	public Optional<byte[]> getResultAsBytes() {
+		ImageGeneration firstGeneration = getResult();
+		if (firstGeneration == null || firstGeneration.getOutput() == null) {
+			return Optional.empty();
+		}
+		return firstGeneration.getOutput().getB64JsonAsBytes().map(byte[]::clone);
+	}
+
+	public List<byte[]> getResultsAsBytes() {
+		return this.imageGenerations.stream()
+			.map(ImageGeneration::getOutput)
+			.filter(Objects::nonNull)
+			.map(Image::getB64JsonAsBytes)
+			.flatMap(Optional::stream)
+			.map(byte[]::clone)
+			.toList();
 	}
 
 	@Override
