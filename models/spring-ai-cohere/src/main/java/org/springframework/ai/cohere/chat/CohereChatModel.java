@@ -152,25 +152,13 @@ public class CohereChatModel implements ChatModel {
 	}
 
 	private static DefaultUsage getDefaultUsage(CohereApi.Usage usage) {
-		return new DefaultUsage(null, null, null, usage);
+		return new DefaultUsage(usage.tokens().inputTokens(), usage.tokens().outputTokens(), null, usage);
 	}
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		Prompt requestPrompt = this.buildRequestPrompt(prompt);
-		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-			.prompt(requestPrompt)
-			.provider(CohereApi.PROVIDER_NAME)
-			.build();
-
-		return ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-					this.observationRegistry)
-			.observe(() -> {
-				ChatResponse chatResponse = doChatRequest(requestPrompt);
-				observationContext.setResponse(chatResponse);
-				return chatResponse;
-			});
+		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return this.internalCall(requestPrompt, null);
 	}
 
 	@Override
@@ -212,19 +200,17 @@ public class CohereChatModel implements ChatModel {
 							ChatCompletionMessage.Provider message = completion.message();
 
 							// Store the role for this completion ID
-							if (message.role() != null) {
+							if (message.role() != null && id != null) {
 								roleMap.putIfAbsent(id, message.role().name());
 							}
 
-							// @formatter:off
 							List<Generation> generations = message.content().stream().map(content -> {
 								Map<String, Object> metadata = Map.of(
 										"id", completion.id() != null ? completion.id() : "",
-										"role", roleMap.getOrDefault(id, ""),
+										"role", completion.id() != null ? roleMap.getOrDefault(id, "") : "",
 										"finishReason", completion.finishReason() != null ? completion.finishReason().name() : "");
 								return buildGeneration(content, completion, metadata);
 							}).toList();
-							// @formatter:on
 
 							if (completion.usage() != null) {
 								DefaultUsage usage = getDefaultUsage(completion.usage());
@@ -261,7 +247,8 @@ public class CohereChatModel implements ChatModel {
 								}
 								else {
 									// Send the tool execution result back to the model.
-									return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									var chatOptions = CohereChatOptions.fromOptions(prompt.getOptions().copy());
+									return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), chatOptions),
 											response);
 								}
 							}).subscribeOn(Schedulers.boundedElastic());
@@ -336,6 +323,13 @@ public class CohereChatModel implements ChatModel {
 			return messageContents;
 		}
 
+		if (rawContent instanceof Map<?, ?> map) {
+			String type = (String) map.get("type");
+			String text = (String) map.get("text");
+			Object value = map.get("value");
+			return List.of(new ChatCompletionMessage.MessageContent(type != null ? type : "text", text, value));
+		}
+
 		return List.of();
 	}
 
@@ -382,56 +376,78 @@ public class CohereChatModel implements ChatModel {
 		return new Prompt(prompt.getInstructions(), requestOptions);
 	}
 
-	private ChatResponse doChatRequest(Prompt prompt) {
-		ChatResponse response = this.internalCall(prompt, null);
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+		ChatCompletionRequest request = createRequest(prompt, false);
+
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+				.prompt(prompt)
+				.provider(CohereApi.PROVIDER_NAME)
+				.build();
+
+		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
+				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+						this.observationRegistry)
+				.observe(() -> {
+
+					ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+							.execute(ctx -> this.cohereApi.chatCompletionEntity(request));
+
+					ChatCompletion chatCompletion = completionEntity.getBody();
+
+					if (chatCompletion == null) {
+						logger.warn("No chat completion returned for prompt: {}", prompt);
+						return new ChatResponse(List.of());
+					}
+
+					final Map<String, Object> metadata = Map.of("id", chatCompletion.id() != null ? chatCompletion.id() : "",
+							"role", chatCompletion.message().role() != null ? chatCompletion.message().role().name() : "",
+							"finishReason",
+							chatCompletion.finishReason() != null ? chatCompletion.finishReason().name() : "");
+
+					List<Generation> generations = new ArrayList<>();
+
+					if (chatCompletion.finishReason() == null) { // Just for secure
+						logger.warn("No chat completion finishReason returned for prompt: {}", prompt);
+						return new ChatResponse(List.of());
+					}
+
+					if (chatCompletion.finishReason().equals(CohereApi.ChatCompletionFinishReason.TOOL_CALL)) {
+						var generation = buildGeneration(null, chatCompletion, metadata);
+						generations.add(generation);
+					} else {
+						generations = chatCompletion.message().content().stream().map(content -> buildGeneration(content, chatCompletion, metadata)).toList();
+					}
+
+					DefaultUsage usage = getDefaultUsage(completionEntity.getBody().usage());
+					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
+
+					ChatResponse chatResponse = new ChatResponse(generations,
+							from(completionEntity.getBody(), cumulativeUsage));
+
+					observationContext.setResponse(chatResponse);
+
+					return chatResponse;
+				});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
 				return ChatResponse.builder()
-					.from(response)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
+						.from(response)
+						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+						.build();
 			}
 			else {
+				// remove tools actions before
+				ChatOptions chatOptions = CohereChatOptions.fromOptions2(prompt.getOptions().copy());
 				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), chatOptions),
+						null);
 			}
 		}
 
 		return response;
-	}
-
-	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
-		ChatCompletionRequest request = createRequest(prompt, false);
-
-		return this.retryTemplate.execute(ctx -> {
-
-			ResponseEntity<ChatCompletion> completionEntity = this.cohereApi.chatCompletionEntity(request);
-
-			var chatCompletion = completionEntity.getBody();
-			if (chatCompletion == null) {
-				logger.warn("No chat completion returned for prompt: {}", prompt);
-				return new ChatResponse(List.of());
-			}
-
-			List<Generation> generations = chatCompletion.message().content().stream().map(content -> {
-				Map<String, Object> metadata = Map.of("id", chatCompletion.id() != null ? chatCompletion.id() : "",
-						"role", chatCompletion.message().role() != null ? chatCompletion.message().role().name() : "",
-						"finishReason",
-						chatCompletion.finishReason() != null ? chatCompletion.finishReason().name() : "");
-				return buildGeneration(content, chatCompletion, metadata);
-			}).toList();
-
-			DefaultUsage usage = getDefaultUsage(completionEntity.getBody().usage());
-			Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
-			ChatResponse chatResponse = new ChatResponse(generations,
-					from(completionEntity.getBody(), cumulativeUsage));
-
-			return chatResponse;
-		});
 	}
 
 	private Generation buildGeneration(ChatCompletionMessage.MessageContent content, ChatCompletion completion,
@@ -445,7 +461,7 @@ public class CohereChatModel implements ChatModel {
 					.toList();
 
 		var assistantMessage = AssistantMessage.builder()
-			.content(content.text())
+			.content(content != null ? content.text() : "")
 			.toolCalls(toolCalls)
 			.properties(metadata)
 			.build();
@@ -494,7 +510,7 @@ public class CohereChatModel implements ChatModel {
 
 				return toolResponseMessage.getResponses()
 					.stream()
-					.map(toolResponse -> new ChatCompletionMessage(toolResponse.responseData(), Role.TOOL))
+					.map(toolResponse -> new ChatCompletionMessage(toolResponse.responseData(), Role.TOOL, toolResponse.name(), null, null, toolResponse.id()))
 					.toList();
 			}
 			else {

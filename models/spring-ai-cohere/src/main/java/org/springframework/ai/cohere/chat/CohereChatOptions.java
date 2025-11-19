@@ -401,6 +401,29 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 			.build();
 	}
 
+	public static CohereChatOptions fromOptions2(CohereChatOptions fromOptions) {
+		return CohereChatOptions.builder()
+				.model(fromOptions.getModel())
+				.temperature(fromOptions.getTemperature())
+				.maxTokens(fromOptions.getMaxTokens())
+				.topP(fromOptions.getTopP())
+				.frequencyPenalty(fromOptions.getFrequencyPenalty())
+				.presencePenalty(fromOptions.getPresencePenalty())
+				.topK(fromOptions.getTopK())
+				.tools(null)
+				.responseFormat(fromOptions.getResponseFormat())
+				.safetyMode(fromOptions.getSafetyMode())
+				.stop(fromOptions.getStopSequences())
+				.seed(fromOptions.getSeed())
+				.logprobs(fromOptions.getLogprobs())
+				.toolChoice(null)
+				.strictTools(null)
+				.toolCallbacks()
+				.toolNames()
+				.internalToolExecutionEnabled(null)
+				.build();
+	}
+
 	public static class Builder {
 
 		private final CohereChatOptions options = new CohereChatOptions();

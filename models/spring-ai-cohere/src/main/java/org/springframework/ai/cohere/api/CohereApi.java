@@ -16,10 +16,7 @@
 
 package org.springframework.ai.cohere.api;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -39,7 +36,6 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -356,8 +352,9 @@ public class CohereApi {
 	 * the {@link ChatCompletionFinishReason#TOOL_CALL} role and null otherwise.
 	 */
 	public record ChatCompletionMessage(@JsonProperty("content") Object rawContent, @JsonProperty("role") Role role,
-			@JsonProperty("tool_plan") String toolPlan, @JsonProperty("tool_calls") List<ToolCall> toolCalls,
-			@JsonProperty("citations") List<ChatCompletionCitation> citations, @JsonProperty("tool_call_id") String toolCallId) {
+			@JsonProperty("tool_plan") String toolPlan,
+										@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("tool_calls") List<ToolCall> toolCalls,
+										@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("citations") List<ChatCompletionCitation> citations, @JsonProperty("tool_call_id") String toolCallId) {
 
 		public ChatCompletionMessage(Object content, Role role) {
 			this(content, role, null, null, null, null);
@@ -369,6 +366,10 @@ public class CohereApi {
 
 		public ChatCompletionMessage(Object content, Role role, List<ToolCall> toolCalls, String toolPlan) {
 			this(content, role, toolPlan, toolCalls, null, null);
+		}
+
+		public ChatCompletionMessage(Object content, Role role, String toolCallId) {
+			this(content, role, null, null, null, toolCallId);
 		}
 
 		/**
@@ -1178,8 +1179,6 @@ public class CohereApi {
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-
 		return this.webClient.post()
 				.uri("v2/chat")
 				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
@@ -1188,29 +1187,36 @@ public class CohereApi {
 				.takeUntil(SSE_DONE_PREDICATE)
 				.filter(SSE_DONE_PREDICATE.negate())
 				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-				.map(chunk -> {
-					if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
-						isInsideTool.set(true);
-					}
-					return chunk;
-				})
-				.windowUntil(chunk -> {
-					if (isInsideTool.get()) {
-						if (this.chunkMerger.isStreamingToolFunctionCallFinish(chunk)) {
-							isInsideTool.set(false);
-							return true;
-						}
-						return !isInsideTool.get();
-					}
-					return "message-end".equals(chunk.type());
-				})
-				.concatMap(window ->
-						window.reduce(
-								new ChatCompletionChunk(null, null, null, null),
-								this.chunkMerger::merge
-						)
+				.groupBy(chunk -> chunk.id() != null ? chunk.id() : "no-id")
+				.flatMap(group ->
+					group.reduce(
+						new ChatCompletionChunk(null, null, null, null),
+						this.chunkMerger::merge
+					)
+					.filter(chunk -> EventType.MESSAGE_END.value.equals(chunk.type()) ||
+									(chunk.delta() != null && chunk.delta().finishReason() != null))
 				)
+				.map(chunkMerger::sanitizeToolCalls)
+				.filter(chunkMerger::hasValidToolCallsOnly)
 				.filter(Objects::nonNull);
+	}
+
+	public enum EventType {
+		MESSAGE_END("message-end"),
+		CONTENT_START("content-start"),
+		CONTENT_DELTA("content-delta"),
+		CONTENT_END("content-end"),
+		TOOL_PLAN_DELTA("tool-plan-delta"),
+		TOOL_CALL_START("tool-call-start"),
+		TOOL_CALL_DELTA("tool-call-delta"),
+		CITATION_START("citation-start");
+		public final String value;
+		EventType(String value) {
+			this.value = value;
+		}
+		public String getValue() {
+			return this.value;
+		}
 	}
 
 	public static Builder builder() {
