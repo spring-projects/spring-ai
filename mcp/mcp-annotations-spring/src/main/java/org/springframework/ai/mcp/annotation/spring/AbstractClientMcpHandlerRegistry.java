@@ -74,7 +74,14 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 				// Only process singleton beans, not scoped beans
 				continue;
 			}
-			var foundAnnotations = this.scan(AutoProxyUtils.determineTargetClass(beanFactory, beanName));
+			Class<?> beanClass = AutoProxyUtils.determineTargetClass(beanFactory, beanName);
+			if (beanClass == null) {
+				// If we cannot determine the bean class, we cannot scan it before
+				// it is really resolved. This is very likely an infrastructure-level
+				// bean, not a "service" type, skip it entirely.
+				continue;
+			}
+			var foundAnnotations = this.scan(beanClass);
 			if (!foundAnnotations.isEmpty()) {
 				this.allAnnotatedBeans.add(beanName);
 			}
