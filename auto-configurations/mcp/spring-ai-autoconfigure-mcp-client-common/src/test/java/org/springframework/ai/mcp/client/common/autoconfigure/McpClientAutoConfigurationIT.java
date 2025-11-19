@@ -209,6 +209,24 @@ public class McpClientAutoConfigurationIT {
 			});
 	}
 
+	@Test
+	void missingAnnotationScanner() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.client.annotation-scanner.enabled=false").run(context -> {
+			assertThat(context).hasBean("mcpSyncClients");
+			List<?> clients = context.getBean("mcpSyncClients", List.class);
+			assertThat(clients).isNotNull();
+		});
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.client.annotation-scanner.enabled=false",
+					"spring.ai.mcp.client.type=ASYNC")
+			.run(context -> {
+				assertThat(context).hasBean("mcpAsyncClients");
+				List<?> clients = context.getBean("mcpAsyncClients", List.class);
+				assertThat(clients).isNotNull();
+			});
+	}
+
 	/**
 	 * Tests that closeable wrapper beans are created properly.
 	 *
