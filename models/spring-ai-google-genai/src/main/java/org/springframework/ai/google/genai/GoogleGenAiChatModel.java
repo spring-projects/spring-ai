@@ -281,9 +281,30 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		else if (message instanceof AssistantMessage assistantMessage) {
 			List<Part> parts = new ArrayList<>();
-			if (StringUtils.hasText(assistantMessage.getText())) {
-				parts.add(Part.fromText(assistantMessage.getText()));
+
+			// Check if there are thought signatures to restore
+			List<byte[]> thoughtSignatures = null;
+			if (assistantMessage.getMetadata() != null
+					&& assistantMessage.getMetadata().containsKey("thoughtSignatures")) {
+				Object signaturesObj = assistantMessage.getMetadata().get("thoughtSignatures");
+				if (signaturesObj instanceof List) {
+					thoughtSignatures = (List<byte[]>) signaturesObj;
+				}
 			}
+
+			// Add text part, potentially with thought signature
+			if (StringUtils.hasText(assistantMessage.getText())) {
+				Part.Builder partBuilder = Part.builder().text(assistantMessage.getText());
+				// If we have thought signatures, apply the first one to this text part
+				if (thoughtSignatures != null && !thoughtSignatures.isEmpty()) {
+					partBuilder.thoughtSignature(thoughtSignatures.get(0));
+					// Remove the used signature
+					thoughtSignatures = thoughtSignatures.subList(1, thoughtSignatures.size());
+				}
+				parts.add(partBuilder.build());
+			}
+
+			// Add function call parts
 			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 				parts.addAll(assistantMessage.getToolCalls()
 					.stream()
@@ -295,6 +316,16 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						.build())
 					.toList());
 			}
+
+			// If there are remaining thought signatures without corresponding content,
+			// we might need to add empty parts with thought signatures.
+			// This handles the case where the model returned only thoughts without text.
+			if (thoughtSignatures != null && !thoughtSignatures.isEmpty()) {
+				for (byte[] signature : thoughtSignatures) {
+					parts.add(Part.builder().thoughtSignature(signature).build());
+				}
+			}
+
 			return parts;
 		}
 		else if (message instanceof ToolResponseMessage toolResponseMessage) {
@@ -601,8 +632,22 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		int candidateIndex = candidate.index().orElse(0);
 		FinishReason candidateFinishReason = candidate.finishReason().orElse(new FinishReason(FinishReason.Known.STOP));
 
-		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
-				candidateFinishReason);
+		Map<String, Object> messageMetadata = new HashMap<>();
+		messageMetadata.put("candidateIndex", candidateIndex);
+		messageMetadata.put("finishReason", candidateFinishReason);
+
+		// Extract thought signatures from response parts if present
+		if (candidate.content().isPresent() && candidate.content().get().parts().isPresent()) {
+			List<Part> parts = candidate.content().get().parts().get();
+			List<byte[]> thoughtSignatures = parts.stream()
+				.filter(part -> part.thoughtSignature().isPresent())
+				.map(part -> part.thoughtSignature().get())
+				.toList();
+
+			if (!thoughtSignatures.isEmpty()) {
+				messageMetadata.put("thoughtSignatures", thoughtSignatures);
+			}
+		}
 
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
 			.finishReason(candidateFinishReason.toString())
@@ -716,10 +761,19 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (requestOptions.getPresencePenalty() != null) {
 			configBuilder.presencePenalty(requestOptions.getPresencePenalty().floatValue());
 		}
-		if (requestOptions.getThinkingBudget() != null) {
-			configBuilder
-				.thinkingConfig(ThinkingConfig.builder().thinkingBudget(requestOptions.getThinkingBudget()).build());
+
+		// Build thinking config if either thinkingBudget or includeThoughts is set
+		if (requestOptions.getThinkingBudget() != null || requestOptions.getIncludeThoughts() != null) {
+			ThinkingConfig.Builder thinkingBuilder = ThinkingConfig.builder();
+			if (requestOptions.getThinkingBudget() != null) {
+				thinkingBuilder.thinkingBudget(requestOptions.getThinkingBudget());
+			}
+			if (requestOptions.getIncludeThoughts() != null) {
+				thinkingBuilder.includeThoughts(requestOptions.getIncludeThoughts());
+			}
+			configBuilder.thinkingConfig(thinkingBuilder.build());
 		}
+
 		if (requestOptions.getLabels() != null && !requestOptions.getLabels().isEmpty()) {
 			configBuilder.labels(requestOptions.getLabels());
 		}
@@ -1068,7 +1122,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 * See: <a href=
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite">gemini-2.5-flash-lite</a>
 		 */
-		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite");
+		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite"),
+
+		GEMINI_3_PRO_PREVIEW("gemini-3-pro-preview");
 
 		public final String value;
 
