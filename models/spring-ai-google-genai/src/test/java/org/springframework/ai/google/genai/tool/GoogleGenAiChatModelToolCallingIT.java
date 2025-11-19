@@ -104,7 +104,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -125,7 +124,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(330);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(500);
 
 		ChatResponse response2 = this.chatModel
 			.call(new Prompt("What is the payment status for transaction 696?", promptOptions));
@@ -145,7 +144,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -178,7 +176,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
 			.toolCallbacks(List.of(
 					FunctionToolCallback.builder("get_current_weather", new MockWeatherService())
 						.description("Get the current weather in a given location.")
@@ -200,7 +197,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(330);
+		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(150).isLessThan(500);
 
 	}
 
@@ -271,7 +268,7 @@ public class GoogleGenAiChatModelToolCallingIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.defaultOptions(GoogleGenAiChatOptions.builder()
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH)
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH)
 					.temperature(0.9)
 					.build())
 				.build();
