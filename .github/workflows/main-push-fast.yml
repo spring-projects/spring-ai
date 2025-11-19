@@ -53,7 +53,7 @@ jobs:
 
       - uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '25'
           distribution: 'temurin'
           # cache: 'maven'  # Disabled for fast workflow - reduces post-job noise
 
@@ -140,9 +140,9 @@ jobs:
             echo "INFO: Running tests for affected modules: $MODS"
             # Build dependencies without tests, then test only the affected modules
             echo "INFO: Phase 1 - Building dependencies (this may take a few minutes)..."
-            ./mvnw -B -q -T 1C -DskipTests -pl "$MODS" -am install
+            ./mvnw -B -ntp -q -T 1C -DskipTests -pl "$MODS" -am install
             echo "INFO: Phase 2 - Running tests for affected modules..."
-            ./mvnw -B -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" verify
+            ./mvnw -B -ntp -q -T 1C -Pci-fast-integration-tests -DfailIfNoTests=false -pl "$MODS" verify
             echo "INFO: Testing complete"
           fi
 
