@@ -22,8 +22,11 @@ import com.openai.credential.BearerTokenCredential;
 import com.openai.credential.Credential;
 
 /**
- * Helps configure the OpenAI Java SDK, depending on the platform used. This code is
- * inspired by LangChain4j's
+ * Specific configuration for authenticating on Azure.
+ * This is in a separate class to avoid needing the Azure SDK dependencies
+ * when not using Azure as a platform.
+ *
+ * This code is inspired by LangChain4j's
  * `dev.langchain4j.model.openaiofficial.AzureInternalOpenAiOfficialHelper` class, which
  * is coded by the same author (Julien Dubois, from Microsoft).
  *
