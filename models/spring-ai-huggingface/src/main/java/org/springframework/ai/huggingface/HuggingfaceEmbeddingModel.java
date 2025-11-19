@@ -39,7 +39,7 @@ import org.springframework.ai.huggingface.api.HuggingfaceApi.EmbeddingsResponse;
 import org.springframework.ai.huggingface.api.common.HuggingfaceApiConstants;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -116,8 +116,8 @@ public class HuggingfaceEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				EmbeddingsResponse response = this.retryTemplate
-					.execute(ctx -> this.huggingfaceApi.embeddings(huggingfaceEmbeddingRequest));
+				EmbeddingsResponse response = RetryUtils.execute(this.retryTemplate,
+						() -> this.huggingfaceApi.embeddings(huggingfaceEmbeddingRequest));
 
 				AtomicInteger indexCounter = new AtomicInteger(0);
 

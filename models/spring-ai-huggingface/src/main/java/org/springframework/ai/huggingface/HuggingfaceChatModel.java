@@ -49,7 +49,7 @@ import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -150,8 +150,8 @@ public class HuggingfaceChatModel implements ChatModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				HuggingfaceApi.ChatResponse apiResponse = this.retryTemplate
-					.execute(ctx -> this.huggingfaceApi.chat(apiRequest));
+				HuggingfaceApi.ChatResponse apiResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.huggingfaceApi.chat(apiRequest));
 
 				List<Generation> generations = apiResponse.choices().stream().map(choice -> {
 					List<AssistantMessage.ToolCall> toolCalls = extractToolCalls(choice.message().toolCalls());

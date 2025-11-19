@@ -180,7 +180,7 @@ class HuggingfaceChatModelIT extends BaseHuggingfaceIT {
 
 		String format = outputConverter.getFormat();
 		String template = """
-				Consider the filmography of Tom Hanks and tell me 5 of his movies.
+				Generate the filmography of 3 movies for Tom Hanks.
 				{format}
 				""";
 		PromptTemplate promptTemplate = PromptTemplate.builder()
@@ -188,8 +188,8 @@ class HuggingfaceChatModelIT extends BaseHuggingfaceIT {
 			.variables(Map.of("format", format))
 			.build();
 
-		// Set higher maxTokens to ensure complete JSON response
-		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder().maxTokens(500).build();
+		// Set higher maxTokens and lower temperature to ensure complete JSON response
+		HuggingfaceChatOptions options = HuggingfaceChatOptions.builder().maxTokens(1000).temperature(0.1).build();
 
 		Prompt prompt = new Prompt(promptTemplate.createMessage(), options);
 		Generation generation = this.chatModel.call(prompt).getResult();

@@ -26,6 +26,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.huggingface.api.HuggingfaceApi;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -204,7 +205,7 @@ class HuggingfaceEmbeddingModelIT extends BaseHuggingfaceIT {
 		HuggingfaceEmbeddingModel wrongEmbeddingModel = HuggingfaceEmbeddingModel.builder()
 			.huggingfaceApi(wrongApi)
 			.defaultOptions(HuggingfaceEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build())
-			.retryTemplate(org.springframework.ai.retry.RetryUtils.DEFAULT_RETRY_TEMPLATE)
+			.retryTemplate(RetryUtils.DEFAULT_RETRY_TEMPLATE)
 			.observationRegistry(io.micrometer.observation.ObservationRegistry.NOOP)
 			.build();
 
