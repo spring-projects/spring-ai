@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Thomas Vitale
  */
-@SpringBootTest(classes = DefaultToolCallingManagerIT.Config.class)
+@SpringBootTest
 class DefaultToolCallingManagerIT {
 
 	@Autowired

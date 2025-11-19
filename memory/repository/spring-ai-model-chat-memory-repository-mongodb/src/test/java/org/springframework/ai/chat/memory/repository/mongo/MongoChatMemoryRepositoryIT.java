@@ -49,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Łukasz Jernaś
  */
-@SpringBootTest(classes = MongoChatMemoryRepositoryIT.TestConfiguration.class)
+@SpringBootTest
 public class MongoChatMemoryRepositoryIT {
 
 	@Autowired

@@ -38,12 +38,13 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
-@SpringBootTest(classes = PgVectorStoreVectorStoreChatMemoryAdvisorIT.OpenAiTestConfiguration.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 
@@ -335,7 +336,7 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 		return new JdbcTemplate(ds);
 	}
 
-	@org.springframework.context.annotation.Configuration
+	@Configuration
 	public static class OpenAiTestConfiguration {
 
 		@Bean

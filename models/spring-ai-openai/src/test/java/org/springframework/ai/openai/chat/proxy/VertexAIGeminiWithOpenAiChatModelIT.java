@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Jonghoon Park
  */
-@SpringBootTest(classes = VertexAIGeminiWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GEMINI_API_KEY", matches = ".+")
 class VertexAIGeminiWithOpenAiChatModelIT {
 

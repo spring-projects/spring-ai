@@ -52,7 +52,7 @@ import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = OpenAiChatModelFunctionCallingIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatModelFunctionCallingIT {
 

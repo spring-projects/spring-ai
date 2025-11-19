@@ -45,7 +45,7 @@ import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = OllamaChatModelFunctionCallingIT.Config.class)
+@SpringBootTest
 class OllamaChatModelFunctionCallingIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaChatModelFunctionCallingIT.class);

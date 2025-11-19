@@ -49,7 +49,7 @@ import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = AzureOpenAiChatModelFunctionCallIT.TestConfiguration.class)
+@SpringBootTest
 @RequiresAzureCredentials
 class AzureOpenAiChatModelFunctionCallIT {
 

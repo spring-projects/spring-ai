@@ -44,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = TransformersEmbeddingModelObservationTests.Config.class)
+@SpringBootTest
 public class TransformersEmbeddingModelObservationTests {
 
 	@Autowired

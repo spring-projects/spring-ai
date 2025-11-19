@@ -52,7 +52,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Alexandros Pappas
  * @author Jason Smith
  */
-@SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiChatModelObservationIT {
 

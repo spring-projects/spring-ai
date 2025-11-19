@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @since 1.1.0
  */
-@SpringBootTest(classes = AnthropicCitationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicCitationIT {
 

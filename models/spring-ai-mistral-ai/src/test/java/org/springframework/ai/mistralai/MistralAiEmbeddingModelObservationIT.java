@@ -46,7 +46,7 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
  * @author Thomas Vitale
  * @author Jason Smith
  */
-@SpringBootTest(classes = MistralAiEmbeddingModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiEmbeddingModelObservationIT {
 
