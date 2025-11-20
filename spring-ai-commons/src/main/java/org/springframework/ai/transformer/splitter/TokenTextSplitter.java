@@ -110,7 +110,7 @@ public class TokenTextSplitter extends TextSplitter {
 	 * @return list of text chunks
 	 */
 	protected List<String> doSplit(String text, int chunkSize) {
-		if (text == null || text.trim().isEmpty()) {
+		if (text.trim().isEmpty()) {
 			return new ArrayList<>();
 		}
 

@@ -76,7 +76,7 @@ public class ToolResponseMessage extends AbstractMessage {
 
 	public static final class Builder {
 
-		private List<ToolResponse> responses;
+		private List<ToolResponse> responses = List.of();
 
 		private Map<String, Object> metadata = Map.of();
 

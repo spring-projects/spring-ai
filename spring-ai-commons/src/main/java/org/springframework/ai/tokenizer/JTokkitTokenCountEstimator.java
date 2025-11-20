@@ -21,6 +21,7 @@ import java.util.Base64;
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingType;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
@@ -57,7 +58,7 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 	}
 
 	@Override
-	public int estimate(final String text) {
+	public int estimate(final @Nullable String text) {
 		if (text == null) {
 			return 0;
 		}
