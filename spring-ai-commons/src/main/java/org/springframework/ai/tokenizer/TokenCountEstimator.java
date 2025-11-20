@@ -16,6 +16,8 @@
 
 package org.springframework.ai.tokenizer;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.content.MediaContent;
 
 /**
@@ -31,7 +33,7 @@ public interface TokenCountEstimator {
 	 * @param text the text to estimate the number of tokens for.
 	 * @return the estimated number of tokens.
 	 */
-	int estimate(String text);
+	int estimate(@Nullable String text);
 
 	/**
 	 * Estimates the number of tokens in the given message.
