@@ -16,6 +16,9 @@
 
 package org.springframework.ai.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,6 +29,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -45,6 +49,9 @@ public class ModelOptionsUtilsTests {
 		specificOptions.setName("Mike");
 		specificOptions.setSpecificField("SpecificField");
 
+		TestSpecificOptions extraOptions = new TestSpecificOptions();
+		extraOptions.setExtraBodyProperty("key", "value");
+
 		assertThatThrownBy(
 				() -> ModelOptionsUtils.merge(portableOptions, specificOptions, TestPortableOptionsImpl.class))
 			.isInstanceOf(IllegalArgumentException.class)
@@ -56,6 +63,10 @@ public class ModelOptionsUtilsTests {
 		assertThat(specificOptions2.getName()).isEqualTo("John"); // !!! Overridden by the
 		// portableOptions
 		assertThat(specificOptions2.getSpecificField()).isEqualTo("SpecificField");
+
+		var extraSpecOptions = ModelOptionsUtils.merge(extraOptions, specificOptions, TestSpecificOptions.class);
+		assertThat(extraSpecOptions.extraBody()).containsKey("key");
+		assertThat(extraSpecOptions.extraBody().get("key")).isEqualTo("value");
 	}
 
 	@Test
@@ -171,12 +182,22 @@ public class ModelOptionsUtilsTests {
 	}
 
 	@Test
-	public void getJsonPropertyValues() {
+	public void getJsonPropertyResult() {
 		record TestRecord(@JsonProperty("field1") String fieldA, @JsonProperty("field2") String fieldB) {
 
 		}
-		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).hasSize(2);
-		assertThat(ModelOptionsUtils.getJsonPropertyValues(TestRecord.class)).containsExactly("field1", "field2");
+		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestRecord.class).properties()).hasSize(2);
+		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestRecord.class).properties()).containsExactly("field1", "field2");
+
+		record TestAnyGetterRecord(Map<String, Object> extraBody) {
+
+			@JsonAnyGetter
+			public Map<String, Object> extraBody() {
+				return this.extraBody;
+			}
+		}
+
+		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestAnyGetterRecord.class).acceptAllFields()).isEqualTo(true);
 	}
 
 	@Test
@@ -357,6 +378,8 @@ public class ModelOptionsUtilsTests {
 		@JsonProperty("age")
 		private Integer age;
 
+		private Map<String, Object> extraBody = new HashMap<>();
+
 		@Override
 		public String getName() {
 			return this.name;
@@ -383,6 +406,31 @@ public class ModelOptionsUtilsTests {
 
 		public void setSpecificField(String modelSpecificField) {
 			this.specificField = modelSpecificField;
+		}
+
+		/**
+		 * Overrides the default accessor to add @JsonAnyGetter annotation.
+		 * This causes Jackson to flatten the extraBody map contents to the top level of the JSON,
+		 * matching the behavior expected by OpenAI-compatible servers like vLLM, Ollama, etc.
+		 * @return The extraBody map, or null if not set.
+		 */
+		@JsonAnyGetter
+		public Map<String, Object> extraBody() {
+			return this.extraBody;
+		}
+
+		/**
+		 * Handles deserialization of unknown properties into the extraBody map.
+		 * This enables JSON with extra fields to be deserialized into ChatCompletionRequest,
+		 * which is useful for implementing OpenAI API proxy servers with @RestController.
+		 * @param key The property name
+		 * @param value The property value
+		 */
+		@JsonAnySetter
+		private void setExtraBodyProperty(String key, Object value) {
+			if (this.extraBody != null) {
+				this.extraBody.put(key, value);
+			}
 		}
 
 		@Override
