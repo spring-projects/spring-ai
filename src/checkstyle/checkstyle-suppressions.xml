@@ -41,7 +41,7 @@
 	<suppress files="AzureOpenAiChatModelMetadataTests.java" checks="RegexpSinglelineJava"/>
 	<suppress files="CouchbaseSearchVectorStore.java" checks="RegexpSinglelineJava"/>
 	<suppress files="DeepSeekChatModelIT.java" checks="RegexpSinglelineJava"/>
-	<suppress files="OpenAiOfficial*.java" checks="RegexpSinglelineJava"/>
+	<suppress files="OpenAiSdk*.java" checks="RegexpSinglelineJava"/>
 	<suppress files="OpenAiApi.java" checks="AnnotationLocation"/>
 
 	<suppress files="AzureVectorStore.java" checks="FinalClass"/>

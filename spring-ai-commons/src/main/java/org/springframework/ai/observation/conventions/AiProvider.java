@@ -88,7 +88,7 @@ public enum AiProvider {
 	/**
 	 * AI system provided by the official OpenAI SDK.
 	 */
-	OPENAI_OFFICIAL("openai_official"),
+	OPENAI_SDK("openai_sdk"),
 
 	/**
 	 * AI system provided by Spring AI.
