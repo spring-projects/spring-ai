@@ -16,11 +16,11 @@
 
 package org.springframework.ai.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -29,7 +29,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -187,7 +186,8 @@ public class ModelOptionsUtilsTests {
 
 		}
 		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestRecord.class).properties()).hasSize(2);
-		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestRecord.class).properties()).containsExactly("field1", "field2");
+		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestRecord.class).properties()).containsExactly("field1",
+				"field2");
 
 		record TestAnyGetterRecord(Map<String, Object> extraBody) {
 
@@ -197,7 +197,8 @@ public class ModelOptionsUtilsTests {
 			}
 		}
 
-		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestAnyGetterRecord.class).acceptAllFields()).isEqualTo(true);
+		assertThat(ModelOptionsUtils.getJsonPropertyResult(TestAnyGetterRecord.class).acceptAllFields())
+			.isEqualTo(true);
 	}
 
 	@Test
@@ -409,9 +410,10 @@ public class ModelOptionsUtilsTests {
 		}
 
 		/**
-		 * Overrides the default accessor to add @JsonAnyGetter annotation.
-		 * This causes Jackson to flatten the extraBody map contents to the top level of the JSON,
-		 * matching the behavior expected by OpenAI-compatible servers like vLLM, Ollama, etc.
+		 * Overrides the default accessor to add @JsonAnyGetter annotation. This causes
+		 * Jackson to flatten the extraBody map contents to the top level of the JSON,
+		 * matching the behavior expected by OpenAI-compatible servers like vLLM, Ollama,
+		 * etc.
 		 * @return The extraBody map, or null if not set.
 		 */
 		@JsonAnyGetter
@@ -420,8 +422,8 @@ public class ModelOptionsUtilsTests {
 		}
 
 		/**
-		 * Handles deserialization of unknown properties into the extraBody map.
-		 * This enables JSON with extra fields to be deserialized into ChatCompletionRequest,
+		 * Handles deserialization of unknown properties into the extraBody map. This
+		 * enables JSON with extra fields to be deserialized into ChatCompletionRequest,
 		 * which is useful for implementing OpenAI API proxy servers with @RestController.
 		 * @param key The property name
 		 * @param value The property value

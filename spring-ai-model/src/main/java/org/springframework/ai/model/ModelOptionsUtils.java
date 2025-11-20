@@ -16,7 +16,6 @@
 
 package org.springframework.ai.model;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -30,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -185,7 +185,7 @@ public abstract class ModelOptionsUtils {
 
 		List<String> requestFieldNames = CollectionUtils.isEmpty(acceptedFieldNames)
 				? REQUEST_FIELD_NAMES_PER_CLASS.computeIfAbsent(clazz, ModelOptionsUtils::getJsonPropertyResult)
-				.properties()
+					.properties()
 				: acceptedFieldNames;
 
 		boolean acceptAllFields = REQUEST_FIELD_NAMES_PER_CLASS.containsKey(clazz)
@@ -281,7 +281,8 @@ public abstract class ModelOptionsUtils {
 		boolean hasAnyGetter = false;
 
 		for (Method method : methods) {
-			// Iterate through the method to check JsonAnyGetter annotation to ensure that unknown parameters can be copied
+			// Iterate through the method to check JsonAnyGetter annotation to ensure that
+			// unknown parameters can be copied
 			JsonAnyGetter anyGetterAnnotation = method.getAnnotation(JsonAnyGetter.class);
 			if (anyGetterAnnotation != null) {
 				hasAnyGetter = true;
@@ -473,8 +474,11 @@ public abstract class ModelOptionsUtils {
 
 	/**
 	 * Record the decision result of {@link #getJsonPropertyResult(Class)}
-	 * @param acceptAllFields  the current class allows tags for all properties
+	 *
+	 * @param acceptAllFields the current class allows tags for all properties
 	 * @param properties list of properties allowed by the current class
 	 */
-	public record JsonPropertyResult(boolean acceptAllFields, List<String> properties) {}
+	public record JsonPropertyResult(boolean acceptAllFields, List<String> properties) {
+	}
+
 }
