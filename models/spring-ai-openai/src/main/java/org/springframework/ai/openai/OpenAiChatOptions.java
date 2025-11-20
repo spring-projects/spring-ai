@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -292,7 +294,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	 *     .build()
 	 * }</pre>
 	 */
-	private @JsonProperty("extra_body") Map<String, Object> extraBody;
+	private Map<String, Object> extraBody = new HashMap<>();
 
 	// @formatter:on
 
@@ -338,7 +340,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 			.serviceTier(fromOptions.getServiceTier())
 			.promptCacheKey(fromOptions.getPromptCacheKey())
 			.safetyIdentifier(fromOptions.getSafetyIdentifier())
-			.extraBody(fromOptions.getExtraBody())
+			.extraBody(fromOptions.extraBody())
 			.build();
 	}
 
@@ -535,12 +537,29 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 		this.parallelToolCalls = parallelToolCalls;
 	}
 
-	public Map<String, Object> getExtraBody() {
+	/**
+	 * Overrides the default accessor to add @JsonAnyGetter annotation. This causes
+	 * Jackson to flatten the extraBody map contents to the top level of the JSON,
+	 * matching the behavior expected by OpenAI-compatible servers like vLLM, Ollama, etc.
+	 * @return The extraBody map, or null if not set.
+	 */
+	@JsonAnyGetter
+	public Map<String, Object> extraBody() {
 		return this.extraBody;
 	}
 
-	public void setExtraBody(Map<String, Object> extraBody) {
-		this.extraBody = extraBody;
+	/**
+	 * Handles deserialization of unknown properties into the extraBody map. This enables
+	 * JSON with extra fields to be deserialized into ChatCompletionRequest, which is
+	 * useful for implementing OpenAI API proxy servers with @RestController.
+	 * @param key The property name
+	 * @param value The property value
+	 */
+	@JsonAnySetter
+	private void setExtraBodyProperty(String key, Object value) {
+		if (this.extraBody != null) {
+			this.extraBody.put(key, value);
+		}
 	}
 
 	@Override
