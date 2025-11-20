@@ -52,7 +52,7 @@ public class CohereEmbeddingOptions implements EmbeddingOptions {
 	 * The types of embeddings to return (float, int8, uint8, binary, ubinary).
 	 */
 	@JsonProperty("embedding_types")
-	private List<EmbeddingType> embeddingTypes;
+	private List<EmbeddingType> embeddingTypes = new ArrayList<>();
 
 	/**
 	 * How to handle inputs longer than the maximum token length (NONE, START, END).
@@ -71,6 +71,11 @@ public class CohereEmbeddingOptions implements EmbeddingOptions {
 					fromOptions.getEmbeddingTypes() != null ? new ArrayList<>(fromOptions.getEmbeddingTypes()) : null)
 			.truncate(fromOptions.getTruncate())
 			.build();
+	}
+
+	private CohereEmbeddingOptions() {
+		this.embeddingTypes.add(EmbeddingType.FLOAT);
+		this.inputType = InputType.CLASSIFICATION;
 	}
 
 	@Override

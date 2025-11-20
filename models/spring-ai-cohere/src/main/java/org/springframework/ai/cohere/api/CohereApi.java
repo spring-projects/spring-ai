@@ -148,7 +148,8 @@ public class CohereApi {
 	 * Usage statistics.
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record Usage(@JsonProperty("billedUnits") BilledUnits billedUnits, @JsonProperty("tokens") Tokens tokens, @JsonProperty("cached_tokens") Integer cachedTokens) {
+	public record Usage(@JsonProperty("billedUnits") BilledUnits billedUnits, @JsonProperty("tokens") Tokens tokens,
+			@JsonProperty("cached_tokens") Integer cachedTokens) {
 		/**
 		 * Bille units
 		 *
@@ -353,8 +354,11 @@ public class CohereApi {
 	 */
 	public record ChatCompletionMessage(@JsonProperty("content") Object rawContent, @JsonProperty("role") Role role,
 			@JsonProperty("tool_plan") String toolPlan,
-										@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("tool_calls") List<ToolCall> toolCalls,
-										@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("citations") List<ChatCompletionCitation> citations, @JsonProperty("tool_call_id") String toolCallId) {
+			@JsonFormat(
+					with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonFormat(
+					with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("citations") List<ChatCompletionCitation> citations,
+			@JsonProperty("tool_call_id") String toolCallId) {
 
 		public ChatCompletionMessage(Object content, Role role) {
 			this(content, role, null, null, null, null);
@@ -908,46 +912,53 @@ public class CohereApi {
 
 	}
 
-
 	/**
 	 * Embedding type
 	 */
 	public enum EmbeddingType {
+
 		/**
-		 * Use this when you want to get back the default float embeddings. Supported with all Embed models.
+		 * Use this when you want to get back the default float embeddings. Supported with
+		 * all Embed models.
 		 */
 		@JsonProperty("float")
 		FLOAT,
 
 		/**
-		 * Use this when you want to get back signed int8 embeddings. Supported with Embed v3.0 and newer Embed models.
+		 * Use this when you want to get back signed int8 embeddings. Supported with Embed
+		 * v3.0 and newer Embed models.
 		 */
 		@JsonProperty("int8")
 		INT8,
 
 		/**
-		 * Use this when you want to get back unsigned int8 embeddings. Supported with Embed v3.0 and newer Embed models.
+		 * Use this when you want to get back unsigned int8 embeddings. Supported with
+		 * Embed v3.0 and newer Embed models.
 		 */
 		@JsonProperty("uint8")
 		UINT8,
 
 		/**
-		 * Use this when you want to get back signed binary embeddings. Supported with Embed v3.0 and newer Embed models.
+		 * Use this when you want to get back signed binary embeddings. Supported with
+		 * Embed v3.0 and newer Embed models.
 		 */
 		@JsonProperty("binary")
 		BINARY,
 
 		/**
-		 * Use this when you want to get back unsigned binary embeddings. Supported with Embed v3.0 and newer Embed models.
+		 * Use this when you want to get back unsigned binary embeddings. Supported with
+		 * Embed v3.0 and newer Embed models.
 		 */
 		@JsonProperty("ubinary")
 		UBINARY,
 
 		/**
-		 * Use this when you want to get back base64 embeddings. Supported with Embed v3.0 and newer Embed models.
+		 * Use this when you want to get back base64 embeddings. Supported with Embed v3.0
+		 * and newer Embed models.
 		 */
 		@JsonProperty("base64")
 		BASE64
+
 	}
 
 	/**
@@ -965,7 +976,7 @@ public class CohereApi {
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record EmbeddingRequest<T>(
-			// @formatter:off
+	// @formatter:off
 			@JsonProperty("texts") List<T> texts,
 			@JsonProperty("model") String model,
 			@JsonProperty("input_type") InputType inputType,
@@ -980,9 +991,13 @@ public class CohereApi {
 		public static final class Builder<T> {
 
 			private String model = EmbeddingModel.EMBED_V4.getValue();
+
 			private List<T> texts;
+
 			private InputType inputType = InputType.SEARCH_DOCUMENT;
+
 			private List<EmbeddingType> embeddingTypes = List.of(EmbeddingType.FLOAT);
+
 			private Truncate truncate = Truncate.END;
 
 			public Builder<T> model(String model) {
@@ -998,7 +1013,8 @@ public class CohereApi {
 
 				if (raw instanceof List<?> list) {
 					this.texts = (List<T>) list;
-				} else {
+				}
+				else {
 					this.texts = List.of((T) raw);
 				}
 				return this;
@@ -1020,14 +1036,9 @@ public class CohereApi {
 			}
 
 			public EmbeddingRequest<T> build() {
-				return new EmbeddingRequest<>(
-						texts,
-						model,
-						inputType,
-						embeddingTypes,
-						truncate
-				);
+				return new EmbeddingRequest<>(texts, model, inputType, embeddingTypes, truncate);
 			}
+
 		}
 
 		/**
@@ -1047,6 +1058,7 @@ public class CohereApi {
 			@JsonProperty("image")
 			IMAGE
 			// @formatter:on
+
 		}
 
 		/**
@@ -1073,12 +1085,13 @@ public class CohereApi {
 	 * @param id Unique identifier for the embedding request.
 	 * @param embeddings The embeddings
 	 * @param texts The texts that were embedded.
-	 * @param responseType The type of response ("embeddings_floats" or "embeddings_by_type").
+	 * @param responseType The type of response ("embeddings_floats" or
+	 * "embeddings_by_type").
 	 */
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record EmbeddingResponse(
-			// @formatter:off
+	// @formatter:off
 			@JsonProperty("id") String id,
 			@JsonProperty("embeddings") Object embeddings,
 			@JsonProperty("texts") List<String> texts,
@@ -1086,10 +1099,10 @@ public class CohereApi {
 		// @formatter:on
 
 		/**
-		 * Extracts float embeddings from the response.
-		 * Handles both response formats:
-		 * - "embeddings_floats": embeddings is List&lt;List&lt;Double&gt;&gt;
-		 * - "embeddings_by_type": embeddings is Map with "float" key containing List&lt;List&lt;Double&gt;&gt;
+		 * Extracts float embeddings from the response. Handles both response formats: -
+		 * "embeddings_floats": embeddings is List&lt;List&lt;Double&gt;&gt; -
+		 * "embeddings_by_type": embeddings is Map with "float" key containing
+		 * List&lt;List&lt;Double&gt;&gt;
 		 * @return List of float arrays representing the embeddings
 		 */
 		@JsonIgnore
@@ -1099,40 +1112,37 @@ public class CohereApi {
 				return List.of();
 			}
 
-			// Handle "embeddings_floats" format: embeddings is directly List<List<Double>>
+			// Handle "embeddings_floats" format: embeddings is directly
+			// List<List<Double>>
 			if (this.embeddings instanceof List<?> embeddingsList) {
-				return embeddingsList.stream()
-						.map(embedding -> {
-							if (embedding instanceof List<?> embeddingVector) {
-								float[] floatArray = new float[embeddingVector.size()];
-								for (int i = 0; i < embeddingVector.size(); i++) {
-									Object value = embeddingVector.get(i);
-									floatArray[i] = (value instanceof Number number) ? number.floatValue() : 0f;
-								}
-								return floatArray;
-							}
-							return new float[0];
-						})
-						.toList();
+				return embeddingsList.stream().map(embedding -> {
+					if (embedding instanceof List<?> embeddingVector) {
+						float[] floatArray = new float[embeddingVector.size()];
+						for (int i = 0; i < embeddingVector.size(); i++) {
+							Object value = embeddingVector.get(i);
+							floatArray[i] = (value instanceof Number number) ? number.floatValue() : 0f;
+						}
+						return floatArray;
+					}
+					return new float[0];
+				}).toList();
 			}
 
 			// Handle "embeddings_by_type" format: embeddings is Map<String, Object>
 			if (this.embeddings instanceof Map<?, ?> embeddingsMap) {
 				Object floatEmbeddings = embeddingsMap.get("float");
 				if (floatEmbeddings instanceof List<?> embeddingsList) {
-					return embeddingsList.stream()
-							.map(embedding -> {
-								if (embedding instanceof List<?> embeddingVector) {
-									float[] floatArray = new float[embeddingVector.size()];
-									for (int i = 0; i < embeddingVector.size(); i++) {
-										Object value = embeddingVector.get(i);
-										floatArray[i] = (value instanceof Number number) ? number.floatValue() : 0f;
-									}
-									return floatArray;
-								}
-								return new float[0];
-							})
-							.toList();
+					return embeddingsList.stream().map(embedding -> {
+						if (embedding instanceof List<?> embeddingVector) {
+							float[] floatArray = new float[embeddingVector.size()];
+							for (int i = 0; i < embeddingVector.size(); i++) {
+								Object value = embeddingVector.get(i);
+								floatArray[i] = (value instanceof Number number) ? number.floatValue() : 0f;
+							}
+							return floatArray;
+						}
+						return new float[0];
+					}).toList();
 				}
 			}
 
@@ -1160,12 +1170,12 @@ public class CohereApi {
 		Assert.isTrue(embeddingRequest.texts.size() <= 96, "The list must be 96 items or less");
 
 		return this.restClient.post()
-				.uri("/v2/embed")
-				.body(embeddingRequest)
-				.retrieve()
-				.toEntity(new ParameterizedTypeReference<>() {
+			.uri("/v2/embed")
+			.body(embeddingRequest)
+			.retrieve()
+			.toEntity(new ParameterizedTypeReference<>() {
 
-				});
+			});
 	}
 
 	/**
@@ -1180,43 +1190,38 @@ public class CohereApi {
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		return this.webClient.post()
-				.uri("v2/chat")
-				.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-				.retrieve()
-				.bodyToFlux(String.class)
-				.takeUntil(SSE_DONE_PREDICATE)
-				.filter(SSE_DONE_PREDICATE.negate())
-				.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-				.groupBy(chunk -> chunk.id() != null ? chunk.id() : "no-id")
-				.flatMap(group ->
-					group.reduce(
-						new ChatCompletionChunk(null, null, null, null),
-						this.chunkMerger::merge
-					)
-					.filter(chunk -> EventType.MESSAGE_END.value.equals(chunk.type()) ||
-									(chunk.delta() != null && chunk.delta().finishReason() != null))
-				)
-				.map(chunkMerger::sanitizeToolCalls)
-				.filter(chunkMerger::hasValidToolCallsOnly)
-				.filter(Objects::nonNull);
+			.uri("v2/chat")
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			.takeUntil(SSE_DONE_PREDICATE)
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.groupBy(chunk -> chunk.id() != null ? chunk.id() : "no-id")
+			.flatMap(group -> group.reduce(new ChatCompletionChunk(null, null, null, null), this.chunkMerger::merge)
+				.filter(chunk -> EventType.MESSAGE_END.value.equals(chunk.type())
+						|| (chunk.delta() != null && chunk.delta().finishReason() != null)))
+			.map(chunkMerger::sanitizeToolCalls)
+			.filter(chunkMerger::hasValidToolCallsOnly)
+			.filter(Objects::nonNull);
 	}
 
 	public enum EventType {
-		MESSAGE_END("message-end"),
-		CONTENT_START("content-start"),
-		CONTENT_DELTA("content-delta"),
-		CONTENT_END("content-end"),
-		TOOL_PLAN_DELTA("tool-plan-delta"),
-		TOOL_CALL_START("tool-call-start"),
-		TOOL_CALL_DELTA("tool-call-delta"),
-		CITATION_START("citation-start");
+
+		MESSAGE_END("message-end"), CONTENT_START("content-start"), CONTENT_DELTA("content-delta"),
+		CONTENT_END("content-end"), TOOL_PLAN_DELTA("tool-plan-delta"), TOOL_CALL_START("tool-call-start"),
+		TOOL_CALL_DELTA("tool-call-delta"), CITATION_START("citation-start");
+
 		public final String value;
+
 		EventType(String value) {
 			this.value = value;
 		}
+
 		public String getValue() {
 			return this.value;
 		}
+
 	}
 
 	public static Builder builder() {

@@ -78,7 +78,7 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public CohereEmbeddingModel(CohereApi cohereApi, MetadataMode metadataMode, CohereEmbeddingOptions options,
-                                RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		Assert.notNull(cohereApi, "cohereApi must not be null");
 		Assert.notNull(metadataMode, "metadataMode must not be null");
 		Assert.notNull(options, "options must not be null");
@@ -141,8 +141,8 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 		return this.embed(document.getFormattedContent(this.metadataMode));
 	}
 
-	private EmbeddingResponseMetadata generateResponseMetadata(String model) {
-		return new EmbeddingResponseMetadata(model, null);
+	private EmbeddingResponseMetadata generateResponseMetadata(String embeddingType) {
+		return new EmbeddingResponseMetadata(embeddingType, null);
 	}
 
 	/**
@@ -158,12 +158,12 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 		CohereEmbeddingOptions options = mergeOptions(request.getOptions(), this.defaultOptions);
 
 		return CohereApi.EmbeddingRequest.<String>builder()
-				.model(options.getModel())
-				.inputType(options.getInputType())
-				.embeddingTypes(options.getEmbeddingTypes())
-				.texts(request.getInstructions())
-				.truncate(options.getTruncate())
-				.build();
+			.model(options.getModel())
+			.inputType(options.getInputType())
+			.embeddingTypes(options.getEmbeddingTypes())
+			.texts(request.getInstructions())
+			.truncate(options.getTruncate())
+			.build();
 	}
 
 	private CohereEmbeddingOptions mergeOptions(EmbeddingOptions requestOptions,
@@ -203,8 +203,8 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 		private MetadataMode metadataMode = MetadataMode.EMBED;
 
 		private CohereEmbeddingOptions options = CohereEmbeddingOptions.builder()
-				.model(CohereApi.EmbeddingModel.EMBED_MULTILINGUAL_LIGHT_V3.getValue())
-				.build();
+			.model(CohereApi.EmbeddingModel.EMBED_MULTILINGUAL_LIGHT_V3.getValue())
+			.build();
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
@@ -217,7 +217,7 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 
 		public Builder metadataMode(MetadataMode metadataMode) {
 			this.metadataMode = metadataMode;
-			return  this;
+			return this;
 		}
 
 		public Builder options(CohereEmbeddingOptions options) {
@@ -239,6 +239,7 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 			return new CohereEmbeddingModel(this.cohereApi, this.metadataMode, this.options, this.retryTemplate,
 					this.observationRegistry);
 		}
+
 	}
 
 }

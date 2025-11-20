@@ -107,8 +107,8 @@ public class CohereApiToolFunctionCallIT {
 		assertThat(chatCompletion.message()).isNotNull();
 
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(chatCompletion.message().content(),
-				chatCompletion.message().role(), chatCompletion.message().toolPlan(), chatCompletion.message().toolCalls(), chatCompletion.message().citations(), null);
-
+				chatCompletion.message().role(), chatCompletion.message().toolPlan(),
+				chatCompletion.message().toolCalls(), chatCompletion.message().citations(), null);
 
 		assertThat(responseMessage.role()).isEqualTo(Role.ASSISTANT);
 		assertThat(responseMessage.toolCalls()).isNotNull();
@@ -136,8 +136,7 @@ public class CohereApiToolFunctionCallIT {
 
 			var functionResponseRequest = new ChatCompletionRequest(messages, MISTRAL_AI_CHAT_MODEL, 0.8);
 
-			ResponseEntity<ChatCompletion> result2 = this.completionApi
-				.chatCompletionEntity(functionResponseRequest);
+			ResponseEntity<ChatCompletion> result2 = this.completionApi.chatCompletionEntity(functionResponseRequest);
 
 			chatCompletion = result2.getBody();
 
@@ -148,12 +147,9 @@ public class CohereApiToolFunctionCallIT {
 			var messageContent = chatCompletion.message().content().get(0);
 
 			assertThat(chatCompletion.message().role()).isEqualTo(Role.ASSISTANT);
-			assertThat(messageContent.text()).contains("San Francisco")
-				.containsAnyOf("30.0", "30");
-			assertThat(messageContent.text()).contains("Tokyo")
-				.containsAnyOf("10.0", "10");
-			assertThat(messageContent.text()).contains("Paris")
-				.containsAnyOf("15.0", "15");
+			assertThat(messageContent.text()).contains("San Francisco").containsAnyOf("30.0", "30");
+			assertThat(messageContent.text()).contains("Tokyo").containsAnyOf("10.0", "10");
+			assertThat(messageContent.text()).contains("Paris").containsAnyOf("15.0", "15");
 		}
 
 	}

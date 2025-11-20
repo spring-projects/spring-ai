@@ -24,7 +24,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 import java.util.function.Function;
 
-
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 
 	@Override

@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -374,11 +375,77 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		CohereChatOptions that = (CohereChatOptions) o;
+		return Objects.equals(model, that.model) && Objects.equals(temperature, that.temperature)
+				&& Objects.equals(p, that.p) && Objects.equals(maxTokens, that.maxTokens)
+				&& Objects.equals(presencePenalty, that.presencePenalty)
+				&& Objects.equals(frequencyPenalty, that.frequencyPenalty) && Objects.equals(k, that.k)
+				&& Objects.equals(tools, that.tools) && Objects.equals(responseFormat, that.responseFormat)
+				&& Objects.equals(safetyMode, that.safetyMode) && Objects.equals(stopSequences, that.stopSequences)
+				&& Objects.equals(seed, that.seed) && Objects.equals(logprobs, that.logprobs)
+				&& Objects.equals(toolChoice, that.toolChoice) && Objects.equals(strictTools, that.strictTools)
+				&& Objects.equals(toolCallbacks, that.toolCallbacks) && Objects.equals(toolNames, that.toolNames)
+				&& Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(toolContext, that.toolContext);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(model, temperature, p, maxTokens, presencePenalty, frequencyPenalty, k, tools,
+				responseFormat, safetyMode, stopSequences, seed, logprobs, toolChoice, strictTools, toolCallbacks,
+				toolNames, internalToolExecutionEnabled, toolContext);
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	public static CohereChatOptions fromOptions(CohereChatOptions fromOptions) {
+		Builder builder = CohereChatOptions.builder()
+			.model(fromOptions.getModel())
+			.temperature(fromOptions.getTemperature())
+			.maxTokens(fromOptions.getMaxTokens())
+			.topP(fromOptions.getTopP())
+			.frequencyPenalty(fromOptions.getFrequencyPenalty())
+			.presencePenalty(fromOptions.getPresencePenalty())
+			.topK(fromOptions.getTopK())
+			.responseFormat(fromOptions.getResponseFormat())
+			.safetyMode(fromOptions.getSafetyMode())
+			.seed(fromOptions.getSeed())
+			.logprobs(fromOptions.getLogprobs())
+			.toolChoice(fromOptions.getToolChoice())
+			.strictTools(fromOptions.getStrictTools())
+			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
+
+		// Create defensive copies of collections
+		if (fromOptions.getTools() != null) {
+			builder.tools(new ArrayList<>(fromOptions.getTools()));
+		}
+		if (fromOptions.getStopSequences() != null) {
+			builder.stop(new ArrayList<>(fromOptions.getStopSequences()));
+		}
+		if (fromOptions.getToolCallbacks() != null) {
+			builder.toolCallbacks(new ArrayList<>(fromOptions.getToolCallbacks()));
+		}
+		if (fromOptions.getToolNames() != null) {
+			builder.toolNames(new HashSet<>(fromOptions.getToolNames()));
+		}
+		if (fromOptions.getToolContext() != null) {
+			builder.toolContext(new HashMap<>(fromOptions.getToolContext()));
+		}
+
+		return builder.build();
+	}
+
+	public static CohereChatOptions fromOptions2(CohereChatOptions fromOptions) {
 		return CohereChatOptions.builder()
 			.model(fromOptions.getModel())
 			.temperature(fromOptions.getTemperature())
@@ -387,41 +454,18 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 			.frequencyPenalty(fromOptions.getFrequencyPenalty())
 			.presencePenalty(fromOptions.getPresencePenalty())
 			.topK(fromOptions.getTopK())
-			.tools(fromOptions.getTools())
+			.tools(null)
 			.responseFormat(fromOptions.getResponseFormat())
 			.safetyMode(fromOptions.getSafetyMode())
 			.stop(fromOptions.getStopSequences())
 			.seed(fromOptions.getSeed())
 			.logprobs(fromOptions.getLogprobs())
-			.toolChoice(fromOptions.getToolChoice())
-			.strictTools(fromOptions.getStrictTools())
-			.toolCallbacks(fromOptions.getToolCallbacks())
-			.toolNames(fromOptions.getToolNames())
-			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
+			.toolChoice(null)
+			.strictTools(null)
+			.toolCallbacks()
+			.toolNames()
+			.internalToolExecutionEnabled(null)
 			.build();
-	}
-
-	public static CohereChatOptions fromOptions2(CohereChatOptions fromOptions) {
-		return CohereChatOptions.builder()
-				.model(fromOptions.getModel())
-				.temperature(fromOptions.getTemperature())
-				.maxTokens(fromOptions.getMaxTokens())
-				.topP(fromOptions.getTopP())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.topK(fromOptions.getTopK())
-				.tools(null)
-				.responseFormat(fromOptions.getResponseFormat())
-				.safetyMode(fromOptions.getSafetyMode())
-				.stop(fromOptions.getStopSequences())
-				.seed(fromOptions.getSeed())
-				.logprobs(fromOptions.getLogprobs())
-				.toolChoice(null)
-				.strictTools(null)
-				.toolCallbacks()
-				.toolNames()
-				.internalToolExecutionEnabled(null)
-				.build();
 	}
 
 	public static class Builder {

@@ -52,10 +52,10 @@ public class CohereEmbeddingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public CohereEmbeddingModel mistralAiEmbeddingModel(CohereCommonProperties commonProperties,
-														CohereEmbeddingProperties embeddingProperties,
-														ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
-														ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
-														ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
+			CohereEmbeddingProperties embeddingProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var cohereApi = cohereApi(embeddingProperties.getApiKey(), commonProperties.getApiKey(),
 				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
@@ -75,7 +75,7 @@ public class CohereEmbeddingAutoConfiguration {
 	}
 
 	private CohereApi cohereApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-								RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -84,11 +84,11 @@ public class CohereEmbeddingAutoConfiguration {
 		Assert.hasText(resoledBaseUrl, "Cohere base URL must be set");
 
 		return CohereApi.builder()
-				.baseUrl(resoledBaseUrl)
-				.apiKey(resolvedApiKey)
-				.restClientBuilder(restClientBuilder)
-				.responseErrorHandler(responseErrorHandler)
-				.build();
+			.baseUrl(resoledBaseUrl)
+			.apiKey(resolvedApiKey)
+			.restClientBuilder(restClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

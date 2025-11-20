@@ -55,9 +55,7 @@ class CohereApiIT extends AbstractIT {
 	@Test
 	void embeddings() {
 		ResponseEntity<CohereApi.EmbeddingResponse> response = this.cohereApi
-				.embeddings(CohereApi.EmbeddingRequest.<String>builder()
-						.texts("Hello world")
-						.build());
+			.embeddings(CohereApi.EmbeddingRequest.<String>builder().texts("Hello world").build());
 
 		assertThat(response).isNotNull();
 		Assertions.assertNotNull(response.getBody());

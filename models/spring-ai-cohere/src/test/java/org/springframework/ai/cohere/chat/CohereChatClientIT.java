@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.cohere;
+package org.springframework.ai.cohere.chat;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -24,8 +24,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.cohere.CohereTestConfiguration;
 import org.springframework.ai.cohere.api.tool.MockWeatherService;
-import org.springframework.ai.cohere.chat.CohereChatOptions;
 import org.springframework.ai.cohere.testutils.AbstractIT;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;

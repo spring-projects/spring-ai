@@ -81,12 +81,12 @@ public class CohereChatAutoConfiguration {
 		Assert.hasText(resoledBaseUrl, "Cohere base URL must be set");
 
 		return CohereApi.builder()
-				.baseUrl(resoledBaseUrl)
-				.apiKey(resolvedApiKey)
-				.restClientBuilder(restClientBuilder)
-				.webClientBuilder(webClientBuilder)
-				.responseErrorHandler(responseErrorHandler)
-				.build();
+			.baseUrl(resoledBaseUrl)
+			.apiKey(resolvedApiKey)
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

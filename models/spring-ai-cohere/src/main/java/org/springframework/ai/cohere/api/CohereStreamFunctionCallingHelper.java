@@ -56,8 +56,7 @@ public class CohereStreamFunctionCallingHelper {
 		ChatCompletionMessage previousMessage = previousDelta != null ? previousDelta.message() : null;
 		ChatCompletionMessage currentMessage = currentDelta != null ? currentDelta.message() : null;
 
-		Role role = previousMessage != null && previousMessage.role() != null
-				? previousMessage.role()
+		Role role = previousMessage != null && previousMessage.role() != null ? previousMessage.role()
 				: (currentMessage != null ? currentMessage.role() : null);
 
 		String previousText = previousMessage != null ? extractTextFromRawContent(previousMessage.rawContent()) : "";
@@ -68,9 +67,11 @@ public class CohereStreamFunctionCallingHelper {
 		String mergedText;
 		if (CONTENT_START.getValue().equals(currentType)) {
 			mergedText = currentText;
-		} else if (CONTENT_END.getValue().equals(currentType)) {
+		}
+		else if (CONTENT_END.getValue().equals(currentType)) {
 			mergedText = previousText;
-		} else {
+		}
+		else {
 			mergedText = previousText + currentText;
 		}
 
@@ -87,29 +88,16 @@ public class CohereStreamFunctionCallingHelper {
 
 		List<ChatCompletionMessage.ChatCompletionCitation> citations = mergeCitations(previous, current);
 
+		ChatCompletionMessage mergedMessage = new ChatCompletionMessage(mergedText, role, mergedToolPlan,
+				mergedToolCalls, citations, null);
 
-		ChatCompletionMessage mergedMessage = new ChatCompletionMessage(
-				mergedText,
-				role,
-				mergedToolPlan,
-				mergedToolCalls,
-				citations,
-				null
-		);
-
-		var finishReason = (currentDelta != null && currentDelta.finishReason() != null)
-				? currentDelta.finishReason()
+		var finishReason = (currentDelta != null && currentDelta.finishReason() != null) ? currentDelta.finishReason()
 				: (previousDelta != null ? previousDelta.finishReason() : null);
 
-		var usage = (currentDelta != null && currentDelta.usage() != null)
-				? currentDelta.usage()
+		var usage = (currentDelta != null && currentDelta.usage() != null) ? currentDelta.usage()
 				: (previousDelta != null ? previousDelta.usage() : null);
 
-		var mergedDelta = new ChatCompletionChunk.ChunkDelta(
-				mergedMessage,
-				finishReason,
-				usage
-		);
+		var mergedDelta = new ChatCompletionChunk.ChunkDelta(mergedMessage, finishReason, usage);
 
 		String id = current.id() != null ? current.id() : previous.id();
 		String type = current.type() != null ? current.type() : previous.type();
@@ -125,25 +113,18 @@ public class CohereStreamFunctionCallingHelper {
 		ChatCompletionMessage msg = chunk.delta().message();
 		List<ToolCall> toolCalls = msg.toolCalls();
 
-		if (toolCalls == null || toolCalls.isEmpty()) return chunk;
+		if (toolCalls == null || toolCalls.isEmpty())
+			return chunk;
 
-		List<ToolCall> cleaned =
-				toolCalls.stream().filter(this::isValidToolCall).toList();
+		List<ToolCall> cleaned = toolCalls.stream().filter(this::isValidToolCall).toList();
 
 		ChatCompletionChunk.ChunkDelta oldDelta = chunk.delta();
 
-		ChatCompletionMessage cleanedMsg =
-				new ChatCompletionMessage(
-						msg.rawContent(),
-						msg.role(),
-						msg.toolPlan(),
-						cleaned.isEmpty() ? null : cleaned,
-						msg.citations(),
-						null
-				);
+		ChatCompletionMessage cleanedMsg = new ChatCompletionMessage(msg.rawContent(), msg.role(), msg.toolPlan(),
+				cleaned.isEmpty() ? null : cleaned, msg.citations(), null);
 
-		ChatCompletionChunk.ChunkDelta newDelta =
-				new ChatCompletionChunk.ChunkDelta(cleanedMsg, oldDelta.finishReason(), oldDelta.usage());
+		ChatCompletionChunk.ChunkDelta newDelta = new ChatCompletionChunk.ChunkDelta(cleanedMsg,
+				oldDelta.finishReason(), oldDelta.usage());
 
 		return new ChatCompletionChunk(chunk.id(), chunk.type(), chunk.index(), newDelta);
 	}
@@ -157,7 +138,8 @@ public class CohereStreamFunctionCallingHelper {
 
 		boolean hasValidToolCalls = calls != null && calls.stream().anyMatch(this::isValidToolCall);
 
-		boolean hasTextContent = message.rawContent() != null && !extractTextFromRawContent(message.rawContent()).isEmpty();
+		boolean hasTextContent = message.rawContent() != null
+				&& !extractTextFromRawContent(message.rawContent()).isEmpty();
 
 		boolean hasCitations = message.citations() != null && !message.citations().isEmpty();
 
@@ -180,30 +162,32 @@ public class CohereStreamFunctionCallingHelper {
 		}
 		if (rawContent instanceof Map<?, ?> map) {
 			Object text = map.get("text");
-			if (text != null) return text.toString();
+			if (text != null)
+				return text.toString();
 		}
 		if (rawContent instanceof List<?> list) {
 			StringBuilder sb = new StringBuilder();
 			for (Object item : list) {
 				if (item instanceof Map<?, ?> m) {
 					Object text = m.get("text");
-					if (text != null) sb.append(text);
-				} else if (item instanceof String s) {
+					if (text != null)
+						sb.append(text);
+				}
+				else if (item instanceof String s) {
 					sb.append(s);
 				}
 			}
 			return sb.toString();
 		}
-		if (rawContent instanceof String s) return s;
+		if (rawContent instanceof String s)
+			return s;
 		return rawContent.toString();
 	}
 
-	private List<ToolCall> mergeToolCalls(ChatCompletionChunk previous,
-										  ChatCompletionChunk current) {
+	private List<ToolCall> mergeToolCalls(ChatCompletionChunk previous, ChatCompletionChunk current) {
 		ChatCompletionMessage previousMessage = previous != null && previous.delta() != null
 				? previous.delta().message() : null;
-		ChatCompletionMessage currentMessage = current.delta() != null
-				? current.delta().message() : null;
+		ChatCompletionMessage currentMessage = current.delta() != null ? current.delta().message() : null;
 
 		List<ToolCall> merged = ensureToolCallList(previousMessage != null ? previousMessage.toolCalls() : null);
 
@@ -215,8 +199,7 @@ public class CohereStreamFunctionCallingHelper {
 		}
 
 		ToolCall existing = ensureToolCallAtIndex(merged, index);
-		ChatCompletionFunction existingFunction = existing.function() != null
-				? existing.function()
+		ChatCompletionFunction existingFunction = existing.function() != null ? existing.function()
 				: new ChatCompletionFunction(null, "");
 
 		String id = existing.id();
@@ -228,8 +211,7 @@ public class CohereStreamFunctionCallingHelper {
 				&& !currentMessage.toolCalls().isEmpty()) {
 
 			ToolCall start = currentMessage.toolCalls().get(0);
-			ChatCompletionFunction startFunction = start.function() != null
-					? start.function()
+			ChatCompletionFunction startFunction = start.function() != null ? start.function()
 					: new ChatCompletionFunction(null, "");
 
 			id = start.id() != null ? start.id() : id;
@@ -266,13 +248,13 @@ public class CohereStreamFunctionCallingHelper {
 		return previous + currentFragment;
 	}
 
-	private List<ChatCompletionMessage.ChatCompletionCitation> mergeCitations(
-			ChatCompletionChunk previous, ChatCompletionChunk current) {
+	private List<ChatCompletionMessage.ChatCompletionCitation> mergeCitations(ChatCompletionChunk previous,
+			ChatCompletionChunk current) {
 
 		ChatCompletionMessage previousMessage = previous != null && previous.delta() != null
 				? previous.delta().message() : null;
-		ChatCompletionMessage currentMessage = current != null && current.delta() != null
-				? current.delta().message() : null;
+		ChatCompletionMessage currentMessage = current != null && current.delta() != null ? current.delta().message()
+				: null;
 
 		List<ChatCompletionMessage.ChatCompletionCitation> merged = new ArrayList<>();
 
@@ -280,7 +262,8 @@ public class CohereStreamFunctionCallingHelper {
 			merged.addAll(previousMessage.citations());
 		}
 
-		if (current != null && CITATION_START.getValue().equals(current.type()) && currentMessage != null && currentMessage.citations() != null) {
+		if (current != null && CITATION_START.getValue().equals(current.type()) && currentMessage != null
+				&& currentMessage.citations() != null) {
 			merged.addAll(currentMessage.citations());
 		}
 

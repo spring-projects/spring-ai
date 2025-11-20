@@ -39,21 +39,20 @@ public class CohereAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner
-				.withConfiguration(SpringAiTestAutoConfigurations.of(CohereEmbeddingAutoConfiguration.class))
-				.run(context -> {
-					CohereEmbeddingModel embeddingModel = context.getBean(CohereEmbeddingModel.class);
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(CohereEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				CohereEmbeddingModel embeddingModel = context.getBean(CohereEmbeddingModel.class);
 
-					EmbeddingResponse embeddingResponse = embeddingModel
-							.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
-					assertThat(embeddingResponse.getResults()).hasSize(2);
-					assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-					assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
-					assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
-					assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
+				EmbeddingResponse embeddingResponse = embeddingModel
+					.embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+				assertThat(embeddingResponse.getResults()).hasSize(2);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
+				assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
+				assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
-					assertThat(embeddingModel.dimensions()).isEqualTo(1536);
-				});
+				assertThat(embeddingModel.dimensions()).isEqualTo(1536);
+			});
 	}
 
 }

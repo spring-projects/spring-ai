@@ -22,6 +22,7 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.cohere.api.CohereApi;
@@ -32,10 +33,6 @@ import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.ChatCom
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.Role;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -68,10 +65,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -140,13 +134,13 @@ public class CohereChatModel implements ChatModel {
 		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 	}
 
-	public static ChatResponseMetadata from(CohereApi.ChatCompletion result) {
+	public static ChatResponseMetadata from(ChatCompletion result) {
 		Assert.notNull(result, "Cohere ChatCompletion must not be null");
 		DefaultUsage usage = getDefaultUsage(result.usage());
 		return ChatResponseMetadata.builder().id(result.id()).usage(usage).build();
 	}
 
-	public static ChatResponseMetadata from(CohereApi.ChatCompletion result, Usage usage) {
+	public static ChatResponseMetadata from(ChatCompletion result, Usage usage) {
 		Assert.notNull(result, "Cohere ChatCompletion must not be null");
 		return ChatResponseMetadata.builder().id(result.id()).usage(usage).build();
 	}
@@ -172,9 +166,9 @@ public class CohereChatModel implements ChatModel {
 			var request = createRequest(prompt, true);
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-					.prompt(prompt)
-					.provider(CohereApi.PROVIDER_NAME)
-					.build();
+				.prompt(prompt)
+				.provider(CohereApi.PROVIDER_NAME)
+				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
@@ -183,7 +177,7 @@ public class CohereChatModel implements ChatModel {
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
 			Flux<CohereApi.ChatCompletionChunk> completionChunks = this.retryTemplate
-					.execute(ctx -> this.cohereApi.chatCompletionStream(request));
+				.execute(ctx -> this.cohereApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the role.
 			// The rest of the chunks with same ID share the same role.
@@ -192,40 +186,39 @@ public class CohereChatModel implements ChatModel {
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion)
-					.filter(chatCompletion -> chatCompletion != null && chatCompletion.message() != null)
-					.switchMap(chatCompletion -> Mono.just(chatCompletion).map(completion -> {
-						try {
-							@SuppressWarnings("null")
-							String id = completion.id();
-							ChatCompletionMessage.Provider message = completion.message();
+				.filter(chatCompletion -> chatCompletion != null && chatCompletion.message() != null)
+				.switchMap(chatCompletion -> Mono.just(chatCompletion).map(completion -> {
+					try {
+						@SuppressWarnings("null")
+						String id = completion.id();
+						ChatCompletionMessage.Provider message = completion.message();
 
-							// Store the role for this completion ID
-							if (message.role() != null && id != null) {
-								roleMap.putIfAbsent(id, message.role().name());
-							}
-
-							List<Generation> generations = message.content().stream().map(content -> {
-								Map<String, Object> metadata = Map.of(
-										"id", completion.id() != null ? completion.id() : "",
-										"role", completion.id() != null ? roleMap.getOrDefault(id, "") : "",
-										"finishReason", completion.finishReason() != null ? completion.finishReason().name() : "");
-								return buildGeneration(content, completion, metadata);
-							}).toList();
-
-							if (completion.usage() != null) {
-								DefaultUsage usage = getDefaultUsage(completion.usage());
-								Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
-								return new ChatResponse(generations, from(completion, cumulativeUsage));
-							}
-							else {
-								return new ChatResponse(generations);
-							}
+						// Store the role for this completion ID
+						if (message.role() != null && id != null) {
+							roleMap.putIfAbsent(id, message.role().name());
 						}
-						catch (Exception e) {
-							logger.error("Error processing chat completion", e);
-							return new ChatResponse(List.of());
+
+						List<Generation> generations = message.content().stream().map(content -> {
+							Map<String, Object> metadata = Map.of("id", completion.id() != null ? completion.id() : "",
+									"role", completion.id() != null ? roleMap.getOrDefault(id, "") : "", "finishReason",
+									completion.finishReason() != null ? completion.finishReason().name() : "");
+							return buildGeneration(content, completion, metadata);
+						}).toList();
+
+						if (completion.usage() != null) {
+							DefaultUsage usage = getDefaultUsage(completion.usage());
+							Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
+							return new ChatResponse(generations, from(completion, cumulativeUsage));
 						}
-					}));
+						else {
+							return new ChatResponse(generations);
+						}
+					}
+					catch (Exception e) {
+						logger.error("Error processing chat completion", e);
+						return new ChatResponse(List.of());
+					}
+				}));
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
@@ -280,22 +273,11 @@ public class CohereChatModel implements ChatModel {
 
 			List<ChatCompletionMessage.MessageContent> content = extractMessageContent(message.rawContent());
 
-			provider = new ChatCompletionMessage.Provider(
-				content,
-				message.role(),
-				message.toolPlan(),
-				message.toolCalls(),
-				message.citations()
-			);
+			provider = new ChatCompletionMessage.Provider(content, message.role(), message.toolPlan(),
+					message.toolCalls(), message.citations());
 		}
 
-		return new CohereApi.ChatCompletion(
-			chunk.id(),
-			delta.finishReason(),
-			provider,
-			null,
-			delta.usage()
-		);
+		return new ChatCompletion(chunk.id(), delta.finishReason(), provider, null, delta.usage());
 	}
 
 	private List<ChatCompletionMessage.MessageContent> extractMessageContent(Object rawContent) {
@@ -380,70 +362,75 @@ public class CohereChatModel implements ChatModel {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
-				.prompt(prompt)
-				.provider(CohereApi.PROVIDER_NAME)
-				.build();
+			.prompt(prompt)
+			.provider(CohereApi.PROVIDER_NAME)
+			.build();
 
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
 
-					ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-							.execute(ctx -> this.cohereApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
+					.execute(ctx -> this.cohereApi.chatCompletionEntity(request));
 
-					ChatCompletion chatCompletion = completionEntity.getBody();
+				ChatCompletion chatCompletion = completionEntity.getBody();
 
-					if (chatCompletion == null) {
-						logger.warn("No chat completion returned for prompt: {}", prompt);
-						return new ChatResponse(List.of());
-					}
+				if (chatCompletion == null) {
+					logger.warn("No chat completion returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-					final Map<String, Object> metadata = Map.of("id", chatCompletion.id() != null ? chatCompletion.id() : "",
-							"role", chatCompletion.message().role() != null ? chatCompletion.message().role().name() : "",
-							"finishReason",
-							chatCompletion.finishReason() != null ? chatCompletion.finishReason().name() : "");
+				final Map<String, Object> metadata = Map.of("id",
+						chatCompletion.id() != null ? chatCompletion.id() : "", "role",
+						chatCompletion.message().role() != null ? chatCompletion.message().role().name() : "",
+						"finishReason",
+						chatCompletion.finishReason() != null ? chatCompletion.finishReason().name() : "");
 
-					List<Generation> generations = new ArrayList<>();
+				List<Generation> generations = new ArrayList<>();
 
-					if (chatCompletion.finishReason() == null) { // Just for secure
-						logger.warn("No chat completion finishReason returned for prompt: {}", prompt);
-						return new ChatResponse(List.of());
-					}
+				if (chatCompletion.finishReason() == null) { // Just for secure
+					logger.warn("No chat completion finishReason returned for prompt: {}", prompt);
+					return new ChatResponse(List.of());
+				}
 
-					if (chatCompletion.finishReason().equals(CohereApi.ChatCompletionFinishReason.TOOL_CALL)) {
-						var generation = buildGeneration(null, chatCompletion, metadata);
-						generations.add(generation);
-					} else {
-						generations = chatCompletion.message().content().stream().map(content -> buildGeneration(content, chatCompletion, metadata)).toList();
-					}
+				if (chatCompletion.finishReason().equals(CohereApi.ChatCompletionFinishReason.TOOL_CALL)) {
+					var generation = buildGeneration(null, chatCompletion, metadata);
+					generations.add(generation);
+				}
+				else {
+					generations = chatCompletion.message()
+						.content()
+						.stream()
+						.map(content -> buildGeneration(content, chatCompletion, metadata))
+						.toList();
+				}
 
-					DefaultUsage usage = getDefaultUsage(completionEntity.getBody().usage());
-					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
+				DefaultUsage usage = getDefaultUsage(completionEntity.getBody().usage());
+				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
 
-					ChatResponse chatResponse = new ChatResponse(generations,
-							from(completionEntity.getBody(), cumulativeUsage));
+				ChatResponse chatResponse = new ChatResponse(generations,
+						from(completionEntity.getBody(), cumulativeUsage));
 
-					observationContext.setResponse(chatResponse);
+				observationContext.setResponse(chatResponse);
 
-					return chatResponse;
-				});
+				return chatResponse;
+			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
 				return ChatResponse.builder()
-						.from(response)
-						.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-						.build();
+					.from(response)
+					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+					.build();
 			}
 			else {
 				// remove tools actions before
 				ChatOptions chatOptions = CohereChatOptions.fromOptions2(prompt.getOptions().copy());
 				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), chatOptions),
-						null);
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), chatOptions), null);
 			}
 		}
 
@@ -474,49 +461,12 @@ public class CohereChatModel implements ChatModel {
 	/**
 	 * Accessible for testing.
 	 */
-	CohereApi.ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
-		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
-			if (message instanceof UserMessage userMessage) {
-				Object content = message.getText();
-
-				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-					List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
-							List.of(new ChatCompletionMessage.MediaContent(message.getText())));
-
-					contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
-
-					content = contentList;
-				}
-
-				return List.of(new ChatCompletionMessage(content, Role.USER));
-			}
-			else if (message instanceof SystemMessage systemMessage) {
-				return List.of(new ChatCompletionMessage(systemMessage.getText(), Role.SYSTEM));
-			}
-			else if (message instanceof AssistantMessage assistantMessage) {
-				List<ToolCall> toolCalls = null;
-				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					toolCalls = assistantMessage.getToolCalls().stream().map(toolCall -> {
-						var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
-						return new ToolCall(toolCall.id(), toolCall.type(), function, null);
-					}).toList();
-				}
-
-				return List.of(new ChatCompletionMessage(assistantMessage.getText(), Role.ASSISTANT, toolCalls));
-			}
-			else if (message instanceof ToolResponseMessage toolResponseMessage) {
-				toolResponseMessage.getResponses()
-					.forEach(response -> Assert.isTrue(response.id() != null, "ToolResponseMessage must have an id"));
-
-				return toolResponseMessage.getResponses()
-					.stream()
-					.map(toolResponse -> new ChatCompletionMessage(toolResponse.responseData(), Role.TOOL, toolResponse.name(), null, null, toolResponse.id()))
-					.toList();
-			}
-			else {
-				throw new IllegalStateException("Unexpected message type: " + message);
-			}
-		}).flatMap(List::stream).toList();
+	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
+		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions()
+			.stream()
+			.map(this::convertToCohereMessage)
+			.flatMap(List::stream)
+			.toList();
 
 		var request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
@@ -532,6 +482,88 @@ public class CohereChatModel implements ChatModel {
 		}
 
 		return request;
+	}
+
+	/**
+	 * Convert a Spring AI message to Cohere API message(s).
+	 * @param message the Spring AI message to convert
+	 * @return list of Cohere ChatCompletionMessage(s)
+	 */
+	private List<ChatCompletionMessage> convertToCohereMessage(Message message) {
+		return switch (message.getMessageType()) {
+			case USER -> convertUserMessage(message);
+			case ASSISTANT -> convertAssistantMessage(message);
+			case SYSTEM -> convertSystemMessage(message);
+			case TOOL -> convertToolMessage(message);
+		};
+	}
+
+	/**
+	 * Convert a USER message.
+	 */
+	private List<ChatCompletionMessage> convertUserMessage(org.springframework.ai.chat.messages.Message message) {
+		Object content = message.getText();
+
+		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
+			List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
+					List.of(new ChatCompletionMessage.MediaContent(message.getText())));
+
+			contentList.addAll(userMessage.getMedia().stream().map(this::mapToMediaContent).toList());
+
+			content = contentList;
+		}
+
+		return List.of(new ChatCompletionMessage(content, Role.USER));
+	}
+
+	/**
+	 * Convert an ASSISTANT message.
+	 */
+	private List<ChatCompletionMessage> convertAssistantMessage(org.springframework.ai.chat.messages.Message message) {
+		if (!(message instanceof AssistantMessage assistantMessage)) {
+			throw new IllegalArgumentException("Unsupported assistant message class: " + message.getClass().getName());
+		}
+
+		List<ToolCall> toolCalls = null;
+		if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+			toolCalls = convertToolCalls(assistantMessage.getToolCalls());
+		}
+
+		return List.of(new ChatCompletionMessage(assistantMessage.getText(), Role.ASSISTANT, toolCalls));
+	}
+
+	/**
+	 * Convert tool calls.
+	 */
+	private List<ToolCall> convertToolCalls(List<AssistantMessage.ToolCall> springToolCalls) {
+		return springToolCalls.stream().map(toolCall -> {
+			var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
+			return new ToolCall(toolCall.id(), toolCall.type(), function, null);
+		}).toList();
+	}
+
+	/**
+	 * Convert a SYSTEM message.
+	 */
+	private List<ChatCompletionMessage> convertSystemMessage(org.springframework.ai.chat.messages.Message message) {
+		return List.of(new ChatCompletionMessage(message.getText(), Role.SYSTEM));
+	}
+
+	/**
+	 * Convert a TOOL response message to Cohere format. Validates that all tool responses
+	 * have an ID.
+	 */
+	private List<ChatCompletionMessage> convertToolMessage(Message message) {
+
+		if (!(message instanceof ToolResponseMessage toolResponseMessage)) {
+			throw new IllegalArgumentException("Unsupported tool message class: " + message.getClass().getName());
+		}
+
+		return toolResponseMessage.getResponses().stream().map(toolResponse -> {
+			Assert.notNull(toolResponse.id(), "ToolResponseMessage.ToolResponse must have an id");
+			return new ChatCompletionMessage(toolResponse.responseData(), Role.TOOL, toolResponse.name(), null, null,
+					toolResponse.id());
+		}).toList();
 	}
 
 	private ChatCompletionMessage.MediaContent mapToMediaContent(Media media) {

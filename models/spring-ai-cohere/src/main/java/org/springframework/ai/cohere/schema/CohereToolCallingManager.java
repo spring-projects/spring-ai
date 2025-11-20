@@ -70,17 +70,16 @@ public class CohereToolCallingManager implements ToolCallingManager {
 
 		List<ToolDefinition> toolDefinitions = this.delegateToolCallingManager.resolveToolDefinitions(chatOptions);
 
-		/*return toolDefinitions.stream().map(td -> {
-			ObjectNode jsonSchema = JsonSchemaConverter.fromJson(td.inputSchema());
-			ObjectNode openApiSchema = JsonSchemaConverter.convertToOpenApiSchema(jsonSchema);
-			JsonSchemaGenerator.convertTypeValuesToUpperCase(openApiSchema);
-
-			return DefaultToolDefinition.builder()
-				.name(td.name())
-				.description(td.description())
-				.inputSchema(openApiSchema.toPrettyString())
-				.build();
-		}).toList();*/
+		/*
+		 * return toolDefinitions.stream().map(td -> { ObjectNode jsonSchema =
+		 * JsonSchemaConverter.fromJson(td.inputSchema()); ObjectNode openApiSchema =
+		 * JsonSchemaConverter.convertToOpenApiSchema(jsonSchema);
+		 * JsonSchemaGenerator.convertTypeValuesToUpperCase(openApiSchema);
+		 *
+		 * return DefaultToolDefinition.builder() .name(td.name())
+		 * .description(td.description()) .inputSchema(openApiSchema.toPrettyString())
+		 * .build(); }).toList();
+		 */
 		return List.of();
 	}
 

@@ -91,13 +91,15 @@ public class PaymentStatusFunctionCallingIT {
 
 		CohereApi cohereApi = CohereApi.builder().apiKey(System.getenv("COHERE_API_KEY")).build();
 
-		ResponseEntity<ChatCompletion> response = cohereApi.chatCompletionEntity(new ChatCompletionRequest(messages,
-				CohereApi.ChatModel.COMMAND_A_R7B.getValue(), List.of(paymentStatusTool, paymentDateTool), ToolChoice.REQUIRED));
+		ResponseEntity<ChatCompletion> response = cohereApi
+			.chatCompletionEntity(new ChatCompletionRequest(messages, CohereApi.ChatModel.COMMAND_A_R7B.getValue(),
+					List.of(paymentStatusTool, paymentDateTool), ToolChoice.REQUIRED));
 
 		ChatCompletion chatCompletion = response.getBody();
 
 		ChatCompletionMessage responseMessage = new ChatCompletionMessage(chatCompletion.message().content(),
-				chatCompletion.message().role(), chatCompletion.message().toolPlan(), chatCompletion.message().toolCalls(), chatCompletion.message().citations(), null);
+				chatCompletion.message().role(), chatCompletion.message().toolPlan(),
+				chatCompletion.message().toolCalls(), chatCompletion.message().citations(), null);
 
 		assertThat(responseMessage.role()).isEqualTo(Role.ASSISTANT);
 		assertThat(responseMessage.toolCalls()).isNotNull();
@@ -116,7 +118,8 @@ public class PaymentStatusFunctionCallingIT {
 
 			// Extend conversation with function response.
 			// The functionName is used to identify the function response!
-			messages.add(new ChatCompletionMessage(result.toString(), Role.TOOL, functionName, null, responseMessage.citations(), toolCall.id()));
+			messages.add(new ChatCompletionMessage(result.toString(), Role.TOOL, functionName, null,
+					responseMessage.citations(), toolCall.id()));
 		}
 
 		response = cohereApi
