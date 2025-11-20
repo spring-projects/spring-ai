@@ -16,8 +16,10 @@
 
 package org.springframework.ai.model;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,7 +85,7 @@ public abstract class ModelOptionsUtils {
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
 
-	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
+	private static final ConcurrentHashMap<Class<?>, JsonPropertyResult> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
 
 	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
@@ -182,10 +184,14 @@ public abstract class ModelOptionsUtils {
 		}
 
 		List<String> requestFieldNames = CollectionUtils.isEmpty(acceptedFieldNames)
-				? REQUEST_FIELD_NAMES_PER_CLASS.computeIfAbsent(clazz, ModelOptionsUtils::getJsonPropertyValues)
+				? REQUEST_FIELD_NAMES_PER_CLASS.computeIfAbsent(clazz, ModelOptionsUtils::getJsonPropertyResult)
+				.properties()
 				: acceptedFieldNames;
 
-		if (CollectionUtils.isEmpty(requestFieldNames)) {
+		boolean acceptAllFields = REQUEST_FIELD_NAMES_PER_CLASS.containsKey(clazz)
+				&& REQUEST_FIELD_NAMES_PER_CLASS.get(clazz).acceptAllFields;
+
+		if (!acceptAllFields && CollectionUtils.isEmpty(requestFieldNames)) {
 			throw new IllegalArgumentException("No @JsonProperty fields found in the " + clazz.getName());
 		}
 
@@ -199,7 +205,7 @@ public abstract class ModelOptionsUtils {
 
 		targetMap = targetMap.entrySet()
 			.stream()
-			.filter(e -> requestFieldNames.contains(e.getKey()))
+			.filter(e -> acceptAllFields || requestFieldNames.contains(e.getKey()))
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		return ModelOptionsUtils.mapToClass(targetMap, clazz);
@@ -263,20 +269,33 @@ public abstract class ModelOptionsUtils {
 	}
 
 	/**
-	 * Returns the list of name values of the {@link JsonProperty} annotations.
+	 * Returns the result contains tag of accept all fields or list of json fields.
 	 * @param clazz the class that contains fields annotated with {@link JsonProperty}.
-	 * @return the list of values of the {@link JsonProperty} annotations.
+	 * @return the result contains tag of method has {@link JsonAnyGetter} annotation or
+	 * list of values of the {@link JsonProperty} annotations.
 	 */
-	public static List<String> getJsonPropertyValues(Class<?> clazz) {
+	public static JsonPropertyResult getJsonPropertyResult(Class<?> clazz) {
 		List<String> values = new ArrayList<>();
 		Field[] fields = clazz.getDeclaredFields();
+		Method[] methods = clazz.getDeclaredMethods();
+		boolean hasAnyGetter = false;
+
+		for (Method method : methods) {
+			// Iterate through the method to check JsonAnyGetter annotation to ensure that unknown parameters can be copied
+			JsonAnyGetter anyGetterAnnotation = method.getAnnotation(JsonAnyGetter.class);
+			if (anyGetterAnnotation != null) {
+				hasAnyGetter = true;
+				return new JsonPropertyResult(hasAnyGetter, values);
+			}
+		}
+
 		for (Field field : fields) {
 			JsonProperty jsonPropertyAnnotation = field.getAnnotation(JsonProperty.class);
 			if (jsonPropertyAnnotation != null) {
 				values.add(jsonPropertyAnnotation.value());
 			}
 		}
-		return values;
+		return new JsonPropertyResult(false, values);
 	}
 
 	/**
@@ -452,4 +471,10 @@ public abstract class ModelOptionsUtils {
 		return ObjectUtils.isEmpty(runtimeValue) ? defaultValue : runtimeValue;
 	}
 
+	/**
+	 * Record the decision result of {@link #getJsonPropertyResult(Class)}
+	 * @param acceptAllFields  the current class allows tags for all properties
+	 * @param properties list of properties allowed by the current class
+	 */
+	public record JsonPropertyResult(boolean acceptAllFields, List<String> properties) {}
 }
