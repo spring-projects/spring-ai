@@ -36,6 +36,16 @@ public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeec
 		return (output != null) ? output : new byte[0];
 	}
 
+	default byte[] call(String text, TextToSpeechOptions options) {
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt(text, options);
+		ModelResult<byte[]> result = call(prompt).getResult();
+		if (result == null) {
+			return new byte[0];
+		}
+		byte[] output = result.getOutput();
+		return (output != null) ? output : new byte[0];
+	}
+
 	@Override
 	TextToSpeechResponse call(TextToSpeechPrompt prompt);
 
