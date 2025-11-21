@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,12 +32,14 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -53,6 +56,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -204,6 +208,98 @@ class GoogleGenAiChatModelIT {
 		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void beanOutputConverterRecordsWithResponseSchema() {
+		// Use the Google GenAI API to set the response schema
+		beanOutputConverterRecordsWithStructuredOutput(jsonSchema -> GoogleGenAiChatOptions.builder()
+			.responseSchema(jsonSchema)
+			.responseMimeType("application/json")
+			.build());
+	}
+
+	@Test
+	void beanOutputConverterRecordsWithOutputSchema() {
+		// Use the unified Spring AI API (StructuredOutputChatOptions) to set the output
+		// schema.
+		beanOutputConverterRecordsWithStructuredOutput(
+				jsonSchema -> GoogleGenAiChatOptions.builder().outputSchema(jsonSchema).build());
+	}
+
+	private void beanOutputConverterRecordsWithStructuredOutput(Function<String, ChatOptions> chatOptionsProvider) {
+
+		BeanOutputConverter<ActorsFilmsRecord> outputConvert = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+
+		String schema = outputConvert.getJsonSchema();
+
+		Prompt prompt = Prompt.builder()
+			.content("Generate the filmography of 5 movies for Tom Hanks.")
+			.chatOptions(chatOptionsProvider.apply(schema))
+			.build();
+
+		Generation generation = this.chatModel.call(prompt).getResult();
+
+		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecords() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecordsNative() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			// forces native structured output handling
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void listOutputConverterBean() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void listOutputConverterBeanNative() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
 	}
 
 	@Test

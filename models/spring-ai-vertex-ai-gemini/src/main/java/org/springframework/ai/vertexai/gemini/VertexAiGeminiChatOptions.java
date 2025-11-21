@@ -29,11 +29,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
+import org.springframework.ai.vertexai.gemini.schema.JsonSchemaConverter;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -48,7 +52,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
+public class VertexAiGeminiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	// https://cloud.google.com/vertex-ai/docs/reference/rest/v1/GenerationConfig
 
@@ -119,7 +123,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
-	 * Optional. OpenAPI response schema.
+	 * Optional. Geminie response schema.
 	 */
 	private @JsonProperty("responseSchema") String responseSchema;
 
@@ -389,6 +393,22 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	public String getOutputSchema() {
+		return this.getResponseSchema();
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String jsonSchemaText) {
+		ObjectNode jsonSchema = JsonSchemaConverter.fromJson(jsonSchemaText);
+		ObjectNode openApiSchema = JsonSchemaConverter.convertToOpenApiSchema(jsonSchema);
+		JsonSchemaGenerator.convertTypeValuesToUpperCase(openApiSchema);
+
+		this.setResponseSchema(openApiSchema.toPrettyString());
+		this.setResponseMimeType("application/json");
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
 			return true;
@@ -512,6 +532,11 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions {
 
 		public Builder responseSchema(String responseSchema) {
 			this.options.setResponseSchema(responseSchema);
+			return this;
+		}
+
+		public Builder outputSchema(String outputSchema) {
+			this.options.setOutputSchema(outputSchema);
 			return this;
 		}
 

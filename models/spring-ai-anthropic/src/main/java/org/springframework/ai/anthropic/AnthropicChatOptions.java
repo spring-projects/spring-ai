@@ -32,8 +32,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.OutputFormat;
 import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.api.CitationDocument;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -51,7 +54,7 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 @JsonInclude(Include.NON_NULL)
-public class AnthropicChatOptions implements ToolCallingChatOptions {
+public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	// @formatter:off
 	private @JsonProperty("model") String model;
@@ -115,6 +118,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, String> httpHeaders = new HashMap<>();
 
+	/**
+	 * The desired response format for structured output.
+	 */
+	private @JsonProperty("output_format") OutputFormat outputFormat;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -141,6 +149,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.cacheOptions(fromOptions.getCacheOptions())
 			.citationDocuments(fromOptions.getCitationDocuments() != null
 					? new ArrayList<>(fromOptions.getCitationDocuments()) : null)
+			.outputFormat(fromOptions.getOutputFormat())
 			.build();
 	}
 
@@ -325,6 +334,27 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		}
 	}
 
+	public OutputFormat getOutputFormat() {
+		return this.outputFormat;
+	}
+
+	public void setOutputFormat(OutputFormat outputFormat) {
+		Assert.notNull(outputFormat, "outputFormat cannot be null");
+		this.outputFormat = outputFormat;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getOutputSchema() {
+		return this.getOutputFormat() != null ? ModelOptionsUtils.toJsonString(this.getOutputFormat().schema()) : null;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String outputSchema) {
+		this.setOutputFormat(new OutputFormat(outputSchema));
+	}
+
 	@Override
 	@SuppressWarnings("unchecked")
 	public AnthropicChatOptions copy() {
@@ -351,6 +381,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
+				&& Objects.equals(this.outputFormat, that.outputFormat)
 				&& Objects.equals(this.citationDocuments, that.citationDocuments);
 	}
 
@@ -359,7 +390,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.toolChoice, this.thinking, this.toolCallbacks, this.toolNames,
 				this.internalToolExecutionEnabled, this.toolContext, this.httpHeaders, this.cacheOptions,
-				this.citationDocuments);
+				this.outputFormat, this.citationDocuments);
 	}
 
 	public static final class Builder {
@@ -498,6 +529,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		public Builder addCitationDocument(CitationDocument document) {
 			Assert.notNull(document, "Citation document cannot be null");
 			this.options.citationDocuments.add(document);
+			return this;
+		}
+
+		public Builder outputFormat(OutputFormat outputFormat) {
+			this.options.outputFormat = outputFormat;
+			return this;
+		}
+
+		public Builder outputSchema(String outputSchema) {
+			this.options.setOutputSchema(outputSchema);
 			return this;
 		}
 
