@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.oracle;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -71,8 +72,12 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 public class OracleVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE).withCopyFileToContainer(
-			MountableFile.forClasspathResource("/initialize.sql"), "/container-entrypoint-initdb.d/initialize.sql");
+	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
+		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
+				"/container-entrypoint-initdb.d/initialize.sql")
+		.withStartupTimeout(Duration.ofMinutes(5))
+		.withStartupAttempts(3)
+		.withSharedMemorySize(2L * 1024L * 1024L * 1024L); // 2GB shared memory
 
 	final List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
