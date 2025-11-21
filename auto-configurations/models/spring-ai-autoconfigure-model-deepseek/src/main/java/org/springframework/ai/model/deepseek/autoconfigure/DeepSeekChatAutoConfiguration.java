@@ -36,7 +36,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.RestClientCustomizer;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
@@ -60,6 +62,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.DEEPSEEK,
 		matchIfMissing = true)
 public class DeepSeekChatAutoConfiguration {
+
+	@Bean
+	@ConditionalOnMissingBean(name = "deepSeekRestClientCustomizer")
+	@ConditionalOnProperty(prefix = "spring.ai.deepseek.http-client", name = "enabled", havingValue = "true",
+			matchIfMissing = true)
+	public RestClientCustomizer deepSeekRestClientCustomizer(DeepSeekConnectionProperties connectionProperties,
+			ObjectProvider<SslBundles> sslBundles) {
+		return new DeepSeekRestClientCustomizer(connectionProperties.getHttpClient(), sslBundles.getIfAvailable());
+	}
 
 	@Bean
 	@ConditionalOnMissingBean
