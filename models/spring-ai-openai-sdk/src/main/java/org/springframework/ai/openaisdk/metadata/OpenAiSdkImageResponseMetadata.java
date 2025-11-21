@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 package org.springframework.ai.openaisdk.metadata;
 
+import java.util.Objects;
+
 import com.openai.models.images.ImagesResponse;
+
 import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.util.Assert;
-
-import java.util.Objects;
 
 /**
  * Represents the metadata for image response using the OpenAI Java SDK.
@@ -56,7 +57,7 @@ public class OpenAiSdkImageResponseMetadata extends ImageResponseMetadata {
 
 	@Override
 	public String toString() {
-		return "OpenAiSdkImageResponseMetadata{" + "created=" + created + '}';
+		return "OpenAiSdkImageResponseMetadata{" + "created=" + this.created + '}';
 	}
 
 	@Override

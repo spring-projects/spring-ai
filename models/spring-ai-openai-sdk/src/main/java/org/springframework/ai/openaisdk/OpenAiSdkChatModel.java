@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,16 @@
 
 package org.springframework.ai.openaisdk;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
@@ -25,13 +35,32 @@ import com.openai.models.ReasoningEffort;
 import com.openai.models.ResponseFormatJsonObject;
 import com.openai.models.ResponseFormatJsonSchema;
 import com.openai.models.ResponseFormatText;
-import com.openai.models.chat.completions.*;
+import com.openai.models.chat.completions.ChatCompletion;
+import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
+import com.openai.models.chat.completions.ChatCompletionChunk;
+import com.openai.models.chat.completions.ChatCompletionContentPart;
+import com.openai.models.chat.completions.ChatCompletionContentPartImage;
+import com.openai.models.chat.completions.ChatCompletionContentPartInputAudio;
+import com.openai.models.chat.completions.ChatCompletionContentPartText;
+import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionFunctionTool;
+import com.openai.models.chat.completions.ChatCompletionMessage;
+import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
+import com.openai.models.chat.completions.ChatCompletionMessageParam;
+import com.openai.models.chat.completions.ChatCompletionMessageToolCall;
+import com.openai.models.chat.completions.ChatCompletionStreamOptions;
+import com.openai.models.chat.completions.ChatCompletionTool;
+import com.openai.models.chat.completions.ChatCompletionToolMessageParam;
+import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import com.openai.models.completions.CompletionUsage;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -58,26 +87,12 @@ import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.openaisdk.setup.OpenAiSdkSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-
-import static org.springframework.ai.openaisdk.setup.OpenAiSdkSetup.setupAsyncClient;
-import static org.springframework.ai.openaisdk.setup.OpenAiSdkSetup.setupSyncClient;
 
 /**
  * Chat Model implementation using the OpenAI Java SDK.
@@ -199,14 +214,15 @@ public class OpenAiSdkChatModel implements ChatModel {
 			this.options = options;
 		}
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
-				() -> setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(), this.options.getCredential(),
-						this.options.getAzureDeploymentName(), this.options.getAzureOpenAIServiceVersion(),
-						this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
-						this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
-						this.options.getProxy(), this.options.getCustomHeaders()));
+				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getAzureDeploymentName(),
+						this.options.getAzureOpenAIServiceVersion(), this.options.getOrganizationId(),
+						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
 
 		this.openAiClientAsync = Objects.requireNonNullElseGet(openAiClientAsync,
-				() -> setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+				() -> OpenAiSdkSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getAzureDeploymentName(),
 						this.options.getAzureOpenAIServiceVersion(), this.options.getOrganizationId(),
 						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
@@ -326,11 +342,13 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @return the assistant message, or null if not available
 	 */
 	public AssistantMessage safeAssistantMessage(ChatResponse response) {
-		if (response == null)
+		if (response == null) {
 			return null;
+		}
 		Generation gen = response.getResult();
-		if (gen == null)
+		if (gen == null) {
 			return null;
+		}
 		return gen.getOutput();
 	}
 
@@ -383,10 +401,12 @@ public class OpenAiSdkChatModel implements ChatModel {
 						sink.error(e);
 					}
 				}).onCompleteFuture().whenComplete((unused, throwable) -> {
-					if (throwable != null)
+					if (throwable != null) {
 						sink.error(throwable);
-					else
+					}
+					else {
 						sink.complete();
+					}
 				});
 			}).buffer(2, 1).map(buffer -> {
 				ChatResponse first = buffer.get(0);
@@ -406,8 +426,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			return flux.collectList().flatMapMany(list -> {
-				if (list.isEmpty())
+				if (list.isEmpty()) {
 					return Flux.empty();
+				}
 				boolean hasToolCalls = list.stream()
 					.map(this::safeAssistantMessage)
 					.filter(Objects::nonNull)
@@ -433,12 +454,15 @@ public class OpenAiSdkChatModel implements ChatModel {
 				Map<String, Object> props = new HashMap<>();
 				for (ChatResponse chatResponse : list) {
 					AssistantMessage am = safeAssistantMessage(chatResponse);
-					if (am == null)
+					if (am == null) {
 						continue;
-					if (am.getText() != null)
+					}
+					if (am.getText() != null) {
 						text.append(am.getText());
-					if (am.getMetadata() != null)
+					}
+					if (am.getMetadata() != null) {
 						props.putAll(am.getMetadata());
+					}
 					if (!CollectionUtils.isEmpty(am.getToolCalls())) {
 						Object ccObj = am.getMetadata().get("chunkChoice");
 						if (ccObj instanceof ChatCompletionChunk.Choice chunkChoice
@@ -468,8 +492,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 							&& generation.getMetadata() != ChatGenerationMetadata.NULL) {
 						finalGenMetadata = generation.getMetadata();
 					}
-					if (chatResponse.getMetadata() != null)
+					if (chatResponse.getMetadata() != null) {
 						finalMetadata = chatResponse.getMetadata();
+					}
 				}
 				List<AssistantMessage.ToolCall> merged = builders.values()
 					.stream()
@@ -497,11 +522,12 @@ public class OpenAiSdkChatModel implements ChatModel {
 						finally {
 							ToolCallReactiveContextHolder.clearContext();
 						}
-						if (tetoolExecutionResult.returnDirect())
+						if (tetoolExecutionResult.returnDirect()) {
 							return Flux.just(ChatResponse.builder()
 								.from(aggregated)
 								.generations(ToolExecutionResult.buildGenerations(tetoolExecutionResult))
 								.build());
+						}
 						return this.internalStream(
 								new Prompt(tetoolExecutionResult.conversationHistory(), prompt.getOptions()),
 								aggregated);
@@ -527,8 +553,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 						.filter(tc -> tc.function().isPresent())
 						.map(tc -> {
 							var funcOpt = tc.function();
-							if (funcOpt.isEmpty())
+							if (funcOpt.isEmpty()) {
 								return null;
+							}
 							var func = funcOpt.get();
 							String id = tc.id().orElse("");
 							String name = func.name().orElse("");
@@ -544,8 +571,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 			toolCalls = message.toolCalls()
 				.map(list -> list.stream().filter(tc -> tc.function().isPresent()).map(tc -> {
 					var opt = tc.function();
-					if (opt.isEmpty())
+					if (opt.isEmpty()) {
 						return null;
+					}
 					var funcCall = opt.get();
 					var functionDef = funcCall.function();
 					String id = funcCall.id();
@@ -1104,7 +1132,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 		private String jsonSchema;
 
 		public Type getType() {
-			return type;
+			return this.type;
 		}
 
 		public void setType(Type type) {
@@ -1112,7 +1140,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 		}
 
 		public String getJsonSchema() {
-			return jsonSchema;
+			return this.jsonSchema;
 		}
 
 		public void setJsonSchema(String jsonSchema) {
@@ -1201,7 +1229,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 		}
 
 		AssistantMessage.ToolCall build() {
-			return new AssistantMessage.ToolCall(id, type, name, arguments.toString());
+			return new AssistantMessage.ToolCall(this.id, this.type, this.name, this.arguments.toString());
 		}
 
 	}

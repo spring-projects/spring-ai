@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -36,7 +37,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.openaisdk.OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL;
 
 /**
  * Integration tests for the response format in {@link OpenAiSdkChatModel}.
@@ -114,7 +114,7 @@ public class OpenAiSdkChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiSdkChatOptions.builder()
-					.model(DEFAULT_CHAT_MODEL)
+					.model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL)
 					.responseFormat(OpenAiSdkChatModel.ResponseFormat.builder()
 						.type(OpenAiSdkChatModel.ResponseFormat.Type.JSON_SCHEMA)
 						.jsonSchema(jsonSchema)
@@ -160,7 +160,7 @@ public class OpenAiSdkChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiSdkChatOptions.builder()
-					.model(DEFAULT_CHAT_MODEL)
+					.model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL)
 					.responseFormat(OpenAiSdkChatModel.ResponseFormat.builder().jsonSchema(jsonSchema).build())
 					.build());
 
@@ -241,7 +241,7 @@ public class OpenAiSdkChatModelResponseFormatIT {
 
 		Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
 				OpenAiSdkChatOptions.builder()
-					.model(DEFAULT_CHAT_MODEL)
+					.model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL)
 					.responseFormat(OpenAiSdkChatModel.ResponseFormat.builder().jsonSchema(jsonSchema1).build())
 					.build());
 

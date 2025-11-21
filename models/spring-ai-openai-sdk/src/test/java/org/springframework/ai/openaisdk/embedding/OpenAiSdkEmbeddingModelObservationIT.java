@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,21 @@
 
 package org.springframework.ai.openaisdk.embedding;
 
+import java.util.List;
+
+import com.openai.models.embeddings.EmbeddingModel;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingModel;
@@ -33,12 +39,7 @@ import org.springframework.ai.openaisdk.OpenAiSdkTestConfigurationWithObservabil
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.List;
-
-import static com.openai.models.embeddings.EmbeddingModel.TEXT_EMBEDDING_3_SMALL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link OpenAiSdkEmbeddingModel}.
@@ -63,7 +64,7 @@ public class OpenAiSdkEmbeddingModelObservationIT {
 	@Test
 	void observationForEmbeddingOperation() {
 		var options = OpenAiSdkEmbeddingOptions.builder()
-			.model(TEXT_EMBEDDING_3_SMALL.toString())
+			.model(EmbeddingModel.TEXT_EMBEDDING_3_SMALL.toString())
 			.dimensions(1536)
 			.build();
 
@@ -79,12 +80,12 @@ public class OpenAiSdkEmbeddingModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("embedding " + TEXT_EMBEDDING_3_SMALL)
+			.hasContextualNameEqualTo("embedding " + EmbeddingModel.TEXT_EMBEDDING_3_SMALL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.EMBEDDING.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI_SDK.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					TEXT_EMBEDDING_3_SMALL.toString())
+					EmbeddingModel.TEXT_EMBEDDING_3_SMALL.toString())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_EMBEDDING_DIMENSIONS.asString(), "1536")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),

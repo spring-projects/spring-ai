@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,10 @@
 package org.springframework.ai.openaisdk;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
+
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
-
-import static org.springframework.ai.openaisdk.OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL;
-import static org.springframework.ai.openaisdk.OpenAiSdkEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
-import static org.springframework.ai.openaisdk.OpenAiSdkImageOptions.DEFAULT_IMAGE_MODEL;
 
 /**
  * Context configuration for OpenAI Java SDK tests.
@@ -41,18 +38,21 @@ public class OpenAiSdkTestConfigurationWithObservability {
 	@Bean
 	public OpenAiSdkEmbeddingModel openAiEmbeddingModel(TestObservationRegistry observationRegistry) {
 		return new OpenAiSdkEmbeddingModel(MetadataMode.EMBED,
-				OpenAiSdkEmbeddingOptions.builder().model(DEFAULT_EMBEDDING_MODEL).build(), observationRegistry);
+				OpenAiSdkEmbeddingOptions.builder().model(OpenAiSdkEmbeddingOptions.DEFAULT_EMBEDDING_MODEL).build(),
+				observationRegistry);
 	}
 
 	@Bean
 	public OpenAiSdkImageModel openAiImageModel(TestObservationRegistry observationRegistry) {
-		return new OpenAiSdkImageModel(OpenAiSdkImageOptions.builder().model(DEFAULT_IMAGE_MODEL).build(),
+		return new OpenAiSdkImageModel(
+				OpenAiSdkImageOptions.builder().model(OpenAiSdkImageOptions.DEFAULT_IMAGE_MODEL).build(),
 				observationRegistry);
 	}
 
 	@Bean
 	public OpenAiSdkChatModel openAiChatModel(TestObservationRegistry observationRegistry) {
-		return new OpenAiSdkChatModel(OpenAiSdkChatOptions.builder().model(DEFAULT_CHAT_MODEL).build(),
+		return new OpenAiSdkChatModel(
+				OpenAiSdkChatOptions.builder().model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL).build(),
 				observationRegistry);
 	}
 
