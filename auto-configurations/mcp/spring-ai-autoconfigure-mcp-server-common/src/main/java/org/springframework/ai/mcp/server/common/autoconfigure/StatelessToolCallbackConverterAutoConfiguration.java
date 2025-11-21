@@ -51,9 +51,11 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 			matchIfMissing = true)
 	public List<McpStatelessServerFeatures.SyncToolSpecification> syncTools(
 			ObjectProvider<List<ToolCallback>> toolCalls, List<ToolCallback> toolCallbackList,
-			List<ToolCallbackProvider> toolCallbackProvider, McpServerProperties serverProperties) {
+			ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
 
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, toolCallbackProvider);
+		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, tcbProviderList,
+				tcbProviders);
 
 		return this.toSyncToolSpecifications(tools, serverProperties);
 	}
@@ -81,9 +83,11 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public List<McpStatelessServerFeatures.AsyncToolSpecification> asyncTools(
 			ObjectProvider<List<ToolCallback>> toolCalls, List<ToolCallback> toolCallbackList,
-			List<ToolCallbackProvider> toolCallbackProvider, McpServerProperties serverProperties) {
+			ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
 
-		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, toolCallbackProvider);
+		List<ToolCallback> tools = this.aggregateToolCallbacks(toolCalls, toolCallbackList, tcbProviderList,
+				tcbProviders);
 
 		return this.toAsyncToolSpecification(tools, serverProperties);
 	}
@@ -107,15 +111,24 @@ public class StatelessToolCallbackConverterAutoConfiguration {
 	}
 
 	private List<ToolCallback> aggregateToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
-			List<ToolCallback> toolCallbacksList, List<ToolCallbackProvider> toolCallbackProvider) {
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders) {
+
+		// Merge ToolCallbackProviders from both ObjectProviders.
+		List<ToolCallbackProvider> totalToolCallbackProviders = new ArrayList<>(
+				tcbProviderList.stream().flatMap(List::stream).toList());
+		totalToolCallbackProviders.addAll(tcbProviders.stream().toList());
+
+		// De-duplicate ToolCallbackProviders
+		totalToolCallbackProviders = totalToolCallbackProviders.stream().distinct().toList();
 
 		List<ToolCallback> tools = new ArrayList<>(toolCalls.stream().flatMap(List::stream).toList());
 
-		if (!CollectionUtils.isEmpty(toolCallbacksList)) {
-			tools.addAll(toolCallbacksList);
+		if (!CollectionUtils.isEmpty(toolCallbackList)) {
+			tools.addAll(toolCallbackList);
 		}
 
-		List<ToolCallback> providerToolCallbacks = toolCallbackProvider.stream()
+		List<ToolCallback> providerToolCallbacks = totalToolCallbackProviders.stream()
 			.map(pr -> List.of(pr.getToolCallbacks()))
 			.flatMap(List::stream)
 			.filter(fc -> fc instanceof ToolCallback)

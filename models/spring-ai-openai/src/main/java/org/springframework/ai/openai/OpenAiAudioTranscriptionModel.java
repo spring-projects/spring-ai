@@ -30,8 +30,8 @@ import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResp
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.Resource;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -63,7 +63,7 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	public OpenAiAudioTranscriptionModel(OpenAiAudioApi audioApi) {
 		this(audioApi,
 				OpenAiAudioTranscriptionOptions.builder()
-					.model(OpenAiAudioApi.WhisperModel.WHISPER_1.getValue())
+					.model(OpenAiAudioApi.TranscriptionModels.WHISPER_1.getValue())
 					.responseFormat(OpenAiAudioApi.TranscriptResponseFormat.JSON)
 					.temperature(0.7f)
 					.build());
@@ -112,8 +112,14 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		if (request.responseFormat().isJsonType()) {
 
-			ResponseEntity<StructuredResponse> transcriptionEntity = this.retryTemplate
-				.execute(ctx -> this.audioApi.createTranscription(request, StructuredResponse.class));
+			ResponseEntity<StructuredResponse> transcriptionEntity;
+			try {
+				transcriptionEntity = this.retryTemplate
+					.execute(() -> this.audioApi.createTranscription(request, StructuredResponse.class));
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Error calling OpenAI transcription API", e);
+			}
 
 			var transcription = transcriptionEntity.getBody();
 
@@ -133,8 +139,14 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		}
 		else {
 
-			ResponseEntity<String> transcriptionEntity = this.retryTemplate
-				.execute(ctx -> this.audioApi.createTranscription(request, String.class));
+			ResponseEntity<String> transcriptionEntity;
+			try {
+				transcriptionEntity = this.retryTemplate
+					.execute(() -> this.audioApi.createTranscription(request, String.class));
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Error calling OpenAI transcription API", e);
+			}
 
 			var transcription = transcriptionEntity.getBody();
 

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
@@ -62,9 +63,11 @@ import reactor.netty.http.server.HttpServer;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
@@ -81,19 +84,24 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 public class StreamableWebClientWebFluxServerIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(StreamableWebClientWebFluxServerIT.class);
 
+	private static final JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new ObjectMapper());
+
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class));
+				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
+				McpServerStreamableHttpWebFluxAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
-				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class));
+				McpClientAutoConfiguration.class, McpClientAnnotationScannerAutoConfiguration.class,
+				StreamableHttpWebFluxTransportAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {
@@ -138,14 +146,17 @@ public class StreamableWebClientWebFluxServerIT {
 
 						// tool list
 						assertThat(mcpClient.listTools().tools()).hasSize(2);
-						assertThat(mcpClient.listTools().tools())
-							.contains(Tool.builder().name("tool1").description("tool1 description").inputSchema("""
+						assertThat(mcpClient.listTools().tools()).contains(Tool.builder()
+							.name("tool1")
+							.description("tool1 description")
+							.inputSchema(jsonMapper, """
 									{
 										"": "http://json-schema.org/draft-07/schema#",
 										"type": "object",
 										"properties": {}
 									}
-									""").build());
+									""")
+							.build());
 
 						// Call a tool that sends progress notifications
 						CallToolRequest toolRequest = CallToolRequest.builder()
@@ -173,7 +184,9 @@ public class StreamableWebClientWebFluxServerIT {
 
 						assertThat(calculatorToolResponse.structuredContent()).isNotNull();
 
-						assertThat(calculatorToolResponse.structuredContent()).containsEntry("result", 5.0)
+						assertThat(calculatorToolResponse.structuredContent())
+							.asInstanceOf(map(String.class, Object.class))
+							.containsEntry("result", 5.0)
 							.containsEntry("operation", "2 + 3")
 							.containsEntry("timestamp", "2024-01-01T10:00:00Z");
 
@@ -296,7 +309,7 @@ public class StreamableWebClientWebFluxServerIT {
 
 			// Tool 1
 			McpServerFeatures.SyncToolSpecification tool1 = McpServerFeatures.SyncToolSpecification.builder()
-				.tool(Tool.builder().name("tool1").description("tool1 description").inputSchema("""
+				.tool(Tool.builder().name("tool1").description("tool1 description").inputSchema(jsonMapper, """
 						{
 							"": "http://json-schema.org/draft-07/schema#",
 							"type": "object",
@@ -510,6 +523,7 @@ public class StreamableWebClientWebFluxServerIT {
 					testContext.progressNotifications.add(progressNotification);
 					testContext.progressLatch.countDown();
 				});
+				mcpClientSpec.capabilities(McpSchema.ClientCapabilities.builder().sampling().elicitation().build());
 			};
 		}
 

@@ -31,7 +31,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  * @since 0.8.1
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".*")
@@ -51,7 +52,7 @@ public class MistralAiAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiChatAutoConfiguration.class))
 			.run(context -> {
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
 				String response = chatModel.call("Hello");
@@ -62,7 +63,7 @@ public class MistralAiAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiChatAutoConfiguration.class))
 			.run(context -> {
 				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
@@ -79,7 +80,8 @@ public class MistralAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				MistralAiEmbeddingModel embeddingModel = context.getBean(MistralAiEmbeddingModel.class);
 

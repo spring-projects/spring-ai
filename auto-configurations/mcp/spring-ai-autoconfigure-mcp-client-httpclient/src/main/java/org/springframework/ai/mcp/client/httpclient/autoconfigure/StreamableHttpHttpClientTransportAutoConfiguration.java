@@ -23,9 +23,10 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.AsyncHttpRequestCustomizer;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
-import io.modelcontextprotocol.client.transport.SyncHttpRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
@@ -46,12 +47,8 @@ import org.springframework.core.log.LogAccessor;
  *
  * <p>
  * This configuration class sets up the necessary beans for Streamable HTTP client
- * transport when WebFlux is not available. It provides HTTP client-based Streamable HTTP
- * transport implementation for MCP client communication.
- *
- * <p>
- * The configuration is activated after the WebFlux Streamable HTTP transport
- * auto-configuration to ensure proper fallback behavior when WebFlux is not available.
+ * transport. It provides HTTP client-based Streamable HTTP transport implementation for
+ * MCP client communication.
  *
  * <p>
  * Key features:
@@ -90,17 +87,17 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	 * configurations
 	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
 	 * available
-	 * @param syncHttpRequestCustomizer provider for {@link SyncHttpRequestCustomizer} if
-	 * available
-	 * @param asyncHttpRequestCustomizer provider fo {@link AsyncHttpRequestCustomizer} if
-	 * available
+	 * @param syncHttpRequestCustomizer provider for
+	 * {@link McpSyncHttpClientRequestCustomizer} if available
+	 * @param asyncHttpRequestCustomizer provider fo
+	 * {@link McpAsyncHttpClientRequestCustomizer} if available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> streamableHttpHttpClientTransports(
 			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<ObjectMapper> objectMapperProvider,
-			ObjectProvider<SyncHttpRequestCustomizer> syncHttpRequestCustomizer,
-			ObjectProvider<AsyncHttpRequestCustomizer> asyncHttpRequestCustomizer) {
+			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
@@ -117,15 +114,15 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 				.builder(baseUrl)
 				.endpoint(streamableHttpEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
-				.objectMapper(objectMapper);
+				.jsonMapper(new JacksonMcpJsonMapper(objectMapper));
 
 			asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
 			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);
 			if (asyncHttpRequestCustomizer.getIfUnique() != null && syncHttpRequestCustomizer.getIfUnique() != null) {
 				logger.warn("Found beans of type %s and %s. Using %s.".formatted(
-						AsyncHttpRequestCustomizer.class.getSimpleName(),
-						SyncHttpRequestCustomizer.class.getSimpleName(),
-						SyncHttpRequestCustomizer.class.getSimpleName()));
+						McpAsyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName(),
+						McpSyncHttpClientRequestCustomizer.class.getSimpleName()));
 			}
 
 			HttpClientStreamableHttpTransport transport = transportBuilder.build();

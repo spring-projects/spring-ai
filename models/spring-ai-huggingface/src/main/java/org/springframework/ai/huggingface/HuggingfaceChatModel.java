@@ -104,7 +104,8 @@ public class HuggingfaceChatModel implements ChatModel {
 					new TypeReference<>() {
 
 					});
-			Generation generation = new Generation(new AssistantMessage(generatedText, detailsMap));
+			Generation generation = new Generation(
+					AssistantMessage.builder().content(generatedText).properties(detailsMap).build());
 			generations.add(generation);
 		}
 		return new ChatResponse(generations);

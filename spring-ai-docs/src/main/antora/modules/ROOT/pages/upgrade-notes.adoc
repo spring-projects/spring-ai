@@ -1,6 +1,89 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-1-1-0-RC1]]
+== Upgrading to 1.1.0-RC1
+
+=== Breaking Changes
+
+==== Text-to-Speech (TTS) API Migration
+
+The OpenAI Text-to-Speech implementation has been migrated from provider-specific classes to shared interfaces. This enables writing portable code that works across multiple TTS providers (OpenAI, ElevenLabs, and future providers).
+
+===== Removed Classes
+
+The following deprecated classes have been removed from the `org.springframework.ai.openai.audio.speech` package:
+
+* `SpeechModel` → Use `TextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `StreamingSpeechModel` → Use `StreamingTextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `SpeechPrompt` → Use `TextToSpeechPrompt` (from `org.springframework.ai.audio.tts`)
+* `SpeechResponse` → Use `TextToSpeechResponse` (from `org.springframework.ai.audio.tts`)
+* `SpeechMessage` → Use `TextToSpeechMessage` (from `org.springframework.ai.audio.tts`)
+* `Speech` (in `org.springframework.ai.openai.audio.speech`) → Use `Speech` (from `org.springframework.ai.audio.tts`)
+
+Additionally, the `speed` parameter type changed from `Float` to `Double` across all OpenAI TTS components for consistency with other TTS providers.
+
+===== Migration Steps
+
+1. **Update Imports**: Replace all imports from `org.springframework.ai.openai.audio.speech.*` with `org.springframework.ai.audio.tts.*`
+
+2. **Update Type References**: Replace all occurrences of the old class names with the new ones:
++
+[source,text]
+----
+Find:    SpeechModel
+Replace: TextToSpeechModel
+
+Find:    StreamingSpeechModel
+Replace: StreamingTextToSpeechModel
+
+Find:    SpeechPrompt
+Replace: TextToSpeechPrompt
+
+Find:    SpeechResponse
+Replace: TextToSpeechResponse
+
+Find:    SpeechMessage
+Replace: TextToSpeechMessage
+----
+
+3. **Update Speed Parameter**: Change from `Float` to `Double`:
++
+[source,text]
+----
+Find:    .speed(1.0f)
+Replace: .speed(1.0)
+
+Find:    Float speed
+Replace: Double speed
+----
+
+4. **Update Dependency Injection**: If you inject `SpeechModel`, update to `TextToSpeechModel`:
++
+[source,java]
+----
+// Before
+public MyService(SpeechModel speechModel) { ... }
+
+// After
+public MyService(TextToSpeechModel textToSpeechModel) { ... }
+----
+
+===== Benefits
+
+* **Portability**: Write code once, switch between OpenAI, ElevenLabs, or other TTS providers easily
+* **Consistency**: Same patterns as ChatModel and other Spring AI abstractions
+* **Type Safety**: Improved type hierarchy with proper interface implementations
+* **Future-Proof**: New TTS providers will automatically work with your existing code
+
+===== Additional Resources
+
+For a comprehensive migration guide with detailed code examples, see:
+
+* xref:api/audio/speech/openai-speech.adoc#_migration_guide[OpenAI TTS Migration Guide]
+* xref:api/audio/speech.adoc#_writing_provider_agnostic_code[Writing Provider-Agnostic TTS Code]
+
+
 [[upgrading-to-1-0-0-snapshot]]
 == Upgrading to 1.0.0-SNAPSHOT
 

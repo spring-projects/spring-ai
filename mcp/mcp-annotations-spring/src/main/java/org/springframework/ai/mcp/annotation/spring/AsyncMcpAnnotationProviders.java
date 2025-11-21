@@ -22,6 +22,7 @@ import java.util.List;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
@@ -117,6 +118,17 @@ public final class AsyncMcpAnnotationProviders {
 	public static List<McpStatelessServerFeatures.AsyncResourceSpecification> statelessResourceSpecifications(
 			List<Object> resourceObjects) {
 		return new SpringAiAsyncStatelessResourceProvider(resourceObjects).getResourceSpecifications();
+	}
+
+	// RESOURCE TEMPLATE
+	public static List<AsyncResourceTemplateSpecification> resourceTemplateSpecifications(
+			List<Object> resourceObjects) {
+		return new SpringAiAsyncResourceProvider(resourceObjects).getResourceTemplateSpecifications();
+	}
+
+	public static List<McpStatelessServerFeatures.AsyncResourceTemplateSpecification> statelessResourceTemplateSpecifications(
+			List<Object> resourceObjects) {
+		return new SpringAiAsyncStatelessResourceProvider(resourceObjects).getResourceTemplateSpecifications();
 	}
 
 	// RESOURCE LIST CHANGED
@@ -234,7 +246,7 @@ public final class AsyncMcpAnnotationProviders {
 			return AnnotationProviderUtil.beanMethods(bean);
 		}
 
-	};
+	}
 
 	private final static class SpringAiAsyncStatelessMcpCompleteProvider extends AsyncStatelessMcpCompleteProvider {
 
@@ -247,7 +259,7 @@ public final class AsyncMcpAnnotationProviders {
 			return AnnotationProviderUtil.beanMethods(bean);
 		}
 
-	};
+	}
 
 	// PROMPT
 	private final static class SpringAiAsyncPromptProvider extends AsyncMcpPromptProvider {

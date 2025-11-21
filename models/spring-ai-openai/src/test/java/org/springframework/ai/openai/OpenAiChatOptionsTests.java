@@ -84,6 +84,8 @@ class OpenAiChatOptionsTests {
 			.httpHeaders(Map.of("header1", "value1"))
 			.toolContext(toolContext)
 			.serviceTier(ServiceTier.PRIORITY)
+			.promptCacheKey("test-cache-key")
+			.safetyIdentifier("test-safety-id")
 			.build();
 
 		assertThat(options)
@@ -91,11 +93,11 @@ class OpenAiChatOptionsTests {
 					"maxCompletionTokens", "n", "outputModalities", "outputAudio", "presencePenalty", "responseFormat",
 					"streamOptions", "seed", "stop", "temperature", "topP", "tools", "toolChoice", "user",
 					"parallelToolCalls", "store", "metadata", "reasoningEffort", "internalToolExecutionEnabled",
-					"httpHeaders", "toolContext", "serviceTier")
+					"httpHeaders", "toolContext", "serviceTier", "promptCacheKey", "safetyIdentifier")
 			.containsExactly("test-model", 0.5, logitBias, true, 5, null, 50, 2, outputModalities, outputAudio, 0.8,
 					responseFormat, streamOptions, 12345, stopSequences, 0.7, 0.9, tools, toolChoice, "test-user", true,
 					false, metadata, "medium", false, Map.of("header1", "value1"), toolContext,
-					ServiceTier.PRIORITY.getValue());
+					ServiceTier.PRIORITY.getValue(), "test-cache-key", "test-safety-id");
 
 		assertThat(options.getStreamUsage()).isTrue();
 		assertThat(options.getStreamOptions()).isEqualTo(StreamOptions.INCLUDE_USAGE);
@@ -144,6 +146,8 @@ class OpenAiChatOptionsTests {
 			.internalToolExecutionEnabled(true)
 			.httpHeaders(Map.of("header1", "value1"))
 			.serviceTier(ServiceTier.DEFAULT)
+			.promptCacheKey("copy-test-cache")
+			.safetyIdentifier("copy-test-safety")
 			.build();
 
 		OpenAiChatOptions copiedOptions = originalOptions.copy();
@@ -289,6 +293,7 @@ class OpenAiChatOptionsTests {
 	}
 
 	@Test
+	@SuppressWarnings("SelfAssertion")
 	void testEqualsAndHashCode() {
 		OpenAiChatOptions options1 = OpenAiChatOptions.builder()
 			.model("test-model")

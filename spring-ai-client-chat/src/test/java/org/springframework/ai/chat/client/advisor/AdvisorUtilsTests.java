@@ -37,6 +37,7 @@ import static org.mockito.Mockito.mock;
  *
  * @author ghdcksgml1
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class AdvisorUtilsTests {
 

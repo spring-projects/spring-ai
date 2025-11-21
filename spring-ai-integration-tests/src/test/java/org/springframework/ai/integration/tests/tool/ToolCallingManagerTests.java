@@ -17,6 +17,7 @@
 package org.springframework.ai.integration.tests.tool;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -107,7 +108,7 @@ public class ToolCallingManagerTests {
 	}
 
 	private void runExplicitToolCallingExecutionWithOptionsStream(ChatOptions chatOptions, Prompt prompt) {
-		ChatResponse chatResponse = this.openAiChatModel.stream(prompt).flatMap(response -> {
+		String joinedTextResponse = this.openAiChatModel.stream(prompt).flatMap(response -> {
 			if (response.hasToolCalls()) {
 				ToolExecutionResult toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 
@@ -117,14 +118,13 @@ public class ToolCallingManagerTests {
 					.anyMatch(m -> m instanceof ToolResponseMessage)).isTrue();
 
 				Prompt secondPrompt = new Prompt(toolExecutionResult.conversationHistory(), chatOptions);
-				// return openAiChatModel.stream(secondPrompt);
-				return Flux.just(this.openAiChatModel.call(secondPrompt));
+				return this.openAiChatModel.stream(secondPrompt);
 			}
 			return Flux.just(response);
-		}).blockLast();
+		}).mapNotNull(it -> it.getResult().getOutput().getText()).collect(Collectors.joining()).block();
 
-		assertThat(chatResponse).isNotNull();
-		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty()
+		assertThat(joinedTextResponse).isNotNull();
+		assertThat(joinedTextResponse).isNotEmpty()
 			.contains("His Dark Materials")
 			.contains("The Lion, the Witch and the Wardrob")
 			.contains("The Hobbit")

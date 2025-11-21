@@ -64,7 +64,10 @@ class MultiOpenAiClientIT {
 		// Derive a new OpenAiChatModel for Groq
 		OpenAiChatModel groqModel = this.baseChatModel.mutate()
 			.openAiApi(groqApi)
-			.defaultOptions(OpenAiChatOptions.builder().model("llama3-70b-8192").temperature(0.5).build())
+			.defaultOptions(OpenAiChatOptions.builder()
+				.model("meta-llama/llama-4-scout-17b-16e-instruct")
+				.temperature(0.5)
+				.build())
 			.build();
 
 		// Derive a new OpenAiChatModel for GPT-4

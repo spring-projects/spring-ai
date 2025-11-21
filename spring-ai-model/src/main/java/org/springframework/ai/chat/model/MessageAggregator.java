@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
@@ -37,8 +38,6 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.content.Media;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import static org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a
@@ -166,8 +165,12 @@ public class MessageAggregator {
 			List<ToolCall> collectedToolCalls = toolCallsRef.get();
 			List<Media> collectedMedias = mediasRef.get();
 
-			AssistantMessage finalAssistantMessage = new AssistantMessage(messageTextContentRef.get().toString(),
-					messageMetadataMapRef.get(), collectedToolCalls, collectedMedias);
+			AssistantMessage finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadataMapRef.get())
+					.toolCalls(collectedToolCalls)
+					.media(collectedMedias)
+					.build();
 
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
 

@@ -32,6 +32,7 @@ import com.azure.core.http.policy.HttpLogOptions;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -122,7 +123,7 @@ class AzureOpenAiChatModelIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 
-		assertThat(counter.get()).isGreaterThan(8).as("More than 8 chuncks because there are 8 planets");
+		assertThat(counter.get()).withFailMessage("More than 8 chunks because there are 8 planets").isGreaterThan(8);
 
 		assertThat(content).contains("Earth", "Mars", "Jupiter");
 	}
@@ -407,6 +408,47 @@ class AzureOpenAiChatModelIT {
 																				// tolerance
 			}
 		}
+	}
+
+	@Test
+	void testModelInStreamingResponse() {
+		String prompt = "List three colors of the rainbow.";
+
+		// @formatter:off
+		Flux<ChatResponse> responseFlux = ChatClient.create(this.chatModel).prompt()
+				.options(AzureOpenAiChatOptions.builder()
+						.deploymentName("gpt-4o")
+						.build())
+				.user(prompt)
+				.stream()
+				.chatResponse();
+		// @formatter:on
+
+		List<ChatResponse> responses = responseFlux.collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		ChatResponse lastResponse = responses.get(responses.size() - 1);
+
+		// Verify that the final merged response has model metadata
+		assertThat(lastResponse.getMetadata()).as("Last response should have metadata").isNotNull();
+		assertThat(lastResponse.getMetadata().getModel()).as("Last response metadata should contain model").isNotNull();
+
+		String model = lastResponse.getMetadata().getModel();
+		logger.info("Final merged response model: {}", model);
+		assertThat(model).isNotEmpty();
+		// Azure OpenAI models typically contain "gpt" in their name
+		assertThat(model).containsIgnoringCase("gpt");
+
+		String content = responses.stream()
+			.flatMap(r -> r.getResults().stream())
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(Objects::nonNull)
+			.collect(Collectors.joining());
+
+		assertThat(content).isNotEmpty();
+		logger.info("Generated content: {}", content);
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

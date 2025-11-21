@@ -73,9 +73,9 @@ import reactor.netty.http.server.HttpServer;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
@@ -94,21 +94,22 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 public class StreamableMcpAnnotationsIT {
 
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
+				McpServerStreamableHttpWebFluxAutoConfiguration.class,
 				McpServerAnnotationScannerAutoConfiguration.class,
 				McpServerSpecificationFactoryAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
 				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class,
-				McpClientAnnotationScannerAutoConfiguration.class,
-				McpClientSpecificationFactoryAutoConfiguration.class));
+				McpClientAnnotationScannerAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {
@@ -219,7 +220,9 @@ public class StreamableMcpAnnotationsIT {
 
 						assertThat(calculatorToolResponse.structuredContent()).isNotNull();
 
-						assertThat(calculatorToolResponse.structuredContent()).containsEntry("result", 5.0)
+						assertThat(calculatorToolResponse.structuredContent())
+							.asInstanceOf(map(String.class, Object.class))
+							.containsEntry("result", 5.0)
 							.containsEntry("operation", "2 + 3")
 							.containsEntry("timestamp", "2024-01-01T10:00:00Z");
 

@@ -22,17 +22,21 @@ import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvide
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.reactive.function.server.RouterFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 
 class McpServerSseWebFluxAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class, McpServerAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class,
+				McpServerAutoConfiguration.class, McpServerObjectMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -94,6 +98,32 @@ class McpServerSseWebFluxAutoConfigurationIT {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.base-url=/test")
 			.run(context -> assertThat(context.getBean(WebFluxSseServerTransportProvider.class)).extracting("baseUrl")
 				.isEqualTo("/test"));
+	}
+
+	@Test
+	void routerFunctionIsCreatedFromProvider() {
+		this.contextRunner.run(context -> {
+			assertThat(context).hasSingleBean(RouterFunction.class);
+			assertThat(context).hasSingleBean(WebFluxSseServerTransportProvider.class);
+
+			// Verify that the RouterFunction is created from the provider
+			WebFluxSseServerTransportProvider serverTransport = context
+				.getBean(WebFluxSseServerTransportProvider.class);
+			RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+			assertThat(routerFunction).isNotNull().isEqualTo(serverTransport.getRouterFunction());
+		});
+	}
+
+	@Test
+	void routerFunctionIsCustom() {
+		this.contextRunner
+			.withBean("webfluxSseServerRouterFunction", RouterFunction.class, () -> mock(RouterFunction.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(RouterFunction.class);
+
+				RouterFunction<?> routerFunction = context.getBean(RouterFunction.class);
+				assertThat(mockingDetails(routerFunction).isMock()).isTrue();
+			});
 	}
 
 }

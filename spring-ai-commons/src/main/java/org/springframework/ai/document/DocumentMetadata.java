@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,13 +32,14 @@ public enum DocumentMetadata {
 	 * The lower the distance, the more they are similar.
 	 * It's the opposite of the similarity score.
 	 */
-	DISTANCE();
+	DISTANCE("distance");
 
 	private final String value;
 
-	DocumentMetadata() {
-		this.value = "distance";
+	DocumentMetadata(String value) {
+		this.value = value;
 	}
+
 	public String value() {
 		return this.value;
 	}

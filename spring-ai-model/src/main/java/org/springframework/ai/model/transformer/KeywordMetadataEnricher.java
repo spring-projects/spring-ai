@@ -102,7 +102,7 @@ public class KeywordMetadataEnricher implements DocumentTransformer {
 		return new Builder(chatModel);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final ChatModel chatModel;
 

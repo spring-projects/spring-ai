@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 import com.mongodb.ConnectionString;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 
-import org.springframework.boot.autoconfigure.mongo.MongoConnectionDetails;
+import org.springframework.boot.mongodb.autoconfigure.MongoConnectionDetails;
 import org.springframework.boot.ssl.SslBundle;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionDetailsFactory;
 import org.springframework.boot.testcontainers.service.connection.ContainerConnectionSource;
@@ -83,8 +83,8 @@ class MongoDbAtlasLocalContainerConnectionDetailsFactory
 		public SslBundle getSslBundle() {
 			if (GET_SSL_BUNDLE_METHOD != null) { // Boot 3.5.x+
 				try {
-					return (SslBundle) MethodHandles.lookup()
-						.in(GET_SSL_BUNDLE_METHOD.getDeclaringClass())
+					MethodHandles.Lookup origin = MethodHandles.lookup().in(getClass());
+					return (SslBundle) MethodHandles.privateLookupIn(GET_SSL_BUNDLE_METHOD.getDeclaringClass(), origin)
 						.unreflectSpecial(GET_SSL_BUNDLE_METHOD, GET_SSL_BUNDLE_METHOD.getDeclaringClass())
 						.bindTo(this)
 						.invokeWithArguments();

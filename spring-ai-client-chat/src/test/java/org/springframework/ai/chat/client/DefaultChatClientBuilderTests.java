@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.nio.charset.Charset;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.model.ChatModel;
@@ -58,9 +59,15 @@ class DefaultChatClientBuilderTests {
 
 	@Test
 	void whenObservationRegistryIsNullThenThrows() {
-		assertThatThrownBy(() -> new DefaultChatClientBuilder(mock(ChatModel.class), null, null))
+		assertThatThrownBy(() -> new DefaultChatClientBuilder(mock(ChatModel.class), null, null, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("the io.micrometer.observation.ObservationRegistry must be non-null");
+	}
+
+	@Test
+	void whenAdvisorObservationConventionIsNullThenReturn() {
+		var builder = new DefaultChatClientBuilder(mock(ChatModel.class), mock(ObservationRegistry.class), null, null);
+		assertThat(builder).isNotNull();
 	}
 
 	@Test

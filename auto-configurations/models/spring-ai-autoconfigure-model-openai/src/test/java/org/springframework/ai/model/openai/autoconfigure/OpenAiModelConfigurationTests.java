@@ -24,6 +24,8 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.OpenAiModerationModel;
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -33,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit Tests for OpenAI auto configurations' conditional enabling of models.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  */
 public class OpenAiModelConfigurationTests {
 
@@ -41,23 +44,25 @@ public class OpenAiModelConfigurationTests {
 
 	@Test
 	void chatModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class)).run(context -> {
-			assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isEmpty();
-		});
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiApi.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isEmpty();
+			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=openai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatProperties.class)).isNotEmpty();
@@ -65,10 +70,10 @@ public class OpenAiModelConfigurationTests {
 			});
 
 		this.contextRunner
-			.withConfiguration(
-					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class,
-							OpenAiImageAutoConfiguration.class, OpenAiAudioSpeechAutoConfiguration.class,
-							OpenAiAudioTranscriptionAutoConfiguration.class, OpenAiModerationAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class, OpenAiImageAutoConfiguration.class,
+					OpenAiAudioSpeechAutoConfiguration.class, OpenAiAudioTranscriptionAutoConfiguration.class,
+					OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=openai", "spring.ai.model.embedding=none",
 					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
 					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none")
@@ -84,7 +89,7 @@ public class OpenAiModelConfigurationTests {
 
 	@Test
 	void embeddingModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
@@ -95,24 +100,24 @@ public class OpenAiModelConfigurationTests {
 			});
 
 		this.contextRunner.withPropertyValues("spring.ai.model.embedding=none")
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
 			});
 
 		this.contextRunner.withPropertyValues("spring.ai.model.embedding=openai")
-			.withConfiguration(AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isNotEmpty();
 			});
 
 		this.contextRunner
-			.withConfiguration(
-					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class,
-							OpenAiImageAutoConfiguration.class, OpenAiAudioSpeechAutoConfiguration.class,
-							OpenAiAudioTranscriptionAutoConfiguration.class, OpenAiModerationAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class, OpenAiImageAutoConfiguration.class,
+					OpenAiAudioSpeechAutoConfiguration.class, OpenAiAudioTranscriptionAutoConfiguration.class,
+					OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=openai",
 					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
 					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none")
@@ -129,23 +134,24 @@ public class OpenAiModelConfigurationTests {
 
 	@Test
 	void imageModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class)).run(context -> {
-			assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
-			assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
-			assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isEmpty();
-		});
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
+				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isEmpty();
+			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.image=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.image=openai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiImageProperties.class)).isNotEmpty();
@@ -153,10 +159,10 @@ public class OpenAiModelConfigurationTests {
 			});
 
 		this.contextRunner
-			.withConfiguration(
-					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class,
-							OpenAiImageAutoConfiguration.class, OpenAiAudioSpeechAutoConfiguration.class,
-							OpenAiAudioTranscriptionAutoConfiguration.class, OpenAiModerationAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class, OpenAiImageAutoConfiguration.class,
+					OpenAiAudioSpeechAutoConfiguration.class, OpenAiAudioTranscriptionAutoConfiguration.class,
+					OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
 					"spring.ai.model.image=openai", "spring.ai.model.audio.speech=none",
 					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none")
@@ -173,7 +179,8 @@ public class OpenAiModelConfigurationTests {
 
 	@Test
 	void audioSpeechModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
@@ -183,14 +190,16 @@ public class OpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.audio.speech=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.audio.speech=openai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechProperties.class)).isNotEmpty();
@@ -198,10 +207,10 @@ public class OpenAiModelConfigurationTests {
 			});
 
 		this.contextRunner
-			.withConfiguration(
-					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class,
-							OpenAiImageAutoConfiguration.class, OpenAiAudioSpeechAutoConfiguration.class,
-							OpenAiAudioTranscriptionAutoConfiguration.class, OpenAiModerationAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class, OpenAiImageAutoConfiguration.class,
+					OpenAiAudioSpeechAutoConfiguration.class, OpenAiAudioTranscriptionAutoConfiguration.class,
+					OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
 					"spring.ai.model.image=none", "spring.ai.model.audio.speech=openai",
 					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=none")
@@ -217,7 +226,8 @@ public class OpenAiModelConfigurationTests {
 
 	@Test
 	void audioTranscriptionModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
@@ -227,14 +237,16 @@ public class OpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.audio.transcription=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.audio.transcription=openai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionProperties.class)).isNotEmpty();
@@ -242,10 +254,10 @@ public class OpenAiModelConfigurationTests {
 			});
 
 		this.contextRunner
-			.withConfiguration(
-					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class,
-							OpenAiImageAutoConfiguration.class, OpenAiAudioSpeechAutoConfiguration.class,
-							OpenAiAudioTranscriptionAutoConfiguration.class, OpenAiModerationAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class, OpenAiImageAutoConfiguration.class,
+					OpenAiAudioSpeechAutoConfiguration.class, OpenAiAudioTranscriptionAutoConfiguration.class,
+					OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
 					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
 					"spring.ai.model.audio.transcription=openai", "spring.ai.model.moderation=none")
@@ -261,7 +273,7 @@ public class OpenAiModelConfigurationTests {
 
 	@Test
 	void moderationModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
@@ -271,14 +283,14 @@ public class OpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isNotEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.moderation=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiModerationProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.moderation=openai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiModerationProperties.class)).isNotEmpty();
@@ -286,10 +298,10 @@ public class OpenAiModelConfigurationTests {
 			});
 
 		this.contextRunner
-			.withConfiguration(
-					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class,
-							OpenAiImageAutoConfiguration.class, OpenAiAudioSpeechAutoConfiguration.class,
-							OpenAiAudioTranscriptionAutoConfiguration.class, OpenAiModerationAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class, OpenAiImageAutoConfiguration.class,
+					OpenAiAudioSpeechAutoConfiguration.class, OpenAiAudioTranscriptionAutoConfiguration.class,
+					OpenAiModerationAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none",
 					"spring.ai.model.image=none", "spring.ai.model.audio.speech=none",
 					"spring.ai.model.audio.transcription=none", "spring.ai.model.moderation=openai")
@@ -300,6 +312,17 @@ public class OpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isNotEmpty();
+			});
+	}
+
+	@Test
+	void openAiApiBean() {
+		// Test that OpenAiApi bean is registered and can be injected
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OpenAiApi.class)).hasSize(1);
+				OpenAiApi openAiApi = context.getBean(OpenAiApi.class);
+				assertThat(openAiApi).isNotNull();
 			});
 	}
 

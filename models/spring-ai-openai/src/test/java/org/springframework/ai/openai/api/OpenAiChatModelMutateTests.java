@@ -18,12 +18,12 @@ package org.springframework.ai.openai.api;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.http.HttpHeaders;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /*
  * Integration test for mutate/clone functionality on OpenAiApi and OpenAiChatModel.
@@ -51,8 +51,6 @@ class OpenAiChatModelMutateTests {
 			.openAiApi(gpt4Api)
 			.defaultOptions(OpenAiChatOptions.builder().model("gpt-4").temperature(0.7).build())
 			.build();
-		ChatClient gpt4Client = ChatClient.builder(gpt4Model).build();
-
 		// Mutate for Llama
 		OpenAiApi llamaApi = this.baseApi.mutate()
 			.baseUrl("https://your-custom-endpoint.com")
@@ -62,8 +60,6 @@ class OpenAiChatModelMutateTests {
 			.openAiApi(llamaApi)
 			.defaultOptions(OpenAiChatOptions.builder().model("llama-70b").temperature(0.5).build())
 			.build();
-		ChatClient llamaClient = ChatClient.builder(llamaModel).build();
-
 		// Assert endpoints and models are different
 		assertThat(gpt4Model).isNotSameAs(llamaModel);
 		assertThat(gpt4Api).isNotSameAs(llamaApi);
@@ -77,7 +73,7 @@ class OpenAiChatModelMutateTests {
 	void testCloneCreatesDeepCopy() {
 		OpenAiChatModel clone = this.baseModel.clone();
 		assertThat(clone).isNotSameAs(this.baseModel);
-		assertThat(clone.toString()).isEqualTo(this.baseModel.toString());
+		assertThat(clone).hasToString(this.baseModel.toString());
 	}
 
 	@Test
@@ -92,12 +88,12 @@ class OpenAiChatModelMutateTests {
 
 	@Test
 	void mutateHeadersCreatesDistinctHeaders() {
-		OpenAiApi mutatedApi = this.baseApi.mutate()
-			.headers(new LinkedMultiValueMap<>(java.util.Map.of("X-Test", java.util.List.of("value"))))
-			.build();
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("X-Test", "value");
+		OpenAiApi mutatedApi = this.baseApi.mutate().headers(headers).build();
 
-		assertThat(mutatedApi.getHeaders()).containsKey("X-Test");
-		assertThat(this.baseApi.getHeaders()).doesNotContainKey("X-Test");
+		assertThat(mutatedApi.getHeaders().get("X-Test")).isNotNull();
+		assertThat(this.baseApi.getHeaders().get("X-Test")).isNull();
 	}
 
 	@Test
@@ -133,7 +129,7 @@ class OpenAiChatModelMutateTests {
 
 	@Test
 	void testApiMutateWithComplexHeaders() {
-		LinkedMultiValueMap<String, String> complexHeaders = new LinkedMultiValueMap<>();
+		HttpHeaders complexHeaders = new HttpHeaders();
 		complexHeaders.add("Authorization", "Bearer custom-token");
 		complexHeaders.add("X-Custom-Header", "value1");
 		complexHeaders.add("X-Custom-Header", "value2");
@@ -141,9 +137,9 @@ class OpenAiChatModelMutateTests {
 
 		OpenAiApi mutatedApi = this.baseApi.mutate().headers(complexHeaders).build();
 
-		assertThat(mutatedApi.getHeaders()).containsKey("Authorization");
-		assertThat(mutatedApi.getHeaders()).containsKey("X-Custom-Header");
-		assertThat(mutatedApi.getHeaders()).containsKey("User-Agent");
+		assertThat(mutatedApi.getHeaders().get("Authorization")).isNotNull();
+		assertThat(mutatedApi.getHeaders().get("X-Custom-Header")).isNotNull();
+		assertThat(mutatedApi.getHeaders().get("User-Agent")).isNotNull();
 		assertThat(mutatedApi.getHeaders().get("X-Custom-Header")).hasSize(2);
 	}
 
@@ -159,11 +155,11 @@ class OpenAiChatModelMutateTests {
 
 	@Test
 	void testApiMutateWithEmptyHeaders() {
-		LinkedMultiValueMap<String, String> emptyHeaders = new LinkedMultiValueMap<>();
+		HttpHeaders emptyHeaders = new HttpHeaders();
 
 		OpenAiApi mutatedApi = this.baseApi.mutate().headers(emptyHeaders).build();
 
-		assertThat(mutatedApi.getHeaders()).isEmpty();
+		assertThat(mutatedApi.getHeaders().isEmpty()).isTrue();
 	}
 
 	@Test
@@ -188,6 +184,33 @@ class OpenAiChatModelMutateTests {
 		OpenAiChatModel unchanged = this.baseModel.mutate().build();
 		assertThat(unchanged).isNotNull();
 		assertThat(unchanged).isNotSameAs(this.baseModel);
+	}
+
+	@Test
+	void testMutateWithInvalidBaseUrl() {
+		assertThatThrownBy(() -> this.baseApi.mutate().baseUrl("").build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("baseUrl");
+
+		assertThatThrownBy(() -> this.baseApi.mutate().baseUrl(null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("baseUrl");
+	}
+
+	@Test
+	void testMutateWithNullOpenAiApi() {
+		assertThatThrownBy(() -> this.baseModel.mutate().openAiApi(null).build())
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void testMutatePreservesUnchangedFields() {
+		String originalBaseUrl = this.baseApi.getBaseUrl();
+		String newApiKey = "new-test-key";
+
+		OpenAiApi mutated = this.baseApi.mutate().apiKey(newApiKey).build();
+
+		assertThat(mutated.getBaseUrl()).isEqualTo(originalBaseUrl);
+		assertThat(mutated.getApiKey().getValue()).isEqualTo(newApiKey);
 	}
 
 }

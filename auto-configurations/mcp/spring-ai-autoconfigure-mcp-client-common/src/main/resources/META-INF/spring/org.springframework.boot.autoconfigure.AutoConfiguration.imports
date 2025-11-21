@@ -17,5 +17,4 @@
 org.springframework.ai.mcp.client.common.autoconfigure.StdioTransportAutoConfiguration
 org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration
 org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration
-org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration
 org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration

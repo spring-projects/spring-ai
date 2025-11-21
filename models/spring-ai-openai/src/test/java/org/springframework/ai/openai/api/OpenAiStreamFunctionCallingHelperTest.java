@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 /**
  * Unit tests for {@link OpenAiStreamFunctionCallingHelper}
@@ -87,8 +88,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		// Test for null.
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null));
 		// Test for empty.
-		assertion.accept(
-				new OpenAiApi.ChatCompletionMessage(null, null, null, null, Collections.emptyList(), null, null, null));
+		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null, Collections.emptyList(), null,
+				null, null, null));
 	}
 
 	@Test
@@ -101,7 +102,7 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		};
 		assertion.accept(new OpenAiApi.ChatCompletionMessage(null, null, null, null,
 				List.of(Mockito.mock(org.springframework.ai.openai.api.OpenAiApi.ChatCompletionMessage.ToolCall.class)),
-				null, null, null));
+				null, null, null, null));
 	}
 
 	@Test
@@ -190,7 +191,8 @@ public class OpenAiStreamFunctionCallingHelperTest {
 	@Test
 	public void isStreamingToolFunctionCall_returnsTrueForValidToolCalls() {
 		var toolCall = Mockito.mock(OpenAiApi.ChatCompletionMessage.ToolCall.class);
-		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null);
+		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null, null, null,
+				null);
 		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, delta, null);
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
 
@@ -204,6 +206,133 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
 
 		assertThat(this.helper.isStreamingToolFunctionCallFinish(chunk)).isTrue();
+	}
+
+	@Test
+	public void merge_whenBothChunksAreNull() {
+		var result = this.helper.merge(null, null);
+		assertThat(result).isNull();
+	}
+
+	@Test
+	public void merge_whenPreviousIsNull() {
+		var current = new OpenAiApi.ChatCompletionChunk("id", Collections.emptyList(), System.currentTimeMillis(),
+				"model", "default", "fingerprint", "object", null);
+
+		var result = this.helper.merge(null, current);
+		assertThat(result).isEqualTo(current);
+	}
+
+	@Test
+	public void merge_whenCurrentIsNull() {
+		var previous = new OpenAiApi.ChatCompletionChunk("id", Collections.emptyList(), System.currentTimeMillis(),
+				"model", "default", "fingerprint", "object", null);
+
+		var result = this.helper.merge(previous, null);
+		assertThat(result).isEqualTo(previous);
+	}
+
+	@Test
+	public void merge_partialFieldsFromEachChunk() {
+		var choices = List.of(Mockito.mock(OpenAiApi.ChatCompletionChunk.ChunkChoice.class));
+		var usage = Mockito.mock(OpenAiApi.Usage.class);
+
+		var previous = new OpenAiApi.ChatCompletionChunk(null, choices, 1L, "model1", null, "fp1", null, null);
+		var current = new OpenAiApi.ChatCompletionChunk("id2", null, null, null, "tier2", null, "object2", usage);
+
+		var result = this.helper.merge(previous, current);
+
+		assertThat(result.id()).isEqualTo("id2");
+		assertThat(result.choices()).isEqualTo(choices);
+		assertThat(result.created()).isEqualTo(1L);
+		assertThat(result.model()).isEqualTo("model1");
+		assertThat(result.serviceTier()).isEqualTo("tier2");
+		assertThat(result.systemFingerprint()).isEqualTo("fp1");
+		assertThat(result.object()).isEqualTo("object2");
+		assertThat(result.usage()).isEqualTo(usage);
+	}
+
+	@Test
+	public void isStreamingToolFunctionCall_withMultipleChoicesAndOnlyFirstHasToolCalls() {
+		var toolCall = Mockito.mock(OpenAiApi.ChatCompletionMessage.ToolCall.class);
+		var deltaWithToolCalls = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall), null,
+				null, null, null);
+		var deltaWithoutToolCalls = new OpenAiApi.ChatCompletionMessage(null, null);
+
+		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, deltaWithToolCalls, null);
+		var choice2 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, deltaWithoutToolCalls, null);
+
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice1, choice2), null, null, null, null, null,
+				null);
+
+		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isTrue();
+	}
+
+	@Test
+	public void isStreamingToolFunctionCall_withMultipleChoicesAndNoneHaveToolCalls() {
+		var deltaWithoutToolCalls = new OpenAiApi.ChatCompletionMessage(null, null);
+
+		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, deltaWithoutToolCalls, null);
+		var choice2 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, deltaWithoutToolCalls, null);
+
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice1, choice2), null, null, null, null, null,
+				null);
+
+		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isFalse();
+	}
+
+	@Test
+	public void isStreamingToolFunctionCallFinish_withMultipleChoicesAndOnlyFirstIsToolCallsFinish() {
+		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(OpenAiApi.ChatCompletionFinishReason.TOOL_CALLS,
+				null, new OpenAiApi.ChatCompletionMessage(null, null), null);
+		var choice2 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(OpenAiApi.ChatCompletionFinishReason.STOP, null,
+				new OpenAiApi.ChatCompletionMessage(null, null), null);
+
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice1, choice2), null, null, null, null, null,
+				null);
+
+		assertThat(this.helper.isStreamingToolFunctionCallFinish(chunk)).isTrue();
+	}
+
+	@Test
+	public void chunkToChatCompletion_whenChunkIsNull() {
+		assertThatThrownBy(() -> this.helper.chunkToChatCompletion(null)).isInstanceOf(NullPointerException.class);
+	}
+
+	@Test
+	public void chunkToChatCompletion_withEmptyChoices() {
+		var chunk = new OpenAiApi.ChatCompletionChunk("id", Collections.emptyList(), 1L, "model", "tier", "fp",
+				"object", null);
+
+		var result = this.helper.chunkToChatCompletion(chunk);
+
+		assertThat(result.object()).isEqualTo("chat.completion");
+		assertThat(result.choices()).isEmpty();
+		assertThat(result.id()).isEqualTo("id");
+		assertThat(result.created()).isEqualTo(1L);
+		assertThat(result.model()).isEqualTo("model");
+	}
+
+	@Test
+	public void edgeCases_emptyStringFields() {
+		var chunk = new OpenAiApi.ChatCompletionChunk("", Collections.emptyList(), 0L, "", "", "", "", null);
+
+		var result = this.helper.chunkToChatCompletion(chunk);
+
+		assertThat(result.id()).isEmpty();
+		assertThat(result.model()).isEmpty();
+		assertThat(result.serviceTier()).isEmpty();
+		assertThat(result.systemFingerprint()).isEmpty();
+		assertThat(result.created()).isEqualTo(0L);
+	}
+
+	@Test
+	public void isStreamingToolFunctionCall_withNullToolCallsList() {
+		var delta = new OpenAiApi.ChatCompletionMessage(null, null, null, null, null, null, null, null, null);
+		var choice = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, null, delta, null);
+		var chunk = new OpenAiApi.ChatCompletionChunk(null, List.of(choice), null, null, null, null, null, null);
+
+		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
 
 }

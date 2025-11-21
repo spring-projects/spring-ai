@@ -39,7 +39,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Media;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.neo4j.Neo4jAutoConfiguration;
+import org.springframework.boot.neo4j.autoconfigure.Neo4jAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.util.MimeType;
 
@@ -83,8 +83,11 @@ class Neo4jChatMemoryRepositoryAutoConfigurationIT {
 			memory.deleteByConversationId(sessionId);
 			assertThat(memory.findByConversationId(sessionId)).isEmpty();
 
-			AssistantMessage assistantMessage = new AssistantMessage("test answer", Map.of(),
-					List.of(new AssistantMessage.ToolCall("id", "type", "name", "arguments")));
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("test answer")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("id", "type", "name", "arguments")))
+				.build();
 
 			memory.saveAll(sessionId, List.of(userMessage, assistantMessage));
 			messages = memory.findByConversationId(sessionId);
@@ -112,10 +115,11 @@ class Neo4jChatMemoryRepositoryAutoConfigurationIT {
 			assertThat(((UserMessage) messages.get(0)).getMedia()).usingRecursiveFieldByFieldElementComparator()
 				.isEqualTo(media);
 			memory.deleteByConversationId(sessionId);
-			ToolResponseMessage toolResponseMessage = new ToolResponseMessage(
-					List.of(new ToolResponse("id", "name", "responseData"),
-							new ToolResponse("id2", "name2", "responseData2")),
-					Map.of("id", "id", "metadataKey", "metadata"));
+			ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+				.responses(List.of(new ToolResponse("id", "name", "responseData"),
+						new ToolResponse("id2", "name2", "responseData2")))
+				.metadata(Map.of("id", "id", "metadataKey", "metadata"))
+				.build();
 			memory.saveAll(sessionId, List.of(toolResponseMessage));
 			messages = memory.findByConversationId(sessionId);
 			assertThat(messages.size()).isEqualTo(1);

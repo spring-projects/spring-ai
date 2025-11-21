@@ -66,8 +66,8 @@ import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -165,8 +165,8 @@ public class DeepSeekChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.deepSeekApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletion> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.deepSeekApi.chatCompletionEntity(request));
 
 				var chatCompletion = completionEntity.getBody();
 
@@ -340,8 +340,13 @@ public class DeepSeekChatModel implements ChatModel {
 		String textContent = choice.message().content();
 		String reasoningContent = choice.message().reasoningContent();
 
-		DeepSeekAssistantMessage assistantMessage = new DeepSeekAssistantMessage(textContent, reasoningContent,
-				metadata, toolCalls);
+		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
+		DeepSeekAssistantMessage assistantMessage = builder.content(textContent)
+			.reasoningContent(reasoningContent)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.build();
+
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
 

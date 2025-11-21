@@ -19,8 +19,8 @@ package org.springframework.ai.mcp.client.autoconfigure;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.client.transport.AsyncHttpRequestCustomizer;
-import io.modelcontextprotocol.client.transport.SyncHttpRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,6 +33,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.annotation.UserConfigurations;
@@ -58,6 +59,7 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
 				"spring.ai.mcp.client.streamable-http.connections.server1.url=" + host)
 		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
+				McpClientAnnotationScannerAutoConfiguration.class,
 				StreamableHttpHttpClientTransportAutoConfiguration.class));
 
 	static String host = "http://localhost:3001";
@@ -95,8 +97,6 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 
 			mcpClient.ping();
 
-			System.out.println("mcpClient = " + mcpClient.getServerInfo());
-
 			ListToolsResult toolsResult = mcpClient.listTools();
 
 			assertThat(toolsResult).isNotNull();
@@ -122,9 +122,9 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 
 				mcpClient.ping();
 
-				verify(context.getBean(SyncHttpRequestCustomizer.class), atLeastOnce()).customize(any(), any(), any(),
-						any());
-				verifyNoInteractions(context.getBean(AsyncHttpRequestCustomizer.class));
+				verify(context.getBean(McpSyncHttpClientRequestCustomizer.class), atLeastOnce()).customize(any(), any(),
+						any(), any(), any());
+				verifyNoInteractions(context.getBean(McpAsyncHttpClientRequestCustomizer.class));
 			});
 	}
 
@@ -141,8 +141,8 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 
 				mcpClient.ping();
 
-				verify(context.getBean(AsyncHttpRequestCustomizer.class), atLeastOnce()).customize(any(), any(), any(),
-						any());
+				verify(context.getBean(McpAsyncHttpClientRequestCustomizer.class), atLeastOnce()).customize(any(),
+						any(), any(), any(), any());
 			});
 	}
 
@@ -150,8 +150,8 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 	static class SyncRequestCustomizerConfiguration {
 
 		@Bean
-		SyncHttpRequestCustomizer syncHttpRequestCustomizer() {
-			return mock(SyncHttpRequestCustomizer.class);
+		McpSyncHttpClientRequestCustomizer syncHttpRequestCustomizer() {
+			return mock(McpSyncHttpClientRequestCustomizer.class);
 		}
 
 	}
@@ -160,9 +160,9 @@ public class StreamableHttpHttpClientTransportAutoConfigurationIT {
 	static class AsyncRequestCustomizerConfiguration {
 
 		@Bean
-		AsyncHttpRequestCustomizer asyncHttpRequestCustomizer() {
-			AsyncHttpRequestCustomizer requestCustomizerMock = mock(AsyncHttpRequestCustomizer.class);
-			when(requestCustomizerMock.customize(any(), any(), any(), any()))
+		McpAsyncHttpClientRequestCustomizer asyncHttpRequestCustomizer() {
+			McpAsyncHttpClientRequestCustomizer requestCustomizerMock = mock(McpAsyncHttpClientRequestCustomizer.class);
+			when(requestCustomizerMock.customize(any(), any(), any(), any(), any()))
 				.thenAnswer(invocation -> Mono.just(invocation.getArguments()[0]));
 			return requestCustomizerMock;
 		}

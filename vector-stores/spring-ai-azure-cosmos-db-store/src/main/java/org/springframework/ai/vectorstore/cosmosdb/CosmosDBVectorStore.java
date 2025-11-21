@@ -60,7 +60,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -128,31 +128,27 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			logger.error("Error creating database: {}", e.getMessage());
 		}
 
-		initializeContainer(this.containerName, this.databaseName, this.vectorStoreThroughput, this.vectorDimensions,
-				this.partitionKeyPath);
+		initializeContainer();
 	}
 
 	public static Builder builder(CosmosAsyncClient cosmosClient, EmbeddingModel embeddingModel) {
 		return new Builder(cosmosClient, embeddingModel);
 	}
 
-	private void initializeContainer(String containerName, String databaseName, int vectorStoreThroughput,
-			long vectorDimensions, String partitionKeyPath) {
+	private void initializeContainer() {
 
 		// Set defaults if not provided
 		if (this.vectorStoreThroughput == 0) {
 			this.vectorStoreThroughput = 400;
-			vectorStoreThroughput = this.vectorStoreThroughput;
 		}
 		if (this.partitionKeyPath == null) {
 			this.partitionKeyPath = "/id";
-			partitionKeyPath = this.partitionKeyPath;
 		}
 
 		// handle hierarchical partition key
 		PartitionKeyDefinition subPartitionKeyDefinition = new PartitionKeyDefinition();
 		List<String> pathsFromCommaSeparatedList = new ArrayList<>();
-		String[] subPartitionKeyPaths = partitionKeyPath.split(",");
+		String[] subPartitionKeyPaths = this.partitionKeyPath.split(",");
 		Collections.addAll(pathsFromCommaSeparatedList, subPartitionKeyPaths);
 		if (subPartitionKeyPaths.length > 1) {
 			subPartitionKeyDefinition.setPaths(pathsFromCommaSeparatedList);
@@ -229,7 +225,7 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	public void doAdd(List<Document> documents) {
 
 		// Batch the documents based on the batching strategy
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		// Create a list to hold both the CosmosItemOperation and the corresponding

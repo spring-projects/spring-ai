@@ -60,4 +60,69 @@ public class ChatCompletionRequestTests {
 		assertThat(request.temperature()).isEqualTo(99.9);
 	}
 
+	@Test
+	public void createRequestWithToolChoice() {
+
+		var client = AnthropicChatModel.builder()
+			.anthropicApi(AnthropicApi.builder().apiKey("TEST").build())
+			.defaultOptions(AnthropicChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		// Test with ToolChoiceAuto
+		var autoToolChoice = new AnthropicApi.ToolChoiceAuto();
+		var prompt = client.buildRequestPrompt(
+				new Prompt("Test message content", AnthropicChatOptions.builder().toolChoice(autoToolChoice).build()));
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.toolChoice()).isNotNull();
+		assertThat(request.toolChoice()).isInstanceOf(AnthropicApi.ToolChoiceAuto.class);
+		assertThat(request.toolChoice().type()).isEqualTo("auto");
+
+		// Test with ToolChoiceAny
+		var anyToolChoice = new AnthropicApi.ToolChoiceAny();
+		prompt = client.buildRequestPrompt(
+				new Prompt("Test message content", AnthropicChatOptions.builder().toolChoice(anyToolChoice).build()));
+
+		request = client.createRequest(prompt, false);
+
+		assertThat(request.toolChoice()).isNotNull();
+		assertThat(request.toolChoice()).isInstanceOf(AnthropicApi.ToolChoiceAny.class);
+		assertThat(request.toolChoice().type()).isEqualTo("any");
+
+		// Test with ToolChoiceTool
+		var specificToolChoice = new AnthropicApi.ToolChoiceTool("get_weather");
+		prompt = client.buildRequestPrompt(new Prompt("Test message content",
+				AnthropicChatOptions.builder().toolChoice(specificToolChoice).build()));
+
+		request = client.createRequest(prompt, false);
+
+		assertThat(request.toolChoice()).isNotNull();
+		assertThat(request.toolChoice()).isInstanceOf(AnthropicApi.ToolChoiceTool.class);
+		assertThat(request.toolChoice().type()).isEqualTo("tool");
+		assertThat(((AnthropicApi.ToolChoiceTool) request.toolChoice()).name()).isEqualTo("get_weather");
+
+		// Test with ToolChoiceNone
+		var noneToolChoice = new AnthropicApi.ToolChoiceNone();
+		prompt = client.buildRequestPrompt(
+				new Prompt("Test message content", AnthropicChatOptions.builder().toolChoice(noneToolChoice).build()));
+
+		request = client.createRequest(prompt, false);
+
+		assertThat(request.toolChoice()).isNotNull();
+		assertThat(request.toolChoice()).isInstanceOf(AnthropicApi.ToolChoiceNone.class);
+		assertThat(request.toolChoice().type()).isEqualTo("none");
+
+		// Test with disableParallelToolUse
+		var autoWithDisabledParallel = new AnthropicApi.ToolChoiceAuto(true);
+		prompt = client.buildRequestPrompt(new Prompt("Test message content",
+				AnthropicChatOptions.builder().toolChoice(autoWithDisabledParallel).build()));
+
+		request = client.createRequest(prompt, false);
+
+		assertThat(request.toolChoice()).isNotNull();
+		assertThat(request.toolChoice()).isInstanceOf(AnthropicApi.ToolChoiceAuto.class);
+		assertThat(((AnthropicApi.ToolChoiceAuto) request.toolChoice()).disableParallelToolUse()).isTrue();
+	}
+
 }

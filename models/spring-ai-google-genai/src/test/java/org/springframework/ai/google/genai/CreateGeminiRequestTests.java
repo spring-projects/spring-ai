@@ -340,4 +340,82 @@ public class CreateGeminiRequestTests {
 		assertThat(request.config().thinkingConfig().get().thinkingBudget().get()).isEqualTo(25000);
 	}
 
+	@Test
+	public void createRequestWithNullThinkingBudget() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(null).build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.contents()).hasSize(1);
+		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
+
+		// Verify thinkingConfig is not present when thinkingBudget is null
+		assertThat(request.config().thinkingConfig()).isEmpty();
+	}
+
+	@Test
+	public void createRequestWithZeroThinkingBudget() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingBudget(0).build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingBudget()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingBudget().get()).isEqualTo(0);
+	}
+
+	@Test
+	public void createRequestWithNoMessages() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt(List.of())));
+
+		assertThat(request.contents()).isEmpty();
+	}
+
+	@Test
+	public void createRequestWithOnlySystemMessage() {
+		var systemMessage = new SystemMessage("System Message Only");
+
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt(List.of(systemMessage))));
+
+		assertThat(request.config().systemInstruction()).isPresent();
+		assertThat(request.contents()).isEmpty();
+	}
+
+	@Test
+	public void createRequestWithLabels() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.labels(java.util.Map.of("org", "my-org", "env", "test"))
+				.build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.config().labels()).isPresent();
+		assertThat(request.config().labels().get()).containsEntry("org", "my-org");
+		assertThat(request.config().labels().get()).containsEntry("env", "test");
+	}
+
 }

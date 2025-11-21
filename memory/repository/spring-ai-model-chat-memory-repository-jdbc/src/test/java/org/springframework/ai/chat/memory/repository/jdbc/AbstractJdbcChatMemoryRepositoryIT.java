@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.memory.repository.jdbc;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -35,8 +34,8 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
@@ -84,7 +83,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 		assertThat(result.get("content")).isEqualTo(message.getText());
 		assertThat(result.get("type")).isEqualTo(messageType.name());
-		assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+		assertThat(result.get("timestamp")).isNotNull();
 	}
 
 	@Test
@@ -114,7 +113,7 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 			assertThat(result.get("conversation_id")).isEqualTo(conversationId);
 			assertThat(result.get("content")).isEqualTo(message.getText());
 			assertThat(result.get("type")).isEqualTo(message.getMessageType().name());
-			assertThat(result.get("timestamp")).isInstanceOf(Timestamp.class);
+			assertThat(result.get("timestamp")).isNotNull();
 		}
 
 		var count = this.chatMemoryRepository.findByConversationId(conversationId).size();
@@ -184,6 +183,30 @@ public abstract class AbstractJdbcChatMemoryRepositoryIT {
 		// Messages should be in the original order (ASC)
 		assertThat(retrievedContents).containsExactly("1-First message", "2-Second message", "3-Third message",
 				"4-Fourth message");
+	}
+
+	@Test
+	void testMessageOrderWithLargeBatch() {
+		var conversationId = UUID.randomUUID().toString();
+
+		// Create a large batch of 50 messages to ensure timestamp ordering issues
+		// are detected. With the old millisecond-precision code, MySQL/MariaDB's
+		// second-precision TIMESTAMP columns would truncate all timestamps to the
+		// same value, causing random ordering. This test validates the fix.
+		List<Message> messages = new java.util.ArrayList<>();
+		for (int i = 0; i < 50; i++) {
+			messages.add(new UserMessage("Message " + i));
+		}
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+
+		List<Message> retrievedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
+
+		// Verify we got all messages back in the exact order they were saved
+		assertThat(retrievedMessages).hasSize(50);
+		for (int i = 0; i < 50; i++) {
+			assertThat(retrievedMessages.get(i).getText()).isEqualTo("Message " + i);
+		}
 	}
 
 	/**

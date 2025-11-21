@@ -23,6 +23,7 @@ import org.springframework.ai.model.ChatModelDescription;
  *
  * @author Siarhei Blashuk
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public enum OllamaModel implements ChatModelDescription {
@@ -50,6 +51,23 @@ public enum OllamaModel implements ChatModelDescription {
 	 * Qwen3 4B
 	 */
 	QWEN3_4B("qwen3:4b"),
+
+	/**
+	 * Qwen3 4B with thinking support. This variant auto-enables thinking by default in
+	 * Ollama 0.12+, providing separate reasoning traces in the response.
+	 * @see OllamaChatOptions#thinkOption
+	 */
+	QWEN3_4B_THINKING("qwen3:4b-thinking"),
+
+	/**
+	 * Qwen3 1.7b
+	 */
+	QWEN_3_1_7_B("qwen3:1.7b"),
+
+	/**
+	 * Qwen3 0.6b
+	 */
+	QWEN_3_06B("qwen3:0.6b"),
 
 	/**
 	 * QwQ is the reasoning model of the Qwen series.

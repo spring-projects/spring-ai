@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,8 +41,10 @@ class ToolExecutionResultTests {
 			.conversationHistory(List.of(new AssistantMessage("Hello, how can I help you?"),
 					new UserMessage("I would like to know the weather in London"),
 					new AssistantMessage("Call the weather tool"),
-					new ToolResponseMessage(List.of(new ToolResponseMessage.ToolResponse("42", "weather",
-							"The weather in London is 20 degrees Celsius")))))
+					ToolResponseMessage.builder()
+						.responses(List
+							.of(new ToolResponse("42", "weather", "The weather in London is 20 degrees Celsius")))
+						.build()))
 			.build();
 
 		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
@@ -59,11 +62,11 @@ class ToolExecutionResultTests {
 			.conversationHistory(List.of(new AssistantMessage("Hello, how can I help you?"),
 					new UserMessage("I would like to know the weather in London"),
 					new AssistantMessage("Call the weather tool and the news tool"),
-					new ToolResponseMessage(List.of(
-							new ToolResponseMessage.ToolResponse("42", "weather",
-									"The weather in London is 20 degrees Celsius"),
-							new ToolResponseMessage.ToolResponse("21", "news",
-									"There is heavy traffic in the centre of London")))))
+					ToolResponseMessage.builder()
+						.responses(List.of(
+								new ToolResponse("42", "weather", "The weather in London is 20 degrees Celsius"),
+								new ToolResponse("21", "news", "There is heavy traffic in the centre of London")))
+						.build()))
 			.build();
 
 		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
@@ -92,8 +95,8 @@ class ToolExecutionResultTests {
 	@Test
 	void whenToolResponseWithEmptyResponseListThenEmptyGenerations() {
 		var toolExecutionResult = ToolExecutionResult.builder()
-			.conversationHistory(
-					List.of(new AssistantMessage("Processing request"), new ToolResponseMessage(List.of())))
+			.conversationHistory(List.of(new AssistantMessage("Processing request"),
+					ToolResponseMessage.builder().responses(List.of()).build()))
 			.build();
 
 		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
@@ -104,8 +107,8 @@ class ToolExecutionResultTests {
 	@Test
 	void whenToolResponseWithNullContentThenGenerationWithNullText() {
 		var toolExecutionResult = ToolExecutionResult.builder()
-			.conversationHistory(
-					List.of(new ToolResponseMessage(List.of(new ToolResponseMessage.ToolResponse("1", "tool", null)))))
+			.conversationHistory(List
+				.of(ToolResponseMessage.builder().responses(List.of(new ToolResponse("1", "tool", null))).build()))
 			.build();
 
 		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
@@ -117,8 +120,8 @@ class ToolExecutionResultTests {
 	@Test
 	void whenToolResponseWithEmptyStringContentThenGenerationWithEmptyText() {
 		var toolExecutionResult = ToolExecutionResult.builder()
-			.conversationHistory(
-					List.of(new ToolResponseMessage(List.of(new ToolResponseMessage.ToolResponse("1", "tool", "")))))
+			.conversationHistory(List
+				.of(ToolResponseMessage.builder().responses(List.of(new ToolResponse("1", "tool", ""))).build()))
 			.build();
 
 		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
@@ -138,6 +141,57 @@ class ToolExecutionResultTests {
 
 		assertThat(toolExecutionResult.conversationHistory()).isNotNull();
 		assertThat(toolExecutionResult.conversationHistory()).isEmpty();
+	}
+
+	@Test
+	void whenMultipleToolResponseMessagesOnlyLastOneIsProcessed() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(new AssistantMessage("First response"),
+					ToolResponseMessage.builder()
+						.responses(List.of(new ToolResponse("1", "old_tool", "Old response")))
+						.build(),
+					new AssistantMessage("Second response"),
+					ToolResponseMessage.builder()
+						.responses(List.of(new ToolResponse("2", "new_tool", "New response")))
+						.build()))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isEqualTo("New response");
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("new_tool");
+	}
+
+	@Test
+	void whenToolResponseWithEmptyToolNameThenMetadataContainsEmptyString() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(ToolResponseMessage.builder()
+				.responses(List.of(new ToolResponse("1", "", "Response content")))
+				.build()))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME)).isEmpty();
+	}
+
+	@Test
+	void whenToolResponseWithNullToolIdThenGenerationStillCreated() {
+		var toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(List.of(ToolResponseMessage.builder()
+				.responses(List.of(new ToolResponse(null, "tool", "Response content")))
+				.build()))
+			.build();
+
+		var generations = ToolExecutionResult.buildGenerations(toolExecutionResult);
+
+		assertThat(generations).hasSize(1);
+		assertThat(generations.get(0).getOutput().getText()).isEqualTo("Response content");
+		assertThat((String) generations.get(0).getMetadata().get(ToolExecutionResult.METADATA_TOOL_NAME))
+			.isEqualTo("tool");
 	}
 
 }

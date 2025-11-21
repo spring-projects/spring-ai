@@ -22,52 +22,83 @@ import java.util.Set;
 import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpLogging;
 import org.springaicommunity.mcp.annotation.McpProgress;
+import org.springaicommunity.mcp.annotation.McpPromptListChanged;
+import org.springaicommunity.mcp.annotation.McpResourceListChanged;
 import org.springaicommunity.mcp.annotation.McpSampling;
+import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
-import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
+import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
+import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
+import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
+import org.springframework.aot.hint.MemberCategory;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
  * @author Christian Tzolov
+ * @author Josh Long
+ * @author Fu Jian
  */
 @AutoConfiguration
 @ConditionalOnClass(McpLogging.class)
 @ConditionalOnProperty(prefix = McpClientAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(McpClientAnnotationScannerProperties.class)
+@ImportRuntimeHints(McpClientAnnotationScannerAutoConfiguration.AnnotationHints.class)
 public class McpClientAnnotationScannerAutoConfiguration {
 
 	private static final Set<Class<? extends Annotation>> CLIENT_MCP_ANNOTATIONS = Set.of(McpLogging.class,
-			McpSampling.class, McpElicitation.class, McpProgress.class);
+			McpSampling.class, McpElicitation.class, McpProgress.class, McpToolListChanged.class,
+			McpResourceListChanged.class, McpPromptListChanged.class);
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ClientMcpAnnotatedBeans clientAnnotatedBeans() {
-		return new ClientMcpAnnotatedBeans();
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public ClientMcpSyncHandlersRegistry clientMcpSyncHandlersRegistry() {
+		return new ClientMcpSyncHandlersRegistry();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ClientAnnotatedMethodBeanPostProcessor clientAnnotatedMethodBeanPostProcessor(
-			ClientMcpAnnotatedBeans clientMcpAnnotatedBeans, McpClientAnnotationScannerProperties properties) {
-		return new ClientAnnotatedMethodBeanPostProcessor(clientMcpAnnotatedBeans, CLIENT_MCP_ANNOTATIONS);
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry() {
+		return new ClientMcpAsyncHandlersRegistry();
+	}
+
+	@Bean
+	static ClientAnnotatedBeanFactoryInitializationAotProcessor clientAnnotatedBeanFactoryInitializationAotProcessor() {
+		return new ClientAnnotatedBeanFactoryInitializationAotProcessor(CLIENT_MCP_ANNOTATIONS);
 	}
 
 	public static class ClientMcpAnnotatedBeans extends AbstractMcpAnnotatedBeans {
 
 	}
 
-	public static class ClientAnnotatedMethodBeanPostProcessor extends AbstractAnnotatedMethodBeanPostProcessor {
+	public static class ClientAnnotatedBeanFactoryInitializationAotProcessor
+			extends AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor {
 
-		public ClientAnnotatedMethodBeanPostProcessor(ClientMcpAnnotatedBeans clientMcpAnnotatedBeans,
+		public ClientAnnotatedBeanFactoryInitializationAotProcessor(
 				Set<Class<? extends Annotation>> targetAnnotations) {
-			super(clientMcpAnnotatedBeans, targetAnnotations);
+			super(targetAnnotations);
+		}
+
+	}
+
+	static class AnnotationHints implements RuntimeHintsRegistrar {
+
+		@Override
+		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+			CLIENT_MCP_ANNOTATIONS.forEach(an -> hints.reflection().registerType(an, MemberCategory.values()));
 		}
 
 	}

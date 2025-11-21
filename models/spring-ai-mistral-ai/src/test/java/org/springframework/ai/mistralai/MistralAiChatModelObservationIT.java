@@ -38,7 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.StringUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  *
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author Jason Smith
  */
 @SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -180,7 +181,7 @@ public class MistralAiChatModelObservationIT {
 
 		@Bean
 		public MistralAiApi mistralAiApi() {
-			return new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
+			return MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 		}
 
 		@Bean
@@ -189,7 +190,7 @@ public class MistralAiChatModelObservationIT {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)
 				.defaultOptions(MistralAiChatOptions.builder().build())
-				.retryTemplate(RetryTemplate.defaultInstance())
+				.retryTemplate(new RetryTemplate())
 				.observationRegistry(observationRegistry)
 				.build();
 		}

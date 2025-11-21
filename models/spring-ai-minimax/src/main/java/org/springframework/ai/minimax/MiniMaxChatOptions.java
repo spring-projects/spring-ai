@@ -397,7 +397,7 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 		return fromOptions(this);
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected MiniMaxChatOptions options;
 

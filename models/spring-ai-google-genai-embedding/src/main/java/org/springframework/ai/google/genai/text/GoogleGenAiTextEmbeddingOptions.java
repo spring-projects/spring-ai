@@ -133,12 +133,12 @@ public class GoogleGenAiTextEmbeddingOptions implements EmbeddingOptions {
 	public enum TaskType {
 
 		/**
-		 * Specifies the given text is a document in a search/retrieval setting.
+		 * Specifies the given text is a query in a search/retrieval setting.
 		 */
 		RETRIEVAL_QUERY,
 
 		/**
-		 * Specifies the given text is a query in a search/retrieval setting.
+		 * Specifies the given text is a document in a search/retrieval setting.
 		 */
 		RETRIEVAL_DOCUMENT,
 
@@ -170,7 +170,7 @@ public class GoogleGenAiTextEmbeddingOptions implements EmbeddingOptions {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected GoogleGenAiTextEmbeddingOptions options;
 

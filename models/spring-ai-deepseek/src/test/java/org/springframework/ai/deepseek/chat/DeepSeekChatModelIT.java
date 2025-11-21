@@ -224,10 +224,12 @@ class DeepSeekChatModelIT {
 				```
 				""";
 		UserMessage userMessage = new UserMessage(userMessageContent);
-		Message assistantMessage = new DeepSeekAssistantMessage("{\"code\":200,\"result\":{\"total\":1,\"data\":[1");
+		Message assistantMessage = AssistantMessage.builder()
+			.content("{\"code\":200,\"result\":{\"total\":1,\"data\":[1")
+			.build();
 		Prompt prompt = new Prompt(List.of(userMessage, assistantMessage));
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getText().equals(",2,3]}}"));
+		assertThat(response.getResult().getOutput().getText()).isEqualTo(",2,3]}}");
 	}
 
 	/**

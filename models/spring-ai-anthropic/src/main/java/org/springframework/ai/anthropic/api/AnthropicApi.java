@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
@@ -47,8 +48,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -65,6 +64,8 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Jonghoon Park
  * @author Claudio Silva Junior
  * @author Filip Hrisafov
+ * @author Soby Chacko
+ * @author Austin Dase
  * @since 1.0.0
  */
 public final class AnthropicApi {
@@ -85,7 +86,7 @@ public final class AnthropicApi {
 
 	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04,pdfs-2024-09-25";
 
-	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
+	public static final String BETA_EXTENDED_CACHE_TTL = "extended-cache-ttl-2025-04-11";
 
 	private static final String HEADER_X_API_KEY = "x-api-key";
 
@@ -146,13 +147,27 @@ public final class AnthropicApi {
 	}
 
 	/**
+	 * Create a new client api.
+	 * @param completionsPath path to append to the base URL.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 * @param apiKey Anthropic api Key.
+	 */
+	public AnthropicApi(String completionsPath, RestClient restClient, WebClient webClient, ApiKey apiKey) {
+		this.completionsPath = completionsPath;
+		this.restClient = restClient;
+		this.webClient = webClient;
+		this.apiKey = apiKey;
+	}
+
+	/**
 	 * Creates a model response for the given chat conversation.
 	 * @param chatRequest The chat completion request.
 	 * @return Entity response with {@link ChatCompletionResponse} as a body and HTTP
 	 * status code and headers.
 	 */
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionEntity(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -163,7 +178,7 @@ public final class AnthropicApi {
 	 * status code and headers.
 	 */
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
@@ -189,7 +204,7 @@ public final class AnthropicApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionStream(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -200,7 +215,7 @@ public final class AnthropicApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
@@ -253,7 +268,7 @@ public final class AnthropicApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HEADER_X_API_KEY)) {
+		if (!headers.containsHeader(HEADER_X_API_KEY)) {
 			String apiKeyValue = this.apiKey.getValue();
 			if (StringUtils.hasText(apiKeyValue)) {
 				headers.add(HEADER_X_API_KEY, apiKeyValue);
@@ -271,14 +286,24 @@ public final class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-sonnet-4-5 model.
+		 */
+		CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
+
+		/**
+		 * The claude-opus-4-1 model.
+		 */
+		CLAUDE_OPUS_4_1("claude-opus-4-1"),
+
+		/**
 		 * The claude-opus-4-0 model.
 		 */
-		CLAUDE_OPUS_4("claude-opus-4-0"),
+		CLAUDE_OPUS_4_0("claude-opus-4-0"),
 
 		/**
 		 * The claude-sonnet-4-0 model.
 		 */
-		CLAUDE_SONNET_4("claude-sonnet-4-0"),
+		CLAUDE_SONNET_4_0("claude-sonnet-4-0"),
 
 		/**
 		 * The claude-3-7-sonnet-latest model.
@@ -286,7 +311,7 @@ public final class AnthropicApi {
 		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
 
 		/**
-		 * The claude-3-5-sonnet-latest model.
+		 * The claude-3-5-sonnet-latest model.(Deprecated on October 28, 2025)
 		 */
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
 
@@ -308,18 +333,7 @@ public final class AnthropicApi {
 		/**
 		 * The CLAUDE_3_HAIKU
 		 */
-		CLAUDE_3_HAIKU("claude-3-haiku-20240307"),
-
-		// Legacy models
-		/**
-		 * The CLAUDE_2_1 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2_1("claude-2.1"),
-
-		/**
-		 * The CLAUDE_2_0 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2("claude-2.0");
+		CLAUDE_3_HAIKU("claude-3-haiku-20240307");
 
 		// @formatter:on
 
@@ -472,8 +486,10 @@ public final class AnthropicApi {
 	 * <a href="https://docs.anthropic.com/claude/docs/models-overview">models</a> for
 	 * additional details and options.
 	 * @param messages Input messages.
-	 * @param system System prompt. A system prompt is a way of providing context and
-	 * instructions to Claude, such as specifying a particular goal or role. See our
+	 * @param system System prompt. Can be a String (for compatibility) or a
+	 * List&lt;ContentBlock&gt; (for caching support). A system prompt is a way of
+	 * providing context and instructions to Claude, such as specifying a particular goal
+	 * or role. See our
 	 * <a href="https://docs.anthropic.com/claude/docs/system-prompts">guide</a> to system
 	 * prompts.
 	 * @param maxTokens The maximum number of tokens to generate before stopping. Note
@@ -506,6 +522,8 @@ public final class AnthropicApi {
 	 * return tool_use content blocks that represent the model's use of those tools. You
 	 * can then run those tools using the tool input generated by the model and then
 	 * optionally return results back to the model using tool_result content blocks.
+	 * @param toolChoice How the model should use the provided tools. The model can use a
+	 * specific tool, any available tool, decide by itself, or not use tools at all.
 	 * @param thinking Configuration for the model's thinking mode. When enabled, the
 	 * model can perform more in-depth reasoning before responding to a query.
 	 */
@@ -514,7 +532,7 @@ public final class AnthropicApi {
 	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("messages") List<AnthropicMessage> messages,
-		@JsonProperty("system") String system,
+		@JsonProperty("system") Object system,
 		@JsonProperty("max_tokens") Integer maxTokens,
 		@JsonProperty("metadata") Metadata metadata,
 		@JsonProperty("stop_sequences") List<String> stopSequences,
@@ -523,17 +541,19 @@ public final class AnthropicApi {
 		@JsonProperty("top_p") Double topP,
 		@JsonProperty("top_k") Integer topK,
 		@JsonProperty("tools") List<Tool> tools,
+		@JsonProperty("tool_choice") ToolChoice toolChoice,
 		@JsonProperty("thinking") ThinkingConfig thinking) {
 		// @formatter:on
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				Double temperature, Boolean stream) {
-			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null);
+			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null, null);
 		}
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				List<String> stopSequences, Double temperature, Boolean stream) {
-			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null);
+			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null,
+					null);
 		}
 
 		public static ChatCompletionRequestBuilder builder() {
@@ -558,6 +578,18 @@ public final class AnthropicApi {
 		}
 
 		/**
+		 * @param type is the cache type supported by anthropic. <a href=
+		 * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record CacheControl(@JsonProperty("type") String type, @JsonProperty("ttl") String ttl) {
+
+			public CacheControl(String type) {
+				this(type, "5m");
+			}
+		}
+
+		/**
 		 * Configuration for the model's thinking mode.
 		 *
 		 * @param type The type of thinking mode. Currently, "enabled" is supported.
@@ -577,7 +609,7 @@ public final class AnthropicApi {
 
 		private List<AnthropicMessage> messages;
 
-		private String system;
+		private Object system;
 
 		private Integer maxTokens;
 
@@ -594,6 +626,8 @@ public final class AnthropicApi {
 		private Integer topK;
 
 		private List<Tool> tools;
+
+		private ToolChoice toolChoice;
 
 		private ChatCompletionRequest.ThinkingConfig thinking;
 
@@ -612,6 +646,7 @@ public final class AnthropicApi {
 			this.topP = request.topP;
 			this.topK = request.topK;
 			this.tools = request.tools;
+			this.toolChoice = request.toolChoice;
 			this.thinking = request.thinking;
 		}
 
@@ -630,7 +665,7 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder system(String system) {
+		public ChatCompletionRequestBuilder system(Object system) {
 			this.system = system;
 			return this;
 		}
@@ -675,6 +710,11 @@ public final class AnthropicApi {
 			return this;
 		}
 
+		public ChatCompletionRequestBuilder toolChoice(ToolChoice toolChoice) {
+			this.toolChoice = toolChoice;
+			return this;
+		}
+
 		public ChatCompletionRequestBuilder thinking(ChatCompletionRequest.ThinkingConfig thinking) {
 			this.thinking = thinking;
 			return this;
@@ -687,7 +727,8 @@ public final class AnthropicApi {
 
 		public ChatCompletionRequest build() {
 			return new ChatCompletionRequest(this.model, this.messages, this.system, this.maxTokens, this.metadata,
-					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools, this.thinking);
+					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools,
+					this.toolChoice, this.thinking);
 		}
 
 	}
@@ -720,6 +761,53 @@ public final class AnthropicApi {
 		@JsonProperty("content") List<ContentBlock> content,
 		@JsonProperty("role") Role role) {
 		// @formatter:on
+	}
+
+	/**
+	 * Citations configuration for document ContentBlocks.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record CitationsConfig(@JsonProperty("enabled") Boolean enabled) {
+	}
+
+	/**
+	 * Citation response structure from Anthropic API. Maps to the actual API response
+	 * format for citations. Contains location information that varies by document type:
+	 * character indices for plain text, page numbers for PDFs, or content block indices
+	 * for custom content.
+	 *
+	 * @param type The citation location type ("char_location", "page_location", or
+	 * "content_block_location")
+	 * @param citedText The text that was cited from the document
+	 * @param documentIndex The index of the document that was cited (0-based)
+	 * @param documentTitle The title of the document that was cited
+	 * @param startCharIndex The starting character index for "char_location" type
+	 * (0-based, inclusive)
+	 * @param endCharIndex The ending character index for "char_location" type (exclusive)
+	 * @param startPageNumber The starting page number for "page_location" type (1-based,
+	 * inclusive)
+	 * @param endPageNumber The ending page number for "page_location" type (exclusive)
+	 * @param startBlockIndex The starting content block index for
+	 * "content_block_location" type (0-based, inclusive)
+	 * @param endBlockIndex The ending content block index for "content_block_location"
+	 * type (exclusive)
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record CitationResponse(@JsonProperty("type") String type, @JsonProperty("cited_text") String citedText,
+			@JsonProperty("document_index") Integer documentIndex, @JsonProperty("document_title") String documentTitle,
+
+			// For char_location type
+			@JsonProperty("start_char_index") Integer startCharIndex,
+			@JsonProperty("end_char_index") Integer endCharIndex,
+
+			// For page_location type
+			@JsonProperty("start_page_number") Integer startPageNumber,
+			@JsonProperty("end_page_number") Integer endPageNumber,
+
+			// For content_block_location type
+			@JsonProperty("start_block_index") Integer startBlockIndex,
+			@JsonProperty("end_block_index") Integer endBlockIndex) {
 	}
 
 	/**
@@ -763,8 +851,16 @@ public final class AnthropicApi {
 		@JsonProperty("thinking") String thinking,
 
 		// Redacted Thinking only
-		@JsonProperty("data") String data
-		) {
+		@JsonProperty("data") String data,
+
+		// cache object
+		@JsonProperty("cache_control") CacheControl cacheControl,
+
+		// Citation fields
+		@JsonProperty("title") String title,
+		@JsonProperty("context") String context,
+		@JsonProperty("citations") Object citations // Can be CitationsConfig for requests or List<CitationResponse> for responses
+	) {
 		// @formatter:on
 
 		/**
@@ -782,7 +878,7 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Type type, Source source) {
-			this(type, source, null, null, null, null, null, null, null, null, null, null);
+			this(type, source, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -790,7 +886,8 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Source source) {
-			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null);
 		}
 
 		/**
@@ -798,7 +895,11 @@ public final class AnthropicApi {
 		 * @param text The text of the content.
 		 */
 		public ContentBlock(String text) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, null, null, null, null);
+		}
+
+		public ContentBlock(String text, CacheControl cache) {
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, cache, null, null, null);
 		}
 
 		// Tool result
@@ -809,7 +910,8 @@ public final class AnthropicApi {
 		 * @param content The content of the tool result.
 		 */
 		public ContentBlock(Type type, String toolUseId, String content) {
-			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null);
+			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null, null, null, null,
+					null);
 		}
 
 		/**
@@ -820,7 +922,7 @@ public final class AnthropicApi {
 		 * @param index The index of the content block.
 		 */
 		public ContentBlock(Type type, Source source, String text, Integer index) {
-			this(type, source, text, index, null, null, null, null, null, null, null, null);
+			this(type, source, text, index, null, null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		// Tool use input JSON delta streaming
@@ -832,7 +934,25 @@ public final class AnthropicApi {
 		 * @param input The input of the tool use.
 		 */
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
-			this(type, null, null, null, id, name, input, null, null, null, null, null);
+			this(type, null, null, null, id, name, input, null, null, null, null, null, null, null, null, null);
+		}
+
+		/**
+		 * Create a document ContentBlock with citations and optional caching.
+		 * @param source The document source
+		 * @param title Optional document title
+		 * @param context Optional document context
+		 * @param citationsEnabled Whether citations are enabled
+		 * @param cacheControl Optional cache control (can be null)
+		 */
+		public ContentBlock(Source source, String title, String context, boolean citationsEnabled,
+				CacheControl cacheControl) {
+			this(Type.DOCUMENT, source, null, null, null, null, null, null, null, null, null, null, cacheControl, title,
+					context, citationsEnabled ? new CitationsConfig(true) : null);
+		}
+
+		public static ContentBlockBuilder from(ContentBlock contentBlock) {
+			return new ContentBlockBuilder(contentBlock);
 		}
 
 		/**
@@ -941,7 +1061,8 @@ public final class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
 			@JsonProperty("data") String data,
-			@JsonProperty("url") String url) {
+			@JsonProperty("url") String url,
+			@JsonProperty("content") List<ContentBlock> content) {
 			// @formatter:on
 
 			/**
@@ -950,15 +1071,144 @@ public final class AnthropicApi {
 			 * @param data The content data.
 			 */
 			public Source(String mediaType, String data) {
-				this("base64", mediaType, data, null);
+				this("base64", mediaType, data, null, null);
 			}
 
 			public Source(String url) {
-				this("url", null, null, url);
+				this("url", null, null, url, null);
+			}
+
+			public Source(List<ContentBlock> content) {
+				this("content", null, null, null, content);
 			}
 
 		}
 
+		public static class ContentBlockBuilder {
+
+			private Type type;
+
+			private Source source;
+
+			private String text;
+
+			private Integer index;
+
+			private String id;
+
+			private String name;
+
+			private Map<String, Object> input;
+
+			private String toolUseId;
+
+			private String content;
+
+			private String signature;
+
+			private String thinking;
+
+			private String data;
+
+			private CacheControl cacheControl;
+
+			private String title;
+
+			private String context;
+
+			private Object citations;
+
+			public ContentBlockBuilder(ContentBlock contentBlock) {
+				this.type = contentBlock.type;
+				this.source = contentBlock.source;
+				this.text = contentBlock.text;
+				this.index = contentBlock.index;
+				this.id = contentBlock.id;
+				this.name = contentBlock.name;
+				this.input = contentBlock.input;
+				this.toolUseId = contentBlock.toolUseId;
+				this.content = contentBlock.content;
+				this.signature = contentBlock.signature;
+				this.thinking = contentBlock.thinking;
+				this.data = contentBlock.data;
+				this.cacheControl = contentBlock.cacheControl;
+				this.title = contentBlock.title;
+				this.context = contentBlock.context;
+				this.citations = contentBlock.citations;
+			}
+
+			public ContentBlockBuilder type(Type type) {
+				this.type = type;
+				return this;
+			}
+
+			public ContentBlockBuilder source(Source source) {
+				this.source = source;
+				return this;
+			}
+
+			public ContentBlockBuilder text(String text) {
+				this.text = text;
+				return this;
+			}
+
+			public ContentBlockBuilder index(Integer index) {
+				this.index = index;
+				return this;
+			}
+
+			public ContentBlockBuilder id(String id) {
+				this.id = id;
+				return this;
+			}
+
+			public ContentBlockBuilder name(String name) {
+				this.name = name;
+				return this;
+			}
+
+			public ContentBlockBuilder input(Map<String, Object> input) {
+				this.input = input;
+				return this;
+			}
+
+			public ContentBlockBuilder toolUseId(String toolUseId) {
+				this.toolUseId = toolUseId;
+				return this;
+			}
+
+			public ContentBlockBuilder content(String content) {
+				this.content = content;
+				return this;
+			}
+
+			public ContentBlockBuilder signature(String signature) {
+				this.signature = signature;
+				return this;
+			}
+
+			public ContentBlockBuilder thinking(String thinking) {
+				this.thinking = thinking;
+				return this;
+			}
+
+			public ContentBlockBuilder data(String data) {
+				this.data = data;
+				return this;
+			}
+
+			public ContentBlockBuilder cacheControl(CacheControl cacheControl) {
+				this.cacheControl = cacheControl;
+				return this;
+			}
+
+			public ContentBlock build() {
+				return new ContentBlock(this.type, this.source, this.text, this.index, this.id, this.name, this.input,
+						this.toolUseId, this.content, this.signature, this.thinking, this.data, this.cacheControl,
+						this.title, this.context, this.citations);
+			}
+
+		}
 	}
 
 	///////////////////////////////////////
@@ -971,14 +1221,144 @@ public final class AnthropicApi {
 	 * @param name The name of the tool.
 	 * @param description A description of the tool.
 	 * @param inputSchema The input schema of the tool.
+	 * @param cacheControl Optional cache control for this tool.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(
 	// @formatter:off
 		@JsonProperty("name") String name,
 		@JsonProperty("description") String description,
-		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
+		@JsonProperty("input_schema") Map<String, Object> inputSchema,
+		@JsonProperty("cache_control") CacheControl cacheControl) {
 		// @formatter:on
+
+		/**
+		 * Constructor for backward compatibility without cache control.
+		 */
+		public Tool(String name, String description, Map<String, Object> inputSchema) {
+			this(name, description, inputSchema, null);
+		}
+
+	}
+
+	/**
+	 * Base interface for tool choice options.
+	 */
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
+			visible = true)
+	@JsonSubTypes({ @JsonSubTypes.Type(value = ToolChoiceAuto.class, name = "auto"),
+			@JsonSubTypes.Type(value = ToolChoiceAny.class, name = "any"),
+			@JsonSubTypes.Type(value = ToolChoiceTool.class, name = "tool"),
+			@JsonSubTypes.Type(value = ToolChoiceNone.class, name = "none") })
+	public interface ToolChoice {
+
+		@JsonProperty("type")
+		String type();
+
+	}
+
+	/**
+	 * Auto tool choice - the model will automatically decide whether to use tools.
+	 *
+	 * @param type The type of tool choice, always "auto".
+	 * @param disableParallelToolUse Whether to disable parallel tool use. Defaults to
+	 * false. If set to true, the model will output at most one tool use.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceAuto(@JsonProperty("type") String type,
+			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+
+		/**
+		 * Create an auto tool choice with default settings.
+		 */
+		public ToolChoiceAuto() {
+			this("auto", null);
+		}
+
+		/**
+		 * Create an auto tool choice with specific parallel tool use setting.
+		 * @param disableParallelToolUse Whether to disable parallel tool use.
+		 */
+		public ToolChoiceAuto(Boolean disableParallelToolUse) {
+			this("auto", disableParallelToolUse);
+		}
+
+	}
+
+	/**
+	 * Any tool choice - the model will use any available tools.
+	 *
+	 * @param type The type of tool choice, always "any".
+	 * @param disableParallelToolUse Whether to disable parallel tool use. Defaults to
+	 * false. If set to true, the model will output exactly one tool use.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceAny(@JsonProperty("type") String type,
+			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+
+		/**
+		 * Create an any tool choice with default settings.
+		 */
+		public ToolChoiceAny() {
+			this("any", null);
+		}
+
+		/**
+		 * Create an any tool choice with specific parallel tool use setting.
+		 * @param disableParallelToolUse Whether to disable parallel tool use.
+		 */
+		public ToolChoiceAny(Boolean disableParallelToolUse) {
+			this("any", disableParallelToolUse);
+		}
+
+	}
+
+	/**
+	 * Tool choice - the model will use the specified tool.
+	 *
+	 * @param type The type of tool choice, always "tool".
+	 * @param name The name of the tool to use.
+	 * @param disableParallelToolUse Whether to disable parallel tool use. Defaults to
+	 * false. If set to true, the model will output exactly one tool use.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceTool(@JsonProperty("type") String type, @JsonProperty("name") String name,
+			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+
+		/**
+		 * Create a tool choice for a specific tool.
+		 * @param name The name of the tool to use.
+		 */
+		public ToolChoiceTool(String name) {
+			this("tool", name, null);
+		}
+
+		/**
+		 * Create a tool choice for a specific tool with parallel tool use setting.
+		 * @param name The name of the tool to use.
+		 * @param disableParallelToolUse Whether to disable parallel tool use.
+		 */
+		public ToolChoiceTool(String name, Boolean disableParallelToolUse) {
+			this("tool", name, disableParallelToolUse);
+		}
+
+	}
+
+	/**
+	 * None tool choice - the model will not be allowed to use tools.
+	 *
+	 * @param type The type of tool choice, always "none".
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceNone(@JsonProperty("type") String type) implements ToolChoice {
+
+		/**
+		 * Create a none tool choice.
+		 */
+		public ToolChoiceNone() {
+			this("none");
+		}
+
 	}
 
 	// CB START EVENT
@@ -1026,7 +1406,9 @@ public final class AnthropicApi {
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens) {
+		@JsonProperty("output_tokens") Integer outputTokens,
+		@JsonProperty("cache_creation_input_tokens") Integer cacheCreationInputTokens,
+		@JsonProperty("cache_read_input_tokens") Integer cacheReadInputTokens) {
 		// @formatter:off
 	}
 
@@ -1386,7 +1768,7 @@ public final class AnthropicApi {
 	}
 	// @formatter:on
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 

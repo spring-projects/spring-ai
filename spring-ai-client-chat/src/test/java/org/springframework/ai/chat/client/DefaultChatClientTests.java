@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +36,8 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -50,6 +53,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -61,12 +65,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link DefaultChatClient}.
  *
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
 class DefaultChatClientTests {
 
@@ -838,6 +846,39 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenSimplePromptThenSetRequestAndResponseOnObservationContext() {
+		ChatModel chatModel = mock(ChatModel.class);
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null).build();
+		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt("my question");
+		DefaultChatClient.DefaultCallResponseSpec spec = (DefaultChatClient.DefaultCallResponseSpec) chatClientRequestSpec
+			.call();
+
+		ChatClientResponse chatClientResponse = spec.chatClientResponse();
+		assertThat(chatClientResponse).isNotNull();
+
+		ChatResponse chatResponse = chatClientResponse.chatResponse();
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
+
+		Prompt actualPrompt = promptCaptor.getValue();
+		assertThat(actualPrompt.getInstructions()).hasSize(1);
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
+
+		assertThat(observationRegistry).hasObservationWithNameEqualTo("spring.ai.chat.client")
+			.that()
+			.isInstanceOfSatisfying(ChatClientObservationContext.class, context -> {
+				assertThat(context.getRequest().prompt()).isEqualTo(actualPrompt);
+				assertThat(context.getResponse()).isSameAs(chatClientResponse);
+			});
+	}
+
+	@Test
 	void whenSimplePromptThenChatResponse() {
 		ChatModel chatModel = mock(ChatModel.class);
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
@@ -1351,6 +1392,40 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void whenSimplePromptThenSetFluxResponseOnObservationContext() {
+		ChatModel chatModel = mock(ChatModel.class);
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.stream(promptCaptor.capture()))
+			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null).build();
+		DefaultChatClient.DefaultChatClientRequestSpec chatClientRequestSpec = (DefaultChatClient.DefaultChatClientRequestSpec) chatClient
+			.prompt("my question");
+		DefaultChatClient.DefaultStreamResponseSpec spec = (DefaultChatClient.DefaultStreamResponseSpec) chatClientRequestSpec
+			.stream();
+
+		ChatClientResponse chatClientResponse = spec.chatClientResponse().blockLast();
+		assertThat(chatClientResponse).isNotNull();
+
+		ChatResponse chatResponse = chatClientResponse.chatResponse();
+		assertThat(chatResponse).isNotNull();
+		assertThat(chatResponse.getResult().getOutput().getText()).isEqualTo("response");
+
+		Prompt actualPrompt = promptCaptor.getValue();
+		assertThat(actualPrompt.getInstructions()).hasSize(1);
+		assertThat(actualPrompt.getInstructions().get(0).getText()).isEqualTo("my question");
+
+		assertThat(observationRegistry).hasObservationWithNameEqualTo("spring.ai.chat.client")
+			.that()
+			.isInstanceOfSatisfying(ChatClientObservationContext.class, context -> {
+				assertThat(context.getRequest().prompt()).isEqualTo(actualPrompt);
+				assertThat(context.getResponse().chatResponse().getResults())
+					.isEqualTo(chatClientResponse.chatResponse().getResults());
+			});
+	}
+
+	@Test
 	void whenSimplePromptThenFluxChatResponse() {
 		ChatModel chatModel = mock(ChatModel.class);
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
@@ -1474,15 +1549,15 @@ class DefaultChatClientTests {
 		ChatModel chatModel = mock(ChatModel.class);
 		DefaultChatClient.DefaultChatClientRequestSpec spec = new DefaultChatClient.DefaultChatClientRequestSpec(
 				chatModel, null, Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(),
-				List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null);
+				List.of(), List.of(), null, List.of(), Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null);
 		assertThat(spec).isNotNull();
 	}
 
 	@Test
 	void whenChatModelIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(null, null, Map.of(), Map.of(),
-				null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(), Map.of(),
-				ObservationRegistry.NOOP, null, Map.of(), null))
+				null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(), null, List.of(),
+				Map.of(), ObservationRegistry.NOOP, null, Map.of(), null, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("chatModel cannot be null");
 	}
@@ -1490,8 +1565,8 @@ class DefaultChatClientTests {
 	@Test
 	void whenObservationRegistryIsNullThenThrow() {
 		assertThatThrownBy(() -> new DefaultChatClient.DefaultChatClientRequestSpec(mock(ChatModel.class), null,
-				Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), null,
-				List.of(), Map.of(), null, null, Map.of(), null))
+				Map.of(), Map.of(), null, Map.of(), Map.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+				null, List.of(), Map.of(), null, null, Map.of(), null, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("observationRegistry cannot be null");
 	}
@@ -2102,8 +2177,10 @@ class DefaultChatClientTests {
 		var chatModel = mock(ChatModel.class);
 		var observationRegistry = mock(ObservationRegistry.class);
 		var observationConvention = mock(ChatClientObservationConvention.class);
+		var advisorObservationConvention = mock(AdvisorObservationConvention.class);
 
-		var builder = new DefaultChatClientBuilder(chatModel, observationRegistry, observationConvention);
+		var builder = new DefaultChatClientBuilder(chatModel, observationRegistry, observationConvention,
+				advisorObservationConvention);
 
 		assertThat(builder).isNotNull();
 	}
@@ -2195,6 +2272,115 @@ class DefaultChatClientTests {
 		assertThatThrownBy(() -> spec.user(user -> user.param("key", null)))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("value cannot be null");
+	}
+
+	@Test
+	void whenToolCallbackProviderThenNotEagerlyEvaluated() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").toolCallbacks(provider);
+
+		// Verify that getToolCallbacks() was NOT called during configuration
+		verify(provider, never()).getToolCallbacks();
+	}
+
+	@Test
+	void whenToolCallbackProviderThenLazilyEvaluatedOnCall() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
+		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").toolCallbacks(provider);
+
+		// Verify not called yet
+		verify(provider, never()).getToolCallbacks();
+
+		// Execute the call
+		spec.call().content();
+
+		// Verify getToolCallbacks() WAS called during execution
+		verify(provider, times(1)).getToolCallbacks();
+	}
+
+	@Test
+	void whenToolCallbackProviderThenLazilyEvaluatedOnStream() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.stream(promptCaptor.capture()))
+			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
+
+		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
+		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").toolCallbacks(provider);
+
+		// Verify not called yet
+		verify(provider, never()).getToolCallbacks();
+
+		// Execute the stream
+		spec.stream().content().blockLast();
+
+		// Verify getToolCallbacks() WAS called during execution
+		verify(provider, times(1)).getToolCallbacks();
+	}
+
+	@Test
+	void whenMultipleToolCallbackProvidersThenAllLazilyEvaluated() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		ToolCallbackProvider provider1 = mock(ToolCallbackProvider.class);
+		when(provider1.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+
+		ToolCallbackProvider provider2 = mock(ToolCallbackProvider.class);
+		when(provider2.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").toolCallbacks(provider1, provider2);
+
+		// Verify not called yet
+		verify(provider1, never()).getToolCallbacks();
+		verify(provider2, never()).getToolCallbacks();
+
+		// Execute the call
+		spec.call().content();
+
+		// Verify both getToolCallbacks() were called during execution
+		verify(provider1, times(1)).getToolCallbacks();
+		verify(provider2, times(1)).getToolCallbacks();
+	}
+
+	@Test
+	void whenToolCallbacksAndProvidersThenBothUsed() {
+		ChatModel chatModel = mock(ChatModel.class);
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
+
+		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
+		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").toolCallbacks(provider);
+
+		// Verify provider not called yet
+		verify(provider, never()).getToolCallbacks();
+
+		// Execute the call
+		spec.call().content();
+
+		// Verify provider was called during execution
+		verify(provider, times(1)).getToolCallbacks();
 	}
 
 	record Person(String name) {

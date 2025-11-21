@@ -156,6 +156,20 @@ public class GoogleGenAiChatOptionsTest {
 	}
 
 	@Test
+	public void testThinkingBudgetWithZeroValue() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().thinkingBudget(0).build();
+
+		assertThat(options.getThinkingBudget()).isEqualTo(0);
+	}
+
+	@Test
+	public void testLabelsWithEmptyMap() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().labels(Map.of()).build();
+
+		assertThat(options.getLabels()).isEmpty();
+	}
+
+	@Test
 	public void testResponseMultimodality() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.responseModalities(List.of(Modality.Known.TEXT.name(), Modality.Known.IMAGE.name()))

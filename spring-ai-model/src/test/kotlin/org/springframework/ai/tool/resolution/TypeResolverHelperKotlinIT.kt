@@ -39,7 +39,7 @@ class TypeResolverHelperKotlinIT {
 		val functionType = TypeResolverHelper.resolveBeanType(this.applicationContext, beanName);
 		val functionInputClass = TypeResolverHelper.getFunctionArgumentType(functionType, 0).rawClass;
 		assertThat(functionInputClass).isNotNull();
-		assertThat(functionInputClass.typeName).isEqualTo(WeatherRequest::class.java.getName());
+		assertThat(functionInputClass?.typeName).isEqualTo(WeatherRequest::class.java.getName());
 	}
 
 	class Outer {

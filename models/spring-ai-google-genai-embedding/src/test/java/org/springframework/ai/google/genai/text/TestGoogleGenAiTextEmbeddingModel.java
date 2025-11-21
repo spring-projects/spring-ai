@@ -17,7 +17,7 @@
 package org.springframework.ai.google.genai.text;
 
 import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 /**
  * Test implementation of GoogleGenAiTextEmbeddingModel that uses a mock connection for

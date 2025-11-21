@@ -40,16 +40,12 @@ public class GoogleGenAiTextEmbeddingProperties {
 	 * Google GenAI Text Embedding API options.
 	 */
 	@NestedConfigurationProperty
-	private GoogleGenAiTextEmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builder()
+	private final GoogleGenAiTextEmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builder()
 		.model(DEFAULT_MODEL)
 		.build();
 
 	public GoogleGenAiTextEmbeddingOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(GoogleGenAiTextEmbeddingOptions options) {
-		this.options = options;
 	}
 
 }
