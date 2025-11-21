@@ -1054,13 +1054,31 @@ public class ZhiPuAiApi {
 	 * @param promptTokens Number of tokens in the prompt.
 	 * @param totalTokens Total number of tokens used in the request (prompt +
 	 * completion).
+	 * @param promptTokensDetails Details about the prompt tokens used. Support for
+	 * GLM-4.5 and later models.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(// @formatter:off
 			@JsonProperty("completion_tokens") Integer completionTokens,
 			@JsonProperty("prompt_tokens") Integer promptTokens,
-			@JsonProperty("total_tokens") Integer totalTokens) { // @formatter:on
+			@JsonProperty("total_tokens") Integer totalTokens,
+			@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails) { // @formatter:on
+
+		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
+			this(completionTokens, promptTokens, totalTokens, null);
+		}
+
+		/**
+		 * Details about the prompt tokens used.
+		 *
+		 * @param cachedTokens Number of tokens in the prompt that were cached.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record PromptTokensDetails(// @formatter:off
+			@JsonProperty("cached_tokens") Integer cachedTokens) { // @formatter:on
+		}
 
 	}
 
