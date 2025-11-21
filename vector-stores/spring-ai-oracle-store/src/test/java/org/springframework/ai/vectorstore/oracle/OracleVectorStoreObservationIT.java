@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.oracle;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -68,8 +69,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OracleVectorStoreObservationIT {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE).withCopyFileToContainer(
-			MountableFile.forClasspathResource("/initialize.sql"), "/container-entrypoint-initdb.d/initialize.sql");
+	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
+		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
+				"/container-entrypoint-initdb.d/initialize.sql")
+		.withStartupTimeout(Duration.ofMinutes(5))
+		.withStartupAttempts(3)
+		.withSharedMemorySize(2L * 1024L * 1024L * 1024L); // 2GB shared memory
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class)
