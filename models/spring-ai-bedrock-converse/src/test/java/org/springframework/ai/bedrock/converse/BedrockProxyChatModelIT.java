@@ -871,6 +871,71 @@ class BedrockProxyChatModelIT {
 						""").inputType(MockWeatherService.Request.class).build());
 	}
 
+	@Test
+	void testOpenAIGptOssModelResponse() {
+		// Test for OpenAI gpt-oss models on Bedrock which return ReasoningContent + Text
+		// blocks
+		// This test verifies the fix for null responses when gpt-oss models return
+		// multiple
+		// ContentBlocks
+		String model = "openai.gpt-oss-120b-1:0";
+
+		UserMessage userMessage = new UserMessage("What is 2+2? Answer briefly.");
+		Prompt prompt = new Prompt(List.of(userMessage), BedrockChatOptions.builder().model(model).build());
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		// Verify response is not null and contains expected content
+		assertThat(response.getResults()).hasSize(1);
+		Generation generation = response.getResults().get(0);
+
+		// The key assertion: response text should NOT be null
+		assertThat(generation.getOutput().getText()).as("gpt-oss model should return non-null text content")
+			.isNotNull()
+			.isNotEmpty();
+
+		// Verify the response contains the expected answer
+		assertThat(generation.getOutput().getText()).as("gpt-oss should correctly answer the math question")
+			.containsAnyOf("4", "four");
+
+		// Verify metadata
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isPositive();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
+
+		logger.info("gpt-oss Response: {}", generation.getOutput().getText());
+		logger.info("Response metadata: {}", response.getMetadata());
+	}
+
+	@Test
+	void testOpenAIGptOssModelStreamingResponse() {
+		// Test streaming with OpenAI gpt-oss models to ensure ReasoningContent blocks are
+		// handled correctly
+		String model = "openai.gpt-oss-120b-1:0";
+
+		UserMessage userMessage = new UserMessage("Who are you?");
+		Prompt prompt = new Prompt(List.of(userMessage), BedrockChatOptions.builder().model(model).build());
+
+		Flux<ChatResponse> responseFlux = this.chatModel.stream(prompt);
+
+		String fullResponse = responseFlux.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		// Verify streaming response is not null or empty
+		assertThat(fullResponse).as("gpt-oss streaming response should not be null or empty").isNotNull().isNotEmpty();
+
+		// Verify the response contains expected gpt-oss identification
+		assertThat(fullResponse.toLowerCase()).as("gpt-oss model should identify itself")
+			.containsAnyOf("chatgpt", "gpt", "openai", "language model", "ai");
+
+		logger.info("gpt-oss Streaming Response: {}", fullResponse);
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
 	}
