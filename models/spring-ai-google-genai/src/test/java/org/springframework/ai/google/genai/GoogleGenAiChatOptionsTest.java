@@ -16,8 +16,10 @@
 
 package org.springframework.ai.google.genai;
 
+import java.util.List;
 import java.util.Map;
 
+import com.google.genai.types.Modality;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -165,6 +167,24 @@ public class GoogleGenAiChatOptionsTest {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().labels(Map.of()).build();
 
 		assertThat(options.getLabels()).isEmpty();
+	}
+
+	@Test
+	public void testResponseMultimodality() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.responseModalities(List.of(Modality.Known.TEXT.name(), Modality.Known.IMAGE.name()))
+			.build();
+		String toString = options.toString();
+		assertThat(toString).contains("responseModalities=[TEXT, IMAGE]");
+	}
+
+	@Test
+	public void testImageConfig() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.imageConfig(GoogleGenAiChatOptionsImageConfig.builder().aspectRatio("1:1").build())
+			.build();
+		String toString = options.toString();
+		assertThat(toString).contains("imageConfig=GoogleGenAiChatOptionsImageConfig{aspectRatio='1:1'}");
 	}
 
 }
