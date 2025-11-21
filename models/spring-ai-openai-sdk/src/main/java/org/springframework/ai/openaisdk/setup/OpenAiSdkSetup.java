@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,12 @@
 
 package org.springframework.ai.openaisdk.setup;
 
+import java.net.Proxy;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -25,14 +31,6 @@ import com.openai.credential.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.Proxy;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static java.time.Duration.ofSeconds;
-
 /**
  * Helps configure the OpenAI Java SDK, depending on the platform used. This code is
  * inspired by LangChain4j's
@@ -41,7 +39,7 @@ import static java.time.Duration.ofSeconds;
  *
  * @author Julien Dubois
  */
-public class OpenAiSdkSetup {
+public final class OpenAiSdkSetup {
 
 	static final String OPENAI_URL = "https://api.openai.com/v1";
 	static final String OPENAI_API_KEY = "OPENAI_API_KEY";
@@ -52,9 +50,12 @@ public class OpenAiSdkSetup {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiSdkSetup.class);
 
-	private static final Duration DEFAULT_DURATION = ofSeconds(60);
+	private static final Duration DEFAULT_DURATION = Duration.ofSeconds(60);
 
 	private static final int DEFAULT_MAX_RETRIES = 3;
+
+	private OpenAiSdkSetup() {
+	}
 
 	public enum ModelProvider {
 

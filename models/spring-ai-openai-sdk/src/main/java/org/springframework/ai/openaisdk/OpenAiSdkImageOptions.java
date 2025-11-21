@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.openaisdk;
+
+import java.util.Objects;
 
 import com.openai.models.images.ImageGenerateParams;
 import com.openai.models.images.ImageModel;
+
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
-
-import java.util.Objects;
 
 /**
  * Configuration information for the Image Model implementation using the OpenAI Java SDK.
@@ -160,25 +162,27 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass())
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 		OpenAiSdkImageOptions that = (OpenAiSdkImageOptions) o;
-		return Objects.equals(n, that.n) && Objects.equals(width, that.width) && Objects.equals(height, that.height)
-				&& Objects.equals(quality, that.quality) && Objects.equals(responseFormat, that.responseFormat)
-				&& Objects.equals(size, that.size) && Objects.equals(style, that.style)
-				&& Objects.equals(user, that.user);
+		return Objects.equals(this.n, that.n) && Objects.equals(this.width, that.width)
+				&& Objects.equals(this.height, that.height) && Objects.equals(this.quality, that.quality)
+				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.size, that.size)
+				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(n, width, height, quality, responseFormat, size, style, user);
+		return Objects.hash(this.n, this.width, this.height, this.quality, this.responseFormat, this.size, this.style,
+				this.user);
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiSdkImageOptions{" + "n=" + n + ", width=" + width + ", height=" + height + ", quality='" + quality
-				+ '\'' + ", responseFormat='" + responseFormat + '\'' + ", size='" + size + '\'' + ", style='" + style
-				+ '\'' + ", user='" + user + '\'' + '}';
+		return "OpenAiSdkImageOptions{" + "n=" + this.n + ", width=" + this.width + ", height=" + this.height
+				+ ", quality='" + this.quality + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", size='"
+				+ this.size + '\'' + ", style='" + this.style + '\'' + ", user='" + this.user + '\'' + '}';
 	}
 
 	public ImageGenerateParams toOpenAiImageGenerateParams(ImagePrompt imagePrompt) {

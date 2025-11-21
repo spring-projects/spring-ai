@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,6 @@
 
 package org.springframework.ai.openaisdk;
 
-import com.openai.models.FunctionDefinition;
-import com.openai.models.chat.completions.ChatCompletionAudioParam;
-import com.openai.models.chat.completions.ChatCompletionToolChoiceOption;
-import com.openai.models.responses.ResponseCreateParams;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,7 +25,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static com.openai.models.ChatModel.GPT_5_MINI;
+import com.openai.models.ChatModel;
+import com.openai.models.FunctionDefinition;
+import com.openai.models.chat.completions.ChatCompletionAudioParam;
+import com.openai.models.chat.completions.ChatCompletionToolChoiceOption;
+import com.openai.models.responses.ResponseCreateParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 /**
  * Configuration information for the Chat Model implementation using the OpenAI Java SDK.
@@ -45,7 +45,7 @@ import static com.openai.models.ChatModel.GPT_5_MINI;
  */
 public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements ToolCallingChatOptions {
 
-	public static final String DEFAULT_CHAT_MODEL = GPT_5_MINI.asString();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_5_MINI.asString();
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiSdkChatOptions.class);
 
@@ -589,53 +589,61 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass())
+		if (o == null || getClass() != o.getClass()) {
 			return false;
+		}
 		OpenAiSdkChatOptions options = (OpenAiSdkChatOptions) o;
-		return Objects.equals(getModel(), options.getModel())
-				&& Objects.equals(frequencyPenalty, options.frequencyPenalty)
-				&& Objects.equals(logitBias, options.logitBias) && Objects.equals(logprobs, options.logprobs)
-				&& Objects.equals(topLogprobs, options.topLogprobs) && Objects.equals(maxTokens, options.maxTokens)
-				&& Objects.equals(maxCompletionTokens, options.maxCompletionTokens) && Objects.equals(n, options.n)
-				&& Objects.equals(outputAudio, options.outputAudio)
-				&& Objects.equals(presencePenalty, options.presencePenalty)
-				&& Objects.equals(responseFormat, options.responseFormat)
-				&& Objects.equals(streamOptions, options.streamOptions)
-				&& Objects.equals(streamUsage, options.streamUsage) && Objects.equals(seed, options.seed)
-				&& Objects.equals(stop, options.stop) && Objects.equals(temperature, options.temperature)
-				&& Objects.equals(topP, options.topP) && Objects.equals(tools, options.tools)
-				&& Objects.equals(toolChoice, options.toolChoice) && Objects.equals(user, options.user)
-				&& Objects.equals(parallelToolCalls, options.parallelToolCalls) && Objects.equals(store, options.store)
-				&& Objects.equals(metadata, options.metadata)
-				&& Objects.equals(reasoningEffort, options.reasoningEffort)
-				&& Objects.equals(verbosity, options.verbosity) && Objects.equals(serviceTier, options.serviceTier)
-				&& Objects.equals(toolCallbacks, options.toolCallbacks) && Objects.equals(toolNames, options.toolNames)
-				&& Objects.equals(internalToolExecutionEnabled, options.internalToolExecutionEnabled)
-				&& Objects.equals(httpHeaders, options.httpHeaders) && Objects.equals(toolContext, options.toolContext);
+		return Objects.equals(this.getModel(), options.getModel())
+				&& Objects.equals(this.frequencyPenalty, options.frequencyPenalty)
+				&& Objects.equals(this.logitBias, options.logitBias) && Objects.equals(this.logprobs, options.logprobs)
+				&& Objects.equals(this.temperature, options.temperature)
+				&& Objects.equals(this.maxTokens, options.maxTokens)
+				&& Objects.equals(this.maxCompletionTokens, options.maxCompletionTokens)
+				&& Objects.equals(this.n, options.n) && Objects.equals(this.outputAudio, options.outputAudio)
+				&& Objects.equals(this.presencePenalty, options.presencePenalty)
+				&& Objects.equals(this.responseFormat, options.responseFormat)
+				&& Objects.equals(this.streamOptions, options.streamOptions)
+				&& Objects.equals(this.streamUsage, options.streamUsage) && Objects.equals(this.seed, options.seed)
+				&& Objects.equals(this.stop, options.stop) && Objects.equals(this.temperature, options.temperature)
+				&& Objects.equals(this.topP, options.topP) && Objects.equals(this.tools, options.tools)
+				&& Objects.equals(this.toolChoice, options.toolChoice) && Objects.equals(this.user, options.user)
+				&& Objects.equals(this.parallelToolCalls, options.parallelToolCalls)
+				&& Objects.equals(this.store, options.store) && Objects.equals(this.metadata, options.metadata)
+				&& Objects.equals(this.reasoningEffort, options.reasoningEffort)
+				&& Objects.equals(this.verbosity, options.verbosity)
+				&& Objects.equals(this.serviceTier, options.serviceTier)
+				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
+				&& Objects.equals(this.toolNames, options.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, options.internalToolExecutionEnabled)
+				&& Objects.equals(this.httpHeaders, options.httpHeaders)
+				&& Objects.equals(this.toolContext, options.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getModel(), frequencyPenalty, logitBias, logprobs, topLogprobs, maxTokens,
-				maxCompletionTokens, n, outputAudio, presencePenalty, responseFormat, streamOptions, streamUsage, seed,
-				stop, temperature, topP, tools, toolChoice, user, parallelToolCalls, store, metadata, reasoningEffort,
-				verbosity, serviceTier, toolCallbacks, toolNames, internalToolExecutionEnabled, httpHeaders,
-				toolContext);
+		return Objects.hash(this.getModel(), this.frequencyPenalty, this.logitBias, this.logprobs, this.topLogprobs,
+				this.maxTokens, this.maxCompletionTokens, this.n, this.outputAudio, this.presencePenalty,
+				this.responseFormat, this.streamOptions, this.streamUsage, this.seed, this.stop, this.temperature,
+				this.topP, this.tools, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.metadata,
+				this.reasoningEffort, this.verbosity, this.serviceTier, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.httpHeaders, this.toolContext);
 	}
 
 	@Override
 	public String toString() {
-		return "OpenAiSdkChatOptions{" + "model='" + getModel() + ", frequencyPenalty=" + frequencyPenalty
-				+ ", logitBias=" + logitBias + ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs
-				+ ", maxTokens=" + maxTokens + ", maxCompletionTokens=" + maxCompletionTokens + ", n=" + n
-				+ ", outputAudio=" + outputAudio + ", presencePenalty=" + presencePenalty + ", responseFormat="
-				+ responseFormat + ", streamOptions=" + streamOptions + ", streamUsage=" + streamUsage + ", seed="
-				+ seed + ", stop=" + stop + ", temperature=" + temperature + ", topP=" + topP + ", tools=" + tools
-				+ ", toolChoice=" + toolChoice + ", user='" + user + '\'' + ", parallelToolCalls=" + parallelToolCalls
-				+ ", store=" + store + ", metadata=" + metadata + ", reasoningEffort='" + reasoningEffort + '\''
-				+ ", verbosity='" + verbosity + '\'' + ", serviceTier='" + serviceTier + '\'' + ", toolCallbacks="
-				+ toolCallbacks + ", toolNames=" + toolNames + ", internalToolExecutionEnabled="
-				+ internalToolExecutionEnabled + ", httpHeaders=" + httpHeaders + ", toolContext=" + toolContext + '}';
+		return "OpenAiSdkChatOptions{" + "model='" + this.getModel() + ", frequencyPenalty=" + this.frequencyPenalty
+				+ ", logitBias=" + this.logitBias + ", logprobs=" + this.logprobs + ", topLogprobs=" + this.topLogprobs
+				+ ", maxTokens=" + this.maxTokens + ", maxCompletionTokens=" + this.maxCompletionTokens + ", n="
+				+ this.n + ", outputAudio=" + this.outputAudio + ", presencePenalty=" + this.presencePenalty
+				+ ", responseFormat=" + this.responseFormat + ", streamOptions=" + this.streamOptions + ", streamUsage="
+				+ this.streamUsage + ", seed=" + this.seed + ", stop=" + this.stop + ", temperature=" + this.temperature
+				+ ", topP=" + this.topP + ", tools=" + this.tools + ", toolChoice=" + this.toolChoice + ", user='"
+				+ this.user + '\'' + ", parallelToolCalls=" + this.parallelToolCalls + ", store=" + this.store
+				+ ", metadata=" + this.metadata + ", reasoningEffort='" + this.reasoningEffort + '\'' + ", verbosity='"
+				+ this.verbosity + '\'' + ", serviceTier='" + this.serviceTier + '\'' + ", toolCallbacks="
+				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", internalToolExecutionEnabled="
+				+ this.internalToolExecutionEnabled + ", httpHeaders=" + this.httpHeaders + ", toolContext="
+				+ this.toolContext + '}';
 	}
 
 	public static final class Builder {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,20 @@
 
 package org.springframework.ai.openaisdk.chat;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.observation.conventions.AiOperationType;
@@ -32,15 +39,8 @@ import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkTestConfigurationWithObservability;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
-import static org.springframework.ai.openaisdk.OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL;
 
 /**
  * Integration tests for observation instrumentation in {@link OpenAiSdkChatModel}.
@@ -65,7 +65,7 @@ public class OpenAiSdkChatModelObservationIT {
 	@Test
 	void observationForChatOperation() throws InterruptedException {
 
-		var options = OpenAiSdkChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
+		var options = OpenAiSdkChatOptions.builder().model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL).build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
@@ -80,7 +80,10 @@ public class OpenAiSdkChatModelObservationIT {
 
 	@Test
 	void observationForStreamingChatOperation() throws InterruptedException {
-		var options = OpenAiSdkChatOptions.builder().model(DEFAULT_CHAT_MODEL).streamUsage(true).build();
+		var options = OpenAiSdkChatOptions.builder()
+			.model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL)
+			.streamUsage(true)
+			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
@@ -114,7 +117,8 @@ public class OpenAiSdkChatModelObservationIT {
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI_SDK.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), DEFAULT_CHAT_MODEL)
+			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+					OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,17 @@
 
 package org.springframework.ai.openaisdk;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import com.openai.client.OpenAIClient;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
@@ -36,14 +41,9 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationCon
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.openaisdk.setup.OpenAiSdkSetup;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
-import static org.springframework.ai.openaisdk.setup.OpenAiSdkSetup.setupSyncClient;
 
 /**
  * Embedding Model implementation using the OpenAI Java SDK.
@@ -160,11 +160,12 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 			this.options = options;
 		}
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
-				() -> setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(), this.options.getCredential(),
-						this.options.getAzureDeploymentName(), this.options.getAzureOpenAIServiceVersion(),
-						this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
-						this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
-						this.options.getProxy(), this.options.getCustomHeaders()));
+				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getAzureDeploymentName(),
+						this.options.getAzureOpenAIServiceVersion(), this.options.getOrganizationId(),
+						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
 		this.metadataMode = Objects.requireNonNullElse(metadataMode, MetadataMode.EMBED);
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}

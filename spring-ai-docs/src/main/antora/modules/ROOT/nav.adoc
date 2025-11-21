@@ -33,6 +33,7 @@
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
 **** OCI Generative AI
 ***** xref:api/chat/oci-genai/cohere-chat.adoc[Cohere]
+**** xref:api/chat/openai-sdk-chat.adoc[OpenAI SDK (Official)]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/qianfan-chat.adoc[QianFan]
 **** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]

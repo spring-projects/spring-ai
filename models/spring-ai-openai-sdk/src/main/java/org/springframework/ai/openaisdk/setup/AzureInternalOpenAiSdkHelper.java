@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,10 @@ import com.openai.credential.Credential;
  *
  * @author Julien Dubois
  */
-class AzureInternalOpenAiSdkHelper {
+final class AzureInternalOpenAiSdkHelper {
+
+	private AzureInternalOpenAiSdkHelper() {
+	}
 
 	static Credential getAzureCredential() {
 		return BearerTokenCredential.create(AuthenticationUtil.getBearerTokenSupplier(

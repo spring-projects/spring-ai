@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,12 @@
 
 package org.springframework.ai.openaisdk;
 
-import com.openai.azure.AzureOpenAIServiceVersion;
-import com.openai.credential.Credential;
-
 import java.net.Proxy;
 import java.time.Duration;
 import java.util.Map;
+
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
 
 public class AbstractOpenAiSdkOptions {
 
@@ -94,7 +94,7 @@ public class AbstractOpenAiSdkOptions {
 	private Map<String, String> customHeaders;
 
 	public String getBaseUrl() {
-		return baseUrl;
+		return this.baseUrl;
 	}
 
 	public void setBaseUrl(String baseUrl) {
@@ -102,7 +102,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public String getApiKey() {
-		return apiKey;
+		return this.apiKey;
 	}
 
 	public void setApiKey(String apiKey) {
@@ -110,7 +110,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public Credential getCredential() {
-		return credential;
+		return this.credential;
 	}
 
 	public void setCredential(Credential credential) {
@@ -118,7 +118,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public String getModel() {
-		return model;
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -126,7 +126,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public String getAzureDeploymentName() {
-		return azureDeploymentName;
+		return this.azureDeploymentName;
 	}
 
 	public void setAzureDeploymentName(String azureDeploymentName) {
@@ -137,7 +137,7 @@ public class AbstractOpenAiSdkOptions {
 	 * Alias for getAzureDeploymentName()
 	 */
 	public String getDeploymentName() {
-		return azureDeploymentName;
+		return this.azureDeploymentName;
 	}
 
 	/**
@@ -148,7 +148,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public AzureOpenAIServiceVersion getAzureOpenAIServiceVersion() {
-		return azureOpenAIServiceVersion;
+		return this.azureOpenAIServiceVersion;
 	}
 
 	public void setAzureOpenAIServiceVersion(AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
@@ -156,7 +156,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public String getOrganizationId() {
-		return organizationId;
+		return this.organizationId;
 	}
 
 	public void setOrganizationId(String organizationId) {
@@ -164,23 +164,23 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public boolean isAzure() {
-		return isAzure;
+		return this.isAzure;
 	}
 
 	public void setAzure(boolean azure) {
-		isAzure = azure;
+		this.isAzure = azure;
 	}
 
 	public boolean isGitHubModels() {
-		return isGitHubModels;
+		return this.isGitHubModels;
 	}
 
 	public void setGitHubModels(boolean gitHubModels) {
-		isGitHubModels = gitHubModels;
+		this.isGitHubModels = gitHubModels;
 	}
 
 	public Duration getTimeout() {
-		return timeout;
+		return this.timeout;
 	}
 
 	public void setTimeout(Duration timeout) {
@@ -188,7 +188,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public Integer getMaxRetries() {
-		return maxRetries;
+		return this.maxRetries;
 	}
 
 	public void setMaxRetries(Integer maxRetries) {
@@ -196,7 +196,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public Proxy getProxy() {
-		return proxy;
+		return this.proxy;
 	}
 
 	public void setProxy(Proxy proxy) {
@@ -204,7 +204,7 @@ public class AbstractOpenAiSdkOptions {
 	}
 
 	public Map<String, String> getCustomHeaders() {
-		return customHeaders;
+		return this.customHeaders;
 	}
 
 	public void setCustomHeaders(Map<String, String> customHeaders) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,17 @@
 
 package org.springframework.ai.openaisdk.image;
 
+import com.openai.models.images.ImageModel;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.OpenAiSdkImageModel;
@@ -32,10 +35,7 @@ import org.springframework.ai.openaisdk.OpenAiSdkTestConfigurationWithObservabil
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static com.openai.models.images.ImageModel.DALL_E_3;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.image.observation.ImageModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.image.observation.ImageModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link OpenAiSdkImageModel}.
@@ -60,7 +60,7 @@ public class OpenAiSdkImageModelObservationIT {
 	@Test
 	void observationForImageOperation() throws InterruptedException {
 		var options = OpenAiSdkImageOptions.builder()
-			.model(DALL_E_3.asString())
+			.model(ImageModel.DALL_E_3.asString())
 			.height(1024)
 			.width(1024)
 			.responseFormat("url")
@@ -82,13 +82,21 @@ public class OpenAiSdkImageModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultImageModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("image " + DALL_E_3.asString())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+			.hasContextualNameEqualTo("image " + ImageModel.DALL_E_3.asString())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.IMAGE.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI_SDK.value())
-			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(), DALL_E_3.asString())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(), "1024x1024")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(), "url")
+			.hasLowCardinalityKeyValue(ImageModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					AiProvider.OPENAI_SDK.value())
+			.hasLowCardinalityKeyValue(
+					ImageModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+					ImageModel.DALL_E_3.asString())
+			.hasHighCardinalityKeyValue(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_SIZE.asString(),
+					"1024x1024")
+			.hasHighCardinalityKeyValue(
+					ImageModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_IMAGE_RESPONSE_FORMAT.asString(),
+					"url")
 			.hasBeenStarted()
 			.hasBeenStopped();
 	}

@@ -32,6 +32,8 @@ This table compares various Chat Models supported by Spring AI, detailing their 
 | xref::api/chat/nvidia-chat.adoc[NVIDIA (OpenAI-proxy)]  | text, image ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16]
 | xref::api/chat/oci-genai/cohere-chat.adoc[OCI GenAI/Cohere] | text ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12]
 | xref::api/chat/ollama-chat.adoc[Ollama]  | text, image ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16]
+| xref::api/chat/openai-sdk-chat.adoc[OpenAI SDK (Official)]  a| In: text, image, audio
+Out: text, audio ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16]
 | xref::api/chat/openai-chat.adoc[OpenAI]  a| In: text, image, audio
 Out: text, audio ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16]
 | xref::api/chat/perplexity-chat.adoc[Perplexity (OpenAI-proxy)]  | text ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16]

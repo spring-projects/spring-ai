@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,15 @@
 
 package org.springframework.ai.openaisdk;
 
+import java.util.List;
+import java.util.Objects;
+
 import com.openai.client.OpenAIClient;
 import com.openai.models.images.ImageGenerateParams;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
@@ -34,12 +38,8 @@ import org.springframework.ai.image.observation.ImageModelObservationDocumentati
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.metadata.OpenAiSdkImageGenerationMetadata;
 import org.springframework.ai.openaisdk.metadata.OpenAiSdkImageResponseMetadata;
+import org.springframework.ai.openaisdk.setup.OpenAiSdkSetup;
 import org.springframework.util.Assert;
-
-import java.util.List;
-import java.util.Objects;
-
-import static org.springframework.ai.openaisdk.setup.OpenAiSdkSetup.setupSyncClient;
 
 /**
  * Image Model implementation using the OpenAI Java SDK.
@@ -137,11 +137,12 @@ public class OpenAiSdkImageModel implements ImageModel {
 			this.options = options;
 		}
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
-				() -> setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(), this.options.getCredential(),
-						this.options.getAzureDeploymentName(), this.options.getAzureOpenAIServiceVersion(),
-						this.options.getOrganizationId(), this.options.isAzure(), this.options.isGitHubModels(),
-						this.options.getModel(), this.options.getTimeout(), this.options.getMaxRetries(),
-						this.options.getProxy(), this.options.getCustomHeaders()));
+				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getAzureDeploymentName(),
+						this.options.getAzureOpenAIServiceVersion(), this.options.getOrganizationId(),
+						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}
 
