@@ -108,7 +108,7 @@ public abstract class RetryUtils {
 
 	private static RetryTemplate createDefaultRetryTemplate() {
 		RetryPolicy retryPolicy = RetryPolicy.builder()
-			.maxAttempts(DEFAULT_MAX_ATTEMPTS)
+			.maxRetries(DEFAULT_MAX_ATTEMPTS)
 			.includes(TransientAiException.class)
 			.includes(ResourceAccessException.class)
 			.delay(Duration.ofMillis(DEFAULT_INITIAL_INTERVAL))
@@ -137,7 +137,7 @@ public abstract class RetryUtils {
 	 */
 	private static RetryTemplate createShortRetryTemplate() {
 		RetryPolicy retryPolicy = RetryPolicy.builder()
-			.maxAttempts(DEFAULT_MAX_ATTEMPTS)
+			.maxRetries(DEFAULT_MAX_ATTEMPTS)
 			.includes(TransientAiException.class)
 			.includes(ResourceAccessException.class)
 			.delay(Duration.ofMillis(SHORT_INITIAL_INTERVAL))
