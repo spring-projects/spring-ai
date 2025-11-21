@@ -16,10 +16,14 @@
 
 package org.springframework.ai.model.deepseek.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.http.client.HttpRedirects;
+import org.springframework.boot.restclient.RestClientCustomizer;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -150,6 +154,158 @@ public class DeepSeekPropertiesTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(DeepSeekChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DeepSeekChatModel.class)).isNotEmpty();
+			});
+	}
+
+	@Test
+	public void httpClientDefaultProperties() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				var httpClientConfig = connectionProperties.getHttpClient();
+
+				assertThat(httpClientConfig.isEnabled()).isTrue();
+				assertThat(httpClientConfig.getConnectTimeout()).isEqualTo(Duration.ofSeconds(10));
+				assertThat(httpClientConfig.getReadTimeout()).isEqualTo(Duration.ofSeconds(60));
+				assertThat(httpClientConfig.getRedirects()).isNull();
+				assertThat(httpClientConfig.getSslBundle()).isNull();
+			});
+	}
+
+	@Test
+	public void httpClientCustomTimeouts() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.http-client.connect-timeout=5s",
+						"spring.ai.deepseek.http-client.read-timeout=30s")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				var httpClientConfig = connectionProperties.getHttpClient();
+
+				assertThat(httpClientConfig.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+				assertThat(httpClientConfig.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
+			});
+	}
+
+	@Test
+	public void httpClientRedirects() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.http-client.redirects=DONT_FOLLOW")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				assertThat(connectionProperties.getHttpClient().getRedirects()).isEqualTo(HttpRedirects.DONT_FOLLOW);
+			});
+	}
+
+	@Test
+	public void httpClientSslBundle() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.http-client.ssl-bundle=deepseek-ssl")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				assertThat(connectionProperties.getHttpClient().getSslBundle()).isEqualTo("deepseek-ssl");
+			});
+	}
+
+	@Test
+	public void httpClientAllProperties() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.http-client.enabled=true",
+						"spring.ai.deepseek.http-client.connect-timeout=15s",
+						"spring.ai.deepseek.http-client.read-timeout=45s",
+						"spring.ai.deepseek.http-client.redirects=FOLLOW",
+						"spring.ai.deepseek.http-client.ssl-bundle=my-bundle")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				var httpClientConfig = connectionProperties.getHttpClient();
+
+				assertThat(httpClientConfig.isEnabled()).isTrue();
+				assertThat(httpClientConfig.getConnectTimeout()).isEqualTo(Duration.ofSeconds(15));
+				assertThat(httpClientConfig.getReadTimeout()).isEqualTo(Duration.ofSeconds(45));
+				assertThat(httpClientConfig.getRedirects()).isEqualTo(HttpRedirects.FOLLOW);
+				assertThat(httpClientConfig.getSslBundle()).isEqualTo("my-bundle");
+			});
+	}
+
+	@Test
+	public void httpClientDisabled() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.http-client.enabled=false")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				assertThat(connectionProperties.getHttpClient().isEnabled()).isFalse();
+
+				// RestClientCustomizer should not be created when disabled
+				assertThat(context.containsBean("deepSeekRestClientCustomizer")).isFalse();
+			});
+	}
+
+	@Test
+	public void restClientCustomizerCreated() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(RestClientCustomizer.class);
+				assertThat(context).hasBean("deepSeekRestClientCustomizer");
+			});
+	}
+
+	@Test
+	public void httpClientWithChatOptions() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.http-client.connect-timeout=8s",
+						"spring.ai.deepseek.http-client.read-timeout=40s",
+						"spring.ai.deepseek.chat.options.model=deepseek-chat",
+						"spring.ai.deepseek.chat.options.temperature=0.7")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				var chatProperties = context.getBean(DeepSeekChatProperties.class);
+
+				// HTTP client configuration
+				assertThat(connectionProperties.getHttpClient().getConnectTimeout()).isEqualTo(Duration.ofSeconds(8));
+				assertThat(connectionProperties.getHttpClient().getReadTimeout()).isEqualTo(Duration.ofSeconds(40));
+
+				// Chat options
+				assertThat(chatProperties.getOptions().getModel()).isEqualTo("deepseek-chat");
+				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.7);
 			});
 	}
 
