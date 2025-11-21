@@ -166,11 +166,11 @@ public class MessageAggregator {
 			List<Media> collectedMedias = mediasRef.get();
 
 			AssistantMessage finalAssistantMessage = AssistantMessage.builder()
-					.content(messageTextContentRef.get().toString())
-					.properties(messageMetadataMapRef.get())
-					.toolCalls(collectedToolCalls)
-					.media(collectedMedias)
-					.build();
+				.content(messageTextContentRef.get().toString())
+				.properties(messageMetadataMapRef.get())
+				.toolCalls(collectedToolCalls)
+				.media(collectedMedias)
+				.build();
 
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
 

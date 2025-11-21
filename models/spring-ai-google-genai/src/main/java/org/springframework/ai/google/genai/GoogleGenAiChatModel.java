@@ -646,13 +646,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						.build())
 					.map(List::of)
 					.orElse(List.of());
-				return AssistantMessage
-						.builder()
-						.content(part.text().orElse(""))
-						.properties(messageMetadata)
-						.toolCalls(List.of())
-						.media(media)
-						.build();
+				return AssistantMessage.builder()
+					.content(part.text().orElse(""))
+					.properties(messageMetadata)
+					.toolCalls(List.of())
+					.media(media)
+					.build();
 			}).map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata)).toList();
 		}
 	}
