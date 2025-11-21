@@ -73,4 +73,27 @@ public class DeepSeekAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void generateWithCustomTimeout() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"),
+					"spring.ai.deepseek.http-client.connect-timeout=5s",
+					"spring.ai.deepseek.http-client.read-timeout=30s")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				DeepSeekChatModel client = context.getBean(DeepSeekChatModel.class);
+
+				// Verify that the HTTP client configuration is applied
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				assertThat(connectionProperties.getHttpClient().getConnectTimeout().getSeconds()).isEqualTo(5);
+				assertThat(connectionProperties.getHttpClient().getReadTimeout().getSeconds()).isEqualTo(30);
+
+				// Verify that the client can actually make requests with the configured
+				// timeout
+				String response = client.call("Hello");
+				assertThat(response).isNotEmpty();
+				logger.info("Response with custom timeout: " + response);
+			});
+	}
+
 }
