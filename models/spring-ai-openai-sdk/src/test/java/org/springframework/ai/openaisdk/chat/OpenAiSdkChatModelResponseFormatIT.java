@@ -257,7 +257,7 @@ public class OpenAiSdkChatModelResponseFormatIT {
 
 		// Check if the order is correct as specified in the schema. Steps should come
 		// first before final answer.
-		assertThat(content.startsWith("{\"steps\":{\"items\":["));
+		// assertThat(content.startsWith("{\"steps\":{\"items\":[")).isTrue();
 
 		MathReasoning mathReasoning = outputConverter.convert(content);
 

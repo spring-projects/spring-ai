@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.openai.models.FunctionDefinition;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
 import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +47,6 @@ public class OpenAiSdkChatOptionsTests {
 		logitBias.put("token2", -1);
 
 		List<String> stop = List.of("stop1", "stop2");
-		List<FunctionDefinition> tools = new ArrayList<>();
 		Map<String, String> metadata = Map.of("key1", "value1");
 		Map<String, Object> toolContext = Map.of("keyA", "valueA");
 		Map<String, String> httpHeaders = Map.of("header1", "value1");
@@ -63,12 +62,11 @@ public class OpenAiSdkChatOptionsTests {
 			.maxCompletionTokens(50)
 			.N(2)
 			.presencePenalty(0.8)
-			.streamUsage(true)
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
 			.seed(12345)
 			.stop(stop)
 			.temperature(0.7)
 			.topP(0.9)
-			.tools(tools)
 			.user("test-user")
 			.parallelToolCalls(true)
 			.store(false)
@@ -91,13 +89,12 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getMaxCompletionTokens()).isEqualTo(50);
 		assertThat(options.getN()).isEqualTo(2);
 		assertThat(options.getPresencePenalty()).isEqualTo(0.8);
-		assertThat(options.getStreamUsage()).isTrue();
+		assertThat(options.getStreamOptions().includeUsage()).isTrue();
 		assertThat(options.getSeed()).isEqualTo(12345);
 		assertThat(options.getStop()).isEqualTo(stop);
 		assertThat(options.getStopSequences()).isEqualTo(stop);
 		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isEqualTo(0.9);
-		assertThat(options.getTools()).isEqualTo(tools);
 		assertThat(options.getUser()).isEqualTo("test-user");
 		assertThat(options.getParallelToolCalls()).isTrue();
 		assertThat(options.getStore()).isFalse();
@@ -116,7 +113,6 @@ public class OpenAiSdkChatOptionsTests {
 		logitBias.put("token1", 1);
 
 		List<String> stop = List.of("stop1");
-		List<FunctionDefinition> tools = new ArrayList<>();
 		Map<String, String> metadata = Map.of("key1", "value1");
 
 		OpenAiSdkChatOptions originalOptions = OpenAiSdkChatOptions.builder()
@@ -129,12 +125,11 @@ public class OpenAiSdkChatOptionsTests {
 			.maxCompletionTokens(50)
 			.N(2)
 			.presencePenalty(0.8)
-			.streamUsage(false)
+			.streamOptions(StreamOptions.builder().includeUsage(false).build())
 			.seed(12345)
 			.stop(stop)
 			.temperature(0.7)
 			.topP(0.9)
-			.tools(tools)
 			.user("test-user")
 			.parallelToolCalls(false)
 			.store(true)
@@ -163,7 +158,6 @@ public class OpenAiSdkChatOptionsTests {
 		logitBias.put("token1", 1);
 
 		List<String> stop = List.of("stop1", "stop2");
-		List<FunctionDefinition> tools = new ArrayList<>();
 		Map<String, String> metadata = Map.of("key2", "value2");
 
 		OpenAiSdkChatOptions options = new OpenAiSdkChatOptions();
@@ -177,12 +171,11 @@ public class OpenAiSdkChatOptionsTests {
 		options.setMaxCompletionTokens(50);
 		options.setN(2);
 		options.setPresencePenalty(0.8);
-		options.setStreamUsage(true);
+		options.setStreamOptions(StreamOptions.builder().includeUsage(true).build());
 		options.setSeed(12345);
 		options.setStop(stop);
 		options.setTemperature(0.7);
 		options.setTopP(0.9);
-		options.setTools(tools);
 		options.setUser("test-user");
 		options.setParallelToolCalls(true);
 		options.setStore(false);
@@ -203,12 +196,11 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getMaxCompletionTokens()).isEqualTo(50);
 		assertThat(options.getN()).isEqualTo(2);
 		assertThat(options.getPresencePenalty()).isEqualTo(0.8);
-		assertThat(options.getStreamUsage()).isTrue();
+		assertThat(options.getStreamOptions().includeUsage()).isTrue();
 		assertThat(options.getSeed()).isEqualTo(12345);
 		assertThat(options.getStop()).isEqualTo(stop);
 		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isEqualTo(0.9);
-		assertThat(options.getTools()).isEqualTo(tools);
 		assertThat(options.getUser()).isEqualTo("test-user");
 		assertThat(options.getParallelToolCalls()).isTrue();
 		assertThat(options.getStore()).isFalse();
@@ -237,14 +229,13 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getPresencePenalty()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
 		assertThat(options.getStreamOptions()).isNull();
-		assertThat(options.getStreamUsage()).isNull();
+		assertThat(options.getStreamOptions()).isNull();
 		assertThat(options.getSeed()).isNull();
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getTopK()).isNull();
-		assertThat(options.getTools()).isNull();
 		assertThat(options.getToolChoice()).isNull();
 		assertThat(options.getUser()).isNull();
 		assertThat(options.getParallelToolCalls()).isNull();
@@ -295,7 +286,6 @@ public class OpenAiSdkChatOptionsTests {
 			.temperature(null)
 			.logitBias(null)
 			.stop(null)
-			.tools(null)
 			.metadata(null)
 			.httpHeaders(null)
 			.build();
@@ -304,7 +294,6 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
-		assertThat(options.getTools()).isNull();
 		assertThat(options.getMetadata()).isNull();
 		assertThat(options.getHttpHeaders()).isNull();
 	}
@@ -330,26 +319,22 @@ public class OpenAiSdkChatOptionsTests {
 		// Test setting null collections
 		options.setLogitBias(null);
 		options.setStop(null);
-		options.setTools(null);
 		options.setMetadata(null);
 		options.setHttpHeaders(null);
 
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
-		assertThat(options.getTools()).isNull();
 		assertThat(options.getMetadata()).isNull();
 		assertThat(options.getHttpHeaders()).isNull();
 
 		// Test setting empty collections
 		options.setLogitBias(new HashMap<>());
 		options.setStop(new ArrayList<>());
-		options.setTools(new ArrayList<>());
 		options.setMetadata(new HashMap<>());
 		options.setHttpHeaders(new HashMap<>());
 
 		assertThat(options.getLogitBias()).isEmpty();
 		assertThat(options.getStop()).isEmpty();
-		assertThat(options.getTools()).isEmpty();
 		assertThat(options.getMetadata()).isEmpty();
 		assertThat(options.getHttpHeaders()).isEmpty();
 	}

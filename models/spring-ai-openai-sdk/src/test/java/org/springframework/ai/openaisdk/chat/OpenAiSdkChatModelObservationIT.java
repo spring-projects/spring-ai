@@ -36,6 +36,7 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkTestConfigurationWithObservability;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -82,7 +83,7 @@ public class OpenAiSdkChatModelObservationIT {
 	void observationForStreamingChatOperation() throws InterruptedException {
 		var options = OpenAiSdkChatOptions.builder()
 			.model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL)
-			.streamUsage(true)
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

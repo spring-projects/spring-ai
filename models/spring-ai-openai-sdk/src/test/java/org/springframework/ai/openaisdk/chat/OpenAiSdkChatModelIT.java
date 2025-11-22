@@ -62,6 +62,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkTestConfiguration;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
@@ -224,7 +225,7 @@ public class OpenAiSdkChatModelIT {
 	@Test
 	void streamingWithTokenUsage() {
 		var promptOptions = OpenAiSdkChatOptions.builder()
-			.streamUsage(true)
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
 			.reasoningEffort(ReasoningEffort.MINIMAL.toString())
 			.seed(1)
 			.build();
@@ -460,7 +461,7 @@ public class OpenAiSdkChatModelIT {
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
-			.streamUsage(true)
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
 			.reasoningEffort(ReasoningEffort.MINIMAL.toString())
 			.build();
 

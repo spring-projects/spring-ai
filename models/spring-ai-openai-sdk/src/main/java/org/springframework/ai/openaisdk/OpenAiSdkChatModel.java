@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
@@ -48,8 +49,10 @@ import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
 import com.openai.models.chat.completions.ChatCompletionMessageToolCall;
+import com.openai.models.chat.completions.ChatCompletionNamedToolChoice;
 import com.openai.models.chat.completions.ChatCompletionStreamOptions;
 import com.openai.models.chat.completions.ChatCompletionTool;
+import com.openai.models.chat.completions.ChatCompletionToolChoiceOption;
 import com.openai.models.chat.completions.ChatCompletionToolMessageParam;
 import com.openai.models.chat.completions.ChatCompletionUserMessageParam;
 import com.openai.models.completions.CompletionUsage;
@@ -98,6 +101,7 @@ import org.springframework.util.StringUtils;
  * Chat Model implementation using the OpenAI Java SDK.
  *
  * @author Julien Dubois
+ * @author Christian Tzolov
  */
 public class OpenAiSdkChatModel implements ChatModel {
 
@@ -1018,12 +1022,20 @@ public class OpenAiSdkChatModel implements ChatModel {
 			if (requestOptions.getStreamOptions() != null) {
 				ChatCompletionStreamOptions.Builder streamOptionsBuilder = ChatCompletionStreamOptions.builder();
 
-				if (requestOptions.getStreamOptions().includeObfuscation().isPresent()) {
-					streamOptionsBuilder
-						.includeObfuscation(requestOptions.getStreamOptions().includeObfuscation().get());
+				var ops = requestOptions.getStreamOptions();
+
+				streamOptionsBuilder.includeObfuscation(ops.includeObfuscation() != null && ops.includeObfuscation());
+				streamOptionsBuilder.includeUsage(ops.includeUsage() != null && ops.includeUsage());
+
+				if (!CollectionUtils.isEmpty(ops.additionalProperties())) {
+					Map<String, com.openai.core.JsonValue> nativeParams = ops.additionalProperties()
+						.entrySet()
+						.stream()
+						.map(e -> Map.entry(e.getKey(), com.openai.core.JsonValue.from(e.getValue())))
+						.collect(HashMap::new, (m, e) -> m.put(e.getKey(), e.getValue()), HashMap::putAll);
+
+					streamOptionsBuilder.putAllAdditionalProperties(nativeParams);
 				}
-				streamOptionsBuilder.additionalProperties(requestOptions.getStreamOptions()._additionalProperties());
-				streamOptionsBuilder.includeUsage(requestOptions.getStreamUsage());
 				builder.streamOptions(streamOptionsBuilder.build());
 			}
 			else {
@@ -1040,10 +1052,48 @@ public class OpenAiSdkChatModel implements ChatModel {
 		}
 
 		if (requestOptions.getToolChoice() != null) {
-			builder.toolChoice(requestOptions.getToolChoice());
+			if (requestOptions.getToolChoice() instanceof ChatCompletionToolChoiceOption toolChoiceOption) {
+				builder.toolChoice(toolChoiceOption);
+			}
+			else if (requestOptions.getToolChoice() instanceof String json) {
+				try {
+					var node = ModelOptionsUtils.OBJECT_MAPPER.readTree(json);
+					builder.toolChoice(parseToolChoice(node));
+				}
+				catch (Exception e) {
+					throw new IllegalArgumentException("Failed to parse toolChoice JSON: " + json, e);
+				}
+			}
 		}
 
 		return builder.build();
+	}
+
+	public static ChatCompletionToolChoiceOption parseToolChoice(JsonNode node) {
+		String type = node.get("type").asText();
+		switch (type) {
+			case "function":
+				String functionName = node.get("function").get("name").asText();
+				ChatCompletionNamedToolChoice.Function func = ChatCompletionNamedToolChoice.Function.builder()
+					.name(functionName)
+					.build();
+				ChatCompletionNamedToolChoice named = ChatCompletionNamedToolChoice.builder().function(func).build();
+				return ChatCompletionToolChoiceOption.ofNamedToolChoice(named);
+			case "auto":
+				// There is a built-in “auto” option — but how to get it depends on SDK
+				// version
+				return ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.AUTO);
+			case "required":
+				// There may or may not be a 'required' option; if SDK supports, you need
+				// a way to construct it
+				// If it's not supported, you must use JSON fallback
+				throw new UnsupportedOperationException("SDK version does not support typed 'required' toolChoice");
+			case "none":
+				// Similarly for none
+				throw new UnsupportedOperationException("SDK version does not support typed 'none' toolChoice");
+			default:
+				throw new IllegalArgumentException("Unknown tool_choice type: " + type);
+		}
 	}
 
 	private String fromAudioData(Object audioData) {
