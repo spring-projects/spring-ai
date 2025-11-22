@@ -57,9 +57,10 @@ Spring AI employs the OSS library https://www.stringtemplate.org/[StringTemplate
 
 For instance, consider the simple prompt template:
 
-```
+[source]
+----
 Tell me a {adjective} joke about {content}.
-```
+----
 
 In Spring AI, prompt templates can be likened to the "View" in Spring MVC architecture.
 A model object, typically a `java.util.Map`, is provided to populate placeholders within the template.
@@ -122,7 +123,7 @@ This intricacy has led to the emergence of a specialized field involving the cre
 
 image::structured-output-architecture.jpg[Structured Output Converter Architecture, width=800, align="center"]
 
-The xref:api/structured-output-converter.adoc#_structuredoutputconverter[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
+The xref:api/structured-output-converter.adoc[Structured output conversion] employs meticulously crafted prompts, often necessitating multiple interactions with the model to achieve the desired formatting.
 
 == Bringing Your Data & APIs to the AI Model
 
