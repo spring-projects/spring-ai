@@ -69,6 +69,13 @@ public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 	@JsonProperty("speed")
 	private Double speed;
 
+	/**
+	 * Optional style/tone instructions for models that support it (e.g.,
+	 * gpt-4o-mini-tts). Ignored for unsupported models.
+	 */
+	@JsonProperty("instructions")
+	private String instructions;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -118,6 +125,14 @@ public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 		this.speed = speed;
 	}
 
+	public String getInstructions() {
+		return this.instructions;
+	}
+
+	public void setInstructions(String instructions) {
+		this.instructions = instructions;
+	}
+
 	// TextToSpeechOptions interface methods
 
 	@Override
@@ -134,6 +149,7 @@ public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 			.voice(this.voice)
 			.responseFormat(this.responseFormat)
 			.speed(this.speed)
+			.instructions(this.instructions)
 			.build();
 	}
 
@@ -146,6 +162,7 @@ public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 		result = prime * result + ((this.voice == null) ? 0 : this.voice.hashCode());
 		result = prime * result + ((this.responseFormat == null) ? 0 : this.responseFormat.hashCode());
 		result = prime * result + ((this.speed == null) ? 0 : this.speed.hashCode());
+		result = prime * result + ((this.instructions == null) ? 0 : this.instructions.hashCode());
 		return result;
 	}
 
@@ -194,10 +211,18 @@ public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 			return false;
 		}
 		if (this.speed == null) {
-			return other.speed == null;
+			if (other.speed != null) {
+				return false;
+			}
+		}
+		else if (!this.speed.equals(other.speed)) {
+			return false;
+		}
+		if (this.instructions == null) {
+			return other.instructions == null;
 		}
 		else {
-			return this.speed.equals(other.speed);
+			return this.instructions.equals(other.instructions);
 		}
 	}
 
@@ -205,7 +230,7 @@ public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 	public String toString() {
 		return "OpenAiAudioSpeechOptions{" + "model='" + this.model + '\'' + ", input='" + this.input + '\''
 				+ ", voice='" + this.voice + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", speed="
-				+ this.speed + '}';
+				+ this.speed + ", instructions='" + this.instructions + "'}";
 	}
 
 	public static final class Builder {
@@ -239,6 +264,11 @@ public class OpenAiAudioSpeechOptions implements TextToSpeechOptions {
 
 		public Builder speed(Double speed) {
 			this.options.speed = speed;
+			return this;
+		}
+
+		public Builder instructions(String instructions) {
+			this.options.instructions = instructions;
 			return this;
 		}
 
