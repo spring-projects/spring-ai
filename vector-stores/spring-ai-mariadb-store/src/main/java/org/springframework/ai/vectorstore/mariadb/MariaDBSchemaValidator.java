@@ -76,7 +76,7 @@ public class MariaDBSchemaValidator {
 			logger.error("""
 					Failed to validate that database supports VECTOR.
 					Run the following SQL commands:
-					   SELECT @@version;\s
+					   SELECT @@version;
 					And ensure that version is >= 11.7.1""");
 			throw new IllegalStateException(e);
 		}
