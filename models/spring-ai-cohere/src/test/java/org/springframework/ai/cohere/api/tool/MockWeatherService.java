@@ -16,13 +16,13 @@
 
 package org.springframework.ai.cohere.api.tool;
 
+import java.util.function.Function;
+
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-
-import java.util.function.Function;
 
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 

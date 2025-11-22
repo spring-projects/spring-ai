@@ -16,21 +16,28 @@
 
 package org.springframework.ai.cohere.chat;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.cohere.CohereTestConfiguration;
+import org.springframework.ai.cohere.api.CohereApi;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.cohere.api.tool.MockWeatherService;
 import org.springframework.ai.cohere.testutils.AbstractIT;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
-import org.springframework.ai.cohere.api.CohereApi;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.test.CurlyBracketEscaper;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,12 +45,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.Resource;
-import reactor.core.publisher.Flux;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

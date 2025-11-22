@@ -16,14 +16,15 @@
 
 package org.springframework.ai.cohere.embedding;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.ResponseEntity;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

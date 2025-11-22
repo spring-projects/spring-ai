@@ -17,6 +17,7 @@
 package org.springframework.ai.cohere.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.embedding.CohereEmbeddingModel;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
@@ -28,10 +29,10 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;

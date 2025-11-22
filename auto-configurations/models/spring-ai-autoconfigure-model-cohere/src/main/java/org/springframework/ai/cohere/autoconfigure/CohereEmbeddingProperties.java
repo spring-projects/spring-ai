@@ -16,15 +16,14 @@
 
 package org.springframework.ai.cohere.autoconfigure;
 
-import org.springframework.ai.cohere.api.CohereApi;
-import org.springframework.ai.cohere.api.CohereApi.EmbeddingType;
+import java.util.List;
+
 import org.springframework.ai.cohere.api.CohereApi.EmbeddingModel;
+import org.springframework.ai.cohere.api.CohereApi.EmbeddingType;
 import org.springframework.ai.cohere.embedding.CohereEmbeddingOptions;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-
-import java.util.List;
 
 /**
  * Configuration properties for Cohere embedding model.

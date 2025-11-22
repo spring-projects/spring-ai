@@ -16,12 +16,16 @@
 
 package org.springframework.ai.cohere.api.tool;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletion;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage;
@@ -33,9 +37,6 @@ import org.springframework.ai.cohere.api.CohereApi.FunctionTool.Type;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

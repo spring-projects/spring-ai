@@ -16,16 +16,18 @@
 
 package org.springframework.ai.cohere;
 
+import java.util.List;
+import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletion;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletionChunk;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionFinishReason;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.Role;
@@ -38,15 +40,11 @@ import org.springframework.ai.cohere.chat.CohereChatOptions;
 import org.springframework.ai.cohere.embedding.CohereEmbeddingModel;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -74,7 +72,7 @@ public class CohereRetryTests {
 	public void beforeEach() {
 		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
-		this.retryTemplate.registerListener(this.retryListener);
+		this.retryTemplate.setRetryListener(this.retryListener);
 
 		this.chatModel = CohereChatModel.builder()
 			.cohereApi(this.cohereApi)
@@ -109,8 +107,8 @@ public class CohereRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.retryCount).isEqualTo(2);
 	}
 
 	@Test
@@ -121,37 +119,6 @@ public class CohereRetryTests {
 	}
 
 	@Test
-	@Disabled("Currently stream() does not implement retry")
-	public void cohereChatStreamTransientError() {
-		var message = new ChatCompletionMessage("Response", Role.ASSISTANT);
-
-		var delta = new ChatCompletionChunk.ChunkDelta(message, ChatCompletionFinishReason.COMPLETE, null);
-
-		ChatCompletionChunk expectedChunk = new ChatCompletionChunk("id", "content-delta", 0, delta);
-
-		given(this.cohereApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.willThrow(new TransientAiException("Transient Error 1"))
-			.willThrow(new TransientAiException("Transient Error 2"))
-			.willReturn(Flux.just(expectedChunk));
-
-		var result = this.chatModel.stream(new Prompt("text"));
-
-		assertThat(result).isNotNull();
-		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isEqualTo("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
-	}
-
-	@Test
-	@Disabled("Currently stream() does not implement retry")
-	public void cohereChatStreamNonTransientError() {
-		given(this.cohereApi.chatCompletionStream(isA(ChatCompletionRequest.class)))
-			.willThrow(new RuntimeException("Non Transient Error"));
-		assertThrows(RuntimeException.class, () -> this.chatModel.stream(new Prompt("text")));
-	}
-
-	@Test
-	@Disabled("Embedding tests need to be adapted for Cohere API structure")
 	public void cohereEmbeddingTransientError() {
 		List<List<Double>> embeddingsList = List.of(List.of(9.9, 8.8), List.of(7.7, 6.6));
 
@@ -167,8 +134,8 @@ public class CohereRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null));
 
 		assertThat(result).isNotNull();
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.retryCount).isEqualTo(2);
 	}
 
 	@Test
@@ -189,24 +156,24 @@ public class CohereRetryTests {
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
 
 		// Should have 1 retry attempt before hitting non-transient error
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.retryCount).isEqualTo(1);
 	}
 
 	private static class TestRetryListener implements RetryListener {
 
-		int onErrorRetryCount = 0;
+		int retryCount = 0;
 
 		int onSuccessRetryCount = 0;
 
 		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
+		public void onRetrySuccess(final RetryPolicy retryPolicy, final Retryable<?> retryable, final Object result) {
+			// Count successful retries - we increment when we succeed after a failure
+			this.onSuccessRetryCount++;
 		}
 
 		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
+		public void beforeRetry(RetryPolicy retryPolicy, Retryable<?> retryable) {
+			this.retryCount++;
 		}
 
 	}

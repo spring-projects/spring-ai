@@ -16,15 +16,16 @@
 
 package org.springframework.ai.cohere.aot;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.chat.CohereChatOptions;
 import org.springframework.ai.cohere.embedding.CohereEmbeddingOptions;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;

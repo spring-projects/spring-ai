@@ -16,7 +16,20 @@
 
 package org.springframework.ai.cohere.api;
 
-import com.fasterxml.jackson.annotation.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -30,14 +43,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * Java Client library for Cohere Platform. Provides implementation for the
@@ -104,6 +109,132 @@ public class CohereApi {
 			.build();
 
 		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+	}
+
+	/**
+	 * Creates a model response for the given chat conversation.
+	 * @param chatRequest The chat completion request.
+	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
+	 * and headers.
+	 */
+	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+
+		return this.restClient.post().uri("/v2/chat/").body(chatRequest).retrieve().toEntity(ChatCompletion.class);
+	}
+
+	/**
+	 * Creates an embedding vector representing the input text or token array.
+	 * @param embeddingRequest The embedding request.
+	 * @return Returns {@link EmbeddingResponse} with embeddings data.
+	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
+	 * {@link List} of tokens (e.g. Integers). For embedding multiple inputs in a single
+	 * request, You can pass a {@link List} of {@link String} or {@link List} of
+	 * {@link List} of tokens. For example:
+	 *
+	 * <pre>{@code List.of("text1", "text2", "text3")} </pre>
+	 */
+	public <T> ResponseEntity<EmbeddingResponse> embeddings(EmbeddingRequest<T> embeddingRequest) {
+
+		Assert.notNull(embeddingRequest, "The request body can not be null.");
+
+		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts), "The texts list can not be empty.");
+		Assert.isTrue(embeddingRequest.texts.size() <= 96, "The list must be 96 items or less");
+
+		return this.restClient.post()
+			.uri("/v2/embed")
+			.body(embeddingRequest)
+			.retrieve()
+			.toEntity(new ParameterizedTypeReference<>() {
+
+			});
+	}
+
+	/**
+	 * Creates a streaming chat response for the given chat conversation.
+	 * @param chatRequest The chat completion request. Must have the stream property set
+	 * to true.
+	 * @return Returns a {@link Flux} stream from chat completion chunks.
+	 */
+	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
+
+		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+
+		return this.webClient.post()
+			.uri("v2/chat")
+			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.retrieve()
+			.bodyToFlux(String.class)
+			.takeUntil(SSE_DONE_PREDICATE)
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.groupBy(chunk -> chunk.id() != null ? chunk.id() : "no-id")
+			.flatMap(group -> group.reduce(new ChatCompletionChunk(null, null, null, null), this.chunkMerger::merge)
+				.filter(chunk -> EventType.MESSAGE_END.value.equals(chunk.type())
+						|| (chunk.delta() != null && chunk.delta().finishReason() != null)))
+			.map(this.chunkMerger::sanitizeToolCalls)
+			.filter(this.chunkMerger::hasValidToolCallsOnly)
+			.filter(Objects::nonNull);
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Builder for creating CohereApi instances.
+	 */
+	public static class Builder {
+
+		private String baseUrl = DEFAULT_BASE_URL;
+
+		private String apiKey;
+
+		private RestClient.Builder restClientBuilder = RestClient.builder();
+
+		private WebClient.Builder webClientBuilder = WebClient.builder();
+
+		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
+
+		public Builder baseUrl(String baseUrl) {
+			this.baseUrl = baseUrl;
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			this.apiKey = apiKey;
+			return this;
+		}
+
+		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
+			this.restClientBuilder = restClientBuilder;
+			return this;
+		}
+
+		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
+			this.webClientBuilder = webClientBuilder;
+			return this;
+		}
+
+		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+			this.responseErrorHandler = responseErrorHandler;
+			return this;
+		}
+
+		public CohereApi build() {
+			Assert.hasText(this.apiKey, "Cohere API key must be set");
+			Assert.hasText(this.baseUrl, "Cohere base URL must be set");
+			Assert.notNull(this.restClientBuilder, "RestClient.Builder must not be null");
+			Assert.notNull(this.webClientBuilder, "WebClient.Builder must not be null");
+			Assert.notNull(this.responseErrorHandler, "ResponseErrorHandler must not be null");
+
+			return new CohereApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.webClientBuilder,
+					this.responseErrorHandler);
+		}
+
 	}
 
 	/**
@@ -824,20 +955,6 @@ public class CohereApi {
 
 	}
 
-	/**
-	 * Creates a model response for the given chat conversation.
-	 * @param chatRequest The chat completion request.
-	 * @return Entity response with {@link ChatCompletion} as a body and HTTP status code
-	 * and headers.
-	 */
-	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-
-		return this.restClient.post().uri("/v2/chat/").body(chatRequest).retrieve().toEntity(ChatCompletion.class);
-	}
-
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionChunk(
@@ -1036,7 +1153,8 @@ public class CohereApi {
 			}
 
 			public EmbeddingRequest<T> build() {
-				return new EmbeddingRequest<>(texts, model, inputType, embeddingTypes, truncate);
+				return new EmbeddingRequest<>(this.texts, this.model, this.inputType, this.embeddingTypes,
+						this.truncate);
 			}
 
 		}
@@ -1151,61 +1269,6 @@ public class CohereApi {
 
 	}
 
-	/**
-	 * Creates an embedding vector representing the input text or token array.
-	 * @param embeddingRequest The embedding request.
-	 * @return Returns {@link EmbeddingResponse} with embeddings data.
-	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
-	 * {@link List} of tokens (e.g. Integers). For embedding multiple inputs in a single
-	 * request, You can pass a {@link List} of {@link String} or {@link List} of
-	 * {@link List} of tokens. For example:
-	 *
-	 * <pre>{@code List.of("text1", "text2", "text3")} </pre>
-	 */
-	public <T> ResponseEntity<EmbeddingResponse> embeddings(EmbeddingRequest<T> embeddingRequest) {
-
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
-
-		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts), "The texts list can not be empty.");
-		Assert.isTrue(embeddingRequest.texts.size() <= 96, "The list must be 96 items or less");
-
-		return this.restClient.post()
-			.uri("/v2/embed")
-			.body(embeddingRequest)
-			.retrieve()
-			.toEntity(new ParameterizedTypeReference<>() {
-
-			});
-	}
-
-	/**
-	 * Creates a streaming chat response for the given chat conversation.
-	 * @param chatRequest The chat completion request. Must have the stream property set
-	 * to true.
-	 * @return Returns a {@link Flux} stream from chat completion chunks.
-	 */
-	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-
-		return this.webClient.post()
-			.uri("v2/chat")
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
-			.retrieve()
-			.bodyToFlux(String.class)
-			.takeUntil(SSE_DONE_PREDICATE)
-			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
-			.groupBy(chunk -> chunk.id() != null ? chunk.id() : "no-id")
-			.flatMap(group -> group.reduce(new ChatCompletionChunk(null, null, null, null), this.chunkMerger::merge)
-				.filter(chunk -> EventType.MESSAGE_END.value.equals(chunk.type())
-						|| (chunk.delta() != null && chunk.delta().finishReason() != null)))
-			.map(chunkMerger::sanitizeToolCalls)
-			.filter(chunkMerger::hasValidToolCallsOnly)
-			.filter(Objects::nonNull);
-	}
-
 	public enum EventType {
 
 		MESSAGE_END("message-end"), CONTENT_START("content-start"), CONTENT_DELTA("content-delta"),
@@ -1220,63 +1283,6 @@ public class CohereApi {
 
 		public String getValue() {
 			return this.value;
-		}
-
-	}
-
-	public static Builder builder() {
-		return new Builder();
-	}
-
-	/**
-	 * Builder for creating CohereApi instances.
-	 */
-	public static class Builder {
-
-		private String baseUrl = DEFAULT_BASE_URL;
-
-		private String apiKey;
-
-		private RestClient.Builder restClientBuilder = RestClient.builder();
-
-		private WebClient.Builder webClientBuilder = WebClient.builder();
-
-		private ResponseErrorHandler responseErrorHandler = RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER;
-
-		public Builder baseUrl(String baseUrl) {
-			this.baseUrl = baseUrl;
-			return this;
-		}
-
-		public Builder apiKey(String apiKey) {
-			this.apiKey = apiKey;
-			return this;
-		}
-
-		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
-			this.restClientBuilder = restClientBuilder;
-			return this;
-		}
-
-		public Builder webClientBuilder(WebClient.Builder webClientBuilder) {
-			this.webClientBuilder = webClientBuilder;
-			return this;
-		}
-
-		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
-			this.responseErrorHandler = responseErrorHandler;
-			return this;
-		}
-
-		public CohereApi build() {
-			Assert.hasText(this.apiKey, "Cohere API key must be set");
-			Assert.hasText(this.baseUrl, "Cohere base URL must be set");
-			Assert.notNull(this.restClientBuilder, "RestClient.Builder must not be null");
-			Assert.notNull(this.webClientBuilder, "WebClient.Builder must not be null");
-			Assert.notNull(this.responseErrorHandler, "ResponseErrorHandler must not be null");
-
-			return new CohereApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.webClientBuilder,
-					this.responseErrorHandler);
 		}
 
 	}

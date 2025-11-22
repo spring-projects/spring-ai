@@ -16,12 +16,13 @@
 
 package org.springframework.ai.cohere.chat;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.ai.cohere.api.CohereApi;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.cohere.api.CohereApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

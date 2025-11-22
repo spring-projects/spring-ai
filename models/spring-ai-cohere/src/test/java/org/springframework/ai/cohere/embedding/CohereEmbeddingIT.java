@@ -16,17 +16,18 @@
 
 package org.springframework.ai.cohere.embedding;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+
 import org.springframework.ai.cohere.CohereTestConfiguration;
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

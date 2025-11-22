@@ -16,57 +16,62 @@
 
 package org.springframework.ai.cohere.chat;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
-import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
-import org.springframework.ai.chat.model.MessageAggregator;
-import org.springframework.ai.cohere.api.CohereApi;
-import org.springframework.ai.cohere.api.CohereApi.FunctionTool;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletion;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.ChatCompletionFunction;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.ToolCall;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.Role;
-import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.cohere.api.CohereApi;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletion;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.Role;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.ToolCall;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest;
+import org.springframework.ai.cohere.api.CohereApi.FunctionTool;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a Cohere Chat Model.
@@ -176,8 +181,8 @@ public class CohereChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			Flux<CohereApi.ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.cohereApi.chatCompletionStream(request));
+			Flux<CohereApi.ChatCompletionChunk> completionChunks = RetryUtils.execute(this.retryTemplate,
+					() -> this.cohereApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the role.
 			// The rest of the chunks with same ID share the same role.
@@ -371,8 +376,8 @@ public class CohereChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.cohereApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletion> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.cohereApi.chatCompletionEntity(request));
 
 				ChatCompletion chatCompletion = completionEntity.getBody();
 
@@ -537,7 +542,7 @@ public class CohereChatModel implements ChatModel {
 	 */
 	private List<ToolCall> convertToolCalls(List<AssistantMessage.ToolCall> springToolCalls) {
 		return springToolCalls.stream().map(toolCall -> {
-			var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
+			var function = new ChatCompletionMessage.ChatCompletionFunction(toolCall.name(), toolCall.arguments());
 			return new ToolCall(toolCall.id(), toolCall.type(), function, null);
 		}).toList();
 	}

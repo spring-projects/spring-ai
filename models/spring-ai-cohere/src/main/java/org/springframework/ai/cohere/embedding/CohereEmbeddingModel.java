@@ -16,30 +16,36 @@
 
 package org.springframework.ai.cohere.embedding;
 
+import java.util.List;
+import java.util.Map;
+
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.embedding.*;
+import org.springframework.ai.embedding.AbstractEmbeddingModel;
+import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.ai.embedding.EmbeddingResponseMetadata;
 import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
-
-import java.util.List;
-import java.util.Map;
 
 /**
  * Provides the Cohere Embedding Model.
  *
- * @see AbstractEmbeddingModel
  * @author Ricken Bazolo
+ * @see AbstractEmbeddingModel
  */
 public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -97,7 +103,7 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 
 		var apiRequest = createRequest(request);
 
-		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
+		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(request)
 			.provider(CohereApi.PROVIDER_NAME)
 			.build();
@@ -106,9 +112,8 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-
-				var apiEmbeddingResponse = this.retryTemplate
-					.execute(ctx -> this.cohereApi.embeddings(apiRequest).getBody());
+				var apiEmbeddingResponse = RetryUtils.execute(this.retryTemplate,
+						() -> this.cohereApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);
@@ -117,7 +122,7 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 
 				var metadata = generateResponseMetadata(apiEmbeddingResponse.responseType());
 
-				// Extract float embeddings from the response using the helper method
+				// Extract float embeddings from response
 				List<float[]> floatEmbeddings = apiEmbeddingResponse.getFloatEmbeddings();
 
 				// Map to Spring AI Embedding objects with proper indexing
@@ -131,7 +136,6 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 				observationContext.setResponse(embeddingResponse);
 
 				return embeddingResponse;
-
 			});
 	}
 
@@ -146,7 +150,7 @@ public class CohereEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	/**
-	 * Use the provided convention for reporting observation data
+	 * Use the provided convention for reporting observation data.
 	 * @param observationConvention The provided convention
 	 */
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {

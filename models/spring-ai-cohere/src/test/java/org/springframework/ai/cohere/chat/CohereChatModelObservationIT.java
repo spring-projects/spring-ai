@@ -16,12 +16,16 @@
 
 package org.springframework.ai.cohere.chat;
 
+import java.util.List;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import reactor.core.publisher.Flux;
+
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
@@ -33,11 +37,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
@@ -174,7 +175,7 @@ public class CohereChatModelObservationIT {
 			return CohereChatModel.builder()
 				.cohereApi(cohereApi)
 				.defaultOptions(CohereChatOptions.builder().build())
-				.retryTemplate(RetryTemplate.defaultInstance())
+				.retryTemplate(new RetryTemplate())
 				.observationRegistry(observationRegistry)
 				.build();
 		}

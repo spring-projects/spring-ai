@@ -16,18 +16,15 @@
 
 package org.springframework.ai.cohere.schema;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.List;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.util.Assert;
-
-import java.util.List;
 
 /**
  * Implementation of {@link ToolCallingManager} specifically designed for Vertex AI

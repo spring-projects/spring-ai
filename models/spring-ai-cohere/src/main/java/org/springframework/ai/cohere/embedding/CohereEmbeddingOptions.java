@@ -16,17 +16,18 @@
 
 package org.springframework.ai.cohere.embedding;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.api.CohereApi.EmbeddingRequest.InputType;
 import org.springframework.ai.cohere.api.CohereApi.EmbeddingRequest.Truncate;
 import org.springframework.ai.cohere.api.CohereApi.EmbeddingType;
 import org.springframework.ai.embedding.EmbeddingOptions;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 /**
  * Options for the Cohere Embedding API.
@@ -34,10 +35,10 @@ import java.util.Objects;
  * @author Ricken Bazolo
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CohereEmbeddingOptions implements EmbeddingOptions {
+public final class CohereEmbeddingOptions implements EmbeddingOptions {
 
 	/**
-	 * ID of the model to use
+	 * ID of the model to use.
 	 */
 	@JsonProperty("model")
 	private String model;

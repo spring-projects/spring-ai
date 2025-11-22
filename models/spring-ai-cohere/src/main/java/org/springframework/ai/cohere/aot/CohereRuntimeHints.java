@@ -19,8 +19,6 @@ package org.springframework.ai.cohere.aot;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 
@@ -33,7 +31,7 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
 public class CohereRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
+	public void registerHints(final RuntimeHints hints, final ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
 
 		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.cohere")) {

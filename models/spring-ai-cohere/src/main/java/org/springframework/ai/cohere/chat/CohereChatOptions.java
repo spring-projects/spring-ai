@@ -16,6 +16,15 @@
 
 package org.springframework.ai.cohere.chat;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,15 +37,6 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 
 /**
  * Options for the Cohere API.
@@ -79,7 +79,7 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("presence_penalty") Double presencePenalty;
 
 	/**
-	 * Nin value of 0.0, max value of 1.0. Used to reduce repetitiveness of generated
+	 * Min value of 0.0, max value of 1.0. Used to reduce repetitiveness of generated
 	 * tokens. Similar to frequency_penalty, except that this penalty is applied equally
 	 * to all tokens that have already appeared, regardless of their exact frequencies.
 	 */
@@ -384,24 +384,27 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 			return false;
 		}
 		CohereChatOptions that = (CohereChatOptions) o;
-		return Objects.equals(model, that.model) && Objects.equals(temperature, that.temperature)
-				&& Objects.equals(p, that.p) && Objects.equals(maxTokens, that.maxTokens)
-				&& Objects.equals(presencePenalty, that.presencePenalty)
-				&& Objects.equals(frequencyPenalty, that.frequencyPenalty) && Objects.equals(k, that.k)
-				&& Objects.equals(tools, that.tools) && Objects.equals(responseFormat, that.responseFormat)
-				&& Objects.equals(safetyMode, that.safetyMode) && Objects.equals(stopSequences, that.stopSequences)
-				&& Objects.equals(seed, that.seed) && Objects.equals(logprobs, that.logprobs)
-				&& Objects.equals(toolChoice, that.toolChoice) && Objects.equals(strictTools, that.strictTools)
-				&& Objects.equals(toolCallbacks, that.toolCallbacks) && Objects.equals(toolNames, that.toolNames)
-				&& Objects.equals(internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(toolContext, that.toolContext);
+		return Objects.equals(this.model, that.model) && Objects.equals(this.temperature, that.temperature)
+				&& Objects.equals(this.p, that.p) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty) && Objects.equals(this.k, that.k)
+				&& Objects.equals(this.tools, that.tools) && Objects.equals(this.responseFormat, that.responseFormat)
+				&& Objects.equals(this.safetyMode, that.safetyMode)
+				&& Objects.equals(this.stopSequences, that.stopSequences) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.toolChoice, that.toolChoice)
+				&& Objects.equals(this.strictTools, that.strictTools)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(model, temperature, p, maxTokens, presencePenalty, frequencyPenalty, k, tools,
-				responseFormat, safetyMode, stopSequences, seed, logprobs, toolChoice, strictTools, toolCallbacks,
-				toolNames, internalToolExecutionEnabled, toolContext);
+		return Objects.hash(this.model, this.temperature, this.p, this.maxTokens, this.presencePenalty,
+				this.frequencyPenalty, this.k, this.tools, this.responseFormat, this.safetyMode, this.stopSequences,
+				this.seed, this.logprobs, this.toolChoice, this.strictTools, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	public static Builder builder() {
@@ -409,8 +412,7 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	}
 
 	public static CohereChatOptions fromOptions(CohereChatOptions fromOptions) {
-		Builder builder = CohereChatOptions.builder()
-			.model(fromOptions.getModel())
+		Builder builder = builder().model(fromOptions.getModel())
 			.temperature(fromOptions.getTemperature())
 			.maxTokens(fromOptions.getMaxTokens())
 			.topP(fromOptions.getTopP())
@@ -446,8 +448,7 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	}
 
 	public static CohereChatOptions fromOptions2(CohereChatOptions fromOptions) {
-		return CohereChatOptions.builder()
-			.model(fromOptions.getModel())
+		return builder().model(fromOptions.getModel())
 			.temperature(fromOptions.getTemperature())
 			.maxTokens(fromOptions.getMaxTokens())
 			.topP(fromOptions.getTopP())

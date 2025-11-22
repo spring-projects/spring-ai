@@ -45,7 +45,7 @@ public class CohereTestConfiguration {
 	}
 
 	@Bean
-	public CohereChatModel mistralAiChatModel(CohereApi api) {
+	public CohereChatModel cohereChatModel(CohereApi api) {
 		return CohereChatModel.builder()
 			.cohereApi(api)
 			.defaultOptions(CohereChatOptions.builder().model(CohereApi.ChatModel.COMMAND_A.getValue()).build())
@@ -53,7 +53,7 @@ public class CohereTestConfiguration {
 	}
 
 	@Bean
-	public CohereEmbeddingModel mistralAiEmbeddingModel(CohereApi api) {
+	public CohereEmbeddingModel cohereEmbeddingModel(CohereApi api) {
 		return CohereEmbeddingModel.builder().cohereApi(api).build();
 	}
 
