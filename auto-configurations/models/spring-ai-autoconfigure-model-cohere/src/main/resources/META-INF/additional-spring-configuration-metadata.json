@@ -1,0 +1,11 @@
+{
+  "groups": [
+	{
+	  "name": "spring.ai.cohere.chat.options.tool-choice",
+	  "type": "org.springframework.ai.cohere.api.CohereApi$ChatCompletionRequest$ToolChoice",
+	  "sourceType": "org.springframework.ai.cohere.chat.CohereChatOptions"
+	}
+  ],
+  "properties": [],
+  "hints": []
+}
