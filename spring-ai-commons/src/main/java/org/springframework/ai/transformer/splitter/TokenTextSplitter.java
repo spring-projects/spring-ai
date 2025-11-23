@@ -46,6 +46,8 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private static final boolean KEEP_SEPARATOR = true;
 
+	private static final List<Character> DEFAULT_PUNCTUATION_MARKS = List.of('.', '?', '!', '\n');
+
 	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
 
 	private final Encoding encoding = this.registry.getEncoding(EncodingType.CL100K_BASE);
@@ -64,21 +66,27 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private final boolean keepSeparator;
 
+	private final List<Character> punctuationMarks;
+
 	public TokenTextSplitter() {
-		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, KEEP_SEPARATOR);
+		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, KEEP_SEPARATOR,
+				DEFAULT_PUNCTUATION_MARKS);
 	}
 
 	public TokenTextSplitter(boolean keepSeparator) {
-		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, keepSeparator);
+		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, keepSeparator,
+				DEFAULT_PUNCTUATION_MARKS);
 	}
 
 	public TokenTextSplitter(int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
-			boolean keepSeparator) {
+			boolean keepSeparator, List<Character> punctuationMarks) {
 		this.chunkSize = chunkSize;
 		this.minChunkSizeChars = minChunkSizeChars;
 		this.minChunkLengthToEmbed = minChunkLengthToEmbed;
 		this.maxNumChunks = maxNumChunks;
 		this.keepSeparator = keepSeparator;
+		Assert.notEmpty(punctuationMarks, "punctuationMarks must not be empty");
+		this.punctuationMarks = punctuationMarks;
 	}
 
 	public static Builder builder() {
@@ -124,8 +132,7 @@ public class TokenTextSplitter extends TextSplitter {
 			// This prevents unnecessary splitting of small texts
 			if (tokens.size() > chunkSize) {
 				// Find the last period or punctuation mark in the chunk
-				int lastPunctuation = Math.max(chunkText.lastIndexOf('.'), Math.max(chunkText.lastIndexOf('?'),
-						Math.max(chunkText.lastIndexOf('!'), chunkText.lastIndexOf('\n'))));
+				int lastPunctuation = getLastPunctuationIndex(chunkText);
 
 				if (lastPunctuation != -1 && lastPunctuation > this.minChunkSizeChars) {
 					// Truncate the chunk text at the punctuation mark
@@ -156,6 +163,16 @@ public class TokenTextSplitter extends TextSplitter {
 		return chunks;
 	}
 
+	protected int getLastPunctuationIndex(String chunkText) {
+		// find the max index of any punctuation mark
+		int maxLastPunctuation = -1;
+		for (Character punctuationMark : this.punctuationMarks) {
+			int lastPunctuation = chunkText.lastIndexOf(punctuationMark);
+			maxLastPunctuation = Math.max(maxLastPunctuation, lastPunctuation);
+		}
+		return maxLastPunctuation;
+	}
+
 	private List<Integer> getEncodedTokens(String text) {
 		Assert.notNull(text, "Text must not be null");
 		return this.encoding.encode(text).boxed();
@@ -179,6 +196,8 @@ public class TokenTextSplitter extends TextSplitter {
 		private int maxNumChunks = MAX_NUM_CHUNKS;
 
 		private boolean keepSeparator = KEEP_SEPARATOR;
+
+		private List<Character> punctuationMarks = DEFAULT_PUNCTUATION_MARKS;
 
 		private Builder() {
 		}
@@ -208,9 +227,14 @@ public class TokenTextSplitter extends TextSplitter {
 			return this;
 		}
 
+		public Builder withPunctuationMarks(List<Character> punctuationMarks) {
+			this.punctuationMarks = punctuationMarks;
+			return this;
+		}
+
 		public TokenTextSplitter build() {
 			return new TokenTextSplitter(this.chunkSize, this.minChunkSizeChars, this.minChunkLengthToEmbed,
-					this.maxNumChunks, this.keepSeparator);
+					this.maxNumChunks, this.keepSeparator, this.punctuationMarks);
 		}
 
 	}
