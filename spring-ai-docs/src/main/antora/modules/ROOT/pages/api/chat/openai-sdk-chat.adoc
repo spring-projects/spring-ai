@@ -140,7 +140,8 @@ The prefix `spring.ai.openai-sdk.chat` is the property prefix for configuring th
 | spring.ai.openai-sdk.chat.options.max-tokens | The maximum number of tokens to generate. *Use for non-reasoning models* (e.g., gpt-4o, gpt-3.5-turbo). *Cannot be used with reasoning models* (e.g., o1, o3, o4-mini series). *Mutually exclusive with maxCompletionTokens*. | -
 | spring.ai.openai-sdk.chat.options.max-completion-tokens | An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and reasoning tokens. *Required for reasoning models* (e.g., o1, o3, o4-mini series). *Cannot be used with non-reasoning models*. *Mutually exclusive with maxTokens*. | -
 | spring.ai.openai-sdk.chat.options.n | How many chat completion choices to generate for each input message. | 1
-| spring.ai.openai-sdk.chat.options.output-audio | Parameters for audio output. Required when audio output is requested. | -
+| spring.ai.openai-sdk.chat.options.output-modalities | List of output modalities. Can include "text" and "audio". | -
+| spring.ai.openai-sdk.chat.options.output-audio | Parameters for audio output. Use `AudioParameters` with voice (ALLOY, ASH, BALLAD, CORAL, ECHO, FABLE, ONYX, NOVA, SAGE, SHIMMER) and format (MP3, FLAC, OPUS, PCM16, WAV, AAC). | -
 | spring.ai.openai-sdk.chat.options.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far. | 0.0
 | spring.ai.openai-sdk.chat.options.response-format.type | Response format type: `TEXT`, `JSON_OBJECT`, or `JSON_SCHEMA`. | TEXT
 | spring.ai.openai-sdk.chat.options.response-format.json-schema | JSON schema for structured outputs when type is `JSON_SCHEMA`. | -
@@ -154,7 +155,8 @@ The prefix `spring.ai.openai-sdk.chat` is the property prefix for configuring th
 | spring.ai.openai-sdk.chat.options.store | Whether to store the output of this chat completion request for use in OpenAI's model distillation or evals products. | false
 | spring.ai.openai-sdk.chat.options.metadata | Developer-defined tags and values used for filtering completions in the dashboard. | -
 | spring.ai.openai-sdk.chat.options.service-tier | Specifies the latency tier to use: `auto`, `default`, `flex`, or `priority`. | -
-| spring.ai.openai-sdk.chat.options.stream-usage | Whether to include usage statistics in streaming responses. | false
+| spring.ai.openai-sdk.chat.options.stream-options.include-usage | Whether to include usage statistics in streaming responses. | false
+| spring.ai.openai-sdk.chat.options.stream-options.include-obfuscation | Whether to include obfuscation in streaming responses. | false
 | spring.ai.openai-sdk.chat.options.tool-choice | Controls which (if any) function is called by the model. | -
 | spring.ai.openai-sdk.chat.options.internal-tool-execution-enabled | If false, Spring AI will proxy tool calls to the client for manual handling. If true (default), Spring AI handles function calls internally. | true
 |====
@@ -339,7 +341,8 @@ ChatResponse response = chatModel.call(
     new Prompt(userMessage,
         OpenAiSdkChatOptions.builder()
             .model("gpt-4o-audio-preview")
-            .outputAudio(new OutputAudio(Voice.ALLOY, AudioResponseFormat.WAV))
+            .outputModalities(List.of("text", "audio"))
+            .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
             .build()));
 
 String text = response.getResult().getOutput().getContent(); // audio transcript

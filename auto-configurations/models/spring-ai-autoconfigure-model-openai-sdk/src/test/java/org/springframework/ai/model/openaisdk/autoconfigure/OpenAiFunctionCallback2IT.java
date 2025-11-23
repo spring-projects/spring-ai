@@ -18,6 +18,7 @@ package org.springframework.ai.model.openaisdk.autoconfigure;
 
 import java.util.stream.Collectors;
 
+import com.openai.models.ChatModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
@@ -46,9 +47,12 @@ public class OpenAiFunctionCallback2IT {
 
 	@Test
 	void functionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai-sdk.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai-sdk.chat.options.temperature=0.1",
+					"spring.ai.openai-sdk.chat.options.model=" + ChatModel.GPT_4O_MINI.asString())
+			.run(context -> {
 
-			OpenAiSdkChatModel chatModel = context.getBean(OpenAiSdkChatModel.class);
+				OpenAiSdkChatModel chatModel = context.getBean(OpenAiSdkChatModel.class);
 
 			// @formatter:off
 			ChatClient chatClient = ChatClient.builder(chatModel)
@@ -61,17 +65,20 @@ public class OpenAiFunctionCallback2IT {
 				.call().content();
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
-			assertThat(content).contains("30", "10", "15");
-		});
+				assertThat(content).contains("30", "10", "15");
+			});
 	}
 
 	@Test
 	void streamFunctionCallTest() {
-		this.contextRunner.withPropertyValues("spring.ai.openai-sdk.chat.options.temperature=0.1").run(context -> {
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai-sdk.chat.options.temperature=0.2",
+					"spring.ai.openai-sdk.chat.options.model=" + ChatModel.GPT_4O_MINI.asString())
+			.run(context -> {
 
-			OpenAiSdkChatModel chatModel = context.getBean(OpenAiSdkChatModel.class);
+				OpenAiSdkChatModel chatModel = context.getBean(OpenAiSdkChatModel.class);
 
 			// @formatter:off
 			String content = ChatClient.builder(chatModel).build().prompt()
@@ -81,10 +88,10 @@ public class OpenAiFunctionCallback2IT {
 				.collectList().block().stream().collect(Collectors.joining());
 			// @formatter:on
 
-			logger.info("Response: {}", content);
+				logger.info("Response: {}", content);
 
-			assertThat(content).contains("30", "10", "15");
-		});
+				assertThat(content).contains("30", "10", "15");
+			});
 	}
 
 	@Configuration

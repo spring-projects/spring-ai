@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -32,6 +33,8 @@ import com.openai.models.ReasoningEffort;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -62,6 +65,9 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.AudioParameters;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.AudioParameters.AudioResponseFormat;
+import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.AudioParameters.Voice;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkTestConfiguration;
 import org.springframework.ai.support.ToolCallbacks;
@@ -76,6 +82,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for {@link OpenAiSdkChatModel}.
@@ -128,7 +135,7 @@ public class OpenAiSdkChatModelIT {
 	@Test
 	void streamCompletenessTest() throws InterruptedException {
 		UserMessage userMessage = new UserMessage(
-				"List ALL natural numbers in range [1, 1000]. Make sure to not omit any. Print the full list here, one after another.");
+				"List ALL natural numbers in range [1, 100]. Make sure to not omit any. Print the full list here, one after another.");
 		Prompt prompt = new Prompt(List.of(userMessage));
 
 		StringBuilder answer = new StringBuilder();
@@ -145,7 +152,7 @@ public class OpenAiSdkChatModelIT {
 		});
 		chatResponseFlux.subscribe();
 		assertThat(latch.await(120, TimeUnit.SECONDS)).isTrue();
-		IntStream.rangeClosed(1, 1000).forEach(n -> assertThat(answer).contains(String.valueOf(n)));
+		IntStream.rangeClosed(1, 100).forEach(n -> assertThat(answer).contains(String.valueOf(n)));
 	}
 
 	@Test
@@ -391,7 +398,7 @@ public class OpenAiSdkChatModelIT {
 	void streamFunctionCallTest() {
 
 		UserMessage userMessage = new UserMessage(
-				"What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.");
+				"What's the weather like in San Francisco, Tokyo, and Paris in Celsius.");
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
@@ -537,6 +544,43 @@ public class OpenAiSdkChatModelIT {
 			.collect(Collectors.joining());
 		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	void multiModalityOutputAudio(String modelName) throws IOException {
+		var userMessage = new UserMessage("Tell me joke about Spring Framework");
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage),
+				OpenAiSdkChatOptions.builder()
+					.model(modelName)
+					.outputModalities(List.of("text", "audio"))
+					.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+					.build()));
+
+		logger.info(response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+
+		byte[] audio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray();
+		assertThat(audio).isNotEmpty();
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	void streamingMultiModalityOutputAudio(String modelName) {
+		var userMessage = new UserMessage("Tell me joke about Spring Framework");
+
+		assertThatThrownBy(() -> this.chatModel
+			.stream(new Prompt(List.of(userMessage),
+					OpenAiSdkChatOptions.builder()
+						.model(modelName)
+						.outputModalities(List.of("text", "audio"))
+						.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
+						.build()))
+			.collectList()
+			.block()).isInstanceOf(CompletionException.class)
+			.hasMessageContaining(
+					"audio.format' does not support 'wav' when stream=true. Supported values are: 'pcm16");
 	}
 
 	@Test

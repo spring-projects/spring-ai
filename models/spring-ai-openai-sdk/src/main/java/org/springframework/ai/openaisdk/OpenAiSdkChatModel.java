@@ -82,6 +82,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -93,8 +94,11 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.setup.OpenAiSdkSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -295,7 +299,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 							"refusal", choice.message().refusal().isPresent() ? choice.message().refusal() : "",
 							"annotations", choice.message().annotations().isPresent() ? choice.message().annotations()
 									: List.of(Map.of()));
-					return buildGeneration(choice, metadata);
+					return buildGeneration(choice, metadata, request);
 				}).toList();
 
 				// Current usage
@@ -392,7 +396,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 											? choice.message().annotations() : List.of(),
 									"chunkChoice", chunk.choices().get((int) choice.index()));
 
-							return buildGeneration(choice, metadata);
+							return buildGeneration(choice, metadata, request);
 						}).toList();
 						Optional<CompletionUsage> usage = chatCompletion.usage();
 						CompletionUsage usageVal = usage.orElse(null);
@@ -542,7 +546,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 		});
 	}
 
-	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata) {
+	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata,
+			ChatCompletionCreateParams request) {
 		ChatCompletionMessage message = choice.message();
 		List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
 
@@ -590,11 +595,35 @@ public class OpenAiSdkChatModel implements ChatModel {
 
 		var generationMetadataBuilder = ChatGenerationMetadata.builder()
 			.finishReason(choice.finishReason().value().name());
+
 		String textContent = message.content().orElse("");
+
+		List<Media> media = new ArrayList<>();
+
+		if (message.audio().isPresent() && StringUtils.hasText(message.audio().get().data())
+				&& request.audio().isPresent()) {
+			var audioOutput = message.audio().get();
+			String mimeType = String.format("audio/%s", request.audio().get().format().value().name().toLowerCase());
+			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
+			Resource resource = new ByteArrayResource(audioData);
+			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
+			media.add(Media.builder()
+				.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+				.data(resource)
+				.id(audioOutput.id())
+				.build());
+			if (!StringUtils.hasText(textContent)) {
+				textContent = audioOutput.transcript();
+			}
+			generationMetadataBuilder.metadata("audioId", audioOutput.id());
+			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
+		}
+
 		var assistantMessage = AssistantMessage.builder()
 			.content(textContent)
 			.properties(metadata)
 			.toolCalls(toolCalls)
+			.media(media)
 			.build();
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
 	}
@@ -626,37 +655,41 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @return the ChatCompletion
 	 */
 	private ChatCompletion chunkToChatCompletion(ChatCompletionChunk chunk) {
-		List<ChatCompletion.Choice> choices = chunk.choices().stream().map(chunkChoice -> {
-			ChatCompletion.Choice.FinishReason finishReason = ChatCompletion.Choice.FinishReason.of("");
-			if (chunkChoice.finishReason().isPresent()) {
-				finishReason = ChatCompletion.Choice.FinishReason
-					.of(chunkChoice.finishReason().get().value().name().toLowerCase());
-			}
 
-			ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder()
-				.finishReason(finishReason)
-				.index(chunkChoice.index())
-				.message(ChatCompletionMessage.builder()
-					.content(chunkChoice.delta().content())
-					.refusal(chunkChoice.delta().refusal())
-					.build());
+		List<ChatCompletion.Choice> choices = (chunk._choices().isMissing()) ? List.of()
+				: chunk.choices().stream().map(chunkChoice -> {
+					ChatCompletion.Choice.FinishReason finishReason = ChatCompletion.Choice.FinishReason.of("");
+					if (chunkChoice.finishReason().isPresent()) {
+						finishReason = ChatCompletion.Choice.FinishReason
+							.of(chunkChoice.finishReason().get().value().name().toLowerCase());
+					}
 
-			// Handle optional logprobs
-			if (chunkChoice.logprobs().isPresent()) {
-				var logprobs = chunkChoice.logprobs().get();
-				choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
-					.content(logprobs.content())
-					.refusal(logprobs.refusal())
-					.build());
-			}
-			else {
-				// Provide empty logprobs when not present
-				choiceBuilder
-					.logprobs(ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
-			}
+					ChatCompletion.Choice.Builder choiceBuilder = ChatCompletion.Choice.builder()
+						.finishReason(finishReason)
+						.index(chunkChoice.index())
+						.message(ChatCompletionMessage.builder()
+							.content(chunkChoice.delta().content())
+							.refusal(chunkChoice.delta().refusal())
+							.build());
 
-			return choiceBuilder.build();
-		}).toList();
+					// Handle optional logprobs
+					if (chunkChoice.logprobs().isPresent()) {
+						var logprobs = chunkChoice.logprobs().get();
+						choiceBuilder.logprobs(ChatCompletion.Choice.Logprobs.builder()
+							.content(logprobs.content())
+							.refusal(logprobs.refusal())
+							.build());
+					}
+					else {
+						// Provide empty logprobs when not present
+						choiceBuilder.logprobs(
+								ChatCompletion.Choice.Logprobs.builder().content(List.of()).refusal(List.of()).build());
+					}
+
+					chunkChoice.delta();
+
+					return choiceBuilder.build();
+				}).toList();
 
 		return ChatCompletion.builder()
 			.id(chunk.id())
@@ -934,8 +967,14 @@ public class OpenAiSdkChatModel implements ChatModel {
 		if (requestOptions.getN() != null) {
 			builder.n(requestOptions.getN());
 		}
+		if (requestOptions.getOutputModalities() != null) {
+			builder.modalities(requestOptions.getOutputModalities()
+				.stream()
+				.map(modality -> ChatCompletionCreateParams.Modality.of(modality.toLowerCase()))
+				.toList());
+		}
 		if (requestOptions.getOutputAudio() != null) {
-			builder.audio(requestOptions.getOutputAudio());
+			builder.audio(requestOptions.getOutputAudio().toChatCompletionAudioParam());
 		}
 		if (requestOptions.getPresencePenalty() != null) {
 			builder.presencePenalty(requestOptions.getPresencePenalty());

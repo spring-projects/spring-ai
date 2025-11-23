@@ -61,7 +61,9 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 
 	private Integer n;
 
-	private ChatCompletionAudioParam outputAudio;
+	private List<String> outputModalities;
+
+	private AudioParameters outputAudio;
 
 	private Double presencePenalty;
 
@@ -214,10 +216,26 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 	}
 
 	/**
+	 * Gets the output modalities.
+	 * @return the output modalities
+	 */
+	public List<String> getOutputModalities() {
+		return this.outputModalities;
+	}
+
+	/**
+	 * Sets the output modalities.
+	 * @param outputModalities the output modalities
+	 */
+	public void setOutputModalities(List<String> outputModalities) {
+		this.outputModalities = outputModalities;
+	}
+
+	/**
 	 * Gets the output audio parameters.
 	 * @return the output audio parameters
 	 */
-	public ChatCompletionAudioParam getOutputAudio() {
+	public AudioParameters getOutputAudio() {
 		return this.outputAudio;
 	}
 
@@ -225,7 +243,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 	 * Sets the output audio parameters.
 	 * @param outputAudio the output audio parameters
 	 */
-	public void setOutputAudio(ChatCompletionAudioParam outputAudio) {
+	public void setOutputAudio(AudioParameters outputAudio) {
 		this.outputAudio = outputAudio;
 	}
 
@@ -561,7 +579,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 				&& Objects.equals(this.temperature, options.temperature)
 				&& Objects.equals(this.maxTokens, options.maxTokens)
 				&& Objects.equals(this.maxCompletionTokens, options.maxCompletionTokens)
-				&& Objects.equals(this.n, options.n) && Objects.equals(this.outputAudio, options.outputAudio)
+				&& Objects.equals(this.n, options.n) && Objects.equals(this.outputModalities, options.outputModalities)
+				&& Objects.equals(this.outputAudio, options.outputAudio)
 				&& Objects.equals(this.presencePenalty, options.presencePenalty)
 				&& Objects.equals(this.responseFormat, options.responseFormat)
 				&& Objects.equals(this.streamOptions, options.streamOptions) && Objects.equals(this.seed, options.seed)
@@ -583,11 +602,11 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.getModel(), this.frequencyPenalty, this.logitBias, this.logprobs, this.topLogprobs,
-				this.maxTokens, this.maxCompletionTokens, this.n, this.outputAudio, this.presencePenalty,
-				this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature, this.topP,
-				this.toolChoice, this.user, this.parallelToolCalls, this.store, this.metadata, this.reasoningEffort,
-				this.verbosity, this.serviceTier, this.toolCallbacks, this.toolNames, this.internalToolExecutionEnabled,
-				this.httpHeaders, this.toolContext);
+				this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
+				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
+				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.metadata,
+				this.reasoningEffort, this.verbosity, this.serviceTier, this.toolCallbacks, this.toolNames,
+				this.internalToolExecutionEnabled, this.httpHeaders, this.toolContext);
 	}
 
 	@Override
@@ -595,15 +614,48 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 		return "OpenAiSdkChatOptions{" + "model='" + this.getModel() + ", frequencyPenalty=" + this.frequencyPenalty
 				+ ", logitBias=" + this.logitBias + ", logprobs=" + this.logprobs + ", topLogprobs=" + this.topLogprobs
 				+ ", maxTokens=" + this.maxTokens + ", maxCompletionTokens=" + this.maxCompletionTokens + ", n="
-				+ this.n + ", outputAudio=" + this.outputAudio + ", presencePenalty=" + this.presencePenalty
-				+ ", responseFormat=" + this.responseFormat + ", streamOptions=" + this.streamOptions + ", streamUsage="
-				+ ", seed=" + this.seed + ", stop=" + this.stop + ", temperature=" + this.temperature + ", topP="
-				+ this.topP + ", toolChoice=" + this.toolChoice + ", user='" + this.user + '\'' + ", parallelToolCalls="
-				+ this.parallelToolCalls + ", store=" + this.store + ", metadata=" + this.metadata
-				+ ", reasoningEffort='" + this.reasoningEffort + '\'' + ", verbosity='" + this.verbosity + '\''
-				+ ", serviceTier='" + this.serviceTier + '\'' + ", toolCallbacks=" + this.toolCallbacks + ", toolNames="
-				+ this.toolNames + ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled
-				+ ", httpHeaders=" + this.httpHeaders + ", toolContext=" + this.toolContext + '}';
+				+ this.n + ", outputModalities=" + this.outputModalities + ", outputAudio=" + this.outputAudio
+				+ ", presencePenalty=" + this.presencePenalty + ", responseFormat=" + this.responseFormat
+				+ ", streamOptions=" + this.streamOptions + ", streamUsage=" + ", seed=" + this.seed + ", stop="
+				+ this.stop + ", temperature=" + this.temperature + ", topP=" + this.topP + ", toolChoice="
+				+ this.toolChoice + ", user='" + this.user + '\'' + ", parallelToolCalls=" + this.parallelToolCalls
+				+ ", store=" + this.store + ", metadata=" + this.metadata + ", reasoningEffort='" + this.reasoningEffort
+				+ '\'' + ", verbosity='" + this.verbosity + '\'' + ", serviceTier='" + this.serviceTier + '\''
+				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
+				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", httpHeaders="
+				+ this.httpHeaders + ", toolContext=" + this.toolContext + '}';
+	}
+
+	public record AudioParameters(Voice voice, AudioResponseFormat format) {
+
+		/**
+		 * Specifies the voice type.
+		 */
+		public enum Voice {
+
+			ALLOY, ASH, BALLAD, CORAL, ECHO, FABLE, ONYX, NOVA, SAGE, SHIMMER
+
+		}
+
+		/**
+		 * Specifies the output audio format.
+		 */
+		public enum AudioResponseFormat {
+
+			MP3, FLAC, OPUS, PCM16, WAV, AAC
+
+		}
+
+		public ChatCompletionAudioParam toChatCompletionAudioParam() {
+			ChatCompletionAudioParam.Builder builder = ChatCompletionAudioParam.builder();
+			if (this.voice() != null) {
+				builder.voice(voice().name().toLowerCase());
+			}
+			if (this.format() != null) {
+				builder.format(ChatCompletionAudioParam.Format.of(this.format().name().toLowerCase()));
+			}
+			return builder.build();
+		}
 	}
 
 	public record StreamOptions(Boolean includeObfuscation, Boolean includeUsage,
@@ -677,6 +729,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			this.options.setMaxTokens(fromOptions.getMaxTokens());
 			this.options.setMaxCompletionTokens(fromOptions.getMaxCompletionTokens());
 			this.options.setN(fromOptions.getN());
+			this.options.setOutputModalities(fromOptions.getOutputModalities());
 			this.options.setOutputAudio(fromOptions.getOutputAudio());
 			this.options.setPresencePenalty(fromOptions.getPresencePenalty());
 			this.options.setResponseFormat(fromOptions.getResponseFormat());
@@ -729,6 +782,9 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			}
 			if (from.getN() != null) {
 				this.options.setN(from.getN());
+			}
+			if (from.getOutputModalities() != null) {
+				this.options.setOutputModalities(new ArrayList<>(from.getOutputModalities()));
 			}
 			if (from.getOutputAudio() != null) {
 				this.options.setOutputAudio(from.getOutputAudio());
@@ -857,7 +913,12 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			return this;
 		}
 
-		public Builder outputAudio(ChatCompletionAudioParam audio) {
+		public Builder outputModalities(List<String> outputModalities) {
+			this.options.setOutputModalities(outputModalities);
+			return this;
+		}
+
+		public Builder outputAudio(AudioParameters audio) {
 			this.options.setOutputAudio(audio);
 			return this;
 		}
@@ -874,6 +935,13 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 
 		public Builder streamOptions(StreamOptions streamOptions) {
 			this.options.setStreamOptions(streamOptions);
+			return this;
+		}
+
+		// helper shortcut methods for StreamOptions with included stream usage
+		public Builder streamUsage(boolean streamUsage) {
+			this.options.setStreamOptions(
+					StreamOptions.builder().from(this.options.getStreamOptions()).includeUsage(streamUsage).build());
 			return this;
 		}
 

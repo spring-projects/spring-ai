@@ -33,7 +33,7 @@ public class OpenAiSdkChatProperties extends AbstractOpenAiSdkOptions {
 
 	public static final String DEFAULT_CHAT_MODEL = OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL;
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
+	private static final Double DEFAULT_TEMPERATURE = 1.0;
 
 	@NestedConfigurationProperty
 	private final OpenAiSdkChatOptions options = OpenAiSdkChatOptions.builder()

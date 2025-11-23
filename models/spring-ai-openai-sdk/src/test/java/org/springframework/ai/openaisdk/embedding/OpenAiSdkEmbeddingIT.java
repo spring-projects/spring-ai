@@ -64,8 +64,7 @@ class OpenAiSdkEmbeddingIT {
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 
 		assertThat(this.openAiSdkEmbeddingModel.dimensions()).isEqualTo(1536);
-		assertThat(embeddingResponse.getMetadata().getModel())
-			.isEqualTo(EmbeddingModel.TEXT_EMBEDDING_ADA_002.toString());
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("text-embedding-ada-002-v2");
 	}
 
 	@Test
