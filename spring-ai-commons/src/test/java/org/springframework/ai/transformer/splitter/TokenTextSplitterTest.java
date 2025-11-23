@@ -125,4 +125,44 @@ public class TokenTextSplitterTest {
 		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
 	}
 
+	@Test
+	public void testTokenTextSplitterWithCustomPunctuationMarks() {
+		var contentFormatter1 = DefaultContentFormatter.defaultConfig();
+		var contentFormatter2 = DefaultContentFormatter.defaultConfig();
+
+		assertThat(contentFormatter1).isNotSameAs(contentFormatter2);
+
+		var doc1 = new Document("Here, we set custom punctuation marks。？！. We just want to test it works or not？");
+		doc1.setContentFormatter(contentFormatter1);
+
+		var doc2 = new Document("And more, we add protected method getLastPunctuationIndex in TokenTextSplitter class！"
+				+ "The subclasses can override this method to achieve their own business logic。We just want to test it works or not？");
+		doc2.setContentFormatter(contentFormatter2);
+
+		var tokenTextSplitter = TokenTextSplitter.builder()
+			.withChunkSize(10)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(3)
+			.withMaxNumChunks(50)
+			.withKeepSeparator(true)
+			.withPunctuationMarks(List.of('。', '？', '！'))
+			.build();
+
+		var chunks = tokenTextSplitter.apply(List.of(doc1, doc2));
+
+		assertThat(chunks.size()).isEqualTo(7);
+
+		// Doc 1
+		assertThat(chunks.get(0).getText()).isEqualTo("Here, we set custom punctuation marks。？！");
+		assertThat(chunks.get(1).getText()).isEqualTo(". We just want to test it works or not");
+
+		// Doc 2
+		assertThat(chunks.get(2).getText()).isEqualTo("And more, we add protected method getLastPunctuation");
+		assertThat(chunks.get(3).getText()).isEqualTo("Index in TokenTextSplitter class！");
+		assertThat(chunks.get(4).getText()).isEqualTo("The subclasses can override this method to achieve their own");
+		assertThat(chunks.get(5).getText()).isEqualTo("business logic。");
+		assertThat(chunks.get(6).getText()).isEqualTo("We just want to test it works or not？");
+
+	}
+
 }
