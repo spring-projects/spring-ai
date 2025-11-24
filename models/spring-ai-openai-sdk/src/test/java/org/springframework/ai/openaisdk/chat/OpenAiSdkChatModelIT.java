@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.openai.models.ChatModel;
 import com.openai.models.ReasoningEffort;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
