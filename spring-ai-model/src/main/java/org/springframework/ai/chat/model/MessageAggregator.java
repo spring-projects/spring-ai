@@ -35,6 +35,7 @@ import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.content.Media;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -59,6 +60,7 @@ public class MessageAggregator {
 		AtomicReference<StringBuilder> messageTextContentRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
 		AtomicReference<List<ToolCall>> toolCallsRef = new AtomicReference<>(new ArrayList<>());
+		AtomicReference<List<Media>> mediasRef = new AtomicReference<>(new ArrayList<>());
 
 		// ChatGeneration Metadata
 		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
@@ -79,6 +81,7 @@ public class MessageAggregator {
 			messageTextContentRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
+			mediasRef.set(new ArrayList<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
@@ -104,7 +107,9 @@ public class MessageAggregator {
 				if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
 					toolCallsRef.get().addAll(outputMessage.getToolCalls());
 				}
-
+				if (!CollectionUtils.isEmpty(outputMessage.getMedia())) {
+					mediasRef.get().addAll(outputMessage.getMedia());
+				}
 			}
 			if (chatResponse.getMetadata() != null) {
 				if (chatResponse.getMetadata().getUsage() != null) {
@@ -136,6 +141,12 @@ public class MessageAggregator {
 					List<ToolCall> toolCallsList = (List<ToolCall>) toolCallsFromMetadata;
 					toolCallsRef.get().addAll(toolCallsList);
 				}
+				Object mediasFromMetadata = chatResponse.getMetadata().get("medias");
+				if (mediasFromMetadata instanceof List) {
+					@SuppressWarnings("unchecked")
+					List<Media> mediasList = (List<Media>) mediasFromMetadata;
+					mediasRef.get().addAll(mediasList);
+				}
 
 			}
 		}).doOnComplete(() -> {
@@ -151,23 +162,16 @@ public class MessageAggregator {
 				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
-			AssistantMessage finalAssistantMessage;
 			List<ToolCall> collectedToolCalls = toolCallsRef.get();
+			List<Media> collectedMedias = mediasRef.get();
 
-			if (!CollectionUtils.isEmpty(collectedToolCalls)) {
+			AssistantMessage finalAssistantMessage = AssistantMessage.builder()
+				.content(messageTextContentRef.get().toString())
+				.properties(messageMetadataMapRef.get())
+				.toolCalls(collectedToolCalls)
+				.media(collectedMedias)
+				.build();
 
-				finalAssistantMessage = AssistantMessage.builder()
-					.content(messageTextContentRef.get().toString())
-					.properties(messageMetadataMapRef.get())
-					.toolCalls(collectedToolCalls)
-					.build();
-			}
-			else {
-				finalAssistantMessage = AssistantMessage.builder()
-					.content(messageTextContentRef.get().toString())
-					.properties(messageMetadataMapRef.get())
-					.build();
-			}
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
 
 					generationMetadataRef.get())), chatResponseMetadata));
@@ -175,6 +179,7 @@ public class MessageAggregator {
 			messageTextContentRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
+			mediasRef.set(new ArrayList<>());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);

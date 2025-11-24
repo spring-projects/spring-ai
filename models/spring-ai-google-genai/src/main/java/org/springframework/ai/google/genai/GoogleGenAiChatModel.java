@@ -91,6 +91,7 @@ import org.springframework.core.retry.RetryTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
 /**
@@ -635,17 +636,23 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
 		else {
-			return candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.map(part -> AssistantMessage.builder()
+			return candidate.content().flatMap(Content::parts).orElse(List.of()).stream().map(part -> {
+				// Multimodality Response Support
+				List<Media> media = part.inlineData()
+					.filter(blob -> blob.data().isPresent() && blob.mimeType().isPresent())
+					.map(blob -> Media.builder()
+						.mimeType(MimeType.valueOf(blob.mimeType().get()))
+						.data(blob.data().get())
+						.build())
+					.map(List::of)
+					.orElse(List.of());
+				return AssistantMessage.builder()
 					.content(part.text().orElse(""))
 					.properties(messageMetadata)
-					.build())
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
+					.toolCalls(List.of())
+					.media(media)
+					.build();
+			}).map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata)).toList();
 		}
 	}
 
@@ -765,6 +772,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (!CollectionUtils.isEmpty(systemContents)) {
 			Assert.isTrue(systemContents.size() <= 1, "Only one system message is allowed in the prompt");
 			configBuilder.systemInstruction(systemContents.get(0));
+		}
+
+		if (!CollectionUtils.isEmpty(requestOptions.getResponseModalities())) {
+			configBuilder.responseModalities(requestOptions.getResponseModalities());
+		}
+
+		if (requestOptions.getImageConfig() != null) {
+			configBuilder.imageConfig(requestOptions.getImageConfig().convert());
 		}
 
 		GenerateContentConfig config = configBuilder.build();
