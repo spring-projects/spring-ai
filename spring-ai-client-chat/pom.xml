@@ -128,8 +128,14 @@
 			<version>${mockk-jvm.version}</version>
 			<scope>test</scope>
 		</dependency>
+		
+        <dependency>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-	</dependencies>
+    </dependencies>
 
 	<profiles>
 		<!-- ANTLR profile moved to spring-ai-vector-store -->
