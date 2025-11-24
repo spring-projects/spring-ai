@@ -37,6 +37,7 @@ import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.ai.openaisdk.OpenAiSdkEmbeddingOptions.DEFAULT_EMBEDDING_MODEL;
 
 /**
  * Integration tests for {@link OpenAiSdkEmbeddingModel}.
@@ -64,7 +65,7 @@ class OpenAiSdkEmbeddingIT {
 		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(2);
 
 		assertThat(this.openAiSdkEmbeddingModel.dimensions()).isEqualTo(1536);
-		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo("text-embedding-ada-002-v2");
+		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo(DEFAULT_EMBEDDING_MODEL);
 	}
 
 	@Test
