@@ -35,6 +35,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
+import org.springframework.ai.vectorstore.redis.RedisVectorStoreBuilderCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Dongha Koo
  */
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
@@ -134,6 +136,18 @@ class RedisVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(RedisVectorStore.class);
 		});
+	}
+
+	@Test
+	void customizerShouldApplyMetadataField() {
+		this.contextRunner
+			.withBean(RedisVectorStoreBuilderCustomizer.class,
+					() -> builder -> builder.metadataFields(RedisVectorStore.MetadataField.tag("customField")))
+			.run(context -> {
+				RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+				List<RedisVectorStore.MetadataField> metadataFields = vectorStore.getMetadataFields();
+				assertThat(metadataFields).extracting(RedisVectorStore.MetadataField::name).contains("customField");
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)
