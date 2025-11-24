@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.openai.models.ChatModel;
 import com.openai.models.ReasoningEffort;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
@@ -94,6 +95,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class OpenAiSdkChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiSdkChatModelIT.class);
+
+	// It would be better to use ChatModel.GPT_4O_AUDIO_PREVIEW.asString(); but it can't be used as a constant.
+	public static final String DEFAULT_CHAT_MODEL_AUDIO = "gpt-4o-audio-preview";
 
 	@Value("classpath:/prompts/system-message.st")
 	private Resource systemResource;
@@ -547,7 +551,7 @@ public class OpenAiSdkChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { DEFAULT_CHAT_MODEL_AUDIO })
 	void multiModalityOutputAudio(String modelName) throws IOException {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 
@@ -566,7 +570,7 @@ public class OpenAiSdkChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "gpt-4o-audio-preview" })
+	@ValueSource(strings = { DEFAULT_CHAT_MODEL_AUDIO })
 	void streamingMultiModalityOutputAudio(String modelName) {
 		var userMessage = new UserMessage("Tell me joke about Spring Framework");
 

@@ -44,7 +44,30 @@ az cognitiveservices account create \
   --sku "S0"
 
 # If you want to know the available models, run the following Azure CLI command:
-# az cognitiveservices account list-models --resource-group "$RESOURCE_GROUP" --name "$AI_SERVICE" -o table  
+# az cognitiveservices account list-models --resource-group "$RESOURCE_GROUP" --name "$AI_SERVICE" -o table
+
+echo "Deploying Chat Models"
+echo "=========================="
+
+models=("gpt-5" "gpt-5-mini" "gpt-4o-audio-preview")
+versions=("2025-08-07" "2025-08-07" "2024-12-17")
+skus=("GlobalStandard" "GlobalStandard" "GlobalStandard")
+
+for i in "${!models[@]}"; do
+  model="${models[$i]}"
+  sku="${skus[$i]}"
+  version="${versions[$i]}"
+  echo "Deploying $model..."
+  az cognitiveservices account deployment create \
+    --name "$AI_SERVICE" \
+    --resource-group "$RESOURCE_GROUP" \
+    --deployment-name "$model" \
+    --model-name "$model" \
+    --model-version "$version"\
+    --model-format "OpenAI" \
+    --sku-capacity 1 \
+    --sku-name "$sku" || echo "Failed to deploy $model. Check SKU and region compatibility."
+done
 
 echo "Deploying Embedding Models"
 echo "=========================="

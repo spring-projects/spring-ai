@@ -102,24 +102,67 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 		private final OpenAiSdkEmbeddingOptions options = new OpenAiSdkEmbeddingOptions();
 
 		public Builder from(OpenAiSdkEmbeddingOptions fromOptions) {
-			this.options.setUser(fromOptions.getUser());
+			// Parent class fields
+			this.options.setBaseUrl(fromOptions.getBaseUrl());
+			this.options.setApiKey(fromOptions.getApiKey());
+			this.options.setCredential(fromOptions.getCredential());
 			this.options.setModel(fromOptions.getModel());
 			this.options.setDeploymentName(fromOptions.getDeploymentName());
+			this.options.setAzureOpenAIServiceVersion(fromOptions.getAzureOpenAIServiceVersion());
+			this.options.setOrganizationId(fromOptions.getOrganizationId());
+			this.options.setAzure(fromOptions.isAzure());
+			this.options.setGitHubModels(fromOptions.isGitHubModels());
+			this.options.setTimeout(fromOptions.getTimeout());
+			this.options.setMaxRetries(fromOptions.getMaxRetries());
+			this.options.setProxy(fromOptions.getProxy());
+			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
+			// Child class fields
+			this.options.setUser(fromOptions.getUser());
 			this.options.setDimensions(fromOptions.getDimensions());
 			return this;
 		}
 
 		public Builder merge(EmbeddingOptions from) {
 			if (from instanceof OpenAiSdkEmbeddingOptions castFrom) {
-
-				if (castFrom.getUser() != null) {
-					this.options.setUser(castFrom.getUser());
+				// Parent class fields
+				if (castFrom.getBaseUrl() != null) {
+					this.options.setBaseUrl(castFrom.getBaseUrl());
+				}
+				if (castFrom.getApiKey() != null) {
+					this.options.setApiKey(castFrom.getApiKey());
+				}
+				if (castFrom.getCredential() != null) {
+					this.options.setCredential(castFrom.getCredential());
 				}
 				if (castFrom.getModel() != null) {
 					this.options.setModel(castFrom.getModel());
 				}
 				if (castFrom.getDeploymentName() != null) {
 					this.options.setDeploymentName(castFrom.getDeploymentName());
+				}
+				if (castFrom.getAzureOpenAIServiceVersion() != null) {
+					this.options.setAzureOpenAIServiceVersion(castFrom.getAzureOpenAIServiceVersion());
+				}
+				if (castFrom.getOrganizationId() != null) {
+					this.options.setOrganizationId(castFrom.getOrganizationId());
+				}
+				this.options.setAzure(castFrom.isAzure());
+				this.options.setGitHubModels(castFrom.isGitHubModels());
+				if (castFrom.getTimeout() != null) {
+					this.options.setTimeout(castFrom.getTimeout());
+				}
+				if (castFrom.getMaxRetries() != null) {
+					this.options.setMaxRetries(castFrom.getMaxRetries());
+				}
+				if (castFrom.getProxy() != null) {
+					this.options.setProxy(castFrom.getProxy());
+				}
+				if (castFrom.getCustomHeaders() != null) {
+					this.options.setCustomHeaders(castFrom.getCustomHeaders());
+				}
+				// Child class fields
+				if (castFrom.getUser() != null) {
+					this.options.setUser(castFrom.getUser());
 				}
 				if (castFrom.getDimensions() != null) {
 					this.options.setDimensions(castFrom.getDimensions());
@@ -151,6 +194,61 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 
 		public Builder model(String model) {
 			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder baseUrl(String baseUrl) {
+			this.options.setBaseUrl(baseUrl);
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			this.options.setApiKey(apiKey);
+			return this;
+		}
+
+		public Builder credential(com.openai.credential.Credential credential) {
+			this.options.setCredential(credential);
+			return this;
+		}
+
+		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
+			this.options.setAzureOpenAIServiceVersion(azureOpenAIServiceVersion);
+			return this;
+		}
+
+		public Builder organizationId(String organizationId) {
+			this.options.setOrganizationId(organizationId);
+			return this;
+		}
+
+		public Builder azure(boolean azure) {
+			this.options.setAzure(azure);
+			return this;
+		}
+
+		public Builder gitHubModels(boolean gitHubModels) {
+			this.options.setGitHubModels(gitHubModels);
+			return this;
+		}
+
+		public Builder timeout(java.time.Duration timeout) {
+			this.options.setTimeout(timeout);
+			return this;
+		}
+
+		public Builder maxRetries(Integer maxRetries) {
+			this.options.setMaxRetries(maxRetries);
+			return this;
+		}
+
+		public Builder proxy(java.net.Proxy proxy) {
+			this.options.setProxy(proxy);
+			return this;
+		}
+
+		public Builder customHeaders(java.util.Map<String, String> customHeaders) {
+			this.options.setCustomHeaders(customHeaders);
 			return this;
 		}
 

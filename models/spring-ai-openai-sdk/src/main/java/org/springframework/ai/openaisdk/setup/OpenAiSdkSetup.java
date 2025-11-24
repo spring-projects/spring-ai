@@ -44,7 +44,7 @@ public final class OpenAiSdkSetup {
 	static final String OPENAI_URL = "https://api.openai.com/v1";
 	static final String OPENAI_API_KEY = "OPENAI_API_KEY";
 	static final String AZURE_OPENAI_KEY = "AZURE_OPENAI_KEY";
-	static final String GITHUB_MODELS_URL = "https://models.inference.ai.azure.com";
+	static final String GITHUB_MODELS_URL = "https://models.github.ai/inference";
 	static final String GITHUB_TOKEN = "GITHUB_TOKEN";
 	static final String DEFAULT_USER_AGENT = "spring-ai-openai-sdk";
 

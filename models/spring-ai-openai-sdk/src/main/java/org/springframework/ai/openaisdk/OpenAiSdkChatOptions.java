@@ -101,8 +101,6 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 
 	private Boolean internalToolExecutionEnabled;
 
-	private Map<String, String> httpHeaders = new HashMap<>();
-
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
@@ -527,22 +525,6 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
-	/**
-	 * Gets the HTTP headers to include in requests.
-	 * @return the HTTP headers map
-	 */
-	public Map<String, String> getHttpHeaders() {
-		return this.httpHeaders;
-	}
-
-	/**
-	 * Sets the HTTP headers to include in requests.
-	 * @param httpHeaders the HTTP headers map
-	 */
-	public void setHttpHeaders(Map<String, String> httpHeaders) {
-		this.httpHeaders = httpHeaders;
-	}
-
 	@Override
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
@@ -595,7 +577,6 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
 				&& Objects.equals(this.toolNames, options.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, options.internalToolExecutionEnabled)
-				&& Objects.equals(this.httpHeaders, options.httpHeaders)
 				&& Objects.equals(this.toolContext, options.toolContext);
 	}
 
@@ -606,7 +587,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
 				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.metadata,
 				this.reasoningEffort, this.verbosity, this.serviceTier, this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.httpHeaders, this.toolContext);
+				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
@@ -622,8 +603,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 				+ ", store=" + this.store + ", metadata=" + this.metadata + ", reasoningEffort='" + this.reasoningEffort
 				+ '\'' + ", verbosity='" + this.verbosity + '\'' + ", serviceTier='" + this.serviceTier + '\''
 				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
-				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", httpHeaders="
-				+ this.httpHeaders + ", toolContext=" + this.toolContext + '}';
+				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext=" +
+				this.toolContext + '}';
 	}
 
 	public record AudioParameters(Voice voice, AudioResponseFormat format) {
@@ -720,8 +701,21 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 		private final OpenAiSdkChatOptions options = new OpenAiSdkChatOptions();
 
 		public Builder from(OpenAiSdkChatOptions fromOptions) {
+			// Parent class fields
+			this.options.setBaseUrl(fromOptions.getBaseUrl());
+			this.options.setApiKey(fromOptions.getApiKey());
+			this.options.setCredential(fromOptions.getCredential());
 			this.options.setModel(fromOptions.getModel());
 			this.options.setDeploymentName(fromOptions.getDeploymentName());
+			this.options.setAzureOpenAIServiceVersion(fromOptions.getAzureOpenAIServiceVersion());
+			this.options.setOrganizationId(fromOptions.getOrganizationId());
+			this.options.setAzure(fromOptions.isAzure());
+			this.options.setGitHubModels(fromOptions.isGitHubModels());
+			this.options.setTimeout(fromOptions.getTimeout());
+			this.options.setMaxRetries(fromOptions.getMaxRetries());
+			this.options.setProxy(fromOptions.getProxy());
+			this.options.setCustomHeaders(fromOptions.getCustomHeaders());
+			// Child class fields
 			this.options.setFrequencyPenalty(fromOptions.getFrequencyPenalty());
 			this.options.setLogitBias(fromOptions.getLogitBias());
 			this.options.setLogprobs(fromOptions.getLogprobs());
@@ -743,8 +737,6 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			this.options.setParallelToolCalls(fromOptions.getParallelToolCalls());
 			this.options.setToolCallbacks(new ArrayList<>(fromOptions.getToolCallbacks()));
 			this.options.setToolNames(new HashSet<>(fromOptions.getToolNames()));
-			this.options.setHttpHeaders(
-					fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null);
 			this.options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 			this.options.setToolContext(new HashMap<>(fromOptions.getToolContext()));
 			this.options.setStore(fromOptions.getStore());
@@ -756,12 +748,43 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 		}
 
 		public Builder merge(OpenAiSdkChatOptions from) {
+			// Parent class fields
+			if (from.getBaseUrl() != null) {
+				this.options.setBaseUrl(from.getBaseUrl());
+			}
+			if (from.getApiKey() != null) {
+				this.options.setApiKey(from.getApiKey());
+			}
+			if (from.getCredential() != null) {
+				this.options.setCredential(from.getCredential());
+			}
 			if (from.getModel() != null) {
 				this.options.setModel(from.getModel());
 			}
 			if (from.getDeploymentName() != null) {
 				this.options.setDeploymentName(from.getDeploymentName());
 			}
+			if (from.getAzureOpenAIServiceVersion() != null) {
+				this.options.setAzureOpenAIServiceVersion(from.getAzureOpenAIServiceVersion());
+			}
+			if (from.getOrganizationId() != null) {
+				this.options.setOrganizationId(from.getOrganizationId());
+			}
+			this.options.setAzure(from.isAzure());
+			this.options.setGitHubModels(from.isGitHubModels());
+			if (from.getTimeout() != null) {
+				this.options.setTimeout(from.getTimeout());
+			}
+			if (from.getMaxRetries() != null) {
+				this.options.setMaxRetries(from.getMaxRetries());
+			}
+			if (from.getProxy() != null) {
+				this.options.setProxy(from.getProxy());
+			}
+			if (from.getCustomHeaders() != null) {
+				this.options.setCustomHeaders(from.getCustomHeaders());
+			}
+			// Child class fields
 			if (from.getFrequencyPenalty() != null) {
 				this.options.setFrequencyPenalty(from.getFrequencyPenalty());
 			}
@@ -825,9 +848,6 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			if (!from.getToolNames().isEmpty()) {
 				this.options.setToolNames(new HashSet<>(from.getToolNames()));
 			}
-			if (from.getHttpHeaders() != null) {
-				this.options.setHttpHeaders(new HashMap<>(from.getHttpHeaders()));
-			}
 			if (from.getInternalToolExecutionEnabled() != null) {
 				this.options.setInternalToolExecutionEnabled(from.getInternalToolExecutionEnabled());
 			}
@@ -859,6 +879,61 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 
 		public Builder deploymentName(String deploymentName) {
 			this.options.setDeploymentName(deploymentName);
+			return this;
+		}
+
+		public Builder baseUrl(String baseUrl) {
+			this.options.setBaseUrl(baseUrl);
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			this.options.setApiKey(apiKey);
+			return this;
+		}
+
+		public Builder credential(com.openai.credential.Credential credential) {
+			this.options.setCredential(credential);
+			return this;
+		}
+
+		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
+			this.options.setAzureOpenAIServiceVersion(azureOpenAIServiceVersion);
+			return this;
+		}
+
+		public Builder organizationId(String organizationId) {
+			this.options.setOrganizationId(organizationId);
+			return this;
+		}
+
+		public Builder azure(boolean azure) {
+			this.options.setAzure(azure);
+			return this;
+		}
+
+		public Builder gitHubModels(boolean gitHubModels) {
+			this.options.setGitHubModels(gitHubModels);
+			return this;
+		}
+
+		public Builder timeout(java.time.Duration timeout) {
+			this.options.setTimeout(timeout);
+			return this;
+		}
+
+		public Builder maxRetries(Integer maxRetries) {
+			this.options.setMaxRetries(maxRetries);
+			return this;
+		}
+
+		public Builder proxy(java.net.Proxy proxy) {
+			this.options.setProxy(proxy);
+			return this;
+		}
+
+		public Builder customHeaders(Map<String, String> customHeaders) {
+			this.options.setCustomHeaders(customHeaders);
 			return this;
 		}
 
@@ -999,11 +1074,6 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 		public Builder toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
 			this.options.setToolNames(new HashSet<>(Arrays.asList(toolNames)));
-			return this;
-		}
-
-		public Builder httpHeaders(Map<String, String> httpHeaders) {
-			this.options.setHttpHeaders(httpHeaders);
 			return this;
 		}
 
