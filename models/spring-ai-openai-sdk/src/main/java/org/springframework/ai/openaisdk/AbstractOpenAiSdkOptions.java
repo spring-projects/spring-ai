@@ -18,6 +18,7 @@ package org.springframework.ai.openaisdk;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
@@ -91,7 +92,7 @@ public class AbstractOpenAiSdkOptions {
 	/**
 	 * Custom HTTP headers to add to OpenAI client requests.
 	 */
-	private Map<String, String> customHeaders;
+	private Map<String, String> customHeaders = new HashMap<>();
 
 	public String getBaseUrl() {
 		return this.baseUrl;
