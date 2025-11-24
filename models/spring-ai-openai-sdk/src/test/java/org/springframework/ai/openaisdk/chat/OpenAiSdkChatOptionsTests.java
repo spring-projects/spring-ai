@@ -49,7 +49,7 @@ public class OpenAiSdkChatOptionsTests {
 		List<String> stop = List.of("stop1", "stop2");
 		Map<String, String> metadata = Map.of("key1", "value1");
 		Map<String, Object> toolContext = Map.of("keyA", "valueA");
-		Map<String, String> httpHeaders = Map.of("header1", "value1");
+		Map<String, String> customHeaders = Map.of("header1", "value1");
 
 		OpenAiSdkChatOptions options = OpenAiSdkChatOptions.builder()
 			.model("test-model")
@@ -75,7 +75,7 @@ public class OpenAiSdkChatOptionsTests {
 			.verbosity("low")
 			.serviceTier("auto")
 			.internalToolExecutionEnabled(false)
-			.customHeaders(httpHeaders)
+			.customHeaders(customHeaders)
 			.toolContext(toolContext)
 			.build();
 
@@ -103,7 +103,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getVerbosity()).isEqualTo("low");
 		assertThat(options.getServiceTier()).isEqualTo("auto");
 		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
-		assertThat(options.getCustomHeaders()).isEqualTo(httpHeaders);
+		assertThat(options.getCustomHeaders()).isEqualTo(customHeaders);
 		assertThat(options.getToolContext()).isEqualTo(toolContext);
 	}
 

@@ -89,7 +89,7 @@ public class AbstractOpenAiSdkOptions {
 	private Proxy proxy;
 
 	/**
-	 * Custom headers to add to OpenAI client requests.
+	 * Custom HTTP headers to add to OpenAI client requests.
 	 */
 	private Map<String, String> customHeaders;
 
@@ -210,4 +210,5 @@ public class AbstractOpenAiSdkOptions {
 	public void setCustomHeaders(Map<String, String> customHeaders) {
 		this.customHeaders = customHeaders;
 	}
+
 }

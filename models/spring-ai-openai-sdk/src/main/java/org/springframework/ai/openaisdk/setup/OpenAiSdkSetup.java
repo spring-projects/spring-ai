@@ -89,7 +89,8 @@ public final class OpenAiSdkSetup {
 				builder.credential(credential);
 			}
 			else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
-				// If no API key is provided for Microsoft Foundry, we try to use passwordless
+				// If no API key is provided for Microsoft Foundry, we try to use
+				// passwordless
 				// authentication
 				builder.credential(azureAuthentication());
 			}
@@ -146,7 +147,8 @@ public final class OpenAiSdkSetup {
 				builder.credential(credential);
 			}
 			else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
-				// If no API key is provided for Microsoft Foundry, we try to use passwordless
+				// If no API key is provided for Microsoft Foundry, we try to use
+				// passwordless
 				// authentication
 				builder.credential(azureAuthentication());
 			}

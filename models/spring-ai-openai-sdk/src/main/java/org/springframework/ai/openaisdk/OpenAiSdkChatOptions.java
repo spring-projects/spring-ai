@@ -603,8 +603,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 				+ ", store=" + this.store + ", metadata=" + this.metadata + ", reasoningEffort='" + this.reasoningEffort
 				+ '\'' + ", verbosity='" + this.verbosity + '\'' + ", serviceTier='" + this.serviceTier + '\''
 				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
-				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext=" +
-				this.toolContext + '}';
+				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
+				+ this.toolContext + '}';
 	}
 
 	public record AudioParameters(Voice voice, AudioResponseFormat format) {
