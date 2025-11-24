@@ -511,9 +511,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
-				this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema, this.toolCallbacks, this.toolNames,
-				this.googleSearchRetrieval, this.safetySettings, this.internalToolExecutionEnabled, this.toolContext,
-				this.labels);
+				this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema, this.toolCallbacks,
+				this.toolNames, this.googleSearchRetrieval, this.safetySettings, this.internalToolExecutionEnabled,
+				this.toolContext, this.labels);
 	}
 
 	@Override
