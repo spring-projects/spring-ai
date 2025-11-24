@@ -401,10 +401,10 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 					.flatMap(List::stream)
 					.toList();
 
-					GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
-					Usage currentUsage = new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount());
-					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
+				GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
+				Usage currentUsage = new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount());
+				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+				ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 
 				observationContext.setResponse(chatResponse);
 				return chatResponse;
