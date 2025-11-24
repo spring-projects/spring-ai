@@ -1,6 +1,6 @@
 # OpenAI Java API Library
 
-This is the official OpenAI Java SDK from OpenAI, which provides integration with OpenAI's services, including Azure OpenAI.
+This is the official OpenAI Java SDK from OpenAI, which provides integration with OpenAI's services, including Microsoft Foundry.
 
 [OpenAI Java API Library GitHub repository](https://github.com/openai/openai-java)
 
@@ -13,7 +13,7 @@ Generic authentication is done using a URL and an API Key, such as:
 
 ```java
 OpenAiSdkChatOptions options = OpenAiSdkChatOptions.builder()
-				.baseUrl("https://<my-deployment-url>.openai.azure.com/")
+				.baseUrl("https://<my-deployment-url>.openai.microsoftFoundry.com/")
 				.apiKey("<my-api-key>")
 				.build();
 ```
@@ -22,7 +22,7 @@ Instead of providing the URL and API Key programmatically, you can also set them
 using environment variables, using the keys below:
 
 ```properties
-OPENAI_BASE_URL=https://<my-deployment-url>.openai.azure.com/
+OPENAI_BASE_URL=https://<my-deployment-url>.openai.microsoftFoundry.com/
 OPENAI_API_KEY=<my-api-key>
 ```
 
@@ -39,12 +39,12 @@ OPENAI_API_KEY=<my-api-key>
 ### Using Microsoft Foundry
 
 Microsoft Foundry will be automatically detected when using a Microsoft Foundry URL.
-It can be forced if necessary by setting the `azure` configuration property to `true`.
+It can be forced if necessary by setting the `microsoftFoundry` configuration property to `true`.
 
 Here's an example using environment variables:
 
 ```properties
-OPENAI_BASE_URL=https://<my-deployment-url>.openai.azure.com/
+OPENAI_BASE_URL=https://<my-deployment-url>.openai.microsoftFoundry.com/
 OPENAI_API_KEY=<my-api-key>
 ```
 

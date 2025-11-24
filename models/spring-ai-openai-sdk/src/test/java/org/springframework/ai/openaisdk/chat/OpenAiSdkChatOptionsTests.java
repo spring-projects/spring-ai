@@ -75,7 +75,7 @@ public class OpenAiSdkChatOptionsTests {
 			.verbosity("low")
 			.serviceTier("auto")
 			.internalToolExecutionEnabled(false)
-			.httpHeaders(httpHeaders)
+			.customHeaders(httpHeaders)
 			.toolContext(toolContext)
 			.build();
 
@@ -103,7 +103,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getVerbosity()).isEqualTo("low");
 		assertThat(options.getServiceTier()).isEqualTo("auto");
 		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
-		assertThat(options.getHttpHeaders()).isEqualTo(httpHeaders);
+		assertThat(options.getCustomHeaders()).isEqualTo(httpHeaders);
 		assertThat(options.getToolContext()).isEqualTo(toolContext);
 	}
 
@@ -138,7 +138,7 @@ public class OpenAiSdkChatOptionsTests {
 			.verbosity("high")
 			.serviceTier("default")
 			.internalToolExecutionEnabled(true)
-			.httpHeaders(Map.of("header1", "value1"))
+			.customHeaders(Map.of("header1", "value1"))
 			.build();
 
 		OpenAiSdkChatOptions copiedOptions = originalOptions.copy();
@@ -146,7 +146,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(copiedOptions).isNotSameAs(originalOptions).isEqualTo(originalOptions);
 		// Verify collections are copied
 		assertThat(copiedOptions.getStop()).isNotSameAs(originalOptions.getStop());
-		assertThat(copiedOptions.getHttpHeaders()).isNotSameAs(originalOptions.getHttpHeaders());
+		assertThat(copiedOptions.getCustomHeaders()).isNotSameAs(originalOptions.getCustomHeaders());
 		assertThat(copiedOptions.getToolCallbacks()).isNotSameAs(originalOptions.getToolCallbacks());
 		assertThat(copiedOptions.getToolNames()).isNotSameAs(originalOptions.getToolNames());
 		assertThat(copiedOptions.getToolContext()).isNotSameAs(originalOptions.getToolContext());
@@ -184,7 +184,7 @@ public class OpenAiSdkChatOptionsTests {
 		options.setVerbosity("medium");
 		options.setServiceTier("auto");
 		options.setInternalToolExecutionEnabled(false);
-		options.setHttpHeaders(Map.of("header2", "value2"));
+		options.setCustomHeaders(Map.of("header2", "value2"));
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getDeploymentName()).isEqualTo("test-deployment");
@@ -209,7 +209,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getVerbosity()).isEqualTo("medium");
 		assertThat(options.getServiceTier()).isEqualTo("auto");
 		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
-		assertThat(options.getHttpHeaders()).isEqualTo(Map.of("header2", "value2"));
+		assertThat(options.getCustomHeaders()).isEqualTo(Map.of("header2", "value2"));
 	}
 
 	@Test
@@ -247,7 +247,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getToolCallbacks()).isNotNull().isEmpty();
 		assertThat(options.getToolNames()).isNotNull().isEmpty();
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
-		assertThat(options.getHttpHeaders()).isNotNull().isEmpty();
+		assertThat(options.getCustomHeaders()).isNotNull().isEmpty();
 		assertThat(options.getToolContext()).isNotNull().isEmpty();
 	}
 
@@ -287,7 +287,7 @@ public class OpenAiSdkChatOptionsTests {
 			.logitBias(null)
 			.stop(null)
 			.metadata(null)
-			.httpHeaders(null)
+			.customHeaders(null)
 			.build();
 
 		assertThat(options.getModel()).isNull();
@@ -295,7 +295,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getMetadata()).isNull();
-		assertThat(options.getHttpHeaders()).isNull();
+		assertThat(options.getCustomHeaders()).isNull();
 	}
 
 	@Test
@@ -320,23 +320,23 @@ public class OpenAiSdkChatOptionsTests {
 		options.setLogitBias(null);
 		options.setStop(null);
 		options.setMetadata(null);
-		options.setHttpHeaders(null);
+		options.setCustomHeaders(null);
 
 		assertThat(options.getLogitBias()).isNull();
 		assertThat(options.getStop()).isNull();
 		assertThat(options.getMetadata()).isNull();
-		assertThat(options.getHttpHeaders()).isNull();
+		assertThat(options.getCustomHeaders()).isNull();
 
 		// Test setting empty collections
 		options.setLogitBias(new HashMap<>());
 		options.setStop(new ArrayList<>());
 		options.setMetadata(new HashMap<>());
-		options.setHttpHeaders(new HashMap<>());
+		options.setCustomHeaders(new HashMap<>());
 
 		assertThat(options.getLogitBias()).isEmpty();
 		assertThat(options.getStop()).isEmpty();
 		assertThat(options.getMetadata()).isEmpty();
-		assertThat(options.getHttpHeaders()).isEmpty();
+		assertThat(options.getCustomHeaders()).isEmpty();
 	}
 
 	@Test

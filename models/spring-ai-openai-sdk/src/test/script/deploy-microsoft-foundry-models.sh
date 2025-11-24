@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Execute this script to deploy the needed Azure OpenAI models to execute the integration tests.
+# Execute this script to deploy the needed Microsoft Foundry models to execute the integration tests.
 #
 # For this, you need to have Azure CLI installed: https://learn.microsoft.com/cli/azure/install-azure-cli
 #

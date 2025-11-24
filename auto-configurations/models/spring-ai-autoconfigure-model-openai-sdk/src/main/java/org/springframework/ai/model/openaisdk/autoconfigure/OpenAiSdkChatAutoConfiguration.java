@@ -75,16 +75,16 @@ public class OpenAiSdkChatAutoConfiguration {
 	private OpenAIClient openAiClient(AbstractOpenAiSdkOptions resolved) {
 
 		return OpenAiSdkSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
-				resolved.getAzureDeploymentName(), resolved.getAzureOpenAIServiceVersion(),
-				resolved.getOrganizationId(), resolved.isAzure(), resolved.isGitHubModels(), resolved.getModel(),
+				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
+				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(), resolved.getModel(),
 				resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(), resolved.getCustomHeaders());
 	}
 
 	private OpenAIClientAsync openAiClientAsync(AbstractOpenAiSdkOptions resolved) {
 
 		return OpenAiSdkSetup.setupAsyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
-				resolved.getAzureDeploymentName(), resolved.getAzureOpenAIServiceVersion(),
-				resolved.getOrganizationId(), resolved.isAzure(), resolved.isGitHubModels(), resolved.getModel(),
+				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
+				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(), resolved.getModel(),
 				resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(), resolved.getCustomHeaders());
 	}
 

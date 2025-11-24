@@ -138,9 +138,9 @@ public class OpenAiSdkImageModel implements ImageModel {
 		}
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
 				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
-						this.options.getCredential(), this.options.getAzureDeploymentName(),
-						this.options.getAzureOpenAIServiceVersion(), this.options.getOrganizationId(),
-						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders()));
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);

@@ -59,7 +59,7 @@ public final class OpenAiSdkSetup {
 
 	public enum ModelProvider {
 
-		OPEN_AI, AZURE_OPEN_AI, GITHUB_MODELS
+		OPEN_AI, MICROSOFT_FOUNDRY, GITHUB_MODELS
 
 	}
 
@@ -88,8 +88,8 @@ public final class OpenAiSdkSetup {
 			if (credential != null) {
 				builder.credential(credential);
 			}
-			else if (modelProvider == ModelProvider.AZURE_OPEN_AI) {
-				// If no API key is provided for Azure OpenAI, we try to use passwordless
+			else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
+				// If no API key is provided for Microsoft Foundry, we try to use passwordless
 				// authentication
 				builder.credential(azureAuthentication());
 			}
@@ -145,8 +145,8 @@ public final class OpenAiSdkSetup {
 			if (credential != null) {
 				builder.credential(credential);
 			}
-			else if (modelProvider == ModelProvider.AZURE_OPEN_AI) {
-				// If no API key is provided for Azure OpenAI, we try to use passwordless
+			else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
+				// If no API key is provided for Microsoft Foundry, we try to use passwordless
 				// authentication
 				builder.credential(azureAuthentication());
 			}
@@ -183,7 +183,7 @@ public final class OpenAiSdkSetup {
 			var azureOpenAiBaseUrl = System.getenv("AZURE_OPENAI_BASE_URL");
 			if (azureOpenAiBaseUrl != null) {
 				baseUrl = azureOpenAiBaseUrl;
-				logger.debug("Azure OpenAI Base URL detected from environment variable AZURE_OPENAI_BASE_URL.");
+				logger.debug("Microsoft Foundry Base URL detected from environment variable AZURE_OPENAI_BASE_URL.");
 			}
 		}
 		return baseUrl;
@@ -193,7 +193,7 @@ public final class OpenAiSdkSetup {
 			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
 
 		if (isAzure) {
-			return ModelProvider.AZURE_OPEN_AI; // Forced by the user
+			return ModelProvider.MICROSOFT_FOUNDRY; // Forced by the user
 		}
 		if (isGitHubModels) {
 			return ModelProvider.GITHUB_MODELS; // Forced by the user
@@ -202,14 +202,14 @@ public final class OpenAiSdkSetup {
 			if (baseUrl.endsWith("openai.azure.com") || baseUrl.endsWith("openai.azure.com/")
 					|| baseUrl.endsWith("cognitiveservices.azure.com")
 					|| baseUrl.endsWith("cognitiveservices.azure.com/")) {
-				return ModelProvider.AZURE_OPEN_AI;
+				return ModelProvider.MICROSOFT_FOUNDRY;
 			}
 			else if (baseUrl.startsWith(GITHUB_MODELS_URL)) {
 				return ModelProvider.GITHUB_MODELS;
 			}
 		}
 		if (azureDeploymentName != null || azureOpenAIServiceVersion != null) {
-			return ModelProvider.AZURE_OPEN_AI;
+			return ModelProvider.MICROSOFT_FOUNDRY;
 		}
 		return ModelProvider.OPEN_AI;
 	}
@@ -226,7 +226,7 @@ public final class OpenAiSdkSetup {
 		else if (modelProvider == ModelProvider.GITHUB_MODELS) {
 			return GITHUB_MODELS_URL;
 		}
-		else if (modelProvider == ModelProvider.AZURE_OPEN_AI) {
+		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
 			String tmpUrl = baseUrl;
 			if (baseUrl.endsWith("/") || baseUrl.endsWith("?")) {
 				tmpUrl = baseUrl.substring(0, baseUrl.length() - 1);
@@ -249,7 +249,7 @@ public final class OpenAiSdkSetup {
 			return AzureInternalOpenAiSdkHelper.getAzureCredential();
 		}
 		catch (NoClassDefFoundError e) {
-			throw new IllegalArgumentException("Azure OpenAI was detected, but no credential was provided. "
+			throw new IllegalArgumentException("Microsoft Foundry was detected, but no credential was provided. "
 					+ "If you want to use passwordless authentication, you need to add the Azure Identity library (groupId=`com.azure`, artifactId=`azure-identity`) to your classpath.");
 		}
 	}
@@ -258,10 +258,10 @@ public final class OpenAiSdkSetup {
 		if (modelProvider == ModelProvider.OPEN_AI && System.getenv(OPENAI_API_KEY) != null) {
 			return System.getenv(OPENAI_API_KEY);
 		}
-		else if (modelProvider == ModelProvider.AZURE_OPEN_AI && System.getenv(AZURE_OPENAI_KEY) != null) {
+		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(AZURE_OPENAI_KEY) != null) {
 			return System.getenv(AZURE_OPENAI_KEY);
 		}
-		else if (modelProvider == ModelProvider.AZURE_OPEN_AI && System.getenv(OPENAI_API_KEY) != null) {
+		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(OPENAI_API_KEY) != null) {
 			return System.getenv(OPENAI_API_KEY);
 		}
 		else if (modelProvider == ModelProvider.GITHUB_MODELS && System.getenv(GITHUB_TOKEN) != null) {

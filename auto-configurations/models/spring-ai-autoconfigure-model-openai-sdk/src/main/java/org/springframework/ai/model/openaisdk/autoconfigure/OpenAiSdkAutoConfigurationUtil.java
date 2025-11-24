@@ -49,15 +49,15 @@ public final class OpenAiSdkAutoConfigurationUtil {
 		resolved.setModel(StringUtils.hasText(modelProperties.getModel()) ? modelProperties.getModel()
 				: commonProperties.getModel());
 
-		resolved.setAzureDeploymentName(StringUtils.hasText(modelProperties.getAzureDeploymentName())
-				? modelProperties.getAzureDeploymentName() : commonProperties.getAzureDeploymentName());
+		resolved.setMicrosoftDeploymentName(StringUtils.hasText(modelProperties.getMicrosoftDeploymentName())
+				? modelProperties.getMicrosoftDeploymentName() : commonProperties.getMicrosoftDeploymentName());
 
-		resolved.setAzureOpenAIServiceVersion(modelProperties.getAzureOpenAIServiceVersion() != null
-				? modelProperties.getAzureOpenAIServiceVersion() : commonProperties.getAzureOpenAIServiceVersion());
+		resolved.setMicrosoftFoundryServiceVersion(modelProperties.getMicrosoftFoundryServiceVersion() != null
+				? modelProperties.getMicrosoftFoundryServiceVersion() : commonProperties.getMicrosoftFoundryServiceVersion());
 
 		// For boolean properties, use modelProperties value, defaulting to
 		// commonProperties if needed
-		resolved.setAzure(modelProperties.isAzure() || commonProperties.isAzure());
+		resolved.setMicrosoftFoundry(modelProperties.isMicrosoftFoundry() || commonProperties.isMicrosoftFoundry());
 
 		resolved.setGitHubModels(modelProperties.isGitHubModels() || commonProperties.isGitHubModels());
 

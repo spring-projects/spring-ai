@@ -76,7 +76,7 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 
 		EmbeddingCreateParams.Builder builder = EmbeddingCreateParams.builder();
 
-		// Use deployment name if available (for Azure AI Foundry), otherwise use model
+		// Use deployment name if available (for Microsoft Foundry), otherwise use model
 		// name
 		if (this.getDeploymentName() != null) {
 			builder.model(this.getDeploymentName());
@@ -108,9 +108,9 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 			this.options.setCredential(fromOptions.getCredential());
 			this.options.setModel(fromOptions.getModel());
 			this.options.setDeploymentName(fromOptions.getDeploymentName());
-			this.options.setAzureOpenAIServiceVersion(fromOptions.getAzureOpenAIServiceVersion());
+			this.options.setMicrosoftFoundryServiceVersion(fromOptions.getMicrosoftFoundryServiceVersion());
 			this.options.setOrganizationId(fromOptions.getOrganizationId());
-			this.options.setAzure(fromOptions.isAzure());
+			this.options.setMicrosoftFoundry(fromOptions.isMicrosoftFoundry());
 			this.options.setGitHubModels(fromOptions.isGitHubModels());
 			this.options.setTimeout(fromOptions.getTimeout());
 			this.options.setMaxRetries(fromOptions.getMaxRetries());
@@ -140,13 +140,13 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 				if (castFrom.getDeploymentName() != null) {
 					this.options.setDeploymentName(castFrom.getDeploymentName());
 				}
-				if (castFrom.getAzureOpenAIServiceVersion() != null) {
-					this.options.setAzureOpenAIServiceVersion(castFrom.getAzureOpenAIServiceVersion());
+				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
+					this.options.setMicrosoftFoundryServiceVersion(castFrom.getMicrosoftFoundryServiceVersion());
 				}
 				if (castFrom.getOrganizationId() != null) {
 					this.options.setOrganizationId(castFrom.getOrganizationId());
 				}
-				this.options.setAzure(castFrom.isAzure());
+				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
 				this.options.setGitHubModels(castFrom.isGitHubModels());
 				if (castFrom.getTimeout() != null) {
 					this.options.setTimeout(castFrom.getTimeout());
@@ -213,7 +213,7 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 		}
 
 		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-			this.options.setAzureOpenAIServiceVersion(azureOpenAIServiceVersion);
+			this.options.setMicrosoftFoundryServiceVersion(azureOpenAIServiceVersion);
 			return this;
 		}
 
@@ -223,7 +223,7 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 		}
 
 		public Builder azure(boolean azure) {
-			this.options.setAzure(azure);
+			this.options.setMicrosoftFoundry(azure);
 			return this;
 		}
 

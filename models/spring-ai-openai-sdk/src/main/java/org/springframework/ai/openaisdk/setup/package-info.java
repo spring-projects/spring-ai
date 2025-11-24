@@ -18,7 +18,7 @@
  * Setup and configuration utilities for OpenAI Sdk clients.
  * <p>
  * This package contains helper classes for configuring and setting up OpenAI clients for
- * different environments including OpenAI, Azure OpenAI, and GitHub Models.
+ * different environments including OpenAI, Microsoft Foundry, and GitHub Models.
  *
  * @author Julien Dubois
  */

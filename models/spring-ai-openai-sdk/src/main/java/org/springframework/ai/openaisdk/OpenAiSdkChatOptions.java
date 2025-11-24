@@ -707,9 +707,9 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			this.options.setCredential(fromOptions.getCredential());
 			this.options.setModel(fromOptions.getModel());
 			this.options.setDeploymentName(fromOptions.getDeploymentName());
-			this.options.setAzureOpenAIServiceVersion(fromOptions.getAzureOpenAIServiceVersion());
+			this.options.setMicrosoftFoundryServiceVersion(fromOptions.getMicrosoftFoundryServiceVersion());
 			this.options.setOrganizationId(fromOptions.getOrganizationId());
-			this.options.setAzure(fromOptions.isAzure());
+			this.options.setMicrosoftFoundry(fromOptions.isMicrosoftFoundry());
 			this.options.setGitHubModels(fromOptions.isGitHubModels());
 			this.options.setTimeout(fromOptions.getTimeout());
 			this.options.setMaxRetries(fromOptions.getMaxRetries());
@@ -764,13 +764,13 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			if (from.getDeploymentName() != null) {
 				this.options.setDeploymentName(from.getDeploymentName());
 			}
-			if (from.getAzureOpenAIServiceVersion() != null) {
-				this.options.setAzureOpenAIServiceVersion(from.getAzureOpenAIServiceVersion());
+			if (from.getMicrosoftFoundryServiceVersion() != null) {
+				this.options.setMicrosoftFoundryServiceVersion(from.getMicrosoftFoundryServiceVersion());
 			}
 			if (from.getOrganizationId() != null) {
 				this.options.setOrganizationId(from.getOrganizationId());
 			}
-			this.options.setAzure(from.isAzure());
+			this.options.setMicrosoftFoundry(from.isMicrosoftFoundry());
 			this.options.setGitHubModels(from.isGitHubModels());
 			if (from.getTimeout() != null) {
 				this.options.setTimeout(from.getTimeout());
@@ -898,7 +898,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 		}
 
 		public Builder azureOpenAIServiceVersion(com.openai.azure.AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-			this.options.setAzureOpenAIServiceVersion(azureOpenAIServiceVersion);
+			this.options.setMicrosoftFoundryServiceVersion(azureOpenAIServiceVersion);
 			return this;
 		}
 
@@ -908,7 +908,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 		}
 
 		public Builder azure(boolean azure) {
-			this.options.setAzure(azure);
+			this.options.setMicrosoftFoundry(azure);
 			return this;
 		}
 

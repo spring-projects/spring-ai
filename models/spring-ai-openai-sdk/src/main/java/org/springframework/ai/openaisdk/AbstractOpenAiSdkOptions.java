@@ -36,37 +36,37 @@ public class AbstractOpenAiSdkOptions {
 	private String apiKey;
 
 	/**
-	 * Credentials used to connect to Azure OpenAI.
+	 * Credentials used to connect to Microsoft Foundry.
 	 */
 	private Credential credential;
 
 	/**
-	 * The model name used. When using Azure AI Foundry, this is also used as the default
+	 * The model name used. When using Microsoft Foundry, this is also used as the default
 	 * deployment name.
 	 */
 	private String model;
 
 	/**
-	 * The deployment name as defined in Azure AI Foundry. On Azure AI Foundry, the
+	 * The deployment name as defined in Microsoft Foundry. On Microsoft Foundry, the
 	 * default deployment name is the same as the model name. When using OpenAI directly,
 	 * this value isn't used.
 	 */
-	private String azureDeploymentName;
+	private String microsoftDeploymentName;
 
 	/**
-	 * The Azure OpenAI Service version to use when connecting to Azure AI Foundry.
+	 * The Service version to use when connecting to Microsoft Foundry.
 	 */
-	private AzureOpenAIServiceVersion azureOpenAIServiceVersion;
+	private AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
 
 	/**
-	 * The organization ID to use when connecting to Azure OpenAI.
+	 * The organization ID to use when connecting to Microsoft Foundry.
 	 */
 	private String organizationId;
 
 	/**
-	 * Whether Azure OpenAI is detected.
+	 * Whether Microsoft Foundry is detected.
 	 */
-	private boolean isAzure;
+	private boolean isMicrosoftFoundry;
 
 	/**
 	 * Whether GitHub Models is detected.
@@ -125,34 +125,34 @@ public class AbstractOpenAiSdkOptions {
 		this.model = model;
 	}
 
-	public String getAzureDeploymentName() {
-		return this.azureDeploymentName;
+	public String getMicrosoftDeploymentName() {
+		return this.microsoftDeploymentName;
 	}
 
-	public void setAzureDeploymentName(String azureDeploymentName) {
-		this.azureDeploymentName = azureDeploymentName;
+	public void setMicrosoftDeploymentName(String microsoftDeploymentName) {
+		this.microsoftDeploymentName = microsoftDeploymentName;
 	}
 
 	/**
 	 * Alias for getAzureDeploymentName()
 	 */
 	public String getDeploymentName() {
-		return this.azureDeploymentName;
+		return this.microsoftDeploymentName;
 	}
 
 	/**
 	 * Alias for setAzureDeploymentName()
 	 */
 	public void setDeploymentName(String azureDeploymentName) {
-		this.azureDeploymentName = azureDeploymentName;
+		this.microsoftDeploymentName = azureDeploymentName;
 	}
 
-	public AzureOpenAIServiceVersion getAzureOpenAIServiceVersion() {
-		return this.azureOpenAIServiceVersion;
+	public AzureOpenAIServiceVersion getMicrosoftFoundryServiceVersion() {
+		return this.microsoftFoundryServiceVersion;
 	}
 
-	public void setAzureOpenAIServiceVersion(AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
-		this.azureOpenAIServiceVersion = azureOpenAIServiceVersion;
+	public void setMicrosoftFoundryServiceVersion(AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
+		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 	}
 
 	public String getOrganizationId() {
@@ -163,12 +163,12 @@ public class AbstractOpenAiSdkOptions {
 		this.organizationId = organizationId;
 	}
 
-	public boolean isAzure() {
-		return this.isAzure;
+	public boolean isMicrosoftFoundry() {
+		return this.isMicrosoftFoundry;
 	}
 
-	public void setAzure(boolean azure) {
-		this.isAzure = azure;
+	public void setMicrosoftFoundry(boolean microsoftFoundry) {
+		this.isMicrosoftFoundry = microsoftFoundry;
 	}
 
 	public boolean isGitHubModels() {

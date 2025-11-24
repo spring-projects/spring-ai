@@ -32,7 +32,7 @@ public class OpenAiSdkSetupTests {
 	void detectModelProvider_returnsAzureOpenAI_whenAzureFlagIsTrue() {
 		OpenAiSdkSetup.ModelProvider result = OpenAiSdkSetup.detectModelProvider(true, false, null, null, null);
 
-		assertEquals(OpenAiSdkSetup.ModelProvider.AZURE_OPEN_AI, result);
+		assertEquals(OpenAiSdkSetup.ModelProvider.MICROSOFT_FOUNDRY, result);
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class OpenAiSdkSetupTests {
 		OpenAiSdkSetup.ModelProvider result = OpenAiSdkSetup.detectModelProvider(false, false,
 				"https://example.openai.azure.com", null, null);
 
-		assertEquals(OpenAiSdkSetup.ModelProvider.AZURE_OPEN_AI, result);
+		assertEquals(OpenAiSdkSetup.ModelProvider.MICROSOFT_FOUNDRY, result);
 	}
 
 	@Test

@@ -223,17 +223,17 @@ public class OpenAiSdkChatModel implements ChatModel {
 		}
 		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
 				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
-						this.options.getCredential(), this.options.getAzureDeploymentName(),
-						this.options.getAzureOpenAIServiceVersion(), this.options.getOrganizationId(),
-						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders()));
 
 		this.openAiClientAsync = Objects.requireNonNullElseGet(openAiClientAsync,
 				() -> OpenAiSdkSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
-						this.options.getCredential(), this.options.getAzureDeploymentName(),
-						this.options.getAzureOpenAIServiceVersion(), this.options.getOrganizationId(),
-						this.options.isAzure(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders()));
 
@@ -738,10 +738,6 @@ public class OpenAiSdkChatModel implements ChatModel {
 				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
 			}
 
-			Map<String, String> mergedHttpHeaders = new HashMap<>(this.options.getHttpHeaders());
-			mergedHttpHeaders.putAll(runtimeOptions.getHttpHeaders());
-			requestOptions.setHttpHeaders(mergedHttpHeaders);
-
 			requestOptions.setInternalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
 					? runtimeOptions.getInternalToolExecutionEnabled()
 					: this.options.getInternalToolExecutionEnabled());
@@ -753,7 +749,6 @@ public class OpenAiSdkChatModel implements ChatModel {
 					this.options.getToolContext()));
 		}
 		else {
-			requestOptions.setHttpHeaders(this.options.getHttpHeaders());
 			requestOptions.setInternalToolExecutionEnabled(this.options.getInternalToolExecutionEnabled());
 			requestOptions.setToolNames(this.options.getToolNames());
 			requestOptions.setToolCallbacks(this.options.getToolCallbacks());
@@ -932,7 +927,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 
 		OpenAiSdkChatOptions requestOptions = (OpenAiSdkChatOptions) prompt.getOptions();
 
-		// Use deployment name if available (for Azure AI Foundry), otherwise use model
+		// Use deployment name if available (for Microsoft Foundry), otherwise use model
 		// name
 		if (requestOptions.getDeploymentName() != null) {
 			builder.model(requestOptions.getDeploymentName());
