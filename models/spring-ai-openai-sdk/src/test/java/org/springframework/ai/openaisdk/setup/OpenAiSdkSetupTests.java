@@ -53,7 +53,7 @@ public class OpenAiSdkSetupTests {
 	@Test
 	void detectModelProvider_returnsGitHubModels_whenBaseUrlMatchesGitHub() {
 		OpenAiSdkSetup.ModelProvider result = OpenAiSdkSetup.detectModelProvider(false, false,
-				"https://models.inference.ai.azure.com", null, null);
+				"https://models.github.ai/inference", null, null);
 
 		assertEquals(OpenAiSdkSetup.ModelProvider.GITHUB_MODELS, result);
 	}
