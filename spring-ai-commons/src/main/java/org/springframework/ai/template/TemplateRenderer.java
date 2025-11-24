@@ -17,17 +17,25 @@
 package org.springframework.ai.template;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
+
+import javax.naming.OperationNotSupportedException;
 
 /**
  * Renders a template using a given strategy.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public interface TemplateRenderer extends BiFunction<String, Map<String, Object>, String> {
 
 	@Override
 	String apply(String template, Map<String, Object> variables);
+
+	default Set<String> getRequiredVariables(String template) throws OperationNotSupportedException {
+		throw new OperationNotSupportedException("getRequiredVariables is not supported");
+	}
 
 }

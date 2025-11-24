@@ -17,6 +17,7 @@
 package org.springframework.ai.template;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.util.Assert;
 
@@ -34,6 +35,11 @@ public class NoOpTemplateRenderer implements TemplateRenderer {
 		Assert.notNull(variables, "variables cannot be null");
 		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
 		return template;
+	}
+
+	@Override
+	public Set<String> getRequiredVariables(String template) {
+		return Set.of();
 	}
 
 }
