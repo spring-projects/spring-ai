@@ -226,9 +226,15 @@ public final class OpenAiSdkSetup {
 			return baseUrl;
 		}
 		else if (modelProvider == ModelProvider.GITHUB_MODELS) {
-			return GITHUB_MODELS_URL;
+			if (baseUrl == null || baseUrl.isBlank()) {
+				return GITHUB_MODELS_URL;
+			}
+			return baseUrl;
 		}
 		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
+			if (baseUrl == null || baseUrl.isBlank()) {
+				throw new IllegalArgumentException("Base URL must be provided for Microsoft Foundry.");
+			}
 			String tmpUrl = baseUrl;
 			if (baseUrl.endsWith("/") || baseUrl.endsWith("?")) {
 				tmpUrl = baseUrl.substring(0, baseUrl.length() - 1);
