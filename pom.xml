@@ -369,11 +369,11 @@
 		<spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
 		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
 		<antora-component-version-maven-plugin.version>0.0.4</antora-component-version-maven-plugin.version>
-		<maven-checkstyle-plugin.version>3.5.0</maven-checkstyle-plugin.version>
+		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
-		<spring-javaformat-checkstyle.version>0.0.43</spring-javaformat-checkstyle.version>
+		<spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
 		<error-prone.version>2.44.0</error-prone.version>
@@ -395,51 +395,6 @@
 					<execution>
 						<goals>
 							<goal>select-jdk-toolchain</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>${maven-checkstyle-plugin.version}</version>
-				<dependencies>
-					<dependency>
-						<groupId>com.puppycrawl.tools</groupId>
-						<artifactId>checkstyle</artifactId>
-						<version>${puppycrawl-tools-checkstyle.version}</version>
-					</dependency>
-					<dependency>
-						<groupId>io.spring.javaformat</groupId>
-						<artifactId>spring-javaformat-checkstyle</artifactId>
-						<version>${spring-javaformat-checkstyle.version}</version>
-					</dependency>
-				</dependencies>
-				<executions>
-					<execution>
-						<id>checkstyle-validation</id>
-						<phase>validate</phase>
-						<inherited>true</inherited>
-						<configuration>
-							<skip>${disable.checks}</skip>
-							<configLocation>src/checkstyle/checkstyle.xml</configLocation>
-							<headerLocation>src/checkstyle/checkstyle-header.txt</headerLocation>
-							<includeTestSourceDirectory>true</includeTestSourceDirectory>
-							<propertyExpansion>
-								checkstyle.build.directory=${project.build.directory}
-								checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-								checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-								checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
-							</propertyExpansion>
-							<consoleOutput>true</consoleOutput>
-							<failsOnError>${maven-checkstyle-plugin.failsOnError}
-							</failsOnError>
-							<failOnViolation>
-								${maven-checkstyle-plugin.failOnViolation}
-							</failOnViolation>
-						</configuration>
-						<goals>
-							<goal>check</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -553,13 +508,10 @@
 				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
 					<argLine>${surefireArgLine}</argLine>
-
 					<useFile>false</useFile>
 					<trimStackTrace>false</trimStackTrace>
-
 					<!-- Show test timing information -->
 					<reportFormat>plain</reportFormat>
-
 					<!-- Output test execution times in the logs -->
 					<redirectTestOutputToFile>false</redirectTestOutputToFile>
 				</configuration>
@@ -583,10 +535,10 @@
 				<version>${maven-source-plugin.version}</version>
 				<executions>
 					<execution>
-						<id>generate-sources</id>
+						<id>package-sources</id>
 						<phase>package</phase>
 						<goals>
-							<goal>jar</goal>
+							<goal>jar-no-fork</goal>
 						</goals>
 					</execution>
 				</executions>
@@ -643,7 +595,7 @@
 				</configuration>
 				<executions>
 					<execution>
-						<id>generate-javadocs</id>
+						<id>package-javadocs</id>
 						<phase>package</phase>
 						<goals>
 							<goal>jar</goal>
@@ -672,6 +624,7 @@
 						<version>${spring-javaformat-maven-plugin.version}</version>
 						<executions>
 							<execution>
+								<id>format-check</id>
 								<phase>validate</phase>
 								<inherited>true</inherited>
 								<goals>
@@ -700,6 +653,7 @@
 						<version>${spring-javaformat-maven-plugin.version}</version>
 						<executions>
 							<execution>
+								<id>format-apply</id>
 								<phase>process-sources</phase>
 								<inherited>true</inherited>
 								<goals>
@@ -712,6 +666,67 @@
 				</plugins>
 			</build>
 
+		</profile>
+		<profile>
+			<!-- Moving this plugin in an always active profile that appears *after* the
+			conditional javaformat -->
+			<id>checkstyle-check</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-checkstyle-plugin</artifactId>
+						<version>${maven-checkstyle-plugin.version}</version>
+						<dependencies>
+							<dependency>
+								<groupId>com.puppycrawl.tools</groupId>
+								<artifactId>checkstyle</artifactId>
+								<version>${puppycrawl-tools-checkstyle.version}</version>
+							</dependency>
+							<dependency>
+								<groupId>io.spring.javaformat</groupId>
+								<artifactId>spring-javaformat-checkstyle</artifactId>
+								<version>${spring-javaformat-checkstyle.version}</version>
+							</dependency>
+						</dependencies>
+						<executions>
+							<execution>
+								<id>checkstyle-validation</id>
+								<phase>verify</phase>
+								<inherited>true</inherited>
+								<configuration>
+									<skip>${disable.checks}</skip>
+									<configLocation>src/checkstyle/checkstyle.xml
+									</configLocation>
+									<headerLocation>src/checkstyle/checkstyle-header.txt
+									</headerLocation>
+									<includeTestSourceDirectory>true
+									</includeTestSourceDirectory>
+									<propertyExpansion>
+										checkstyle.build.directory=${project.build.directory}
+										checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
+										checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
+										checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
+									</propertyExpansion>
+									<consoleOutput>true</consoleOutput>
+									<failsOnError>${maven-checkstyle-plugin.failsOnError}
+									</failsOnError>
+									<failOnViolation>
+										${maven-checkstyle-plugin.failOnViolation}
+									</failOnViolation>
+								</configuration>
+								<goals>
+									<goal>check</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+
+				</plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>license</id>
