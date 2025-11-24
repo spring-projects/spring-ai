@@ -65,8 +65,9 @@ public class OpenAiSdkEmbeddingAutoConfiguration {
 
 		return OpenAiSdkSetup.setupSyncClient(resolved.getBaseUrl(), resolved.getApiKey(), resolved.getCredential(),
 				resolved.getMicrosoftDeploymentName(), resolved.getMicrosoftFoundryServiceVersion(),
-				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(), resolved.getModel(),
-				resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(), resolved.getCustomHeaders());
+				resolved.getOrganizationId(), resolved.isMicrosoftFoundry(), resolved.isGitHubModels(),
+				resolved.getModel(), resolved.getTimeout(), resolved.getMaxRetries(), resolved.getProxy(),
+				resolved.getCustomHeaders());
 	}
 
 }

@@ -53,7 +53,8 @@ public final class OpenAiSdkAutoConfigurationUtil {
 				? modelProperties.getMicrosoftDeploymentName() : commonProperties.getMicrosoftDeploymentName());
 
 		resolved.setMicrosoftFoundryServiceVersion(modelProperties.getMicrosoftFoundryServiceVersion() != null
-				? modelProperties.getMicrosoftFoundryServiceVersion() : commonProperties.getMicrosoftFoundryServiceVersion());
+				? modelProperties.getMicrosoftFoundryServiceVersion()
+				: commonProperties.getMicrosoftFoundryServiceVersion());
 
 		// For boolean properties, use modelProperties value, defaulting to
 		// commonProperties if needed

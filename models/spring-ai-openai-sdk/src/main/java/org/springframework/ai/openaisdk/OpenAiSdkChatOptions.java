@@ -714,7 +714,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 			this.options.setTimeout(fromOptions.getTimeout());
 			this.options.setMaxRetries(fromOptions.getMaxRetries());
 			this.options.setProxy(fromOptions.getProxy());
-			this.options.setCustomHeaders(fromOptions.getCustomHeaders() != null ? new HashMap<>(fromOptions.getCustomHeaders()) : null);
+			this.options.setCustomHeaders(
+					fromOptions.getCustomHeaders() != null ? new HashMap<>(fromOptions.getCustomHeaders()) : null);
 			// Child class fields
 			this.options.setFrequencyPenalty(fromOptions.getFrequencyPenalty());
 			this.options.setLogitBias(fromOptions.getLogitBias());
