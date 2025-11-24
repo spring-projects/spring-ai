@@ -278,6 +278,69 @@ class JsonParserTests {
 		assertThat(input).isEqualTo(result);
 	}
 
+	@Test
+	void shouldThrowNumberFormatExceptionForEmptyStringToLong() {
+		// Reproduces GitHub issue #3884
+		// When LLM returns empty string for Long parameter, conversion fails with
+		// helpful error message
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Long.class)).isInstanceOf(NumberFormatException.class)
+			.hasMessage("Cannot convert value to Long: empty string provided. Expected a valid long value");
+	}
+
+	@Test
+	void shouldThrowNumberFormatExceptionForEmptyStringToInteger() {
+		// Same issue applies to other numeric types - now with helpful error messages
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Integer.class)).isInstanceOf(NumberFormatException.class)
+			.hasMessage("Cannot convert value to Integer: empty string provided. Expected a valid integer value");
+	}
+
+	@Test
+	void shouldThrowNumberFormatExceptionForInvalidStringToLong() {
+		// Test invalid string conversion with improved error message
+		assertThatThrownBy(() -> JsonParser.toTypedObject("not-a-number", Long.class))
+			.isInstanceOf(NumberFormatException.class)
+			.hasMessageContaining("Cannot convert value to Long: 'not-a-number'")
+			.hasMessageContaining("Expected a valid long value");
+	}
+
+	@Test
+	void shouldThrowNumberFormatExceptionForEmptyStringToByte() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Byte.class)).isInstanceOf(NumberFormatException.class)
+			.hasMessage("Cannot convert value to Byte: empty string provided. Expected a valid byte value");
+	}
+
+	@Test
+	void shouldThrowNumberFormatExceptionForEmptyStringToShort() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Short.class)).isInstanceOf(NumberFormatException.class)
+			.hasMessage("Cannot convert value to Short: empty string provided. Expected a valid short value");
+	}
+
+	@Test
+	void shouldThrowNumberFormatExceptionForEmptyStringToDouble() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Double.class)).isInstanceOf(NumberFormatException.class)
+			.hasMessage("Cannot convert value to Double: empty string provided. Expected a valid double value");
+	}
+
+	@Test
+	void shouldThrowNumberFormatExceptionForEmptyStringToFloat() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Float.class)).isInstanceOf(NumberFormatException.class)
+			.hasMessage("Cannot convert value to Float: empty string provided. Expected a valid float value");
+	}
+
+	@Test
+	void shouldThrowIllegalArgumentExceptionForInvalidEnum() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("INVALID", TestEnum.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Cannot convert value to TestEnum: 'INVALID'. Expected one of: VALUE");
+	}
+
+	@Test
+	void shouldThrowIllegalArgumentExceptionForEmptyStringToEnum() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", TestEnum.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Cannot convert value to TestEnum: empty string provided. Expected one of: VALUE");
+	}
+
 	record TestRecord(String name, Integer age) {
 	}
 
