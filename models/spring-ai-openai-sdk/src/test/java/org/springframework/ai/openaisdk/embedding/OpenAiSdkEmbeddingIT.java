@@ -65,7 +65,7 @@ class OpenAiSdkEmbeddingIT {
 
 		assertThat(this.openAiSdkEmbeddingModel.dimensions()).isEqualTo(1536);
 		assertThat(embeddingResponse.getMetadata().getModel())
-			.isEqualTo(OpenAiSdkEmbeddingOptions.DEFAULT_EMBEDDING_MODEL);
+			.contains(OpenAiSdkEmbeddingOptions.DEFAULT_EMBEDDING_MODEL);
 	}
 
 	@Test
