@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
@@ -61,7 +62,7 @@ public class GoogleGenAiRetryTests {
 				GoogleGenAiChatOptions.builder()
 					.temperature(0.7)
 					.topP(1.0)
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
+					.model(ChatModel.GEMINI_2_5_PRO.getValue())
 					.build(),
 				this.retryTemplate);
 
