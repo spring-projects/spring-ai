@@ -1,6 +1,6 @@
 = OpenAI SDK Chat (Official)
 
-Spring AI supports OpenAI's language models through the OpenAI Java SDK, providing a robust and officially-maintained integration with OpenAI's services including Azure OpenAI and GitHub Models.
+Spring AI supports OpenAI's language models through the OpenAI Java SDK, providing a robust and officially-maintained integration with OpenAI's services including Microsoft Foundry and GitHub Models.
 
 NOTE: This implementation uses the official link:https://github.com/openai/openai-java[OpenAI Java SDK] from OpenAI. For the alternative Spring AI implementation, see xref:api/chat/openai-chat.adoc[OpenAI Chat].
 
@@ -31,7 +31,7 @@ export OPENAI_API_KEY=<your-openai-api-key>
 # OPENAI_BASE_URL is optional, defaults to https://api.openai.com/v1
 ----
 
-=== Using Microsoft Foundry (Azure OpenAI)
+=== Using Microsoft Foundry
 
 Microsoft Foundry is automatically detected when using a Microsoft Foundry URL. You can configure it using properties:
 
@@ -167,7 +167,7 @@ The OpenAI SDK implementation provides native support for Microsoft Foundry (Azu
 | spring.ai.openai-sdk.credential      | Credential object for passwordless authentication (requires `com.azure:azure-identity` dependency). |  -
 |====
 
-TIP: Microsoft Foundry (Azure OpenAI) supports passwordless authentication. Add the `com.azure:azure-identity` dependency and the implementation will automatically attempt to use Azure credentials from the environment when no API key is provided.
+TIP: Microsoft Foundry supports passwordless authentication. Add the `com.azure:azure-identity` dependency and the implementation will automatically attempt to use Azure credentials from the environment when no API key is provided.
 
 ==== GitHub Models Properties
 
@@ -582,9 +582,9 @@ Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
-=== Microsoft Foundry (Azure OpenAI) Configuration
+=== Microsoft Foundry Configuration
 
-For Microsoft Foundry (Azure OpenAI):
+For Microsoft Foundry :
 
 [source,java]
 ----
@@ -599,7 +599,7 @@ var chatOptions = OpenAiSdkChatOptions.builder()
 var chatModel = new OpenAiSdkChatModel(chatOptions);
 ----
 
-TIP: Microsoft Foundry (Azure OpenAI) supports passwordless authentication. Add the `com.azure:azure-identity` dependency to your project. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
+TIP: Microsoft Foundry supports passwordless authentication. Add the `com.azure:azure-identity` dependency to your project. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
 
 === GitHub Models Configuration
 
@@ -637,7 +637,7 @@ This implementation differs from the xref:api/chat/openai-chat.adoc[Spring AI Op
 **When to use OpenAI SDK:**
 
 * You're starting a new project
-* You primarily use Azure OpenAI or GitHub Models
+* You primarily use Microsoft Foundry or GitHub Models
 * You want automatic API updates from OpenAI
 * You don't need audio transcription or moderation features
 * You prefer official SDK support
@@ -671,5 +671,5 @@ These features are available in the xref:api/chat/openai-chat.adoc[Spring AI Ope
 * link:https://github.com/openai/openai-java[Official OpenAI Java SDK]
 * link:https://platform.openai.com/docs/api-reference/chat[OpenAI Chat API Documentation]
 * link:https://platform.openai.com/docs/models[OpenAI Models]
-* link:https://learn.microsoft.com/en-us/azure/ai-services/openai/[Azure OpenAI Documentation]
+* link:https://learn.microsoft.com/en-us/azure/ai-foundry/[Microsoft Foundry Documentation]
 * link:https://github.com/marketplace/models[GitHub Models]
