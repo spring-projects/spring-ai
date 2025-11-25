@@ -31,9 +31,10 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.OpenAiSdkImageModel;
 import org.springframework.ai.openaisdk.OpenAiSdkImageOptions;
-import org.springframework.ai.openaisdk.OpenAiSdkTestConfigurationWithObservability;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Julien Dubois
  */
-@SpringBootTest(classes = OpenAiSdkTestConfigurationWithObservability.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiSdkImageModelObservationIT {
 
@@ -99,6 +100,23 @@ public class OpenAiSdkImageModelObservationIT {
 					"url")
 			.hasBeenStarted()
 			.hasBeenStopped();
+	}
+
+	@SpringBootConfiguration
+	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
+		public OpenAiSdkImageModel openAiImageModel(TestObservationRegistry observationRegistry) {
+			return new OpenAiSdkImageModel(
+					OpenAiSdkImageOptions.builder().model(OpenAiSdkImageOptions.DEFAULT_IMAGE_MODEL).build(),
+					observationRegistry);
+		}
+
 	}
 
 }

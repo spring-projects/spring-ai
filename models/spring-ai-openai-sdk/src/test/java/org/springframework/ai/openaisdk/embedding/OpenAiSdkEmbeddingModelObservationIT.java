@@ -16,15 +16,13 @@
 
 package org.springframework.ai.openaisdk.embedding;
 
-import java.util.List;
-
 import com.openai.models.embeddings.EmbeddingModel;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-
+import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -35,9 +33,12 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingModel;
 import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingOptions;
-import org.springframework.ai.openaisdk.OpenAiSdkTestConfigurationWithObservability;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Julien Dubois
  */
-@SpringBootTest(classes = OpenAiSdkTestConfigurationWithObservability.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiSdkEmbeddingModelObservationIT {
 
@@ -94,6 +95,25 @@ public class OpenAiSdkEmbeddingModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+	}
+
+	@SpringBootConfiguration
+	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
+		public OpenAiSdkEmbeddingModel openAiEmbeddingModel(TestObservationRegistry observationRegistry) {
+			return new OpenAiSdkEmbeddingModel(MetadataMode.EMBED,
+					OpenAiSdkEmbeddingOptions.builder()
+						.model(OpenAiSdkEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+						.build(),
+					observationRegistry);
+		}
+
 	}
 
 }

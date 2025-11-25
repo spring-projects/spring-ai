@@ -37,9 +37,10 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
-import org.springframework.ai.openaisdk.OpenAiSdkTestConfigurationWithObservability;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,7 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Julien Dubois
  */
-@SpringBootTest(classes = OpenAiSdkTestConfigurationWithObservability.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiSdkChatModelObservationIT {
 
@@ -131,6 +132,23 @@ public class OpenAiSdkChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+	}
+
+	@SpringBootConfiguration
+	static class Config {
+
+		@Bean
+		public TestObservationRegistry observationRegistry() {
+			return TestObservationRegistry.create();
+		}
+
+		@Bean
+		public OpenAiSdkChatModel openAiChatModel(TestObservationRegistry observationRegistry) {
+			return new OpenAiSdkChatModel(
+					OpenAiSdkChatOptions.builder().model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL).build(),
+					observationRegistry);
+		}
+
 	}
 
 }
