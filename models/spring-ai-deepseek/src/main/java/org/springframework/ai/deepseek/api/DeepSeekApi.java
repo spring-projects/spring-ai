@@ -47,7 +47,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Single class implementation of the DeepSeek Chat Completion API:
- * https://platform.deepseek.com/api-docs/api/create-chat-completion
+ * <a href="https://platform.deepseek.com/api-docs/api/create-chat-completion">...</a>
  *
  * @author Geng Rong
  */
@@ -201,7 +201,7 @@ public class DeepSeekApi {
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window.reduce(
 						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
+						this.chunkMerger::merge);
 				return List.of(monoChunk);
 			})
 			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>

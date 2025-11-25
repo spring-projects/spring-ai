@@ -374,17 +374,16 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 				.topP(fromOptions.getTopP())
 				.tools(fromOptions.getTools())
 				.toolChoice(fromOptions.getToolChoice())
-				.toolCallbacks(
-						fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
-				.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
+				.toolCallbacks(new ArrayList<>(fromOptions.getToolCallbacks()))
+				.toolNames(new HashSet<>(fromOptions.getToolNames()))
 				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
+				.toolContext(new HashMap<>(fromOptions.getToolContext()))
 				.build();
 	}
 
 	public static final class Builder {
 
-		protected DeepSeekChatOptions options;
+		private final DeepSeekChatOptions options;
 
 		public Builder() {
 			this.options = new DeepSeekChatOptions();
@@ -488,12 +487,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		}
 
 		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
-			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
+			this.options.toolContext.putAll(toolContext);
 			return this;
 		}
 
