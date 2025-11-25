@@ -1,42 +1,102 @@
-= OpenAI SDK Chat
+= OpenAI SDK Chat (Official)
 
 Spring AI supports OpenAI's language models through the OpenAI Java SDK, providing a robust and officially-maintained integration with OpenAI's services including Azure OpenAI and GitHub Models.
 
 NOTE: This implementation uses the official link:https://github.com/openai/openai-java[OpenAI Java SDK] from OpenAI. For the alternative Spring AI implementation, see xref:api/chat/openai-chat.adoc[OpenAI Chat].
 
-== Prerequisites
+The OpenAI SDK module automatically detects the service provider (OpenAI, Microsoft Foundry, or GitHub Models) based on the base URL you provide.
 
-You will need to create an API key with OpenAI to access ChatGPT models.
+== Authentication
 
-Create an account at https://platform.openai.com/signup[OpenAI signup page] and generate the token on the https://platform.openai.com/account/api-keys[API Keys page].
+Authentication is done using a base URL and an API Key. The implementation provides flexible configuration options through Spring Boot properties or environment variables.
 
-The Spring AI project defines a configuration property named `spring.ai.openai-sdk.api-key` that you should set to the value of the `API Key` obtained from openai.com.
 
-You can set this configuration property in your `application.properties` file:
+=== Using OpenAI
+
+If you are using OpenAI directly, create an account at https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
+
+The base URL doesn't need to be set as it defaults to `https://api.openai.com/v1`:
 
 [source,properties]
 ----
 spring.ai.openai-sdk.api-key=<your-openai-api-key>
+# base-url is optional, defaults to https://api.openai.com/v1
 ----
 
-For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference a custom environment variable:
-
-[source,yaml]
-----
-# In application.yml
-spring:
-  ai:
-    openai-sdk:
-      api-key: ${OPENAI_API_KEY}
-----
+Or using environment variables:
 
 [source,bash]
 ----
-# In your environment or .env file
 export OPENAI_API_KEY=<your-openai-api-key>
+# OPENAI_BASE_URL is optional, defaults to https://api.openai.com/v1
 ----
 
-The implementation automatically detects the API key from the `OPENAI_API_KEY` environment variable if not explicitly configured.
+=== Using Microsoft Foundry (Azure OpenAI)
+
+Microsoft Foundry is automatically detected when using a Microsoft Foundry URL. You can configure it using properties:
+
+[source,properties]
+----
+spring.ai.openai-sdk.base-url=https://<your-deployment-url>.openai.azure.com
+spring.ai.openai-sdk.api-key=<your-api-key>
+spring.ai.openai-sdk.microsoft-deployment-name=<your-deployment-name>
+----
+
+Or using environment variables:
+
+[source,bash]
+----
+export OPENAI_BASE_URL=https://<your-deployment-url>.openai.azure.com
+export OPENAI_API_KEY=<your-api-key>
+----
+
+**Passwordless Authentication (Recommended for Azure):**
+
+Microsoft Foundry supports passwordless authentication without providing an API key, which is more secure when running on Azure.
+
+To enable passwordless authentication, add the `com.azure:azure-identity` dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.azure</groupId>
+    <artifactId>azure-identity</artifactId>
+</dependency>
+----
+
+Then configure without an API key:
+
+[source,properties]
+----
+spring.ai.openai-sdk.base-url=https://<your-deployment-url>.openai.azure.com
+spring.ai.openai-sdk.microsoft-deployment-name=<your-deployment-name>
+# No api-key needed - will use Azure credentials from environment
+----
+
+=== Using GitHub Models
+
+GitHub Models is automatically detected when using the GitHub Models base URL. You'll need to create a GitHub Personal Access Token (PAT) with the `models:read` scope.
+
+[source,properties]
+----
+spring.ai.openai-sdk.base-url=https://models.inference.ai.azure.com
+spring.ai.openai-sdk.api-key=github_pat_XXXXXXXXXXX
+----
+
+Or using environment variables:
+
+[source,bash]
+----
+export OPENAI_BASE_URL=https://models.inference.ai.azure.com
+export OPENAI_API_KEY=github_pat_XXXXXXXXXXX
+----
+
+TIP: For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) in your properties: 
+
+[source,properties]
+----
+spring.ai.openai-sdk.api-key=${OPENAI_API_KEY}
+----
 
 === Add Repositories and BOM
 
@@ -58,7 +118,7 @@ Maven::
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-openai-sdk</artifactId>
+    <artifactId>spring-ai-starter-model-openai-sdk</artifactId>
 </dependency>
 ----
 
@@ -67,7 +127,7 @@ Gradle::
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-openai-sdk'
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai-sdk'
 }
 ----
 ======
@@ -84,31 +144,30 @@ The prefix `spring.ai.openai-sdk` is used as the property prefix that lets you c
 |====
 | Property | Description | Default
 
-| spring.ai.openai-sdk.base-url        | The URL to connect to. Auto-detects from `OPENAI_BASE_URL` or `AZURE_OPENAI_BASE_URL` environment variables if not set. |  https://api.openai.com/v1
-| spring.ai.openai-sdk.api-key         | The API Key. Auto-detects from `OPENAI_API_KEY`, `AZURE_OPENAI_KEY`, or `GITHUB_TOKEN` environment variables based on the base URL. |  -
+| spring.ai.openai-sdk.base-url        | The URL to connect to. Auto-detects from `OPENAI_BASE_URL` environment variable if not set. |  https://api.openai.com/v1
+| spring.ai.openai-sdk.api-key         | The API Key. Auto-detects from `OPENAI_API_KEY` environment variable if not set. |  -
 | spring.ai.openai-sdk.organization-id | Optionally specify which organization to use for API requests. |  -
-| spring.ai.openai-sdk.timeout         | Request timeout duration. |  60 seconds
-| spring.ai.openai-sdk.max-retries     | Maximum number of retry attempts for failed requests. |  3
-| spring.ai.openai-sdk.proxy.host      | Proxy host for HTTP requests. |  -
-| spring.ai.openai-sdk.proxy.port      | Proxy port for HTTP requests. |  -
-| spring.ai.openai-sdk.custom-headers  | Custom HTTP headers to include in requests. |  -
+| spring.ai.openai-sdk.timeout         | Request timeout duration. |  -
+| spring.ai.openai-sdk.max-retries     | Maximum number of retry attempts for failed requests. |  -
+| spring.ai.openai-sdk.proxy           | Proxy settings for OpenAI client (Java `Proxy` object). |  -
+| spring.ai.openai-sdk.custom-headers  | Custom HTTP headers to include in requests. Map of header name to header value. |  -
 |====
 
-==== Azure OpenAI Properties
+==== Microsoft Foundry (Azure OpenAI) Properties
 
-The OpenAI SDK implementation provides native support for Azure OpenAI with automatic configuration:
+The OpenAI SDK implementation provides native support for Microsoft Foundry (Azure OpenAI) with automatic configuration:
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.openai-sdk.azure           | Enable Azure OpenAI mode. Auto-detected if base URL contains `openai.azure.com` or `cognitiveservices.azure.com`. |  false
-| spring.ai.openai-sdk.azure-deployment-name | Azure deployment name. If not specified, the model name will be used. |  -
-| spring.ai.openai-sdk.azure-openai-service-version | Azure OpenAI API version. |  -
-| spring.ai.openai-sdk.credential      | Azure credential for passwordless authentication. |  -
+| spring.ai.openai-sdk.microsoft-foundry           | Enable Microsoft Foundry mode. Auto-detected if base URL contains `openai.azure.com`, `cognitiveservices.azure.com`, or `.openai.microsoftFoundry.com`. |  false
+| spring.ai.openai-sdk.microsoft-deployment-name | Microsoft Foundry deployment name. If not specified, the model name will be used. Also accessible via alias `deployment-name`. |  -
+| spring.ai.openai-sdk.microsoft-foundry-service-version | Microsoft Foundry API service version. |  -
+| spring.ai.openai-sdk.credential      | Credential object for passwordless authentication (requires `com.azure:azure-identity` dependency). |  -
 |====
 
-TIP: Azure OpenAI supports passwordless authentication. If no API key is provided, the implementation automatically attempts to use Azure credentials from the environment.
+TIP: Microsoft Foundry (Azure OpenAI) supports passwordless authentication. Add the `com.azure:azure-identity` dependency and the implementation will automatically attempt to use Azure credentials from the environment when no API key is provided.
 
 ==== GitHub Models Properties
 
@@ -118,10 +177,10 @@ Native support for GitHub Models is available:
 |====
 | Property | Description | Default
 
-| spring.ai.openai-sdk.github-models   | Enable GitHub Models mode. Auto-detected if base URL is `https://models.inference.ai.azure.com`. |  false
+| spring.ai.openai-sdk.github-models   | Enable GitHub Models mode. Auto-detected if base URL contains `models.github.ai` or `models.inference.ai.azure.com`. |  false
 |====
 
-TIP: GitHub Models authentication uses the `GITHUB_TOKEN` environment variable when detected.
+TIP: GitHub Models requires a Personal Access Token with the `models:read` scope. Set it via the `OPENAI_API_KEY` environment variable or the `spring.ai.openai-sdk.api-key` property.
 
 ==== Chat Model Properties
 
@@ -132,7 +191,7 @@ The prefix `spring.ai.openai-sdk.chat` is the property prefix for configuring th
 | Property | Description | Default
 
 | spring.ai.openai-sdk.chat.options.model | Name of the OpenAI chat model to use. You can select between models such as: `gpt-5-mini`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `o1`, `o3-mini`, and more. See the https://platform.openai.com/docs/models[models] page for more information. | `gpt-5-mini`
-| spring.ai.openai-sdk.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.7
+| spring.ai.openai-sdk.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 1.0
 | spring.ai.openai-sdk.chat.options.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0
 | spring.ai.openai-sdk.chat.options.logit-bias | Modify the likelihood of specified tokens appearing in the completion. | -
 | spring.ai.openai-sdk.chat.options.logprobs | Whether to return log probabilities of the output tokens. | false
@@ -523,24 +582,24 @@ Flux<ChatResponse> response = chatModel.stream(
     new Prompt("Generate the names of 5 famous pirates."));
 ----
 
-=== Azure OpenAI Configuration
+=== Microsoft Foundry (Azure OpenAI) Configuration
 
-For Azure OpenAI:
+For Microsoft Foundry (Azure OpenAI):
 
 [source,java]
 ----
 var chatOptions = OpenAiSdkChatOptions.builder()
     .baseUrl("https://your-resource.openai.azure.com")
-    .apiKey(System.getenv("AZURE_OPENAI_KEY"))
-    .azureDeploymentName("gpt-4")
+    .apiKey(System.getenv("OPENAI_API_KEY"))
+    .deploymentName("gpt-4")
     .azureOpenAIServiceVersion(AzureOpenAIServiceVersion.V2024_10_01_PREVIEW)
-    .azure(true)
+    .azure(true)  // Enables Microsoft Foundry mode
     .build();
 
 var chatModel = new OpenAiSdkChatModel(chatOptions);
 ----
 
-TIP: Azure OpenAI supports passwordless authentication. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
+TIP: Microsoft Foundry (Azure OpenAI) supports passwordless authentication. Add the `com.azure:azure-identity` dependency to your project. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
 
 === GitHub Models Configuration
 
