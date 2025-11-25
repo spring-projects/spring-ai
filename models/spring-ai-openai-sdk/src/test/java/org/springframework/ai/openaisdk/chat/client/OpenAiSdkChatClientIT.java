@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
@@ -178,10 +179,41 @@ class OpenAiSdkChatClientIT {
 	}
 
 	@Test
+	void beanOutputConverterNativeStructuredOutput() {
+
+		// @formatter:off
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+				.user("Generate the filmography for a random actor.")
+				.call()
+				.entity(ActorsFilms.class);
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isNotBlank();
+	}
+
+	@Test
 	void beanOutputConverterRecords() {
 
 		// @formatter:off
 		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks.")
+				.call()
+				.entity(ActorsFilms.class);
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void beanOutputConverterRecordsNativeStructuredOutput() {
+
+		// @formatter:off
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 				.user("Generate the filmography of 5 movies for Tom Hanks.")
 				.call()
 				.entity(ActorsFilms.class);

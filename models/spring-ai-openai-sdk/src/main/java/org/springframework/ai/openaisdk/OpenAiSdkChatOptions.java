@@ -25,12 +25,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.openai.models.ChatModel;
 import com.openai.models.chat.completions.ChatCompletionAudioParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.openaisdk.OpenAiSdkChatModel.ResponseFormat.Type;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -41,7 +44,8 @@ import org.springframework.util.Assert;
  * @author Julien Dubois
  * @author Christian Tzolov
  */
-public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements ToolCallingChatOptions {
+public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
+		implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	public static final String DEFAULT_CHAT_MODEL = ChatModel.GPT_5_MINI.asString();
 
@@ -538,6 +542,19 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions implements To
 	@Override
 	public Integer getTopK() {
 		return null;
+	}
+
+	@Override
+	@JsonIgnore
+	public String getOutputSchema() {
+		return this.getResponseFormat().getJsonSchema();
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String outputSchema) {
+		this.setResponseFormat(
+				OpenAiSdkChatModel.ResponseFormat.builder().type(Type.JSON_SCHEMA).jsonSchema(outputSchema).build());
 	}
 
 	public static Builder builder() {
