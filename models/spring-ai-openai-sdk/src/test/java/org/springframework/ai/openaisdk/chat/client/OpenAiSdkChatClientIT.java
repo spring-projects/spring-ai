@@ -274,7 +274,7 @@ class OpenAiSdkChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
 				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
@@ -297,7 +297,7 @@ class OpenAiSdkChatClientIT {
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
 					.build())
-				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris?"))
+				.defaultUser(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
 			.build()
 			.prompt().call().content();
 		// @formatter:on
@@ -312,7 +312,7 @@ class OpenAiSdkChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.user("What's the weather like in San Francisco, Tokyo, and Paris?")
+				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 					.description("Get the weather in location")
 					.inputType(MockWeatherService.Request.class)
