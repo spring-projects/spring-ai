@@ -345,12 +345,16 @@ public class OllamaChatModel implements ChatModel {
 					.toolCalls(toolCalls)
 					.build();
 
-				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
+				ChatGenerationMetadata.Builder generationMetadataBuilder = ChatGenerationMetadata.builder();
 				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
-					generationMetadata = ChatGenerationMetadata.builder().finishReason(chunk.doneReason()).build();
+					generationMetadataBuilder.finishReason(chunk.doneReason());
 				}
 
-				var generator = new Generation(assistantMessage, generationMetadata);
+				if (chunk.message() != null && chunk.message().thinking() != null) {
+					generationMetadataBuilder.metadata("thinking", chunk.message().thinking());
+				}
+
+				var generator = new Generation(assistantMessage, generationMetadataBuilder.build());
 				return new ChatResponse(List.of(generator), from(chunk, previousChatResponse));
 			});
 
