@@ -37,6 +37,7 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 		Assert.notNull(prompt, "prompt cannot be null");
 		Assert.notNull(context, "context cannot be null");
 		Assert.noNullElements(context.keySet(), "context keys cannot be null");
+		Assert.noNullElements(context.values(), "context values cannot be null");
 	}
 
 	public ChatClientRequest copy() {
@@ -68,12 +69,15 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 
 		public Builder context(Map<String, Object> context) {
 			Assert.notNull(context, "context cannot be null");
+			Assert.noNullElements(context.keySet(), "context keys cannot be null");
+			Assert.noNullElements(context.values(), "context values cannot be null");
 			this.context.putAll(context);
 			return this;
 		}
 
 		public Builder context(String key, Object value) {
 			Assert.notNull(key, "key cannot be null");
+			Assert.notNull(value, "value cannot be null");
 			this.context.put(key, value);
 			return this;
 		}

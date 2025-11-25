@@ -54,6 +54,19 @@ class ChatClientResponseTests {
 	}
 
 	@Test
+	void whenContextHasNullValuesThenThrow() {
+		Map<String, Object> context = new HashMap<>();
+		context.put("key", null);
+
+		assertThatThrownBy(() -> new ChatClientResponse(null, context)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("context values cannot be null");
+
+		assertThatThrownBy(() -> ChatClientResponse.builder().chatResponse(null).context(context).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("context values cannot be null");
+	}
+
+	@Test
 	void whenCopyThenImmutableContext() {
 		Map<String, Object> context = new HashMap<>();
 		context.put("key", "value");
@@ -120,16 +133,15 @@ class ChatClientResponseTests {
 	}
 
 	@Test
-	void whenContextWithNullValuesThenCreateSuccessfully() {
+	void whenContextWithNullValuesThenThrow() {
 		ChatResponse chatResponse = mock(ChatResponse.class);
 		Map<String, Object> context = new HashMap<>();
 		context.put("key1", "value1");
 		context.put("key2", null);
 
-		ChatClientResponse response = new ChatClientResponse(chatResponse, context);
-
-		assertThat(response.context()).containsEntry("key1", "value1");
-		assertThat(response.context()).containsEntry("key2", null);
+		assertThatThrownBy(() -> new ChatClientResponse(chatResponse, context))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("context values cannot be null");
 	}
 
 	@Test
@@ -164,6 +176,23 @@ class ChatClientResponseTests {
 		ChatClientResponse response = ChatClientResponse.builder().context(context).build();
 
 		assertThat(response.chatResponse()).isNull();
+	}
+
+	@Test
+	void whenBuilderContextMapHasNullKeyThenThrow() {
+		Map<String, Object> context = new HashMap<>();
+		context.put(null, "value");
+
+		assertThatThrownBy(() -> ChatClientResponse.builder().context(context).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("context keys cannot be null");
+	}
+
+	@Test
+	void whenBuilderAddsNullValueThenThrow() {
+		assertThatThrownBy(() -> ChatClientResponse.builder().context("key", null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("value cannot be null");
 	}
 
 	@Test
