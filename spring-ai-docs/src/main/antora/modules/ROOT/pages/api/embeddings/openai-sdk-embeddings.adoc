@@ -1,6 +1,6 @@
 = OpenAI SDK Embeddings (Official)
 
-Spring AI supports OpenAI's text embeddings models through the OpenAI Java SDK, providing a robust and officially-maintained integration with OpenAI's services including Azure OpenAI and GitHub Models.
+Spring AI supports OpenAI's text embeddings models through the OpenAI Java SDK, providing a robust and officially-maintained integration with OpenAI's services including Microsoft Foundry and GitHub Models.
 
 NOTE: This implementation uses the official link:https://github.com/openai/openai-java[OpenAI Java SDK] from OpenAI. For the alternative Spring AI implementation, see xref:api/embeddings/openai-embeddings.adoc[OpenAI Embeddings].
 
@@ -33,7 +33,7 @@ export OPENAI_API_KEY=<your-openai-api-key>
 # OPENAI_BASE_URL is optional, defaults to https://api.openai.com/v1
 ----
 
-=== Using Microsoft Foundry (Azure OpenAI)
+=== Using Microsoft Foundry
 
 Microsoft Foundry is automatically detected when using a Microsoft Foundry URL. You can configure it using properties:
 
@@ -155,9 +155,9 @@ The prefix `spring.ai.openai-sdk` is used as the property prefix that lets you c
 | spring.ai.openai-sdk.custom-headers  | Custom HTTP headers to include in requests. Map of header name to header value. |  -
 |====
 
-==== Microsoft Foundry (Azure OpenAI) Properties
+==== Microsoft Foundry Properties
 
-The OpenAI SDK implementation provides native support for Microsoft Foundry (Azure OpenAI) with automatic configuration:
+The OpenAI SDK implementation provides native support for Microsoft Foundry with automatic configuration:
 
 [cols="3,5,1", stripes=even]
 |====
@@ -169,7 +169,7 @@ The OpenAI SDK implementation provides native support for Microsoft Foundry (Azu
 | spring.ai.openai-sdk.credential      | Credential object for passwordless authentication (requires `com.azure:azure-identity` dependency). |  -
 |====
 
-TIP: Microsoft Foundry (Azure OpenAI) supports passwordless authentication. Add the `com.azure:azure-identity` dependency and the implementation will automatically attempt to use Azure credentials from the environment when no API key is provided.
+TIP: Microsoft Foundry supports passwordless authentication. Add the `com.azure:azure-identity` dependency and the implementation will automatically attempt to use Azure credentials from the environment when no API key is provided.
 
 ==== GitHub Models Properties
 
@@ -308,9 +308,9 @@ EmbeddingResponse embeddingResponse = embeddingModel
 The `OpenAiSdkEmbeddingOptions` provides the configuration information for the embedding requests.
 The options class offers a `builder()` for easy options creation.
 
-=== Microsoft Foundry (Azure OpenAI) Configuration
+=== Microsoft Foundry Configuration
 
-For Microsoft Foundry (Azure OpenAI):
+For Microsoft Foundry:
 
 [source,java]
 ----
@@ -325,7 +325,7 @@ var embeddingOptions = OpenAiSdkEmbeddingOptions.builder()
 var embeddingModel = new OpenAiSdkEmbeddingModel(embeddingOptions);
 ----
 
-TIP: Microsoft Foundry (Azure OpenAI) supports passwordless authentication. Add the `com.azure:azure-identity` dependency to your project. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
+TIP: Microsoft Foundry supports passwordless authentication. Add the `com.azure:azure-identity` dependency to your project. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
 
 === GitHub Models Configuration
 
@@ -353,5 +353,5 @@ All embedding model operations are instrumented for monitoring and tracing.
 * link:https://github.com/openai/openai-java[Official OpenAI Java SDK]
 * link:https://platform.openai.com/docs/api-reference/embeddings[OpenAI Embeddings API Documentation]
 * link:https://platform.openai.com/docs/models[OpenAI Models]
-* link:https://learn.microsoft.com/en-us/azure/ai-services/openai/[Azure OpenAI Documentation]
+* link:https://learn.microsoft.com/en-us/azure/ai-foundry/[Microsoft Foundry Documentation]
 * link:https://github.com/marketplace/models[GitHub Models]
