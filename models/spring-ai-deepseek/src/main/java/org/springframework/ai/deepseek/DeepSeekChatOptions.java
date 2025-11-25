@@ -487,6 +487,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		}
 
 		public Builder toolContext(Map<String, Object> toolContext) {
+			Assert.notNull(toolContext, "toolContext cannot be null");
 			this.options.toolContext.putAll(toolContext);
 			return this;
 		}
