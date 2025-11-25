@@ -40,7 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -171,7 +171,7 @@ public class AnthropicChatModelObservationIT {
 		public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi,
 				TestObservationRegistry observationRegistry) {
 			return new AnthropicChatModel(anthropicApi, AnthropicChatOptions.builder().build(),
-					ToolCallingManager.builder().build(), RetryTemplate.defaultInstance(), observationRegistry);
+					ToolCallingManager.builder().build(), new RetryTemplate(), observationRegistry);
 		}
 
 	}

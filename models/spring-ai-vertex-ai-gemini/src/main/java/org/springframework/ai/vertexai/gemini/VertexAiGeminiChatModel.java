@@ -61,7 +61,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -91,8 +90,8 @@ import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting
 import org.springframework.ai.vertexai.gemini.schema.VertexAiSchemaConverter;
 import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.lang.NonNull;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -389,28 +388,29 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
-			.observe(() -> this.retryTemplate.execute(context -> {
+			.observe(() -> {
 
-				var geminiRequest = createGeminiRequest(prompt);
+				return RetryUtils.execute(this.retryTemplate, () -> {
 
-				GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
+					var geminiRequest = createGeminiRequest(prompt);
 
-				List<Generation> generations = generateContentResponse.getCandidatesList()
-					.stream()
-					.map(this::responseCandidateToGeneration)
-					.flatMap(List::stream)
-					.toList();
+					GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
 
-				GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
-				Usage currentUsage = (usage != null)
-						? new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount())
-						: new EmptyUsage();
-				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
+					List<Generation> generations = generateContentResponse.getCandidatesList()
+						.stream()
+						.map(this::responseCandidateToGeneration)
+						.flatMap(List::stream)
+						.toList();
 
-				observationContext.setResponse(chatResponse);
-				return chatResponse;
-			}));
+					GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
+					Usage currentUsage = new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount());
+					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
+
+					observationContext.setResponse(chatResponse);
+					return chatResponse;
+				});
+			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
@@ -517,7 +517,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					GenerateContentResponse.UsageMetadata usage = response.getUsageMetadata();
-					Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+					Usage currentUsage = getDefaultUsage(usage);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 					return Flux.just(chatResponse);
@@ -724,6 +724,9 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 		if (options.getTopK() != null) {
 			generationConfigBuilder.setTopK(options.getTopK());
+		}
+		if (options.getSeed() != null) {
+			generationConfigBuilder.setSeed(options.getSeed());
 		}
 		if (options.getTopP() != null) {
 			generationConfigBuilder.setTopP(options.getTopP().floatValue());

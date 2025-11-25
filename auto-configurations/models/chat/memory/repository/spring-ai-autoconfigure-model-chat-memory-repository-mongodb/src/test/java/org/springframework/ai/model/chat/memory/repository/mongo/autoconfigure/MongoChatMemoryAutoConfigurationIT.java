@@ -27,17 +27,16 @@ import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.mongo.Conversation;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = { MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-		MongoChatMemoryAutoConfiguration.class, MongoChatMemoryIndexCreatorAutoConfiguration.class })
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestPropertySource(properties = { "spring.ai.chat.memory.repository.mongo.create-indices=true" })
 class MongoChatMemoryAutoConfigurationIT {
 
@@ -76,6 +75,12 @@ class MongoChatMemoryAutoConfigurationIT {
 		this.chatMemoryRepository.saveAll(conversationId, List.of(systemMessage));
 
 		assertThat(this.mongoTemplate.indexOps(Conversation.class).getIndexInfo().size()).isEqualTo(2);
+	}
+
+	@Configuration
+	@EnableAutoConfiguration
+	static class TestConfiguration {
+
 	}
 
 }

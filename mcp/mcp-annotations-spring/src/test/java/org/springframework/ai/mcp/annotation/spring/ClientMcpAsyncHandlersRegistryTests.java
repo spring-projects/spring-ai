@@ -38,6 +38,7 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
@@ -338,6 +339,16 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.postProcessBeanFactory(beanFactory);
 
 		assertThat(registry.getCapabilities("client-1").elicitation()).isNotNull();
+	}
+
+	@Test
+	void skipsUnknownBeanClass() {
+		var registry = new ClientMcpAsyncHandlersRegistry();
+		var beanFactory = new DefaultListableBeanFactory();
+		beanFactory.registerBeanDefinition("myConfig",
+				BeanDefinitionBuilder.genericBeanDefinition().getBeanDefinition());
+
+		assertThatNoException().isThrownBy(() -> registry.postProcessBeanFactory(beanFactory));
 	}
 
 	static class ClientCapabilitiesConfiguration {

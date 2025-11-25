@@ -87,8 +87,8 @@ import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.DisposableBean;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.lang.NonNull;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -404,30 +404,33 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		ChatResponse response = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
-			.observe(() -> this.retryTemplate.execute(context -> {
+			.observe(() -> {
 
-				var geminiRequest = createGeminiRequest(prompt);
+				return RetryUtils.execute(this.retryTemplate, () -> {
 
-				GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
+					var geminiRequest = createGeminiRequest(prompt);
 
-				List<Generation> generations = generateContentResponse.candidates()
-					.orElse(List.of())
-					.stream()
-					.map(this::responseCandidateToGeneration)
-					.flatMap(List::stream)
-					.toList();
+					GenerateContentResponse generateContentResponse = this.getContentResponse(geminiRequest);
 
-				var usage = generateContentResponse.usageMetadata();
-				GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
-				Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
-						: getDefaultUsage(null, options);
-				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations,
-						toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
+					List<Generation> generations = generateContentResponse.candidates()
+						.orElse(List.of())
+						.stream()
+						.map(this::responseCandidateToGeneration)
+						.flatMap(List::stream)
+						.toList();
 
-				observationContext.setResponse(chatResponse);
-				return chatResponse;
-			}));
+					var usage = generateContentResponse.usageMetadata();
+					GoogleGenAiChatOptions options = (GoogleGenAiChatOptions) prompt.getOptions();
+					Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
+							: getDefaultUsage(null, options);
+					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+					ChatResponse chatResponse = new ChatResponse(generations,
+							toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
+
+					observationContext.setResponse(chatResponse);
+					return chatResponse;
+				});
+			});
 
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
@@ -703,6 +706,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		if (requestOptions.getResponseMimeType() != null) {
 			configBuilder.responseMimeType(requestOptions.getResponseMimeType());
+		}
+		if (requestOptions.getResponseSchema() != null) {
+			configBuilder.responseJsonSchema(jsonToSchema(requestOptions.getResponseSchema()));
 		}
 		if (requestOptions.getFrequencyPenalty() != null) {
 			configBuilder.frequencyPenalty(requestOptions.getFrequencyPenalty().floatValue());

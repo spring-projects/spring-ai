@@ -28,7 +28,7 @@ import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -71,7 +71,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		byte[] audioData = this.retryTemplate.execute(context -> {
+		byte[] audioData = RetryUtils.execute(this.retryTemplate, () -> {
 			var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
 					requestContext.queryParameters);
 			if (response.getBody() == null) {
@@ -88,9 +88,10 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		return this.retryTemplate.execute(context -> this.elevenLabsApi
-			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
-			.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
+		return RetryUtils.execute(this.retryTemplate,
+				() -> this.elevenLabsApi
+					.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
+					.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
 	}
 
 	private RequestContext prepareRequest(TextToSpeechPrompt prompt) {

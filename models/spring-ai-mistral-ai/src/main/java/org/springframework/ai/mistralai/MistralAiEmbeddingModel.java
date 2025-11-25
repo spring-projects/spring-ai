@@ -39,7 +39,7 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -117,8 +117,8 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				var apiEmbeddingResponse = this.retryTemplate
-					.execute(ctx -> this.mistralAiApi.embeddings(apiRequest).getBody());
+				MistralAiApi.EmbeddingList<MistralAiApi.Embedding> apiEmbeddingResponse = RetryUtils
+					.execute(this.retryTemplate, () -> this.mistralAiApi.embeddings(apiRequest).getBody());
 
 				if (apiEmbeddingResponse == null) {
 					logger.warn("No embeddings returned for request: {}", request);

@@ -35,6 +35,7 @@ import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
@@ -108,6 +109,25 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void listOutputConverterBean2() {
+
+		// @formatter:off
+		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+				.options(AnthropicChatOptions.builder()
+					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
+					.build())
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
 				.entity(new ParameterizedTypeReference<>() {

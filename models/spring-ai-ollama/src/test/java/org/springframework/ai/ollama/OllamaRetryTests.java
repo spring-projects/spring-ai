@@ -34,10 +34,10 @@ import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.web.client.ResourceAccessException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +70,7 @@ class OllamaRetryTests {
 	public void beforeEach() {
 		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
-		this.retryTemplate.registerListener(this.retryListener);
+		this.retryTemplate.setRetryListener(this.retryListener);
 
 		this.chatModel = OllamaChatModel.builder()
 			.ollamaApi(this.ollamaApi)
@@ -95,7 +95,7 @@ class OllamaRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -129,7 +129,7 @@ class OllamaRetryTests {
 			.hasMessage("Model not found");
 
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(0);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(0);
 		verify(this.ollamaApi, times(1)).chat(isA(OllamaApi.ChatRequest.class));
 	}
 
@@ -201,14 +201,15 @@ class OllamaRetryTests {
 		int onSuccessRetryCount = 0;
 
 		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
+		public void beforeRetry(final RetryPolicy retryPolicy, final Retryable<?> retryable) {
+			// Count each retry attempt
+			this.onErrorRetryCount++;
 		}
 
 		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
+		public void onRetrySuccess(final RetryPolicy retryPolicy, final Retryable<?> retryable, final Object result) {
+			// Count successful retries - we increment when we succeed after a failure
+			this.onSuccessRetryCount++;
 		}
 
 	}

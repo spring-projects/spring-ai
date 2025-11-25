@@ -194,6 +194,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			.with(jacksonModule)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
+		configBuilder.forFields().withRequiredCheck(f -> true);
+
 		if (KotlinDetector.isKotlinReflectPresent()) {
 			configBuilder.with(new KotlinModule());
 		}

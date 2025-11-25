@@ -69,8 +69,8 @@ import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -191,8 +191,8 @@ public class MistralAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.mistralAiApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletion> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.mistralAiApi.chatCompletionEntity(request));
 
 				ChatCompletion chatCompletion = completionEntity.getBody();
 
@@ -264,8 +264,8 @@ public class MistralAiChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.mistralAiApi.chatCompletionStream(request));
+			Flux<ChatCompletionChunk> completionChunks = RetryUtils.execute(this.retryTemplate,
+					() -> this.mistralAiApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.

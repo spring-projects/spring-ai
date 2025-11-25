@@ -48,9 +48,9 @@ import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.server.reactive.HttpHandler;

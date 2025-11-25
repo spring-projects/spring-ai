@@ -32,10 +32,10 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.Version;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.client.RestClient;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -168,7 +168,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
-		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(builder.restClient,
+		this.elasticsearchClient = new ElasticsearchClient(new Rest5ClientTransport(builder.restClient,
 				new JacksonJsonpMapper(
 						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))))
 			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
@@ -369,13 +369,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 * Creates a new builder instance for ElasticsearchVectorStore.
 	 * @return a new ElasticsearchBuilder instance
 	 */
-	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
+	public static Builder builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
 		return new Builder(restClient, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		private final RestClient restClient;
+		private final Rest5Client restClient;
 
 		private ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 
@@ -388,7 +388,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @param restClient the Elasticsearch REST client
 		 * @param embeddingModel the Embedding Model to be used
 		 */
-		public Builder(RestClient restClient, EmbeddingModel embeddingModel) {
+		public Builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(restClient, "RestClient must not be null");
 			this.restClient = restClient;

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
@@ -46,15 +47,12 @@ import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservat
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
-import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,6 +62,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Eddú Meléndez
+ * @author Ilayaperumal Gopinathan
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -72,10 +71,9 @@ public class MongoDbVectorStoreObservationIT {
 	@Container
 	private static MongoDBAtlasLocalContainer container = new MongoDBAtlasLocalContainer(MongoDbImage.DEFAULT_IMAGE);
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.data.mongodb.database=springaisample",
-				String.format("spring.data.mongodb.uri=" + container.getConnectionString()));
+	private ApplicationContextRunner getContextRunner() {
+		return new ApplicationContextRunner().withUserConfiguration(Config.class);
+	}
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -94,7 +92,7 @@ public class MongoDbVectorStoreObservationIT {
 
 	@BeforeEach
 	public void beforeEach() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
 			mongoTemplate.getCollection("vector_store").deleteMany(new org.bson.Document());
 		});
@@ -103,7 +101,7 @@ public class MongoDbVectorStoreObservationIT {
 	@Test
 	void observationVectorStoreAddAndQueryOperations() {
 
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
@@ -176,7 +174,6 @@ public class MongoDbVectorStoreObservationIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration
 	public static class Config {
 
 		@Bean
@@ -197,14 +194,15 @@ public class MongoDbVectorStoreObservationIT {
 		}
 
 		@Bean
-		public MongoTemplate mongoTemplate(MongoClient mongoClient, MongoCustomConversions mongoCustomConversions) {
-			MongoTemplate mongoTemplate = new MongoTemplate(mongoClient, "springaisample");
-			MappingMongoConverter converter = (MappingMongoConverter) mongoTemplate.getConverter();
-			converter.setCustomConversions(mongoCustomConversions);
-			((MongoMappingContext) converter.getMappingContext())
-				.setSimpleTypeHolder(mongoCustomConversions.getSimpleTypeHolder());
-			converter.afterPropertiesSet();
-			return mongoTemplate;
+		public MongoClient mongoClient() {
+			String baseUri = container.getConnectionString();
+			String uriWithDb = baseUri.replace("/?", "/springaisample?");
+			return MongoClients.create(uriWithDb);
+		}
+
+		@Bean
+		public MongoTemplate mongoTemplate(MongoClient mongoClient) {
+			return new MongoTemplate(mongoClient, "springaisample");
 		}
 
 		@Bean
