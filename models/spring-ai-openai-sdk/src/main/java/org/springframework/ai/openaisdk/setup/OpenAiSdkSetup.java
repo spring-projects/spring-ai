@@ -229,7 +229,11 @@ public final class OpenAiSdkSetup {
 			if (baseUrl == null || baseUrl.isBlank()) {
 				return GITHUB_MODELS_URL;
 			}
-			return baseUrl;
+			if (baseUrl.startsWith(GITHUB_MODELS_URL)) {
+				// To support GitHub Models for specific orgs
+				return baseUrl;
+			}
+			return GITHUB_MODELS_URL;
 		}
 		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
 			if (baseUrl == null || baseUrl.isBlank()) {
