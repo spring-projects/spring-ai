@@ -489,13 +489,12 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
-					<release>${java.version}</release>
 					<fork>true</fork>
+					<release>${java.version}</release>
 					<compilerArgs>
 						<arg>-parameters</arg>
 						<arg>-XDcompilePolicy=simple</arg>
 						<arg>--should-stop=ifError=FLOW</arg>
-						<arg>-Xplugin:ErrorProne -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
 						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
 						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
 						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
@@ -506,6 +505,7 @@
 						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
 						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
 						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+						<arg>-Xplugin:ErrorProne -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
 					</compilerArgs>
 					<annotationProcessorPaths>
 						<path>
@@ -1026,6 +1026,35 @@
 	    </build>
 	</profile>
 
+		<!-- Fast build profile for mvnd: mvnd -Pmvnd clean package -->
+		<profile>
+			<id>mvnd</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-toolchains-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>default</id>
+								<phase>none</phase>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<fork>false</fork>
+							<compilerArgs>
+								<arg>-parameters</arg>
+							</compilerArgs>
+							<annotationProcessorPaths/>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 
 	</profiles>
 
