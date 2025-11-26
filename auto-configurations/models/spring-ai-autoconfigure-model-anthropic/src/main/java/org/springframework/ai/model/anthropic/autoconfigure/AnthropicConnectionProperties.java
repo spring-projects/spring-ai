@@ -18,6 +18,7 @@ package org.springframework.ai.model.anthropic.autoconfigure;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Anthropic API connection properties.
@@ -26,7 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @since 1.0.0
  */
 @ConfigurationProperties(AnthropicConnectionProperties.CONFIG_PREFIX)
-public class AnthropicConnectionProperties {
+public class AnthropicConnectionProperties extends HttpClientSettingsProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.anthropic";
 

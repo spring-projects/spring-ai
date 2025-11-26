@@ -78,8 +78,7 @@ public class DeepSeekAutoConfigurationIT {
 	void generateWithCustomTimeout() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"),
-					"spring.ai.deepseek.connect-timeout=5s",
-					"spring.ai.deepseek.read-timeout=30s")
+					"spring.ai.deepseek.connect-timeout=5s", "spring.ai.deepseek.read-timeout=30s")
 			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 			.run(context -> {
 				DeepSeekChatModel client = context.getBean(DeepSeekChatModel.class);
@@ -100,27 +99,26 @@ public class DeepSeekAutoConfigurationIT {
 	@Test
 	void generateStreamingWithCustomTimeout() {
 		new ApplicationContextRunner()
-				.withPropertyValues("spring.ai.deepseek.apiKey=" + "sk-2567813d742c40e79fa6f1f2ee2f830c",
-						"spring.ai.deepseek.connect-timeout=1s",
-						"spring.ai.deepseek.read-timeout=1s")
-				.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
-				.run(context -> {
-					DeepSeekChatModel client = context.getBean(DeepSeekChatModel.class);
+			.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"),
+					"spring.ai.deepseek.connect-timeout=1s", "spring.ai.deepseek.read-timeout=1s")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				DeepSeekChatModel client = context.getBean(DeepSeekChatModel.class);
 
-					// Verify that the HTTP client configuration is applied
-					var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
-					assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(1));
-					assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(1));
+				// Verify that the HTTP client configuration is applied
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(1));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(1));
 
-					Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
-					String response = Objects.requireNonNull(responseFlux.collectList().block())
-							.stream()
-							.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
-							.collect(Collectors.joining());
+				Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
+				String response = Objects.requireNonNull(responseFlux.collectList().block())
+					.stream()
+					.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
+					.collect(Collectors.joining());
 
-					assertThat(response).isNotEmpty();
-					logger.info("Response with custom timeout: " + response);
-				});
+				assertThat(response).isNotEmpty();
+				logger.info("Response with custom timeout: " + response);
+			});
 	}
 
 }
