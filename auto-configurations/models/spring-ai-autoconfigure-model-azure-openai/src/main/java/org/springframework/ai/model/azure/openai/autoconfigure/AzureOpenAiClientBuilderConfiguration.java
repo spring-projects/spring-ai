@@ -23,8 +23,8 @@ import java.util.stream.Collectors;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.credential.KeyCredential;
-import com.azure.core.util.ClientOptions;
 import com.azure.core.util.Header;
+import com.azure.core.util.HttpClientOptions;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -56,23 +56,17 @@ public class AzureOpenAiClientBuilderConfiguration {
 
 		final OpenAIClientBuilder clientBuilder;
 
+		HttpClientOptions clientOptions = createHttpClientOptions(connectionProperties);
+
 		// Connect to OpenAI (e.g. not the Azure OpenAI). The deploymentName property is
 		// used as OpenAI model name.
 		if (StringUtils.hasText(connectionProperties.getOpenAiApiKey())) {
 			clientBuilder = new OpenAIClientBuilder().endpoint("https://api.openai.com/v1")
 				.credential(new KeyCredential(connectionProperties.getOpenAiApiKey()))
-				.clientOptions(new ClientOptions().setApplicationId(APPLICATION_ID));
+				.clientOptions(clientOptions);
 			applyOpenAIClientBuilderCustomizers(clientBuilder, customizers);
 			return clientBuilder;
 		}
-
-		Map<String, String> customHeaders = connectionProperties.getCustomHeaders();
-		List<Header> headers = customHeaders.entrySet()
-			.stream()
-			.map(entry -> new Header(entry.getKey(), entry.getValue()))
-			.collect(Collectors.toList());
-		ClientOptions clientOptions = new ClientOptions().setApplicationId(APPLICATION_ID).setHeaders(headers);
-
 		Assert.hasText(connectionProperties.getEndpoint(), "Endpoint must not be empty");
 
 		if (!StringUtils.hasText(connectionProperties.getApiKey())) {
@@ -94,6 +88,46 @@ public class AzureOpenAiClientBuilderConfiguration {
 	private void applyOpenAIClientBuilderCustomizers(OpenAIClientBuilder clientBuilder,
 			ObjectProvider<AzureOpenAIClientBuilderCustomizer> customizers) {
 		customizers.orderedStream().forEach(customizer -> customizer.customize(clientBuilder));
+	}
+
+	/**
+	 * Create HttpClientOptions
+	 */
+	private HttpClientOptions createHttpClientOptions(AzureOpenAiConnectionProperties connectionProperties) {
+		// Create HttpClientOptions and apply the configuration
+		HttpClientOptions options = new HttpClientOptions();
+
+		options.setApplicationId(APPLICATION_ID);
+
+		Map<String, String> customHeaders = connectionProperties.getCustomHeaders();
+		List<Header> headers = customHeaders.entrySet()
+			.stream()
+			.map(entry -> new Header(entry.getKey(), entry.getValue()))
+			.collect(Collectors.toList());
+
+		options.setHeaders(headers);
+
+		if (connectionProperties.getConnectTimeout() != null) {
+			options.setConnectTimeout(connectionProperties.getConnectTimeout());
+		}
+
+		if (connectionProperties.getReadTimeout() != null) {
+			options.setReadTimeout(connectionProperties.getReadTimeout());
+		}
+
+		if (connectionProperties.getWriteTimeout() != null) {
+			options.setWriteTimeout(connectionProperties.getWriteTimeout());
+		}
+
+		if (connectionProperties.getResponseTimeout() != null) {
+			options.setResponseTimeout(connectionProperties.getResponseTimeout());
+		}
+
+		if (connectionProperties.getMaximumConnectionPoolSize() != null) {
+			options.setMaximumConnectionPoolSize(connectionProperties.getMaximumConnectionPoolSize());
+		}
+
+		return options;
 	}
 
 }

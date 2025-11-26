@@ -54,6 +54,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
@@ -285,6 +286,17 @@ class AzureOpenAiAutoConfigurationIT {
 				context.getBean(OpenAIClientBuilder.class);
 				assertThat(firstCustomizationApplied.get()).isTrue();
 				assertThat(secondCustomizationApplied.get()).isTrue();
+			});
+	}
+
+	@Test
+	void connectTimeoutShouldTakeEffect() {
+		new ApplicationContextRunner().withPropertyValues("spring.ai.azure.openai.connect-timeout=1ms")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class))
+			.run(context -> {
+				AzureOpenAiChatModel chatModel = context.getBean(AzureOpenAiChatModel.class);
+
+				assertThatThrownBy(() -> chatModel.call(new Prompt("Hello"))).isInstanceOf(Exception.class);
 			});
 	}
 
