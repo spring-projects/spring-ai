@@ -17,9 +17,14 @@
 package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Optional;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.common.collect.ImmutableMap;
 import com.google.genai.Client;
+import com.google.genai.types.ClientOptions;
+import com.google.genai.types.HttpOptions;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
@@ -90,6 +95,28 @@ public class GoogleGenAiChatAutoConfiguration {
 				// credentials are handled automatically when vertexAI is true
 			}
 		}
+		HttpOptions.Builder httpOptionsBuilder = HttpOptions.builder();
+		if (connectionProperties.getTimeout() != null) {
+			Integer timeout = Optional.ofNullable(connectionProperties.getTimeout())
+				.map(Duration::toMillisPart)
+				.orElse(null);
+			httpOptionsBuilder.timeout(timeout);
+		}
+		if (!connectionProperties.getCustomHeaders().isEmpty()) {
+			httpOptionsBuilder.headers(ImmutableMap.copyOf(connectionProperties.getCustomHeaders()));
+		}
+
+		ClientOptions.Builder clientOptionsBuilder = ClientOptions.builder();
+		if (connectionProperties.getMaxConnections() != null) {
+			clientOptionsBuilder.maxConnections(connectionProperties.getMaxConnections());
+		}
+
+		if (connectionProperties.getMaxConnectionsPerHost() != null) {
+			clientOptionsBuilder.maxConnectionsPerHost(connectionProperties.getMaxConnectionsPerHost());
+		}
+
+		clientBuilder.httpOptions(httpOptionsBuilder.build());
+		clientBuilder.clientOptions(clientOptionsBuilder.build());
 
 		return clientBuilder.build();
 	}
