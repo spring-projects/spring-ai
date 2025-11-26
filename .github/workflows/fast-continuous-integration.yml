@@ -168,7 +168,7 @@ jobs:
     name: Generate documentation artifacts
     runs-on: ubuntu-latest
     needs: [build-all, test-ollama, test-openai, test-remaining]
-    if: ${{ github.ref == 'refs/heads/main' && github.repository_owner == 'spring-projects' }}
+    if: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/1.1.x') && github.repository_owner == 'spring-projects' }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -211,7 +211,7 @@ jobs:
     name: Deploy to Artifactory
     runs-on: ubuntu-latest
     needs: [build-all, test-ollama, test-openai, test-remaining]
-    if: ${{ github.ref == 'refs/heads/main' && github.repository_owner == 'spring-projects' }}
+    if: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/1.1.x') && github.repository_owner == 'spring-projects' }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -240,7 +240,7 @@ jobs:
     name: Deploy documentation
     runs-on: ubuntu-latest
     needs: [generate-artifacts]
-    if: ${{ github.ref == 'refs/heads/main' && github.repository_owner == 'spring-projects' }}
+    if: ${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/1.1.x') && github.repository_owner == 'spring-projects' }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
