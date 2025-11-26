@@ -18,6 +18,7 @@ package org.springframework.ai.model.elevenlabs.autoconfigure;
 
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Configuration properties for the ElevenLabs API connection.
@@ -25,7 +26,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author Alexandros Pappas
  */
 @ConfigurationProperties(ElevenLabsConnectionProperties.CONFIG_PREFIX)
-public class ElevenLabsConnectionProperties {
+public class ElevenLabsConnectionProperties extends HttpClientSettingsProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.elevenlabs";
 
