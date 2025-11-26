@@ -16,14 +16,14 @@
 
 package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiEmbeddingConnectionProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Configuration;
-
-import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
