@@ -94,7 +94,7 @@ The server mcp-annotations properties are prefixed with `spring.ai.mcp.server.an
 
 === Stateless Connection Properties
 
-All connection properties are prefixed with `spring.ai.mcp.server.stateless`:
+All connection properties are prefixed with `spring.ai.mcp.server.streamable-http`:
 
 [options="header"]
 |===
