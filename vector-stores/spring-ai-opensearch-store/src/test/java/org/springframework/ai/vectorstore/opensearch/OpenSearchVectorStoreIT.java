@@ -825,6 +825,9 @@ class OpenSearchVectorStoreIT {
 				.initializeSchema(true)
 				.build();
 
+			// Ensure the index is fully initialized before adding documents
+			testVectorStore.afterPropertiesSet();
+
 			// Test documents
 			List<Document> testDocuments = List.of(new Document("doc1", "Test content 1", Map.of("key1", "value1")),
 					new Document("doc2", "Test content 2", Map.of("key2", "value2")));
@@ -869,6 +872,9 @@ class OpenSearchVectorStoreIT {
 				.index("test_aws_serverless_compatible")
 				.initializeSchema(true)
 				.build();
+
+			// Ensure the index is fully initialized before adding documents
+			awsCompatibleVectorStore.afterPropertiesSet();
 
 			// Test documents with IDs (these should be ignored when
 			// manageDocumentIds=false)
@@ -916,6 +922,9 @@ class OpenSearchVectorStoreIT {
 				.index("test_explicit_ids")
 				.initializeSchema(true)
 				.build();
+
+			// Ensure the index is fully initialized before adding documents
+			explicitIdVectorStore.afterPropertiesSet();
 
 			// Test documents with specific IDs
 			List<Document> testDocuments = List.of(
