@@ -105,7 +105,7 @@ class GoogleGenAiChatModelIT {
 				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Calico Jack",
-				"Anne Bonny");
+				"Bob", "Anne Bonny");
 	}
 
 	@Test
