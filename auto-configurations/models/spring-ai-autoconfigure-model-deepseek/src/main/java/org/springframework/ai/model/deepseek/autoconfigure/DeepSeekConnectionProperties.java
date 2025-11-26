@@ -16,14 +16,8 @@
 
 package org.springframework.ai.model.deepseek.autoconfigure;
 
-import java.time.Duration;
-
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.boot.http.client.HttpClientSettings;
-import org.springframework.boot.http.client.HttpRedirects;
-import org.springframework.boot.ssl.SslBundle;
-import org.springframework.boot.ssl.SslBundles;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Parent properties for DeepSeek.
@@ -31,117 +25,28 @@ import org.springframework.boot.ssl.SslBundles;
  * @author Geng Rong
  */
 @ConfigurationProperties(DeepSeekConnectionProperties.CONFIG_PREFIX)
-public class DeepSeekConnectionProperties extends DeepSeekParentProperties {
+public class DeepSeekConnectionProperties extends HttpClientSettingsProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.deepseek";
 
-	public static final String DEFAULT_BASE_URL = "https://api.deepseek.com";
+	private String apiKey;
 
-	/**
-	 * HTTP client settings for DeepSeek API calls.
-	 */
-	@NestedConfigurationProperty
-	private HttpClientConfig httpClient = new HttpClientConfig();
+	private String baseUrl = "https://api.deepseek.com";
 
-	public DeepSeekConnectionProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
+	public String getApiKey() {
+		return this.apiKey;
 	}
 
-	public HttpClientConfig getHttpClient() {
-		return this.httpClient;
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
-	public void setHttpClient(HttpClientConfig httpClient) {
-		this.httpClient = httpClient;
+	public String getBaseUrl() {
+		return this.baseUrl;
 	}
 
-	/**
-	 * HTTP client configuration settings. This inner class mirrors the structure of
-	 * Spring Boot's HttpClientSettings to provide full control over HTTP client behavior.
-	 */
-	public static class HttpClientConfig {
-
-		/**
-		 * Whether to enable custom HTTP client configuration.
-		 */
-		private boolean enabled = true;
-
-		/**
-		 * Connection timeout.
-		 */
-		private Duration connectTimeout = Duration.ofSeconds(10);
-
-		/**
-		 * Read timeout.
-		 */
-		private Duration readTimeout = Duration.ofSeconds(60);
-
-		/**
-		 * HTTP redirect strategy.
-		 */
-		private HttpRedirects redirects;
-
-		/**
-		 * SSL bundle name for secure connections.
-		 */
-		private String sslBundle;
-
-		public boolean isEnabled() {
-			return this.enabled;
-		}
-
-		public void setEnabled(boolean enabled) {
-			this.enabled = enabled;
-		}
-
-		public Duration getConnectTimeout() {
-			return this.connectTimeout;
-		}
-
-		public void setConnectTimeout(Duration connectTimeout) {
-			this.connectTimeout = connectTimeout;
-		}
-
-		public Duration getReadTimeout() {
-			return this.readTimeout;
-		}
-
-		public void setReadTimeout(Duration readTimeout) {
-			this.readTimeout = readTimeout;
-		}
-
-		public HttpRedirects getRedirects() {
-			return this.redirects;
-		}
-
-		public void setRedirects(HttpRedirects redirects) {
-			this.redirects = redirects;
-		}
-
-		public String getSslBundle() {
-			return this.sslBundle;
-		}
-
-		public void setSslBundle(String sslBundle) {
-			this.sslBundle = sslBundle;
-		}
-
-		/**
-		 * Convert to Spring Boot's HttpClientSettings.
-		 * @param sslBundles the SSL bundles registry
-		 * @return HttpClientSettings instance
-		 */
-		public HttpClientSettings toHttpClientSettings(SslBundles sslBundles) {
-			SslBundle bundle = (this.sslBundle != null && sslBundles != null) ? sslBundles.getBundle(this.sslBundle)
-					: null;
-
-			return HttpClientSettings.defaults()
-				.withConnectTimeout(this.connectTimeout)
-				.withReadTimeout(this.readTimeout)
-				.withRedirects(this.redirects)
-				.withSslBundle(bundle);
-		}
-
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 }
