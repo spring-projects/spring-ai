@@ -46,6 +46,7 @@ import org.springframework.util.StringUtils;
  * @author Alexandros Pappas
  * @author Thomas Vitale
  * @author Heonwoo Kim
+ * @author Taewoong Kim
  * @since 1.0.0
  */
 public class MessageAggregator {
@@ -102,7 +103,7 @@ public class MessageAggregator {
 				}
 				AssistantMessage outputMessage = chatResponse.getResult().getOutput();
 				if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
-					toolCallsRef.get().addAll(outputMessage.getToolCalls());
+					mergeToolCalls(toolCallsRef.get(), outputMessage.getToolCalls());
 				}
 
 			}
@@ -184,6 +185,78 @@ public class MessageAggregator {
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
 		}).doOnError(e -> logger.error("Aggregation Error", e));
+	}
+
+	/**
+	 * Merge tool calls by id to handle streaming responses where tool call data is split
+	 * across multiple chunks. This is common in OpenAI-compatible APIs like Qwen, where
+	 * the first chunk contains the function name and subsequent chunks contain only
+	 * arguments. if a tool call has an ID, it's matched by ID. if it has no ID (empty or
+	 * null), it's merged with the last tool call in the list.
+	 * @param existingToolCalls the list of existing tool calls to merge into
+	 * @param newToolCalls the new tool calls to merge
+	 */
+	private void mergeToolCalls(List<ToolCall> existingToolCalls, List<ToolCall> newToolCalls) {
+		for (ToolCall newCall : newToolCalls) {
+			if (StringUtils.hasText(newCall.id())) {
+				// ID present: match by ID or add as new
+				ToolCall existingMatch = existingToolCalls.stream()
+					.filter(existing -> newCall.id().equals(existing.id()))
+					.findFirst()
+					.orElse(null);
+
+				if (existingMatch != null) {
+					// Merge with existing tool call with same ID
+					int index = existingToolCalls.indexOf(existingMatch);
+					ToolCall merged = mergeToolCall(existingMatch, newCall);
+					existingToolCalls.set(index, merged);
+				}
+				else {
+					// New tool call with ID
+					existingToolCalls.add(newCall);
+				}
+			}
+			else {
+				// No ID: merge with last tool call
+				ToolCall lastToolCall = existingToolCalls.isEmpty() ? null
+						: existingToolCalls.get(existingToolCalls.size() - 1);
+				ToolCall merged = mergeToolCall(lastToolCall, newCall);
+
+				if (lastToolCall != null) {
+					existingToolCalls.set(existingToolCalls.size() - 1, merged);
+				}
+				else {
+					existingToolCalls.add(merged);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Merge two tool calls into one, combining their properties.
+	 * @param existing the existing tool call
+	 * @param current the current tool call to merge
+	 * @return the merged tool call
+	 */
+	private ToolCall mergeToolCall(ToolCall existing, ToolCall current) {
+		if (existing == null) {
+			return current;
+		}
+
+		// Use non-empty ID, prefer existing if both present (for consistency)
+		String mergedId = StringUtils.hasText(existing.id()) ? existing.id() : current.id();
+
+		// Use non-empty name, prefer new if both present
+		String mergedName = StringUtils.hasText(current.name()) ? current.name() : existing.name();
+
+		// Use non-empty type, prefer new if both present
+		String mergedType = StringUtils.hasText(current.type()) ? current.type() : existing.type();
+
+		// Concatenate arguments
+		String mergedArgs = (existing.arguments() != null ? existing.arguments() : "")
+				+ (current.arguments() != null ? current.arguments() : "");
+
+		return new ToolCall(mergedId, mergedType, mergedName, mergedArgs);
 	}
 
 	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) implements Usage {
