@@ -82,7 +82,7 @@ final class DefaultChatClientUtils {
 			processedMessages.addAll(inputRequest.getMessages());
 		}
 
-		// User Test => Last in the list
+		// User Text => Last in the list
 		String processedUserText = inputRequest.getUserText();
 		if (StringUtils.hasText(processedUserText)) {
 			if (!CollectionUtils.isEmpty(inputRequest.getUserParams())) {
