@@ -112,6 +112,20 @@ The prefix `spring.ai.minimax` is used as the property prefix that lets you conn
 | spring.ai.minimax.api-key    | The API Key           |  -
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.minimax` is used as the property prefix that lets you configure the HTTP client for MiniMax API calls.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.minimax.connect-timeout | HTTP connection timeout | -
+| spring.ai.minimax.read-timeout | HTTP read timeout | -
+| spring.ai.minimax.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.minimax.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 ==== Configuration Properties
 
 [NOTE]

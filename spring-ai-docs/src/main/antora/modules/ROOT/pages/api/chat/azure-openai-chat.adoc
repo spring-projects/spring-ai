@@ -201,6 +201,11 @@ The prefix `spring.ai.azure.openai` is the property prefix to configure the conn
 This automatically sets the endpoint to https://api.openai.com/v1. Use either `api-key` or `openai-api-key` property.
 With this configuration the `spring.ai.azure.openai.chat.options.deployment-name` is treated as an https://platform.openai.com/docs/models[OpenAi Model] name.| -
 | spring.ai.azure.openai.custom-headers | A map of custom headers to be included in the API requests. Each entry in the map represents a header, where the key is the header name and the value is the header value. | Empty map
+| spring.ai.azure.openai.connect-timeout | HTTP connection timeout | -
+| spring.ai.azure.openai.read-timeout | HTTP read timeout | -
+| spring.ai.azure.openai.write-timeout | HTTP write timeout | -
+| spring.ai.azure.openai.response-timeout | HTTP response timeout | -
+| spring.ai.azure.openai.maximum-connection-pool-size | Maximum number of connections in the HTTP connection pool | -
 |====
 
 [NOTE]
