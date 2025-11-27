@@ -40,6 +40,8 @@ public final class SpringAIVectorStoreTypes {
 
 	public static final String HANADB = "hanadb";
 
+	public static final String INFINISPAN = "infinispan";
+
 	public static final String MARIADB = "mariadb";
 
 	public static final String MILVUS = "milvus";

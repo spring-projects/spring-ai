@@ -71,6 +71,11 @@ public enum VectorStoreProvider {
 	HANA("hana"),
 
 	/**
+	 * Vector store provided by Infinispan.
+	 */
+	INFINISPAN("infinispan"),
+
+	/**
 	 * Vector store provided by MariaDB.
 	 */
 	MARIADB("mariadb"),
