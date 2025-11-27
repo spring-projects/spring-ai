@@ -115,7 +115,8 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.options.max-output-tokens | The maximum number of tokens to generate. | -
 | spring.ai.google.genai.chat.options.frequency-penalty | Frequency penalties for reducing repetition. | -
 | spring.ai.google.genai.chat.options.presence-penalty | Presence penalties for reducing repetition. | -
-| spring.ai.google.genai.chat.options.thinking-budget | Thinking budget for the thinking process. | -
+| spring.ai.google.genai.chat.options.thinking-budget | Thinking budget for the thinking process. See <<thinking-config>>. | -
+| spring.ai.google.genai.chat.options.thinking-level | The level of thinking tokens the model should generate. Valid values: `LOW`, `HIGH`, `THINKING_LEVEL_UNSPECIFIED`. See <<thinking-config>>. | -
 | spring.ai.google.genai.chat.options.include-thoughts | Enable thought signatures for function calling. **Required** for Gemini 3 Pro to avoid validation errors during the internal tool execution loop. See <<thought-signatures>>. | false
 | spring.ai.google.genai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.google.genai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
@@ -195,6 +196,147 @@ String response = ChatClient.create(this.chatModel)
 ----
 
 Find more in xref:api/tools.adoc[Tools] documentation.
+
+== Thinking Configuration [[thinking-config]]
+
+Gemini models support a "thinking" capability that allows the model to perform deeper reasoning before generating responses. This is controlled through the `ThinkingConfig` which includes three related options: `thinkingBudget`, `thinkingLevel`, and `includeThoughts`.
+
+=== Thinking Level
+
+The `thinkingLevel` option controls the depth of reasoning tokens the model generates. This is available for models that support thinking (e.g., Gemini 3 Pro Preview).
+
+[cols="1,3", stripes=even]
+|====
+| Value | Description
+
+| `LOW` | Minimal thinking. Use for simple queries where speed is preferred over deep analysis.
+| `HIGH` | Extensive thinking. Use for complex problems requiring deep analysis and step-by-step reasoning.
+| `THINKING_LEVEL_UNSPECIFIED` | The model uses its default behavior.
+|====
+
+==== Configuration via Properties
+
+[source,application.properties]
+----
+spring.ai.google.genai.chat.options.model=gemini-3-pro-preview
+spring.ai.google.genai.chat.options.thinking-level=HIGH
+----
+
+==== Programmatic Configuration
+
+[source,java]
+----
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Explain the theory of relativity in simple terms.",
+        GoogleGenAiChatOptions.builder()
+            .model("gemini-3-pro-preview")
+            .thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+            .build()
+    ));
+----
+
+=== Thinking Budget
+
+The `thinkingBudget` option sets a token budget for the thinking process:
+
+- **Positive value**: Maximum number of tokens for thinking (e.g., `8192`)
+- **Zero (`0`)**: Disables thinking entirely
+- **Not set**: Model decides automatically based on query complexity
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Solve this complex math problem step by step.",
+        GoogleGenAiChatOptions.builder()
+            .model("gemini-2.5-pro")
+            .thinkingBudget(8192)
+            .build()
+    ));
+----
+
+=== Option Compatibility
+
+[IMPORTANT]
+====
+**`thinkingLevel` and `thinkingBudget` are mutually exclusive.** You cannot use both in the same request - doing so will result in an API error.
+
+* Use `thinkingLevel` (`LOW`, `HIGH`) for **Gemini 3 Pro** models
+* Use `thinkingBudget` (token count) for **Gemini 2.5** series models
+====
+
+You can combine `includeThoughts` with either `thinkingLevel` or `thinkingBudget` (but not both):
+
+[source,java]
+----
+// For Gemini 3 Pro: use thinkingLevel + includeThoughts
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Analyze this complex scenario.",
+        GoogleGenAiChatOptions.builder()
+            .model("gemini-3-pro-preview")
+            .thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+            .includeThoughts(true)
+            .build()
+    ));
+
+// For Gemini 2.5: use thinkingBudget + includeThoughts
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Analyze this complex scenario.",
+        GoogleGenAiChatOptions.builder()
+            .model("gemini-2.5-pro")
+            .thinkingBudget(8192)
+            .includeThoughts(true)
+            .build()
+    ));
+----
+
+=== Model Support
+
+The thinking configuration options are model-specific:
+
+[cols="2,1,1,2", stripes=even]
+|====
+| Model | thinkingLevel | thinkingBudget | Notes
+
+| Gemini 3 Pro (Preview)
+| ✅ Supported
+| ⚠️ Backwards compatible only
+| Use `thinkingLevel`. Cannot disable thinking. Requires **global** endpoint.
+
+| Gemini 2.5 Pro
+| ❌ Not supported
+| ✅ Supported
+| Use `thinkingBudget`. Set to 0 to disable, -1 for dynamic.
+
+| Gemini 2.5 Flash
+| ❌ Not supported
+| ✅ Supported
+| Use `thinkingBudget`. Set to 0 to disable, -1 for dynamic.
+
+| Gemini 2.5 Flash-Lite
+| ❌ Not supported
+| ✅ Supported
+| Thinking disabled by default. Set `thinkingBudget` to enable.
+
+| Gemini 2.0 Flash
+| ❌ Not supported
+| ❌ Not supported
+| Thinking not available.
+|====
+
+[IMPORTANT]
+====
+* Using `thinkingLevel` with unsupported models (e.g., Gemini 2.5 or earlier) will result in an API error.
+* Gemini 3 Pro Preview is only available on **global** endpoints. Set `spring.ai.google.genai.location=global` or `GOOGLE_CLOUD_LOCATION=global`.
+* Check the https://ai.google.dev/gemini-api/docs/thinking[Google GenAI Thinking documentation] for the latest model capabilities.
+====
+
+NOTE: Enabling thinking features increases token usage and API costs. Use appropriately based on the complexity of your queries.
 
 == Thought Signatures [[thought-signatures]]
 

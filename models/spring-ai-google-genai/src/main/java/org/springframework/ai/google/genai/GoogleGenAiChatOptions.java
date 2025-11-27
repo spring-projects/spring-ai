@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -127,6 +128,13 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("includeThoughts") Boolean includeThoughts;
 
 	/**
+	 * Optional. The level of thinking tokens the model should generate.
+	 * LOW = minimal thinking, HIGH = extensive thinking.
+	 * This is part of the thinkingConfig in GenerationConfig.
+	 */
+	private @JsonProperty("thinkingLevel") GoogleGenAiThinkingLevel thinkingLevel;
+
+	/**
 	 * Optional. Whether to include extended usage metadata in responses.
 	 * When true, includes thinking tokens, cached content, tool-use tokens, and modality details.
 	 * Defaults to true for full metadata access.
@@ -220,6 +228,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		options.setToolContext(fromOptions.getToolContext());
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
 		options.setIncludeThoughts(fromOptions.getIncludeThoughts());
+		options.setThinkingLevel(fromOptions.getThinkingLevel());
 		options.setLabels(fromOptions.getLabels());
 		options.setIncludeExtendedUsageMetadata(fromOptions.getIncludeExtendedUsageMetadata());
 		options.setCachedContentName(fromOptions.getCachedContentName());
@@ -379,6 +388,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		this.includeThoughts = includeThoughts;
 	}
 
+	public GoogleGenAiThinkingLevel getThinkingLevel() {
+		return this.thinkingLevel;
+	}
+
+	public void setThinkingLevel(GoogleGenAiThinkingLevel thinkingLevel) {
+		this.thinkingLevel = thinkingLevel;
+	}
+
 	public Boolean getIncludeExtendedUsageMetadata() {
 		return this.includeExtendedUsageMetadata;
 	}
@@ -471,6 +488,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.thinkingBudget, that.thinkingBudget)
 				&& Objects.equals(this.includeThoughts, that.includeThoughts)
+				&& this.thinkingLevel == that.thinkingLevel
 				&& Objects.equals(this.maxOutputTokens, that.maxOutputTokens) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
@@ -484,9 +502,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
-				this.maxOutputTokens, this.model, this.responseMimeType, this.toolCallbacks, this.toolNames,
-				this.googleSearchRetrieval, this.safetySettings, this.internalToolExecutionEnabled, this.toolContext,
-				this.labels);
+				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.toolCallbacks,
+				this.toolNames, this.googleSearchRetrieval, this.safetySettings, this.internalToolExecutionEnabled,
+				this.toolContext, this.labels);
 	}
 
 	@Override
@@ -494,11 +512,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 		return "GoogleGenAiChatOptions{" + "stopSequences=" + this.stopSequences + ", temperature=" + this.temperature
 				+ ", topP=" + this.topP + ", topK=" + this.topK + ", frequencyPenalty=" + this.frequencyPenalty
 				+ ", presencePenalty=" + this.presencePenalty + ", thinkingBudget=" + this.thinkingBudget
-				+ ", includeThoughts=" + this.includeThoughts + ", candidateCount=" + this.candidateCount
-				+ ", maxOutputTokens=" + this.maxOutputTokens + ", model='" + this.model + '\'' + ", responseMimeType='"
-				+ this.responseMimeType + '\'' + ", toolCallbacks=" + this.toolCallbacks + ", toolNames="
-				+ this.toolNames + ", googleSearchRetrieval=" + this.googleSearchRetrieval + ", safetySettings="
-				+ this.safetySettings + ", labels=" + this.labels + '}';
+				+ ", includeThoughts=" + this.includeThoughts + ", thinkingLevel=" + this.thinkingLevel
+				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
+				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
+				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
+				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
+				+ '}';
 	}
 
 	@Override
@@ -628,6 +647,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder includeThoughts(Boolean includeThoughts) {
 			this.options.setIncludeThoughts(includeThoughts);
+			return this;
+		}
+
+		public Builder thinkingLevel(GoogleGenAiThinkingLevel thinkingLevel) {
+			this.options.setThinkingLevel(thinkingLevel);
 			return this;
 		}
 
