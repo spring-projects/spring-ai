@@ -60,4 +60,29 @@ public class StabilityAiAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void generateWithCustomTimeout() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.stabilityai.connect-timeout=1s", "spring.ai.stabilityai.read-timeout=1s")
+			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
+			.run(context -> {
+				ImageModel imageModel = context.getBean(ImageModel.class);
+				StabilityAiImageOptions imageOptions = StabilityAiImageOptions.builder()
+					.stylePreset(StyleEnum.PHOTOGRAPHIC)
+					.build();
+
+				var instructions = """
+						A light cream colored mini golden doodle.
+						""";
+
+				ImagePrompt imagePrompt = new ImagePrompt(instructions, imageOptions);
+				ImageResponse imageResponse = imageModel.call(imagePrompt);
+
+				ImageGeneration imageGeneration = imageResponse.getResult();
+				Image image = imageGeneration.getOutput();
+
+				assertThat(image.getB64Json()).isNotEmpty();
+			});
+	}
+
 }
