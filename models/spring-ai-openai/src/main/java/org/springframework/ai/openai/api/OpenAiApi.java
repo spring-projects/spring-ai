@@ -1160,7 +1160,7 @@ public class OpenAiApi {
 			@JsonProperty("verbosity") String verbosity,
 			@JsonProperty("prompt_cache_key") String promptCacheKey,
 			@JsonProperty("safety_identifier") String safetyIdentifier,
-			Map<String, Object> extraBody) {
+			@JsonProperty("extra_body") Map<String, Object> extraBody) {
 
 		/**
 		 * Compact constructor that ensures extraBody is initialized as a mutable HashMap
