@@ -49,6 +49,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,7 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
@@ -578,6 +580,86 @@ class GoogleGenAiChatModelIT {
 
 		assertThat(response).isNotEmpty();
 		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	@Test
+	void testThinkingUnsupportedModels() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_2_5_FLASH)
+				.temperature(0.1)
+				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		assertThatThrownBy(() -> chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content())
+			.isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Failed to generate content");
+	}
+
+	@Test
+	void testThinkingLevelLow() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("ThinkingLevel=LOW Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	@Test
+	void testThinkingLevelHigh() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.temperature(0.1)
+				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt()
+			.user("Explain the theory of relativity in simple terms.")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("ThinkingLevel=HIGH Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	@Test
+	void testThinkingLevelWithBudgetCombined() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.temperature(0.1)
+				.thinkingBudget(4096)
+				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+				.includeThoughts(true)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		assertThatThrownBy(() -> chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content())
+			.isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Failed to generate content");
 	}
 
 	/**
