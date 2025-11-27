@@ -40,6 +40,7 @@ import com.google.genai.types.Part;
 import com.google.genai.types.SafetySetting;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
+import com.google.genai.types.ThinkingLevel;
 import com.google.genai.types.Tool;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -73,6 +74,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
@@ -759,14 +761,18 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			configBuilder.presencePenalty(requestOptions.getPresencePenalty().floatValue());
 		}
 
-		// Build thinking config if either thinkingBudget or includeThoughts is set
-		if (requestOptions.getThinkingBudget() != null || requestOptions.getIncludeThoughts() != null) {
+		// Build thinking config if any thinking option is set
+		if (requestOptions.getThinkingBudget() != null || requestOptions.getIncludeThoughts() != null
+				|| requestOptions.getThinkingLevel() != null) {
 			ThinkingConfig.Builder thinkingBuilder = ThinkingConfig.builder();
 			if (requestOptions.getThinkingBudget() != null) {
 				thinkingBuilder.thinkingBudget(requestOptions.getThinkingBudget());
 			}
 			if (requestOptions.getIncludeThoughts() != null) {
 				thinkingBuilder.includeThoughts(requestOptions.getIncludeThoughts());
+			}
+			if (requestOptions.getThinkingLevel() != null) {
+				thinkingBuilder.thinkingLevel(mapToGenAiThinkingLevel(requestOptions.getThinkingLevel()));
 			}
 			configBuilder.thinkingConfig(thinkingBuilder.build());
 		}
@@ -863,6 +869,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			case OFF ->
 				new com.google.genai.types.HarmBlockThreshold(com.google.genai.types.HarmBlockThreshold.Known.OFF);
 			default -> throw new IllegalArgumentException("Unknown HarmBlockThreshold: " + threshold);
+		};
+	}
+
+	private static ThinkingLevel mapToGenAiThinkingLevel(GoogleGenAiThinkingLevel level) {
+		return switch (level) {
+			case THINKING_LEVEL_UNSPECIFIED -> new ThinkingLevel(ThinkingLevel.Known.THINKING_LEVEL_UNSPECIFIED);
+			case LOW -> new ThinkingLevel(ThinkingLevel.Known.LOW);
+			case HIGH -> new ThinkingLevel(ThinkingLevel.Known.HIGH);
 		};
 	}
 
