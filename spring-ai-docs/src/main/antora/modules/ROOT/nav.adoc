@@ -57,7 +57,9 @@
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
 **** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
-**** xref:api/embeddings/cohere-embeddings.adoc[Cohere]
+**** Cohere
+***** xref:api/embeddings/cohere-embeddings-text.adoc[Text Embedding]
+***** xref:api/embeddings/cohere-embeddings-multimodal.adoc[Multimodal Embedding]
 
 *** xref:api/imageclient.adoc[Image Models]
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
