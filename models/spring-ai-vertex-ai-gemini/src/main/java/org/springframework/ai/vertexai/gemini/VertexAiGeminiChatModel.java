@@ -797,7 +797,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public VertexAiGeminiChatOptions getDefaultOptions() {
 		return VertexAiGeminiChatOptions.fromOptions(this.defaultOptions);
 	}
 
