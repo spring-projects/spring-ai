@@ -69,6 +69,7 @@
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>vector-stores/spring-ai-gemfire-store</module>
 		<module>vector-stores/spring-ai-hanadb-store</module>
+		<module>vector-stores/spring-ai-infinispan-store</module>
 		<module>vector-stores/spring-ai-mariadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
@@ -138,6 +139,7 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-infinispan</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
@@ -335,6 +337,7 @@
 		<mariadb.version>3.5.3</mariadb.version>
 		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
+		<infinispan.version>16.0.5</infinispan.version>
 
 		<couchbase.version>3.9.1</couchbase.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
