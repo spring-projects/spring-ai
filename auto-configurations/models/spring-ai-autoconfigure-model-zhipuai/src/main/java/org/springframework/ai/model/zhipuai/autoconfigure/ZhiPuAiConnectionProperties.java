@@ -16,7 +16,14 @@
 
 package org.springframework.ai.model.zhipuai.autoconfigure;
 
+import java.time.Duration;
+
+import jakarta.annotation.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.http.client.HttpRedirects;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 @ConfigurationProperties(ZhiPuAiConnectionProperties.CONFIG_PREFIX)
 public class ZhiPuAiConnectionProperties extends ZhiPuAiParentProperties {
@@ -25,8 +32,47 @@ public class ZhiPuAiConnectionProperties extends ZhiPuAiParentProperties {
 
 	public static final String DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/paas";
 
+	@NestedConfigurationProperty
+	private final HttpClientSettingsProperties http = new HttpClientSettingsProperties() {
+	};
+
 	public ZhiPuAiConnectionProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
+	}
+
+	@Nullable
+	public HttpRedirects getRedirects() {
+		return this.http.getRedirects();
+	}
+
+	public void setRedirects(HttpRedirects redirects) {
+		this.http.setRedirects(redirects);
+	}
+
+	@Nullable
+	public Duration getConnectTimeout() {
+		return this.http.getConnectTimeout();
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.http.setConnectTimeout(connectTimeout);
+	}
+
+	@Nullable
+	public Duration getReadTimeout() {
+		return this.http.getReadTimeout();
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.http.setReadTimeout(readTimeout);
+	}
+
+	public HttpClientSettingsProperties.Ssl getSsl() {
+		return this.http.getSsl();
+	}
+
+	public HttpClientSettingsProperties getHttp() {
+		return this.http;
 	}
 
 }
