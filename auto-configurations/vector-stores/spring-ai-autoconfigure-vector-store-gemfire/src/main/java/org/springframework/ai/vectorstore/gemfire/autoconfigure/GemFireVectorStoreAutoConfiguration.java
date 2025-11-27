@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Bean;
  * @author Geet Rawat
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Jason Huynh
  */
 @AutoConfiguration
 @ConditionalOnClass({ GemFireVectorStore.class, EmbeddingModel.class })
@@ -80,6 +81,9 @@ public class GemFireVectorStoreAutoConfiguration {
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)
+			.username(gemFireConnectionDetails.getUsername())
+			.password(gemFireConnectionDetails.getPassword())
+			.token(gemFireConnectionDetails.getToken())
 			.build();
 	}
 
@@ -99,6 +103,21 @@ public class GemFireVectorStoreAutoConfiguration {
 		@Override
 		public int getPort() {
 			return this.properties.getPort();
+		}
+
+		@Override
+		public String getUsername() {
+			return this.properties.getUsername();
+		}
+
+		@Override
+		public String getPassword() {
+			return this.properties.getPassword();
+		}
+
+		@Override
+		public String getToken() {
+			return this.properties.getToken();
 		}
 
 	}
