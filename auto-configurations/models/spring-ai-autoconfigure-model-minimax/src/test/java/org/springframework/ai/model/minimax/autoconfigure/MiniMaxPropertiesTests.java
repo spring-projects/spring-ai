@@ -77,8 +77,8 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.api-key=456",
 				"spring.ai.minimax.chat.options.model=MODEL_XYZ",
 				"spring.ai.minimax.chat.options.temperature=0.55",
-				"spring.ai.elevenlabs.connect-timeout=1s",
-				"spring.ai.elevenlabs.read-timeout=1s")
+				"spring.ai.minimax.connect-timeout=1s",
+				"spring.ai.minimax.read-timeout=1s")
 				// @formatter:on
 			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
 			.run(context -> {
