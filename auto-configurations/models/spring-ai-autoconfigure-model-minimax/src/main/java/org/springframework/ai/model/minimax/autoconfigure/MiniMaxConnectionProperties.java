@@ -17,16 +17,31 @@
 package org.springframework.ai.model.minimax.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 @ConfigurationProperties(MiniMaxConnectionProperties.CONFIG_PREFIX)
-public class MiniMaxConnectionProperties extends MiniMaxParentProperties {
+public class MiniMaxConnectionProperties extends HttpClientSettingsProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.minimax";
 
-	public static final String DEFAULT_BASE_URL = "https://api.minimax.chat";
+	private String apiKey;
 
-	public MiniMaxConnectionProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
+	private String baseUrl = "https://api.minimax.chat";
+
+	public String getApiKey() {
+		return this.apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
+	public String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 }
