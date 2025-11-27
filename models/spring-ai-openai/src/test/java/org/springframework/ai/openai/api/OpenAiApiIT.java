@@ -81,7 +81,7 @@ class OpenAiApiIT {
 				ChatCompletionMessage.Role.USER);
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "gpt-5", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
-				null, null, null, "high", null, null, null, null, null);
+				null, null, null, "high", null, null, null, null, null, null);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();
@@ -185,7 +185,8 @@ class OpenAiApiIT {
 
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
 				modelName.getValue(), null, null, null, null, null, null, null, null, null, null, null, null, null,
-				null, null, null, false, null, 1.0, null, null, null, null, null, null, null, "low", null, null, null);
+				null, null, null, false, null, 1.0, null, null, null, null, null, null, null, "low", null, null, null,
+				null);
 
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
@@ -232,7 +233,7 @@ class OpenAiApiIT {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
 				OpenAiApi.ChatModel.GPT_4_O.value, null, null, null, null, null, null, null, null, null, null, null,
 				null, null, null, serviceTier.getValue(), null, false, null, 1.0, null, null, null, null, null, null,
-				null, null, null, null, null);
+				null, null, null, null, null, null);
 
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
@@ -293,6 +294,26 @@ class OpenAiApiIT {
 
 			mockWebServer.shutdown();
 		}
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName}")
+	@EnumSource(names = { "GPT_5_1", "GPT_5_1_CHAT_LATEST" })
+	void chatCompletionEntityWithGpt51AndExtendedPromptCaching(OpenAiApi.ChatModel modelName) {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage(
+				"Explain the concept of extended prompt caching in detail.", Role.USER);
+
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
+				modelName.getValue(), null, null, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, false, null, null, null, null, null, null, null, null, null, null, null, null, null,
+				"24h");
+
+		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().choices()).isNotEmpty();
+		assertThat(response.getBody().choices().get(0).message().content()).isNotEmpty();
+		assertThat(response.getBody().model()).containsIgnoringCase(modelName.getValue());
 	}
 
 }

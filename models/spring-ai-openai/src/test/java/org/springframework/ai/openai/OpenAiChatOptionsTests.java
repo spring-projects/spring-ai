@@ -85,6 +85,7 @@ class OpenAiChatOptionsTests {
 			.toolContext(toolContext)
 			.serviceTier(ServiceTier.PRIORITY)
 			.promptCacheKey("test-cache-key")
+			.promptCacheRetention("24h")
 			.safetyIdentifier("test-safety-id")
 			.build();
 
@@ -93,11 +94,12 @@ class OpenAiChatOptionsTests {
 					"maxCompletionTokens", "n", "outputModalities", "outputAudio", "presencePenalty", "responseFormat",
 					"streamOptions", "seed", "stop", "temperature", "topP", "tools", "toolChoice", "user",
 					"parallelToolCalls", "store", "metadata", "reasoningEffort", "internalToolExecutionEnabled",
-					"httpHeaders", "toolContext", "serviceTier", "promptCacheKey", "safetyIdentifier")
+					"httpHeaders", "toolContext", "serviceTier", "promptCacheKey", "promptCacheRetention",
+					"safetyIdentifier")
 			.containsExactly("test-model", 0.5, logitBias, true, 5, null, 50, 2, outputModalities, outputAudio, 0.8,
 					responseFormat, streamOptions, 12345, stopSequences, 0.7, 0.9, tools, toolChoice, "test-user", true,
 					false, metadata, "medium", false, Map.of("header1", "value1"), toolContext,
-					ServiceTier.PRIORITY.getValue(), "test-cache-key", "test-safety-id");
+					ServiceTier.PRIORITY.getValue(), "test-cache-key", "24h", "test-safety-id");
 
 		assertThat(options.getStreamUsage()).isTrue();
 		assertThat(options.getStreamOptions()).isEqualTo(StreamOptions.INCLUDE_USAGE);

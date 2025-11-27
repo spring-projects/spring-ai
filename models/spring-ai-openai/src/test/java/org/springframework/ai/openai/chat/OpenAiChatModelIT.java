@@ -957,6 +957,23 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(response.getResults()).isNotEmpty();
 	}
 
+	@Test
+	void shouldSupportGpt51WithExtendedPromptCacheRetention() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model(OpenAiApi.ChatModel.GPT_5_1.getValue())
+			.promptCacheRetention("24h")
+			.reasoningEffort("none")
+			.verbosity("low")
+			.build();
+
+		ChatResponse response = this.openAiChatModel
+			.call(new Prompt("Explain the benefits of extended prompt caching", options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
 	}

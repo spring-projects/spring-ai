@@ -552,6 +552,50 @@ public class OpenAiApi {
 		GPT_5_CHAT_LATEST("gpt-5-chat-latest"),
 
 		/**
+		 * <b>GPT-5.1</b> is the flagship model for coding and agentic tasks with
+		 * configurable reasoning and non-reasoning effort. It accepts both text and image
+		 * inputs, and produces text and image outputs.
+		 * <p>
+		 * <b>GPT-5.1 Features:</b>
+		 * <ul>
+		 * <li>Default reasoning effort: "none" (for low-latency interactions)</li>
+		 * <li>Adaptive reasoning: automatically adjusts reasoning depth based on task
+		 * complexity</li>
+		 * <li>Supports reasoning efforts: "none", "low", "medium", "high"</li>
+		 * <li>Verbosity control: "low", "medium", "high"</li>
+		 * <li>Extended prompt caching: up to 24 hours with
+		 * prompt_cache_retention="24h"</li>
+		 * <li>New tools: apply_patch and shell (for coding use cases)</li>
+		 * </ul>
+		 * <p>
+		 * <b>Important:</b> temperature, top_p, and logprobs parameters are only
+		 * supported when reasoning effort is set to "none". For other reasoning levels,
+		 * use reasoning.effort and text.verbosity parameters to control output.
+		 * <p>
+		 * Context window: 400,000 tokens. Max output tokens: 128,000 tokens. Knowledge
+		 * cutoff: September 30, 2024.
+		 * <p>
+		 * Model ID: gpt-5.1
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-5.1">gpt-5.1</a>
+		 */
+		GPT_5_1("gpt-5.1"),
+
+		/**
+		 * <b>GPT-5.1 Chat</b> points to the GPT-5.1 snapshot currently used in ChatGPT.
+		 * It accepts both text and image inputs, and produces text outputs.
+		 * <p>
+		 * Context window: 128,000 tokens. Max output tokens: 16,384 tokens. Knowledge
+		 * cutoff: September 30, 2024.
+		 * <p>
+		 * Model ID: gpt-5.1-chat-latest
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5.1-chat-latest">gpt-5.1-chat-latest</a>
+		 */
+		GPT_5_1_CHAT_LATEST("gpt-5.1-chat-latest"),
+
+		/**
 		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
 		 * model. It accepts both text and image inputs, and produces text outputs
 		 * (including Structured Outputs). It is considered the best model for most tasks,
@@ -1126,6 +1170,9 @@ public class OpenAiApi {
 	 * result in faster responses and fewer tokens used on reasoning in a response.
 	 * @param webSearchOptions Options for web search.
 	 * @param verbosity Controls the verbosity of the model's response.
+	 * @param promptCacheRetention Retention policy for the prompt cache. Set to "24h" for
+	 * extended caching (up to 24 hours). Default is "in_memory" (5-10 minutes). Extended
+	 * caching is supported by GPT-5.1, GPT-5, and GPT-4.1 models.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -1160,7 +1207,8 @@ public class OpenAiApi {
 			@JsonProperty("verbosity") String verbosity,
 			@JsonProperty("prompt_cache_key") String promptCacheKey,
 			@JsonProperty("safety_identifier") String safetyIdentifier,
-			Map<String, Object> extraBody) {
+			Map<String, Object> extraBody,
+			@JsonProperty("prompt_cache_retention") String promptCacheRetention) {
 
 		/**
 		 * Compact constructor that ensures extraBody is initialized as a mutable HashMap
@@ -1182,7 +1230,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1196,7 +1244,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1211,7 +1259,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null, null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1227,7 +1275,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null, null, null, null, null, null, null);
+					tools, toolChoice, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1240,7 +1288,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null, null, null, null, null, null, null, null, null,
 				null, null, null, null, stream, null, null, null, null, null, null, null, null, null,
-				null, null, null, null);
+				null, null, null, null, null);
 		}
 
 		/**
@@ -1254,7 +1302,7 @@ public class OpenAiApi {
 					this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
 					this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
 					this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions, this.verbosity,
-					this.promptCacheKey, this.safetyIdentifier, this.extraBody);
+					this.promptCacheKey, this.safetyIdentifier, this.extraBody, this.promptCacheRetention);
 		}
 
 		/**
