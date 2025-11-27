@@ -18,6 +18,7 @@ package org.springframework.ai.openai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -133,6 +134,70 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		assertThat(followUpAnswer).containsIgnoringCase("David");
 	}
 
+	/**
+	 * Tests that the advisor correctly uses a conversation ID supplier when provided.
+	 */
+	@Test
+	protected void testUseSupplierConversationId() {
+		// Arrange
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+				.chatMemoryRepository(new InMemoryChatMemoryRepository())
+				.build();
+
+		// ConversationId circular iterator
+		String firstConversationId = "conversationId-1";
+		String secondConversationId = "conversationId-2";
+		AtomicReference<String> conversationIdHolder = new AtomicReference<>(firstConversationId);
+
+		// Create advisor with conversation id supplier returning conversationId interchangeable
+		var advisor = MessageChatMemoryAdvisor.builder(chatMemory).conversationIdSupplier(conversationIdHolder::get).build();
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
+
+		String firstQuestion = "What is the capital of Germany?";
+		String firstAnswer = chatClient.prompt()
+				.user(firstQuestion)
+				.call()
+				.content();
+		logger.info("First question: {}", firstQuestion);
+		logger.info("First answer: {}", firstAnswer);
+		// Assert response is relevant
+		assertThat(firstAnswer).containsIgnoringCase("Berlin");
+
+		conversationIdHolder.set(secondConversationId);
+		String secondQuestion = "What is the capital of Poland?";
+		String secondAnswer = chatClient.prompt()
+				.user(secondQuestion)
+				.call()
+				.content();
+		logger.info("Second question: {}", secondQuestion);
+		logger.info("Second answer: {}", secondAnswer);
+		// Assert response is relevant
+		assertThat(secondAnswer).containsIgnoringCase("Warsaw");
+
+		conversationIdHolder.set(firstConversationId);
+		String thirdQuestion = "What is the capital of Spain?";
+		String thirdAnswer = chatClient.prompt()
+				.user(thirdQuestion)
+				.call()
+				.content();
+		logger.info("Third question: {}", thirdQuestion);
+		logger.info("Third answer: {}", thirdAnswer);
+		// Assert response is relevant
+		assertThat(thirdAnswer).containsIgnoringCase("Madrid");
+
+		// Verify first conversation memory contains the firstQuestion, firstAnswer, thirdQuestion and thirdAnswer
+		List<Message> firstMemoryMessages = chatMemory.get(firstConversationId);
+		assertThat(firstMemoryMessages).hasSize(4);
+		assertThat(firstMemoryMessages.get(0).getText()).isEqualTo(firstQuestion);
+		assertThat(firstMemoryMessages.get(2).getText()).isEqualTo(thirdQuestion);
+
+		// Verify second conversation memory contains the secondQuestion and secondAnswer
+		List<Message> secondMemoryMessages = chatMemory.get(secondConversationId);
+		assertThat(secondMemoryMessages).hasSize(2);
+		assertThat(secondMemoryMessages.get(0).getText()).isEqualTo(secondQuestion);
+	}
+
 	@Test
 	void shouldHandleNonExistentConversation() {
 		testHandleNonExistentConversation();
@@ -157,7 +222,6 @@ public class MessageChatMemoryAdvisorIT extends AbstractChatMemoryAdvisorIT {
 		String userInput = "Tell me a short joke about programming";
 
 		// Collect the streaming responses
-		List<String> streamedResponses = new ArrayList<>();
 		chatClient.prompt()
 			.user(userInput)
 			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
