@@ -27,4 +27,12 @@ public interface OllamaConnectionDetails extends ConnectionDetails {
 
 	String getBaseUrl();
 
+	/**
+	 * Returns the API key for authenticating requests.
+	 * @return the API key, or null if no authentication is required
+	 */
+	default String getApiKey() {
+		return null;
+	}
+
 }
