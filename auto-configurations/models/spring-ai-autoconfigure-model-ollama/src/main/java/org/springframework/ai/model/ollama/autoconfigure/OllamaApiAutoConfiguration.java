@@ -74,7 +74,7 @@ public class OllamaApiAutoConfiguration {
 
 		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
 				globalHttpClientSettings.getIfAvailable());
-		HttpClientSettings httpClientSettings = mapper.map(connectionProperties);
+		HttpClientSettings httpClientSettings = mapper.map(connectionProperties.getHttp());
 
 		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
 		applyRestClientSettings(restClientBuilder, httpClientSettings,
@@ -92,6 +92,18 @@ public class OllamaApiAutoConfiguration {
 			.build();
 	}
 
+	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
+		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
+		builder.requestFactory(requestFactory);
+	}
+
+	private void applyWebClientSettings(WebClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpConnectorBuilder<?> connectorBuilder) {
+		ClientHttpConnector connector = connectorBuilder.build(httpClientSettings);
+		builder.clientConnector(connector);
+	}
+
 	static class PropertiesOllamaConnectionDetails implements OllamaConnectionDetails {
 
 		private final OllamaConnectionProperties properties;
@@ -105,18 +117,6 @@ public class OllamaApiAutoConfiguration {
 			return this.properties.getBaseUrl();
 		}
 
-	}
-
-	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
-			ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
-		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
-		builder.requestFactory(requestFactory);
-	}
-
-	private void applyWebClientSettings(WebClient.Builder builder, HttpClientSettings httpClientSettings,
-			ClientHttpConnectorBuilder<?> connectorBuilder) {
-		ClientHttpConnector connector = connectorBuilder.build(httpClientSettings);
-		builder.clientConnector(connector);
 	}
 
 }

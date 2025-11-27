@@ -86,7 +86,7 @@ public class MistralAiChatAutoConfiguration {
 
 		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
 				globalHttpClientSettings.getIfAvailable());
-		HttpClientSettings httpClientSettings = mapper.map(commonProperties);
+		HttpClientSettings httpClientSettings = mapper.map(commonProperties.getHttp());
 
 		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
 		applyRestClientSettings(restClientBuilder, httpClientSettings,

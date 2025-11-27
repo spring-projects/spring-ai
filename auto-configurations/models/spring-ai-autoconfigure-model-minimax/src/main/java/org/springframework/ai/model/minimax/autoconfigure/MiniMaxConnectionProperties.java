@@ -16,32 +16,63 @@
 
 package org.springframework.ai.model.minimax.autoconfigure;
 
+import java.time.Duration;
+
+import jakarta.annotation.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.http.client.HttpRedirects;
 import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 @ConfigurationProperties(MiniMaxConnectionProperties.CONFIG_PREFIX)
-public class MiniMaxConnectionProperties extends HttpClientSettingsProperties {
+public class MiniMaxConnectionProperties extends MiniMaxParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.minimax";
 
-	private String apiKey;
+	public static final String DEFAULT_BASE_URL = "https://api.minimax.chat";
 
-	private String baseUrl = "https://api.minimax.chat";
+	@NestedConfigurationProperty
+	private final HttpClientSettingsProperties http = new HttpClientSettingsProperties() {
+	};
 
-	public String getApiKey() {
-		return this.apiKey;
+	public MiniMaxConnectionProperties() {
+		super.setBaseUrl(DEFAULT_BASE_URL);
 	}
 
-	public void setApiKey(String apiKey) {
-		this.apiKey = apiKey;
+	@Nullable
+	public HttpRedirects getRedirects() {
+		return this.http.getRedirects();
 	}
 
-	public String getBaseUrl() {
-		return this.baseUrl;
+	public void setRedirects(HttpRedirects redirects) {
+		this.http.setRedirects(redirects);
 	}
 
-	public void setBaseUrl(String baseUrl) {
-		this.baseUrl = baseUrl;
+	@Nullable
+	public Duration getConnectTimeout() {
+		return this.http.getConnectTimeout();
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.http.setConnectTimeout(connectTimeout);
+	}
+
+	@Nullable
+	public Duration getReadTimeout() {
+		return this.http.getReadTimeout();
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.http.setReadTimeout(readTimeout);
+	}
+
+	public HttpClientSettingsProperties.Ssl getSsl() {
+		return this.http.getSsl();
+	}
+
+	public HttpClientSettingsProperties getHttp() {
+		return this.http;
 	}
 
 }

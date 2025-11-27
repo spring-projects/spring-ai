@@ -82,7 +82,7 @@ public class AnthropicChatAutoConfiguration {
 
 		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
 				globalHttpClientSettings.getIfAvailable());
-		HttpClientSettings httpClientSettings = mapper.map(connectionProperties);
+		HttpClientSettings httpClientSettings = mapper.map(connectionProperties.getHttp());
 
 		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
 		applyRestClientSettings(restClientBuilder, httpClientSettings,
