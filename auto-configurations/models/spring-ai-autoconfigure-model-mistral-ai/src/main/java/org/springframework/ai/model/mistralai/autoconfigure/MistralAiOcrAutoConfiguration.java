@@ -26,8 +26,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsPropertyMapper;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -49,7 +54,10 @@ public class MistralAiOcrAutoConfiguration {
 	@ConditionalOnMissingBean
 	public MistralOcrApi mistralOcrApi(MistralAiCommonProperties commonProperties, MistralAiOcrProperties ocrProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<SslBundles> sslBundles,
+			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder) {
 
 		var apiKey = ocrProperties.getApiKey();
 		var baseUrl = ocrProperties.getBaseUrl();
@@ -60,9 +68,22 @@ public class MistralAiOcrAutoConfiguration {
 		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
 		Assert.hasText(resolvedBaseUrl, "Mistral base URL must be set");
 
-		return new MistralOcrApi(resolvedBaseUrl, resolvedApiKey,
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
+				globalHttpClientSettings.getIfAvailable());
+		HttpClientSettings httpClientSettings = mapper.map(commonProperties);
+
+		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
+		applyRestClientSettings(restClientBuilder, httpClientSettings,
+				factoryBuilder.getIfAvailable(ClientHttpRequestFactoryBuilder::detect));
+
+		return new MistralOcrApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
 				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
+	}
+
+	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
+										 ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
+		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
+		builder.requestFactory(requestFactory);
 	}
 
 }

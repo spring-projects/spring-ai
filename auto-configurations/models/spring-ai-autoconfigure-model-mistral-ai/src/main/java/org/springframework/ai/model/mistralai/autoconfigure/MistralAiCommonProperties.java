@@ -17,6 +17,7 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Common properties for Mistral AI.
@@ -26,14 +27,30 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @since 0.8.1
  */
 @ConfigurationProperties(MistralAiCommonProperties.CONFIG_PREFIX)
-public class MistralAiCommonProperties extends MistralAiParentProperties {
+public class MistralAiCommonProperties extends HttpClientSettingsProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mistralai";
 
 	public static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
 
-	public MistralAiCommonProperties() {
-		super.setBaseUrl(DEFAULT_BASE_URL);
+	private String apiKey;
+
+	private String baseUrl = DEFAULT_BASE_URL;
+
+	public String getApiKey() {
+		return this.apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
+	}
+
+	public String getBaseUrl() {
+		return this.baseUrl;
+	}
+
+	public void setBaseUrl(String baseUrl) {
+		this.baseUrl = baseUrl;
 	}
 
 }
