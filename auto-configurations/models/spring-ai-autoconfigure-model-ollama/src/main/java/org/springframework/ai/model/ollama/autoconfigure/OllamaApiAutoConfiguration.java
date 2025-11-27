@@ -24,9 +24,16 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsPropertyMapper;
+import org.springframework.boot.http.client.reactive.ClientHttpConnectorBuilder;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -38,6 +45,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author yinh
  * @since 0.8.0
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
@@ -55,13 +63,31 @@ public class OllamaApiAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails,
+			OllamaConnectionProperties connectionProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<SslBundles> sslBundles,
+			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder,
+			ObjectProvider<ClientHttpConnectorBuilder<?>> webConnectorBuilderProvider) {
+
+		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
+				globalHttpClientSettings.getIfAvailable());
+		HttpClientSettings httpClientSettings = mapper.map(connectionProperties);
+
+		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
+		applyRestClientSettings(restClientBuilder, httpClientSettings,
+				factoryBuilder.getIfAvailable(ClientHttpRequestFactoryBuilder::detect));
+
+		WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder);
+		applyWebClientSettings(webClientBuilder, httpClientSettings,
+				webConnectorBuilderProvider.getIfAvailable(ClientHttpConnectorBuilder::detect));
+
 		return OllamaApi.builder()
 			.baseUrl(connectionDetails.getBaseUrl())
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
@@ -79,6 +105,18 @@ public class OllamaApiAutoConfiguration {
 			return this.properties.getBaseUrl();
 		}
 
+	}
+
+	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
+		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
+		builder.requestFactory(requestFactory);
+	}
+
+	private void applyWebClientSettings(WebClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpConnectorBuilder<?> connectorBuilder) {
+		ClientHttpConnector connector = connectorBuilder.build(httpClientSettings);
+		builder.clientConnector(connector);
 	}
 
 }

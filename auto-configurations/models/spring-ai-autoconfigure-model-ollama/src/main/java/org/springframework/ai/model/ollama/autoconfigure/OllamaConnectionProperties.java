@@ -17,6 +17,7 @@
 package org.springframework.ai.model.ollama.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Ollama connection autoconfiguration properties.
@@ -25,7 +26,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @since 0.8.0
  */
 @ConfigurationProperties(OllamaConnectionProperties.CONFIG_PREFIX)
-public class OllamaConnectionProperties {
+public class OllamaConnectionProperties extends HttpClientSettingsProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.ollama";
 
