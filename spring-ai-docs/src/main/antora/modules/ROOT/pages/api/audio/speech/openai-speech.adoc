@@ -89,6 +89,7 @@ The prefix `spring.ai.openai.audio.speech` is used as the property prefix that l
 | spring.ai.openai.audio.speech.options.voice | The voice to use for synthesis. For OpenAI's TTS API, One of the available voices for the chosen model: alloy, echo, fable, onyx, nova, and shimmer. | alloy
 | spring.ai.openai.audio.speech.options.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
 | spring.ai.openai.audio.speech.options.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
+| spring.ai.openai.audio.speech.options.instructions | Optional style/tone instructions for models that support it (e.g., `gpt-4o-mini-tts`). Provides guidance on prosody, emotion, or delivery style. Ignored for models that don't support instructions (`tts-1`, `tts-1-hd`). | -
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
@@ -113,11 +114,31 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
     .speed(1.0)
+    .instructions("Please speak in a friendly, warm tone with natural pauses.")
     .build();
 
 TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
 TextToSpeechResponse response = openAiAudioSpeechModel.call(speechPrompt);
 ----
+
+=== Using Instructions for Style Control
+
+The `instructions` parameter allows you to guide the prosody and delivery style of the generated speech for models that support it (currently `gpt-4o-mini-tts`).
+
+[source,java]
+----
+OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+    .model("gpt-4o-mini-tts")
+    .voice(OpenAiAudioApi.SpeechRequest.Voice.VERSE)
+    .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
+    .instructions("Friendly; warm tone; natural pauses; ~1.1x feel")
+    .build();
+
+TextToSpeechPrompt prompt = new TextToSpeechPrompt("Welcome to our service!", options);
+TextToSpeechResponse response = openAiAudioSpeechModel.call(prompt);
+----
+
+IMPORTANT: The `instructions` parameter is only supported by certain models (e.g., `gpt-4o-mini-tts`). When used with models that don't support it (such as `tts-1` or `tts-1-hd`), the parameter will be ignored and a warning will be logged. The request will still succeed, but the instructions won't affect the speech output.
 
 == Manual Configuration
 
