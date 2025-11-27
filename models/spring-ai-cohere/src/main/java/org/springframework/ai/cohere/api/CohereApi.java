@@ -126,7 +126,7 @@ public class CohereApi {
 	}
 
 	/**
-	 * Creates an embedding vector representing the input text or token array.
+	 * Creates an embedding vector representing the input text, token array, or images.
 	 * @param embeddingRequest The embedding request.
 	 * @return Returns {@link EmbeddingResponse} with embeddings data.
 	 * @param <T> Type of the entity in the data list. Can be a {@link String} or
@@ -140,8 +140,19 @@ public class CohereApi {
 
 		Assert.notNull(embeddingRequest, "The request body can not be null.");
 
-		Assert.isTrue(!CollectionUtils.isEmpty(embeddingRequest.texts), "The texts list can not be empty.");
-		Assert.isTrue(embeddingRequest.texts.size() <= 96, "The list must be 96 items or less");
+		boolean hasTexts = !CollectionUtils.isEmpty(embeddingRequest.texts);
+		boolean hasImages = !CollectionUtils.isEmpty(embeddingRequest.images);
+
+		Assert.isTrue(hasTexts || hasImages, "Either texts or images must be provided");
+		Assert.isTrue(!(hasTexts && hasImages), "Cannot provide both texts and images in the same request");
+
+		if (hasTexts) {
+			Assert.isTrue(embeddingRequest.texts.size() <= 96, "The texts list must be 96 items or less");
+		}
+
+		if (hasImages) {
+			Assert.isTrue(embeddingRequest.images.size() <= 1, "Only one image per request is supported");
+		}
 
 		return this.restClient.post()
 			.uri("/v2/embed")
@@ -1082,9 +1093,10 @@ public class CohereApi {
 	 * Embedding request.
 	 *
 	 * @param texts An array of strings to embed.
+	 * @param images An array of images to embed as data URIs.
 	 * @param model The model to use for embedding.
 	 * @param inputType The type of input (search_document, search_query, classification,
-	 * clustering).
+	 * clustering, image).
 	 * @param embeddingTypes The types of embeddings to return (float, int8, uint8,
 	 * binary, ubinary).
 	 * @param truncate How to handle inputs longer than the maximum token length (NONE,
@@ -1095,6 +1107,7 @@ public class CohereApi {
 	public record EmbeddingRequest<T>(
 	// @formatter:off
 			@JsonProperty("texts") List<T> texts,
+			@JsonProperty("images") List<String> images,
 			@JsonProperty("model") String model,
 			@JsonProperty("input_type") InputType inputType,
 			@JsonProperty("embedding_types") List<EmbeddingType> embeddingTypes,
@@ -1110,6 +1123,8 @@ public class CohereApi {
 			private String model = EmbeddingModel.EMBED_V4.getValue();
 
 			private List<T> texts;
+
+			private List<String> images;
 
 			private InputType inputType = InputType.SEARCH_DOCUMENT;
 
@@ -1137,6 +1152,11 @@ public class CohereApi {
 				return this;
 			}
 
+			public Builder<T> images(List<String> images) {
+				this.images = images;
+				return this;
+			}
+
 			public Builder<T> inputType(InputType inputType) {
 				this.inputType = inputType;
 				return this;
@@ -1153,7 +1173,7 @@ public class CohereApi {
 			}
 
 			public EmbeddingRequest<T> build() {
-				return new EmbeddingRequest<>(this.texts, this.model, this.inputType, this.embeddingTypes,
+				return new EmbeddingRequest<>(this.texts, this.images, this.model, this.inputType, this.embeddingTypes,
 						this.truncate);
 			}
 

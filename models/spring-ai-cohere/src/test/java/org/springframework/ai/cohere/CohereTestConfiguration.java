@@ -20,6 +20,7 @@ import org.springframework.ai.cohere.api.CohereApi;
 import org.springframework.ai.cohere.chat.CohereChatModel;
 import org.springframework.ai.cohere.chat.CohereChatOptions;
 import org.springframework.ai.cohere.embedding.CohereEmbeddingModel;
+import org.springframework.ai.cohere.embedding.CohereMultimodalEmbeddingModel;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -55,6 +56,11 @@ public class CohereTestConfiguration {
 	@Bean
 	public CohereEmbeddingModel cohereEmbeddingModel(CohereApi api) {
 		return CohereEmbeddingModel.builder().cohereApi(api).build();
+	}
+
+	@Bean
+	public CohereMultimodalEmbeddingModel cohereMultimodalEmbeddingModel(CohereApi api) {
+		return CohereMultimodalEmbeddingModel.builder().cohereApi(api).build();
 	}
 
 }

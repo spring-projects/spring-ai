@@ -15,3 +15,4 @@
 #
 org.springframework.ai.cohere.autoconfigure.CohereChatAutoConfiguration
 org.springframework.ai.cohere.autoconfigure.CohereEmbeddingAutoConfiguration
+org.springframework.ai.cohere.autoconfigure.CohereMultimodalEmbeddingAutoConfiguration

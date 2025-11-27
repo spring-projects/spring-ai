@@ -26,6 +26,9 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.cohere.chat.CohereChatModel;
 import org.springframework.ai.cohere.embedding.CohereEmbeddingModel;
+import org.springframework.ai.document.Document;
+import org.springframework.ai.embedding.DocumentEmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -89,6 +92,35 @@ public class CohereAutoConfigurationIT {
 
 				assertThat(response).isNotEmpty();
 				logger.info("Response: " + response);
+			});
+	}
+
+	@Test
+	public void multimodalEmbedding() {
+		this.contextRunner
+			.withConfiguration(SpringAiTestAutoConfigurations.of(CohereMultimodalEmbeddingAutoConfiguration.class))
+			.run(context -> {
+				var multimodalEmbeddingProperties = context.getBean(CohereMultimodalEmbeddingProperties.class);
+
+				assertThat(multimodalEmbeddingProperties).isNotNull();
+
+				var multiModelEmbeddingModel = context
+					.getBean(org.springframework.ai.cohere.embedding.CohereMultimodalEmbeddingModel.class);
+
+				assertThat(multiModelEmbeddingModel).isNotNull();
+
+				var document = new Document("Hello World");
+
+				DocumentEmbeddingRequest embeddingRequest = new DocumentEmbeddingRequest(List.of(document),
+						EmbeddingOptions.builder().build());
+
+				EmbeddingResponse embeddingResponse = multiModelEmbeddingModel.call(embeddingRequest);
+				assertThat(embeddingResponse.getResults()).hasSize(1);
+				assertThat(embeddingResponse.getResults().get(0)).isNotNull();
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).hasSize(1536);
+
+				assertThat(multiModelEmbeddingModel.dimensions()).isEqualTo(1536);
+
 			});
 	}
 

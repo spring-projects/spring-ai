@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.cohere.chat.CohereChatModel;
 import org.springframework.ai.cohere.embedding.CohereEmbeddingModel;
+import org.springframework.ai.cohere.embedding.CohereMultimodalEmbeddingModel;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -39,6 +40,10 @@ public class CohereModelConfigurationTests {
 	private final ApplicationContextRunner embeddingContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.cohere.apiKey=" + System.getenv("COHERE_API_KEY"))
 		.withConfiguration(SpringAiTestAutoConfigurations.of(CohereEmbeddingAutoConfiguration.class));
+
+	private final ApplicationContextRunner embeddingMultimodalContextRunner = new ApplicationContextRunner()
+		.withPropertyValues("spring.ai.cohere.apiKey=" + System.getenv("COHERE_API_KEY"))
+		.withConfiguration(SpringAiTestAutoConfigurations.of(CohereMultimodalEmbeddingAutoConfiguration.class));
 
 	@Test
 	void chatModelActivation() {
@@ -78,6 +83,24 @@ public class CohereModelConfigurationTests {
 			assertThat(context.getBeansOfType(CohereEmbeddingProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(CohereEmbeddingModel.class)).isNotEmpty();
 		});
+	}
+
+	@Test
+	void multimodalEmbeddingActivation() {
+		this.embeddingMultimodalContextRunner
+			.run(context -> assertThat(context.getBeansOfType(CohereMultimodalEmbeddingModel.class)).isNotEmpty());
+
+		this.embeddingMultimodalContextRunner.withPropertyValues("spring.ai.model.embedding.multimodal=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(CohereMultimodalEmbeddingProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(CohereMultimodalEmbeddingModel.class)).isEmpty();
+			});
+
+		this.embeddingMultimodalContextRunner.withPropertyValues("spring.ai.model.embedding.multimodal=cohere")
+			.run(context -> {
+				assertThat(context.getBeansOfType(CohereMultimodalEmbeddingProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(CohereMultimodalEmbeddingModel.class)).isNotEmpty();
+			});
 	}
 
 }
