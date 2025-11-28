@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Azure Vector Store.
  *
  * @author Christian Tzolov
+ * @author Alexandros Pappas
  */
 @ConfigurationProperties(AzureVectorStoreProperties.CONFIG_PREFIX)
 public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
@@ -41,6 +42,12 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 	private double defaultSimilarityThreshold = -1;
 
 	private boolean useKeylessAuth;
+
+	private String contentFieldName;
+
+	private String embeddingFieldName;
+
+	private String metadataFieldName;
 
 	public String getUrl() {
 		return this.url;
@@ -88,6 +95,30 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setUseKeylessAuth(boolean useKeylessAuth) {
 		this.useKeylessAuth = useKeylessAuth;
+	}
+
+	public String getContentFieldName() {
+		return this.contentFieldName;
+	}
+
+	public void setContentFieldName(String contentFieldName) {
+		this.contentFieldName = contentFieldName;
+	}
+
+	public String getEmbeddingFieldName() {
+		return this.embeddingFieldName;
+	}
+
+	public void setEmbeddingFieldName(String embeddingFieldName) {
+		this.embeddingFieldName = embeddingFieldName;
+	}
+
+	public String getMetadataFieldName() {
+		return this.metadataFieldName;
+	}
+
+	public void setMetadataFieldName(String metadataFieldName) {
+		this.metadataFieldName = metadataFieldName;
 	}
 
 }
