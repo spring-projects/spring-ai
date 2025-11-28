@@ -77,6 +77,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jinwoo Lee
+ * @author Alexandros Pappas
  */
 public class AzureVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -119,6 +120,12 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	 */
 	private final List<MetadataField> filterMetadataFields;
 
+	private final String contentFieldName;
+
+	private final String embeddingFieldName;
+
+	private final String metadataFieldName;
+
 	@Nullable
 	private SearchClient searchClient;
 
@@ -145,6 +152,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		this.defaultTopK = builder.defaultTopK;
 		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
 		this.indexName = builder.indexName;
+		this.contentFieldName = builder.contentFieldName;
+		this.embeddingFieldName = builder.embeddingFieldName;
+		this.metadataFieldName = builder.metadataFieldName;
 		this.filterExpressionConverter = new AzureAiSearchFilterExpressionConverter(this.filterMetadataFields);
 	}
 
@@ -166,9 +176,9 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		final var searchDocuments = documents.stream().map(document -> {
 			SearchDocument searchDocument = new SearchDocument();
 			searchDocument.put(ID_FIELD_NAME, document.getId());
-			searchDocument.put(EMBEDDING_FIELD_NAME, embeddings.get(documents.indexOf(document)));
-			searchDocument.put(CONTENT_FIELD_NAME, document.getText());
-			searchDocument.put(METADATA_FIELD_NAME, new JSONObject(document.getMetadata()).toJSONString());
+			searchDocument.put(this.embeddingFieldName, embeddings.get(documents.indexOf(document)));
+			searchDocument.put(this.contentFieldName, document.getText());
+			searchDocument.put(this.metadataFieldName, new JSONObject(document.getMetadata()).toJSONString());
 
 			// Add the filterable metadata fields as top level fields, allowing filler
 			// expressions on them.
@@ -223,7 +233,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.setKNearestNeighborsCount(request.getTopK())
 			// Set the fields to compare the vector against. This is a comma-delimited
 			// list of field names.
-			.setFields(EMBEDDING_FIELD_NAME);
+			.setFields(this.embeddingFieldName);
 
 		var searchOptions = new SearchOptions()
 			.setVectorSearchOptions(new VectorSearchOptions().setQueries(vectorQuery));
@@ -239,18 +249,19 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.filter(result -> result.getScore() >= request.getSimilarityThreshold())
 			.map(result -> {
 
-				final AzureSearchDocument entry = result.getDocument(AzureSearchDocument.class);
+				SearchDocument document = result.getDocument(SearchDocument.class);
 
-				Map<String, Object> metadata = parseMetadataToMutable(entry.metadata());
+				String id = document.get(ID_FIELD_NAME) != null ? document.get(ID_FIELD_NAME).toString() : "";
+				String content = document.get(this.contentFieldName) != null
+						? document.get(this.contentFieldName).toString() : "";
+				String metadataJson = document.get(this.metadataFieldName) != null
+						? document.get(this.metadataFieldName).toString() : "";
+
+				Map<String, Object> metadata = parseMetadataToMutable(metadataJson);
 
 				metadata.put(DocumentMetadata.DISTANCE.value(), 1.0 - result.getScore());
 
-				return Document.builder()
-					.id(entry.id())
-					.text(entry.content)
-					.metadata(metadata)
-					.score(result.getScore())
-					.build();
+				return Document.builder().id(id).text(content).metadata(metadata).score(result.getScore()).build();
 			})
 			.collect(Collectors.toList());
 	}
@@ -270,15 +281,15 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		fields.add(new SearchField(ID_FIELD_NAME, SearchFieldDataType.STRING).setKey(true)
 			.setFilterable(true)
 			.setSortable(true));
-		fields.add(new SearchField(EMBEDDING_FIELD_NAME, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
+		fields.add(new SearchField(this.embeddingFieldName, SearchFieldDataType.collection(SearchFieldDataType.SINGLE))
 			.setSearchable(true)
 			.setHidden(false)
 			.setVectorSearchDimensions(dimensions)
 			// This must match a vector search configuration name.
 			.setVectorSearchProfileName(SPRING_AI_VECTOR_PROFILE));
-		fields.add(new SearchField(CONTENT_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
+		fields.add(new SearchField(this.contentFieldName, SearchFieldDataType.STRING).setSearchable(true)
 			.setFilterable(true));
-		fields.add(new SearchField(METADATA_FIELD_NAME, SearchFieldDataType.STRING).setSearchable(true)
+		fields.add(new SearchField(this.metadataFieldName, SearchFieldDataType.STRING).setSearchable(true)
 			.setFilterable(true));
 
 		for (MetadataField filterableMetadataField : this.filterMetadataFields) {
@@ -368,13 +379,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	/**
-	 * Internal data structure for retrieving and storing documents.
-	 */
-	private record AzureSearchDocument(String id, String content, List<Float> embedding, String metadata) {
-
-	}
-
-	/**
 	 * Builder class for creating {@link AzureVectorStore} instances.
 	 * <p>
 	 * Provides a fluent API for configuring all aspects of the Azure vector store.
@@ -394,6 +398,12 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		private Double defaultSimilarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
 
 		private String indexName = DEFAULT_INDEX_NAME;
+
+		private String contentFieldName = CONTENT_FIELD_NAME;
+
+		private String embeddingFieldName = EMBEDDING_FIELD_NAME;
+
+		private String metadataFieldName = METADATA_FIELD_NAME;
 
 		private Builder(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -457,6 +467,38 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			Assert.isTrue(defaultSimilarityThreshold >= 0.0 && defaultSimilarityThreshold <= 1.0,
 					"The similarity threshold must be in range [0.0:1.00].");
 			this.defaultSimilarityThreshold = defaultSimilarityThreshold;
+			return this;
+		}
+
+		/**
+		 * Sets the content field name in the Azure Search index.
+		 * @param contentFieldName the name of the content field (defaults to "content")
+		 * @return the builder instance
+		 */
+		public Builder contentFieldName(@Nullable String contentFieldName) {
+			this.contentFieldName = contentFieldName != null ? contentFieldName : CONTENT_FIELD_NAME;
+			return this;
+		}
+
+		/**
+		 * Sets the embedding field name in the Azure Search index.
+		 * @param embeddingFieldName the name of the embedding field (defaults to
+		 * "embedding")
+		 * @return the builder instance
+		 */
+		public Builder embeddingFieldName(@Nullable String embeddingFieldName) {
+			this.embeddingFieldName = embeddingFieldName != null ? embeddingFieldName : EMBEDDING_FIELD_NAME;
+			return this;
+		}
+
+		/**
+		 * Sets the metadata field name in the Azure Search index.
+		 * @param metadataFieldName the name of the metadata field (defaults to
+		 * "metadata")
+		 * @return the builder instance
+		 */
+		public Builder metadataFieldName(@Nullable String metadataFieldName) {
+			this.metadataFieldName = metadataFieldName != null ? metadataFieldName : METADATA_FIELD_NAME;
 			return this;
 		}
 
