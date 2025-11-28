@@ -17,6 +17,7 @@
 package org.springframework.ai.retry.autoconfigure;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.retry.RetryCallback;
@@ -104,6 +106,14 @@ public class SpringAiRetryAutoConfiguration {
 			}
 
 			@Override
+			public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
+				handleError(response);
+			}
+
+			// On purposes commented out so that the code can compile both with Spring 6
+			// and Spring 7
+			// @Override
+			@SuppressWarnings("removal")
 			public void handleError(@NonNull ClientHttpResponse response) throws IOException {
 				if (!response.getStatusCode().isError()) {
 					return;
