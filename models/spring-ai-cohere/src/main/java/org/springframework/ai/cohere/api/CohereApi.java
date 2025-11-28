@@ -560,14 +560,36 @@ public class CohereApi {
 			}
 
 			/**
+			 * The level of detail for processing the image.
+			 */
+			public enum DetailLevel {
+
+				@JsonProperty("low")
+				LOW,
+
+				@JsonProperty("high")
+				HIGH,
+
+				@JsonProperty("auto")
+				AUTO
+
+			}
+
+			/**
 			 * Shortcut constructor for an image rawContent.
 			 *
 			 * @param url Either a URL of the image or the base64 encoded image data. The
 			 * base64 encoded image data must have a special prefix in the following
 			 * format: "data:{mimetype};base64,{base64-encoded-image-data}".
+			 * @param detail The level of detail for processing the image. Can be "low",
+			 * "high", or "auto". Defaults to "auto" if not specified.
 			 */
 			@JsonInclude(JsonInclude.Include.NON_NULL)
-			public record ImageUrl(@JsonProperty("url") String url) {
+			public record ImageUrl(@JsonProperty("url") String url, @JsonProperty("detail") DetailLevel detail) {
+
+				public ImageUrl(String url) {
+					this(url, DetailLevel.AUTO);
+				}
 
 			}
 		}

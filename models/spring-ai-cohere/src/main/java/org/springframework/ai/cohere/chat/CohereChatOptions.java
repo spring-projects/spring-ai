@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.cohere.api.CohereApi;
+import org.springframework.ai.cohere.api.CohereApi.ChatCompletionMessage.MediaContent.DetailLevel;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.cohere.api.CohereApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.cohere.api.CohereApi.FunctionTool;
@@ -147,6 +148,14 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("strict_tools") Boolean strictTools;
 
 	/**
+	 * The level of detail for processing images. Can be "low", "high", or "auto".
+	 * Defaults to "auto" if not specified. This controls the resolution at which the
+	 * model views image.
+	 */
+	@JsonIgnore
+	private DetailLevel imageDetail;
+
+	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
@@ -199,6 +208,14 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 
 	public void setStrictTools(Boolean strictTools) {
 		this.strictTools = strictTools;
+	}
+
+	public DetailLevel getImageDetail() {
+		return this.imageDetail;
+	}
+
+	public void setImageDetail(DetailLevel imageDetail) {
+		this.imageDetail = imageDetail;
 	}
 
 	public Double getP() {
@@ -393,6 +410,7 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.stopSequences, that.stopSequences) && Objects.equals(this.seed, that.seed)
 				&& Objects.equals(this.logprobs, that.logprobs) && Objects.equals(this.toolChoice, that.toolChoice)
 				&& Objects.equals(this.strictTools, that.strictTools)
+				&& Objects.equals(this.imageDetail, that.imageDetail)
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
@@ -403,8 +421,8 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.p, this.maxTokens, this.presencePenalty,
 				this.frequencyPenalty, this.k, this.tools, this.responseFormat, this.safetyMode, this.stopSequences,
-				this.seed, this.logprobs, this.toolChoice, this.strictTools, this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.seed, this.logprobs, this.toolChoice, this.strictTools, this.imageDetail, this.toolCallbacks,
+				this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	public static Builder builder() {
@@ -425,6 +443,7 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 			.logprobs(fromOptions.getLogprobs())
 			.toolChoice(fromOptions.getToolChoice())
 			.strictTools(fromOptions.getStrictTools())
+			.imageDetail(fromOptions.getImageDetail())
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 
 		// Create defensive copies of collections
@@ -592,6 +611,11 @@ public class CohereChatOptions implements ToolCallingChatOptions {
 
 		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder imageDetail(DetailLevel imageDetail) {
+			this.options.setImageDetail(imageDetail);
 			return this;
 		}
 

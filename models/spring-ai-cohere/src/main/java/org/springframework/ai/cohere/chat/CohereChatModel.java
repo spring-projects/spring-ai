@@ -510,6 +510,9 @@ public class CohereChatModel implements ChatModel {
 		Object content = message.getText();
 
 		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
+			// Validate images before processing
+			CohereImageValidator.validateImages(userMessage.getMedia());
+
 			List<ChatCompletionMessage.MediaContent> contentList = new ArrayList<>(
 					List.of(new ChatCompletionMessage.MediaContent(message.getText())));
 
@@ -572,8 +575,10 @@ public class CohereChatModel implements ChatModel {
 	}
 
 	private ChatCompletionMessage.MediaContent mapToMediaContent(Media media) {
+		CohereApi.ChatCompletionMessage.MediaContent.DetailLevel detail = this.defaultOptions != null
+				? this.defaultOptions.getImageDetail() : null;
 		return new ChatCompletionMessage.MediaContent(new ChatCompletionMessage.MediaContent.ImageUrl(
-				this.fromMediaData(media.getMimeType(), media.getData())));
+				this.fromMediaData(media.getMimeType(), media.getData()), detail));
 	}
 
 	private String fromMediaData(MimeType mimeType, Object mediaContentData) {
