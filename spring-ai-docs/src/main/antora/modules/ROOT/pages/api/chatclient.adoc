@@ -283,6 +283,23 @@ List<ActorFilms> actorFilms = chatClient.prompt()
     .entity(new ParameterizedTypeReference<List<ActorFilms>>() {});
 ----
 
+==== Native Structured Output
+
+As more AI models support structured output natively, you can take advantage of this feature by using the `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT` advisor parameter when calling the `ChatClient`.
+You can use the `defaultAdvisors()` method on the `ChatClient.Builder` to set this parameter globally for all calls or set it per call as shown below:
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class);
+----
+
+NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
+In such cases, you can use the Spring AI default structured output conversion.
+
 === Streaming Responses
 
 The `stream()` method lets you get an asynchronous response as shown below:
@@ -365,12 +382,14 @@ After specifying the `call()` method on `ChatClient`, there are a few different 
 * `String content()`: returns the String content of the response
 * `ChatResponse chatResponse()`: returns the `ChatResponse` object that contains multiple generations and also metadata about the response, for example how many token were used to create the response.
 * `ChatClientResponse chatClientResponse()`: returns a `ChatClientResponse` object that contains the `ChatResponse` object and the ChatClient execution context, giving you access to additional data used during the execution of advisors (e.g. the relevant documents retrieved in a RAG flow).
-* `ResponseEntity<?> responseEntity()`: returns a `ResponseEntity` containing the full HTTP response, including status code, headers, and body.
-This is useful when you need access to low-level HTTP details of the response.
 * `entity()` to return a Java type
 ** `entity(ParameterizedTypeReference<T> type)`: used to return a `Collection` of entity types.
 ** `entity(Class<T> type)`:  used to return a specific entity type.
 ** `entity(StructuredOutputConverter<T> structuredOutputConverter)`: used to specify an instance of a `StructuredOutputConverter` to convert a `String` to an entity type.
+* `responseEntity()` to return both the `ChatResponse` and a Java type. This is useful when you need access to both the complete AI model response (with metadata and generations) and the structured output entity in a single call.
+** `responseEntity(Class<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a specific entity type.
+** `responseEntity(ParameterizedTypeReference<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a `Collection` of entity types.
+** `responseEntity(StructuredOutputConverter<T> structuredOutputConverter)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and an entity converted using a specified `StructuredOutputConverter`.
 
 You can also invoke the `stream()` method instead of `call()`.
 

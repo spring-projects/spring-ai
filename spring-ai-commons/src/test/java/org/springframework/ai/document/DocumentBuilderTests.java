@@ -290,4 +290,120 @@ public class DocumentBuilderTests {
 		assertThat(doc2.getMetadata()).containsEntry("key", "value2");
 	}
 
+	@Test
+	void testMediaDocumentWithoutText() {
+		Media media = getMedia();
+		Document document = this.builder.media(media).build();
+
+		assertThat(document.getMedia()).isEqualTo(media);
+		assertThat(document.getText()).isNull();
+	}
+
+	@Test
+	void testTextDocumentWithoutMedia() {
+		Document document = this.builder.text("test content").build();
+
+		assertThat(document.getText()).isEqualTo("test content");
+		assertThat(document.getMedia()).isNull();
+	}
+
+	@Test
+	void testOverwritingMediaWithNull() {
+		Media media = getMedia();
+		Document document = this.builder.media(media).media(null).text("fallback").build();
+
+		assertThat(document.getMedia()).isNull();
+	}
+
+	@Test
+	void testMetadataWithSpecialCharacterKeys() {
+		Document document = this.builder.text("test")
+			.metadata("key-with-dashes", "value1")
+			.metadata("key.with.dots", "value2")
+			.metadata("key_with_underscores", "value3")
+			.metadata("key with spaces", "value4")
+			.build();
+
+		assertThat(document.getMetadata()).containsEntry("key-with-dashes", "value1")
+			.containsEntry("key.with.dots", "value2")
+			.containsEntry("key_with_underscores", "value3")
+			.containsEntry("key with spaces", "value4");
+	}
+
+	@Test
+	void testBuilderStateIsolation() {
+		// Configure first builder state
+		this.builder.text("first").metadata("shared", "first");
+
+		// Create first document
+		Document doc1 = this.builder.build();
+
+		// Modify builder for second document
+		this.builder.text("second").metadata("shared", "second");
+
+		// Create second document
+		Document doc2 = this.builder.build();
+
+		// Verify first document wasn't affected by subsequent changes
+		assertThat(doc1.getText()).isEqualTo("first");
+		assertThat(doc1.getMetadata()).containsEntry("shared", "first");
+
+		assertThat(doc2.getText()).isEqualTo("second");
+		assertThat(doc2.getMetadata()).containsEntry("shared", "second");
+	}
+
+	@Test
+	void testBuilderMethodChaining() {
+		Document document = this.builder.text("chained")
+			.id("chain-id")
+			.metadata("key1", "value1")
+			.metadata("key2", "value2")
+			.score(0.75)
+			.build();
+
+		assertThat(document.getText()).isEqualTo("chained");
+		assertThat(document.getId()).isEqualTo("chain-id");
+		assertThat(document.getMetadata()).hasSize(2);
+		assertThat(document.getScore()).isEqualTo(0.75);
+	}
+
+	@Test
+	void testTextWithNewlinesAndTabs() {
+		String textWithFormatting = "Line 1\nLine 2\n\tTabbed line\r\nWindows line ending";
+		Document document = this.builder.text(textWithFormatting).build();
+
+		assertThat(document.getText()).isEqualTo(textWithFormatting);
+	}
+
+	@Test
+	void testMetadataOverwritingWithMapAfterKeyValue() {
+		Map<String, Object> newMetadata = new HashMap<>();
+		newMetadata.put("map-key", "map-value");
+
+		Document document = this.builder.text("test")
+			.metadata("old-key", "old-value")
+			.metadata("another-key", "another-value")
+			.metadata(newMetadata) // This should replace all previous metadata
+			.build();
+
+		assertThat(document.getMetadata()).hasSize(1);
+		assertThat(document.getMetadata()).containsEntry("map-key", "map-value");
+		assertThat(document.getMetadata()).doesNotContainKey("old-key");
+		assertThat(document.getMetadata()).doesNotContainKey("another-key");
+	}
+
+	@Test
+	void testMetadataKeyValuePairsAccumulation() {
+		Document document = this.builder.text("test")
+			.metadata("a", "1")
+			.metadata("b", "2")
+			.metadata("c", "3")
+			.metadata("d", "4")
+			.metadata("e", "5")
+			.build();
+
+		assertThat(document.getMetadata()).hasSize(5);
+		assertThat(document.getMetadata().keySet()).containsExactlyInAnyOrder("a", "b", "c", "d", "e");
+	}
+
 }

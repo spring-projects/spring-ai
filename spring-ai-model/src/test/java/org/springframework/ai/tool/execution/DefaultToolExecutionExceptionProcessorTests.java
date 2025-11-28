@@ -42,13 +42,14 @@ class DefaultToolExecutionExceptionProcessorTests {
 	private final DefaultToolDefinition toolDefinition = new DefaultToolDefinition("toolName", "toolDescription",
 			"inputSchema");
 
-	private final ToolExecutionException toolExecutionException = new ToolExecutionException(toolDefinition,
-			toolException);
+	private final ToolExecutionException toolExecutionException = new ToolExecutionException(this.toolDefinition,
+			this.toolException);
 
-	private final ToolExecutionException toolExecutionCheckedException = new ToolExecutionException(toolDefinition,
-			toolCheckedException);
+	private final ToolExecutionException toolExecutionCheckedException = new ToolExecutionException(this.toolDefinition,
+			this.toolCheckedException);
 
-	private final ToolExecutionException toolExecutionError = new ToolExecutionException(toolDefinition, toolError);
+	private final ToolExecutionException toolExecutionError = new ToolExecutionException(this.toolDefinition,
+			this.toolError);
 
 	@Test
 	void processReturnsMessage() {
@@ -57,6 +58,28 @@ class DefaultToolExecutionExceptionProcessorTests {
 		String result = processor.process(this.toolExecutionException);
 
 		assertThat(result).isEqualTo(this.toolException.getMessage());
+	}
+
+	@Test
+	void processReturnsFallbackMessageWhenNull() {
+		DefaultToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder().build();
+
+		ToolExecutionException exception = new ToolExecutionException(this.toolDefinition, new IllegalStateException());
+
+		String result = processor.process(exception);
+
+		assertThat(result).isEqualTo("Exception occurred in tool: toolName (IllegalStateException)");
+	}
+
+	@Test
+	void processReturnsFallbackMessageWhenBlank() {
+		DefaultToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder().build();
+
+		ToolExecutionException exception = new ToolExecutionException(this.toolDefinition, new RuntimeException(" "));
+
+		String result = processor.process(exception);
+
+		assertThat(result).isEqualTo("Exception occurred in tool: toolName (RuntimeException)");
 	}
 
 	@Test

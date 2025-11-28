@@ -89,7 +89,7 @@ public class OpenAiEmbeddingOptions implements EmbeddingOptions {
 		this.user = user;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		protected OpenAiEmbeddingOptions options;
 

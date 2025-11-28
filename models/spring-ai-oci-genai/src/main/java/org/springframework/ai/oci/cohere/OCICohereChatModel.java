@@ -200,7 +200,7 @@ public class OCICohereChatModel implements ChatModel {
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
 				.finishReason(resp.getFinishReason().getValue())
 				.build();
-			AssistantMessage message = new AssistantMessage(resp.getText(), Map.of());
+			AssistantMessage message = AssistantMessage.builder().content(resp.getText()).properties(Map.of()).build();
 			generations.add(new Generation(message, metadata));
 			return generations;
 		}

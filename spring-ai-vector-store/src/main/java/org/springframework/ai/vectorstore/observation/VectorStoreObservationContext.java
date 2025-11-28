@@ -177,7 +177,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final VectorStoreObservationContext context;
 

@@ -21,10 +21,10 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link EmbeddingModelObservationContext}.
@@ -36,15 +36,89 @@ class EmbeddingModelObservationContextTests {
 	@Test
 	void whenMandatoryRequestOptionsThenReturn() {
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("supermodel").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("supermodel").build()))
 			.provider("superprovider")
 			.build();
 
 		assertThat(observationContext).isNotNull();
 	}
 
+	@Test
+	void whenBuilderWithNullRequestThenThrowsException() {
+		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
+			.embeddingRequest(null)
+			.provider("test-provider")
+			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("request cannot be null");
+	}
+
+	@Test
+	void whenBuilderWithNullProviderThenThrowsException() {
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
+
+		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
+			.embeddingRequest(embeddingRequest)
+			.provider(null)
+			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("provider cannot be null or empty");
+	}
+
+	@Test
+	void whenBuilderWithEmptyProviderThenThrowsException() {
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
+
+		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
+			.embeddingRequest(embeddingRequest)
+			.provider("")
+			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("provider cannot be null or empty");
+	}
+
+	@Test
+	void whenValidRequestAndProviderThenBuildsSuccessfully() {
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
+
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(embeddingRequest)
+			.provider("valid-provider")
+			.build();
+
+		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void whenBuilderWithBlankProviderThenThrowsException() {
+		var embeddingRequest = generateEmbeddingRequest(EmbeddingOptions.builder().model("test-model").build());
+
+		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
+			.embeddingRequest(embeddingRequest)
+			.provider("   ")
+			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("provider cannot be null or empty");
+	}
+
+	@Test
+	void whenEmbeddingRequestWithNullOptionsThenBuildsSuccessfully() {
+		var embeddingRequest = generateEmbeddingRequest(null);
+
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(embeddingRequest)
+			.provider("test-provider")
+			.build();
+
+		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void whenEmbeddingRequestWithEmptyInputListThenBuildsSuccessfully() {
+		var embeddingRequest = new EmbeddingRequest(List.of(), EmbeddingOptions.builder().model("test-model").build());
+
+		var observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(embeddingRequest)
+			.provider("test-provider")
+			.build();
+
+		assertThat(observationContext).isNotNull();
+	}
+
 	private EmbeddingRequest generateEmbeddingRequest(EmbeddingOptions embeddingOptions) {
-		return new EmbeddingRequest(List.of(), embeddingOptions);
+		return new EmbeddingRequest(List.of("test input"), embeddingOptions);
 	}
 
 }

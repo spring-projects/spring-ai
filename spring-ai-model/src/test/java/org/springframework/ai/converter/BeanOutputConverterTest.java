@@ -238,6 +238,131 @@ class BeanOutputConverterTest {
 			assertThat(testClass.get(0).getSomeString()).isEqualTo("some value");
 		}
 
+		@Test
+		void convertWithThinkingTags() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = "<thinking>This is my reasoning process...</thinking>{ \"someString\": \"some value\" }";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertWithThinkingTagsMultiline() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = """
+					<thinking>
+					This is my reasoning process
+					spanning multiple lines
+					</thinking>
+					{ "someString": "some value" }
+					""";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertWithThinkingTagsAndMarkdownCodeBlock() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = """
+					<thinking>This is my reasoning process...</thinking>
+					```json
+					{ "someString": "some value" }
+					```
+					""";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertWithMultipleThinkingTags() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkingTags = "<thinking>First thought</thinking><thinking>Second thought</thinking>{ \"someString\": \"some value\" }";
+			var testClass = converter.convert(textWithThinkingTags);
+			assertThat(testClass.getSomeString()).isEqualTo("some value");
+		}
+
+		@Test
+		void convertWithQwenThinkTags() {
+			// Test Qwen model format: <think>...</think>
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkTags = "<think>Let me analyze this...</think>{ \"someString\": \"qwen test\" }";
+			var testClass = converter.convert(textWithThinkTags);
+			assertThat(testClass.getSomeString()).isEqualTo("qwen test");
+		}
+
+		@Test
+		void convertWithQwenThinkTagsMultiline() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithThinkTags = """
+					<think>
+					Analyzing the request step by step
+					First, I need to understand the schema
+					Then generate the JSON
+					</think>
+					{ "someString": "qwen multiline" }
+					""";
+			var testClass = converter.convert(textWithThinkTags);
+			assertThat(testClass.getSomeString()).isEqualTo("qwen multiline");
+		}
+
+		@Test
+		void convertWithMixedThinkingAndThinkTags() {
+			// Test mixed format from different models
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithMixedTags = "<thinking>Nova reasoning</thinking><think>Qwen analysis</think>{ \"someString\": \"mixed test\" }";
+			var testClass = converter.convert(textWithMixedTags);
+			assertThat(testClass.getSomeString()).isEqualTo("mixed test");
+		}
+
+		@Test
+		void convertWithReasoningTags() {
+			// Test alternative reasoning tags
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithReasoningTags = "<reasoning>Internal reasoning process</reasoning>{ \"someString\": \"reasoning test\" }";
+			var testClass = converter.convert(textWithReasoningTags);
+			assertThat(testClass.getSomeString()).isEqualTo("reasoning test");
+		}
+
+		@Test
+		void convertWithMarkdownThinkingBlock() {
+			// Test markdown-style thinking block
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithMarkdownThinking = """
+					```thinking
+					This is a markdown-style thinking block
+					Used by some models
+					```
+					{ "someString": "markdown thinking" }
+					""";
+			var testClass = converter.convert(textWithMarkdownThinking);
+			assertThat(testClass.getSomeString()).isEqualTo("markdown thinking");
+		}
+
+		@Test
+		void convertWithCaseInsensitiveTags() {
+			// Test case insensitive tag matching
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String textWithUpperCaseTags = "<THINKING>UPPERCASE THINKING</THINKING>{ \"someString\": \"case test\" }";
+			var testClass = converter.convert(textWithUpperCaseTags);
+			assertThat(testClass.getSomeString()).isEqualTo("case test");
+		}
+
+		@Test
+		void convertWithComplexNestedStructure() {
+			// Test complex scenario with multiple formats combined
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String complexText = """
+					<thinking>Nova model reasoning</thinking>
+					<think>Qwen model analysis</think>
+
+					```json
+					{ "someString": "complex test" }
+					```
+					""";
+			var testClass = converter.convert(complexText);
+			assertThat(testClass.getSomeString()).isEqualTo("complex test");
+		}
+
 	}
 
 	// @checkstyle:off RegexpSinglelineJavaCheck
@@ -263,6 +388,7 @@ class BeanOutputConverterTest {
 								      "type" : "string"
 								    }
 								  },
+								  "required" : [ "someString" ],
 								  "additionalProperties" : false
 								}```
 								""");
@@ -289,6 +415,7 @@ class BeanOutputConverterTest {
 								      "type" : "string"
 								    }
 								  },
+								  "required" : [ "someString" ],
 								  "additionalProperties" : false
 								}```
 								""");
@@ -317,6 +444,7 @@ class BeanOutputConverterTest {
 								        "type" : "string"
 								      }
 								    },
+								    "required" : [ "someString" ],
 								    "additionalProperties" : false
 								  }
 								}```
@@ -336,6 +464,7 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
+					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
@@ -356,6 +485,7 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
+					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");

@@ -18,10 +18,10 @@ package org.springframework.ai.chat.client.advisor.vectorstore;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.vectorstore.VectorStore;
-import reactor.core.scheduler.Scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -204,6 +204,157 @@ class VectorStoreChatMemoryAdvisorTests {
 			.build();
 
 		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenBuilderWithEmptyStringConversationIdThenThrow() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		assertThatThrownBy(() -> VectorStoreChatMemoryAdvisor.builder(vectorStore).conversationId("").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("defaultConversationId cannot be null or empty");
+	}
+
+	@Test
+	void whenBuilderWithWhitespaceOnlyConversationIdThenThrow() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		assertThatThrownBy(() -> VectorStoreChatMemoryAdvisor.builder(vectorStore).conversationId("\t\n\r ").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("defaultConversationId cannot be null or empty");
+	}
+
+	@Test
+	void whenBuilderWithSpecialCharactersInConversationIdThenSuccess() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.conversationId("conversation-id_123@domain.com")
+			.build();
+
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenBuilderWithMaxIntegerTopKThenSuccess() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.defaultTopK(Integer.MAX_VALUE)
+			.build();
+
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenBuilderWithNegativeTopKThenThrow() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		assertThatThrownBy(() -> VectorStoreChatMemoryAdvisor.builder(vectorStore).defaultTopK(-100).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("topK must be greater than 0");
+	}
+
+	@Test
+	void whenBuilderChainedWithAllParametersThenSuccess() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+		Scheduler scheduler = Mockito.mock(Scheduler.class);
+		PromptTemplate systemPromptTemplate = Mockito.mock(PromptTemplate.class);
+
+		VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.conversationId("chained-test")
+			.defaultTopK(42)
+			.scheduler(scheduler)
+			.systemPromptTemplate(systemPromptTemplate)
+			.build();
+
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenBuilderParametersSetInDifferentOrderThenSuccess() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+		Scheduler scheduler = Mockito.mock(Scheduler.class);
+		PromptTemplate systemPromptTemplate = Mockito.mock(PromptTemplate.class);
+
+		VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.systemPromptTemplate(systemPromptTemplate)
+			.defaultTopK(7)
+			.scheduler(scheduler)
+			.conversationId("order-test")
+			.build();
+
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenBuilderWithOverriddenParametersThenUseLastValue() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.conversationId("first-id")
+			.conversationId("second-id") // This should override the first
+			.defaultTopK(5)
+			.defaultTopK(10) // This should override the first
+			.build();
+
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenBuilderReusedThenCreatesSeparateInstances() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		// Simulate builder reuse (if the builder itself is stateful)
+		var builder = VectorStoreChatMemoryAdvisor.builder(vectorStore).conversationId("shared-config");
+
+		VectorStoreChatMemoryAdvisor advisor1 = builder.build();
+		VectorStoreChatMemoryAdvisor advisor2 = builder.build();
+
+		assertThat(advisor1).isNotNull();
+		assertThat(advisor2).isNotNull();
+		assertThat(advisor1).isNotSameAs(advisor2);
+	}
+
+	@Test
+	void whenBuilderWithLongConversationIdThenSuccess() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+		String longId = "a".repeat(1000); // 1000 character conversation ID
+
+		VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.conversationId(longId)
+			.build();
+
+		assertThat(advisor).isNotNull();
+	}
+
+	@Test
+	void whenBuilderCalledWithNullAfterValidValueThenThrow() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		assertThatThrownBy(() -> VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.conversationId("valid-id")
+			.conversationId(null) // Set to null after valid value
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("defaultConversationId cannot be null or empty");
+	}
+
+	@Test
+	void whenBuilderWithTopKBoundaryValuesThenSuccess() {
+		VectorStore vectorStore = Mockito.mock(VectorStore.class);
+
+		// Test with value 1 (minimum valid)
+		VectorStoreChatMemoryAdvisor advisor1 = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.defaultTopK(1)
+			.build();
+
+		// Test with a reasonable upper bound
+		VectorStoreChatMemoryAdvisor advisor2 = VectorStoreChatMemoryAdvisor.builder(vectorStore)
+			.defaultTopK(10000)
+			.build();
+
+		assertThat(advisor1).isNotNull();
+		assertThat(advisor2).isNotNull();
 	}
 
 }

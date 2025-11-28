@@ -62,7 +62,7 @@ public class MilvusVectorStoreAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(BatchingStrategy.class)
+	@ConditionalOnMissingBean
 	BatchingStrategy milvusBatchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}

@@ -119,7 +119,7 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 		return AI_METADATA_STRING.formatted(getId(), getUsage(), getRateLimit());
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private final ChatResponseMetadata chatResponseMetadata;
 

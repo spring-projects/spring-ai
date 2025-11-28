@@ -42,7 +42,7 @@ public class SpringAiRetryProperties {
 	 * Exponential Backoff properties.
 	 */
 	@NestedConfigurationProperty
-	private Backoff backoff = new Backoff();
+	private final Backoff backoff = new Backoff();
 
 	/**
 	 * If false, throw a NonTransientAiException, and do not attempt retry for 4xx client

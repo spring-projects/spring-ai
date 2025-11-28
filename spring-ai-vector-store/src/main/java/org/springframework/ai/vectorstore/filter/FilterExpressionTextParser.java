@@ -97,6 +97,7 @@ import org.springframework.util.Assert;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public class FilterExpressionTextParser {
 
@@ -264,6 +265,14 @@ public class FilterExpressionTextParser {
 		@Override
 		public Filter.Operand visitNotExpression(NotExpressionContext ctx) {
 			return new Filter.Expression(Filter.ExpressionType.NOT, this.visit(ctx.booleanExpression()), null);
+		}
+
+		@Override
+		public Filter.Operand visitLongConstant(FiltersParser.LongConstantContext ctx) {
+			String text = ctx.getText();
+			// Remove the trailing 'l' or 'L'
+			long value = Long.parseLong(text.substring(0, text.length() - 1));
+			return new Filter.Value(value);
 		}
 
 		public Filter.Expression castToExpression(Filter.Operand expression) {

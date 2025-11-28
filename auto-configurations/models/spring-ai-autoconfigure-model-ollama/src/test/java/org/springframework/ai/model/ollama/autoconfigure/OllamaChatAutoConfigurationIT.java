@@ -33,7 +33,6 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.management.OllamaModelManager;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,7 +54,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 				"spring.ai.ollama.chat.options.temperature=0.5",
 				"spring.ai.ollama.chat.options.topK=10")
 				// @formatter:on
-		.withConfiguration(AutoConfigurations.of(OllamaChatAutoConfiguration.class));
+		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class));
 
 	private final UserMessage userMessage = new UserMessage("What's the capital of Denmark?");
 

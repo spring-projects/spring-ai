@@ -73,11 +73,17 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 |====
 | Property | Description | Default
 
-| spring.ai.bedrock.aws.region     | AWS region to use.  | us-east-1
-| spring.ai.bedrock.aws.timeout    | AWS timeout to use. | 5m
-| spring.ai.bedrock.aws.access-key | AWS access key.  | -
-| spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
-| spring.ai.bedrock.aws.session-token | AWS session token for temporary credentials. | -
+| spring.ai.bedrock.aws.region     | AWS region to use  | us-east-1
+| spring.ai.bedrock.aws.timeout    | AWS max duration for entire API call | 5m
+| spring.ai.bedrock.aws.connectionTimeout | Max duration to wait while establishing connection | 5s
+| spring.ai.bedrock.aws.connectionAcquisitionTimeout | Max duration to wait for new connection from the pool | 30s
+| spring.ai.bedrock.aws.asyncReadTimeout | Max duration spent reading asynchronous responses | 30s
+| spring.ai.bedrock.aws.access-key | AWS access key  | -
+| spring.ai.bedrock.aws.secret-key | AWS secret key  | -
+| spring.ai.bedrock.aws.session-token | AWS session token for temporary credentials | -
+| spring.ai.bedrock.aws.profile.name | AWS profile name.  | -
+| spring.ai.bedrock.aws.profile.credentials-path | AWS credentials file path.  | -
+| spring.ai.bedrock.aws.profile.configuration-path | AWS config file path.  | -
 |====
 
 [NOTE]
@@ -131,6 +137,593 @@ String response = ChatClient.create(this.chatModel)
     .options(options)
     .call()
     .content();
+----
+
+== Prompt Caching
+
+AWS Bedrock's https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html[prompt caching feature] allows you to cache frequently used prompts to reduce costs and improve response times for repeated interactions.
+When you cache a prompt, subsequent identical requests can reuse the cached content, significantly reducing the number of input tokens processed.
+
+[NOTE]
+====
+*Supported Models*
+
+Prompt caching is supported on Claude 3.x, Claude 4.x, and Amazon Nova models available through AWS Bedrock.
+
+*Token Requirements*
+
+Different models have different minimum token thresholds for cache effectiveness:
+- Claude Sonnet 4 and most models: 1024+ tokens
+- Model-specific requirements may vary - consult AWS Bedrock documentation
+====
+
+=== Cache Strategies
+
+Spring AI provides strategic cache placement through the `BedrockCacheStrategy` enum:
+
+* `NONE`: Disables prompt caching completely (default)
+* `SYSTEM_ONLY`: Caches only the system message content
+* `TOOLS_ONLY`: Caches tool definitions only (Claude models only)
+* `SYSTEM_AND_TOOLS`: Caches both system message and tool definitions (Claude models only)
+* `CONVERSATION_HISTORY`: Caches entire conversation history in chat memory scenarios
+
+This strategic approach ensures optimal cache breakpoint placement while staying within AWS Bedrock's 4-breakpoint limit.
+
+[NOTE]
+====
+*Amazon Nova Limitations*
+
+Amazon Nova models (Nova Micro, Lite, Pro, Premier) only support caching for `system` and `messages` content.
+They do **not** support caching for `tools`.
+
+If you attempt to use `TOOLS_ONLY` or `SYSTEM_AND_TOOLS` strategies with Nova models, AWS will return a `ValidationException`.
+Use `SYSTEM_ONLY` strategy for Amazon Nova models.
+====
+
+=== Enabling Prompt Caching
+
+Enable prompt caching by setting `cacheOptions` on `BedrockChatOptions` and choosing a `strategy`.
+
+==== System-Only Caching
+
+The most common use case - cache system instructions across multiple requests:
+
+[source,java]
+----
+// Cache system message content
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a helpful AI assistant with extensive knowledge..."),
+            new UserMessage("What is machine learning?")
+        ),
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+==== Tools-Only Caching
+
+Cache large tool definitions while keeping system prompts dynamic (Claude models only):
+
+[source,java]
+----
+// Cache tool definitions only
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco?",
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.TOOLS_ONLY)
+                .build())
+            .toolCallbacks(weatherToolCallbacks)  // Large tool definitions
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+NOTE: This strategy is only supported on Claude models.
+Amazon Nova models will return a `ValidationException`.
+
+==== System and Tools Caching
+
+Cache both system instructions and tool definitions for maximum reuse (Claude models only):
+
+[source,java]
+----
+// Cache system message and tool definitions
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a weather analysis assistant..."),
+            new UserMessage("What's the weather like in Tokyo?")
+        ),
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_AND_TOOLS)
+                .build())
+            .toolCallbacks(weatherToolCallbacks)
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+NOTE: This strategy uses 2 cache breakpoints (one for tools, one for system).
+Only supported on Claude models.
+
+==== Conversation History Caching
+
+Cache growing conversation history for multi-turn chatbots and assistants:
+
+[source,java]
+----
+// Cache conversation history with ChatClient and memory
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultSystem("You are a personalized career counselor...")
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
+        .conversationId(conversationId)
+        .build())
+    .build();
+
+String response = chatClient.prompt()
+    .user("What career advice would you give me?")
+    .options(BedrockChatOptions.builder()
+        .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+        .cacheOptions(BedrockCacheOptions.builder()
+            .strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+            .build())
+        .maxTokens(500)
+        .build())
+    .call()
+    .content();
+----
+
+==== Using ChatClient Fluent API
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .system("You are an expert document analyst...")
+    .user("Analyze this large document: " + document)
+    .options(BedrockChatOptions.builder()
+        .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+        .cacheOptions(BedrockCacheOptions.builder()
+            .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+            .build())
+        .build())
+    .call()
+    .content();
+----
+
+=== Usage Example
+
+Here's a complete example demonstrating prompt caching with cost tracking:
+
+[source,java]
+----
+// Create system content that will be reused multiple times
+String largeSystemPrompt = "You are an expert software architect specializing in distributed systems...";
+// (Ensure this is 1024+ tokens for cache effectiveness)
+
+// First request - creates cache
+ChatResponse firstResponse = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(largeSystemPrompt),
+            new UserMessage("What is microservices architecture?")
+        ),
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+
+// Access cache-related token usage from metadata
+Integer cacheWrite1 = (Integer) firstResponse.getMetadata()
+    .getMetadata()
+    .get("cacheWriteInputTokens");
+Integer cacheRead1 = (Integer) firstResponse.getMetadata()
+    .getMetadata()
+    .get("cacheReadInputTokens");
+
+System.out.println("Cache creation tokens: " + cacheWrite1);
+System.out.println("Cache read tokens: " + cacheRead1);
+
+// Second request with same system prompt - reads from cache
+ChatResponse secondResponse = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(largeSystemPrompt),  // Same prompt - cache hit
+            new UserMessage("What are the benefits of event sourcing?")
+        ),
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+
+Integer cacheWrite2 = (Integer) secondResponse.getMetadata()
+    .getMetadata()
+    .get("cacheWriteInputTokens");
+Integer cacheRead2 = (Integer) secondResponse.getMetadata()
+    .getMetadata()
+    .get("cacheReadInputTokens");
+
+System.out.println("Cache creation tokens: " + cacheWrite2); // Should be 0
+System.out.println("Cache read tokens: " + cacheRead2);      // Should be > 0
+----
+
+=== Token Usage Tracking
+
+AWS Bedrock provides cache-specific metrics through the response metadata.
+Cache metrics are accessible via the metadata Map:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(/* ... */);
+
+// Access cache metrics from metadata Map
+Integer cacheWrite = (Integer) response.getMetadata()
+    .getMetadata()
+    .get("cacheWriteInputTokens");
+Integer cacheRead = (Integer) response.getMetadata()
+    .getMetadata()
+    .get("cacheReadInputTokens");
+----
+
+Cache-specific metrics include:
+
+* `cacheWriteInputTokens`: Returns the number of tokens used when creating a cache entry
+* `cacheReadInputTokens`: Returns the number of tokens read from an existing cache entry
+
+When you first send a cached prompt:
+- `cacheWriteInputTokens` will be greater than 0
+- `cacheReadInputTokens` will be 0
+
+When you send the same cached prompt again (within 5-minute TTL):
+- `cacheWriteInputTokens` will be 0
+- `cacheReadInputTokens` will be greater than 0
+
+=== Real-World Use Cases
+
+==== Legal Document Analysis
+
+Analyze large legal contracts or compliance documents efficiently by caching document content across multiple questions:
+
+[source,java]
+----
+// Load a legal contract (PDF or text)
+String legalContract = loadDocument("merger-agreement.pdf"); // ~3000 tokens
+
+// System prompt with legal expertise
+String legalSystemPrompt = "You are an expert legal analyst specializing in corporate law. " +
+    "Analyze the following contract and provide precise answers about terms, obligations, and risks: " +
+    legalContract;
+
+// First analysis - creates cache
+ChatResponse riskAnalysis = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(legalSystemPrompt),
+            new UserMessage("What are the key termination clauses and associated penalties?")
+        ),
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(1000)
+            .build()
+    )
+);
+
+// Subsequent questions reuse cached document - 90% cost savings
+ChatResponse obligationAnalysis = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(legalSystemPrompt), // Same content - cache hit
+            new UserMessage("List all financial obligations and payment schedules.")
+        ),
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(1000)
+            .build()
+    )
+);
+----
+
+==== Batch Code Review
+
+Process multiple code files with consistent review criteria while caching the review guidelines:
+
+[source,java]
+----
+// Define comprehensive code review guidelines
+String reviewGuidelines = """
+    You are a senior software engineer conducting code reviews. Apply these criteria:
+    - Security vulnerabilities and best practices
+    - Performance optimizations and memory usage
+    - Code maintainability and readability
+    - Testing coverage and edge cases
+    - Design patterns and architecture compliance
+    """;
+
+List<String> codeFiles = Arrays.asList(
+    "UserService.java", "PaymentController.java", "SecurityConfig.java"
+);
+
+List<String> reviews = new ArrayList<>();
+
+for (String filename : codeFiles) {
+    String sourceCode = loadSourceFile(filename);
+
+    ChatResponse review = chatModel.call(
+        new Prompt(
+            List.of(
+                new SystemMessage(reviewGuidelines), // Cached across all reviews
+                new UserMessage("Review this " + filename + " code:\n\n" + sourceCode)
+            ),
+            BedrockChatOptions.builder()
+                .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+                .cacheOptions(BedrockCacheOptions.builder()
+                    .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+                    .build())
+                .maxTokens(800)
+                .build()
+        )
+    );
+
+    reviews.add(review.getResult().getOutput().getText());
+}
+
+// Guidelines cached after first request, subsequent reviews are faster and cheaper
+----
+
+==== Customer Support with Knowledge Base
+
+Create a customer support system that caches your product knowledge base for consistent, accurate responses:
+
+[source,java]
+----
+// Load comprehensive product knowledge
+String knowledgeBase = """
+    PRODUCT DOCUMENTATION:
+    - API endpoints and authentication methods
+    - Common troubleshooting procedures
+    - Billing and subscription details
+    - Integration guides and examples
+    - Known issues and workarounds
+    """ + loadProductDocs(); // ~2500 tokens
+
+@Service
+public class CustomerSupportService {
+
+    public String handleCustomerQuery(String customerQuery, String customerId) {
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                List.of(
+                    new SystemMessage("You are a helpful customer support agent. " +
+                        "Use this knowledge base to provide accurate solutions: " + knowledgeBase),
+                    new UserMessage("Customer " + customerId + " asks: " + customerQuery)
+                ),
+                BedrockChatOptions.builder()
+                    .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+                    .cacheOptions(BedrockCacheOptions.builder()
+                        .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
+                        .build())
+                    .maxTokens(600)
+                    .build()
+            )
+        );
+
+        return response.getResult().getOutput().getText();
+    }
+}
+
+// Knowledge base is cached across all customer queries
+// Multiple support agents can benefit from the same cached content
+----
+
+==== Multi-Tenant SaaS Application
+
+Cache shared tool definitions across different tenants while customizing system prompts per tenant:
+
+[source,java]
+----
+// Shared tool definitions (cached once, used across all tenants)
+List<FunctionToolCallback> sharedTools = createLargeToolRegistry(); // ~2000 tokens
+
+// Tenant-specific configuration
+@Service
+public class MultiTenantAIService {
+
+    public String processRequest(String tenantId, String userQuery) {
+        // Load tenant-specific system prompt (changes per tenant)
+        String tenantPrompt = loadTenantSystemPrompt(tenantId);
+
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                List.of(
+                    new SystemMessage(tenantPrompt), // Tenant-specific, not cached
+                    new UserMessage(userQuery)
+                ),
+                BedrockChatOptions.builder()
+                    .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+                    .cacheOptions(BedrockCacheOptions.builder()
+                        .strategy(BedrockCacheStrategy.TOOLS_ONLY)
+                        .build())
+                    .toolCallbacks(sharedTools) // Shared tools - cached
+                    .maxTokens(500)
+                    .build()
+            )
+        );
+
+        return response.getResult().getOutput().getText();
+    }
+}
+
+// Tools cached once, each tenant gets customized system prompt
+----
+
+=== Best Practices
+
+1. **Choose the Right Strategy**:
+   - Use `SYSTEM_ONLY` for reusable system prompts and instructions (works with all models)
+   - Use `TOOLS_ONLY` when you have large stable tools but dynamic system prompts (Claude only)
+   - Use `SYSTEM_AND_TOOLS` when both system and tools are large and stable (Claude only)
+   - Use `CONVERSATION_HISTORY` with ChatClient memory for multi-turn conversations
+   - Use `NONE` to explicitly disable caching
+
+2. **Meet Token Requirements**: Focus on caching content that meets the minimum token requirements (1024+ tokens for most models).
+
+3. **Reuse Identical Content**: Caching works best with exact matches of prompt content.
+Even small changes will require a new cache entry.
+
+4. **Monitor Token Usage**: Track cache effectiveness using the metadata metrics:
+
+   Integer cacheWrite = (Integer) response.getMetadata().getMetadata().get("cacheWriteInputTokens");
+   Integer cacheRead = (Integer) response.getMetadata().getMetadata().get("cacheReadInputTokens");
+   if (cacheRead != null && cacheRead > 0) {
+       System.out.println("Cache hit: " + cacheRead + " tokens saved");
+   }
+
+5. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with AWS Bedrock's 4-breakpoint limit.
+
+6. **Cache Lifetime**: AWS Bedrock caches have a fixed 5-minute TTL (Time To Live).
+Each cache access resets the timer.
+
+7. **Model Compatibility**: Be aware of model-specific limitations:
+   - **Claude models**: Support all caching strategies
+   - **Amazon Nova models**: Only support `SYSTEM_ONLY` and `CONVERSATION_HISTORY` (tool caching not supported)
+
+8. **Tool Stability**: When using `TOOLS_ONLY`, `SYSTEM_AND_TOOLS`, or `CONVERSATION_HISTORY` strategies, ensure tools remain stable.
+Changing tool definitions will invalidate all downstream cache breakpoints due to cascade invalidation.
+
+=== Cache Invalidation and Cascade Behavior
+
+AWS Bedrock follows a hierarchical cache model with cascade invalidation:
+
+**Cache Hierarchy**: `Tools → System → Messages`
+
+Changes at each level invalidate that level and all subsequent levels:
+
+[cols="1,1,1,1", stripes=even]
+|====
+| What Changes | Tools Cache | System Cache | Messages Cache
+
+| Tools | ❌ Invalid | ❌ Invalid | ❌ Invalid
+| System | ✅ Valid | ❌ Invalid | ❌ Invalid
+| Messages | ✅ Valid | ✅ Valid | ❌ Invalid
+|====
+
+**Example with `SYSTEM_AND_TOOLS` strategy**:
+
+[source,java]
+----
+// Request 1: Cache both tools and system
+ChatResponse r1 = chatModel.call(
+    new Prompt(
+        List.of(new SystemMessage("System prompt"), new UserMessage("Question")),
+        BedrockChatOptions.builder()
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_AND_TOOLS)
+                .build())
+            .toolCallbacks(tools)
+            .build()
+    )
+);
+// Result: Both caches created
+
+// Request 2: Change only system prompt (tools same)
+ChatResponse r2 = chatModel.call(
+    new Prompt(
+        List.of(new SystemMessage("DIFFERENT system prompt"), new UserMessage("Question")),
+        BedrockChatOptions.builder()
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_AND_TOOLS)
+                .build())
+            .toolCallbacks(tools) // SAME tools
+            .build()
+    )
+);
+// Result: Tools cache HIT (reused), system cache MISS (recreated)
+
+// Request 3: Change tools (system same as Request 2)
+ChatResponse r3 = chatModel.call(
+    new Prompt(
+        List.of(new SystemMessage("DIFFERENT system prompt"), new UserMessage("Question")),
+        BedrockChatOptions.builder()
+            .cacheOptions(BedrockCacheOptions.builder()
+                .strategy(BedrockCacheStrategy.SYSTEM_AND_TOOLS)
+                .build())
+            .toolCallbacks(newTools) // DIFFERENT tools
+            .build()
+    )
+);
+// Result: BOTH caches MISS (tools change invalidates everything downstream)
+----
+
+=== Implementation Details
+
+The prompt caching implementation in Spring AI follows these key design principles:
+
+1. **Strategic Cache Placement**: Cache breakpoints are automatically placed at optimal locations based on the chosen strategy, ensuring compliance with AWS Bedrock's 4-breakpoint limit.
+
+2. **Provider Portability**: Cache configuration is done through `BedrockChatOptions` rather than individual messages, preserving compatibility when switching between different AI providers.
+
+3. **Thread Safety**: The cache breakpoint tracking is implemented with thread-safe mechanisms to handle concurrent requests correctly.
+
+4. **UNION Type Pattern**: AWS SDK uses UNION types where cache points are added as separate blocks rather than properties.
+This is different from direct API approaches but ensures type safety and API compliance.
+
+5. **Incremental Caching**: The `CONVERSATION_HISTORY` strategy places cache breakpoints on the last user message, enabling incremental caching where each conversation turn builds on the previous cached prefix.
+
+=== Cost Considerations
+
+AWS Bedrock pricing for prompt caching (approximate, varies by model):
+
+* **Cache writes**: ~25% more expensive than base input tokens
+* **Cache reads**: ~90% cheaper (only 10% of base input token price)
+* **Break-even point**: After just 1 cache read, you've saved money
+
+**Example cost calculation**:
+
+[source,java]
+----
+// System prompt: 2000 tokens
+// User question: 50 tokens
+
+// Without caching (5 requests):
+// Cost: 5 × (2000 + 50) = 10,250 tokens at base rate
+
+// With caching (5 requests):
+// Request 1: 2000 tokens × 1.25 (cache write) + 50 = 2,550 tokens
+// Requests 2-5: 4 × (2000 × 0.10 (cache read) + 50) = 4 × 250 = 1,000 tokens
+// Total: 2,550 + 1,000 = 3,550 tokens equivalent
+
+// Savings: (10,250 - 3,550) / 10,250 = 65% cost reduction
 ----
 
 == Tool Calling

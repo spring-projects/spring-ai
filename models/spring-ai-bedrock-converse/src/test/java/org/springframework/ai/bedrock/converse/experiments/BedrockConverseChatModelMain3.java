@@ -40,7 +40,7 @@ public final class BedrockConverseChatModelMain3 {
 
 		// String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
 		// String modelId = "ai21.jamba-1-5-large-v1:0";
-		String modelId = "anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String modelId = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
 
 		// var prompt = new Prompt("Tell me a joke?",
 		// ChatOptions.builder().model(modelId).build();

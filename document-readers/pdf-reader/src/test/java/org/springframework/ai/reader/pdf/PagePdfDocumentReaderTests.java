@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Tibor Tarnai
+ * @author Fu Jian
  */
 class PagePdfDocumentReaderTests {
 
@@ -69,6 +70,45 @@ class PagePdfDocumentReaderTests {
 			.get();
 
 		assertThat(documents).hasSize(64);
+	}
+
+	@Test
+	void testPagesPerDocument() {
+		// The test pdf contain 64 pages
+		var documents = new PagePdfDocumentReader("classpath:/sample2.pdf",
+				PdfDocumentReaderConfig.builder()
+					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder().build())
+					.withPagesPerDocument(32)
+					.build())
+			.get();
+
+		assertThat(documents).hasSize(2);
+	}
+
+	@Test
+	void testPagesPerDocumentNotDivisible() {
+		// The test pdf contain 64 pages
+		var documents = new PagePdfDocumentReader("classpath:/sample2.pdf",
+				PdfDocumentReaderConfig.builder()
+					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder().build())
+					.withPagesPerDocument(3)
+					.build())
+			.get();
+
+		assertThat(documents).hasSize(22);
+	}
+
+	@Test
+	void testAllPagesPerDocument() {
+		// The test pdf contain 64 pages
+		var documents = new PagePdfDocumentReader("classpath:/sample2.pdf",
+				PdfDocumentReaderConfig.builder()
+					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder().build())
+					.withPagesPerDocument(0) // all pages into one document
+					.build())
+			.get();
+
+		assertThat(documents).hasSize(1);
 	}
 
 }

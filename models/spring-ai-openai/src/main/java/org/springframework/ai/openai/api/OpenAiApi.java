@@ -16,19 +16,24 @@
 
 package org.springframework.ai.openai.api;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -45,8 +50,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -67,6 +70,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  */
 public class OpenAiApi {
 
+	public static final String HTTP_USER_AGENT_HEADER = "User-Agent";
+
+	public static final String SPRING_AI_USER_AGENT = "spring-ai";
+
 	/**
 	 * Returns a builder pre-populated with the current configuration for mutation.
 	 */
@@ -84,12 +91,18 @@ public class OpenAiApi {
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
+	private static final String REQUEST_BODY_NULL_MESSAGE = "The request body can not be null.";
+
+	private static final String STREAM_FALSE_MESSAGE = "Request must set the stream property to false.";
+
+	private static final String ADDITIONAL_HEADERS_NULL_MESSAGE = "The additional HTTP headers can not be null.";
+
 	// Store config fields for mutate/copy
 	private final String baseUrl;
 
 	private final ApiKey apiKey;
 
-	private final MultiValueMap<String, String> headers;
+	private final HttpHeaders headers;
 
 	private final String completionsPath;
 
@@ -101,7 +114,7 @@ public class OpenAiApi {
 
 	private final WebClient webClient;
 
-	private OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
+	private final OpenAiStreamFunctionCallingHelper chunkMerger = new OpenAiStreamFunctionCallingHelper();
 
 	/**
 	 * Create a new chat completion api.
@@ -114,8 +127,8 @@ public class OpenAiApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	public OpenAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
-			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+	public OpenAiApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String completionsPath, String embeddingsPath,
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
@@ -131,6 +144,7 @@ public class OpenAiApi {
 		// @formatter:off
 		Consumer<HttpHeaders> finalHeaders = h -> {
 			h.setContentType(MediaType.APPLICATION_JSON);
+			h.set(HTTP_USER_AGENT_HEADER, SPRING_AI_USER_AGENT);
 			h.addAll(headers);
 		};
 		this.restClient = restClientBuilder.clone()
@@ -143,6 +157,29 @@ public class OpenAiApi {
 			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.build(); // @formatter:on
+	}
+
+	/**
+	 * Create a new chat completion api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param embeddingsPath the path to the embeddings endpoint.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public OpenAiApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String completionsPath, String embeddingsPath,
+			ResponseErrorHandler responseErrorHandler, RestClient restClient, WebClient webClient) {
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.headers = headers;
+		this.completionsPath = completionsPath;
+		this.embeddingsPath = embeddingsPath;
+		this.responseErrorHandler = responseErrorHandler;
+		this.restClient = restClient;
+		this.webClient = webClient;
 	}
 
 	/**
@@ -168,7 +205,7 @@ public class OpenAiApi {
 	 * and headers.
 	 */
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionEntity(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -180,11 +217,11 @@ public class OpenAiApi {
 	 * and headers.
 	 */
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
+		Assert.notNull(chatRequest, REQUEST_BODY_NULL_MESSAGE);
+		Assert.isTrue(!chatRequest.stream(), STREAM_FALSE_MESSAGE);
+		Assert.notNull(additionalHttpHeader, ADDITIONAL_HEADERS_NULL_MESSAGE);
 
 		// @formatter:off
 		return this.restClient.post()
@@ -206,7 +243,7 @@ public class OpenAiApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionStream(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -218,9 +255,9 @@ public class OpenAiApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
-		Assert.notNull(chatRequest, "The request body can not be null.");
+		Assert.notNull(chatRequest, REQUEST_BODY_NULL_MESSAGE);
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
@@ -232,7 +269,7 @@ public class OpenAiApi {
 				headers.addAll(additionalHttpHeader);
 				addDefaultHeadersIfMissing(headers);
 			}) // @formatter:on
-			.body(Mono.just(chatRequest), ChatCompletionRequest.class)
+			.bodyValue(chatRequest)
 			.retrieve()
 			.bodyToFlux(String.class)
 			// cancels the flux stream after the "[DONE]" is received.
@@ -283,7 +320,7 @@ public class OpenAiApi {
 	 */
 	public <T> ResponseEntity<EmbeddingList<Embedding>> embeddings(EmbeddingRequest<T> embeddingRequest) {
 
-		Assert.notNull(embeddingRequest, "The request body can not be null.");
+		Assert.notNull(embeddingRequest, REQUEST_BODY_NULL_MESSAGE);
 
 		// Input text to embed, encoded as a string or array of tokens. To embed multiple
 		// inputs in a single
@@ -295,7 +332,7 @@ public class OpenAiApi {
 		// The input must not exceed the max input tokens for the model (8192 tokens for
 		// text-embedding-ada-002), cannot
 		// be an empty string, and any array must be 2048 dimensions or less.
-		if (embeddingRequest.input() instanceof List list) {
+		if (embeddingRequest.input() instanceof List<?> list) {
 			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
 			Assert.isTrue(list.size() <= 2048, "The list must be 2048 dimensions or less");
 			Assert.isTrue(
@@ -314,7 +351,7 @@ public class OpenAiApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+		if (headers.get(HttpHeaders.AUTHORIZATION) == null && !(this.apiKey instanceof NoopApiKey)) {
 			headers.setBearerAuth(this.apiKey.getValue());
 		}
 	}
@@ -328,7 +365,7 @@ public class OpenAiApi {
 		return this.apiKey;
 	}
 
-	MultiValueMap<String, String> getHeaders() {
+	HttpHeaders getHeaders() {
 		return this.headers;
 	}
 
@@ -467,6 +504,52 @@ public class OpenAiApi {
 		 * See: <a href="https://platform.openai.com/docs/models/gpt-4.1">gpt-4.1</a>
 		 */
 		GPT_4_1("gpt-4.1"),
+
+		/**
+		 * <b>GPT-5</b> is the next-generation flagship model with enhanced capabilities
+		 * for complex reasoning and problem-solving tasks.
+		 * <p>
+		 * Note: GPT-5 models require temperature=1.0 (default value). Custom temperature
+		 * values are not supported and will cause errors.
+		 * <p>
+		 * Model ID: gpt-5
+		 * <p>
+		 * See: <a href="https://platform.openai.com/docs/models/gpt-5">gpt-5</a>
+		 */
+		GPT_5("gpt-5"),
+
+		/**
+		 * GPT-5 mini is a faster, more cost-efficient version of GPT-5. It's great for
+		 * well-defined tasks and precise prompts.
+		 * <p>
+		 * Model ID: gpt-5-mini
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-mini">gpt-5-mini</a>
+		 */
+		GPT_5_MINI("gpt-5-mini"),
+
+		/**
+		 * GPT-5 Nano is the fastest, cheapest version of GPT-5. It's great for
+		 * summarization and classification tasks.
+		 * <p>
+		 * Model ID: gpt-5-nano
+		 * <p>
+		 * See:
+		 * <a href="https://platform.openai.com/docs/models/gpt-5-nano">gpt-5-nano</a>
+		 */
+		GPT_5_NANO("gpt-5-nano"),
+
+		/**
+		 * GPT-5 Chat points to the GPT-5 snapshot currently used in ChatGPT. GPT-5
+		 * accepts both text and image inputs, and produces text outputs.
+		 * <p>
+		 * Model ID: gpt-5-chat-latest
+		 * <p>
+		 * See: <a href=
+		 * "https://platform.openai.com/docs/models/gpt-5-chat-latest">gpt-5-chat-latest</a>
+		 */
+		GPT_5_CHAT_LATEST("gpt-5-chat-latest"),
 
 		/**
 		 * <b>GPT-4o</b> (“o” for “omni”) is the versatile, high-intelligence flagship
@@ -696,6 +779,11 @@ public class OpenAiApi {
 	 */
 	public enum ChatCompletionFinishReason {
 
+		/**
+		 * Handles, empty, NULL and unknown values
+		 */
+		@JsonProperty("")
+		UNKNOWN,
 		/**
 		 * The model hit a natural stop point or a provided stop sequence.
 		 */
@@ -1037,6 +1125,7 @@ public class OpenAiApi {
 	 * Currently supported values are low, medium, and high. Reducing reasoning effort can
 	 * result in faster responses and fewer tokens used on reasoning in a response.
 	 * @param webSearchOptions Options for web search.
+	 * @param verbosity Controls the verbosity of the model's response.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -1067,7 +1156,21 @@ public class OpenAiApi {
 			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
 			@JsonProperty("user") String user,
 			@JsonProperty("reasoning_effort") String reasoningEffort,
-			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions) {
+			@JsonProperty("web_search_options") WebSearchOptions webSearchOptions,
+			@JsonProperty("verbosity") String verbosity,
+			@JsonProperty("prompt_cache_key") String promptCacheKey,
+			@JsonProperty("safety_identifier") String safetyIdentifier,
+			Map<String, Object> extraBody) {
+
+		/**
+		 * Compact constructor that ensures extraBody is initialized as a mutable HashMap
+		 * when null, enabling @JsonAnySetter to populate it during deserialization.
+		 */
+		public ChatCompletionRequest {
+			if (extraBody == null) {
+				extraBody = new java.util.HashMap<>();
+			}
+		}
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages, model and temperature.
@@ -1079,7 +1182,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null, null, false, null, temperature, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1093,7 +1196,7 @@ public class OpenAiApi {
 			this(messages, model, null, null, null, null, null, null,
 					null, null, null, List.of(OutputModality.AUDIO, OutputModality.TEXT), audio, null, null,
 					null, null, null, stream, null, null, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1108,7 +1211,7 @@ public class OpenAiApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, stream, null, temperature, null,
-					null, null, null, null, null, null);
+					null, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1124,7 +1227,7 @@ public class OpenAiApi {
 				List<FunctionTool> tools, Object toolChoice) {
 			this(messages, model, null, null, null, null, null, null, null, null, null,
 					null, null, null, null, null, null, null, false, null, 0.8, null,
-					tools, toolChoice, null, null, null, null);
+					tools, toolChoice, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1135,9 +1238,9 @@ public class OpenAiApi {
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(messages, null, null, null, null, null, null, null, null, null, null,
-					null, null, null, null, null, null, null, stream, null, null, null,
-					null, null, null, null, null, null);
+			this(messages, null, null, null, null, null, null, null, null, null, null, null, null, null,
+				null, null, null, null, stream, null, null, null, null, null, null, null, null, null,
+				null, null, null, null);
 		}
 
 		/**
@@ -1148,9 +1251,35 @@ public class OpenAiApi {
 		 */
 		public ChatCompletionRequest streamOptions(StreamOptions streamOptions) {
 			return new ChatCompletionRequest(this.messages, this.model, this.store, this.metadata, this.frequencyPenalty, this.logitBias, this.logprobs,
-			this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
-			this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
-			this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions);
+					this.topLogprobs, this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.audioParameters, this.presencePenalty,
+					this.responseFormat, this.seed, this.serviceTier, this.stop, this.stream, streamOptions, this.temperature, this.topP,
+					this.tools, this.toolChoice, this.parallelToolCalls, this.user, this.reasoningEffort, this.webSearchOptions, this.verbosity,
+					this.promptCacheKey, this.safetyIdentifier, this.extraBody);
+		}
+
+		/**
+		 * Overrides the default accessor to add @JsonAnyGetter annotation.
+		 * This causes Jackson to flatten the extraBody map contents to the top level of the JSON,
+		 * matching the behavior expected by OpenAI-compatible servers like vLLM, Ollama, etc.
+		 * @return The extraBody map, or null if not set.
+		 */
+		@JsonAnyGetter
+		public Map<String, Object> extraBody() {
+			return this.extraBody;
+		}
+
+		/**
+		 * Handles deserialization of unknown properties into the extraBody map.
+		 * This enables JSON with extra fields to be deserialized into ChatCompletionRequest,
+		 * which is useful for implementing OpenAI API proxy servers with @RestController.
+		 * @param key The property name
+		 * @param value The property value
+		 */
+		@JsonAnySetter
+		private void setExtraBodyProperty(String key, Object value) {
+			if (this.extraBody != null) {
+				this.extraBody.put(key, value);
+			}
 		}
 
 		/**
@@ -1169,7 +1298,7 @@ public class OpenAiApi {
 			/**
 			 * Specifying a particular function forces the model to call that function.
 			 */
-			public static Object FUNCTION(String functionName) {
+			public static Object function(String functionName) {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
 		}
@@ -1298,6 +1427,41 @@ public class OpenAiApi {
 	} // @formatter:on
 
 	/**
+	 * Specifies the processing type used for serving the request.
+	 */
+	public enum ServiceTier {
+
+		/**
+		 * Then the request will be processed with the service tier configured in the
+		 * Project settings.
+		 */
+		AUTO("auto"),
+		/**
+		 * Then the request will be processed with the standard pricing.
+		 */
+		DEFAULT("default"),
+		/**
+		 * Then the request will be processed with the flex pricing.
+		 */
+		FLEX("flex"),
+		/**
+		 * Then the request will be processed with the priority pricing.
+		 */
+		PRIORITY("priority");
+
+		private final String value;
+
+		ServiceTier(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	/**
 	 * Message comprising the conversation.
 	 *
 	 * @param rawContent The contents of the message. Can be either a {@link MediaContent}
@@ -1327,7 +1491,8 @@ public class OpenAiApi {
 			@JsonProperty("tool_calls") @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
 			@JsonProperty("refusal") String refusal,
 			@JsonProperty("audio") AudioOutput audioOutput,
-			@JsonProperty("annotations") List<Annotation> annotations
+			@JsonProperty("annotations") List<Annotation> annotations,
+			@JsonProperty("reasoning_content") String reasoningContent
 	) { // @formatter:on
 
 		/**
@@ -1337,7 +1502,7 @@ public class OpenAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null, null, null, null);
+			this(content, role, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -1793,7 +1958,9 @@ public class OpenAiApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Embedding(// @formatter:off
 			@JsonProperty("index") Integer index,
-			@JsonProperty("embedding") float[] embedding,
+		@JsonProperty("embedding")
+			@JsonDeserialize(using = OpenAiEmbeddingDeserializer.class)
+			float[] embedding,
 			@JsonProperty("object") String object) { // @formatter:on
 
 		/**
@@ -1805,6 +1972,25 @@ public class OpenAiApi {
 		 */
 		public Embedding(Integer index, float[] embedding) {
 			this(index, embedding, "embedding");
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof Embedding other)) {
+				return false;
+			}
+			return Objects.equals(this.index, other.index) && Arrays.equals(this.embedding, other.embedding)
+					&& Objects.equals(this.object, other.object);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = Objects.hash(this.index, this.object);
+			result = 31 * result + Arrays.hashCode(this.embedding);
+			return result;
 		}
 
 	}
@@ -1873,7 +2059,7 @@ public class OpenAiApi {
 			@JsonProperty("usage") Usage usage) { // @formatter:on
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		public Builder() {
 		}
@@ -1882,7 +2068,8 @@ public class OpenAiApi {
 		public Builder(OpenAiApi api) {
 			this.baseUrl = api.getBaseUrl();
 			this.apiKey = api.getApiKey();
-			this.headers = new LinkedMultiValueMap<>(api.getHeaders());
+			this.headers = new HttpHeaders();
+			this.headers.addAll(api.getHeaders());
 			this.completionsPath = api.getCompletionsPath();
 			this.embeddingsPath = api.getEmbeddingsPath();
 			this.restClientBuilder = api.restClient != null ? api.restClient.mutate() : RestClient.builder();
@@ -1894,7 +2081,7 @@ public class OpenAiApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private String completionsPath = "/v1/chat/completions";
 
@@ -1923,7 +2110,7 @@ public class OpenAiApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

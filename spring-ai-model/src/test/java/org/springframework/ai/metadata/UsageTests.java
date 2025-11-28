@@ -87,4 +87,28 @@ public class UsageTests {
 		verifyUsage(usage);
 	}
 
+	@Test
+	void totalTokensHandlesZeroPromptTokens() {
+		Usage usage = mockUsage(0, 1);
+
+		assertThat(usage.getTotalTokens()).isEqualTo(1);
+		verifyUsage(usage);
+	}
+
+	@Test
+	void totalTokensHandlesZeroCompletionTokens() {
+		Usage usage = mockUsage(1, 0);
+
+		assertThat(usage.getTotalTokens()).isEqualTo(1);
+		verifyUsage(usage);
+	}
+
+	@Test
+	void totalTokensHandlesBothZeroTokens() {
+		Usage usage = mockUsage(0, 0);
+
+		assertThat(usage.getTotalTokens()).isZero();
+		verifyUsage(usage);
+	}
+
 }

@@ -16,11 +16,11 @@
 
 package org.springframework.ai.mcp;
 
-import io.modelcontextprotocol.spec.McpSchema;
 import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
@@ -50,48 +50,66 @@ class SyncMcpToolCallbackTests {
 
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
-
 		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test tool description");
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
 
 		var toolDefinition = callback.getToolDefinition();
 
-		assertThat(toolDefinition.name()).isEqualTo(clientInfo.name() + "_testTool");
+		assertThat(toolDefinition.name()).isEqualTo("t_testTool");
 		assertThat(toolDefinition.description()).isEqualTo("Test tool description");
 	}
 
 	@Test
+	void getOriginalToolNameShouldReturnCorrectName() {
+		when(this.tool.name()).thenReturn("originalToolName");
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("prefix_originalToolName")
+			.build();
+
+		assertThat(callback.getOriginalToolName()).isEqualTo("originalToolName");
+	}
+
+	@Test
 	void callShouldHandleJsonInputAndOutput() {
-
-		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
-		// "1.0.0"));
-
 		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
 
 		String response = callback.call("{\"param\":\"value\"}");
 
-		// Assert
 		assertThat(response).isNotNull();
 	}
 
 	@Test
-	void callShouldIgnoreToolContext() {
-		// when(mcpClient.getClientInfo()).thenReturn(new Implementation("testClient",
-		// "1.0.0"));
-
+	void callShouldHandleToolContext() {
 		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
 
 		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
@@ -99,16 +117,46 @@ class SyncMcpToolCallbackTests {
 	}
 
 	@Test
+	void callShouldHandleNullOrEmptyInput() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.content()).thenReturn(List.of());
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testClient_testTool")
+			.build();
+
+		// Test with null input
+		String responseNull = callback.call(null);
+		assertThat(responseNull).isEqualTo("[]");
+
+		// Test with empty string input
+		String responseEmpty = callback.call("");
+		assertThat(responseEmpty).isEqualTo("[]");
+
+		// Test with whitespace-only input
+		String responseWhitespace = callback.call("   ");
+		assertThat(responseWhitespace).isEqualTo("[]");
+	}
+
+	@Test
 	void callShouldThrowOnError() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientInfo = new Implementation("testClient", "server1", "1.0.0");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(callResult.isError()).thenReturn(true);
 		when(callResult.content()).thenReturn(List.of(new McpSchema.TextContent("Some error data")));
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
 
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.cause()
@@ -119,15 +167,106 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void callShouldWrapExceptions() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new Implementation("testClient", "1.0.0");
-		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientInfo = new Implementation("testClient", "server1", "1.0.0");
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenThrow(new RuntimeException("Testing tool error"));
 
-		SyncMcpToolCallback callback = new SyncMcpToolCallback(this.mcpClient, this.tool);
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
 
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.rootCause()
 			.hasMessage("Testing tool error");
+	}
+
+	@Test
+	void callShouldHandleEmptyResponse() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.content()).thenReturn(List.of());
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		assertThat(response).isEqualTo("[]");
+	}
+
+	@Test
+	void callShouldHandleMultipleContentItems() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.content()).thenReturn(
+				List.of(new McpSchema.TextContent("First content"), new McpSchema.TextContent("Second content")));
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		assertThat(response).isNotNull();
+		assertThat(response).isEqualTo("[{\"text\":\"First content\"},{\"text\":\"Second content\"}]");
+	}
+
+	@Test
+	void callShouldHandleNonTextContent() {
+		when(this.tool.name()).thenReturn("testTool");
+		CallToolResult callResult = mock(CallToolResult.class);
+		when(callResult.isError()).thenReturn(false);
+		when(callResult.content()).thenReturn(List.of(new McpSchema.ImageContent(null, "base64data", "image/png")));
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName("testClient", "server1", this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
+
+		String response = callback.call("{\"param\":\"value\"}");
+
+		assertThat(response).isNotNull();
+		assertThat(response).isEqualTo("[{\"data\":\"base64data\",\"mimeType\":\"image/png\"}]");
+	}
+
+	@Test
+	void builderShouldUseDefaultPrefixWhenNotSpecified() {
+		when(this.tool.name()).thenReturn("testTool");
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder().mcpClient(this.mcpClient).tool(this.tool).build();
+
+		// The default prefix generator should create a prefixed name
+		var toolDefinition = callback.getToolDefinition();
+		assertThat(toolDefinition.name()).contains("testTool");
+	}
+
+	@Test
+	void builderShouldValidateRequiredParameters() {
+		// Test missing mcpClient
+		assertThatThrownBy(() -> SyncMcpToolCallback.builder().tool(this.tool).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("MCP client must not be null");
+
+		// Test missing tool
+		assertThatThrownBy(() -> SyncMcpToolCallback.builder().mcpClient(this.mcpClient).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("MCP tool must not be null");
 	}
 
 }

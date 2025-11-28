@@ -25,19 +25,18 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import static org.springframework.ai.chat.messages.AssistantMessage.*;
 
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a
@@ -157,12 +156,17 @@ public class MessageAggregator {
 
 			if (!CollectionUtils.isEmpty(collectedToolCalls)) {
 
-				finalAssistantMessage = new AssistantMessage(messageTextContentRef.get().toString(),
-						messageMetadataMapRef.get(), collectedToolCalls);
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadataMapRef.get())
+					.toolCalls(collectedToolCalls)
+					.build();
 			}
 			else {
-				finalAssistantMessage = new AssistantMessage(messageTextContentRef.get().toString(),
-						messageMetadataMapRef.get());
+				finalAssistantMessage = AssistantMessage.builder()
+					.content(messageTextContentRef.get().toString())
+					.properties(messageMetadataMapRef.get())
+					.build();
 			}
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
 

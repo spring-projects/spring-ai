@@ -42,8 +42,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -85,7 +83,7 @@ public class ZhiPuAiApi {
 
 	private final ApiKey apiKey;
 
-	private final MultiValueMap<String, String> headers;
+	private final HttpHeaders headers;
 
 	private final String completionsPath;
 
@@ -100,54 +98,6 @@ public class ZhiPuAiApi {
 	private final ZhiPuAiStreamFunctionCallingHelper chunkMerger = new ZhiPuAiStreamFunctionCallingHelper();
 
 	/**
-	 * Create a new chat completion api with default base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String zhiPuAiToken) {
-		this(ZhiPuApiConstants.DEFAULT_BASE_URL, zhiPuAiToken);
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String baseUrl, String zhiPuAiToken) {
-		this(baseUrl, zhiPuAiToken, RestClient.builder());
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder) {
-		this(baseUrl, zhiPuAiToken, restClientBuilder, RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new chat completion api.
-	 * @param baseUrl api base URL.
-	 * @param zhiPuAiToken ZhiPuAI apiKey.
-	 * @param restClientBuilder RestClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 * @deprecated Use {@link #builder()} instead.
-	 */
-	@Deprecated
-	public ZhiPuAiApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, new SimpleApiKey(zhiPuAiToken), new LinkedMultiValueMap<>(), DEFAULT_COMPLETIONS_PATH,
-				DEFAULT_EMBEDDINGS_PATH, restClientBuilder, WebClient.builder(), responseErrorHandler);
-	}
-
-	/**
 	 * Create a new chat completion api.
 	 * @param baseUrl api base URL.
 	 * @param apiKey ZhiPuAI apiKey.
@@ -158,7 +108,7 @@ public class ZhiPuAiApi {
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
-	private ZhiPuAiApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers, String completionsPath,
+	private ZhiPuAiApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String completionsPath,
 			String embeddingsPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 		Assert.hasText(completionsPath, "Completions Path must not be null");
@@ -190,6 +140,33 @@ public class ZhiPuAiApi {
 			.build(); // @formatter:on
 	}
 
+	/**
+	 * Create a new chat completion api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey ZhiPuAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param completionsPath the path to the chat completions endpoint.
+	 * @param embeddingsPath the path to the embeddings endpoint.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 * @param responseErrorHandler Response error handler.
+	 */
+	public ZhiPuAiApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String completionsPath, String embeddingsPath,
+			ResponseErrorHandler responseErrorHandler, RestClient restClient, WebClient webClient) {
+		Assert.hasText(completionsPath, "Completions Path must not be null");
+		Assert.hasText(embeddingsPath, "Embeddings Path must not be null");
+		Assert.notNull(headers, "Headers must not be null");
+
+		this.baseUrl = baseUrl;
+		this.apiKey = apiKey;
+		this.headers = headers;
+		this.completionsPath = completionsPath;
+		this.embeddingsPath = embeddingsPath;
+		this.responseErrorHandler = responseErrorHandler;
+		this.restClient = restClient;
+		this.webClient = webClient;
+	}
+
 	public static String getTextContent(List<ChatCompletionMessage.MediaContent> content) {
 		return content.stream()
 			.filter(c -> "text".equals(c.type()))
@@ -204,7 +181,7 @@ public class ZhiPuAiApi {
 	 * and headers.
 	 */
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionEntity(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -214,7 +191,7 @@ public class ZhiPuAiApi {
 	 * and headers.
 	 */
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
@@ -239,7 +216,7 @@ public class ZhiPuAiApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionStream(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -249,7 +226,7 @@ public class ZhiPuAiApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
@@ -284,7 +261,7 @@ public class ZhiPuAiApi {
 			})
 			.concatMapIterable(window -> {
 				Mono<ChatCompletionChunk> monoChunk = window
-					.reduce(new ChatCompletionChunk(null, null, null, null, null, null), this.chunkMerger::merge);
+					.reduce(new ChatCompletionChunk(null, null, null, null, null, null, null), this.chunkMerger::merge);
 				return List.of(monoChunk);
 			})
 			.flatMap(mono -> mono);
@@ -330,7 +307,7 @@ public class ZhiPuAiApi {
 	}
 
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HttpHeaders.AUTHORIZATION) && !(this.apiKey instanceof NoopApiKey)) {
+		if (headers.get(HttpHeaders.AUTHORIZATION) == null && !(this.apiKey instanceof NoopApiKey)) {
 			headers.setBearerAuth(this.apiKey.getValue());
 		}
 	}
@@ -344,7 +321,7 @@ public class ZhiPuAiApi {
 		return this.apiKey;
 	}
 
-	MultiValueMap<String, String> getHeaders() {
+	HttpHeaders getHeaders() {
 		return this.headers;
 	}
 
@@ -367,6 +344,28 @@ public class ZhiPuAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		GLM_4_6("glm-4.6"),
+
+		GLM_4_5("glm-4.5"),
+
+		GLM_4_5_X("glm-4.5-x"),
+
+		GLM_4_5_Air("glm-4.5-air"),
+
+		GLM_4_5_AirX("glm-4.5-airx"),
+
+		GLM_4_5V("glm-4.5v"),
+
+		GLM_4_5_Flash("glm-4.5-flash"),
+
+		GLM_Z1_Air("glm-z1-air"),
+
+		GLM_Z1_AirX("glm-z1-airx"),
+
+		GLM_Z1_Flash("glm-z1-flash"),
+
+		GLM_Z1_FlashX("glm-z1-flashx"),
+
 		GLM_4("GLM-4"),
 
 		GLM_4V("glm-4v"),
@@ -377,7 +376,14 @@ public class ZhiPuAiApi {
 
 		GLM_4_Flash("glm-4-flash"),
 
-		GLM_3_Turbo("GLM-3-Turbo"); // @formatter:on
+		GLM_3_Turbo("GLM-3-Turbo"),
+
+		// --- Visual Reasoning Models ---
+
+		GLM_4_Thinking_FlashX("glm-4.1v-thinking-flashx"),
+
+		GLM_4_Thinking_Flash("glm-4.1v-thinking-flash");
+		// @formatter:on
 
 		public final String value;
 
@@ -645,6 +651,9 @@ public class ZhiPuAiApi {
 	 * logged and can be used for debugging purposes.
 	 * @param doSample If set, the model will use sampling to generate the next token. If
 	 * not set, the model will use greedy decoding to generate the next token.
+	 * @param responseFormat Control the format of the model output. Set to `json_object`
+	 * to ensure the message is a valid JSON object.
+	 * @param thinking Control whether to enable the large model's chain of thought.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -657,9 +666,11 @@ public class ZhiPuAiApi {
 			@JsonProperty("top_p") Double topP,
 			@JsonProperty("tools") List<FunctionTool> tools,
 			@JsonProperty("tool_choice") Object toolChoice,
-			@JsonProperty("user") String user,
+			@JsonProperty("user_id") String user,
 			@JsonProperty("request_id") String requestId,
-			@JsonProperty("do_sample") Boolean doSample) { // @formatter:on
+			@JsonProperty("do_sample") Boolean doSample,
+			@JsonProperty("response_format") ResponseFormat responseFormat,
+			@JsonProperty("thinking") Thinking thinking) { // @formatter:on
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages and
@@ -669,7 +680,7 @@ public class ZhiPuAiApi {
 		 * @param temperature What sampling temperature to use, between 0 and 1.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(messages, model, null, null, false, temperature, null, null, null, null, null, null);
+			this(messages, model, null, null, false, temperature, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -684,7 +695,7 @@ public class ZhiPuAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				boolean stream) {
-			this(messages, model, null, null, stream, temperature, null, null, null, null, null, null);
+			this(messages, model, null, null, stream, temperature, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -699,7 +710,7 @@ public class ZhiPuAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				Object toolChoice) {
-			this(messages, model, null, null, false, 0.8, null, tools, toolChoice, null, null, null);
+			this(messages, model, null, null, false, 0.8, null, tools, toolChoice, null, null, null, null, null);
 		}
 
 		/**
@@ -712,7 +723,7 @@ public class ZhiPuAiApi {
 		 * terminated by a data: [DONE] message.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(messages, null, null, null, stream, null, null, null, null, null, null, null);
+			this(messages, null, null, null, stream, null, null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -747,7 +758,32 @@ public class ZhiPuAiApi {
 		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ResponseFormat(@JsonProperty("type") String type) {
+
+			public static ResponseFormat text() {
+				return new ResponseFormat("text");
+			}
+
+			public static ResponseFormat jsonObject() {
+				return new ResponseFormat("json_object");
+			}
 		}
+
+		/**
+		 * Control whether to enable the large model's chain of thought
+		 *
+		 * @param type Available options: (default) enabled, disabled
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Thinking(@JsonProperty("type") String type) {
+			public static Thinking enabled() {
+				return new Thinking("enabled");
+			}
+
+			public static Thinking disabled() {
+				return new Thinking("disabled");
+			}
+		}
+
 	}
 
 	/**
@@ -772,7 +808,8 @@ public class ZhiPuAiApi {
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") String name,
 			@JsonProperty("tool_call_id") String toolCallId,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls) { // @formatter:on
+			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
+			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -781,7 +818,7 @@ public class ZhiPuAiApi {
 		 * @param role The role of the author of this message.
 		 */
 		public ChatCompletionMessage(Object content, Role role) {
-			this(content, role, null, null, null);
+			this(content, role, null, null, null, null);
 		}
 
 		/**
@@ -839,7 +876,7 @@ public class ZhiPuAiApi {
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record MediaContent(// @formatter:off
 				@JsonProperty("type") String type,
-			    @JsonProperty("text") String text,
+				@JsonProperty("text") String text,
 				@JsonProperty("image_url") ImageUrl imageUrl) { // @formatter:on
 
 			/**
@@ -870,7 +907,7 @@ public class ZhiPuAiApi {
 			@JsonIgnoreProperties(ignoreUnknown = true)
 			public record ImageUrl(// @formatter:off
 					@JsonProperty("url") String url,
-				    @JsonProperty("detail") String detail) { // @formatter:on
+					@JsonProperty("detail") String detail) { // @formatter:on
 
 				public ImageUrl(String url) {
 					this(url, null);
@@ -891,7 +928,7 @@ public class ZhiPuAiApi {
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(// @formatter:off
 				@JsonProperty("id") String id,
-			    @JsonProperty("type") String type,
+				@JsonProperty("type") String type,
 				@JsonProperty("function") ChatCompletionFunction function) { // @formatter:on
 		}
 
@@ -1017,13 +1054,31 @@ public class ZhiPuAiApi {
 	 * @param promptTokens Number of tokens in the prompt.
 	 * @param totalTokens Total number of tokens used in the request (prompt +
 	 * completion).
+	 * @param promptTokensDetails Details about the prompt tokens used. Support for
+	 * GLM-4.5 and later models.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(// @formatter:off
 			@JsonProperty("completion_tokens") Integer completionTokens,
 			@JsonProperty("prompt_tokens") Integer promptTokens,
-			@JsonProperty("total_tokens") Integer totalTokens) { // @formatter:on
+			@JsonProperty("total_tokens") Integer totalTokens,
+			@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails) { // @formatter:on
+
+		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
+			this(completionTokens, promptTokens, totalTokens, null);
+		}
+
+		/**
+		 * Details about the prompt tokens used.
+		 *
+		 * @param cachedTokens Number of tokens in the prompt that were cached.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record PromptTokensDetails(// @formatter:off
+			@JsonProperty("cached_tokens") Integer cachedTokens) { // @formatter:on
+		}
 
 	}
 
@@ -1050,7 +1105,8 @@ public class ZhiPuAiApi {
 			@JsonProperty("created") Long created,
 			@JsonProperty("model") String model,
 			@JsonProperty("system_fingerprint") String systemFingerprint,
-			@JsonProperty("object") String object) { // @formatter:on
+			@JsonProperty("object") String object,
+			@JsonProperty("usage") Usage usage) { // @formatter:on
 
 		/**
 		 * Chat completion choice.
@@ -1147,7 +1203,7 @@ public class ZhiPuAiApi {
 			@JsonProperty("usage") Usage usage) { // @formatter:on
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private Builder() {
 		}
@@ -1155,7 +1211,8 @@ public class ZhiPuAiApi {
 		public Builder(ZhiPuAiApi api) {
 			this.baseUrl = api.getBaseUrl();
 			this.apiKey = api.getApiKey();
-			this.headers = new LinkedMultiValueMap<>(api.getHeaders());
+			this.headers = new HttpHeaders();
+			this.headers.addAll(api.getHeaders());
 			this.completionsPath = api.getCompletionsPath();
 			this.embeddingsPath = api.getEmbeddingsPath();
 			this.restClientBuilder = api.restClient != null ? api.restClient.mutate() : RestClient.builder();
@@ -1167,7 +1224,7 @@ public class ZhiPuAiApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private String completionsPath = DEFAULT_COMPLETIONS_PATH;
 
@@ -1196,7 +1253,7 @@ public class ZhiPuAiApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

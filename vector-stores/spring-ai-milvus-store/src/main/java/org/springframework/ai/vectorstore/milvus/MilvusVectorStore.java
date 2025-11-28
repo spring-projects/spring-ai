@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -242,7 +242,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		for (Document document : documents) {
@@ -292,7 +292,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		long deleteCount = status.getData().getDeleteCnt();
 		if (deleteCount != idList.size()) {
-			logger.warn(String.format("Deleted only %s entries from requested %s ", deleteCount, idList.size()));
+			logger.warn("Deleted only {} entries from requested {} ", deleteCount, idList.size());
 		}
 	}
 
@@ -379,8 +379,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 				JsonObject metadata = new JsonObject();
 				try {
 					metadata = (JsonObject) rowRecord.get(this.metadataFieldName);
-					// inject the distance into the metadata.
-					metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					if (metadata != null) {
+						// inject the distance into the metadata.
+						metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
+					}
 				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
@@ -542,8 +544,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			}
 		}
 		catch (Exception e) {
-			logger.warn("Failed to obtain the embedding dimensions from the embedding model and fall backs to default:"
-					+ this.embeddingDimension, e);
+			logger.warn(
+					"Failed to obtain the embedding dimensions from the embedding model and fall backs to default:{}",
+					this.embeddingDimension, e);
 		}
 		return OPENAI_EMBEDDING_DIMENSION_SIZE;
 	}

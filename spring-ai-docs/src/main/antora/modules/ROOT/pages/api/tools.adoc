@@ -618,7 +618,7 @@ class WeatherTools {
 
 ==== Adding Tools to `ChatClient`
 
-When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `tools()` method of `ChatClient`.
+When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `toolNames()` method of `ChatClient`.
 The tool will only be available for the specific chat request it's added to.
 
 [source,java]

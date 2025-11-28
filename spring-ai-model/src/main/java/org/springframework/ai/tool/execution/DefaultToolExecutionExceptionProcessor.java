@@ -72,16 +72,21 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		if (this.alwaysThrow) {
 			throw exception;
 		}
-		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(),
-				exception.getMessage());
-		return exception.getMessage();
+		String message = exception.getMessage();
+		if (message == null || message.isBlank()) {
+			message = "Exception occurred in tool: " + exception.getToolDefinition().name() + " ("
+					+ cause.getClass().getSimpleName() + ")";
+		}
+		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message,
+				exception);
+		return message;
 	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private boolean alwaysThrow = DEFAULT_ALWAYS_THROW;
 
@@ -109,7 +114,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		}
 
 		public DefaultToolExecutionExceptionProcessor build() {
-			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, exceptions);
+			return new DefaultToolExecutionExceptionProcessor(this.alwaysThrow, this.exceptions);
 		}
 
 	}

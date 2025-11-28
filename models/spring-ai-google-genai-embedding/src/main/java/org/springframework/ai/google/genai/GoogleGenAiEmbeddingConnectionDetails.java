@@ -32,7 +32,7 @@ import org.springframework.util.StringUtils;
  * @author Dan Dobrin
  * @since 1.0.0
  */
-public class GoogleGenAiEmbeddingConnectionDetails {
+public final class GoogleGenAiEmbeddingConnectionDetails {
 
 	public static final String DEFAULT_LOCATION = "us-central1";
 
@@ -101,7 +101,7 @@ public class GoogleGenAiEmbeddingConnectionDetails {
 		return modelName;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		/**
 		 * Your project ID.

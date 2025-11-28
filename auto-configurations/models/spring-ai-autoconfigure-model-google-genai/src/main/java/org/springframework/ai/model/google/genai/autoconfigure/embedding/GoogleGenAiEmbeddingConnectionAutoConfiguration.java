@@ -39,7 +39,7 @@ import org.springframework.util.StringUtils;
  * @since 1.1.0
  */
 @AutoConfiguration
-@ConditionalOnClass(Client.class)
+@ConditionalOnClass({ Client.class, GoogleGenAiEmbeddingConnectionDetails.class })
 @EnableConfigurationProperties(GoogleGenAiEmbeddingConnectionProperties.class)
 public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
 

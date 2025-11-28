@@ -16,9 +16,10 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
-import io.micrometer.observation.ObservationRegistry;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.ResolvableType;
 import org.springframework.util.ClassUtils;
 
 /**
@@ -59,13 +61,35 @@ public class ToolCallingAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(ToolCallingAutoConfiguration.class);
 
+	/**
+	 * The default {@link ToolCallbackResolver} resolves tools by name for methods,
+	 * functions, and {@link ToolCallbackProvider} beans.
+	 * <p>
+	 * MCP providers are excluded, to avoid initializing them early with #listTools().
+	 */
 	@Bean
 	@ConditionalOnMissingBean
-	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
-			List<ToolCallback> toolCallbacks, List<ToolCallbackProvider> tcbProviders) {
+	ToolCallbackResolver toolCallbackResolver(
+			GenericApplicationContext applicationContext, // @formatter:off
+			List<ToolCallback> toolCallbacks,
+			// Deprecated in favor of the tcbProviders. Kept for backward compatibility.
+			ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders) { // @formatter:on
 
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
-		tcbProviders.stream().map(pr -> List.of(pr.getToolCallbacks())).forEach(allFunctionAndToolCallbacks::addAll);
+
+		// Merge ToolCallbackProviders from both ObjectProviders.
+		List<ToolCallbackProvider> totalToolCallbackProviders = new ArrayList<>(
+				tcbProviderList.stream().flatMap(List::stream).toList());
+		totalToolCallbackProviders.addAll(tcbProviders.stream().toList());
+
+		// De-duplicate ToolCallbackProviders
+		totalToolCallbackProviders = totalToolCallbackProviders.stream().distinct().toList();
+
+		totalToolCallbackProviders.stream()
+			.filter(pr -> !isMcpToolCallbackProvider(ResolvableType.forInstance(pr)))
+			.map(pr -> List.of(pr.getToolCallbacks()))
+			.forEach(allFunctionAndToolCallbacks::addAll);
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
 
@@ -74,6 +98,15 @@ public class ToolCallingAutoConfiguration {
 			.build();
 
 		return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+	}
+
+	private static boolean isMcpToolCallbackProvider(ResolvableType type) {
+		if (type.getType().getTypeName().equals("org.springframework.ai.mcp.SyncMcpToolCallbackProvider")
+				|| type.getType().getTypeName().equals("org.springframework.ai.mcp.AsyncMcpToolCallbackProvider")) {
+			return true;
+		}
+		var superType = type.getSuperType();
+		return superType != ResolvableType.NONE && isMcpToolCallbackProvider(superType);
 	}
 
 	@Bean
@@ -125,10 +158,19 @@ public class ToolCallingAutoConfiguration {
 
 	private static Class<? extends RuntimeException> getClassOrNull(String className) {
 		try {
-			return (Class<? extends RuntimeException>) ClassUtils.forName(className, null);
+			Class<?> clazz = ClassUtils.forName(className, null);
+			if (RuntimeException.class.isAssignableFrom(clazz)) {
+				return (Class<? extends RuntimeException>) clazz;
+			}
+			else {
+				logger.debug("Class {} is not a subclass of RuntimeException", className);
+			}
 		}
 		catch (ClassNotFoundException e) {
-			logger.debug("Cannot load class", e);
+			logger.debug("Cannot load class: {}", className);
+		}
+		catch (Exception e) {
+			logger.debug("Error loading class: {}", className, e);
 		}
 		return null;
 	}

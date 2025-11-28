@@ -19,11 +19,13 @@ package org.springframework.ai.model.bedrock.autoconfigure;
 import java.time.Duration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Bedrock AWS connection.
  *
  * @author Christian Tzolov
+ * @author Baojun Jiang
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockAwsConnectionProperties.CONFIG_PREFIX)
@@ -48,14 +50,41 @@ public class BedrockAwsConnectionProperties {
 
 	/**
 	 * AWS session token. (optional) When provided the AwsSessionCredentials are used.
-	 * Otherwise the AwsBasicCredentials are used.
+	 * Otherwise, the AwsBasicCredentials are used.
 	 */
 	private String sessionToken;
 
 	/**
-	 * Set model timeout, Defaults 5 min.
+	 * Aws profile. (optional) When the {@link #accessKey} and {@link #secretKey} are not
+	 * declared. Otherwise, the AwsBasicCredentials are used.
+	 */
+	@NestedConfigurationProperty
+	private ProfileProperties profile;
+
+	/**
+	 * Maximum duration of the entire API call operation.
 	 */
 	private Duration timeout = Duration.ofMinutes(5L);
+
+	/**
+	 * Maximum time to wait while establishing connection with AWS service.
+	 */
+	private Duration connectionTimeout = Duration.ofSeconds(5L);
+
+	/**
+	 * Maximum duration spent reading response data.
+	 */
+	private Duration asyncReadTimeout = Duration.ofSeconds(30L);
+
+	/**
+	 * Maximum time to wait for a new connection from the pool.
+	 */
+	private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
+
+	/**
+	 * Maximum time to wait for response data.
+	 */
+	private Duration socketTimeout = Duration.ofSeconds(90L);
 
 	public String getRegion() {
 		return this.region;
@@ -89,12 +118,52 @@ public class BedrockAwsConnectionProperties {
 		this.timeout = timeout;
 	}
 
+	public Duration getConnectionTimeout() {
+		return this.connectionTimeout;
+	}
+
+	public void setConnectionTimeout(Duration connectionTimeout) {
+		this.connectionTimeout = connectionTimeout;
+	}
+
+	public Duration getAsyncReadTimeout() {
+		return this.asyncReadTimeout;
+	}
+
+	public void setAsyncReadTimeout(Duration asyncReadTimeout) {
+		this.asyncReadTimeout = asyncReadTimeout;
+	}
+
+	public Duration getConnectionAcquisitionTimeout() {
+		return this.connectionAcquisitionTimeout;
+	}
+
+	public void setConnectionAcquisitionTimeout(Duration connectionAcquisitionTimeout) {
+		this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
+	}
+
+	public Duration getSocketTimeout() {
+		return this.socketTimeout;
+	}
+
+	public void setSocketTimeout(Duration socketTimeout) {
+		this.socketTimeout = socketTimeout;
+	}
+
 	public String getSessionToken() {
 		return this.sessionToken;
 	}
 
 	public void setSessionToken(String sessionToken) {
 		this.sessionToken = sessionToken;
+	}
+
+	public ProfileProperties getProfile() {
+		return this.profile;
+	}
+
+	public void setProfile(ProfileProperties profile) {
+		this.profile = profile;
 	}
 
 }

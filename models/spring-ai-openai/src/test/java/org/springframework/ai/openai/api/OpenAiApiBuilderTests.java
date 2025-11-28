@@ -32,13 +32,12 @@ import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
 import org.springframework.ai.model.ApiKey;
+import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -66,7 +65,7 @@ public class OpenAiApiBuilderTests {
 
 	@Test
 	void testFullBuilder() {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		HttpHeaders headers = new HttpHeaders();
 		headers.add("Custom-Header", "test-value");
 		RestClient.Builder restClientBuilder = RestClient.builder();
 		WebClient.Builder webClientBuilder = WebClient.builder();
@@ -159,6 +158,186 @@ public class OpenAiApiBuilderTests {
 			.hasMessageContaining("responseErrorHandler cannot be null");
 	}
 
+	@Test
+	void testBuilderWithAllCustomPaths() {
+		OpenAiApi api = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.baseUrl(TEST_BASE_URL)
+			.completionsPath("/custom/completions")
+			.embeddingsPath("/custom/embeddings")
+			.build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testBuilderImmutability() {
+		OpenAiApi.Builder builder = OpenAiApi.builder().apiKey(TEST_API_KEY).baseUrl(TEST_BASE_URL);
+
+		OpenAiApi api1 = builder.build();
+		OpenAiApi api2 = builder.build();
+
+		assertThat(api1).isNotNull();
+		assertThat(api2).isNotNull();
+		assertThat(api1).isNotSameAs(api2);
+	}
+
+	@Test
+	void testNullApiKeyValue() {
+		assertThatThrownBy(() -> OpenAiApi.builder().apiKey((ApiKey) null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("apiKey cannot be null");
+	}
+
+	@Test
+	void testBuilderMethodChaining() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("Test-Header", "test-value");
+
+		OpenAiApi api = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.baseUrl(TEST_BASE_URL)
+			.completionsPath(TEST_COMPLETIONS_PATH)
+			.embeddingsPath(TEST_EMBEDDINGS_PATH)
+			.headers(headers)
+			.restClientBuilder(RestClient.builder())
+			.webClientBuilder(WebClient.builder())
+			.responseErrorHandler(mock(ResponseErrorHandler.class))
+			.build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testCustomHeadersPreservation() {
+		HttpHeaders customHeaders = new HttpHeaders();
+		customHeaders.add("X-Custom-Header", "custom-value");
+		customHeaders.add("X-Organization", "org-123");
+		customHeaders.add("User-Agent", "Custom-Client/1.0");
+
+		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).headers(customHeaders).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testComplexMultiValueHeaders() {
+		HttpHeaders multiHeaders = new HttpHeaders();
+		multiHeaders.add("Accept", "application/json");
+		multiHeaders.add("Accept", "text/plain");
+		multiHeaders.add("Cache-Control", "no-cache");
+		multiHeaders.add("Cache-Control", "no-store");
+
+		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).headers(multiHeaders).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testPathValidationWithSlashes() {
+		OpenAiApi api1 = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.completionsPath("/v1/completions")
+			.embeddingsPath("/v1/embeddings")
+			.build();
+
+		OpenAiApi api2 = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.completionsPath("v1/completions")
+			.embeddingsPath("v1/embeddings")
+			.build();
+
+		assertThat(api1).isNotNull();
+		assertThat(api2).isNotNull();
+	}
+
+	@Test
+	void testInvalidPathsWithSpecialCharacters() {
+		assertThatThrownBy(() -> OpenAiApi.builder().apiKey(TEST_API_KEY).completionsPath(" ").build())
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void testBuilderWithOnlyRequiredFields() {
+		OpenAiApi api = OpenAiApi.builder().apiKey(TEST_API_KEY).build();
+
+		assertThat(api).isNotNull();
+	}
+
+	@Test
+	void testDifferentApiKeyTypes() {
+		SimpleApiKey simpleKey = new SimpleApiKey("simple-key");
+		OpenAiApi api1 = OpenAiApi.builder().apiKey(simpleKey).build();
+		assertThat(api1).isNotNull();
+
+		OpenAiApi api2 = OpenAiApi.builder().apiKey(() -> "supplier-key").build();
+		assertThat(api2).isNotNull();
+	}
+
+	@Test
+	void testBuilderCreatesIndependentInstances() {
+		HttpHeaders sharedHeaders = new HttpHeaders();
+		sharedHeaders.add("X-Shared", "value");
+
+		OpenAiApi.Builder builder = OpenAiApi.builder()
+			.apiKey(TEST_API_KEY)
+			.baseUrl(TEST_BASE_URL)
+			.headers(sharedHeaders);
+
+		OpenAiApi api1 = builder.build();
+
+		// Modify the shared headers
+		sharedHeaders.add("X-Modified", "new-value");
+
+		OpenAiApi api2 = builder.build();
+
+		// Both APIs should have the modified headers since they share the same reference
+		assertThat(api1.getHeaders().containsHeader("X-Modified")).isTrue();
+		assertThat(api2.getHeaders().containsHeader("X-Modified")).isTrue();
+	}
+
+	@Test
+	void testMutatePreservesResponseErrorHandler() {
+		ResponseErrorHandler customHandler = mock(ResponseErrorHandler.class);
+
+		OpenAiApi original = OpenAiApi.builder().apiKey(TEST_API_KEY).responseErrorHandler(customHandler).build();
+
+		OpenAiApi mutated = original.mutate().apiKey("new-key").build();
+
+		assertThat(original.getResponseErrorHandler()).isSameAs(customHandler);
+		assertThat(mutated.getResponseErrorHandler()).isSameAs(customHandler);
+	}
+
+	@Test
+	void testMutateCreatesIndependentHeaders() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add("X-Original", "value1");
+
+		OpenAiApi original = OpenAiApi.builder().apiKey(TEST_API_KEY).headers(headers).build();
+
+		HttpHeaders newHeaders = new HttpHeaders();
+		newHeaders.add("X-New", "value2");
+
+		OpenAiApi mutated = original.mutate().headers(newHeaders).build();
+
+		// Original headers should be unchanged
+		assertThat(original.getHeaders().containsHeader("X-Original")).isTrue();
+		assertThat(original.getHeaders().containsHeader("X-New")).isFalse();
+
+		// Mutated should have new headers
+		assertThat(mutated.getHeaders().containsHeader("X-Original")).isFalse();
+		assertThat(mutated.getHeaders().containsHeader("X-New")).isTrue();
+	}
+
+	@Test
+	void testNoopApiKey() {
+		OpenAiApi api = OpenAiApi.builder().apiKey(new NoopApiKey()).build();
+
+		assertThat(api).isNotNull();
+		assertThat(api.getApiKey()).isInstanceOf(NoopApiKey.class);
+		assertThat(api.getApiKey().getValue()).isEmpty();
+	}
+
 	@Nested
 	class MockRequests {
 
@@ -166,13 +345,13 @@ public class OpenAiApiBuilderTests {
 
 		@BeforeEach
 		void setUp() throws IOException {
-			mockWebServer = new MockWebServer();
-			mockWebServer.start();
+			this.mockWebServer = new MockWebServer();
+			this.mockWebServer.start();
 		}
 
 		@AfterEach
 		void tearDown() throws IOException {
-			mockWebServer.shutdown();
+			this.mockWebServer.shutdown();
 		}
 
 		@Test
@@ -180,7 +359,7 @@ public class OpenAiApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			OpenAiApi api = OpenAiApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -208,8 +387,8 @@ public class OpenAiApiBuilderTests {
 							}
 						}
 						""");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
 					OpenAiApi.ChatCompletionMessage.Role.USER);
@@ -217,13 +396,13 @@ public class OpenAiApiBuilderTests {
 					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, false);
 			ResponseEntity<OpenAiApi.ChatCompletion> response = api.chatCompletionEntity(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.chatCompletionEntity(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 
@@ -231,7 +410,7 @@ public class OpenAiApiBuilderTests {
 		void dynamicApiKeyRestClientWithAdditionalAuthorizationHeader() throws InterruptedException {
 			OpenAiApi api = OpenAiApi.builder().apiKey(() -> {
 				throw new AssertionFailedError("Should not be called, API key is provided in headers");
-			}).baseUrl(mockWebServer.url("/").toString()).build();
+			}).baseUrl(this.mockWebServer.url("/").toString()).build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -258,18 +437,18 @@ public class OpenAiApiBuilderTests {
 							}
 						}
 						""");
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
 					OpenAiApi.ChatCompletionMessage.Role.USER);
 			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
 					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, false);
 
-			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			HttpHeaders additionalHeaders = new HttpHeaders();
 			additionalHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer additional-key");
 			ResponseEntity<OpenAiApi.ChatCompletion> response = api.chatCompletionEntity(request, additionalHeaders);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer additional-key");
 		}
 
@@ -278,7 +457,7 @@ public class OpenAiApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			OpenAiApi api = OpenAiApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -296,6 +475,7 @@ public class OpenAiApiBuilderTests {
 									"role": "assistant",
 									"content": "Hello world"
 									},
+									"reasoning_content": "test",
 									"finish_reason": "stop"
 								}
 							],
@@ -306,8 +486,8 @@ public class OpenAiApiBuilderTests {
 							}
 						}
 						""".replace("\n", ""));
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
 					OpenAiApi.ChatCompletionMessage.Role.USER);
@@ -315,13 +495,13 @@ public class OpenAiApiBuilderTests {
 					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, true);
 			List<OpenAiApi.ChatCompletionChunk> response = api.chatCompletionStream(request).collectList().block();
 			assertThat(response).hasSize(1);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.chatCompletionStream(request).collectList().block();
 			assertThat(response).hasSize(1);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 
@@ -329,7 +509,7 @@ public class OpenAiApiBuilderTests {
 		void dynamicApiKeyWebClientWithAdditionalAuthorizationHeader() throws InterruptedException {
 			OpenAiApi api = OpenAiApi.builder().apiKey(() -> {
 				throw new AssertionFailedError("Should not be called, API key is provided in headers");
-			}).baseUrl(mockWebServer.url("/").toString()).build();
+			}).baseUrl(this.mockWebServer.url("/").toString()).build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -356,19 +536,19 @@ public class OpenAiApiBuilderTests {
 							}
 						}
 						""".replace("\n", ""));
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiApi.ChatCompletionMessage chatCompletionMessage = new OpenAiApi.ChatCompletionMessage("Hello world",
 					OpenAiApi.ChatCompletionMessage.Role.USER);
 			OpenAiApi.ChatCompletionRequest request = new OpenAiApi.ChatCompletionRequest(
 					List.of(chatCompletionMessage), "gpt-3.5-turbo", 0.8, true);
-			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			HttpHeaders additionalHeaders = new HttpHeaders();
 			additionalHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer additional-key");
 			List<OpenAiApi.ChatCompletionChunk> response = api.chatCompletionStream(request, additionalHeaders)
 				.collectList()
 				.block();
 			assertThat(response).hasSize(1);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer additional-key");
 		}
 
@@ -377,7 +557,7 @@ public class OpenAiApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			OpenAiApi api = OpenAiApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
@@ -407,19 +587,19 @@ public class OpenAiApiBuilderTests {
 						   }
 						}
 						""");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiApi.EmbeddingRequest<String> request = new OpenAiApi.EmbeddingRequest<>("Hello world");
 			ResponseEntity<OpenAiApi.EmbeddingList<OpenAiApi.Embedding>> response = api.embeddings(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.embeddings(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 
