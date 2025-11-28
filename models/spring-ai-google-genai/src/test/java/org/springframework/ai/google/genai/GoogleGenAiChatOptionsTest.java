@@ -167,4 +167,27 @@ public class GoogleGenAiChatOptionsTest {
 		assertThat(options.getLabels()).isEmpty();
 	}
 
+	@Test
+	public void testUrlContextEnabledCopyAndEquality() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+				.model("test-model")
+				.urlContextEnabled(true)
+				.build();
+
+		GoogleGenAiChatOptions copy = original.copy();
+
+		assertThat(original.getUrlContextEnabled()).isTrue();
+		assertThat(copy.getUrlContextEnabled()).isTrue();
+		assertThat(copy).isEqualTo(original);
+		assertThat(copy).isNotSameAs(original);
+		assertThat(copy.toString()).contains("urlContextEnabled=true");
+
+		GoogleGenAiChatOptions different = GoogleGenAiChatOptions.builder()
+				.model("test-model")
+				.urlContextEnabled(false)
+				.build();
+
+		assertThat(original).isNotEqualTo(different);
+		assertThat(original.hashCode()).isNotEqualTo(different.hashCode());
+	}
 }
