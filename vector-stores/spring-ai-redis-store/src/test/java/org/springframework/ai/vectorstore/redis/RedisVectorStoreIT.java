@@ -48,7 +48,6 @@ import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfigurat
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,6 +64,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
 
+	// Use host and port explicitly since getRedisURI() might not be consistent
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(DataRedisAutoConfiguration.class))
 		.withUserConfiguration(TestApplication.class)
@@ -319,18 +319,13 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	public static class TestApplication {
 
 		@Bean
-		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel,
-				JedisConnectionFactory jedisConnectionFactory) {
+		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel) {
+			// Create JedisPooled directly with container properties for more reliable
+			// connection
 			return RedisVectorStore
-				.builder(new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort()),
-						embeddingModel)
+				.builder(new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort()), embeddingModel)
 				.metadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"), MetadataField.tag("country"),
-						MetadataField.numeric("year"), MetadataField.numeric("priority"), // Add
-																							// priority
-																							// as
-																							// numeric
-						MetadataField.tag("type") // Add type as tag
-				)
+						MetadataField.numeric("year"), MetadataField.numeric("priority"), MetadataField.tag("type"))
 				.initializeSchema(true)
 				.build();
 		}
