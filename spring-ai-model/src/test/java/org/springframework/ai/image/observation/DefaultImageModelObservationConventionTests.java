@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
+import org.springframework.ai.image.ImageResponseFormat;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,7 +91,7 @@ class DefaultImageModelObservationConventionTests {
 			.height(1080)
 			.width(1920)
 			.style("sketch")
-			.responseFormat("base64")
+			.responseFormat(ImageResponseFormat.B64_JSON)
 			.build();
 		ImageModelObservationContext observationContext = ImageModelObservationContext.builder()
 			.imagePrompt(generateImagePrompt(imageOptions))
@@ -98,7 +99,7 @@ class DefaultImageModelObservationConventionTests {
 			.build();
 
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_RESPONSE_FORMAT.value(), "base64"),
+				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_RESPONSE_FORMAT.value(), "b64_json"),
 				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_SIZE.value(), "1920x1080"),
 				KeyValue.of(AiObservationAttributes.REQUEST_IMAGE_STYLE.value(), "sketch"));
 	}
