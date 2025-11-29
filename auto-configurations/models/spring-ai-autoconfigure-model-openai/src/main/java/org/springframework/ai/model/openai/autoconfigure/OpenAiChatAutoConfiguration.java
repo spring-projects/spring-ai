@@ -52,6 +52,7 @@ import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfig
  * @author Stefan Vassilev
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Yanming Zhou
  * @author Issam El-atif
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
@@ -76,7 +77,6 @@ public class OpenAiChatAutoConfiguration {
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
 			.headers(resolved.headers())
 			.completionsPath(chatProperties.getCompletionsPath())
-			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
 			.responseErrorHandler(responseErrorHandler)
