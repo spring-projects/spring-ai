@@ -67,18 +67,42 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class ModelOptionsUtils {
 
-	public static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
-		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-		.addModules(JacksonUtils.instantiateAvailableModules())
-		.build()
-		.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+	private static final ObjectMapper DEFAULT_OBJECT_MAPPER;
 
 	static {
+		DEFAULT_OBJECT_MAPPER = JsonMapper.builder()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.build()
+			.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+
 		// Configure coercion for empty strings to null for Enum types
 		// This fixes the issue where empty string finish_reason values cause
 		// deserialization failures
-		OBJECT_MAPPER.coercionConfigFor(Enum.class).setCoercion(CoercionInputShape.EmptyString, CoercionAction.AsNull);
+		DEFAULT_OBJECT_MAPPER.coercionConfigFor(Enum.class)
+			.setCoercion(CoercionInputShape.EmptyString, CoercionAction.AsNull);
+	}
+
+	private static final AtomicReference<ObjectMapper> OBJECT_MAPPER = new AtomicReference<>(DEFAULT_OBJECT_MAPPER);
+
+	/**
+	 * Sets a custom {@link ObjectMapper} instance to use for model options operations.
+	 * This is typically called by Spring's auto-configuration to inject a configured
+	 * ObjectMapper bean.
+	 * @param objectMapper the ObjectMapper to use
+	 */
+	public static void setObjectMapper(ObjectMapper objectMapper) {
+		org.springframework.util.Assert.notNull(objectMapper, "objectMapper cannot be null");
+		OBJECT_MAPPER.set(objectMapper);
+	}
+
+	/**
+	 * Returns the {@link ObjectMapper} instance used for model options operations.
+	 * @return the ObjectMapper instance
+	 */
+	public static ObjectMapper getObjectMapper() {
+		return OBJECT_MAPPER.get();
 	}
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
@@ -98,7 +122,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> jsonToMap(String json) {
-		return jsonToMap(json, OBJECT_MAPPER);
+		return jsonToMap(json, OBJECT_MAPPER.get());
 	}
 
 	/**
@@ -126,7 +150,7 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static <T> T jsonToObject(String json, Class<T> type) {
 		try {
-			return OBJECT_MAPPER.readValue(json, type);
+			return OBJECT_MAPPER.get().readValue(json, type);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to json: " + json, e);
@@ -140,7 +164,7 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static String toJsonString(Object object) {
 		try {
-			return OBJECT_MAPPER.writeValueAsString(object);
+			return OBJECT_MAPPER.get().writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -154,7 +178,7 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static String toJsonStringPrettyPrinter(Object object) {
 		try {
-			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
+			return OBJECT_MAPPER.get().writerWithDefaultPrettyPrinter().writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -231,8 +255,9 @@ public abstract class ModelOptionsUtils {
 			return new HashMap<>();
 		}
 		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
+			ObjectMapper mapper = OBJECT_MAPPER.get();
+			String json = mapper.writeValueAsString(source);
+			return mapper.readValue(json, new TypeReference<Map<String, Object>>() {
 
 			})
 				.entrySet()
@@ -254,8 +279,9 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static <T> T mapToClass(Map<String, Object> source, Class<T> clazz) {
 		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, clazz);
+			ObjectMapper mapper = OBJECT_MAPPER.get();
+			String json = mapper.writeValueAsString(source);
+			return mapper.readValue(json, clazz);
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
