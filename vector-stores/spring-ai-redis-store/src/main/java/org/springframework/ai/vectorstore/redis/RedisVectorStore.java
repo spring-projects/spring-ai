@@ -189,7 +189,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	public static final String DEFAULT_PREFIX = "embedding:";
 
-	public static final Algorithm DEFAULT_VECTOR_ALGORITHM = Algorithm.HSNW;
+	public static final Algorithm DEFAULT_VECTOR_ALGORITHM = Algorithm.HNSW;
 
 	public static final String DISTANCE_FIELD_NAME = "vector_score";
 
@@ -443,7 +443,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	private VectorAlgorithm vectorAlgorithm() {
-		if (this.vectorAlgorithm == Algorithm.HSNW) {
+		if (this.vectorAlgorithm == Algorithm.HNSW) {
 			return VectorAlgorithm.HNSW;
 		}
 		return VectorAlgorithm.FLAT;
@@ -477,7 +477,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	public enum Algorithm {
 
-		FLAT, HSNW
+		FLAT, HNSW
 
 	}
 
