@@ -47,19 +47,11 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
-		<!-- https://mvnrepository.com/artifact/io.swagger.core.v3/swagger-annotations-jakarta -->
 		<dependency>
-			<groupId>io.swagger.core.v3</groupId>
-			<artifactId>swagger-annotations-jakarta</artifactId>
-			<version>${swagger-annotations.version}</version>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-retry</artifactId>
+			<version>${project.parent.version}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>javax.annotation</groupId>
-			<artifactId>javax.annotation-api</artifactId>
-			<version>1.3.2</version>
-		</dependency>
-
 
 		<!-- Spring Framework -->
 		<dependency>
@@ -79,66 +71,24 @@
 
 		<!-- test dependencies -->
 		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-client-chat</artifactId>
+			<version>${project.parent.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-observation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>io.swagger.codegen.v3</groupId>
-				<artifactId>swagger-codegen-maven-plugin</artifactId>
-				<version>3.0.75</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>generate</goal>
-						</goals>
-						<configuration>
-							<inputSpec>${project.basedir}/src/main/resources/openapi.json</inputSpec>
-							<language>java</language>
-							<library>resttemplate</library>
-							<templateDirectory>src/main/resources/handlebars/Java</templateDirectory>
-							<apiPackage>org.springframework.ai.huggingface.api</apiPackage>
-							<modelPackage>org.springframework.ai.huggingface.model</modelPackage>
-							<invokerPackage>org.springframework.ai.huggingface.invoker</invokerPackage>
-							<generateApiTests>false</generateApiTests>
-							<generateModelTests>false</generateModelTests>
-							<configOptions>
-								<sourceFolder>src/main/java</sourceFolder>
-								<dateLibrary>java8</dateLibrary>
-								<!-- jackson secret sauce!! -->
-								<notNullJacksonAnnotation>true</notNullJacksonAnnotation>
-							</configOptions>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<!-- a hint for IDE's to add the java sources to the classpath -->
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>3.4.0</version>
-				<executions>
-					<execution>
-						<id>01-add-test-sources</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>add-source</goal>
-						</goals>
-						<configuration>
-							<sources>
-								<source>${project.build.directory}/generated-sources/swagger/src/main/java</source>
-							</sources>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-		</plugins>
-	</build>
 
 </project>

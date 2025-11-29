@@ -1,14 +1,136 @@
 [[hugging-face]]
-= Hugging Face
+= HuggingFace
 
-One of the easiest ways you can get access to many machine learning and artificial intelligence models is by using the https://en.wikipedia.org/wiki/Hugging_Face[Hugging Face's] https://huggingface.co/inference-endpoints[Inference Endpoints].
+Spring AI provides comprehensive integration with link:https://huggingface.co[HuggingFace], one of the most popular platforms for machine learning and artificial intelligence models.
+HuggingFace offers access to thousands of pre-trained models, datasets, and deployment options, making cutting-edge AI capabilities accessible to developers.
 
-Hugging Face Hub is a platform that provides a collaborative environment for creating and sharing tens of thousands of Open Source ML/AI models, data sets, and demo applications.
+== Overview
 
-Inference Endpoints let you deploy AI Models on dedicated infrastructure with a pay-as-you-go billing model.
+HuggingFace Hub is a collaborative platform providing:
+
+* **Tens of thousands of open-source AI models** - From small efficient models to large state-of-the-art language models
+* **Model hosting and deployment** - Inference Endpoints, Dedicated Endpoints, and Serverless API
+* **Diverse model types** - Text generation, embeddings, image generation, speech recognition, and more
+* **Community-driven** - Active open-source community continuously contributing new models
+
+link:https://huggingface.co/inference-endpoints[Inference Endpoints] enable you to deploy AI models on dedicated infrastructure with a pay-as-you-go billing model.
 You can use infrastructure provided by Amazon Web Services, Microsoft Azure, and Google Cloud Platform.
-Hugging Face lets you run the models on your own machine, but it is quite common to not have enough CPU/GPU resources to run the larger, more AI-focused models.
 
-It provides access to Meta's recent (August 2023) Llama 2 and CodeLlama 2 models and provides the https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard[Open LLM Leaderboard], where you can quickly discover high quality models.
+== Spring AI Support
 
-While Hugging Face has a free hosting tier, which is very useful for quickly evaluating if a specific ML/AI Model fits your needs, they do not let you access many of those models on the free tier by using the https://huggingface.co/docs/text-generation-inference/main/en/index[Text Generation Interface API]. If you want to end up on production anyway, with a stable API, pay a few cents to try out a reliable solution. Prices are as low as $0.06 per CPU core/hr and $0.6 per GPU/hr.
+Spring AI provides native support for HuggingFace models through two main integrations:
+
+=== Chat Models
+The xref:api/chat/huggingface.adoc[HuggingFace Chat integration] enables you to use any text generation model from HuggingFace Hub for conversational AI applications.
+
+**Key Features:**
+* OpenAI-compatible API endpoint (`/v1/chat/completions`)
+* Support for thousands of instruction-tuned models (Llama, Mistral, Gemma, Qwen, etc.)
+* Function/tool calling capabilities (model-dependent)
+* Full observability and metrics support
+
+**Example Configuration:**
+[source,yaml]
+----
+spring:
+  ai:
+    huggingface:
+      api-key: ${HUGGINGFACE_API_KEY}
+      chat:
+        options:
+          model: meta-llama/Llama-3.2-3B-Instruct
+          temperature: 0.7
+----
+
+link:api/chat/huggingface.adoc[Learn more about HuggingFace Chat integration →]
+
+=== Embedding Models
+The xref:api/embeddings/huggingface-embeddings.adoc[HuggingFace Embedding integration] enables you to generate text embeddings using HuggingFace's Feature Extraction pipeline.
+
+**Key Features:**
+* Access to specialized embedding models (sentence-transformers, BAAI, intfloat, etc.)
+* Multilingual embedding support
+* Semantic search and similarity calculations
+* Full observability and metrics support
+
+**Example Configuration:**
+[source,yaml]
+----
+spring:
+  ai:
+    huggingface:
+      api-key: ${HUGGINGFACE_API_KEY}
+      embedding:
+        options:
+          model: sentence-transformers/all-MiniLM-L6-v2
+----
+
+link:api/embeddings/huggingface-embeddings.adoc[Learn more about HuggingFace Embeddings integration →]
+
+== Popular Models
+
+HuggingFace provides access to a vast collection of models. Here are some popular choices:
+
+=== Chat/Text Generation Models
+* **Llama Series**: `meta-llama/Llama-3.2-3B-Instruct`, `meta-llama/Llama-3.1-8B-Instruct`
+* **Mistral Series**: `mistralai/Mistral-7B-Instruct-v0.3`, `mistralai/Mixtral-8x7B-Instruct-v0.1`
+* **Gemma Series**: `google/gemma-2-9b-it`, `google/gemma-2-27b-it`
+* **Qwen Series**: `Qwen/Qwen2.5-7B-Instruct`, `Qwen/Qwen2.5-72B-Instruct`
+
+Browse more at link:https://huggingface.co/models?pipeline_tag=text-generation&sort=trending[HuggingFace Model Hub (Text Generation)]
+
+=== Embedding Models
+* **Sentence Transformers**: `sentence-transformers/all-MiniLM-L6-v2`, `sentence-transformers/all-mpnet-base-v2`
+* **BGE Series**: `BAAI/bge-small-en-v1.5`, `BAAI/bge-large-en-v1.5`
+* **E5 Series**: `intfloat/e5-large-v2`, `intfloat/e5-base-v2`
+* **Multilingual**: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
+
+Browse more at link:https://huggingface.co/models?pipeline_tag=feature-extraction&sort=trending[HuggingFace Model Hub (Feature Extraction)]
+
+== Deployment Options
+
+HuggingFace offers several deployment options that work seamlessly with Spring AI:
+
+=== Inference Endpoints (Recommended)
+Dedicated infrastructure for production workloads:
+
+* **Flexible scaling**: Choose CPU or GPU instances based on your needs
+* **Pay-as-you-go**: $0.06 per CPU core/hr, $0.6 per GPU/hr (pricing may vary)
+* **Multiple cloud providers**: AWS, Azure, Google Cloud
+* **Automatic scaling**: Scale up or down based on demand
+
+link:https://huggingface.co/inference-endpoints[Learn more about Inference Endpoints]
+
+=== Serverless Inference API
+Free tier for development and testing:
+
+* **No infrastructure management**: Fully managed by HuggingFace
+* **Quick experimentation**: Test models without setup
+* **Rate-limited**: Suitable for development, not production
+
+link:https://huggingface.co/docs/api-inference/index[Learn more about Serverless Inference API]
+
+=== Dedicated Endpoints
+Enterprise-grade deployment for mission-critical applications:
+
+* **Reserved capacity**: Guaranteed availability and performance
+* **SLA guarantees**: Production-ready reliability
+* **Custom configurations**: Tailored to your specific requirements
+
+== Getting Started
+
+To get started with HuggingFace in Spring AI:
+
+1. **Create a HuggingFace account** at link:https://huggingface.co/join[https://huggingface.co/join]
+2. **Generate an API token** on the link:https://huggingface.co/settings/tokens[Access Tokens page]
+3. **Add the Spring AI HuggingFace starter** to your project
+4. **Configure your application** with the API key and desired model
+
+Complete setup instructions are available in the Chat and Embedding documentation pages linked above.
+
+== Additional Resources
+
+* link:https://huggingface.co/docs[HuggingFace Documentation]
+* link:https://huggingface.co/docs/api-inference[Inference API Documentation]
+* link:https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard[Open LLM Leaderboard]
+* link:https://huggingface.co/pricing[HuggingFace Pricing]

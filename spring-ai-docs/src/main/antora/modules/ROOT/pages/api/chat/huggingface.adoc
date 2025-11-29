@@ -1,32 +1,28 @@
-= Hugging Face Chat
+= HuggingFace Chat
 
-Hugging Face Text Generation Inference (TGI) is a specialized deployment solution for serving Large Language Models (LLMs) in the cloud, making them accessible via an API. TGI provides optimized performance for text generation tasks through features like continuous batching, token streaming, and efficient memory management.
+Spring AI supports HuggingFace's language models through the HuggingFace Inference API.
+HuggingFace provides access to thousands of pre-trained language models, from small efficient models to large state-of-the-art models, making advanced AI capabilities accessible through a simple API.
 
-IMPORTANT: Text Generation Inference requires models to be compatible with its architecture-specific optimizations. While many popular LLMs are supported, not all models on Hugging Face Hub can be deployed using TGI. If you need to deploy other types of models, consider using standard Hugging Face Inference Endpoints instead.
+IMPORTANT: The HuggingFace Chat implementation uses OpenAI-compatible endpoints (`/v1/chat/completions`). This provides broad compatibility with various HuggingFace deployment options including Inference Endpoints, Dedicated Endpoints, and Serverless Inference API.
 
-TIP: For a complete and up-to-date list of supported models and architectures, see the link:https://huggingface.co/docs/text-generation-inference/en/supported_models[Text Generation Inference supported models documentation].
+TIP: For the most up-to-date list of supported models and deployment options, see the link:https://huggingface.co/docs/api-inference[HuggingFace Inference API documentation].
 
 == Prerequisites
 
-You will need to create an Inference Endpoint on Hugging Face and create an API token to access the endpoint.
-Further details can be found link:https://huggingface.co/docs/inference-endpoints/index[here].
+You will need to create an API token with HuggingFace to access the Inference API.
 
-The Spring AI project defines two configuration properties:
+Create an account at https://huggingface.co/join[HuggingFace signup page] and generate a token on the https://huggingface.co/settings/tokens[Access Tokens page].
 
-1. `spring.ai.huggingface.chat.api-key`: Set this to the value of the API token obtained from Hugging Face.
-2. `spring.ai.huggingface.chat.url`: Set this to the inference endpoint URL obtained when provisioning your model in Hugging Face.
+The Spring AI project defines a configuration property named `spring.ai.huggingface.api-key` that you should set to the value of the API token obtained from huggingface.co.
 
-You can find your inference endpoint URL on the Inference Endpoint's UI link:https://ui.endpoints.huggingface.co/[here].
-
-You can set these configuration properties in your `application.properties` file:
+You can set this configuration property in your `application.properties` file:
 
 [source,properties]
 ----
-spring.ai.huggingface.chat.api-key=<your-huggingface-api-key>
-spring.ai.huggingface.chat.url=<your-inference-endpoint-url>
+spring.ai.huggingface.api-key=<your-huggingface-api-token>
 ----
 
-For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference custom environment variables:
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference an environment variable:
 
 [source,yaml]
 ----
@@ -34,25 +30,21 @@ For enhanced security when handling sensitive information like API keys, you can
 spring:
   ai:
     huggingface:
-      chat:
-        api-key: ${HUGGINGFACE_API_KEY}
-        url: ${HUGGINGFACE_ENDPOINT_URL}
+      api-key: ${HUGGINGFACE_API_KEY}
 ----
 
 [source,bash]
 ----
 # In your environment or .env file
-export HUGGINGFACE_API_KEY=<your-huggingface-api-key>
-export HUGGINGFACE_ENDPOINT_URL=<your-inference-endpoint-url>
+export HUGGINGFACE_API_KEY=<your-huggingface-api-token>
 ----
 
-You can also set these configurations programmatically in your application code:
+You can also set this configuration programmatically in your application code:
 
 [source,java]
 ----
-// Retrieve API key and endpoint URL from secure sources or environment variables
+// Retrieve API key from a secure source or environment variable
 String apiKey = System.getenv("HUGGINGFACE_API_KEY");
-String endpointUrl = System.getenv("HUGGINGFACE_ENDPOINT_URL");
 ----
 
 === Add Repositories and BOM
@@ -70,9 +62,13 @@ There has been a significant change in the Spring AI auto-configuration, starter
 Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
 ====
 
-Spring AI provides Spring Boot auto-configuration for the Hugging Face Chat Client.
-To enable it add the following dependency to your project's Maven `pom.xml` file:
+Spring AI provides Spring Boot auto-configuration for the HuggingFace Chat Model.
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -81,18 +77,51 @@ To enable it add the following dependency to your project's Maven `pom.xml` file
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-starter-model-huggingface'
 }
 ----
+======
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 === Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the HuggingFace Chat model.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.huggingface` is used as the property prefix that lets you connect to HuggingFace Inference API.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.huggingface.api-key    | The API Key (token)           |  -
+|====
+
+NOTE: The API key is shared between the Chat and Embedding models. You only need to configure it once.
+
+==== Configuration Properties
 
 [NOTE]
 ====
@@ -105,30 +134,196 @@ To disable, spring.ai.model.chat=none (or any value which doesn't match huggingf
 This change is done to allow configuration of multiple models.
 ====
 
-The prefix `spring.ai.huggingface` is the property prefix that lets you configure the chat model implementation for Hugging Face.
+The prefix `spring.ai.huggingface.chat` is the property prefix that lets you configure the chat model implementation for HuggingFace.
+
+NOTE: Default values shown below for numeric options (e.g., temperature, frequency-penalty, presence-penalty) are HuggingFace Inference API defaults when these parameters are not specified in the request. Spring AI itself does not set these values - they are `null` by default and only applied by the API if omitted. To explicitly configure these values, set them in your application properties or at runtime.
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
-| spring.ai.huggingface.chat.api-key    | API Key to authenticate with the Inference Endpoint.  |  -
-| spring.ai.huggingface.chat.url        | URL of the Inference Endpoint to connect to           |  -
-| spring.ai.huggingface.chat.enabled (Removed and no longer valid)   | Enable Hugging Face chat model.                       | true
-| spring.ai.model.chat                  | Enable Hugging Face chat model.                       | huggingface
+
+| spring.ai.model.chat | Enable HuggingFace chat model.  | huggingface
+| spring.ai.huggingface.chat.url   | Base URL for the HuggingFace Inference API Chat endpoint | +https://router.huggingface.co/v1+
+| spring.ai.huggingface.chat.options.model | The model to use. Examples: `meta-llama/Llama-3.2-3B-Instruct`, `mistralai/Mistral-7B-Instruct-v0.3`, `google/gemma-2-9b-it` | meta-llama/Llama-3.2-3B-Instruct
+| spring.ai.huggingface.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. | -
+| spring.ai.huggingface.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. | -
+| spring.ai.huggingface.chat.options.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. | -
+| spring.ai.huggingface.chat.options.frequency-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | -
+| spring.ai.huggingface.chat.options.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
+| spring.ai.huggingface.chat.options.stop | Up to 4 sequences where the API will stop generating further tokens. | -
+| spring.ai.huggingface.chat.options.seed | Integer seed for reproducibility. Makes repeated requests with the same seed and parameters return the same result. | -
+| spring.ai.huggingface.chat.options.response-format | An object specifying the format that the model must output. Setting to `{"type": "json_object"}` enables JSON mode. Can be configured as a Map with type and optional schema fields. | -
+| spring.ai.huggingface.chat.options.tool-prompt | A prompt to be appended before the tools when using function calling. | -
+| spring.ai.huggingface.chat.options.logprobs | Whether to return log probabilities of the output tokens. If true, returns the log probabilities of each output token. | -
+| spring.ai.huggingface.chat.options.top-logprobs | An integer between 0 and 5 specifying the number of most likely tokens to return at each token position. Requires logprobs to be set to true. | -
+| spring.ai.huggingface.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.huggingface.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel for function calling. | -
+| spring.ai.huggingface.chat.options.internal-tool-execution-enabled | If false, Spring AI will not handle the tool calls internally, but will proxy them to the client. If true (the default), Spring AI will handle the function calls internally. | true
 |====
 
-== Sample Controller (Auto-configuration)
+NOTE: You can override the common `spring.ai.huggingface.api-key` for the `ChatModel` and `EmbeddingModel` implementations if needed. The `spring.ai.huggingface.chat.api-key` property (if set) takes precedence over the common property.
+
+TIP: All properties prefixed with `spring.ai.huggingface.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
+
+== Runtime Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-huggingface/src/main/java/org/springframework/ai/huggingface/HuggingfaceChatOptions.java[HuggingfaceChatOptions.java] provides the HuggingFace configurations, such as the model to use, the temperature, max tokens, etc.
+
+The default options can be configured using the `spring.ai.huggingface.chat.options` properties as well.
+
+At start-time, use the `HuggingfaceChatModel` constructor to set the default options used for all chat requests.
+At run-time, you can override the default options by adding a `HuggingfaceChatOptions` instance as part of your `Prompt`.
+
+For example, to override the default model name for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        HuggingfaceChatOptions.builder()
+            .model("mistralai/Mistral-7B-Instruct-v0.3")
+            .temperature(0.4)
+        .build()
+    ));
+----
+
+=== Advanced Options
+
+You can use additional parameters for more control over the model's behavior:
+
+[source,java]
+----
+// Using stop sequences to limit generation
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Count from 1 to 10",
+        HuggingfaceChatOptions.builder()
+            .model("meta-llama/Llama-3.2-3B-Instruct")
+            .stopSequences(Arrays.asList("5", "STOP"))
+        .build()
+    ));
+
+// Using seed for reproducible outputs
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate a random story",
+        HuggingfaceChatOptions.builder()
+            .seed(42)  // Same seed produces same results
+            .temperature(0.7)
+        .build()
+    ));
+
+// Using JSON response format
+Map<String, Object> responseFormat = new HashMap<>();
+responseFormat.put("type", "json_object");
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate a JSON object with fields: name, age, city",
+        HuggingfaceChatOptions.builder()
+            .responseFormat(responseFormat)
+        .build()
+    ));
+----
+
+TIP: In addition to model-specific `HuggingfaceChatOptions`, you can use portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-core/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance. This enables you to switch between different chat model providers with minimal code changes.
+
+== Function Calling
+
+You can register custom Java functions with the `HuggingfaceChatModel` and have the HuggingFace model intelligently choose to call them when appropriate.
+
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about link:https://docs.spring.io/spring-ai/reference/api/tools.html[Tool/Function Calling] in Spring AI.
+
+=== Example: Weather Service Function
+
+Here's a complete example demonstrating function calling with HuggingFace:
+
+[source,java]
+----
+@Configuration
+public class FunctionConfiguration {
+
+    @Bean
+    @Description("Get the current weather conditions for a specific location")
+    public Function<WeatherRequest, WeatherResponse> weatherFunction() {
+        return new MockWeatherService();
+    }
+
+    public record WeatherRequest(String location, String unit) {}
+    public record WeatherResponse(double temperature, double windSpeed, String forecast) {}
+}
+
+@RestController
+public class ChatController {
+
+    private final ChatModel chatModel;
+
+    public ChatController(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/weather")
+    public String getWeather(@RequestParam String location) {
+        UserMessage userMessage = new UserMessage(
+            "What's the weather like in " + location + "?");
+
+        ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+            HuggingfaceChatOptions.builder()
+                .functionCallbacks(List.of(FunctionCallback.builder()
+                    .function("weatherFunction", new MockWeatherService())
+                    .description("Get the current weather conditions")
+                    .build()))
+            .build()));
+
+        return response.getResult().getOutput().getText();
+    }
+}
+----
+
+IMPORTANT: Function calling support in HuggingFace requires both a compatible model AND provider. Not all models or providers support this feature.
+
+**Model and Provider Requirements:**
+
+* **Provider Suffix Required:** Function-calling models typically require a provider suffix in the model name (e.g., `meta-llama/Llama-3.2-3B-Instruct:together`)
+* **Supported Providers:** Common providers include `together`, `fastest`, and others depending on the model
+* **Compatible Models:** See the link:https://huggingface.co/collections/MarketAgents/function-calling-models-tool-use[HuggingFace Function Calling Models Collection] for a curated list
+
+**Configuration Example:**
+
+[source,yaml]
+----
+spring:
+  ai:
+    huggingface:
+      chat:
+        options:
+          model: meta-llama/Llama-3.2-3B-Instruct:together  # Note the :together provider suffix
+----
+
+For more details about function calling with HuggingFace, see the link:https://huggingface.co/docs/inference-providers/guides/function-calling[HuggingFace Function Calling Guide].
+
+NOTE: Streaming function calling is not yet supported in this release. Non-streaming function calling (using `ChatModel.call()`) works as expected.
+
+== Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-huggingface` to your pom (or gradle) dependencies.
 
-Add an `application.properties` file, under the `src/main/resources` directory, to enable and configure the Hugging Face chat model:
+Add an `application.yml` file, under the `src/main/resources` directory, to enable and configure the HuggingFace chat model:
 
-[source,application.properties]
+[source,yaml]
 ----
-spring.ai.huggingface.chat.api-key=YOUR_API_KEY
-spring.ai.huggingface.chat.url=YOUR_INFERENCE_ENDPOINT_URL
+spring:
+  ai:
+    huggingface:
+      api-key: ${HUGGINGFACE_API_KEY}
+      chat:
+        options:
+          model: meta-llama/Llama-3.2-3B-Instruct
+          temperature: 0.7
 ----
 
-TIP: replace the `api-key` and `url` with your Hugging Face values.
+TIP: Replace the `api-key` with your HuggingFace API token value.
 
 This will create a `HuggingfaceChatModel` implementation that you can inject into your class.
 Here is an example of a simple `@Controller` class that uses the chat model for text generations.
@@ -138,25 +333,26 @@ Here is an example of a simple `@Controller` class that uses the chat model for 
 @RestController
 public class ChatController {
 
-    private final HuggingfaceChatModel chatModel;
+    private final ChatModel chatModel;
 
     @Autowired
-    public ChatController(HuggingfaceChatModel chatModel) {
+    public ChatController(ChatModel chatModel) {
         this.chatModel = chatModel;
     }
 
     @GetMapping("/ai/generate")
     public Map generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
-        return Map.of("generation", this.chatModel.call(message));
+        return Map.of("generation", chatModel.call(message));
     }
 }
 ----
 
+NOTE: Streaming is not currently supported by `HuggingfaceChatModel`. This feature is planned for a future release using WebClient integration.
+
 == Manual Configuration
 
-The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-huggingface/src/main/java/org/springframework/ai/huggingface/HuggingfaceChatModel.java[HuggingfaceChatModel] implements the `ChatModel` interface and uses the <<low-level-api>> to connect to the Hugging Face inference endpoints.
-
-Add the `spring-ai-huggingface` dependency to your project's Maven `pom.xml` file:
+If you are not using Spring Boot, you can manually configure the HuggingFace Chat Model.
+For this add the `spring-ai-huggingface` dependency to your project's Maven `pom.xml` file:
 
 [source, xml]
 ----
@@ -177,14 +373,113 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-Next, create a `HuggingfaceChatModel` and use it for text generations:
+NOTE: The `spring-ai-huggingface` dependency provides access also to the `HuggingfaceEmbeddingModel`.
+For more information about the `HuggingfaceEmbeddingModel` refer to the link:../embeddings/huggingface-embeddings.html[HuggingFace Embeddings] section.
+
+Next, create a `HuggingfaceChatModel` instance and use it for text generations:
 
 [source,java]
 ----
-HuggingfaceChatModel chatModel = new HuggingfaceChatModel(apiKey, url);
+var huggingfaceApi = HuggingfaceApi.builder()
+    .baseUrl("https://router.huggingface.co/v1")
+    .apiKey(System.getenv("HUGGINGFACE_API_KEY"))
+    .build();
 
-ChatResponse response = this.chatModel.call(
+var chatModel = HuggingfaceChatModel.builder()
+    .huggingfaceApi(huggingfaceApi)
+    .defaultOptions(HuggingfaceChatOptions.builder()
+        .model("meta-llama/Llama-3.2-3B-Instruct")
+        .temperature(0.7)
+        .build())
+    .build();
+
+ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
 
 System.out.println(response.getResult().getOutput().getText());
 ----
+
+The `HuggingfaceChatOptions` provides the configuration information for the chat requests.
+Both the API and options classes offer a `builder()` for easy instance creation.
+
+== Low-level HuggingfaceApi Client [[low-level-api]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-huggingface/src/main/java/org/springframework/ai/huggingface/api/HuggingfaceApi.java[HuggingfaceApi] provides a lightweight Java client for link:https://huggingface.co/docs/api-inference[HuggingFace Inference API].
+
+The `HuggingfaceApi` supports:
+
+* **OpenAI-compatible Chat Completions**: Accessible via `/v1/chat/completions` endpoint (relative to chat base URL)
+* **Feature Extraction for Embeddings**: Accessible via `/{model}/pipeline/feature-extraction` endpoint (relative to embedding base URL: `https://router.huggingface.co/hf-inference/models`)
+
+Here's a simple example of how to use the `HuggingfaceApi` directly for chat completions:
+
+[source,java]
+----
+HuggingfaceApi huggingfaceApi = HuggingfaceApi.builder()
+    .baseUrl("https://router.huggingface.co/v1")
+    .apiKey(System.getenv("HUGGINGFACE_API_KEY"))
+    .build();
+
+// Create a user message
+HuggingfaceApi.Message userMessage = new HuggingfaceApi.Message(
+    "user",
+    "Explain quantum computing in simple terms");
+
+// Create chat request with options
+Map<String, Object> options = new HashMap<>();
+options.put("temperature", 0.7);
+
+HuggingfaceApi.ChatRequest chatRequest = new HuggingfaceApi.ChatRequest(
+    "meta-llama/Llama-3.2-3B-Instruct",
+    List.of(userMessage),
+    options);
+
+// Call the API
+HuggingfaceApi.ChatResponse response = huggingfaceApi.chat(chatRequest);
+String assistantReply = response.choices().get(0).message().content();
+----
+
+== Supported Models
+
+HuggingFace Inference API provides access to thousands of models. Popular chat models include:
+
+* **Llama Models**: `meta-llama/Llama-3.2-3B-Instruct`, `meta-llama/Llama-3.1-8B-Instruct`
+* **Mistral Models**: `mistralai/Mistral-7B-Instruct-v0.3`, `mistralai/Mixtral-8x7B-Instruct-v0.1`
+* **Gemma Models**: `google/gemma-2-9b-it`, `google/gemma-2-27b-it`
+* **Qwen Models**: `Qwen/Qwen2.5-7B-Instruct`, `Qwen/Qwen2.5-72B-Instruct`
+* **DeepSeek Models**: `deepseek-ai/DeepSeek-V3`, `deepseek-ai/DeepSeek-R1`
+
+You can browse all available models at https://huggingface.co/models?pipeline_tag=text-generation&sort=trending[HuggingFace Model Hub].
+
+IMPORTANT: Ensure the model you choose supports the OpenAI-compatible chat completions endpoint. Most instruction-tuned models work well, but always check the model card for API compatibility information.
+
+== Observability
+
+Spring AI provides built-in observability for HuggingFace Chat models through Micrometer and Spring Boot actuators.
+
+To enable observability:
+
+1. Add the Spring Boot Actuator dependency to your project
+2. Enable metrics in your `application.yml`:
+
+[source,yaml]
+----
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  metrics:
+    export:
+      simple:
+        enabled: true
+----
+
+The HuggingFace Chat model will automatically export metrics including:
+
+* Request count
+* Request duration
+* Token usage (when provided by the model)
+* Error rates
+
+These metrics are tagged with the model name and provider for easy filtering and aggregation.
