@@ -48,8 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = BedrockProxyChatModelObservationIT.Config.class,
-		properties = "spring.ai.retry.on-http-codes=429")
+@SpringBootTest("spring.ai.retry.on-http-codes=429")
 @RequiresAwsCredentials
 public class BedrockProxyChatModelObservationIT {
 

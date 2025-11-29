@@ -50,8 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  */
-@SpringBootTest(classes = AnthropicChatModelObservationIT.Config.class,
-		properties = "spring.ai.retry.on-http-codes=429")
+@SpringBootTest("spring.ai.retry.on-http-codes=429")
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class AnthropicChatModelObservationIT {
 
