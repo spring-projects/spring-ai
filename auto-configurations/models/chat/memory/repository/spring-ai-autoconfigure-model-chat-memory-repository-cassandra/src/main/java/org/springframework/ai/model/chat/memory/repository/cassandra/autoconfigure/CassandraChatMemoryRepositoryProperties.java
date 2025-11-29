@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,13 @@ package org.springframework.ai.model.chat.memory.repository.cassandra.autoconfig
 
 import java.time.Duration;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.springframework.ai.chat.memory.repository.cassandra.CassandraChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.lang.Nullable;
 
 /**
- * Configuration properties for Cassandra chat memory.
+ * Configuration properties for Cassandra Chat Memory Repository.
  *
  * @author Mick Semb Wever
- * @author Jihoon Kim
  * @since 1.0.0
  */
 @ConfigurationProperties(CassandraChatMemoryRepositoryProperties.CONFIG_PREFIX)
@@ -37,25 +32,30 @@ public class CassandraChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.cassandra";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraChatMemoryRepositoryProperties.class);
-
+	/**
+	 * Cassandra keyspace name.
+	 */
 	private String keyspace = CassandraChatMemoryRepositoryConfig.DEFAULT_KEYSPACE_NAME;
 
+	/**
+	 * Cassandra table name.
+	 */
 	private String table = CassandraChatMemoryRepositoryConfig.DEFAULT_TABLE_NAME;
 
+	/**
+	 * Cassandra column name for messages.
+	 */
 	private String messagesColumn = CassandraChatMemoryRepositoryConfig.DEFAULT_MESSAGES_COLUMN_NAME;
 
+	/**
+	 * Time to live (TTL) for messages written in Cassandra.
+	 */
+	private Duration timeToLive;
+
+	/**
+	 * Whether to initialize the schema on startup.
+	 */
 	private boolean initializeSchema = true;
-
-	public boolean isInitializeSchema() {
-		return this.initializeSchema;
-	}
-
-	public void setInitializeSchema(boolean initializeSchema) {
-		this.initializeSchema = initializeSchema;
-	}
-
-	private Duration timeToLive = null;
 
 	public String getKeyspace() {
 		return this.keyspace;
@@ -81,7 +81,6 @@ public class CassandraChatMemoryRepositoryProperties {
 		this.messagesColumn = messagesColumn;
 	}
 
-	@Nullable
 	public Duration getTimeToLive() {
 		return this.timeToLive;
 	}
@@ -90,4 +89,13 @@ public class CassandraChatMemoryRepositoryProperties {
 		this.timeToLive = timeToLive;
 	}
 
+	public boolean isInitializeSchema() {
+		return this.initializeSchema;
+	}
+
+	public void setInitializeSchema(boolean initializeSchema) {
+		this.initializeSchema = initializeSchema;
+	}
+
 }
+
