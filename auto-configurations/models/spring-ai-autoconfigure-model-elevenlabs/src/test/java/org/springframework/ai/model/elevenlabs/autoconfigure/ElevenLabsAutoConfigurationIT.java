@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.elevenlabs.autoconfigure;
 
+import java.time.Duration;
 import java.util.Arrays;
 
 import org.junit.jupiter.api.Test;
@@ -71,6 +72,23 @@ public class ElevenLabsAutoConfigurationIT {
 
 			logger.debug("Response: " + Arrays.toString(response));
 		});
+	}
+
+	@Test
+	void speechWithCustomTimeout() {
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
+			.withPropertyValues("spring.ai.elevenlabs.connect-timeout=1ms", "spring.ai.elevenlabs.read-timeout=1ms")
+			.run(context -> {
+				ElevenLabsTextToSpeechModel speechModel = context.getBean(ElevenLabsTextToSpeechModel.class);
+				var connectionProperties = context.getBean(ElevenLabsConnectionProperties.class);
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofMillis(1));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMillis(1));
+
+				byte[] response = speechModel.call("H");
+				assertThat(response).isNotNull();
+
+				logger.info("Response with custom timeout: " + Arrays.toString(response));
+			});
 	}
 
 	public boolean verifyMp3FrameHeader(byte[] audioResponse) {

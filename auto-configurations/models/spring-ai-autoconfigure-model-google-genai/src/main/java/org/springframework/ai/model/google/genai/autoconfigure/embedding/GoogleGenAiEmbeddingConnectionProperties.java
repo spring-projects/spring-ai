@@ -16,6 +16,10 @@
 
 package org.springframework.ai.model.google.genai.autoconfigure.embedding;
 
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
@@ -51,6 +55,23 @@ public class GoogleGenAiEmbeddingConnectionProperties {
 	 * URI to Google Cloud credentials (optional, for Vertex AI mode).
 	 */
 	private Resource credentialsUri;
+
+	/**
+	 * Timeout for the request in milliseconds.
+	 */
+	private Duration timeout;
+
+	/**
+	 * The maximum number of connections allowed in the pool.
+	 */
+	private Integer maxConnections;
+
+	/**
+	 * The maximum number of connections allowed per host.
+	 */
+	private Integer maxConnectionsPerHost;
+
+	private Map<String, String> customHeaders = new HashMap<>();
 
 	/**
 	 * Whether to use Vertex AI mode. If false, uses Gemini Developer API mode. This is
@@ -96,6 +117,38 @@ public class GoogleGenAiEmbeddingConnectionProperties {
 
 	public void setVertexAi(boolean vertexAi) {
 		this.vertexAi = vertexAi;
+	}
+
+	public Duration getTimeout() {
+		return this.timeout;
+	}
+
+	public void setTimeout(Duration timeout) {
+		this.timeout = timeout;
+	}
+
+	public Integer getMaxConnections() {
+		return this.maxConnections;
+	}
+
+	public void setMaxConnections(Integer maxConnections) {
+		this.maxConnections = maxConnections;
+	}
+
+	public Integer getMaxConnectionsPerHost() {
+		return this.maxConnectionsPerHost;
+	}
+
+	public void setMaxConnectionsPerHost(Integer maxConnectionsPerHost) {
+		this.maxConnectionsPerHost = maxConnectionsPerHost;
+	}
+
+	public Map<String, String> getCustomHeaders() {
+		return this.customHeaders;
+	}
+
+	public void setCustomHeaders(Map<String, String> customHeaders) {
+		this.customHeaders = customHeaders;
 	}
 
 }

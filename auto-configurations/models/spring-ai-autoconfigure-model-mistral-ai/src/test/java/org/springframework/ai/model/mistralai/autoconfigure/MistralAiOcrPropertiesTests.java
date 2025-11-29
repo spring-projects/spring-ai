@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mistralai.ocr.MistralOcrApi;
@@ -163,6 +165,24 @@ class MistralAiOcrPropertiesTests {
 				// but in this minimal test setup, they shouldn't be loaded if OCR is
 				// disabled.
 				assertThat(context.getBeansOfType(MistralAiCommonProperties.class)).isEmpty();
+			});
+	}
+
+	@Test
+	public void ocrCustomTimeouts() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.mistralai.api-key=API_KEY",
+						"spring.ai.mistralai.base-url=TEST_BASE_URL",
+						"spring.ai.mistralai.connect-timeout=5s",
+						"spring.ai.mistralai.read-timeout=30s")
+				// @formatter:on
+			.withConfiguration(this.autoConfigurations)
+			.run(context -> {
+				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
+
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
 			});
 	}
 

@@ -16,8 +16,15 @@
 
 package org.springframework.ai.model.anthropic.autoconfigure;
 
+import java.time.Duration;
+
+import jakarta.annotation.Nullable;
+
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.http.client.HttpRedirects;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Anthropic API connection properties.
@@ -55,6 +62,10 @@ public class AnthropicConnectionProperties {
 	 * max-tokens-3-5-sonnet-2024-07-15.
 	 */
 	private String betaVersion = AnthropicApi.DEFAULT_ANTHROPIC_BETA_VERSION;
+
+	@NestedConfigurationProperty
+	private final HttpClientSettingsProperties http = new HttpClientSettingsProperties() {
+	};
 
 	public String getApiKey() {
 		return this.apiKey;
@@ -94,6 +105,41 @@ public class AnthropicConnectionProperties {
 
 	public void setBetaVersion(String betaVersion) {
 		this.betaVersion = betaVersion;
+	}
+
+	@Nullable
+	public HttpRedirects getRedirects() {
+		return this.http.getRedirects();
+	}
+
+	public void setRedirects(HttpRedirects redirects) {
+		this.http.setRedirects(redirects);
+	}
+
+	@Nullable
+	public Duration getConnectTimeout() {
+		return this.http.getConnectTimeout();
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.http.setConnectTimeout(connectTimeout);
+	}
+
+	@Nullable
+	public Duration getReadTimeout() {
+		return this.http.getReadTimeout();
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.http.setReadTimeout(readTimeout);
+	}
+
+	public HttpClientSettingsProperties.Ssl getSsl() {
+		return this.http.getSsl();
+	}
+
+	public HttpClientSettingsProperties getHttp() {
+		return this.http;
 	}
 
 }

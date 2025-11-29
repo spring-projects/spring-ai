@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -696,6 +698,23 @@ public class OpenAiPropertiesTests {
 				assertThat(moderationProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 				assertThat(moderationProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(moderationProperties.getOptions().getModel()).isEqualTo("MODERATION_MODEL");
+			});
+	}
+
+	@Test
+	public void httpClientCustomTimeouts() {
+		this.contextRunner.withPropertyValues(
+		// @formatter:off
+						"spring.ai.openai.api-key=API_KEY", "spring.ai.openai.base-url=TEST_BASE_URL",
+						"spring.ai.openai.connect-timeout=5s",
+						"spring.ai.openai.read-timeout=30s")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
 			});
 	}
 

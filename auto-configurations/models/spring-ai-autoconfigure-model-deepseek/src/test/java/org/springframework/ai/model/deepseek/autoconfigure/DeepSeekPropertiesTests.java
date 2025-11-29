@@ -16,10 +16,13 @@
 
 package org.springframework.ai.model.deepseek.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.http.client.HttpRedirects;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -150,6 +153,39 @@ public class DeepSeekPropertiesTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(DeepSeekChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DeepSeekChatModel.class)).isNotEmpty();
+			});
+	}
+
+	@Test
+	public void httpClientCustomTimeouts() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.connect-timeout=5s",
+						"spring.ai.deepseek.read-timeout=30s")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
+			});
+	}
+
+	@Test
+	public void httpClientRedirects() {
+		new ApplicationContextRunner().withPropertyValues(
+		// @formatter:off
+						"spring.ai.deepseek.api-key=API_KEY",
+						"spring.ai.deepseek.base-url=TEST_BASE_URL",
+						"spring.ai.deepseek.redirects=DONT_FOLLOW")
+				// @formatter:on
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.run(context -> {
+				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
+				assertThat(connectionProperties.getRedirects()).isEqualTo(HttpRedirects.DONT_FOLLOW);
 			});
 	}
 
