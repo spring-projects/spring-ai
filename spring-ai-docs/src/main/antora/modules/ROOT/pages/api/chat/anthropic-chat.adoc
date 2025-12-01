@@ -149,7 +149,7 @@ The prefix `spring.ai.anthropic.chat` is the property prefix that lets you confi
 
 | spring.ai.anthropic.chat.enabled (Removed and no longer valid) | Enable Anthropic chat model.  | true
 | spring.ai.model.chat | Enable Anthropic chat model.  | anthropic
-| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307`, `claude-3-7-sonnet-latest`, `claude-sonnet-4-20250514`, `claude-opus-4-1-20250805` | `claude-opus-4-20250514`
+| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-sonnet-4-5`, `claude-opus-4-5`, `claude-haiku-4-5`, `claude-opus-4-1`, `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-5-haiku-latest`, `claude-3-opus-latest`, `claude-3-haiku-20240307` | `claude-sonnet-4-5`
 | spring.ai.anthropic.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.anthropic.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | 500
 | spring.ai.anthropic.chat.options.stop-sequence | Custom text sequences that will cause the model to stop generating. Our models will normally stop when they have naturally completed their turn, which will result in a response stop_reason of "end_turn". If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter. If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence. | -
@@ -198,7 +198,7 @@ When you cache a prompt, subsequent identical requests can reuse the cached cont
 ====
 *Supported Models*
 
-Prompt caching is currently supported on Claude Opus 4, Claude Sonnet 4, Claude Sonnet 3.7, Claude Sonnet 3.5, Claude Haiku 3.5, Claude Haiku 3, and Claude Opus 3.
+Prompt caching is currently supported on Claude Sonnet 4.5, Claude Opus 4.5, Claude Haiku 4.5, Claude Opus 4, Claude Sonnet 4, Claude Sonnet 3.7, Claude Sonnet 3.5, Claude Haiku 3.5, Claude Haiku 3, and Claude Opus 3.
 
 *Token Requirements*
 

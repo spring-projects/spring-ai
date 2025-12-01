@@ -279,6 +279,16 @@ public final class AnthropicApi {
 		CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
 
 		/**
+		 * The claude-opus-4-5 model.
+		 */
+		CLAUDE_OPUS_4_5("claude-opus-4-5"),
+
+		/**
+		 * The claude-haiku-4-5 model.
+		 */
+		CLAUDE_HAIKU_4_5("claude-haiku-4-5"),
+
+		/**
 		 * The claude-opus-4-1 model.
 		 */
 		CLAUDE_OPUS_4_1("claude-opus-4-1"),
