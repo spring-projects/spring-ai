@@ -348,11 +348,10 @@
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
-		<maven-toolchains-plugin.version>3.2.0</maven-toolchains-plugin.version>
+		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
 		<!-- The version (range) of the JDK we want to use to compile.
-			This is different from ${java.version} which we use as -release target.
-			This exact property name is recognized by the toolchains plugin. -->
-		<toolchain.jdk.version>[25,)</toolchain.jdk.version>
+			This is different from ${java.version} which we use as -release target. -->
+		<compiler.jdk.version>[25,)</compiler.jdk.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
@@ -386,16 +385,32 @@
 	<build>
 		<plugins>
 			<plugin>
-				<!-- This plugin makes sure we can locate a JDK matching the ${toolchain.jdk.version} constraint.-->
-				<!-- It will be used by e.g. the maven.compiler.plugin, or fail otherwise. -->
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-toolchains-plugin</artifactId>
-				<version>${maven-toolchains-plugin.version}</version>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven-enforcer-plugin.version}</version>
 				<executions>
 					<execution>
+						<id>maven-enforcer</id>
 						<goals>
-							<goal>select-jdk-toolchain</goal>
+							<goal>enforce</goal>
 						</goals>
+						<configuration>
+							<rules>
+								<!-- Make sure we run with a JDK that supports the
+								error_prone + nullaway tools correctly. An alternative
+								would have been to use fork=true at the compiler plugin
+								level, but this is more efficient in this big project.
+								See also .mvn/jvm.config -->
+								<requireJavaVersion>
+									<version>${compiler.jdk.version}</version>
+								</requireJavaVersion>
+								<banDuplicatePomDependencyVersions />
+								<!-- TODO <dependencyConvergence /> -->
+								<requireMavenVersion>
+									<version>[3.9.1,)</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -490,22 +505,11 @@
 				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
 					<release>${java.version}</release>
-					<fork>true</fork>
 					<compilerArgs>
 						<arg>-parameters</arg>
 						<arg>-XDcompilePolicy=simple</arg>
 						<arg>--should-stop=ifError=FLOW</arg>
 						<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
-						<arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
-						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
-						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
 					</compilerArgs>
 					<annotationProcessorPaths>
 						<path>
