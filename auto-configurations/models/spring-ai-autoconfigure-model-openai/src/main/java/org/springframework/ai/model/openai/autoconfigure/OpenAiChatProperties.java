@@ -29,14 +29,11 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
 	private String completionsPath = DEFAULT_COMPLETIONS_PATH;
 
 	@NestedConfigurationProperty
 	private final OpenAiChatOptions options = OpenAiChatOptions.builder()
 		.model(DEFAULT_CHAT_MODEL)
-		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public OpenAiChatOptions getOptions() {
