@@ -215,6 +215,85 @@ var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 ----
 
 
+== Safety Settings and Safety Ratings
+
+The Vertex AI Gemini API provides safety filtering capabilities to help you control harmful content in both prompts and responses.
+For more details, see the https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters[Vertex AI Safety Filters documentation].
+
+=== Configuring Safety Settings
+
+You can configure safety settings to control the threshold at which content is blocked for different harm categories.
+The available harm categories are:
+
+* `HARM_CATEGORY_HATE_SPEECH` - Hate speech content
+* `HARM_CATEGORY_DANGEROUS_CONTENT` - Dangerous content
+* `HARM_CATEGORY_HARASSMENT` - Harassment content
+* `HARM_CATEGORY_SEXUALLY_EXPLICIT` - Sexually explicit content
+* `HARM_CATEGORY_CIVIC_INTEGRITY` - Civic integrity content
+
+The available threshold levels are:
+
+* `BLOCK_LOW_AND_ABOVE` - Block when low, medium, or high probability of unsafe content
+* `BLOCK_MEDIUM_AND_ABOVE` - Block when medium or high probability of unsafe content
+* `BLOCK_ONLY_HIGH` - Block only when high probability of unsafe content
+* `BLOCK_NONE` - Never block (use with caution)
+
+[source,java]
+----
+List<VertexAiGeminiSafetySetting> safetySettings = List.of(
+    VertexAiGeminiSafetySetting.builder()
+        .withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
+        .withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+        .build(),
+    VertexAiGeminiSafetySetting.builder()
+        .withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH)
+        .withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+        .build());
+
+ChatResponse response = chatModel.call(new Prompt("Your prompt here",
+    VertexAiGeminiChatOptions.builder()
+        .safetySettings(safetySettings)
+        .build()));
+----
+
+=== Accessing Safety Ratings in Responses
+
+When safety settings are configured, the Gemini API returns safety ratings for each response candidate.
+These ratings indicate the probability and severity of harmful content in each category.
+
+Safety ratings are available in the `AssistantMessage` metadata under the key `"safetyRatings"`:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(new Prompt(prompt,
+    VertexAiGeminiChatOptions.builder()
+        .safetySettings(safetySettings)
+        .build()));
+
+// Access safety ratings from the response
+List<VertexAiGeminiSafetyRating> safetyRatings =
+    (List<VertexAiGeminiSafetyRating>) response.getResult()
+        .getOutput()
+        .getMetadata()
+        .get("safetyRatings");
+
+for (VertexAiGeminiSafetyRating rating : safetyRatings) {
+    System.out.println("Category: " + rating.category());
+    System.out.println("Probability: " + rating.probability());
+    System.out.println("Severity: " + rating.severity());
+    System.out.println("Blocked: " + rating.blocked());
+}
+----
+
+The `VertexAiGeminiSafetyRating` record contains:
+
+* `category` - The harm category (e.g., `HARM_CATEGORY_HARASSMENT`)
+* `probability` - The probability level (`NEGLIGIBLE`, `LOW`, `MEDIUM`, `HIGH`)
+* `blocked` - Whether the content was blocked due to this rating
+* `probabilityScore` - The raw probability score (0.0 to 1.0)
+* `severity` - The severity level (`HARM_SEVERITY_NEGLIGIBLE`, `HARM_SEVERITY_LOW`, `HARM_SEVERITY_MEDIUM`, `HARM_SEVERITY_HIGH`)
+* `severityScore` - The raw severity score (0.0 to 1.0)
+
 == Sample Controller
 
 https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-vertex-ai-gemini` to your pom (or gradle) dependencies.

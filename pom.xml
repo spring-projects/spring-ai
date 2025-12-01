@@ -292,7 +292,7 @@
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
-		<com.google.cloud.version>26.60.0</com.google.cloud.version>
+		<com.google.cloud.version>26.72.0</com.google.cloud.version>
 		<com.google.genai.version>1.28.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
 		<jsonschema.version>4.38.0</jsonschema.version>
