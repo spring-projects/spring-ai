@@ -83,6 +83,20 @@ The prefix `spring.ai.stabilityai` is used as the property prefix that lets you 
 | spring.ai.stabilityai.api-key    | The API Key           |  -
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.stabilityai` is used as the property prefix that lets you configure the HTTP client for Stability AI API calls.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.stabilityai.connect-timeout | HTTP connection timeout | -
+| spring.ai.stabilityai.read-timeout | HTTP read timeout | -
+| spring.ai.stabilityai.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.stabilityai.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 [NOTE]
 ====
 Enabling and disabling of the image auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.

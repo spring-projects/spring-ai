@@ -75,6 +75,20 @@ The prefix `spring.ai.ollama` is the property prefix to configure the connection
 | spring.ai.ollama.base-url | Base URL where Ollama API server is running. | `+http://localhost:11434+`
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.ollama` is used as the property prefix that lets you configure the HTTP client for Ollama API calls.
+
+[cols="3,6,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.ollama.connect-timeout | HTTP connection timeout | -
+| spring.ai.ollama.read-timeout | HTTP read timeout | -
+| spring.ai.ollama.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.ollama.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 Here are the properties for initializing the Ollama integration and xref:auto-pulling-models[auto-pulling models].
 
 [cols="3,6,1"]

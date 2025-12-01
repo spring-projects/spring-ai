@@ -64,7 +64,9 @@ The prefix `spring.ai.oci.genai` is the property prefix to configure the connect
 | spring.ai.oci.genai.file | Path to OCI config file. Used when authenticating with `file` auth. | <user's home directory>/.oci/config
 | spring.ai.oci.genai.profile | OCI profile name. Used when authenticating with `file` auth. | DEFAULT
 | spring.ai.oci.genai.endpoint | Optional OCI GenAI endpoint. | -
-
+| spring.ai.oci.genai.connect-timeout | HTTP connection timeout | -
+| spring.ai.oci.genai.read-timeout | HTTP read timeout | -
+| spring.ai.oci.genai.max-async-threads | Maximum number of async threads | -
 |====
 
 

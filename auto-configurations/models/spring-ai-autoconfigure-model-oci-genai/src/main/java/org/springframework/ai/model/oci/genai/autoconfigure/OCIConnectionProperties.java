@@ -17,6 +17,7 @@
 package org.springframework.ai.model.oci.genai.autoconfigure;
 
 import java.nio.file.Paths;
+import java.time.Duration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
@@ -52,6 +53,12 @@ public class OCIConnectionProperties {
 	private String region = "us-chicago-1";
 
 	private String endpoint;
+
+	private Duration connectTimeout;
+
+	private Duration readTimeout;
+
+	private Integer maxAsyncThreads;
 
 	public String getRegion() {
 		return this.region;
@@ -131,6 +138,30 @@ public class OCIConnectionProperties {
 
 	public void setEndpoint(String endpoint) {
 		this.endpoint = endpoint;
+	}
+
+	public Duration getConnectTimeout() {
+		return this.connectTimeout;
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.connectTimeout = connectTimeout;
+	}
+
+	public Duration getReadTimeout() {
+		return this.readTimeout;
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.readTimeout = readTimeout;
+	}
+
+	public Integer getMaxAsyncThreads() {
+		return this.maxAsyncThreads;
+	}
+
+	public void setMaxAsyncThreads(Integer maxAsyncThreads) {
+		this.maxAsyncThreads = maxAsyncThreads;
 	}
 
 	public enum AuthenticationType {

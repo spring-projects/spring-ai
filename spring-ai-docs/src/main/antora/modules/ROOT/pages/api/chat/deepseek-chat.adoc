@@ -106,6 +106,20 @@ The prefix `spring.ai.deepseek` is used as the property prefix that lets you con
 | spring.ai.deepseek.api-key    | The API Key           |  -
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.deepseek` is used as the property prefix that lets you configure the HTTP client for DeepSeek API calls.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.deepseek.connect-timeout | HTTP connection timeout | -
+| spring.ai.deepseek.read-timeout | HTTP read timeout | -
+| spring.ai.deepseek.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.deepseek.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 ==== Configuration Properties
 
 The prefix `spring.ai.deepseek.chat` is the property prefix that lets you configure the chat model implementation for DeepSeek.

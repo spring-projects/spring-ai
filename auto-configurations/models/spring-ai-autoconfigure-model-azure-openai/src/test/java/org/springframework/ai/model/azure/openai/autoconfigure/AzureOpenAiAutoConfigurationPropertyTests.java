@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.azure.openai.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
@@ -66,7 +68,13 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				"spring.ai.azure.openai.chat.options.stop=boza,koza",
 				"spring.ai.azure.openai.chat.options.temperature=0.55",
 				"spring.ai.azure.openai.chat.options.topP=0.56",
-				"spring.ai.azure.openai.chat.options.user=userXYZ"
+				"spring.ai.azure.openai.chat.options.user=userXYZ",
+
+				"spring.ai.azure.openai.connect-timeout=10s",
+				"spring.ai.azure.openai.read-timeout=30s",
+				"spring.ai.azure.openai.write-timeout=30s",
+				"spring.ai.azure.openai.response-timeout=60s",
+				"spring.ai.azure.openai.maximum-connection-pool-size=50"
 				)
 			// @formatter:on
 			.withConfiguration(SpringAiTestAutoConfigurations.of(AzureOpenAiChatAutoConfiguration.class,
@@ -90,6 +98,12 @@ public class AzureOpenAiAutoConfigurationPropertyTests {
 				assertThat(chatProperties.getOptions().getStop()).contains("boza", "koza");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
 				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.56);
+
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(10));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
+				assertThat(connectionProperties.getWriteTimeout()).isEqualTo(Duration.ofSeconds(30));
+				assertThat(connectionProperties.getResponseTimeout()).isEqualTo(Duration.ofSeconds(60));
+				assertThat(connectionProperties.getMaximumConnectionPoolSize()).isEqualTo(50);
 
 				assertThat(chatProperties.getOptions().getUser()).isEqualTo("userXYZ");
 			});

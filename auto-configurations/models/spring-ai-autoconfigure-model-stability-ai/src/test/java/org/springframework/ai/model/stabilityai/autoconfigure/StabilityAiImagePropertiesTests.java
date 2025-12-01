@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.stabilityai.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.stabilityai.StabilityAiImageModel;
@@ -48,12 +50,16 @@ public class StabilityAiImagePropertiesTests {
 				"spring.ai.stabilityai.image.options.sampler=K_EULER",
 				"spring.ai.stabilityai.image.options.seed=0",
 				"spring.ai.stabilityai.image.options.steps=30",
-				"spring.ai.stabilityai.image.options.style-preset=neon-punk"
+				"spring.ai.stabilityai.image.options.style-preset=neon-punk",
+
+				"spring.ai.stabilityai.connect-timeout=5s",
+				"spring.ai.stabilityai.read-timeout=30s"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(StabilityAiImageProperties.class);
+				var connectionProperties = context.getBean(StabilityAiConnectionProperties.class);
 
 				assertThat(chatProperties.getBaseUrl()).isEqualTo("ENDPOINT");
 				assertThat(chatProperties.getApiKey()).isEqualTo("API_KEY");
@@ -69,6 +75,9 @@ public class StabilityAiImagePropertiesTests {
 				assertThat(chatProperties.getOptions().getSeed()).isEqualTo(0);
 				assertThat(chatProperties.getOptions().getSteps()).isEqualTo(30);
 				assertThat(chatProperties.getOptions().getStylePreset()).isEqualTo("neon-punk");
+
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
 			});
 	}
 

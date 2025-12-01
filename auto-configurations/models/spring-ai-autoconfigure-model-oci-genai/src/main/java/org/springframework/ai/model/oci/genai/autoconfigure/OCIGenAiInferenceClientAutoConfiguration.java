@@ -52,9 +52,20 @@ public class OCIGenAiInferenceClientAutoConfiguration {
 	@ConditionalOnMissingBean
 	public GenerativeAiInferenceClient generativeAiInferenceClient(OCIConnectionProperties properties)
 			throws IOException {
-		ClientConfiguration clientConfiguration = ClientConfiguration.builder()
-			.retryConfiguration(RetryConfiguration.SDK_DEFAULT_RETRY_CONFIGURATION)
-			.build();
+		ClientConfiguration.ClientConfigurationBuilder clientConfigurationBuilder = ClientConfiguration.builder()
+			.retryConfiguration(RetryConfiguration.SDK_DEFAULT_RETRY_CONFIGURATION);
+
+		if (properties.getConnectTimeout() != null) {
+			clientConfigurationBuilder.connectionTimeoutMillis(properties.getConnectTimeout().toMillisPart());
+		}
+		if (properties.getReadTimeout() != null) {
+			clientConfigurationBuilder.readTimeoutMillis(properties.getReadTimeout().toMillisPart());
+		}
+		if (properties.getMaxAsyncThreads() != null) {
+			clientConfigurationBuilder.maxAsyncThreads(properties.getMaxAsyncThreads());
+		}
+		ClientConfiguration clientConfiguration = clientConfigurationBuilder.build();
+
 		GenerativeAiInferenceClient.Builder builder = GenerativeAiInferenceClient.builder()
 			.configuration(clientConfiguration);
 		if (StringUtils.hasText(properties.getRegion())) {

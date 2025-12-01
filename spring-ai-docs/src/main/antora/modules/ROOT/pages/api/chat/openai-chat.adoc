@@ -120,6 +120,20 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), you can optionally specify which organization and project is used for an API request.
 Usage from these API requests will count as usage for the specified organization and project.
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.openai` is used as the property prefix that lets you configure the HTTP client for OpenAI API calls.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.openai.connect-timeout | HTTP connection timeout | -
+| spring.ai.openai.read-timeout | HTTP read timeout | -
+| spring.ai.openai.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.openai.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 ==== User-Agent Header
 
 Spring AI automatically sends a `User-Agent: spring-ai` header with all requests to OpenAI.

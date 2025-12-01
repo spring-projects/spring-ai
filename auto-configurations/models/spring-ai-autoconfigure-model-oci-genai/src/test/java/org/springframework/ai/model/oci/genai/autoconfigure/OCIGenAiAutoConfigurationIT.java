@@ -50,7 +50,9 @@ public class OCIGenAiAutoConfigurationIT {
 				"spring.ai.oci.genai.file=" + this.CONFIG_FILE,
 				"spring.ai.oci.genai.embedding.compartment=" + this.COMPARTMENT_ID,
 				"spring.ai.oci.genai.embedding.servingMode=on-demand",
-				"spring.ai.oci.genai.embedding.model=cohere.embed-english-light-v2.0"
+				"spring.ai.oci.genai.embedding.model=cohere.embed-english-light-v2.0",
+				"spring.ai.oci.genai.connect-timeout:1ms",
+				"spring.ai.oci.genai.read-timeout:1ms"
 				// @formatter:on
 	).withConfiguration(SpringAiTestAutoConfigurations.of(OCIGenAiEmbeddingAutoConfiguration.class));
 
@@ -60,7 +62,9 @@ public class OCIGenAiAutoConfigurationIT {
 			"spring.ai.oci.genai.file=" + this.CONFIG_FILE,
 			"spring.ai.oci.genai.cohere.chat.options.compartment=" + this.COMPARTMENT_ID,
 			"spring.ai.oci.genai.cohere.chat.options.servingMode=on-demand",
-			"spring.ai.oci.genai.cohere.chat.options.model=" + this.CHAT_MODEL_ID
+			"spring.ai.oci.genai.cohere.chat.options.model=" + this.CHAT_MODEL_ID,
+			"spring.ai.oci.genai.connect-timeout:1ms",
+			"spring.ai.oci.genai.read-timeout:1ms"
 			// @formatter:on
 	).withConfiguration(SpringAiTestAutoConfigurations.of(OCIGenAiChatAutoConfiguration.class));
 
