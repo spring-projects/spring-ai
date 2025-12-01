@@ -32,7 +32,6 @@ import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
 
 /**
  * Converts {@link Expression} into Redis search filter expression format.
- * (<a href="https://redis-stack.io/docs/interact/search-and-query/">search-and-query</a>) or
  * (<a href="https://redis.io/docs/latest/develop/ai/search-and-query/">search-and-query</a>)
  *
  * @author Julien Ruaux
