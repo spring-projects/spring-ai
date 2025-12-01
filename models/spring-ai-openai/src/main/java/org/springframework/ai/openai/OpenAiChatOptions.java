@@ -233,11 +233,6 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	private @JsonProperty("web_search_options") WebSearchOptions webSearchOptions;
 
 	/**
-	 * Specifies the <a href="https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier">processing type</a> used for serving the request.
-	 */
-	private @JsonProperty("service_tier") String serviceTier;
-
-	/**
 	 * Key used by OpenAI for caching prompt prefixes. OpenAI claims
 	 * they do caching even without this key, but testing shows that without this key
 	 * OpenAI doesn't do prompt prefix caching. OpenAI says this should be an end-user
