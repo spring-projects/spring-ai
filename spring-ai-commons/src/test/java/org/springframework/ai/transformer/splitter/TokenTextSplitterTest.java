@@ -20,16 +20,23 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Ricken Bazolo
  */
 public class TokenTextSplitterTest {
+
+	private final String SAMPLE_TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
+			+ "Vestibulum volutpat augue et turpis facilisis, id porta ligula interdum. "
+			+ "Proin condimentum justo sed lectus fermentum, a pretium orci iaculis. "
+			+ "Mauris nec pharetra libero. Nulla facilisi. Sed consequat velit id eros volutpat dignissim.";
 
 	@Test
 	public void testTokenTextSplitterBuilderWithDefaultValues() {
@@ -123,6 +130,85 @@ public class TokenTextSplitterTest {
 
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
 		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
+	}
+
+	@Test
+	void testSplitWithOverlap() {
+		TokenTextSplitter splitter = TokenTextSplitter.builder()
+			.withChunkSize(40)
+			.withOverlapSize(10)
+			.withMinChunkLengthToEmbed(5)
+			.build();
+
+		List<String> chunks = splitter.splitText(SAMPLE_TEXT);
+
+		assertNotNull(chunks);
+		assertTrue(chunks.size() > 1, "Text should be split into multiple chunks");
+
+		// Compare overlapping tokens between consecutive chunks
+		List<Integer> allTokens = splitter.getEncodedTokens(SAMPLE_TEXT);
+
+		for (int i = 1; i < chunks.size(); i++) {
+			List<Integer> prevTokens = splitter.getEncodedTokens(chunks.get(i - 1));
+			List<Integer> currTokens = splitter.getEncodedTokens(chunks.get(i));
+
+			int overlap = getOverlapSize(prevTokens, currTokens);
+
+			// Allow some deviation due to punctuation or sentence trimming
+			assertTrue(overlap >= 5 && overlap <= 15,
+					"Expected ~10 overlapping tokens between chunks, but got " + overlap);
+		}
+	}
+
+	@Test
+	void testSplitWithoutOverlap() {
+		TokenTextSplitter splitter = TokenTextSplitter.builder().withChunkSize(40).withOverlapSize(0).build();
+
+		List<String> chunks = splitter.splitText(SAMPLE_TEXT);
+
+		assertNotNull(chunks);
+		assertTrue(chunks.size() > 1);
+
+		for (int i = 1; i < chunks.size(); i++) {
+			List<Integer> prev = splitter.getEncodedTokens(chunks.get(i - 1));
+			List<Integer> curr = splitter.getEncodedTokens(chunks.get(i));
+
+			assertTrue(noOverlap(prev, curr), "There should be no overlap between chunks");
+		}
+	}
+
+	@Test
+	void testEmptyText() {
+		TokenTextSplitter splitter = TokenTextSplitter.builder().withChunkSize(50).withOverlapSize(10).build();
+
+		List<String> chunks = splitter.splitText("   ");
+		assertTrue(chunks.isEmpty(), "Empty or whitespace-only input should return no chunks");
+	}
+
+	/**
+	 * Calculate the number of overlapping tokens between the end of the previous chunk
+	 * and the start of the current chunk.
+	 */
+	private int getOverlapSize(List<Integer> prev, List<Integer> curr) {
+		int maxOverlap = Math.min(prev.size(), curr.size());
+		for (int i = maxOverlap; i > 0; i--) {
+			if (prev.subList(prev.size() - i, prev.size()).equals(curr.subList(0, i))) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Check whether there is no overlap between the two token lists.
+	 */
+	private boolean noOverlap(List<Integer> prev, List<Integer> curr) {
+		for (int len = Math.min(prev.size(), curr.size()); len > 0; len--) {
+			if (prev.subList(prev.size() - len, prev.size()).equals(curr.subList(0, len))) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }
