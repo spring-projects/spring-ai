@@ -124,7 +124,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	}
 
 	public String getReasoningContent() {
-		return reasoningContent == null ? "" : reasoningContent;
+		return this.reasoningContent == null ? "" : this.reasoningContent;
 	}
 
 	public record ToolCall(String id, String type, String name, String arguments) {

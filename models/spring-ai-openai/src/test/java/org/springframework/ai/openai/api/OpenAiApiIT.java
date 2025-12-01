@@ -229,7 +229,7 @@ public class OpenAiApiIT {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
 				OpenAiApi.ChatModel.GPT_4_O.value, null, null, null, null, null, null, null, null, null, null, null,
 				null, null, null, serviceTier.getValue(), null, false, null, 1.0, null, null, null, null, null, null,
-				null, null);
+				null, null, null);
 
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 

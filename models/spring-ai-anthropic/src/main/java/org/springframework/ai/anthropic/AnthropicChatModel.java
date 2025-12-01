@@ -462,12 +462,6 @@ public class AnthropicChatModel implements ChatModel {
 					this.defaultOptions.getToolCallbacks()));
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.defaultOptions.getToolContext()));
-
-			// Merge cache strategy and TTL (also @JsonIgnore fields)
-			requestOptions.setCacheStrategy(runtimeOptions.getCacheStrategy() != null
-					? runtimeOptions.getCacheStrategy() : this.defaultOptions.getCacheStrategy());
-			requestOptions.setCacheTtl(runtimeOptions.getCacheTtl() != null ? runtimeOptions.getCacheTtl()
-					: this.defaultOptions.getCacheTtl());
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -476,6 +470,12 @@ public class AnthropicChatModel implements ChatModel {
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
 		}
+
+		// Merge cache strategy and TTL (also @JsonIgnore fields)
+		requestOptions.setCacheStrategy(runtimeOptions.getCacheStrategy() != null ? runtimeOptions.getCacheStrategy()
+				: this.defaultOptions.getCacheStrategy());
+		requestOptions.setCacheTtl(runtimeOptions.getCacheTtl() != null ? runtimeOptions.getCacheTtl()
+				: this.defaultOptions.getCacheTtl());
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 

@@ -648,7 +648,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 				this.streamOptions, this.seed, this.stop, this.temperature, this.topP, this.tools, this.toolChoice,
 				this.user, this.parallelToolCalls, this.toolCallbacks, this.toolNames, this.httpHeaders,
 				this.internalToolExecutionEnabled, this.toolContext, this.outputModalities, this.outputAudio,
-				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier, this.promptCacheKey);
+				this.store, this.metadata, this.reasoningEffort, this.webSearchOptions, this.serviceTier,
+				this.promptCacheKey);
 	}
 
 	@Override

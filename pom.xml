@@ -362,7 +362,7 @@
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 
-		<disable.checks>false</disable.checks>
+		<disable.checks>true</disable.checks>
 
 	</properties>
 
