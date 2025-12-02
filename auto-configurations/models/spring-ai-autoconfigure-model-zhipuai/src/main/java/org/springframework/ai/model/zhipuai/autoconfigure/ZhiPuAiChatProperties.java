@@ -33,13 +33,8 @@ public class ZhiPuAiChatProperties extends ZhiPuAiParentProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = ZhiPuAiApi.ChatModel.GLM_4_Air.value;
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
 	@NestedConfigurationProperty
-	private final ZhiPuAiChatOptions options = ZhiPuAiChatOptions.builder()
-		.model(DEFAULT_CHAT_MODEL)
-		.temperature(DEFAULT_TEMPERATURE)
-		.build();
+	private final ZhiPuAiChatOptions options = ZhiPuAiChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
 
 	public ZhiPuAiChatOptions getOptions() {
 		return this.options;
