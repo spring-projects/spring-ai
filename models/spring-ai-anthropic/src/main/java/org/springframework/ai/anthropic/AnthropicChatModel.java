@@ -105,8 +105,6 @@ public class AnthropicChatModel implements ChatModel {
 
 	public static final Integer DEFAULT_MAX_TOKENS = 500;
 
-	public static final Double DEFAULT_TEMPERATURE = 0.8;
-
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
@@ -879,7 +877,6 @@ public class AnthropicChatModel implements ChatModel {
 		private AnthropicChatOptions defaultOptions = AnthropicChatOptions.builder()
 			.model(DEFAULT_MODEL_NAME)
 			.maxTokens(DEFAULT_MAX_TOKENS)
-			.temperature(DEFAULT_TEMPERATURE)
 			.build();
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
