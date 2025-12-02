@@ -78,7 +78,7 @@ public class TokenTextSplitterTest {
 		doc1.setContentFormatter(contentFormatter1);
 
 		var doc2 = new Document("The most oppressive thing about the labyrinth is that you are constantly "
-				+ "being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
+				+ "being forced to choose. It isn't the lack of an exit, but the abundance of exits that is so disorienting.",
 				Map.of("key2", "value22", "key3", "value3"));
 		doc2.setContentFormatter(contentFormatter2);
 
@@ -101,7 +101,7 @@ public class TokenTextSplitterTest {
 		// Doc 2
 		assertThat(chunks.get(2).getText()).isEqualTo("The most oppressive thing about the labyrinth is that you");
 		assertThat(chunks.get(3).getText()).isEqualTo("are constantly being forced to choose.");
-		assertThat(chunks.get(4).getText()).isEqualTo("It isn’t the lack of an exit, but");
+		assertThat(chunks.get(4).getText()).isEqualTo("It isn't the lack of an exit, but");
 		assertThat(chunks.get(5).getText()).isEqualTo("the abundance of exits that is so disorienting");
 
 		// Verify that the original metadata is copied to all chunks (including
@@ -123,6 +123,46 @@ public class TokenTextSplitterTest {
 
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
 		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
+	}
+
+	@Test
+	public void testSmallTextWithPunctuationShouldNotSplit() {
+		TokenTextSplitter splitter = TokenTextSplitter.builder()
+			.withKeepSeparator(true)
+			.withChunkSize(10000)
+			.withMinChunkSizeChars(10)
+			.build();
+
+		Document testDoc = new Document(
+				"Hi. This is a small text without one of the ending chars. It is splitted into multiple chunks but shouldn't");
+		List<Document> splitted = splitter.split(testDoc);
+
+		// Should be a single chunk since the text is well below the chunk size
+		assertThat(splitted.size()).isEqualTo(1);
+		assertThat(splitted.get(0).getText()).isEqualTo(
+				"Hi. This is a small text without one of the ending chars. It is splitted into multiple chunks but shouldn't");
+	}
+
+	@Test
+	public void testLargeTextStillSplitsAtPunctuation() {
+		// Verify that punctuation-based splitting still works when text exceeds chunk
+		// size
+		TokenTextSplitter splitter = TokenTextSplitter.builder()
+			.withKeepSeparator(true)
+			.withChunkSize(15)
+			.withMinChunkSizeChars(10)
+			.build();
+
+		// This text has multiple sentences and will exceed 15 tokens
+		Document testDoc = new Document(
+				"This is the first sentence with enough words. This is the second sentence. And this is the third sentence.");
+		List<Document> splitted = splitter.split(testDoc);
+
+		// Should split into multiple chunks at punctuation marks
+		assertThat(splitted.size()).isGreaterThan(1);
+
+		// Verify first chunk ends with punctuation
+		assertThat(splitted.get(0).getText()).endsWith(".");
 	}
 
 }

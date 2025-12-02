@@ -108,13 +108,18 @@ public class TokenTextSplitter extends TextSplitter {
 				continue;
 			}
 
-			// Find the last period or punctuation mark in the chunk
-			int lastPunctuation = Math.max(chunkText.lastIndexOf('.'), Math.max(chunkText.lastIndexOf('?'),
-					Math.max(chunkText.lastIndexOf('!'), chunkText.lastIndexOf('\n'))));
+			// Only apply punctuation-based truncation if we have more tokens than the
+			// chunk size
+			// This prevents unnecessary splitting of small texts
+			if (tokens.size() > chunkSize) {
+				// Find the last period or punctuation mark in the chunk
+				int lastPunctuation = Math.max(chunkText.lastIndexOf('.'), Math.max(chunkText.lastIndexOf('?'),
+						Math.max(chunkText.lastIndexOf('!'), chunkText.lastIndexOf('\n'))));
 
-			if (lastPunctuation != -1 && lastPunctuation > this.minChunkSizeChars) {
-				// Truncate the chunk text at the punctuation mark
-				chunkText = chunkText.substring(0, lastPunctuation + 1);
+				if (lastPunctuation != -1 && lastPunctuation > this.minChunkSizeChars) {
+					// Truncate the chunk text at the punctuation mark
+					chunkText = chunkText.substring(0, lastPunctuation + 1);
+				}
 			}
 
 			String chunkTextToAppend = (this.keepSeparator) ? chunkText.trim()
