@@ -32,6 +32,7 @@ import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.Assert;
@@ -91,9 +92,10 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
 			.build();
 
-		// 4. Add the new user message to the conversation memory.
+		// 4. Handle message updates and add the new user message to the conversation
+		// memory.
 		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
-		this.chatMemory.add(conversationId, userMessage);
+		handleMessageUpdate(conversationId, userMessage);
 
 		return processedChatClientRequest;
 	}
@@ -126,6 +128,74 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.flatMapMany(streamAdvisorChain::nextStream)
 			.transform(flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux,
 					response -> this.after(response, streamAdvisorChain)));
+	}
+
+	/**
+	 * Handle message updates by checking if a user message with the same ID already
+	 * exists. If it does, remove the old message and its corresponding assistant response
+	 * before adding the new message.
+	 * @param conversationId the conversation ID
+	 * @param userMessage the user message to add
+	 */
+	private void handleMessageUpdate(String conversationId, UserMessage userMessage) {
+		// Ensure the user message has a unique messageId for tracking
+		UserMessage messageWithId = ensureMessageId(userMessage);
+
+		String messageId = (String) messageWithId.getMetadata().get("messageId");
+
+		// Check if this is an update (messageId already exists in memory)
+		if (this.chatMemory instanceof MessageWindowChatMemory windowMemory) {
+			// If we have an existing message with this ID, remove it and its response
+			if (hasExistingMessage(conversationId, messageId)) {
+				windowMemory.removeMessageAndResponse(conversationId, messageId);
+			}
+		}
+
+		// Add the new/updated message to memory
+		this.chatMemory.add(conversationId, messageWithId);
+	}
+
+	/**
+	 * Ensure the user message has a unique messageId in its metadata. If no messageId
+	 * exists, generate one based on content hash.
+	 * @param userMessage the user message
+	 * @return the user message with messageId in metadata
+	 */
+	private UserMessage ensureMessageId(UserMessage userMessage) {
+		String existingMessageId = (String) userMessage.getMetadata().get("messageId");
+		if (existingMessageId != null) {
+			return userMessage;
+		}
+
+		// Generate a messageId based on content hash for tracking updates
+		String messageId = generateMessageId(userMessage);
+
+		// Merge with existing metadata
+		java.util.Map<String, Object> metadata = new java.util.HashMap<>(userMessage.getMetadata());
+		metadata.put("messageId", messageId);
+
+		return userMessage.mutate().metadata(metadata).build();
+	}
+
+	/**
+	 * Generate a unique message ID based on the user message content.
+	 * @param userMessage the user message
+	 * @return a unique message ID
+	 */
+	private String generateMessageId(UserMessage userMessage) {
+		// Use content hash as a stable identifier for the same logical message
+		return String.valueOf(userMessage.getText().hashCode());
+	}
+
+	/**
+	 * Check if a message with the given ID already exists in the conversation memory.
+	 * @param conversationId the conversation ID
+	 * @param messageId the message ID to check
+	 * @return true if the message exists, false otherwise
+	 */
+	private boolean hasExistingMessage(String conversationId, String messageId) {
+		List<Message> memoryMessages = this.chatMemory.get(conversationId);
+		return memoryMessages.stream().anyMatch(message -> messageId.equals(message.getMetadata().get("messageId")));
 	}
 
 	public static Builder builder(ChatMemory chatMemory) {
