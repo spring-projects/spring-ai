@@ -44,7 +44,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
+public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final ToolCallingManager toolCallingManager;
 
@@ -57,7 +57,7 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 	 */
 	private final int advisorOrder;
 
-	private ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
@@ -76,7 +76,6 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		return this.advisorOrder;
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 		Assert.notNull(callAdvisorChain, "callAdvisorChain must not be null");
@@ -87,6 +86,8 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			throw new IllegalArgumentException(
 					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
 		}
+
+		chatClientRequest = this.doInitializeLoop(chatClientRequest, callAdvisorChain);
 
 		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
 		var optionsCopy = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions().copy();
@@ -109,7 +110,11 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 				.build();
 
 			// Next Call
+			processedChatClientRequest = this.doBeforeCall(processedChatClientRequest, callAdvisorChain);
+
 			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
+
+			chatClientResponse = this.doAfterCall(chatClientResponse, callAdvisorChain);
 
 			// After Call
 
@@ -148,6 +153,19 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		return chatClientResponse;
 	}
 
+	protected ChatClientRequest doInitializeLoop(ChatClientRequest chatClientRequest,
+			CallAdvisorChain callAdvisorChain) {
+		return chatClientRequest;
+	}
+
+	protected ChatClientRequest doBeforeCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+		return chatClientRequest;
+	}
+
+	protected ChatClientResponse doAfterCall(ChatClientResponse chatClientResponse, CallAdvisorChain callAdvisorChain) {
+		return chatClientResponse;
+	}
+
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
 			StreamAdvisorChain streamAdvisorChain) {
@@ -158,20 +176,35 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 	 * Creates a new Builder instance for constructing a ToolCallAdvisor.
 	 * @return a new Builder instance
 	 */
-	public static Builder builder() {
-		return new Builder();
+	public static Builder<?> builder() {
+		return new Builder<>();
 	}
 
 	/**
 	 * Builder for creating instances of ToolCallAdvisor.
+	 * <p>
+	 * This builder uses the self-referential generic pattern to support extensibility.
+	 *
+	 * @param <T> the builder type, used for self-referential generics to support method
+	 * chaining in subclasses
 	 */
-	public final static class Builder {
+	public static class Builder<T extends Builder<T>> {
 
 		private ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 		private int advisorOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 300;
 
-		private Builder() {
+		protected Builder() {
+		}
+
+		/**
+		 * Returns this builder cast to the appropriate type for method chaining.
+		 * Subclasses should override this method to return the correct type.
+		 * @return this builder instance
+		 */
+		@SuppressWarnings("unchecked")
+		protected T self() {
+			return (T) this;
 		}
 
 		/**
@@ -179,9 +212,9 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * @param toolCallingManager the ToolCallingManager instance
 		 * @return this Builder instance for method chaining
 		 */
-		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+		public T toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
-			return this;
+			return self();
 		}
 
 		/**
@@ -190,9 +223,25 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * LOWEST_PRECEDENCE
 		 * @return this Builder instance for method chaining
 		 */
-		public Builder advisorOrder(int advisorOrder) {
+		public T advisorOrder(int advisorOrder) {
 			this.advisorOrder = advisorOrder;
-			return this;
+			return self();
+		}
+
+		/**
+		 * Returns the configured ToolCallingManager.
+		 * @return the ToolCallingManager instance
+		 */
+		protected ToolCallingManager getToolCallingManager() {
+			return this.toolCallingManager;
+		}
+
+		/**
+		 * Returns the configured advisor order.
+		 * @return the advisor order value
+		 */
+		protected int getAdvisorOrder() {
+			return this.advisorOrder;
 		}
 
 		/**

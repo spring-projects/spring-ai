@@ -377,6 +377,99 @@ public class ToolCallAdvisorTests {
 		assertThat(advisor.getOrder()).isEqualTo(customOrder);
 	}
 
+	@Test
+	void testBuilderGetters() {
+		ToolCallingManager customManager = mock(ToolCallingManager.class);
+		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 500;
+
+		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder()
+			.toolCallingManager(customManager)
+			.advisorOrder(customOrder);
+
+		assertThat(builder.getToolCallingManager()).isEqualTo(customManager);
+		assertThat(builder.getAdvisorOrder()).isEqualTo(customOrder);
+	}
+
+	@Test
+	void testExtendedAdvisorWithCustomHooks() {
+		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
+
+		// Create extended advisor to verify hooks are called
+		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
+				BaseAdvisor.HIGHEST_PRECEDENCE + 300, hookCallCounts);
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse response = createMockResponse(false);
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> response);
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		advisor.adviseCall(request, realChain);
+
+		// Verify hooks were called
+		assertThat(hookCallCounts[0]).isEqualTo(1); // doInitializeLoop called once
+		assertThat(hookCallCounts[1]).isEqualTo(1); // doBeforeCall called once
+		assertThat(hookCallCounts[2]).isEqualTo(1); // doAfterCall called once
+	}
+
+	@Test
+	void testExtendedAdvisorHooksCalledMultipleTimesWithToolCalls() {
+		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
+
+		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
+				BaseAdvisor.HIGHEST_PRECEDENCE + 300, hookCallCounts);
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		advisor.adviseCall(request, realChain);
+
+		// Verify hooks were called correct number of times
+		assertThat(hookCallCounts[0]).isEqualTo(1); // doInitializeLoop called once
+													// (before loop)
+		assertThat(hookCallCounts[1]).isEqualTo(2); // doBeforeCall called twice (each
+													// iteration)
+		assertThat(hookCallCounts[2]).isEqualTo(2); // doAfterCall called twice (each
+													// iteration)
+	}
+
+	@Test
+	void testExtendedBuilderWithCustomBuilder() {
+		ToolCallingManager customManager = mock(ToolCallingManager.class);
+		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 450;
+
+		TestableToolCallAdvisor advisor = TestableToolCallAdvisor.testBuilder()
+			.toolCallingManager(customManager)
+			.advisorOrder(customOrder)
+			.build();
+
+		assertThat(advisor).isNotNull();
+		assertThat(advisor.getOrder()).isEqualTo(customOrder);
+	}
+
 	// Helper methods
 
 	private ChatClientRequest createMockRequest(boolean withToolCallingOptions) {
@@ -472,6 +565,65 @@ public class ToolCallAdvisorTests {
 			return this.responseFunction.apply(req, chain);
 		}
 
-	};
+	}
+
+	/**
+	 * Test subclass of ToolCallAdvisor to verify extensibility and hook methods.
+	 */
+	private static class TestableToolCallAdvisor extends ToolCallAdvisor {
+
+		private final int[] hookCallCounts;
+
+		TestableToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
+			super(toolCallingManager, advisorOrder);
+			this.hookCallCounts = hookCallCounts;
+		}
+
+		@Override
+		protected ChatClientRequest doInitializeLoop(ChatClientRequest chatClientRequest,
+				CallAdvisorChain callAdvisorChain) {
+			if (this.hookCallCounts != null) {
+				this.hookCallCounts[0]++;
+			}
+			return super.doInitializeLoop(chatClientRequest, callAdvisorChain);
+		}
+
+		@Override
+		protected ChatClientRequest doBeforeCall(ChatClientRequest chatClientRequest,
+				CallAdvisorChain callAdvisorChain) {
+			if (this.hookCallCounts != null) {
+				this.hookCallCounts[1]++;
+			}
+			return super.doBeforeCall(chatClientRequest, callAdvisorChain);
+		}
+
+		@Override
+		protected ChatClientResponse doAfterCall(ChatClientResponse chatClientResponse,
+				CallAdvisorChain callAdvisorChain) {
+			if (this.hookCallCounts != null) {
+				this.hookCallCounts[2]++;
+			}
+			return super.doAfterCall(chatClientResponse, callAdvisorChain);
+		}
+
+		static TestableBuilder testBuilder() {
+			return new TestableBuilder();
+		}
+
+		static class TestableBuilder extends ToolCallAdvisor.Builder<TestableBuilder> {
+
+			@Override
+			protected TestableBuilder self() {
+				return this;
+			}
+
+			@Override
+			public TestableToolCallAdvisor build() {
+				return new TestableToolCallAdvisor(getToolCallingManager(), getAdvisorOrder(), null);
+			}
+
+		}
+
+	}
 
 }
