@@ -22,6 +22,7 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 
 import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,25 +36,20 @@ import org.springframework.context.annotation.Bean;
  * @author Theo van Kraay
  * @since 1.1.0
  */
-@AutoConfiguration
+@AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ CosmosDBChatMemoryRepository.class, CosmosAsyncClient.class })
 @EnableConfigurationProperties(CosmosDBChatMemoryRepositoryProperties.class)
+@ConditionalOnProperty(prefix = CosmosDBChatMemoryRepositoryProperties.CONFIG_PREFIX, name = "endpoint")
 public class CosmosDBChatMemoryRepositoryAutoConfiguration {
 
-	private final String agentSuffix = "SpringAI-CDBNoSQL-ChatMemoryRepository";
+	private final String agentSuffix = "SpringAI-CDBNoSQL-ChatMemory";
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = "spring.ai.chat.memory.repository.cosmosdb", name = "endpoint")
-	public CosmosAsyncClient cosmosClient(CosmosDBChatMemoryRepositoryProperties properties) {
-		if (properties.getEndpoint() == null || properties.getEndpoint().isEmpty()) {
-			throw new IllegalArgumentException(
-					"Cosmos DB endpoint must be provided via spring.ai.chat.memory.repository.cosmosdb.endpoint property");
-		}
-
+	public CosmosAsyncClient cosmosAsyncClient(CosmosDBChatMemoryRepositoryProperties properties) {
 		String mode = properties.getConnectionMode();
 		if (mode == null) {
-			properties.setConnectionMode("gateway");
+			mode = "gateway";
 		}
 		else if (!mode.equals("direct") && !mode.equals("gateway")) {
 			throw new IllegalArgumentException("Connection mode must be either 'direct' or 'gateway'");
@@ -69,27 +65,22 @@ public class CosmosDBChatMemoryRepositoryAutoConfiguration {
 			builder.key(properties.getKey());
 		}
 
-		return ("direct".equals(properties.getConnectionMode()) ? builder.directMode() : builder.gatewayMode())
-			.buildAsyncClient();
+		return ("direct".equals(mode) ? builder.directMode() : builder.gatewayMode()).buildAsyncClient();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CosmosDBChatMemoryRepositoryConfig cosmosDBChatMemoryRepositoryConfig(
+	public CosmosDBChatMemoryRepository cosmosDBChatMemoryRepository(
 			CosmosDBChatMemoryRepositoryProperties properties, CosmosAsyncClient cosmosAsyncClient) {
 
-		return CosmosDBChatMemoryRepositoryConfig.builder()
+		var configBuilder = CosmosDBChatMemoryRepositoryConfig.builder()
 			.withCosmosClient(cosmosAsyncClient)
 			.withDatabaseName(properties.getDatabaseName())
 			.withContainerName(properties.getContainerName())
-			.withPartitionKeyPath(properties.getPartitionKeyPath())
-			.build();
-	}
+			.withPartitionKeyPath(properties.getPartitionKeyPath());
 
-	@Bean
-	@ConditionalOnMissingBean
-	public CosmosDBChatMemoryRepository cosmosDBChatMemoryRepository(CosmosDBChatMemoryRepositoryConfig config) {
-		return CosmosDBChatMemoryRepository.create(config);
+		return CosmosDBChatMemoryRepository.create(configBuilder.build());
 	}
 
 }
+
