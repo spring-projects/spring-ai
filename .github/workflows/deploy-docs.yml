@@ -21,10 +21,10 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 5
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
+    - name: Set up JDK
+      uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '25'
         distribution: 'temurin'
     # - name: Set up refname build
     #   if: github.event.inputs.build-refname
