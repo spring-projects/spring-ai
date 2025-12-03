@@ -115,6 +115,15 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private Map<String, String> httpHeaders = new HashMap<>();
 
+	/**
+	 * Container for Claude Skills to make available in this request.
+	 * Skills are collections of instructions, scripts, and resources that
+	 * extend Claude's capabilities for specific domains.
+	 * Maximum of 8 skills per request.
+	 */
+	@JsonIgnore
+	private AnthropicApi.SkillContainer skillContainer;
+
 	// @formatter:on
 
 	public static Builder builder() {
@@ -141,7 +150,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			.cacheOptions(fromOptions.getCacheOptions())
 			.citationDocuments(fromOptions.getCitationDocuments() != null
 					? new ArrayList<>(fromOptions.getCitationDocuments()) : null)
+			.skillContainer(fromOptions.getSkillContainer())
 			.build();
+	}
+
+	public AnthropicApi.SkillContainer getSkillContainer() {
+		return this.skillContainer;
+	}
+
+	public void setSkillContainer(AnthropicApi.SkillContainer skillContainer) {
+		this.skillContainer = skillContainer;
 	}
 
 	@Override
@@ -351,7 +369,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.httpHeaders, that.httpHeaders)
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
-				&& Objects.equals(this.citationDocuments, that.citationDocuments);
+				&& Objects.equals(this.citationDocuments, that.citationDocuments)
+				&& Objects.equals(this.skillContainer, that.skillContainer);
 	}
 
 	@Override
@@ -359,7 +378,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.toolChoice, this.thinking, this.toolCallbacks, this.toolNames,
 				this.internalToolExecutionEnabled, this.toolContext, this.httpHeaders, this.cacheOptions,
-				this.citationDocuments);
+				this.citationDocuments, this.skillContainer);
 	}
 
 	public static final class Builder {
@@ -499,6 +518,80 @@ public class AnthropicChatOptions implements ToolCallingChatOptions {
 			Assert.notNull(document, "Citation document cannot be null");
 			this.options.citationDocuments.add(document);
 			return this;
+		}
+
+		/**
+		 * Set the Skills container for this request.
+		 * @param skillContainer Container with skills to make available
+		 * @return Builder for method chaining
+		 */
+		public Builder skillContainer(AnthropicApi.SkillContainer skillContainer) {
+			this.options.setSkillContainer(skillContainer);
+			return this;
+		}
+
+		/**
+		 * Add a single skill to the request. Creates a SkillContainer if one doesn't
+		 * exist.
+		 * @param skill Skill to add
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(AnthropicApi.Skill skill) {
+			Assert.notNull(skill, "Skill cannot be null");
+			if (this.options.skillContainer == null) {
+				this.options.skillContainer = AnthropicApi.SkillContainer.builder().skill(skill).build();
+			}
+			else {
+				// Rebuild container with additional skill
+				List<AnthropicApi.Skill> existingSkills = new ArrayList<>(this.options.skillContainer.skills());
+				existingSkills.add(skill);
+				this.options.skillContainer = new AnthropicApi.SkillContainer(existingSkills);
+			}
+			return this;
+		}
+
+		/**
+		 * Add an Anthropic pre-built skill (xlsx, pptx, docx, pdf).
+		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * @return Builder for method chaining
+		 */
+		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill) {
+			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
+			return skill(anthropicSkill.toSkill());
+		}
+
+		/**
+		 * Add an Anthropic pre-built skill with specific version.
+		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * @param version Version of the skill (e.g., "latest", "20251013")
+		 * @return Builder for method chaining
+		 */
+		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill, String version) {
+			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
+			Assert.hasText(version, "Version cannot be empty");
+			return skill(anthropicSkill.toSkill(version));
+		}
+
+		/**
+		 * Add a custom skill by ID.
+		 * @param skillId Custom skill ID
+		 * @return Builder for method chaining
+		 */
+		public Builder customSkill(String skillId) {
+			Assert.hasText(skillId, "Skill ID cannot be empty");
+			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillId));
+		}
+
+		/**
+		 * Add a custom skill with specific version.
+		 * @param skillId Custom skill ID
+		 * @param version Version of the skill
+		 * @return Builder for method chaining
+		 */
+		public Builder customSkill(String skillId, String version) {
+			Assert.hasText(skillId, "Skill ID cannot be empty");
+			Assert.hasText(version, "Version cannot be empty");
+			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillId, version));
 		}
 
 		public AnthropicChatOptions build() {
