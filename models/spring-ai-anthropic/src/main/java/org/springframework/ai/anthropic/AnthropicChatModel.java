@@ -583,6 +583,14 @@ public class AnthropicChatModel implements ChatModel {
 			else if (this.defaultOptions.getCitationDocuments() != null) {
 				requestOptions.setCitationDocuments(this.defaultOptions.getCitationDocuments());
 			}
+
+			// Merge skillContainer that is Json-ignored
+			if (runtimeOptions.getSkillContainer() != null) {
+				requestOptions.setSkillContainer(runtimeOptions.getSkillContainer());
+			}
+			else if (this.defaultOptions.getSkillContainer() != null) {
+				requestOptions.setSkillContainer(this.defaultOptions.getSkillContainer());
+			}
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -591,6 +599,7 @@ public class AnthropicChatModel implements ChatModel {
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
 			requestOptions.setCitationDocuments(this.defaultOptions.getCitationDocuments());
+			requestOptions.setSkillContainer(this.defaultOptions.getSkillContainer());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -647,6 +656,56 @@ public class AnthropicChatModel implements ChatModel {
 			Map<String, String> headers = new HashMap<>(requestOptions.getHttpHeaders());
 			headers.put("anthropic-beta", AnthropicApi.BETA_EXTENDED_CACHE_TTL);
 			requestOptions.setHttpHeaders(headers);
+		}
+
+		// Add Skills container from options if present
+		AnthropicApi.SkillContainer skillContainer = null;
+		if (requestOptions != null && requestOptions.getSkillContainer() != null) {
+			skillContainer = requestOptions.getSkillContainer();
+		}
+		else if (this.defaultOptions.getSkillContainer() != null) {
+			skillContainer = this.defaultOptions.getSkillContainer();
+		}
+
+		if (skillContainer != null) {
+			request = ChatCompletionRequest.from(request).container(skillContainer).build();
+
+			// Skills require the code_execution tool to be enabled
+			// Add it if not already present
+			List<AnthropicApi.Tool> existingTools = request.tools() != null ? new ArrayList<>(request.tools())
+					: new ArrayList<>();
+			boolean hasCodeExecution = existingTools.stream().anyMatch(tool -> "code_execution".equals(tool.name()));
+
+			if (!hasCodeExecution) {
+				existingTools.add(new AnthropicApi.Tool(AnthropicApi.CODE_EXECUTION_TOOL_TYPE, "code_execution", null,
+						null, null));
+				request = ChatCompletionRequest.from(request).tools(existingTools).build();
+			}
+
+			// Skills require three beta headers: skills, code-execution, and files-api
+			Map<String, String> headers = requestOptions != null ? new HashMap<>(requestOptions.getHttpHeaders())
+					: new HashMap<>();
+			String requiredBetas = AnthropicApi.BETA_SKILLS + "," + AnthropicApi.BETA_CODE_EXECUTION + ","
+					+ AnthropicApi.BETA_FILES_API;
+			String existingBeta = headers.get("anthropic-beta");
+			if (existingBeta != null) {
+				if (!existingBeta.contains(AnthropicApi.BETA_SKILLS)) {
+					existingBeta = existingBeta + "," + AnthropicApi.BETA_SKILLS;
+				}
+				if (!existingBeta.contains(AnthropicApi.BETA_CODE_EXECUTION)) {
+					existingBeta = existingBeta + "," + AnthropicApi.BETA_CODE_EXECUTION;
+				}
+				if (!existingBeta.contains(AnthropicApi.BETA_FILES_API)) {
+					existingBeta = existingBeta + "," + AnthropicApi.BETA_FILES_API;
+				}
+				headers.put("anthropic-beta", existingBeta);
+			}
+			else {
+				headers.put("anthropic-beta", requiredBetas);
+			}
+			if (requestOptions != null) {
+				requestOptions.setHttpHeaders(headers);
+			}
 		}
 
 		return request;
@@ -845,7 +904,8 @@ public class AnthropicChatModel implements ChatModel {
 			AnthropicApi.Tool tool = tools.get(i);
 			if (i == tools.size() - 1) {
 				// Add cache control to last tool
-				tool = new AnthropicApi.Tool(tool.name(), tool.description(), tool.inputSchema(), cacheControl);
+				tool = new AnthropicApi.Tool(tool.type(), tool.name(), tool.description(), tool.inputSchema(),
+						cacheControl);
 				cacheEligibilityResolver.useCacheBlock();
 			}
 			modifiedTools.add(tool);
