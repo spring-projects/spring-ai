@@ -806,7 +806,9 @@ public class MistralAiApi {
 		}
 
 		/**
-		 * Get message content as String.
+		 * Returns the text content of the message.
+		 * For reasoning models (Magistral), extracts the text block from the content array.
+		 * @return the text content or null if not available
 		 */
 		public String content() {
 			if (this.rawContent == null) {
@@ -815,7 +817,18 @@ public class MistralAiApi {
 			if (this.rawContent instanceof String text) {
 				return text;
 			}
-			throw new IllegalStateException("The content is not a string!");
+			if (this.rawContent instanceof List<?> blocks) {
+				for (Object block : blocks) {
+					if (block instanceof Map<?, ?> map && "text".equals(map.get("type"))) {
+						Object text = map.get("text");
+						if (text instanceof String s) {
+							return s;
+						}
+					}
+				}
+				return null;
+			}
+			throw new IllegalStateException("Unexpected content type: " + rawContent.getClass());
 		}
 
 		/**
