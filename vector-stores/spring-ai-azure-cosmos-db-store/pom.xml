@@ -41,6 +41,17 @@
         <maven.compiler.source>17</maven.compiler.source>
 	</properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<!-- Override commons-compress to fix CVE (Infinite Loop, Resource Allocation) in 1.24.0 -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-compress</artifactId>
+				<version>1.28.0</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>com.azure</groupId>
