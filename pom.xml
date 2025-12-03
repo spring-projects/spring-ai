@@ -990,6 +990,12 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<!-- Override commons-lang3 to fix CVE (Uncontrolled Recursion) in 3.17.0 -->
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>3.18.0</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
