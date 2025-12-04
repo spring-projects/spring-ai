@@ -61,9 +61,9 @@ class MistralAiChatOptionsTests {
 	@Test
 	void testBuilderWithEnum() {
 		MistralAiChatOptions optionsWithEnum = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MINISTRAL_8B_LATEST)
+			.model(MistralAiApi.ChatModel.MINISTRAL_8B)
 			.build();
-		assertThat(optionsWithEnum.getModel()).isEqualTo(MistralAiApi.ChatModel.MINISTRAL_8B_LATEST.getValue());
+		assertThat(optionsWithEnum.getModel()).isEqualTo(MistralAiApi.ChatModel.MINISTRAL_8B.getValue());
 	}
 
 	@Test
