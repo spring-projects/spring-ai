@@ -69,7 +69,7 @@ class MistralAiMagistralIT {
 		// Magistral models excel at reasoning tasks - use a question that requires
 		// step-by-step thinking
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue())
+			.model(MistralAiApi.ChatModel.MAGISTRAL_SMALL.getValue())
 			.build();
 
 		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
@@ -92,7 +92,7 @@ class MistralAiMagistralIT {
 	@Test
 	void testMagistralModelHandlesMathProblemsWithReasoning() {
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue())
+			.model(MistralAiApi.ChatModel.MAGISTRAL_SMALL.getValue())
 			.build();
 
 		Prompt prompt = new Prompt(
@@ -118,7 +118,7 @@ class MistralAiMagistralIT {
 	@Test
 	void testMagistralModelStreamingWorks() {
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue())
+			.model(MistralAiApi.ChatModel.MAGISTRAL_SMALL.getValue())
 			.build();
 
 		Prompt prompt = new Prompt("What is 25 * 4? Think step by step.", promptOptions);
@@ -147,7 +147,7 @@ class MistralAiMagistralIT {
 		messages.add(new UserMessage("What is 5 + 3?"));
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue())
+			.model(MistralAiApi.ChatModel.MAGISTRAL_SMALL.getValue())
 			.build();
 
 		// First round
@@ -181,7 +181,7 @@ class MistralAiMagistralIT {
 	@Test
 	void testMagistralModelHandlesLogicPuzzles() {
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue())
+			.model(MistralAiApi.ChatModel.MAGISTRAL_SMALL.getValue())
 			.build();
 
 		String puzzle = """
@@ -215,7 +215,7 @@ class MistralAiMagistralIT {
 	@Test
 	void testResponseMetadataPopulatedCorrectly() {
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue())
+			.model(MistralAiApi.ChatModel.MAGISTRAL_SMALL.getValue())
 			.build();
 
 		Prompt prompt = new Prompt("What is 2 + 2?", promptOptions);
