@@ -381,7 +381,8 @@ public class AnthropicChatModel implements ChatModel {
 			.usage(usage)
 			.keyValue("stop-reason", chatCompletion.stopReason())
 			.keyValue("stop-sequence", chatCompletion.stopSequence())
-			.keyValue("type", chatCompletion.type());
+			.keyValue("type", chatCompletion.type())
+			.keyValue("anthropic-response", chatCompletion);
 
 		// Add citation metadata if citations were found
 		if (citationContext.hasCitations()) {
@@ -711,11 +712,21 @@ public class AnthropicChatModel implements ChatModel {
 		return request;
 	}
 
+	private static String serializeContent(Object content) {
+		if (content == null) {
+			return null;
+		}
+		if (content instanceof String s) {
+			return s;
+		}
+		return JsonParser.toJson(content);
+	}
+
 	private static ContentBlock cacheAwareContentBlock(ContentBlock contentBlock, MessageType messageType,
 			CacheEligibilityResolver cacheEligibilityResolver) {
 		String basisForLength = switch (contentBlock.type()) {
 			case TEXT, TEXT_DELTA -> contentBlock.text();
-			case TOOL_RESULT -> contentBlock.content();
+			case TOOL_RESULT -> serializeContent(contentBlock.content());
 			case TOOL_USE -> JsonParser.toJson(contentBlock.input());
 			case THINKING, THINKING_DELTA -> contentBlock.thinking();
 			case REDACTED_THINKING -> contentBlock.data();
