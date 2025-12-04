@@ -77,6 +77,7 @@ public class OpenAiChatAutoConfiguration {
 			.headers(resolved.headers())
 			.completionsPath(chatProperties.getCompletionsPath())
 			.embeddingsPath(OpenAiEmbeddingProperties.DEFAULT_EMBEDDINGS_PATH)
+			.responsesPath(chatProperties.getResponsesPath())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
 			.responseErrorHandler(responseErrorHandler)

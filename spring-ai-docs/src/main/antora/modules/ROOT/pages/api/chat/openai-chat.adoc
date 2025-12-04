@@ -150,7 +150,8 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.enabled (Removed and no longer valid) | Enable OpenAI chat model.  | true
 | spring.ai.model.chat | Enable OpenAI chat model.  | openai
 | spring.ai.openai.chat.base-url   | Optional override for the `spring.ai.openai.base-url` property to provide a chat-specific URL. |  -
-| spring.ai.openai.chat.completions-path   | The path to append to the base URL. |  `/v1/chat/completions`
+| spring.ai.openai.chat.completions-path   | The path to append to the base URL for Chat Completions API. |  `/v1/chat/completions`
+| spring.ai.openai.chat.responses-path   | The path to append to the base URL for Responses API. |  `/v1/responses`
 | spring.ai.openai.chat.api-key   | Optional override for the `spring.ai.openai.api-key` to provide a chat-specific API Key. |  -
 | spring.ai.openai.chat.organization-id | Optionally, you can specify which organization to use for an API request. |  -
 | spring.ai.openai.chat.project-id      | Optionally, you can specify which project to use for an API request. |  -
@@ -884,7 +885,7 @@ Spring AI maps this field from the JSON response to the `reasoningContent` key i
 
 Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
 They only expose `reasoning_tokens` count in usage statistics.
-To access actual reasoning text from official OpenAI models, you must use OpenAI's Responses API (a separate endpoint not currently supported by this client).
+To access actual reasoning text from official OpenAI models, you must use OpenAI's Responses API (available via the low-level `OpenAiApi` class).
 
 **Fallback behavior:** When `reasoning_content` is not provided by the server (e.g., official OpenAI Chat Completions), the `reasoningContent` metadata field will be an empty string.
 ====
