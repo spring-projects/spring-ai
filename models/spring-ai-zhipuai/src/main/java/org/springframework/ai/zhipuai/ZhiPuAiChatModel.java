@@ -418,7 +418,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 	}
 
 	/**
-	 * Convert the ChatCompletionChunk into a ChatCompletion. The Usage is set to null.
+	 * Convert the ChatCompletionChunk into a ChatCompletion.
 	 * @param chunk the ChatCompletionChunk to convert
 	 * @return the ChatCompletion
 	 */
@@ -432,7 +432,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 		}).toList();
 
 		return new ChatCompletion(chunk.id(), choices, chunk.created(), chunk.model(), chunk.systemFingerprint(),
-				"chat.completion", null);
+				"chat.completion", chunk.usage());
 	}
 
 	private List<ZhiPuAiApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
