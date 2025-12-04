@@ -23,8 +23,9 @@ import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 
 /**
- * Converts {@link Expression} into Milvus metadata filter expression format.
- * (https://milvus.io/docs/json_data_type.md)
+ * Converts {@link Expression} into Milvus metadata filter expression format. See Milvus
+ * JSON‑field & filtering docs:
+ * <a href="https://milvus.io/docs/json-field-overview.md">json-field-overview</a>
  *
  * @author Christian Tzolov
  */
