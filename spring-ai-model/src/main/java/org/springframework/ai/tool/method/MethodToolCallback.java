@@ -132,12 +132,10 @@ public final class MethodToolCallback implements ToolCallback {
 			return JsonParser.fromJson(toolInput, new TypeReference<>() {
 			});
 		}
-		catch (IllegalStateException ex) {
-			if (ex.getCause() instanceof JsonProcessingException jsonExp) {
-				logger.warn("Conversion from JSON failed", ex);
-				throw new ToolExecutionException(this.getToolDefinition(), jsonExp);
-			}
-			throw ex;
+		catch (Exception ex) {
+			logger.warn("Conversion from JSON failed", ex);
+			Throwable cause = (ex.getCause() instanceof JsonProcessingException) ? ex.getCause() : ex;
+			throw new ToolExecutionException(this.getToolDefinition(), cause);
 		}
 	}
 
@@ -168,12 +166,10 @@ public final class MethodToolCallback implements ToolCallback {
 			String json = JsonParser.toJson(value);
 			return JsonParser.fromJson(json, type);
 		}
-		catch (IllegalStateException ex) {
-			if (ex.getCause() instanceof JsonProcessingException jsonExp) {
-				logger.warn("Conversion from JSON failed", ex);
-				throw new ToolExecutionException(this.getToolDefinition(), jsonExp);
-			}
-			throw ex;
+		catch (Exception ex) {
+			logger.warn("Conversion from JSON failed", ex);
+			Throwable cause = (ex.getCause() instanceof JsonProcessingException) ? ex.getCause() : ex;
+			throw new ToolExecutionException(this.getToolDefinition(), cause);
 		}
 	}
 
