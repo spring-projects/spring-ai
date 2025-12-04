@@ -58,6 +58,24 @@ class ChatClientToolsWithGenericArgumentTypesIT {
 	ChatModel chatModel;
 
 	@Test
+	void toolWithGenericArgumentTypes2() {
+		// @formatter:off
+		String response = ChatClient.create(this.chatModel).prompt()
+				.user("Turn light YELLOW in the living room and the kitchen. You can violate the color enum for this request.")
+				.tools(new TestToolProvider())
+				.call()
+				.content();
+		// @formatter:on
+
+		logger.info("Response: {}", response);
+
+		assertThat(arguments).containsEntry("living room", LightColor.RED);
+		assertThat(arguments).containsEntry("kitchen", LightColor.RED);
+
+		assertThat(callCounter.get()).isEqualTo(1);
+	}
+
+	@Test
 	void toolWithGenericArgumentTypes() {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
