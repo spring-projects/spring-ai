@@ -83,7 +83,7 @@ public class MistralAiRetryTests {
 				.temperature(0.7)
 				.topP(1.0)
 				.safePrompt(false)
-				.model(MistralAiApi.ChatModel.SMALL.getValue())
+				.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 				.build())
 			.retryTemplate(this.retryTemplate)
 			.build();

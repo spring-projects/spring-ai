@@ -570,7 +570,7 @@ public class MistralAiChatModel implements ChatModel {
 			.temperature(0.7)
 			.topP(1.0)
 			.safePrompt(false)
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.build();
 
 		private ToolCallingManager toolCallingManager = DEFAULT_TOOL_CALLING_MANAGER;
