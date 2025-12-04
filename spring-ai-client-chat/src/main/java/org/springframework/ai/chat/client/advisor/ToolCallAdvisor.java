@@ -46,7 +46,7 @@ import org.springframework.util.Assert;
  */
 public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
-	private final ToolCallingManager toolCallingManager;
+	protected final ToolCallingManager toolCallingManager;
 
 	/**
 	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
