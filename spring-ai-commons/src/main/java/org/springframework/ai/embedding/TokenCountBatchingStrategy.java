@@ -51,6 +51,7 @@ import org.springframework.util.Assert;
  * @author Laura Trotta
  * @author Jihoon Kim
  * @author Yanming Zhou
+ * @author John Blum
  * @since 1.0.0
  */
 public class TokenCountBatchingStrategy implements BatchingStrategy {
@@ -148,8 +149,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 			int tokenCount = this.tokenCountEstimator
 				.estimate(document.getFormattedContent(this.contentFormatter, this.metadataMode));
 			if (tokenCount > this.maxInputTokenCount) {
-				throw new IllegalArgumentException(
-						"Tokens in a single document exceeds the maximum number of allowed input tokens");
+				throw MaxTokenCountExceededException.because(document, tokenCount, this.maxInputTokenCount);
 			}
 			documentTokens.put(document, tokenCount);
 		}
