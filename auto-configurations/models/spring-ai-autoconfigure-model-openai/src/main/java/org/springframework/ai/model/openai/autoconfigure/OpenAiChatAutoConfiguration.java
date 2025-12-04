@@ -64,7 +64,33 @@ public class OpenAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiApi openAiApi(OpenAiConnectionProperties commonProperties, OpenAiChatProperties chatProperties,
+	public OpenAiChatModel openAiChatModel(OpenAiConnectionProperties commonProperties,
+			OpenAiChatProperties chatProperties, ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention,
+			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+
+		OpenAiApi openAiApi = openAiApi(commonProperties, chatProperties, restClientBuilderProvider,
+				webClientBuilderProvider, responseErrorHandler);
+
+		var chatModel = OpenAiChatModel.builder()
+			.openAiApi(openAiApi)
+			.defaultOptions(chatProperties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.toolExecutionEligibilityPredicate(
+					openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.retryTemplate(retryTemplate)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
+
+		observationConvention.ifAvailable(chatModel::setObservationConvention);
+
+		return chatModel;
+	}
+
+	private OpenAiApi openAiApi(OpenAiConnectionProperties commonProperties, OpenAiChatProperties chatProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
@@ -81,29 +107,6 @@ public class OpenAiChatAutoConfiguration {
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
 			.responseErrorHandler(responseErrorHandler)
 			.build();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public OpenAiChatModel openAiChatModel(OpenAiApi openAiApi, OpenAiChatProperties chatProperties,
-			ToolCallingManager toolCallingManager, RetryTemplate retryTemplate,
-			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
-
-		var chatModel = OpenAiChatModel.builder()
-			.openAiApi(openAiApi)
-			.defaultOptions(chatProperties.getOptions())
-			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(
-					openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
-			.retryTemplate(retryTemplate)
-			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.build();
-
-		observationConvention.ifAvailable(chatModel::setObservationConvention);
-
-		return chatModel;
 	}
 
 }
