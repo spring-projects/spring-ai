@@ -72,10 +72,7 @@ To clone it you have to either:
 ## Building
 
 The project targets and build artifacts compatible with Java 17+, but requires a JDK 25+
-to build. This is enforced by the maven toolchains plugin and a compatible JDK should be
-automatically located on your machine if it exists, without forcing you to make it the
-default in the PATH. Please refer to the [maven toolchains plugin](https://maven.apache.org/plugins/maven-toolchains-plugin/index.html) if detection does
-not work as expected.
+to build. This is enforced by the maven enforcer plugin.
 
 To build with running unit tests
 
