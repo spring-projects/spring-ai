@@ -358,8 +358,8 @@ public class MistralAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = AssistantMessage.builder()
-			.content(choice.message().content())
+		var assistantMessage = new MistralAiAssistantMessage.Builder().content(choice.message().content())
+			.thinkingContent(choice.message().thinkingContent())
 			.properties(metadata)
 			.toolCalls(toolCalls)
 			.build();
