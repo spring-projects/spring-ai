@@ -1070,12 +1070,6 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<!-- Override transitive protobuf-java to fix CVE-2024-7254 (SNYK-JAVA-COMGOOGLEPROTOBUF-8055227) -->
-			<dependency>
-				<groupId>com.google.protobuf</groupId>
-				<artifactId>protobuf-java</artifactId>
-				<version>${protobuf-java.version}</version>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
 
