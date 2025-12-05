@@ -274,7 +274,6 @@
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
-		<kotlin.compiler.version>2.2.21</kotlin.compiler.version>
 
 		<!-- production dependencies -->
 		<spring-boot.version>4.0.0</spring-boot.version>
@@ -340,7 +339,7 @@
 		<okhttp3.version>4.12.0</okhttp3.version>
 		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
-		
+
 		<!-- MCP-->
 		<mcp.sdk.version>0.18.0-SNAPSHOT</mcp.sdk.version>
 		<mcp-annotations.version>0.9.0-SNAPSHOT</mcp-annotations.version>
@@ -351,7 +350,7 @@
 		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
 		<!-- The version (range) of the JDK we want to use to compile.
 			This is different from ${java.version} which we use as -release target. -->
-		<compiler.jdk.version>[25,)</compiler.jdk.version>
+		<compiler.jdk.version>[21.0.8,)</compiler.jdk.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
@@ -422,10 +421,12 @@
 			<plugin>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<artifactId>kotlin-maven-plugin</artifactId>
-				<version>${kotlin.compiler.version}</version>
+				<version>${kotlin.version}</version>
 				<configuration>
 					<jvmTarget>${java.version}</jvmTarget>
 					<javaParameters>true</javaParameters>
+					<apiVersion>2.2</apiVersion>
+					<languageVersion>2.2</languageVersion>
 				</configuration>
 				<executions>
 					<execution>
@@ -462,9 +463,6 @@
 					<release>${java.version}</release>
 					<compilerArgs>
 						<arg>-parameters</arg>
-						<arg>-XDcompilePolicy=simple</arg>
-						<arg>--should-stop=ifError=FLOW</arg>
-						<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
 					</compilerArgs>
 					<annotationProcessorPaths>
 						<path>
@@ -496,6 +494,15 @@
 						<goals>
 							<goal>compile</goal>
 						</goals>
+						<configuration>
+							<compilerArgs>
+								<arg>-XDcompilePolicy=simple</arg>
+								<!-- The following arg won't be necessary with JDK25+ -->
+								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+								<arg>--should-stop=ifError=FLOW</arg>
+								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
+							</compilerArgs>
+						</configuration>
 					</execution>
 					<execution>
 						<id>java-test-compile</id>
