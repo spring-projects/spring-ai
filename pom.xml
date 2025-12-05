@@ -319,7 +319,6 @@
 		<fastjson2.version>2.0.46</fastjson2.version>
 		<azure-core.version>1.55.3</azure-core.version>
 		<azure-json.version>1.5.0</azure-json.version>
-		<azure-identity.version>1.15.4</azure-identity.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<azure-cosmos.version>5.22.0</azure-cosmos.version>
 		<elasticsearch-java.version>8.18.1</elasticsearch-java.version>
