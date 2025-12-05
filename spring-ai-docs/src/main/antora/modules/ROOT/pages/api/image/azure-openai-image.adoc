@@ -51,7 +51,7 @@ String endpoint = System.getenv("AZURE_OPENAI_ENDPOINT");
 
 === Deployment Name
 
-To use run Azure AI applications, create an Azure AI Deployment through the [Azure AI Portal](https://oai.azure.com/portal).
+To use run Azure AI applications, create an Azure AI Deployment through the https://oai.azure.com/portal[Azure AI Portal].
 
 In Azure, each client must specify a `Deployment Name` to connect to the Azure OpenAI service.
 
@@ -68,9 +68,10 @@ This Azure configuration will align with the default configurations of the Sprin
 
 If you use a different Deployment Name, update the configuration property accordingly:
 
-```
+[source,properties]
+----
 spring.ai.azure.openai.image.options.deployment-name=<my deployment name>
-```
+----
 
 The different deployment structures of Azure OpenAI and OpenAI leads to a property in the Azure OpenAI client library named `deploymentOrModelName`.
 This is because in OpenAI there is no `Deployment Name`, only a `Model Name`.
