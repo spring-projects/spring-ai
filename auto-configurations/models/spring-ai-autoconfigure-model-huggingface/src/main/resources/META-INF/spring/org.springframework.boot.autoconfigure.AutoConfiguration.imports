@@ -13,4 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+org.springframework.ai.model.huggingface.autoconfigure.HuggingfaceApiAutoConfiguration
 org.springframework.ai.model.huggingface.autoconfigure.HuggingfaceChatAutoConfiguration
+org.springframework.ai.model.huggingface.autoconfigure.HuggingfaceEmbeddingAutoConfiguration
