@@ -71,7 +71,7 @@ To clone it you have to either:
 
 ## Building
 
-The project targets and build artifacts compatible with Java 17+, but requires a JDK 25+
+The project targets and build artifacts compatible with Java 17+, but requires JDK 21
 to build. This is enforced by the maven enforcer plugin.
 
 To build with running unit tests
