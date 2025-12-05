@@ -95,6 +95,27 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	private boolean sslEnabled = GemFireVectorStore.DEFAULT_SSL_ENABLED;
 
+	/**
+	 * Configures the username for the GemFire VectorStore connection
+	 *
+	 * To specify username, use "spring.ai.vectorstore.gemfire.username";
+	 */
+	private String username;
+
+	/**
+	 * Configures the password for the GemFire VectorStore connection
+	 *
+	 * To specify password, use "spring.ai.vectorstore.gemfire.password";
+	 */
+	private String password;
+
+	/**
+	 * Configures the token for the GemFire VectorStore connection
+	 *
+	 * To specify token, use "spring.ai.vectorstore.gemfire.token";
+	 */
+	private String token;
+
 	public int getBeamWidth() {
 		return this.beamWidth;
 	}
@@ -165,6 +186,30 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setSslEnabled(boolean sslEnabled) {
 		this.sslEnabled = sslEnabled;
+	}
+
+	public String getToken() {
+		return this.token;
+	}
+
+	public void setToken(String token) {
+		this.token = token;
+	}
+
+	public String getPassword() {
+		return this.password;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public String getUsername() {
+		return this.username;
+	}
+
+	public void setUsername(String username) {
+		this.username = username;
 	}
 
 }

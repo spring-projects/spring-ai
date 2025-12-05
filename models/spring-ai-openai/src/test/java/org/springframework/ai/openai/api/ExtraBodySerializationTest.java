@@ -22,6 +22,8 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -206,6 +208,27 @@ class ExtraBodySerializationTest {
 		// Assert: Complex types should be preserved as String/List
 		assertThat(request.extraBody().get("guided_json")).isInstanceOf(String.class);
 		assertThat(request.extraBody().get("stop_token_ids")).isInstanceOf(List.class);
+	}
+
+	@Test
+	void testMergeWithExtraBody() throws Exception {
+		// Arrange: Create OpenAiChatOptions with extraBody
+		OpenAiChatOptions requestOptions = OpenAiChatOptions.builder()
+			.model("test-model")
+			.extraBody(Map.of("enable_thinking", true, "max_depth", 10))
+			.build();
+
+		// Create empty ChatCompletionRequest
+		ChatCompletionRequest request = new ChatCompletionRequest(null, null);
+
+		// Act: Merge options into request
+		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
+
+		// Assert: Verify extraBody was successfully merged
+		assertThat(request.extraBody()).isNotNull();
+		assertThat(request.extraBody()).containsEntry("enable_thinking", true);
+		assertThat(request.extraBody()).containsEntry("max_depth", 10);
+		assertThat(request.model()).isEqualTo("test-model");
 	}
 
 }

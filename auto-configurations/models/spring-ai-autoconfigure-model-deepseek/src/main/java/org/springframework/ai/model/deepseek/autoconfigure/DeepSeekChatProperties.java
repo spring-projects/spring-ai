@@ -33,8 +33,6 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 	public static final String DEFAULT_CHAT_MODEL = DeepSeekApi.ChatModel.DEEPSEEK_CHAT.getValue();
 
-	private static final Double DEFAULT_TEMPERATURE = 1D;
-
 	public static final String DEFAULT_COMPLETIONS_PATH = "/chat/completions";
 
 	public static final String DEFAULT_BETA_PREFIX_PATH = "/beta";
@@ -49,10 +47,7 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 	private String betaPrefixPath = DEFAULT_BETA_PREFIX_PATH;
 
 	@NestedConfigurationProperty
-	private final DeepSeekChatOptions options = DeepSeekChatOptions.builder()
-		.model(DEFAULT_CHAT_MODEL)
-		.temperature(DEFAULT_TEMPERATURE)
-		.build();
+	private final DeepSeekChatOptions options = DeepSeekChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
 
 	public DeepSeekChatOptions getOptions() {
 		return this.options;

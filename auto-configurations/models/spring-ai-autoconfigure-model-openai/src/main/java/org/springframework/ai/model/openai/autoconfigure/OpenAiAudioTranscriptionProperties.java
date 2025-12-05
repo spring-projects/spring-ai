@@ -28,14 +28,11 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_TRANSCRIPTION_MODEL = OpenAiAudioApi.TranscriptionModels.WHISPER_1.getValue();
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
 	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
 
 	@NestedConfigurationProperty
 	private final OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 		.model(DEFAULT_TRANSCRIPTION_MODEL)
-		.temperature(DEFAULT_TEMPERATURE.floatValue())
 		.responseFormat(DEFAULT_RESPONSE_FORMAT)
 		.build();
 

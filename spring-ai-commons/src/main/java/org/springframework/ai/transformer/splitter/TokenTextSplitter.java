@@ -100,21 +100,34 @@ public class TokenTextSplitter extends TextSplitter {
 		return doSplit(text, this.chunkSize, this.chunkOverlap);
 	}
 
+  /**
+	 * Splits text into chunks based on token count.
+	 * <p>
+	 * Punctuation-based splitting only applies when the token count exceeds the chunk
+	 * size ({@code tokens.size() > chunkSize}). Text that exactly matches or is smaller
+	 * than the chunk size is returned as a single chunk without punctuation-based
+	 * truncation.
+	 * @param text the text to split
+	 * @param chunkSize the target chunk size in tokens
+	 * @return list of text chunks
+	 */
 	protected List<String> doSplit(String text, int chunkSize, int chunkOverlap) {
 		if (text == null || text.trim().isEmpty()) {
 			return new ArrayList<>();
 		}
 
 		List<Integer> tokens = getEncodedTokens(text);
+    
 		// If text is smaller than chunk size, return as a single chunk
 		if (tokens.size() <= chunkSize) {
-			String processedText = this.keepSeparator ? text.trim() : text.replace(System.lineSeparator(), " ").trim();
+			String processedText = this.keepSeparator ? text.trim() 
+          : text.replace(System.lineSeparator(), " ").trim();
 
 			if (processedText.length() > this.minChunkLengthToEmbed) {
 				return List.of(processedText);
-			}
-			return new ArrayList<>();
-		}
+      }
+      return new ArrayList<>();
+    }
 		List<String> chunks = new ArrayList<>();
 
 		int position = 0;

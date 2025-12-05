@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,6 +103,14 @@ public class FilterExpressionBuilder {
 
 	public Op nin(String key, List<Object> values) {
 		return new Op(new Filter.Expression(ExpressionType.NIN, new Key(key), new Value(values)));
+	}
+
+	public Op isNull(String key) {
+		return new Op(new Filter.Expression(ExpressionType.ISNULL, new Key(key)));
+	}
+
+	public Op isNotNull(String key) {
+		return new Op(new Filter.Expression(ExpressionType.ISNOTNULL, new Key(key)));
 	}
 
 	public Op group(Op content) {

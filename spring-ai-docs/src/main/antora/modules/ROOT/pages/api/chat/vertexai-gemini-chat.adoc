@@ -94,7 +94,7 @@ The prefix `spring.ai.vertex.ai.gemini.chat` is the property prefix that lets yo
 | spring.ai.vertex.ai.gemini.chat.options.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
 | spring.ai.vertex.ai.gemini.chat.options.response-schema | String, containing the output response schema in OpenAPI format, as described in https://ai.google.dev/gemini-api/docs/structured-output#json-schemas. |  -
 | spring.ai.vertex.ai.gemini.chat.options.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
-| spring.ai.vertex.ai.gemini.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | 0.7
+| spring.ai.vertex.ai.gemini.chat.options.temperature | Controls the randomness of the output. Values can range over [0.0,1.0], inclusive. A value closer to 1.0 will produce responses that are more varied, while a value closer to 0.0 will typically result in less surprising responses from the generative. This value specifies default to be used by the backend while making the call to the generative. | -
 | spring.ai.vertex.ai.gemini.chat.options.top-k | The maximum number of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Top-k sampling considers the set of topK most probable tokens. | -
 | spring.ai.vertex.ai.gemini.chat.options.top-p | The maximum cumulative probability of tokens to consider when sampling. The generative uses combined Top-k and nucleus sampling. Nucleus sampling considers the smallest set of tokens whose probability sum is at least topP.  | -
 | spring.ai.vertex.ai.gemini.chat.options.candidate-count | The number of generated response messages to return. This value must be between [1, 8], inclusive. Defaults to 1. | 1
@@ -214,6 +214,85 @@ var userMessage = new UserMessage(
 var response = this.chatModel.call(new Prompt(List.of(userMessage)));
 ----
 
+
+== Safety Settings and Safety Ratings
+
+The Vertex AI Gemini API provides safety filtering capabilities to help you control harmful content in both prompts and responses.
+For more details, see the https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/configure-safety-filters[Vertex AI Safety Filters documentation].
+
+=== Configuring Safety Settings
+
+You can configure safety settings to control the threshold at which content is blocked for different harm categories.
+The available harm categories are:
+
+* `HARM_CATEGORY_HATE_SPEECH` - Hate speech content
+* `HARM_CATEGORY_DANGEROUS_CONTENT` - Dangerous content
+* `HARM_CATEGORY_HARASSMENT` - Harassment content
+* `HARM_CATEGORY_SEXUALLY_EXPLICIT` - Sexually explicit content
+* `HARM_CATEGORY_CIVIC_INTEGRITY` - Civic integrity content
+
+The available threshold levels are:
+
+* `BLOCK_LOW_AND_ABOVE` - Block when low, medium, or high probability of unsafe content
+* `BLOCK_MEDIUM_AND_ABOVE` - Block when medium or high probability of unsafe content
+* `BLOCK_ONLY_HIGH` - Block only when high probability of unsafe content
+* `BLOCK_NONE` - Never block (use with caution)
+
+[source,java]
+----
+List<VertexAiGeminiSafetySetting> safetySettings = List.of(
+    VertexAiGeminiSafetySetting.builder()
+        .withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
+        .withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+        .build(),
+    VertexAiGeminiSafetySetting.builder()
+        .withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH)
+        .withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+        .build());
+
+ChatResponse response = chatModel.call(new Prompt("Your prompt here",
+    VertexAiGeminiChatOptions.builder()
+        .safetySettings(safetySettings)
+        .build()));
+----
+
+=== Accessing Safety Ratings in Responses
+
+When safety settings are configured, the Gemini API returns safety ratings for each response candidate.
+These ratings indicate the probability and severity of harmful content in each category.
+
+Safety ratings are available in the `AssistantMessage` metadata under the key `"safetyRatings"`:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(new Prompt(prompt,
+    VertexAiGeminiChatOptions.builder()
+        .safetySettings(safetySettings)
+        .build()));
+
+// Access safety ratings from the response
+List<VertexAiGeminiSafetyRating> safetyRatings =
+    (List<VertexAiGeminiSafetyRating>) response.getResult()
+        .getOutput()
+        .getMetadata()
+        .get("safetyRatings");
+
+for (VertexAiGeminiSafetyRating rating : safetyRatings) {
+    System.out.println("Category: " + rating.category());
+    System.out.println("Probability: " + rating.probability());
+    System.out.println("Severity: " + rating.severity());
+    System.out.println("Blocked: " + rating.blocked());
+}
+----
+
+The `VertexAiGeminiSafetyRating` record contains:
+
+* `category` - The harm category (e.g., `HARM_CATEGORY_HARASSMENT`)
+* `probability` - The probability level (`NEGLIGIBLE`, `LOW`, `MEDIUM`, `HIGH`)
+* `blocked` - Whether the content was blocked due to this rating
+* `probabilityScore` - The raw probability score (0.0 to 1.0)
+* `severity` - The severity level (`HARM_SEVERITY_NEGLIGIBLE`, `HARM_SEVERITY_LOW`, `HARM_SEVERITY_MEDIUM`, `HARM_SEVERITY_HIGH`)
+* `severityScore` - The raw severity score (0.0 to 1.0)
 
 == Sample Controller
 

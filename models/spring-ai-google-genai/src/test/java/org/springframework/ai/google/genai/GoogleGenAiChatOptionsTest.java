@@ -20,6 +20,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -165,6 +167,118 @@ public class GoogleGenAiChatOptionsTest {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().labels(Map.of()).build();
 
 		assertThat(options.getLabels()).isEmpty();
+	}
+
+	@Test
+	public void testThinkingLevelGetterSetter() {
+		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
+
+		assertThat(options.getThinkingLevel()).isNull();
+
+		options.setThinkingLevel(GoogleGenAiThinkingLevel.HIGH);
+		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
+
+		options.setThinkingLevel(GoogleGenAiThinkingLevel.LOW);
+		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
+
+		options.setThinkingLevel(null);
+		assertThat(options.getThinkingLevel()).isNull();
+	}
+
+	@Test
+	public void testThinkingLevelWithBuilder() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.build();
+
+		assertThat(options.getModel()).isEqualTo("test-model");
+		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
+	}
+
+	@Test
+	public void testFromOptionsWithThinkingLevel() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+			.build();
+
+		GoogleGenAiChatOptions copy = GoogleGenAiChatOptions.fromOptions(original);
+
+		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.LOW);
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testCopyWithThinkingLevel() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.build();
+
+		GoogleGenAiChatOptions copy = original.copy();
+
+		assertThat(copy.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
+		assertThat(copy).isNotSameAs(original);
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithThinkingLevel() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.build();
+
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.build();
+
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testToStringWithThinkingLevel() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.build();
+
+		String toString = options.toString();
+		assertThat(toString).contains("thinkingLevel=HIGH");
+	}
+
+	@Test
+	public void testThinkingLevelWithBudgetAndIncludeThoughts() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("test-model")
+			.thinkingBudget(8192)
+			.includeThoughts(true)
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.build();
+
+		assertThat(options.getThinkingBudget()).isEqualTo(8192);
+		assertThat(options.getIncludeThoughts()).isTrue();
+		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
+	}
+
+	@Test
+	public void testAllThinkingLevelValues() {
+		// Test all enum values work correctly
+		for (GoogleGenAiThinkingLevel level : GoogleGenAiThinkingLevel.values()) {
+			GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+				.model("test-model")
+				.thinkingLevel(level)
+				.build();
+			assertThat(options.getThinkingLevel()).isEqualTo(level);
+		}
 	}
 
 }

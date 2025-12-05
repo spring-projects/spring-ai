@@ -105,8 +105,6 @@ public class AnthropicChatModel implements ChatModel {
 
 	public static final Integer DEFAULT_MAX_TOKENS = 500;
 
-	public static final Double DEFAULT_TEMPERATURE = 0.8;
-
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
@@ -197,6 +195,7 @@ public class AnthropicChatModel implements ChatModel {
 						() -> this.anthropicApi.chatCompletionEntity(request, this.getAdditionalHttpHeaders(prompt)));
 
 				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
+
 				AnthropicApi.Usage usage = completionResponse.usage();
 
 				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(completionResponse.usage())
@@ -381,7 +380,8 @@ public class AnthropicChatModel implements ChatModel {
 			.usage(usage)
 			.keyValue("stop-reason", chatCompletion.stopReason())
 			.keyValue("stop-sequence", chatCompletion.stopSequence())
-			.keyValue("type", chatCompletion.type());
+			.keyValue("type", chatCompletion.type())
+			.keyValue("anthropic-response", chatCompletion);
 
 		// Add citation metadata if citations were found
 		if (citationContext.hasCitations()) {
@@ -584,6 +584,14 @@ public class AnthropicChatModel implements ChatModel {
 			else if (this.defaultOptions.getCitationDocuments() != null) {
 				requestOptions.setCitationDocuments(this.defaultOptions.getCitationDocuments());
 			}
+
+			// Merge skillContainer that is Json-ignored
+			if (runtimeOptions.getSkillContainer() != null) {
+				requestOptions.setSkillContainer(runtimeOptions.getSkillContainer());
+			}
+			else if (this.defaultOptions.getSkillContainer() != null) {
+				requestOptions.setSkillContainer(this.defaultOptions.getSkillContainer());
+			}
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -592,6 +600,7 @@ public class AnthropicChatModel implements ChatModel {
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
 			requestOptions.setCitationDocuments(this.defaultOptions.getCitationDocuments());
+			requestOptions.setSkillContainer(this.defaultOptions.getSkillContainer());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -629,7 +638,16 @@ public class AnthropicChatModel implements ChatModel {
 		ChatCompletionRequest request = new ChatCompletionRequest(this.defaultOptions.getModel(), userMessages,
 				systemContent, this.defaultOptions.getMaxTokens(), this.defaultOptions.getTemperature(), stream);
 
-		request = ModelOptionsUtils.merge(requestOptions, request, ChatCompletionRequest.class);
+		// Save toolChoice for later application (after code_execution tool is added)
+		AnthropicApi.ToolChoice savedToolChoice = requestOptions != null ? requestOptions.getToolChoice() : null;
+		AnthropicChatOptions mergeOptions = requestOptions;
+		if (savedToolChoice != null && requestOptions != null) {
+			// Create a copy without toolChoice to avoid premature merge
+			mergeOptions = requestOptions.copy();
+			mergeOptions.setToolChoice(null);
+		}
+
+		request = ModelOptionsUtils.merge(mergeOptions, request, ChatCompletionRequest.class);
 
 		// Add the tool definitions with potential caching
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
@@ -643,21 +661,112 @@ public class AnthropicChatModel implements ChatModel {
 			request = ChatCompletionRequest.from(request).tools(tools).build();
 		}
 
-		// Add beta header for 1-hour TTL if needed
-		if (cacheOptions.getMessageTypeTtl().containsValue(AnthropicCacheTtl.ONE_HOUR)) {
+		// Add Skills container from options if present
+		AnthropicApi.SkillContainer skillContainer = null;
+		if (requestOptions != null && requestOptions.getSkillContainer() != null) {
+			skillContainer = requestOptions.getSkillContainer();
+		}
+		else if (this.defaultOptions.getSkillContainer() != null) {
+			skillContainer = this.defaultOptions.getSkillContainer();
+		}
+
+		if (skillContainer != null) {
+			request = ChatCompletionRequest.from(request).container(skillContainer).build();
+
+			// Skills require the code_execution tool to be enabled
+			// Add it if not already present
+			List<AnthropicApi.Tool> existingTools = request.tools() != null ? new ArrayList<>(request.tools())
+					: new ArrayList<>();
+			boolean hasCodeExecution = existingTools.stream().anyMatch(tool -> "code_execution".equals(tool.name()));
+
+			if (!hasCodeExecution) {
+				existingTools
+					.add(new AnthropicApi.Tool(AnthropicApi.CODE_EXECUTION_TOOL_TYPE, "code_execution", null, null));
+				request = ChatCompletionRequest.from(request).tools(existingTools).build();
+			}
+
+			// Apply saved toolChoice now that code_execution tool has been added
+			if (savedToolChoice != null) {
+				request = ChatCompletionRequest.from(request).toolChoice(savedToolChoice).build();
+			}
+		}
+		else if (savedToolChoice != null) {
+			// No Skills but toolChoice was set - apply it now
+			request = ChatCompletionRequest.from(request).toolChoice(savedToolChoice).build();
+		}
+
+		// Add beta headers if needed
+		if (requestOptions != null) {
 			Map<String, String> headers = new HashMap<>(requestOptions.getHttpHeaders());
-			headers.put("anthropic-beta", AnthropicApi.BETA_EXTENDED_CACHE_TTL);
-			requestOptions.setHttpHeaders(headers);
+			boolean needsUpdate = false;
+
+			// Add Skills beta headers if Skills are present
+			// Skills require three beta headers: skills, code-execution, and files-api
+			if (skillContainer != null) {
+				String existingBeta = headers.get("anthropic-beta");
+				String requiredBetas = AnthropicApi.BETA_SKILLS + "," + AnthropicApi.BETA_CODE_EXECUTION + ","
+						+ AnthropicApi.BETA_FILES_API;
+
+				if (existingBeta != null) {
+					// Add missing beta headers
+					if (!existingBeta.contains(AnthropicApi.BETA_SKILLS)) {
+						existingBeta = existingBeta + "," + AnthropicApi.BETA_SKILLS;
+					}
+					if (!existingBeta.contains(AnthropicApi.BETA_CODE_EXECUTION)) {
+						existingBeta = existingBeta + "," + AnthropicApi.BETA_CODE_EXECUTION;
+					}
+					if (!existingBeta.contains(AnthropicApi.BETA_FILES_API)) {
+						existingBeta = existingBeta + "," + AnthropicApi.BETA_FILES_API;
+					}
+					headers.put("anthropic-beta", existingBeta);
+				}
+				else {
+					headers.put("anthropic-beta", requiredBetas);
+				}
+				needsUpdate = true;
+			}
+
+			// Add extended cache TTL beta header if needed
+			if (cacheOptions.getMessageTypeTtl().containsValue(AnthropicCacheTtl.ONE_HOUR)) {
+				String existingBeta = headers.get("anthropic-beta");
+				if (existingBeta != null && !existingBeta.contains(AnthropicApi.BETA_EXTENDED_CACHE_TTL)) {
+					headers.put("anthropic-beta", existingBeta + "," + AnthropicApi.BETA_EXTENDED_CACHE_TTL);
+				}
+				else if (existingBeta == null) {
+					headers.put("anthropic-beta", AnthropicApi.BETA_EXTENDED_CACHE_TTL);
+				}
+				needsUpdate = true;
+			}
+
+			if (needsUpdate) {
+				requestOptions.setHttpHeaders(headers);
+			}
 		}
 
 		return request;
+	}
+
+	/**
+	 * Helper method to serialize content from ContentBlock. The content field can be
+	 * either a String or a complex object (for Skills responses).
+	 * @param content The content to serialize
+	 * @return String representation of the content, or null if content is null
+	 */
+	private static String serializeContent(Object content) {
+		if (content == null) {
+			return null;
+		}
+		if (content instanceof String s) {
+			return s;
+		}
+		return JsonParser.toJson(content);
 	}
 
 	private static ContentBlock cacheAwareContentBlock(ContentBlock contentBlock, MessageType messageType,
 			CacheEligibilityResolver cacheEligibilityResolver) {
 		String basisForLength = switch (contentBlock.type()) {
 			case TEXT, TEXT_DELTA -> contentBlock.text();
-			case TOOL_RESULT -> contentBlock.content();
+			case TOOL_RESULT -> serializeContent(contentBlock.content());
 			case TOOL_USE -> JsonParser.toJson(contentBlock.input());
 			case THINKING, THINKING_DELTA -> contentBlock.thinking();
 			case REDACTED_THINKING -> contentBlock.data();
@@ -846,7 +955,8 @@ public class AnthropicChatModel implements ChatModel {
 			AnthropicApi.Tool tool = tools.get(i);
 			if (i == tools.size() - 1) {
 				// Add cache control to last tool
-				tool = new AnthropicApi.Tool(tool.name(), tool.description(), tool.inputSchema(), cacheControl);
+				tool = new AnthropicApi.Tool(tool.type(), tool.name(), tool.description(), tool.inputSchema(),
+						cacheControl);
 				cacheEligibilityResolver.useCacheBlock();
 			}
 			modifiedTools.add(tool);
@@ -879,7 +989,6 @@ public class AnthropicChatModel implements ChatModel {
 		private AnthropicChatOptions defaultOptions = AnthropicChatOptions.builder()
 			.model(DEFAULT_MODEL_NAME)
 			.maxTokens(DEFAULT_MAX_TOKENS)
-			.temperature(DEFAULT_TEMPERATURE)
 			.build();
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
