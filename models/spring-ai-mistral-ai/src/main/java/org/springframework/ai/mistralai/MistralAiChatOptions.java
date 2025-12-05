@@ -33,6 +33,8 @@ import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
+import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -49,7 +51,7 @@ import org.springframework.util.Assert;
  * @since 0.8.1
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class MistralAiChatOptions implements ToolCallingChatOptions {
+public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	/**
 	 * ID of the model to use
@@ -368,6 +370,22 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@JsonIgnore
+	public String getOutputSchema() {
+		if (this.responseFormat == null || this.responseFormat.getJsonSchema() == null) {
+			return null;
+		}
+		return ModelOptionsUtils.toJsonString(this.responseFormat.getJsonSchema().getSchema());
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String outputSchema) {
+		this.setResponseFormat(
+				ResponseFormat.builder().type(ResponseFormat.Type.JSON_SCHEMA).jsonSchema(outputSchema).build());
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public MistralAiChatOptions copy() {
 		return fromOptions(this);
@@ -515,6 +533,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder outputSchema(String outputSchema) {
+			this.options.setOutputSchema(outputSchema);
 			return this;
 		}
 
