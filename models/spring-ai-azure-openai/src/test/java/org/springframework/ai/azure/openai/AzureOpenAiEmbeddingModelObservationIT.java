@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = AzureOpenAiEmbeddingModelObservationIT.Config.class)
+@SpringBootTest
 @RequiresAzureCredentials
 public class AzureOpenAiEmbeddingModelObservationIT {
 

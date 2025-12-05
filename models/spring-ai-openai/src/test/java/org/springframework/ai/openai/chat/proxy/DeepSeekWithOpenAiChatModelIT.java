@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * For more information on DeepSeek behavior, refer to its API documentation:
  * <a href="https://api-docs.deepseek.com/">DeepSeek API</a>
  */
-@SpringBootTest(classes = DeepSeekWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 @Disabled("Requires DeepSeek credits")
 class DeepSeekWithOpenAiChatModelIT {
