@@ -274,7 +274,6 @@
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
-		<kotlin.compiler.version>2.2.21</kotlin.compiler.version>
 
 		<!-- production dependencies -->
 		<spring-boot.version>3.5.8</spring-boot.version>
@@ -345,7 +344,7 @@
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
-		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
@@ -428,10 +427,12 @@
 			<plugin>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<artifactId>kotlin-maven-plugin</artifactId>
-				<version>${kotlin.compiler.version}</version>
+				<version>${kotlin.version}</version>
 				<configuration>
 					<jvmTarget>${java.version}</jvmTarget>
 					<javaParameters>true</javaParameters>
+					<apiVersion>1.7</apiVersion>
+					<languageVersion>1.7</languageVersion>
 				</configuration>
 				<executions>
 					<execution>
@@ -467,7 +468,7 @@
 				<configuration>
 					<release>${java.version}</release>
 					<compilerArgs>
-						<compilerArg>-parameters</compilerArg>
+						<arg>-parameters</arg>
 					</compilerArgs>
 				</configuration>
 				<executions>

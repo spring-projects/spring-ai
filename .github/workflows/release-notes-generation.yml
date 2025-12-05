@@ -23,10 +23,10 @@ jobs:
       - name: Download changelog generator
         run: wget https://github.com/spring-io/github-changelog-generator/releases/download/v$GENERATOR_VERSION/github-changelog-generator.jar
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Prepare configuration file

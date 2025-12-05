@@ -1,5 +1,11 @@
 # Spring AI [![build status](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/spring-projects/spring-ai/actions/workflows/continuous-integration.yml) [![build status](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml/badge.svg)](https://github.com/spring-projects/spring-ai-integration-tests/actions/workflows/spring-ai-integration-tests.yml)
 
+### Spring Boot Version Compatibility
+
+> **Spring AI 2.x.x** ([main](https://github.com/spring-projects/spring-ai/tree/main) branch) - Spring Boot `4.x`
+>
+> **Spring AI 1.1.x** ([1.1.x](https://github.com/spring-projects/spring-ai/tree/1.1.x) branch) - Spring Boot `3.5.x`
+
 
 The Spring AI project provides a Spring-friendly API and abstractions for developing AI applications.
 
@@ -65,7 +71,9 @@ To clone it you have to either:
 
 ## Building
 
-Build using Java 17.
+The project targets and build artifacts compatible with Java 17+.
+We encourage using Java 21 to build (especially if you switch back and forth between 
+the main branch and the 1.1.x branch), but the project can be built with Java 17.
 
 To build with running unit tests
 
