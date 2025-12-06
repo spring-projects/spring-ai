@@ -57,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Eddú Meléndez
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author Dongha Koo
  */
 @Testcontainers
 class RedisVectorStoreIT extends BaseVectorStoreTests {
@@ -313,6 +314,18 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 			Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
 		});
+	}
+
+	@Test
+	void customizerShouldBeAppliedToBuilder() {
+		this.contextRunner
+			.withBean(RedisVectorStoreBuilderCustomizer.class,
+					() -> builder -> builder.metadataFields(MetadataField.tag("customField")))
+			.run(context -> {
+				RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+				List<MetadataField> metadataFields = vectorStore.getMetadataFields();
+				assertThat(metadataFields).extracting(MetadataField::name).contains("customField");
+			});
 	}
 
 	@SpringBootConfiguration
