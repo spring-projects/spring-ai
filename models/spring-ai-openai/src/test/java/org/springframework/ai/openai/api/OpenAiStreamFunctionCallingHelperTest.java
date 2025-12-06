@@ -335,4 +335,48 @@ public class OpenAiStreamFunctionCallingHelperTest {
 		assertThat(this.helper.isStreamingToolFunctionCall(chunk)).isFalse();
 	}
 
+	@Test
+	public void merge_sameIdToolCallChunks_shouldMergeProperly() {
+		// Tests merge() behavior when chunks with same ID arrive separately.
+		// This happens when finish_reason is not "tool_calls", causing
+		// isStreamingToolFunctionCallFinish() to return false and windowUntil()
+		// to fail grouping. Without same-ID merging, this creates multiple
+		// tool calls with empty names, causing IllegalArgumentException.
+
+		// Chunk 1: ID + function name
+		var toolCall1 = new OpenAiApi.ChatCompletionMessage.ToolCall("call_123", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("get_weather", ""));
+		var delta1 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall1), null, null, null);
+		var choice1 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta1, null);
+		var chunk1 = new OpenAiApi.ChatCompletionChunk("chat-1", List.of(choice1), 1L, "gpt-4", null, null, null, null);
+
+		// Chunk 2: Same ID, empty name, partial arguments
+		var toolCall2 = new OpenAiApi.ChatCompletionMessage.ToolCall("call_123", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("", "{\"city\""));
+		var delta2 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall2), null, null, null);
+		var choice2 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta2, null);
+		var chunk2 = new OpenAiApi.ChatCompletionChunk("chat-1", List.of(choice2), null, null, null, null, null, null);
+
+		// Chunk 3: Same ID, empty name, remaining arguments
+		var toolCall3 = new OpenAiApi.ChatCompletionMessage.ToolCall("call_123", "function",
+				new OpenAiApi.ChatCompletionMessage.ChatCompletionFunction("", ":\"Seoul\"}"));
+		var delta3 = new OpenAiApi.ChatCompletionMessage(null, null, null, null, List.of(toolCall3), null, null, null);
+		var choice3 = new OpenAiApi.ChatCompletionChunk.ChunkChoice(null, 0, delta3, null);
+		var chunk3 = new OpenAiApi.ChatCompletionChunk("chat-1", List.of(choice3), null, null, null, null, null, null);
+
+		// Merge all chunks
+		var merged1 = this.helper.merge(chunk1, chunk2);
+		var merged2 = this.helper.merge(merged1, chunk3);
+
+		// Verify: should have exactly one tool call with complete data
+		assertThat(merged2.choices()).hasSize(1);
+		var finalChoice = merged2.choices().get(0);
+		assertThat(finalChoice.delta().toolCalls()).hasSize(1);
+
+		var finalToolCall = finalChoice.delta().toolCalls().get(0);
+		assertThat(finalToolCall.id()).isEqualTo("call_123");
+		assertThat(finalToolCall.function().name()).isEqualTo("get_weather");
+		assertThat(finalToolCall.function().arguments()).isEqualTo("{\"city\":\"Seoul\"}");
+	}
+
 }
