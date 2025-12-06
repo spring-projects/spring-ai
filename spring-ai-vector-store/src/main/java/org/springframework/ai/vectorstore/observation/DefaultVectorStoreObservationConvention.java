@@ -18,11 +18,11 @@ package org.springframework.ai.vectorstore.observation;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**

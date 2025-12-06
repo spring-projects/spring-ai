@@ -16,8 +16,9 @@
 
 package org.springframework.ai.image;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
 
 /**
  * ImageOptions represent the common options, portable across different image generation

@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.ModalityTokenCount;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.lang.Nullable;
 
 /**
  * Extended usage metadata for Google GenAI responses that includes thinking tokens,

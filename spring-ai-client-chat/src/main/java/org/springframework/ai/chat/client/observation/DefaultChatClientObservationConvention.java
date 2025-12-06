@@ -20,6 +20,7 @@ import java.util.ArrayList;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.observation.ChatClientObservationDocumentation.LowCardinalityKeyNames;
@@ -28,7 +29,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.ai.observation.conventions.SpringAiKind;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 

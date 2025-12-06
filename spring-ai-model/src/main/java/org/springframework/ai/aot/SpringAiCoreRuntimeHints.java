@@ -18,6 +18,7 @@ package org.springframework.ai.aot;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOP_FallbackServiceProvider;
 import org.slf4j.helpers.SubstituteServiceProvider;
@@ -38,7 +39,6 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 

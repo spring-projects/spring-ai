@@ -22,8 +22,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 public class MutableResponseMetadata implements ResponseMetadata {
 

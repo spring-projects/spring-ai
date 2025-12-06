@@ -18,8 +18,9 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link ModelOptions} representing the common options that are portable across different

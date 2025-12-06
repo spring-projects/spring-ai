@@ -18,8 +18,9 @@ package org.springframework.ai.tool.resolution;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

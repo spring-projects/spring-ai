@@ -16,12 +16,13 @@
 
 package org.springframework.ai.deepseek.aot;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 

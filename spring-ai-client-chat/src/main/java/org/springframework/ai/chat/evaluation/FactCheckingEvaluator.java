@@ -18,11 +18,12 @@ package org.springframework.ai.chat.evaluation;
 
 import java.util.Collections;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.Evaluator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

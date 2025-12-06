@@ -16,8 +16,9 @@
 
 package org.springframework.ai.tool.resolution;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 
 /**
  * A resolver for {@link ToolCallback} instances.

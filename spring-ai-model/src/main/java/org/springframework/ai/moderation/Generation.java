@@ -16,8 +16,9 @@
 
 package org.springframework.ai.moderation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelResult;
-import org.springframework.lang.Nullable;
 
 /**
  * The Generation class represents a response from a moderation process. It encapsulates

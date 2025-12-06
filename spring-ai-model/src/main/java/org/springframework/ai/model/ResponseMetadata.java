@@ -20,8 +20,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 /**
  * Interface representing metadata associated with an AI model's response.

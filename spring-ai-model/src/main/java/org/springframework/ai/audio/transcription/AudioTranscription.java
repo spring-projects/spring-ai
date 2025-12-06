@@ -18,8 +18,9 @@ package org.springframework.ai.audio.transcription;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelResult;
-import org.springframework.lang.Nullable;
 
 /**
  * Represents a response returned by the AI.

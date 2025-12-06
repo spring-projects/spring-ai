@@ -16,12 +16,13 @@
 
 package org.springframework.ai.aot;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 /**
  * Registers runtime hints for the tool calling APIs.
