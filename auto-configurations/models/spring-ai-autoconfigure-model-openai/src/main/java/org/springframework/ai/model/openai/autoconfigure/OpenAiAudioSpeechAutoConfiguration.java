@@ -75,7 +75,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 			.responseErrorHandler(responseErrorHandler)
 			.build();
 
-		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
+		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions(), retryTemplate);
 	}
 
 }
