@@ -16,9 +16,10 @@
 
 package org.springframework.ai.vectorstore.milvus;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.lang.Nullable;
 
 /**
  * A specialized {@link SearchRequest} for Milvus vector search, extending the base

@@ -19,8 +19,9 @@ package org.springframework.ai.content;
 import java.io.IOException;
 import java.net.URI;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 

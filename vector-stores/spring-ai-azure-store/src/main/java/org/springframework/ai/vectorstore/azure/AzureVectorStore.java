@@ -43,6 +43,7 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +60,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;

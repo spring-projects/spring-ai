@@ -19,8 +19,9 @@ package org.springframework.ai.chat.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

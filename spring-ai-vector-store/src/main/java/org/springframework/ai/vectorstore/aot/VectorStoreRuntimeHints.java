@@ -18,11 +18,12 @@ package org.springframework.ai.vectorstore.aot;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 public class VectorStoreRuntimeHints implements RuntimeHintsRegistrar {
 

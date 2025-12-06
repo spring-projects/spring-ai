@@ -19,6 +19,7 @@ package org.springframework.ai.azure.openai.aot;
 import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.models.ChatChoice;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.aot.AiRuntimeHints;
 import org.springframework.aot.hint.MemberCategory;
@@ -26,7 +27,6 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link RuntimeHintsRegistrar} for Azure OpenAI.

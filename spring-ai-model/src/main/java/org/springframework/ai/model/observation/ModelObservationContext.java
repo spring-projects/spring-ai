@@ -17,9 +17,9 @@
 package org.springframework.ai.model.observation;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

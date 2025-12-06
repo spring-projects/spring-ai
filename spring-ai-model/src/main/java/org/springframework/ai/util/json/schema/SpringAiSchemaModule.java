@@ -25,9 +25,9 @@ import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigPart;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**

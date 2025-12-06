@@ -33,10 +33,10 @@ import com.google.genai.types.DeleteCachedContentResponse;
 import com.google.genai.types.GetCachedContentConfig;
 import com.google.genai.types.ListCachedContentsConfig;
 import com.google.genai.types.UpdateCachedContentConfig;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

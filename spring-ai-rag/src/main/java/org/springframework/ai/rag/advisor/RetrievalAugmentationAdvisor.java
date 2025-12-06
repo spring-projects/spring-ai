@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -42,7 +43,6 @@ import org.springframework.ai.rag.retrieval.join.DocumentJoiner;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.core.task.support.ContextPropagatingTaskDecorator;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 

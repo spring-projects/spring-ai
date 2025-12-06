@@ -19,13 +19,13 @@ package org.springframework.ai.mcp.aot;
 import java.util.Set;
 
 import io.modelcontextprotocol.spec.McpSchema;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.aot.AiRuntimeHints;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
-import org.springframework.lang.Nullable;
 
 /**
  * Runtime hints registrar for Model Context Protocol (MCP) schema classes.
