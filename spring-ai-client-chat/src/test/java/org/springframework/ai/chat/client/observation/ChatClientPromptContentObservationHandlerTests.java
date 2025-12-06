@@ -64,8 +64,7 @@ class ChatClientPromptContentObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
-				[]
-				""");
+				[]""");
 	}
 
 	@Test
@@ -76,8 +75,7 @@ class ChatClientPromptContentObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
-				["user":"supercalifragilisticexpialidocious"]
-				""");
+				["user":"supercalifragilisticexpialidocious"]""");
 	}
 
 	@Test
@@ -91,8 +89,7 @@ class ChatClientPromptContentObservationHandlerTests {
 		this.observationHandler.onStop(context);
 		assertThat(output).contains("""
 				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
-				["system":"you're a chimney sweep", "user":"supercalifragilisticexpialidocious"]
-				""");
+				["system":"you're a chimney sweep", "user":"supercalifragilisticexpialidocious"]""");
 	}
 
 }
