@@ -9,6 +9,25 @@
 		</global>
 	</input>
 	<executionControl>
+		<runAlways>
+			<goalsLists>
+				<goalsList artifactId="maven-install-plugin">
+					<goals>
+						<goal>install</goal>
+					</goals>
+				</goalsList>
+				<goalsList artifactId="maven-deploy-plugin">
+					<goals>
+						<goal>deploy</goal>
+					</goals>
+				</goalsList>
+				<goalsList groupId="org.codehaus.mojo" artifactId="flatten-maven-plugin">
+					<goals>
+						<goal>flatten</goal>
+					</goals>
+				</goalsList>
+			</goalsLists>
+		</runAlways>
 		<reconcile>
 			<plugins>
 				<plugin artifactId="maven-surefire-plugin" goal="test">
@@ -26,7 +45,12 @@
 						<reconcile propertyName="skipTests" skipValue="true"/>
 					</reconciles>
 				</plugin>
-
+				<!-- workaround for https://issues.apache.org/jira/browse/MBUILDCACHE-56 -->
+				<plugin artifactId="maven-enforcer-plugin" goal="enforce">
+					<nologs>
+						<nolog propertyName="commandLineRules"/>
+					</nologs>
+				</plugin>
 			</plugins>
 		</reconcile>
 	</executionControl>
