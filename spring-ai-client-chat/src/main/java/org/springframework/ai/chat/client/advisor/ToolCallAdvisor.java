@@ -150,6 +150,11 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 		while (isToolCall); // loop until no tool calls are present
 
+		return this.doFinalizeLoop(chatClientResponse, callAdvisorChain);
+	}
+
+	protected ChatClientResponse doFinalizeLoop(ChatClientResponse chatClientResponse,
+			CallAdvisorChain callAdvisorChain) {
 		return chatClientResponse;
 	}
 
