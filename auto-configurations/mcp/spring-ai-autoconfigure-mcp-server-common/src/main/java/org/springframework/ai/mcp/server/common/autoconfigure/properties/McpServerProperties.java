@@ -95,7 +95,7 @@ public class McpServerProperties {
 
 	private Capabilities capabilities = new Capabilities();
 
-	private ServerProtocol protocol = ServerProtocol.SSE;
+	private ServerProtocol protocol = ServerProtocol.STREAMABLE;
 
 	/**
 	 * Sets the duration to wait for server responses before timing out requests. This
