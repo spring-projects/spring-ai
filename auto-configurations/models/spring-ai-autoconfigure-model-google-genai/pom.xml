@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai-parent</artifactId>
-		<version>1.1.2-SNAPSHOT</version>
+		<version>1.1.2</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-autoconfigure-model-google-genai</artifactId>
