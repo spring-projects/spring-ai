@@ -126,7 +126,7 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public McpSyncToolsChangeEventEmitter mcpSyncToolChangeEventEmmiter(
+	public McpSyncToolsChangeEventEmitter mcpSyncToolChangeEventEmitter(
 			ApplicationEventPublisher applicationEventPublisher) {
 		return new McpSyncToolsChangeEventEmitter(applicationEventPublisher);
 	}
@@ -237,7 +237,7 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public McpAsyncToolsChangeEventEmitter mcpAsyncToolChangeEventEmmiter(
+	public McpAsyncToolsChangeEventEmitter mcpAsyncToolChangeEventEmitter(
 			ApplicationEventPublisher applicationEventPublisher) {
 		return new McpAsyncToolsChangeEventEmitter(applicationEventPublisher);
 	}
