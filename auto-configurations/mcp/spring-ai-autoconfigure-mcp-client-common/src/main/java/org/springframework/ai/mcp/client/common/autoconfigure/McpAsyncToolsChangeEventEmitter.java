@@ -30,11 +30,11 @@ import org.springframework.context.ApplicationEventPublisher;
  *
  * @author Christian Tzolov
  */
-public class McpAsyncToolsChangeEventEmmiter implements McpAsyncClientCustomizer {
+public class McpAsyncToolsChangeEventEmitter implements McpAsyncClientCustomizer {
 
 	private final ApplicationEventPublisher applicationEventPublisher;
 
-	public McpAsyncToolsChangeEventEmmiter(ApplicationEventPublisher applicationEventPublisher) {
+	public McpAsyncToolsChangeEventEmitter(ApplicationEventPublisher applicationEventPublisher) {
 		Assert.notNull(applicationEventPublisher, "applicationEventPublisher must not be null");
 		this.applicationEventPublisher = applicationEventPublisher;
 	}
