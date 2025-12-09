@@ -39,10 +39,9 @@ import org.springframework.core.NestedExceptionUtils;
 import org.springframework.util.Assert;
 
 /**
- *
  * Parse a textual, vector-store agnostic, filter expression language into
  * {@link Filter.Expression}.
- *
+ * <p>
  * The vector-store agnostic, filter expression language is defined by a formal ANTLR4
  * grammar (Filters.g4). The language looks and feels like a subset of the well known SQL
  * WHERE filter expressions. For example, you can use the parser like this:
@@ -161,7 +160,9 @@ public class FilterExpressionTextParser {
 		this.cache.clear();
 	}
 
-	/** For testing only */
+	/**
+	 * For testing only
+	 */
 	Map<String, Filter.Expression> getCache() {
 		return this.cache;
 	}
@@ -202,7 +203,13 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitIntegerConstant(FiltersParser.IntegerConstantContext ctx) {
-			return new Filter.Value(Integer.valueOf(ctx.getText()));
+			String text = ctx.getText();
+			try {
+				return new Filter.Value(Integer.parseInt(text));
+			}
+			catch (NumberFormatException ignored) {
+				return new Filter.Value(Long.parseLong(text));
+			}
 		}
 
 		@Override
