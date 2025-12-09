@@ -165,4 +165,26 @@ public class TokenTextSplitterTest {
 		assertThat(splitted.get(0).getText()).endsWith(".");
 	}
 
+	@Test
+	public void testLargeTextStillSplitsAtChinesePunctuation() {
+		// Verify that punctuation-based splitting still works when text exceeds chunk
+		// size
+		TokenTextSplitter splitter = TokenTextSplitter.builder()
+			.withKeepSeparator(true)
+			.withChunkSize(15)
+			.withMinChunkSizeChars(10)
+			.build();
+
+		// This text has multiple sentences and will exceed 15 tokens
+		Document testDoc = new Document(
+				"This is the first sentence with enough words？ This is the second sentence！ And this is the third sentence。");
+		List<Document> splitted = splitter.split(testDoc);
+
+		// Should split into multiple chunks at punctuation marks
+		assertThat(splitted.size()).isGreaterThan(1);
+
+		// Verify first chunk ends with punctuation
+		assertThat(splitted.get(0).getText()).endsWith("！");
+	}
+
 }
