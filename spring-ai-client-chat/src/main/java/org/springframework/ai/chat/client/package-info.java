@@ -15,7 +15,7 @@
  */
 
 /**
- * Chat client.
+ * Chat client API.
  */
 @NonNullApi
 @NonNullFields
