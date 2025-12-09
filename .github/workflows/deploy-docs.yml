@@ -2,16 +2,6 @@ name: Deploy Docs
 run-name: ${{ github.event_name == 'workflow_dispatch' && 'Deploy Docs (Build)' || 'Deploy Docs (Dispatcher)' }}
 on:
   workflow_dispatch:
-  push:
-    branches: [main, '[0-9].[0-9].x' ]
-    tags: ['v[0-9].[0-9].[0-9]', 'v[0-9].[0-9].[0-9]-*']
-    paths:
-      - 'spring-ai-docs/**/*.adoc'
-      - 'spring-ai-docs/**/antora.yml'
-      - 'spring-ai-docs/**/antora-playbook.yml'
-      - 'spring-ai-docs/pom.xml'
-      - 'spring-ai-docs/src/main/javadoc/**'
-      - '.github/workflows/deploy-docs.yml'
 permissions:
   actions: write
 jobs:
@@ -19,20 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'spring-projects' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: docs-build
-          fetch-depth: 1
-      - name: Dispatch (partial build)
-        if: github.ref_type == 'branch'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GIT_TRACE: 1
-          GIT_CURL_VERBOSE: 1
-        run: gh workflow run deploy-docs.yml -r $(git rev-parse --abbrev-ref HEAD) -f build-refname=${{ github.ref_name }}
       - name: Dispatch (full build)
-        if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run deploy-docs.yml -r $(git rev-parse --abbrev-ref HEAD)
+        run: gh workflow run deploy-docs.yml -r docs-build
