@@ -614,6 +614,8 @@ The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text 
 
 ==== Usage
 
+===== Basic Usage
+
 [source,java]
 ----
 @Component
@@ -625,7 +627,62 @@ class MyTokenTextSplitter {
     }
 
     public List<Document> splitCustomized(List<Document> documents) {
-        TokenTextSplitter splitter = new TokenTextSplitter(1000, 400, 10, 5000, true);
+        TokenTextSplitter splitter = new TokenTextSplitter(1000, 400, 10, 5000, true, List.of('.', '?', '!', '\n'));
+        return splitter.apply(documents);
+    }
+}
+----
+
+===== Using the Builder Pattern
+
+The recommended way to create a `TokenTextSplitter` is using the builder pattern, which provides a more readable and flexible API:
+
+[source,java]
+----
+@Component
+class MyTokenTextSplitter {
+
+    public List<Document> splitWithBuilder(List<Document> documents) {
+        TokenTextSplitter splitter = TokenTextSplitter.builder()
+            .withChunkSize(1000)
+            .withMinChunkSizeChars(400)
+            .withMinChunkLengthToEmbed(10)
+            .withMaxNumChunks(5000)
+            .withKeepSeparator(true)
+            .build();
+
+        return splitter.apply(documents);
+    }
+}
+----
+
+===== Custom Punctuation Marks
+
+You can customize the punctuation marks used for splitting text into semantically meaningful chunks. This is particularly useful for internationalization:
+
+[source,java]
+----
+@Component
+class MyInternationalTextSplitter {
+
+    public List<Document> splitChineseText(List<Document> documents) {
+        // Use Chinese punctuation marks
+        TokenTextSplitter splitter = TokenTextSplitter.builder()
+            .withChunkSize(800)
+            .withMinChunkSizeChars(350)
+            .withPunctuationMarks(List.of('。', '？', '！', '；'))  // Chinese punctuation
+            .build();
+
+        return splitter.apply(documents);
+    }
+
+    public List<Document> splitWithCustomMarks(List<Document> documents) {
+        // Mix of English and other punctuation marks
+        TokenTextSplitter splitter = TokenTextSplitter.builder()
+            .withChunkSize(800)
+            .withPunctuationMarks(List.of('.', '?', '!', '\n', ';', ':', '。'))
+            .build();
+
         return splitter.apply(documents);
     }
 }
@@ -633,34 +690,39 @@ class MyTokenTextSplitter {
 
 ==== Constructor Options
 
-The `TokenTextSplitter` provides two constructor options:
+The `TokenTextSplitter` provides three constructor options:
 
 1. `TokenTextSplitter()`: Creates a splitter with default settings.
-2. `TokenTextSplitter(int defaultChunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator)`
+2. `TokenTextSplitter(boolean keepSeparator)`: Creates a splitter with custom separator behavior.
+3. `TokenTextSplitter(int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator, List<Character> punctuationMarks)`: Full constructor with all customization options.
 
+NOTE: The builder pattern (shown above) is the recommended approach for creating instances with custom configurations.
 
 ==== Parameters
 
-* `defaultChunkSize`: The target size of each text chunk in tokens (default: 800).
+* `chunkSize`: The target size of each text chunk in tokens (default: 800).
 * `minChunkSizeChars`: The minimum size of each text chunk in characters (default: 350).
 * `minChunkLengthToEmbed`: The minimum length of a chunk to be included (default: 5).
 * `maxNumChunks`: The maximum number of chunks to generate from a text (default: 10000).
 * `keepSeparator`: Whether to keep separators (like newlines) in the chunks (default: true).
+* `punctuationMarks`: List of characters to use as sentence boundaries for splitting (default: `.`, `?`, `!`, `\n`).
 
 ==== Behavior
 
 The `TokenTextSplitter` processes text content as follows:
 
 1. It encodes the input text into tokens using the CL100K_BASE encoding.
-2. It splits the encoded text into chunks based on the `defaultChunkSize`.
+2. It splits the encoded text into chunks based on the `chunkSize`.
 3. For each chunk:
-a. It decodes the chunk back into text.
-b. It attempts to find a suitable break point (period, question mark, exclamation mark, or newline) after the `minChunkSizeChars`.
-c. If a break point is found, it truncates the chunk at that point.
-d. It trims the chunk and optionally removes newline characters based on the `keepSeparator` setting.
-e. If the resulting chunk is longer than `minChunkLengthToEmbed`, it's added to the output.
+   a. It decodes the chunk back into text.
+   b. *Only if the total token count exceeds the chunk size*, it attempts to find a suitable break point (using the configured `punctuationMarks`) after the `minChunkSizeChars`.
+   c. If a break point is found, it truncates the chunk at that point.
+   d. It trims the chunk and optionally removes newline characters based on the `keepSeparator` setting.
+   e. If the resulting chunk is longer than `minChunkLengthToEmbed`, it's added to the output.
 4. This process continues until all tokens are processed or `maxNumChunks` is reached.
 5. Any remaining text is added as a final chunk if it's longer than `minChunkLengthToEmbed`.
+
+IMPORTANT: Punctuation-based splitting only applies when the token count exceeds the chunk size. Text that exactly matches or is smaller than the chunk size is returned as a single chunk without punctuation-based truncation. This prevents unnecessary splitting of small texts.
 
 ==== Example
 
@@ -688,6 +750,10 @@ for (Document doc : splitDocuments) {
 * Metadata from the original documents is preserved and copied to all chunks derived from that document.
 * The content formatter (if set) from the original document is also copied to the derived chunks if `copyContentFormatter` is set to `true` (default behavior).
 * This splitter is particularly useful for preparing text for large language models that have token limits, ensuring that each chunk is within the model's processing capacity.
+* *Custom Punctuation Marks*: The default punctuation marks (`.`, `?`, `!`, `\n`) work well for English text. For other languages or specialized content, customize the punctuation marks using the builder's `withPunctuationMarks()` method.
+* *Performance Consideration*: While the splitter can handle any number of punctuation marks, it's recommended to keep the list reasonably small (under 20 characters) for optimal performance, as each mark is checked for every chunk.
+* *Extensibility*: The `getLastPunctuationIndex(String)` method is `protected`, allowing subclasses to override the punctuation detection logic for specialized use cases.
+* *Small Text Handling*: As of version 2.0, small texts (with token count at or below the chunk size) are no longer split at punctuation marks, preventing unnecessary fragmentation of content that already fits within the size limits.
 
 === ContentFormatTransformer
 Ensures uniform content formats across all documents.
