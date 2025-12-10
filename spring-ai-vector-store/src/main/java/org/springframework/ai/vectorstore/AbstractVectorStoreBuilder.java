@@ -17,12 +17,12 @@
 package org.springframework.ai.vectorstore;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

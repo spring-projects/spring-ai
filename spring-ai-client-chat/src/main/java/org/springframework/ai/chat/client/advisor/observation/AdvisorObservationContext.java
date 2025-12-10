@@ -17,10 +17,10 @@
 package org.springframework.ai.chat.client.advisor.observation;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

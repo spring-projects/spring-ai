@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -36,7 +37,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -150,8 +150,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 			.build();
 	}
 
-	@Nullable
-	protected Filter.Expression doGetFilterExpression(Map<String, Object> context) {
+	protected Filter.@Nullable Expression doGetFilterExpression(Map<String, Object> context) {
 		if (!context.containsKey(FILTER_EXPRESSION)
 				|| !StringUtils.hasText(context.get(FILTER_EXPRESSION).toString())) {
 			return this.searchRequest.getFilterExpression();

@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -38,7 +39,6 @@ import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.schema.JsonSchemaConverter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

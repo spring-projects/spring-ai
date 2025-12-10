@@ -16,8 +16,9 @@
 
 package org.springframework.ai.audio.tts;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
 
 /**
  * Interface for text-to-speech model options. Defines the common, portable options that

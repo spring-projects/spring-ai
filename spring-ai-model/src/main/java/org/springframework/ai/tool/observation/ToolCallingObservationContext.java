@@ -17,13 +17,13 @@
 package org.springframework.ai.tool.observation;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

@@ -16,8 +16,9 @@
 
 package org.springframework.ai.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
 
 /**
  * Options for embedding models.

@@ -16,12 +16,13 @@
 
 package org.springframework.ai.openai.metadata.audio;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.metadata.OpenAiRateLimit;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**

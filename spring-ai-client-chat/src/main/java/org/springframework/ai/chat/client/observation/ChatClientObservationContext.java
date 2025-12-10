@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.observation;
 import java.util.List;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -27,7 +28,6 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
