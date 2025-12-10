@@ -16,6 +16,10 @@
 
 package org.springframework.ai.openai.aot;
 
+import java.util.Set;
+
+import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.api.OpenAiEmbeddingDeserializer;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -37,6 +41,11 @@ public class OpenAiRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
+
+		for (var c : Set.of(OpenAiApi.Embedding.class, OpenAiApi.EmbeddingList.class,
+				OpenAiEmbeddingDeserializer.class)) {
+			hints.reflection().registerType(c, MemberCategory.values());
+		}
 
 		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.openai")) {
 			hints.reflection().registerType(tr, mcs);
