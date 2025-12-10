@@ -59,7 +59,7 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
 	BedrockRuntimeHints() {
-		this.allClasses = this.find(rootPackage);
+		this.allClasses = this.find(this.rootPackage);
 	}
 
 	@Override
@@ -70,16 +70,17 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 			this.registerResources(hints);
 		} //
 		catch (Throwable ex) {
-			log.warn("error when registering Bedrock types", ex);
+			this.log.warn("error when registering Bedrock types", ex);
 		}
 	}
 
 	private void registerBedrockRuntimeService(RuntimeHints hints) {
-		var pkg = rootPackage + ".services.bedrockruntime";
+		var pkg = this.rootPackage + ".services.bedrockruntime";
 		var all = new HashSet<TypeReference>();
 		for (var clzz : this.allClasses) {
-			if (clzz.getName().contains("Bedrock") && clzz.getName().contains("Client"))
+			if (clzz.getName().contains("Bedrock") && clzz.getName().contains("Client")) {
 				all.add(clzz);
+			}
 		}
 		var modelPkg = pkg + ".model";
 		all.addAll(this.find(modelPkg));
