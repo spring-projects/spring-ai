@@ -20,7 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
+import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,10 +32,42 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit Tests for Ollama auto-configurations conditional enabling of models.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Nicolas Krier
  */
-public class OllamaModelConfigurationTests {
+class OllamaModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
+
+	@Test
+	void apiActivation() {
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OllamaApiAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).doesNotHaveBean(OllamaApiAutoConfiguration.PropertiesOllamaConnectionDetails.class);
+				assertThat(context).doesNotHaveBean(OllamaApi.class);
+			});
+
+		List.of(
+		// @formatter:off
+				this.contextRunner
+					.withConfiguration(SpringAiTestAutoConfigurations.of(OllamaApiAutoConfiguration.class)),
+				this.contextRunner
+					.withConfiguration(SpringAiTestAutoConfigurations.of(OllamaApiAutoConfiguration.class))
+					.withPropertyValues("spring.ai.model.chat=ollama", "spring.ai.model.embedding=ollama"),
+				this.contextRunner
+					.withConfiguration(SpringAiTestAutoConfigurations.of(OllamaApiAutoConfiguration.class))
+					.withPropertyValues("spring.ai.model.chat=ollama", "spring.ai.model.embedding=none"),
+				this.contextRunner
+					.withConfiguration(SpringAiTestAutoConfigurations.of(OllamaApiAutoConfiguration.class))
+					.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=ollama")
+		// @formatter:on
+		).forEach(runner -> runner.run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).hasSingleBean(OllamaApiAutoConfiguration.PropertiesOllamaConnectionDetails.class);
+			assertThat(context).hasSingleBean(OllamaApi.class);
+		}));
+	}
 
 	@Test
 	void chatModelActivation() {
