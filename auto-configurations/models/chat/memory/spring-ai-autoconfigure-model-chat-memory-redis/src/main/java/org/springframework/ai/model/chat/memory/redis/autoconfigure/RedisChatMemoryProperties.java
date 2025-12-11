@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Configuration properties for Redis-based chat memory.
@@ -82,7 +83,7 @@ public class RedisChatMemoryProperties {
 	private List<Map<String, String>> metadataFields;
 
 	public String getHost() {
-		return host;
+		return this.host;
 	}
 
 	public void setHost(String host) {
@@ -90,7 +91,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public int getPort() {
-		return port;
+		return this.port;
 	}
 
 	public void setPort(int port) {
@@ -98,7 +99,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public String getIndexName() {
-		return indexName;
+		return this.indexName;
 	}
 
 	public void setIndexName(String indexName) {
@@ -106,7 +107,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public String getKeyPrefix() {
-		return keyPrefix;
+		return this.keyPrefix;
 	}
 
 	public void setKeyPrefix(String keyPrefix) {
@@ -114,7 +115,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public Duration getTimeToLive() {
-		return timeToLive;
+		return this.timeToLive;
 	}
 
 	public void setTimeToLive(Duration timeToLive) {
@@ -122,7 +123,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public Boolean getInitializeSchema() {
-		return initializeSchema;
+		return this.initializeSchema;
 	}
 
 	public void setInitializeSchema(Boolean initializeSchema) {
@@ -130,7 +131,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public Integer getMaxConversationIds() {
-		return maxConversationIds;
+		return this.maxConversationIds;
 	}
 
 	public void setMaxConversationIds(Integer maxConversationIds) {
@@ -138,7 +139,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public Integer getMaxMessagesPerConversation() {
-		return maxMessagesPerConversation;
+		return this.maxMessagesPerConversation;
 	}
 
 	public void setMaxMessagesPerConversation(Integer maxMessagesPerConversation) {
@@ -146,7 +147,7 @@ public class RedisChatMemoryProperties {
 	}
 
 	public List<Map<String, String>> getMetadataFields() {
-		return metadataFields;
+		return this.metadataFields;
 	}
 
 	public void setMetadataFields(List<Map<String, String>> metadataFields) {
