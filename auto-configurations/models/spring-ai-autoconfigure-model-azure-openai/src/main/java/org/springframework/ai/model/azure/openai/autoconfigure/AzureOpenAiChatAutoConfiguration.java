@@ -44,7 +44,8 @@ import org.springframework.context.annotation.Import;
  * @author Manuel Andreo Garcia
  * @author Ilayaperumal Gopinathan
  */
-@AutoConfiguration(after = ToolCallingAutoConfiguration.class)
+@AutoConfiguration(after = ToolCallingAutoConfiguration.class,
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass(AzureOpenAiChatModel.class)
 @EnableConfigurationProperties(AzureOpenAiChatProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.AZURE_OPENAI,
