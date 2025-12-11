@@ -21,9 +21,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.mongodb.ConnectionString;
+import com.mongodb.MongoDriverInformation;
+import com.mongodb.client.MongoClient;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.mockito.ArgumentCaptor;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
@@ -48,6 +51,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Eddú Meléndez
@@ -188,6 +194,20 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(MongoDBAtlasVectorStore.class);
 		});
+	}
+
+	@Test
+	public void appendsFrameworkMetadataWhenMongoClientBeanIsPresent() {
+		MongoClient mongoClient = mock(MongoClient.class);
+		getContextRunner().withPropertyValues("spring.ai.vectorstore.mongodb.initialize-schema=false")
+			.withBean(MongoClient.class, () -> mongoClient)
+			.run(context -> {
+				assertThat(context).hasSingleBean(MongoDBAtlasVectorStore.class);
+
+				ArgumentCaptor<MongoDriverInformation> captor = ArgumentCaptor.forClass(MongoDriverInformation.class);
+				verify(mongoClient, times(1)).appendMetadata(captor.capture());
+				assertThat(captor.getValue().getDriverNames()).contains("spring-ai");
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)
