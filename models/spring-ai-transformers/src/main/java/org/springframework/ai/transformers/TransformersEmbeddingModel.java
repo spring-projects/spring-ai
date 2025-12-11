@@ -85,7 +85,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 
 	// ONNX generative for all-MiniLM-L6-v2 pre-trained transformer:
 	// https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-	public static final String DEFAULT_ONNX_MODEL_URI = "https://github.com/spring-projects/spring-ai/raw/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
+	public static final String DEFAULT_ONNX_MODEL_URI = "https://media.githubusercontent.com/media/spring-projects/spring-ai/refs/heads/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/model.onnx";
 
 	public static final String DEFAULT_MODEL_OUTPUT_NAME = "last_hidden_state";
 
