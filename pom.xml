@@ -619,11 +619,11 @@
 
 		</profile>
 		<profile>
-			<!-- Moving this plugin in an always active profile that appears *after* the
-			conditional javaformat -->
 			<id>checkstyle-check</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<property>
+					<name>!env.BOGUS</name>
+				</property>
 			</activation>
 			<build>
 				<plugins>
@@ -646,7 +646,7 @@
 						<executions>
 							<execution>
 								<id>checkstyle-validation</id>
-								<phase>verify</phase>
+								<phase>process-sources</phase>
 								<inherited>true</inherited>
 								<configuration>
 									<skip>${disable.checks}</skip>
