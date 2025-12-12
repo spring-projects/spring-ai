@@ -136,11 +136,12 @@ public class ChromaApi {
 				.retrieve()
 				.body(Tenant.class);
 		}
+		catch (HttpClientErrorException.NotFound e) {
+			// Tenant not found, return null
+			return null;
+		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			if (String.format("Tenant [%s] not found", tenantName).equals(msg)) {
-				return null;
-			}
 			throw new RuntimeException(msg, e);
 		}
 	}
@@ -165,11 +166,12 @@ public class ChromaApi {
 				.retrieve()
 				.body(Database.class);
 		}
+		catch (HttpClientErrorException.NotFound e) {
+			// Database not found, return null
+			return null;
+		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			if (msg.startsWith(String.format("Database [%s] not found.", databaseName))) {
-				return null;
-			}
 			throw new RuntimeException(msg, e);
 		}
 	}
@@ -226,13 +228,12 @@ public class ChromaApi {
 				.retrieve()
 				.body(Collection.class);
 		}
+		catch (HttpClientErrorException.NotFound e) {
+			// Collection not found, return null
+			return null;
+		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			// Handle both "does not exist" and "does not exists" variants from Chroma API
-			if (String.format("Collection [%s] does not exist", collectionName).equals(msg)
-					|| String.format("Collection [%s] does not exists", collectionName).equals(msg)) {
-				return null;
-			}
 			throw new RuntimeException(msg, e);
 		}
 	}
