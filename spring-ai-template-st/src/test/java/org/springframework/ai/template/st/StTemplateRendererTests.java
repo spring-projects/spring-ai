@@ -18,6 +18,7 @@ package org.springframework.ai.template.st;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link StTemplateRenderer}.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  */
 class StTemplateRendererTests {
 
@@ -351,6 +353,18 @@ class StTemplateRendererTests {
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining(
 					"Not all variables were replaced in the template. Missing variable names are: [user]");
+	}
+
+	/**
+	 * Test whether the required variables can be correctly extracted from the template.
+	 */
+	@Test
+	void shouldCorrectlyExtractedRequiredVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		String template = "Person: {name}, Age: {age}";
+		Set<String> requiredVariables = renderer.getRequiredVariables(template);
+
+		assertThat(requiredVariables).contains("name", "age");
 	}
 
 }
