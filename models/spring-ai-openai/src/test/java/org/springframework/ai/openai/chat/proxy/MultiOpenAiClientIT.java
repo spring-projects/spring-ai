@@ -33,7 +33,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = MultiOpenAiClientIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GROQ_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @ActiveProfiles("logging-test")
