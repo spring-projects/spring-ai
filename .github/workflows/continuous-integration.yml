@@ -201,6 +201,8 @@ jobs:
     name: Generate and upload javadocs, trigger antora reference doc
     if: ${{  github.repository_owner == 'spring-projects'  && github.event_name != 'schedule'}}
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     needs: [build-all, test-ollama, test-openai, test-remaining]
     steps:
       - name: Checkout source code
@@ -244,7 +246,7 @@ jobs:
     name: Deploy to Artifactory
     runs-on: ubuntu-latest
     needs: [build-all, test-ollama, test-openai, test-remaining]
-    if: ${{  github.repository_owner == 'spring-projects' && github.event_name != 'schedule' && false}}
+    if: ${{  github.repository_owner == 'spring-projects' && github.event_name != 'schedule' }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
