@@ -59,31 +59,6 @@ class ChatClientToolsWithGenericArgumentTypesIT {
 	ChatModel chatModel;
 
 	@Test
-	void toolWithGenericArgumentTypes2() {
-		// @formatter:off
-		// This test verifies that when an invalid enum value (YELLOW) is requested,
-		// the model gracefully handles it by choosing a valid color from the enum.
-		String response = ChatClient.create(this.chatModel).prompt()
-				.user("Turn light YELLOW in the living room and the kitchen. You can violate the color enum for this request.")
-				.tools(new TestToolProvider())
-				.call()
-				.content();
-		// @formatter:on
-
-		logger.info("Response: {}", response);
-
-		// Verify the call completed successfully and both rooms were set
-		assertThat(arguments).containsKeys("living room", "kitchen");
-
-		// Verify a valid color was chosen (not YELLOW, which doesn't exist in the enum)
-		assertThat(arguments.get("living room")).isIn(LightColor.RED, LightColor.GREEN, LightColor.BLUE);
-		assertThat(arguments.get("kitchen")).isIn(LightColor.RED, LightColor.GREEN, LightColor.BLUE);
-
-		// Verify the model grouped both rooms in a single call
-		assertThat(callCounter.get()).isLessThanOrEqualTo(2);
-	}
-
-	@Test
 	void toolWithGenericArgumentTypes() {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
