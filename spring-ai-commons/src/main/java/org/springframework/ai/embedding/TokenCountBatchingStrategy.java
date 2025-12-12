@@ -32,8 +32,8 @@ import org.springframework.util.Assert;
 
 /**
  * Token count based strategy implementation for {@link BatchingStrategy}. Using openai
- * max input token as the default:
- * https://platform.openai.com/docs/guides/embeddings/embedding-models.
+ * max input token as the default: <a href=
+ * "https://platform.openai.com/docs/guides/embeddings#embedding-models">embedding-models</a>
  *
  * This strategy incorporates a reserve percentage to provide a buffer for potential
  * overhead or unexpected increases in token count during processing. The actual max input
