@@ -55,7 +55,7 @@ public class S3ChatMemoryProperties {
 	private String storageClass = "STANDARD";
 
 	public String getBucketName() {
-		return bucketName;
+		return this.bucketName;
 	}
 
 	public void setBucketName(String bucketName) {
@@ -63,7 +63,7 @@ public class S3ChatMemoryProperties {
 	}
 
 	public String getKeyPrefix() {
-		return keyPrefix;
+		return this.keyPrefix;
 	}
 
 	public void setKeyPrefix(String keyPrefix) {
@@ -71,7 +71,7 @@ public class S3ChatMemoryProperties {
 	}
 
 	public String getRegion() {
-		return region;
+		return this.region;
 	}
 
 	public void setRegion(String region) {
@@ -79,7 +79,7 @@ public class S3ChatMemoryProperties {
 	}
 
 	public boolean isInitializeBucket() {
-		return initializeBucket;
+		return this.initializeBucket;
 	}
 
 	public void setInitializeBucket(boolean initializeBucket) {
@@ -87,7 +87,7 @@ public class S3ChatMemoryProperties {
 	}
 
 	public String getStorageClass() {
-		return storageClass;
+		return this.storageClass;
 	}
 
 	public void setStorageClass(String storageClass) {

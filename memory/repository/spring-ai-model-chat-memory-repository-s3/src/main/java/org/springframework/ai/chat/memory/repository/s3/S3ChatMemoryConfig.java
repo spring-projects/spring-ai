@@ -16,9 +16,10 @@
 
 package org.springframework.ai.chat.memory.repository.s3;
 
-import org.springframework.util.Assert;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.StorageClass;
+
+import org.springframework.util.Assert;
 
 /**
  * Configuration class for S3ChatMemoryRepository.
@@ -55,23 +56,23 @@ public final class S3ChatMemoryConfig {
 	}
 
 	public S3Client getS3Client() {
-		return s3Client;
+		return this.s3Client;
 	}
 
 	public String getBucketName() {
-		return bucketName;
+		return this.bucketName;
 	}
 
 	public String getKeyPrefix() {
-		return keyPrefix;
+		return this.keyPrefix;
 	}
 
 	public boolean isInitializeBucket() {
-		return initializeBucket;
+		return this.initializeBucket;
 	}
 
 	public StorageClass getStorageClass() {
-		return storageClass;
+		return this.storageClass;
 	}
 
 	public static Builder builder() {

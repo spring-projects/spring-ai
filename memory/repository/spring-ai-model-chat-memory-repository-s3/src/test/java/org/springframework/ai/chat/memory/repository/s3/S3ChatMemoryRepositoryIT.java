@@ -21,9 +21,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.localstack.LocalStackContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.localstack.LocalStackContainer;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -67,7 +67,7 @@ class S3ChatMemoryRepositoryIT {
 		Thread.sleep(1000);
 
 		// Create S3 client pointing to LocalStack with path-style access
-		s3Client = S3Client.builder()
+		this.s3Client = S3Client.builder()
 			.endpointOverride(localstack.getEndpoint())
 			.credentialsProvider(StaticCredentialsProvider
 				.create(AwsBasicCredentials.create(localstack.getAccessKey(), localstack.getSecretKey())))
@@ -80,7 +80,7 @@ class S3ChatMemoryRepositoryIT {
 		int attempts = 0;
 		while (!bucketCreated && attempts < 5) {
 			try {
-				s3Client.createBucket(CreateBucketRequest.builder().bucket(BUCKET_NAME).build());
+				this.s3Client.createBucket(CreateBucketRequest.builder().bucket(BUCKET_NAME).build());
 				bucketCreated = true;
 			}
 			catch (software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException e) {
@@ -100,11 +100,11 @@ class S3ChatMemoryRepositoryIT {
 			}
 		}
 
-		// Create repository with unique prefix for each test
+		// Create this.repository with unique prefix for each test
 		String uniquePrefix = "test-" + System.currentTimeMillis();
 
-		repository = S3ChatMemoryRepository.builder()
-			.s3Client(s3Client)
+		this.repository = S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
 			.bucketName(BUCKET_NAME)
 			.keyPrefix(uniquePrefix)
 
@@ -120,27 +120,27 @@ class S3ChatMemoryRepositoryIT {
 				SystemMessage.builder().text("System message").build());
 
 		// When: Saving messages
-		repository.saveAll(conversationId, messages);
+		this.repository.saveAll(conversationId, messages);
 
 		// Then: Messages can be retrieved
-		List<Message> retrieved = repository.findByConversationId(conversationId);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
 		assertThat(retrieved).hasSize(3);
 		assertThat(retrieved.get(0).getText()).isEqualTo("Hello");
 		assertThat(retrieved.get(1).getText()).isEqualTo("Hi there!");
 		assertThat(retrieved.get(2).getText()).isEqualTo("System message");
 
 		// And: Conversation ID appears in list
-		List<String> conversationIds = repository.findConversationIds();
+		List<String> conversationIds = this.repository.findConversationIds();
 		assertThat(conversationIds).contains(conversationId);
 
 		// When: Deleting conversation
-		repository.deleteByConversationId(conversationId);
+		this.repository.deleteByConversationId(conversationId);
 
 		// Then: Conversation no longer exists
-		List<Message> afterDelete = repository.findByConversationId(conversationId);
+		List<Message> afterDelete = this.repository.findByConversationId(conversationId);
 		assertThat(afterDelete).isEmpty();
 
-		List<String> idsAfterDelete = repository.findConversationIds();
+		List<String> idsAfterDelete = this.repository.findConversationIds();
 		assertThat(idsAfterDelete).doesNotContain(conversationId);
 	}
 
@@ -150,11 +150,11 @@ class S3ChatMemoryRepositoryIT {
 		for (int i = 1; i <= 5; i++) {
 			String conversationId = "conversation-" + i;
 			List<Message> messages = List.of(UserMessage.builder().text("Message " + i).build());
-			repository.saveAll(conversationId, messages);
+			this.repository.saveAll(conversationId, messages);
 		}
 
 		// When: Listing all conversations
-		List<String> conversationIds = repository.findConversationIds();
+		List<String> conversationIds = this.repository.findConversationIds();
 
 		// Then: All conversations are present
 		assertThat(conversationIds).hasSize(5);
@@ -169,11 +169,11 @@ class S3ChatMemoryRepositoryIT {
 		for (int i = 1; i <= conversationCount; i++) {
 			String conversationId = "conv-" + i;
 			List<Message> messages = List.of(UserMessage.builder().text("Test message " + i).build());
-			repository.saveAll(conversationId, messages);
+			this.repository.saveAll(conversationId, messages);
 		}
 
 		// When: Listing all conversations
-		List<String> conversationIds = repository.findConversationIds();
+		List<String> conversationIds = this.repository.findConversationIds();
 
 		// Then: All conversations are returned (pagination handled internally)
 		assertThat(conversationIds).hasSize(conversationCount);
@@ -184,15 +184,15 @@ class S3ChatMemoryRepositoryIT {
 		// Given: A conversation with initial messages
 		String conversationId = "replacement-test";
 		List<Message> initialMessages = List.of(UserMessage.builder().text("Initial message").build());
-		repository.saveAll(conversationId, initialMessages);
+		this.repository.saveAll(conversationId, initialMessages);
 
 		// When: Replacing with new messages
 		List<Message> newMessages = List.of(UserMessage.builder().text("New message 1").build(),
 				UserMessage.builder().text("New message 2").build());
-		repository.saveAll(conversationId, newMessages);
+		this.repository.saveAll(conversationId, newMessages);
 
 		// Then: Only new messages are present
-		List<Message> retrieved = repository.findByConversationId(conversationId);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
 		assertThat(retrieved).hasSize(2);
 		assertThat(retrieved.get(0).getText()).isEqualTo("New message 1");
 		assertThat(retrieved.get(1).getText()).isEqualTo("New message 2");
@@ -203,23 +203,23 @@ class S3ChatMemoryRepositoryIT {
 		// Given: A conversation with messages
 		String conversationId = "empty-test";
 		List<Message> messages = List.of(UserMessage.builder().text("Test").build());
-		repository.saveAll(conversationId, messages);
+		this.repository.saveAll(conversationId, messages);
 
 		// When: Saving empty message list
-		repository.saveAll(conversationId, List.of());
+		this.repository.saveAll(conversationId, List.of());
 
 		// Then: Conversation is deleted
-		List<Message> retrieved = repository.findByConversationId(conversationId);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
 		assertThat(retrieved).isEmpty();
 
-		List<String> conversationIds = repository.findConversationIds();
+		List<String> conversationIds = this.repository.findConversationIds();
 		assertThat(conversationIds).doesNotContain(conversationId);
 	}
 
 	@Test
 	void testNonExistentConversation() {
 		// When: Retrieving non-existent conversation
-		List<Message> messages = repository.findByConversationId("non-existent");
+		List<Message> messages = this.repository.findByConversationId("non-existent");
 
 		// Then: Empty list is returned
 		assertThat(messages).isEmpty();
@@ -240,8 +240,8 @@ class S3ChatMemoryRepositoryIT {
 					.build());
 
 		// When: Saving and retrieving
-		repository.saveAll(conversationId, messages);
-		List<Message> retrieved = repository.findByConversationId(conversationId);
+		this.repository.saveAll(conversationId, messages);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
 
 		// Then: Metadata is preserved
 		assertThat(retrieved).hasSize(2);
@@ -260,8 +260,8 @@ class S3ChatMemoryRepositoryIT {
 		}
 
 		// When: Saving and retrieving
-		repository.saveAll(conversationId, messages);
-		List<Message> retrieved = repository.findByConversationId(conversationId);
+		this.repository.saveAll(conversationId, messages);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
 
 		// Then: Order is preserved
 		assertThat(retrieved).hasSize(10);
@@ -275,7 +275,7 @@ class S3ChatMemoryRepositoryIT {
 		// Given: Repository with custom storage class
 		String uniquePrefix = "storage-test-" + System.currentTimeMillis();
 		S3ChatMemoryRepository storageRepository = S3ChatMemoryRepository.builder()
-			.s3Client(s3Client)
+			.s3Client(this.s3Client)
 			.bucketName(BUCKET_NAME)
 			.keyPrefix(uniquePrefix)
 			.storageClass(software.amazon.awssdk.services.s3.model.StorageClass.STANDARD_IA)

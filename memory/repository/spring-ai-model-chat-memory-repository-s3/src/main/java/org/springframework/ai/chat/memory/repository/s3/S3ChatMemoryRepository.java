@@ -25,7 +25,6 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -50,7 +49,6 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-
 import org.springframework.util.Assert;
 
 /**
@@ -80,26 +78,27 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 
 	private void ensureBucketExists() {
 		try {
-			s3Client.headBucket(HeadBucketRequest.builder().bucket(config.getBucketName()).build());
+			this.s3Client.headBucket(HeadBucketRequest.builder().bucket(this.config.getBucketName()).build());
 		}
 		catch (NoSuchBucketException e) {
-			if (config.isInitializeBucket()) {
+			if (this.config.isInitializeBucket()) {
 				try {
-					s3Client.createBucket(CreateBucketRequest.builder().bucket(config.getBucketName()).build());
+					this.s3Client
+						.createBucket(CreateBucketRequest.builder().bucket(this.config.getBucketName()).build());
 				}
 				catch (S3Exception createException) {
-					throw new IllegalStateException("Failed to create S3 bucket '" + config.getBucketName() + "': "
+					throw new IllegalStateException("Failed to create S3 bucket '" + this.config.getBucketName() + "': "
 							+ createException.getMessage(), createException);
 				}
 			}
 			else {
-				throw new IllegalStateException("S3 bucket '" + config.getBucketName() + "' does not exist. "
+				throw new IllegalStateException("S3 bucket '" + this.config.getBucketName() + "' does not exist. "
 						+ "Create the bucket manually or set spring.ai.chat.memory.repository.s3.initialize-bucket=true");
 			}
 		}
 		catch (S3Exception e) {
 			throw new IllegalStateException(
-					"Failed to check S3 bucket '" + config.getBucketName() + "': " + e.getMessage(), e);
+					"Failed to check S3 bucket '" + this.config.getBucketName() + "': " + e.getMessage(), e);
 		}
 	}
 
@@ -166,7 +165,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 
 			payload.put("messages", messageList);
 
-			return objectMapper.writeValueAsString(payload);
+			return this.objectMapper.writeValueAsString(payload);
 		}
 		catch (JsonProcessingException e) {
 			throw new IllegalStateException(
@@ -176,7 +175,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 
 	private List<Message> deserialize(String json) {
 		try {
-			JsonNode root = objectMapper.readTree(json);
+			JsonNode root = this.objectMapper.readTree(json);
 
 			if (!root.has("messages")) {
 				throw new IllegalStateException("JSON does not contain 'messages' field");
@@ -214,7 +213,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	private Map<String, Object> convertMetadata(JsonNode metadataNode) {
-		return objectMapper.convertValue(metadataNode,
+		return this.objectMapper.convertValue(metadataNode,
 				new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
 				});
 	}
@@ -236,17 +235,17 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 			List<String> conversationIds = new ArrayList<>();
 
 			ListObjectsV2Request request = ListObjectsV2Request.builder()
-				.bucket(config.getBucketName())
-				.prefix(config.getKeyPrefix() + "/")
+				.bucket(this.config.getBucketName())
+				.prefix(this.config.getKeyPrefix() + "/")
 				.build();
 
 			ListObjectsV2Response response;
 			do {
-				response = s3Client.listObjectsV2(request);
+				response = this.s3Client.listObjectsV2(request);
 
 				for (S3Object s3Object : response.contents()) {
 					String key = s3Object.key();
-					String conversationId = extractConversationId(key, config.getKeyPrefix());
+					String conversationId = extractConversationId(key, this.config.getKeyPrefix());
 					if (conversationId != null) {
 						conversationIds.add(conversationId);
 					}
@@ -259,8 +258,8 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 			return conversationIds;
 		}
 		catch (S3Exception e) {
-			throw new IllegalStateException("Failed to list conversation IDs from S3 bucket '" + config.getBucketName()
-					+ "': " + e.getMessage(), e);
+			throw new IllegalStateException("Failed to list conversation IDs from S3 bucket '"
+					+ this.config.getBucketName() + "': " + e.getMessage(), e);
 		}
 	}
 
@@ -270,14 +269,14 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		ensureBucketExists();
 
 		try {
-			String key = generateKey(normalizedConversationId, config.getKeyPrefix());
+			String key = generateKey(normalizedConversationId, this.config.getKeyPrefix());
 
 			GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-				.bucket(config.getBucketName())
+				.bucket(this.config.getBucketName())
 				.key(key)
 				.build();
 
-			try (ResponseInputStream<GetObjectResponse> response = s3Client.getObject(getObjectRequest)) {
+			try (ResponseInputStream<GetObjectResponse> response = this.s3Client.getObject(getObjectRequest)) {
 				String json = new String(response.readAllBytes());
 				return deserialize(json);
 			}
@@ -287,7 +286,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		}
 		catch (S3Exception e) {
 			throw new IllegalStateException("Failed to retrieve conversation '" + normalizedConversationId
-					+ "' from S3 bucket '" + config.getBucketName() + "': " + e.getMessage(), e);
+					+ "' from S3 bucket '" + this.config.getBucketName() + "': " + e.getMessage(), e);
 		}
 		catch (Exception e) {
 			throw new IllegalStateException(
@@ -309,20 +308,20 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		ensureBucketExists();
 
 		try {
-			String key = generateKey(normalizedConversationId, config.getKeyPrefix());
+			String key = generateKey(normalizedConversationId, this.config.getKeyPrefix());
 			String json = serialize(normalizedConversationId, messages);
 
 			PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-				.bucket(config.getBucketName())
+				.bucket(this.config.getBucketName())
 				.key(key)
-				.storageClass(config.getStorageClass())
+				.storageClass(this.config.getStorageClass())
 				.build();
 
-			s3Client.putObject(putObjectRequest, RequestBody.fromString(json));
+			this.s3Client.putObject(putObjectRequest, RequestBody.fromString(json));
 		}
 		catch (S3Exception e) {
 			throw new IllegalStateException("Failed to save conversation '" + normalizedConversationId
-					+ "' to S3 bucket '" + config.getBucketName() + "': " + e.getMessage(), e);
+					+ "' to S3 bucket '" + this.config.getBucketName() + "': " + e.getMessage(), e);
 		}
 	}
 
@@ -332,18 +331,18 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		ensureBucketExists();
 
 		try {
-			String key = generateKey(normalizedConversationId, config.getKeyPrefix());
+			String key = generateKey(normalizedConversationId, this.config.getKeyPrefix());
 
 			DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-				.bucket(config.getBucketName())
+				.bucket(this.config.getBucketName())
 				.key(key)
 				.build();
 
-			s3Client.deleteObject(deleteObjectRequest);
+			this.s3Client.deleteObject(deleteObjectRequest);
 		}
 		catch (S3Exception e) {
 			throw new IllegalStateException("Failed to delete conversation '" + normalizedConversationId
-					+ "' from S3 bucket '" + config.getBucketName() + "': " + e.getMessage(), e);
+					+ "' from S3 bucket '" + this.config.getBucketName() + "': " + e.getMessage(), e);
 		}
 	}
 
@@ -399,7 +398,6 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 				.bucketName(this.bucketName)
 				.keyPrefix(this.keyPrefix)
 				.initializeBucket(this.initializeBucket)
-
 				.storageClass(this.storageClass)
 				.build();
 

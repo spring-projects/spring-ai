@@ -255,21 +255,8 @@ class S3ChatMemoryRepositoryPropertyTest {
 			.build();
 
 		// When/Then: Invalid inputs should throw IllegalArgumentException
-		org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class, () -> {
-			// Only testing saveAll with null messages now (null conversation IDs are
-			// valid)
-			repository.saveAll(input.conversationId(), input.messages());
-		});
-	}
-
-	@Provide
-	Arbitrary<InvalidInput> invalidInputs() {
-		// Only test truly invalid inputs - null conversation IDs are now valid (converted
-		// to default)
-		return Arbitraries.just(new InvalidInput("saveAll", "valid-id", null));
-	}
-
-	record InvalidInput(String operation, String conversationId, List<Message> messages) {
+		org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+				() -> repository.saveAll(input.conversationId(), input.messages()));
 	}
 
 	// Feature: s3-chat-memory-repository, Property 10: Timestamp consistency
@@ -295,6 +282,13 @@ class S3ChatMemoryRepositoryPropertyTest {
 	}
 
 	@Provide
+	Arbitrary<InvalidInput> invalidInputs() {
+		// Only test truly invalid inputs - null conversation IDs are now valid (converted
+		// to default)
+		return Arbitraries.just(new InvalidInput("saveAll", "valid-id", null));
+	}
+
+	@Provide
 	Arbitrary<List<Message>> largeMessageLists() {
 		return Arbitraries.strings()
 			.alpha()
@@ -305,6 +299,9 @@ class S3ChatMemoryRepositoryPropertyTest {
 			.list()
 			.ofMinSize(10)
 			.ofMaxSize(50); // Larger lists to test window enforcement
+	}
+
+	record InvalidInput(String operation, String conversationId, List<Message> messages) {
 	}
 
 	record KeySet(Set<String> allKeys, Set<String> validConversationIds, Set<String> invalidKeys) {
