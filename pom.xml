@@ -84,6 +84,7 @@
 
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
+		<module>auto-configurations/common/spring-ai-autoconfigure-jackson</module>
 
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
