@@ -35,6 +35,7 @@ import org.springframework.util.StringUtils;
  * irrelevant information that may affect the quality of the search results.
  *
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  * @see <a href="https://arxiv.org/pdf/2305.14283">arXiv:2305.14283</a>
  */
@@ -60,6 +61,8 @@ public class RewriteQueryTransformer implements QueryTransformer {
 
 	private final String targetSearchSystem;
 
+	private final ValidationMode validationMode;
+
 	public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,
 			@Nullable String targetSearchSystem) {
 		Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
@@ -67,8 +70,19 @@ public class RewriteQueryTransformer implements QueryTransformer {
 		this.chatClient = chatClientBuilder.build();
 		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
 		this.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;
+		this.validationMode = ValidationMode.THROW;
+		validate();
+	}
 
-		PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "target", "query");
+	public RewriteQueryTransformer(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate,
+			@Nullable String targetSearchSystem, @Nullable ValidationMode validationMode) {
+		Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
+
+		this.chatClient = chatClientBuilder.build();
+		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
+		this.targetSearchSystem = targetSearchSystem != null ? targetSearchSystem : DEFAULT_TARGET;
+		this.validationMode = validationMode != null ? validationMode : ValidationMode.THROW;
+		validate();
 	}
 
 	@Override
@@ -92,6 +106,23 @@ public class RewriteQueryTransformer implements QueryTransformer {
 		return query.mutate().text(rewrittenQueryText).build();
 	}
 
+	/**
+	 * Verify whether the template contains the required variables.
+	 */
+	private void validate() {
+		switch (this.validationMode) {
+			case THROW -> PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "target", "query");
+			case WARN -> {
+				try {
+					PromptAssert.templateHasRequiredPlaceholders(this.promptTemplate, "target", "query");
+				}
+				catch (IllegalArgumentException e) {
+					logger.warn(e.getMessage());
+				}
+			}
+		}
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -105,6 +136,9 @@ public class RewriteQueryTransformer implements QueryTransformer {
 
 		@Nullable
 		private String targetSearchSystem;
+
+		@Nullable
+		private ValidationMode validationMode;
 
 		private Builder() {
 		}
@@ -124,8 +158,14 @@ public class RewriteQueryTransformer implements QueryTransformer {
 			return this;
 		}
 
+		public Builder validationMode(ValidationMode validationMode) {
+			this.validationMode = validationMode;
+			return this;
+		}
+
 		public RewriteQueryTransformer build() {
-			return new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);
+			return new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem,
+					this.validationMode);
 		}
 
 	}
