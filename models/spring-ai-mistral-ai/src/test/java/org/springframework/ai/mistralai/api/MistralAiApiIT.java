@@ -48,7 +48,7 @@ public class MistralAiApiIT {
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = this.mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), MistralAiApi.ChatModel.SMALL.getValue(), 0.8, false));
+				List.of(chatCompletionMessage), MistralAiApi.ChatModel.MISTRAL_SMALL.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -65,7 +65,7 @@ public class MistralAiApiIT {
 					""", Role.SYSTEM);
 
 		ResponseEntity<ChatCompletion> response = this.mistralAiApi.chatCompletionEntity(new ChatCompletionRequest(
-				List.of(systemMessage, userMessage), MistralAiApi.ChatModel.SMALL.getValue(), 0.8, false));
+				List.of(systemMessage, userMessage), MistralAiApi.ChatModel.MISTRAL_SMALL.getValue(), 0.8, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -75,7 +75,7 @@ public class MistralAiApiIT {
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		Flux<ChatCompletionChunk> response = this.mistralAiApi.chatCompletionStream(new ChatCompletionRequest(
-				List.of(chatCompletionMessage), MistralAiApi.ChatModel.SMALL.getValue(), 0.8, true));
+				List.of(chatCompletionMessage), MistralAiApi.ChatModel.MISTRAL_SMALL.getValue(), 0.8, true));
 
 		assertThat(response).isNotNull();
 		assertThat(response.collectList().block()).isNotNull();
