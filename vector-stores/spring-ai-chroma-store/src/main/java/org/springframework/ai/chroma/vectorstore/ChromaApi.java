@@ -228,7 +228,9 @@ public class ChromaApi {
 		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			if (String.format("Collection [%s] does not exist", collectionName).equals(msg)) {
+			// Handle both "does not exist" and "does not exists" variants from Chroma API
+			if (String.format("Collection [%s] does not exist", collectionName).equals(msg)
+					|| String.format("Collection [%s] does not exists", collectionName).equals(msg)) {
 				return null;
 			}
 			throw new RuntimeException(msg, e);
