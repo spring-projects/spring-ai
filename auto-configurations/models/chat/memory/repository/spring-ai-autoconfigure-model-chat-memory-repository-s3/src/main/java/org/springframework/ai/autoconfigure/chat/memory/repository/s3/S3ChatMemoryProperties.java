@@ -54,44 +54,84 @@ public class S3ChatMemoryProperties {
 	 */
 	private String storageClass = "STANDARD";
 
+	/**
+	 * Gets the S3 bucket name.
+	 * @return the bucket name
+	 */
 	public String getBucketName() {
 		return this.bucketName;
 	}
 
-	public void setBucketName(String bucketName) {
-		this.bucketName = bucketName;
+	/**
+	 * Sets the S3 bucket name.
+	 * @param name the bucket name to set
+	 */
+	public void setBucketName(final String name) {
+		this.bucketName = name;
 	}
 
+	/**
+	 * Gets the S3 key prefix.
+	 * @return the key prefix
+	 */
 	public String getKeyPrefix() {
 		return this.keyPrefix;
 	}
 
-	public void setKeyPrefix(String keyPrefix) {
-		this.keyPrefix = keyPrefix;
+	/**
+	 * Sets the S3 key prefix.
+	 * @param prefix the key prefix to set
+	 */
+	public void setKeyPrefix(final String prefix) {
+		this.keyPrefix = prefix;
 	}
 
+	/**
+	 * Gets the AWS region.
+	 * @return the region
+	 */
 	public String getRegion() {
 		return this.region;
 	}
 
-	public void setRegion(String region) {
-		this.region = region;
+	/**
+	 * Sets the AWS region.
+	 * @param awsRegion the region to set
+	 */
+	public void setRegion(final String awsRegion) {
+		this.region = awsRegion;
 	}
 
+	/**
+	 * Gets whether to initialize bucket.
+	 * @return true if bucket should be initialized
+	 */
 	public boolean isInitializeBucket() {
 		return this.initializeBucket;
 	}
 
-	public void setInitializeBucket(boolean initializeBucket) {
-		this.initializeBucket = initializeBucket;
+	/**
+	 * Sets whether to initialize bucket.
+	 * @param initialize true to initialize bucket
+	 */
+	public void setInitializeBucket(final boolean initialize) {
+		this.initializeBucket = initialize;
 	}
 
+	/**
+	 * Gets the storage class.
+	 * @return the storage class
+	 */
 	public String getStorageClass() {
 		return this.storageClass;
 	}
 
-	public void setStorageClass(String storageClass) {
-		this.storageClass = storageClass;
+	/**
+	 * Sets the storage class.
+	 * @param storage the storage class to set
+	 */
+	public void setStorageClass(final String storage) {
+		this.storageClass = storage;
 	}
 
 }

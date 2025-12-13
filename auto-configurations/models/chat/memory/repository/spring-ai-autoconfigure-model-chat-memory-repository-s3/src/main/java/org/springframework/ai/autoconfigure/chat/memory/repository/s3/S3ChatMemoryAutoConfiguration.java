@@ -46,9 +46,14 @@ import org.springframework.util.StringUtils;
 @ConditionalOnProperty(prefix = "spring.ai.chat.memory.repository.s3", name = "bucket-name")
 public class S3ChatMemoryAutoConfiguration {
 
+	/**
+	 * Creates an S3Client bean if one is not already present.
+	 * @param properties the S3 chat memory properties
+	 * @return configured S3Client
+	 */
 	@Bean
 	@ConditionalOnMissingBean
-	public S3Client s3Client(S3ChatMemoryProperties properties) {
+	public S3Client s3Client(final S3ChatMemoryProperties properties) {
 		S3ClientBuilder builder = S3Client.builder();
 
 		// Set region
@@ -56,7 +61,8 @@ public class S3ChatMemoryAutoConfiguration {
 			builder.region(Region.of(properties.getRegion()));
 		}
 
-		// Support for custom endpoint (useful for S3-compatible services like MinIO)
+		// Support for custom endpoint (useful for S3-compatible services
+		// like MinIO)
 		String endpoint = System.getProperty("spring.ai.chat.memory.repository.s3.endpoint");
 		if (StringUtils.hasText(endpoint)) {
 			builder.endpointOverride(URI.create(endpoint));
@@ -65,9 +71,16 @@ public class S3ChatMemoryAutoConfiguration {
 		return builder.build();
 	}
 
+	/**
+	 * Creates an S3ChatMemoryRepository bean if one is not already present.
+	 * @param s3Client the S3 client
+	 * @param properties the S3 chat memory properties
+	 * @return configured S3ChatMemoryRepository
+	 */
 	@Bean
 	@ConditionalOnMissingBean({ S3ChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
-	public S3ChatMemoryRepository s3ChatMemoryRepository(S3Client s3Client, S3ChatMemoryProperties properties) {
+	public S3ChatMemoryRepository s3ChatMemoryRepository(final S3Client s3Client,
+			final S3ChatMemoryProperties properties) {
 		StorageClass storageClass = StorageClass.fromValue(properties.getStorageClass());
 
 		return S3ChatMemoryRepository.builder()
@@ -75,7 +88,6 @@ public class S3ChatMemoryAutoConfiguration {
 			.bucketName(properties.getBucketName())
 			.keyPrefix(properties.getKeyPrefix())
 			.initializeBucket(properties.isInitializeBucket())
-
 			.storageClass(storageClass)
 			.build();
 	}
