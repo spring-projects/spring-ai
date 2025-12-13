@@ -19,6 +19,7 @@ package org.springframework.ai.google.genai.schema;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -94,6 +95,19 @@ public class GoogleGenAiToolCallingManager implements ToolCallingManager {
 	@Override
 	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
 		return this.delegateToolCallingManager.executeToolCalls(prompt, chatResponse);
+	}
+
+	/**
+	 * Executes tool calls asynchronously by delegating to the underlying tool calling
+	 * manager.
+	 * @param prompt the original prompt that triggered the tool calls
+	 * @param chatResponse the chat response containing the tool calls to execute
+	 * @return a Mono that emits the result of executing the tool calls
+	 * @since 1.2.0
+	 */
+	@Override
+	public Mono<ToolExecutionResult> executeToolCallsAsync(Prompt prompt, ChatResponse chatResponse) {
+		return this.delegateToolCallingManager.executeToolCallsAsync(prompt, chatResponse);
 	}
 
 }
