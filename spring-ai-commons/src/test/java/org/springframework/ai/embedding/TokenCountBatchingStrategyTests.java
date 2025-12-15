@@ -22,17 +22,30 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
+import org.springframework.ai.tokenizer.TokenCountEstimator;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 /**
- * Basic unit test for {@link TokenCountBatchingStrategy}.
+ * Basic unit tests for {@link TokenCountBatchingStrategy}.
  *
  * @author Soby Chacko
+ * @author John Blum
  */
 public class TokenCountBatchingStrategyTests {
 
@@ -52,6 +65,32 @@ public class TokenCountBatchingStrategyTests {
 		TokenCountBatchingStrategy tokenCountBatchingStrategy = new TokenCountBatchingStrategy();
 		assertThatThrownBy(() -> tokenCountBatchingStrategy.batch(List.of(new Document(contentAsString))))
 			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void documentTokenCountExceedsConfiguredMaxTokenCount() {
+
+		Document mockDocument = mock(Document.class);
+		ContentFormatter mockContentFormatter = mock(ContentFormatter.class);
+		TokenCountEstimator mockTokenCountEstimator = mock(TokenCountEstimator.class);
+
+		doReturn("123abc").when(mockDocument).getId();
+		doReturn(10).when(mockTokenCountEstimator).estimate(anyString());
+		doReturn("test").when(mockDocument).getFormattedContent(any(), any());
+
+		TokenCountBatchingStrategy batchingStrategy = new TokenCountBatchingStrategy(mockTokenCountEstimator, 9, 0.0d,
+				mockContentFormatter, MetadataMode.EMBED);
+
+		assertThatExceptionOfType(MaxTokenCountExceededException.class)
+			.isThrownBy(() -> batchingStrategy.batch(List.of(mockDocument)))
+			.withMessage(
+					"Tokens [10] from Document [123abc] exceeds the configured maximum number of input tokens allowed [9]")
+			.withNoCause();
+
+		verify(mockDocument, times(1)).getId();
+		verify(mockDocument, times(1)).getFormattedContent(eq(mockContentFormatter), eq(MetadataMode.EMBED));
+		verify(mockTokenCountEstimator, times(1)).estimate(eq("test"));
+		verifyNoMoreInteractions(mockDocument, mockTokenCountEstimator);
 	}
 
 }
