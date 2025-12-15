@@ -67,8 +67,8 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<exclusions>
 				<exclusion>
-					<groupId>com.vaadin.external.google</groupId>
-					<artifactId>android-json</artifactId>
+					<groupId>org.skyscreamer</groupId>
+					<artifactId>jsonassert</artifactId>
 				</exclusion>
 			</exclusions>
 		</dependency>
