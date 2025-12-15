@@ -300,7 +300,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 		 *
 		 * <p>Example usage:</p>
 		 * <pre>{@code
-		 * TemplateRenderer renderer = MyStTemplateRenderer.builder()
+		 * TemplateRenderer renderer = StTemplateRenderer.builder()
 		 *         .validationMode(ValidationMode.NONE)
 		 *         .keepMissingVariables(true)
 		 *         .build();
