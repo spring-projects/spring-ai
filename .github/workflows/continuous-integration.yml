@@ -6,7 +6,8 @@ on:
       - 'main'
       - '[0-9].[0-9].x'
   schedule:
-    - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM EST
+    - cron: '30 11 * * 1-5'  # 12:30 PM CET / 6:30 AM 
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow_ref }}
