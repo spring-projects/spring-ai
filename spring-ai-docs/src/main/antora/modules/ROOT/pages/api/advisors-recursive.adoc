@@ -38,6 +38,7 @@ Key features:
 * Supports "return direct" functionality - when a tool execution has `returnDirect=true`, it interrupts the tool calling loop and returns the tool execution result directly to the client application instead of sending it back to the LLM
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
 * Includes null safety checks to handle cases where the chat response might be null
+* Supports configurable conversation history management via `conversationHistoryEnabled`
 
 Example usage:
 
@@ -50,6 +51,37 @@ var toolCallAdvisor = ToolCallAdvisor.builder()
 
 var chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(toolCallAdvisor)
+    .build();
+----
+
+==== Conversation History Management
+
+The `ToolCallAdvisor` includes a `conversationHistoryEnabled` configuration option that controls how conversation history is managed during tool calling iterations.
+
+By default (`conversationHistoryEnabled=true`), the advisor maintains the full conversation history internally during tool call iterations. This means each subsequent LLM call in the tool calling loop includes all previous messages (user message, assistant responses, tool responses).
+
+When set to `false`, only the last tool response message is passed to the next iteration. This is useful when:
+
+* You have a Chat Memory Advisor registered next in the chain that already manages conversation history
+* You want to reduce token usage by not duplicating history management
+* You're integrating with external conversation memory systems
+
+Example with conversation history disabled:
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .conversationHistoryEnabled(false)  // Disable internal history - let ChatMemory handle it
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)  // Positioned before ToolCallAdvisor
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor, toolCallAdvisor)
     .build();
 ----
 
