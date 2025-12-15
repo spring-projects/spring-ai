@@ -424,7 +424,7 @@ ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(toolCallback)
-    .build():
+    .build();
 Prompt prompt = new Prompt("What day is tomorrow?", chatOptions);
 chatModel.call(prompt);
 ----
@@ -546,7 +546,7 @@ ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(toolCallback)
-    .build():
+    .build();
 Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions);
 chatModel.call(prompt);
 ----
