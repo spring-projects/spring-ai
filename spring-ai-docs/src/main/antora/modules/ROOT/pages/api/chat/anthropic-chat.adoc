@@ -2023,26 +2023,178 @@ ChatResponse response = chatModel.call(
 );
 ----
 
-[NOTE]
+=== Custom Skills
+
+In addition to pre-built skills, Anthropic supports custom skills that you can create for specialized document templates, formatting rules, or domain-specific behaviors.
+Custom skills are `SKILL.md` files with instructions that you upload to your Anthropic workspace.
+Once uploaded, you can use them in Spring AI alongside pre-built skills.
+
+Custom skills are ideal for:
+
+* **Corporate branding**: Apply consistent headers, footers, logos, and color schemes
+* **Compliance requirements**: Add required disclaimers, confidentiality notices, or audit trails
+* **Document templates**: Enforce specific structures for reports, proposals, or specifications
+* **Domain expertise**: Include industry-specific terminology, calculations, or formatting rules
+
+For details on creating custom skills, refer to the https://platform.claude.com/docs/en/api/skills-guide[Anthropic Skills API documentation].
+
+==== Uploading a Custom Skill
+
+Upload your skill using the Anthropic API.
+Note the specific format requirements for the `files[]` parameter:
+
+[source,bash]
+----
+curl -X POST "https://api.anthropic.com/v1/skills" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: skills-2025-10-02" \
+  -F "display_title=My Custom Skill" \
+  -F "files[]=@SKILL.md;filename=my-skill-name/SKILL.md"
+----
+
+[IMPORTANT]
 ====
-*About Custom Skills*
+* Use `files[]=` (with square brackets), not `files=`
+* The `filename` parameter must include a directory matching the `name` field in your SKILL.md YAML frontmatter
+* After uploading, verify your skill appears in the Anthropic Console under **Settings > Capabilities**
+====
 
-In addition to the pre-built skills documented above, Anthropic supports custom skills that organizations can create for specialized document templates, formatting rules, or domain-specific behaviors.
+The response contains your skill ID:
 
-**Important:** Custom skills must be created and uploaded through Anthropic's platform (Console or API) before they can be used.
-Spring AI currently supports **using** custom skills once they are set up, but does not provide APIs for creating or managing custom skills.
+[source,json]
+----
+{
+  "id": "skill_01AbCdEfGhIjKlMnOpQrStUv",
+  "display_title": "My Custom Skill",
+  "source": "custom",
+  "latest_version": "1765845644409101"
+}
+----
 
-If you have custom skills configured in your Anthropic workspace, you can reference them by their skill ID:
+==== Using Custom Skills in Spring AI
+
+Reference your custom skill by its ID using the `.customSkill()` method:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a quarterly sales report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")
+            .build()
+    )
+);
+----
+
+==== Combining Pre-built and Custom Skills
+
+You can use both pre-built and custom skills in the same request.
+This allows you to leverage Anthropic's document generation capabilities while applying your organization's specific requirements:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a sales report spreadsheet",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)  // Pre-built
+            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")     // Your custom skill
+            .build()
+    )
+);
+----
+
+==== Using SkillContainer with Custom Skills
+
+For more control over skill versions, use `SkillContainer` directly:
 
 [source,java]
 ----
 AnthropicApi.SkillContainer container = AnthropicApi.SkillContainer.builder()
-    .customSkill("skill_abc123") // Your custom skill ID from Anthropic
+    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+    .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")                    // Uses latest version
+    .customSkill("skill_02XyZaBcDeFgHiJkLmNoPq", "1765845644409101")  // Specific version
     .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(8192)
+            .skillContainer(container)
+            .build()
+    )
+);
 ----
 
-Refer to the https://platform.claude.com/docs/en/build-with-claude/skills-guide[Anthropic Skills API documentation] for details on creating and managing custom skills in your workspace.
-====
+==== Updating a Custom Skill
+
+To update an existing skill, upload a new version to the `/versions` endpoint:
+
+[source,bash]
+----
+curl -X POST "https://api.anthropic.com/v1/skills/YOUR_SKILL_ID/versions" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: skills-2025-10-02" \
+  -F "files[]=@SKILL.md;filename=my-skill-name/SKILL.md"
+----
+
+When using `latest` as the version (the default), the new version is picked up automatically.
+
+==== Complete Custom Skills Example
+
+Here's a complete example showing a service that optionally applies a custom branding skill:
+
+[source,java]
+----
+@Service
+public class BrandedDocumentService {
+
+    private static final String BRANDING_SKILL_ID = "skill_01AbCdEfGhIjKlMnOpQrStUv";
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+
+    public BrandedDocumentService(AnthropicChatModel chatModel, AnthropicApi anthropicApi) {
+        this.chatModel = chatModel;
+        this.anthropicApi = anthropicApi;
+    }
+
+    public byte[] generateReport(String prompt, boolean includeBranding) throws IOException {
+        // Build options with document skill
+        AnthropicChatOptions.Builder optionsBuilder = AnthropicChatOptions.builder()
+                .model("claude-sonnet-4-5")
+                .maxTokens(8192)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX);
+
+        // Add custom branding skill if requested
+        if (includeBranding) {
+            optionsBuilder.customSkill(BRANDING_SKILL_ID);
+        }
+
+        ChatResponse response = chatModel.call(
+            new Prompt(prompt, optionsBuilder.build())
+        );
+
+        // Extract and download the generated file
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+        if (fileIds.isEmpty()) {
+            throw new RuntimeException("No file was generated");
+        }
+
+        return anthropicApi.downloadFile(fileIds.get(0));
+    }
+}
+----
 
 == Sample Controller
 
