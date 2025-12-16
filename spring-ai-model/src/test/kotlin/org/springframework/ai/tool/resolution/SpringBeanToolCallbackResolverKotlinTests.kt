@@ -40,7 +40,7 @@ class SpringBeanToolCallbackResolverKotlinTests {
 		val resolver = SpringBeanToolCallbackResolver(applicationContext, SchemaType.JSON_SCHEMA)
 		val resolvedToolCallback = resolver.resolve(Functions.WELCOME_TOOL_NAME)
 		Assertions.assertThat(resolvedToolCallback).isNotNull()
-		Assertions.assertThat(resolvedToolCallback.toolDefinition.name()).isEqualTo(Functions.WELCOME_TOOL_NAME)
+		Assertions.assertThat(resolvedToolCallback!!.toolDefinition.name()).isEqualTo(Functions.WELCOME_TOOL_NAME)
 		Assertions.assertThat(resolvedToolCallback.toolDefinition.description())
 			.isEqualTo(Functions.WELCOME_TOOL_DESCRIPTION)
 	}
@@ -51,7 +51,7 @@ class SpringBeanToolCallbackResolverKotlinTests {
 		val resolver = SpringBeanToolCallbackResolver(applicationContext, SchemaType.JSON_SCHEMA)
 		val resolvedToolCallback = resolver.resolve(Functions.WELCOME_USER_TOOL_NAME)
 		Assertions.assertThat(resolvedToolCallback).isNotNull()
-		Assertions.assertThat(resolvedToolCallback.toolDefinition.name()).isEqualTo(Functions.WELCOME_USER_TOOL_NAME)
+		Assertions.assertThat(resolvedToolCallback!!.toolDefinition.name()).isEqualTo(Functions.WELCOME_USER_TOOL_NAME)
 		Assertions.assertThat(resolvedToolCallback.toolDefinition.description())
 			.isEqualTo(Functions.WELCOME_USER_TOOL_DESCRIPTION)
 	}
@@ -62,7 +62,7 @@ class SpringBeanToolCallbackResolverKotlinTests {
 		val resolver = SpringBeanToolCallbackResolver(applicationContext, SchemaType.JSON_SCHEMA)
 		val resolvedToolCallback = resolver.resolve(Functions.BOOKS_BY_AUTHOR_TOOL_NAME)
 		Assertions.assertThat(resolvedToolCallback).isNotNull()
-		Assertions.assertThat(resolvedToolCallback.toolDefinition.name()).isEqualTo(Functions.BOOKS_BY_AUTHOR_TOOL_NAME)
+		Assertions.assertThat(resolvedToolCallback!!.toolDefinition.name()).isEqualTo(Functions.BOOKS_BY_AUTHOR_TOOL_NAME)
 		Assertions.assertThat(resolvedToolCallback.toolDefinition.description())
 			.isEqualTo(Functions.BOOKS_BY_AUTHOR_TOOL_DESCRIPTION)
 	}

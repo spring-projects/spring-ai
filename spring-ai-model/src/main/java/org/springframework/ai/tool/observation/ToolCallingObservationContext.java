@@ -17,13 +17,13 @@
 package org.springframework.ai.tool.observation;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -43,8 +43,7 @@ public final class ToolCallingObservationContext extends Observation.Context {
 
 	private final String toolCallArguments;
 
-	@Nullable
-	private String toolCallResult;
+	private @Nullable String toolCallResult;
 
 	private ToolCallingObservationContext(ToolDefinition toolDefinition, ToolMetadata toolMetadata,
 			@Nullable String toolCallArguments, @Nullable String toolCallResult) {
@@ -73,8 +72,7 @@ public final class ToolCallingObservationContext extends Observation.Context {
 		return this.toolCallArguments;
 	}
 
-	@Nullable
-	public String getToolCallResult() {
+	public @Nullable String getToolCallResult() {
 		return this.toolCallResult;
 	}
 
@@ -88,14 +86,13 @@ public final class ToolCallingObservationContext extends Observation.Context {
 
 	public static final class Builder {
 
-		private ToolDefinition toolDefinition;
+		private @Nullable ToolDefinition toolDefinition;
 
 		private ToolMetadata toolMetadata = ToolMetadata.builder().build();
 
-		private String toolCallArguments;
+		private @Nullable String toolCallArguments;
 
-		@Nullable
-		private String toolCallResult;
+		private @Nullable String toolCallResult;
 
 		private Builder() {
 		}
@@ -121,6 +118,7 @@ public final class ToolCallingObservationContext extends Observation.Context {
 		}
 
 		public ToolCallingObservationContext build() {
+			Assert.state(this.toolDefinition != null, "toolDefinition cannot be null");
 			return new ToolCallingObservationContext(this.toolDefinition, this.toolMetadata, this.toolCallArguments,
 					this.toolCallResult);
 		}

@@ -22,6 +22,7 @@ import java.util.Set;
 
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
@@ -97,7 +98,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 	}
 
 	@Override
-	public String apply(String template, Map<String, Object> variables) {
+	public String apply(String template, Map<String, @Nullable Object> variables) {
 		Assert.hasText(template, "template cannot be null or empty");
 		Assert.notNull(variables, "variables cannot be null");
 		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
@@ -130,7 +131,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 	 * @param templateVariables the provided variables
 	 * @return set of missing variable names, or empty set if none are missing
 	 */
-	private Set<String> validate(ST st, Map<String, Object> templateVariables) {
+	private Set<String> validate(ST st, Map<String, @Nullable Object> templateVariables) {
 		Set<String> templateTokens = getInputVariables(st);
 		Set<String> modelKeys = templateVariables.keySet();
 		Set<String> missingVariables = new HashSet<>(templateTokens);

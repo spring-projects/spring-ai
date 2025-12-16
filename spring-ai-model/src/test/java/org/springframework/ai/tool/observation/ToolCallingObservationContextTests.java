@@ -61,7 +61,7 @@ class ToolCallingObservationContextTests {
 	@Test
 	void whenToolDefinitionIsNullThenThrow() {
 		assertThatThrownBy(() -> ToolCallingObservationContext.builder().toolCallArguments("lizard").build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("toolDefinition cannot be null");
 	}
 

@@ -33,7 +33,7 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 	private final TextToSpeechResponseMetadata textToSpeechResponseMetadata;
 
 	public TextToSpeechResponse(List<Speech> results) {
-		this(results, null);
+		this(results, new TextToSpeechResponseMetadata());
 	}
 
 	public TextToSpeechResponse(List<Speech> results, TextToSpeechResponseMetadata textToSpeechResponseMetadata) {

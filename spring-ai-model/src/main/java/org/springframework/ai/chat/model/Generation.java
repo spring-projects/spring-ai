@@ -37,7 +37,8 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 	public Generation(AssistantMessage assistantMessage, ChatGenerationMetadata chatGenerationMetadata) {
 		this.assistantMessage = assistantMessage;
-		this.chatGenerationMetadata = chatGenerationMetadata;
+		this.chatGenerationMetadata = chatGenerationMetadata != null ? chatGenerationMetadata
+				: ChatGenerationMetadata.NULL;
 	}
 
 	@Override
@@ -47,8 +48,7 @@ public class Generation implements ModelResult<AssistantMessage> {
 
 	@Override
 	public ChatGenerationMetadata getMetadata() {
-		ChatGenerationMetadata chatGenerationMetadata = this.chatGenerationMetadata;
-		return chatGenerationMetadata != null ? chatGenerationMetadata : ChatGenerationMetadata.NULL;
+		return this.chatGenerationMetadata;
 	}
 
 	@Override

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ResultMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
@@ -40,14 +42,14 @@ public class EmbeddingResultMetadata implements ResultMetadata {
 
 	private final MimeType mimeType;
 
-	private final Object documentData;
+	private final @Nullable Object documentData;
 
 	public EmbeddingResultMetadata() {
 		this("", ModalityType.TEXT, MimeTypeUtils.TEXT_PLAIN, null);
 	}
 
 	public EmbeddingResultMetadata(String documentId, ModalityType modalityType, MimeType mimeType,
-			Object documentData) {
+			@Nullable Object documentData) {
 		Assert.notNull(modalityType, "ModalityType must not be null");
 		Assert.notNull(mimeType, "MimeType must not be null");
 
@@ -69,7 +71,7 @@ public class EmbeddingResultMetadata implements ResultMetadata {
 		return this.documentId;
 	}
 
-	public Object getDocumentData() {
+	public @Nullable Object getDocumentData() {
 		return this.documentData;
 	}
 

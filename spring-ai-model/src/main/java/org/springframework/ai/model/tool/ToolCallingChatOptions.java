@@ -23,11 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.support.ToolUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -67,8 +68,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
 	 * the model or if the tools should be executed directly by the caller.
 	 */
-	@Nullable
-	Boolean getInternalToolExecutionEnabled();
+	@Nullable Boolean getInternalToolExecutionEnabled();
 
 	/**
 	 * Set whether the {@link ChatModel} is responsible for executing the tools requested
