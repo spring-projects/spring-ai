@@ -546,10 +546,21 @@ public class DefaultChatClient implements ChatClient {
 
 		@Nullable
 		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
-			return Optional.ofNullable(chatResponse)
-				.map(ChatResponse::getResult)
+			if (chatResponse == null || CollectionUtils.isEmpty(chatResponse.getResults())) {
+				return null;
+			}
+			// Iterate through all generations to find the first one with non-null content
+			// This handles cases where models return multiple generations (e.g., Bedrock
+			// Converse API
+			// with openai.gpt-oss models may return reasoning output first with null
+			// content,
+			// followed by the actual response)
+			return chatResponse.getResults()
+				.stream()
 				.map(Generation::getOutput)
 				.map(AbstractMessage::getText)
+				.filter(text -> text != null)
+				.findFirst()
 				.orElse(null);
 		}
 
