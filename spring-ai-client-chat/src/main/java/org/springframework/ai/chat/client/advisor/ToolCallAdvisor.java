@@ -98,7 +98,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
 		}
 
-		chatClientRequest = this.doInitializeLoop(chatClientRequest.copy(), callAdvisorChain);
+		chatClientRequest = this.doInitializeLoop(chatClientRequest, callAdvisorChain);
 
 		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
 		var optionsCopy = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions().copy();
