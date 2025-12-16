@@ -16,11 +16,14 @@
 
 package org.springframework.ai.embedding.observation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.util.Assert;
 
 /**
  * Context used to store metadata for embedding model exchanges.
@@ -45,9 +48,9 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 
 	public static final class Builder {
 
-		private EmbeddingRequest embeddingRequest;
+		private @Nullable EmbeddingRequest embeddingRequest;
 
-		private String provider;
+		private @Nullable String provider;
 
 		private Builder() {
 		}
@@ -63,6 +66,8 @@ public class EmbeddingModelObservationContext extends ModelObservationContext<Em
 		}
 
 		public EmbeddingModelObservationContext build() {
+			Assert.state(this.embeddingRequest != null, "request cannot be null");
+			Assert.state(this.provider != null, "provider cannot be null or empty");
 			return new EmbeddingModelObservationContext(this.embeddingRequest, this.provider);
 		}
 

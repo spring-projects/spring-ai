@@ -18,7 +18,7 @@ package org.springframework.ai.tool.execution;
 
 import java.lang.reflect.Type;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A functional interface to convert tool call results to a String that can be sent back

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2025-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.prompt;
+@NullMarked
+package org.springframework.ai.model.transformer;
 
-public class FunctionPromptTemplate extends PromptTemplate {
-
-	private String name;
-
-	public FunctionPromptTemplate(String template) {
-		super(template);
-	}
-
-}
+import org.jspecify.annotations.NullMarked;

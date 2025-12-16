@@ -111,22 +111,6 @@ class ChatModelMeterObservationHandlerTests {
 	}
 
 	@Test
-	void shouldHandleNullResponseMetadata() {
-		var observationContext = generateObservationContext();
-		var observation = Observation
-			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
-					this.observationRegistry)
-			.start();
-
-		observationContext.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("test"))), null));
-
-		observation.stop();
-
-		assertThat(this.meterRegistry.getMeters())
-			.noneMatch(meter -> meter.getId().getName().equals(AiObservationMetricNames.TOKEN_USAGE.value()));
-	}
-
-	@Test
 	void shouldHandleEmptyGenerations() {
 		var observationContext = generateObservationContext();
 		var observation = Observation

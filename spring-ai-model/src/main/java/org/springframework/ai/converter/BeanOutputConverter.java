@@ -34,6 +34,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +42,6 @@ import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.lang.NonNull;
 
 import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
@@ -94,7 +94,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param clazz The target type's class.
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
-	public BeanOutputConverter(Class<T> clazz, ObjectMapper objectMapper) {
+	public BeanOutputConverter(Class<T> clazz, @Nullable ObjectMapper objectMapper) {
 		this(clazz, objectMapper, null);
 	}
 
@@ -105,7 +105,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	public BeanOutputConverter(Class<T> clazz, ObjectMapper objectMapper, ResponseTextCleaner textCleaner) {
+	public BeanOutputConverter(Class<T> clazz, @Nullable ObjectMapper objectMapper,
+			@Nullable ResponseTextCleaner textCleaner) {
 		this(ParameterizedTypeReference.forType(clazz), objectMapper, textCleaner);
 	}
 
@@ -124,7 +125,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param typeRef The target class type reference.
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 */
-	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, ObjectMapper objectMapper) {
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable ObjectMapper objectMapper) {
 		this(typeRef, objectMapper, null);
 	}
 
@@ -135,8 +136,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, ObjectMapper objectMapper,
-			ResponseTextCleaner textCleaner) {
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable ObjectMapper objectMapper,
+			@Nullable ResponseTextCleaner textCleaner) {
 		this(typeRef.getType(), objectMapper, textCleaner);
 	}
 
@@ -148,7 +149,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param objectMapper Custom object mapper for JSON operations. endings.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	private BeanOutputConverter(Type type, ObjectMapper objectMapper, ResponseTextCleaner textCleaner) {
+	private BeanOutputConverter(Type type, @Nullable ObjectMapper objectMapper,
+			@Nullable ResponseTextCleaner textCleaner) {
 		Objects.requireNonNull(type, "Type cannot be null;");
 		this.type = type;
 		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
@@ -221,7 +223,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public T convert(@NonNull String text) {
+	public T convert(String text) {
 		try {
 			// Clean the text using the configured text cleaner
 			text = this.textCleaner.clean(text);

@@ -23,6 +23,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -35,7 +37,7 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 
 	private final Map<String, Object> metadata;
 
-	private final String finishReason;
+	private final @Nullable String finishReason;
 
 	private final Set<String> contentFilters;
 
@@ -46,7 +48,8 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 	 * @param contentFilters the content filters, must not be null
 	 * @throws IllegalArgumentException if metadata or contentFilters is null
 	 */
-	DefaultChatGenerationMetadata(Map<String, Object> metadata, String finishReason, Set<String> contentFilters) {
+	DefaultChatGenerationMetadata(Map<String, Object> metadata, @Nullable String finishReason,
+			Set<String> contentFilters) {
 		Assert.notNull(metadata, "Metadata must not be null");
 		Assert.notNull(contentFilters, "Content filters must not be null");
 		this.metadata = metadata;
@@ -55,7 +58,7 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 	}
 
 	@Override
-	public <T> T get(String key) {
+	public <T> @Nullable T get(String key) {
 		return (T) this.metadata.get(key);
 	}
 
@@ -66,7 +69,8 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 
 	@Override
 	public <T> T getOrDefault(String key, T defaultObject) {
-		return containsKey(key) ? get(key) : defaultObject;
+		T value = get(key);
+		return value != null ? value : defaultObject;
 	}
 
 	@Override
@@ -85,7 +89,7 @@ public class DefaultChatGenerationMetadata implements ChatGenerationMetadata {
 	}
 
 	@Override
-	public String getFinishReason() {
+	public @Nullable String getFinishReason() {
 		return this.finishReason;
 	}
 
