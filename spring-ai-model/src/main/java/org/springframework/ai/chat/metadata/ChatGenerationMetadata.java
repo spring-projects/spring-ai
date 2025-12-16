@@ -20,6 +20,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ResultMetadata;
 
 /**
@@ -38,11 +40,11 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 	 * Get the {@link String reason} this choice completed for the generation.
 	 * @return the {@link String reason} this choice completed for the generation.
 	 */
-	String getFinishReason();
+	@Nullable String getFinishReason();
 
 	Set<String> getContentFilters();
 
-	<T> T get(String key);
+	<T> @Nullable T get(String key);
 
 	boolean containsKey(String key);
 

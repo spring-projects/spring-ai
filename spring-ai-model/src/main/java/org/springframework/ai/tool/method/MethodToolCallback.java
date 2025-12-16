@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,6 @@ import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
@@ -61,8 +61,7 @@ public final class MethodToolCallback implements ToolCallback {
 
 	private final Method toolMethod;
 
-	@Nullable
-	private final Object toolObject;
+	private final @Nullable Object toolObject;
 
 	private final ToolCallResultConverter toolCallResultConverter;
 
@@ -80,13 +79,11 @@ public final class MethodToolCallback implements ToolCallback {
 				: DEFAULT_RESULT_CONVERTER;
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return this.toolDefinition;
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public ToolMetadata getToolMetadata() {
 		return this.toolMetadata;
@@ -151,8 +148,7 @@ public final class MethodToolCallback implements ToolCallback {
 		}).toArray();
 	}
 
-	@Nullable
-	private Object buildTypedArgument(@Nullable Object value, Type type) {
+	private @Nullable Object buildTypedArgument(@Nullable Object value, Type type) {
 		if (value == null) {
 			return null;
 		}
@@ -173,9 +169,8 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 	}
 
-	@SuppressWarnings("null")
-	@Nullable
-	private Object callMethod(Object[] methodArguments) {
+	@SuppressWarnings("NullAway") // ex.getCause() is guaranteed to be non-null
+	private @Nullable Object callMethod(Object[] methodArguments) {
 		if (isObjectNotPublic() || isMethodNotPublic()) {
 			this.toolMethod.setAccessible(true);
 		}
@@ -213,15 +208,15 @@ public final class MethodToolCallback implements ToolCallback {
 
 	public static final class Builder {
 
-		private ToolDefinition toolDefinition;
+		private @Nullable ToolDefinition toolDefinition;
 
-		private ToolMetadata toolMetadata;
+		private @Nullable ToolMetadata toolMetadata;
 
-		private Method toolMethod;
+		private @Nullable Method toolMethod;
 
-		private Object toolObject;
+		private @Nullable Object toolObject;
 
-		private ToolCallResultConverter toolCallResultConverter;
+		private @Nullable ToolCallResultConverter toolCallResultConverter;
 
 		private Builder() {
 		}
@@ -253,6 +248,8 @@ public final class MethodToolCallback implements ToolCallback {
 
 		@SuppressWarnings("null")
 		public MethodToolCallback build() {
+			Assert.state(this.toolDefinition != null, "ToolDefinition is required");
+			Assert.state(this.toolMethod != null, "ToolMethod is required");
 			return new MethodToolCallback(this.toolDefinition, this.toolMetadata, this.toolMethod, this.toolObject,
 					this.toolCallResultConverter);
 		}

@@ -25,9 +25,9 @@ import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigPart;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -63,8 +63,7 @@ public final class SpringAiSchemaModule implements Module {
 	/**
 	 * Extract description from {@code @ToolParam(description = ...)} for the given field.
 	 */
-	@Nullable
-	private String resolveDescription(MemberScope<?, ?> member) {
+	private @Nullable String resolveDescription(MemberScope<?, ?> member) {
 		var toolParamAnnotation = member.getAnnotationConsideringFieldAndGetter(ToolParam.class);
 		if (toolParamAnnotation != null && StringUtils.hasText(toolParamAnnotation.description())) {
 			return toolParamAnnotation.description();

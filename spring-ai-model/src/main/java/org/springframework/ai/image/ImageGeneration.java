@@ -20,12 +20,16 @@ import org.springframework.ai.model.ModelResult;
 
 public class ImageGeneration implements ModelResult<Image> {
 
-	private ImageGenerationMetadata imageGenerationMetadata;
+	private static final ImageGenerationMetadata NONE = new ImageGenerationMetadata() {
 
-	private Image image;
+	};
+
+	private final ImageGenerationMetadata imageGenerationMetadata;
+
+	private final Image image;
 
 	public ImageGeneration(Image image) {
-		this.image = image;
+		this(image, NONE);
 	}
 
 	public ImageGeneration(Image image, ImageGenerationMetadata imageGenerationMetadata) {

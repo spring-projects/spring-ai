@@ -18,6 +18,7 @@ package org.springframework.ai.aot;
 
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOP_FallbackServiceProvider;
 import org.slf4j.helpers.SubstituteServiceProvider;
@@ -38,13 +39,11 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 
 		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ToolResponseMessage.class, Message.class,
 				ToolCallback.class, ToolDefinition.class, AssistantMessage.ToolCall.class, MessageType.class,

@@ -18,8 +18,9 @@ package org.springframework.ai.embedding;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelRequest;
-import org.springframework.lang.Nullable;
 
 /**
  * Request to embed a list of input instructions.
@@ -30,8 +31,7 @@ public class EmbeddingRequest implements ModelRequest<List<String>> {
 
 	private final List<String> inputs;
 
-	@Nullable
-	private final EmbeddingOptions options;
+	private final @Nullable EmbeddingOptions options;
 
 	public EmbeddingRequest(List<String> inputs, @Nullable EmbeddingOptions options) {
 		this.inputs = inputs;
@@ -44,8 +44,7 @@ public class EmbeddingRequest implements ModelRequest<List<String>> {
 	}
 
 	@Override
-	@Nullable
-	public EmbeddingOptions getOptions() {
+	public @Nullable EmbeddingOptions getOptions() {
 		return this.options;
 	}
 
