@@ -18,6 +18,8 @@ package org.springframework.ai.moderation;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Represents the result of a moderation process, indicating whether content was flagged,
  * the categories of moderation, and detailed scores for each category. This class is
@@ -30,9 +32,9 @@ public final class ModerationResult {
 
 	private boolean flagged;
 
-	private Categories categories;
+	private @Nullable Categories categories;
 
-	private CategoryScores categoryScores;
+	private @Nullable CategoryScores categoryScores;
 
 	private ModerationResult(Builder builder) {
 		this.flagged = builder.flagged;
@@ -52,7 +54,7 @@ public final class ModerationResult {
 		this.flagged = flagged;
 	}
 
-	public Categories getCategories() {
+	public @Nullable Categories getCategories() {
 		return this.categories;
 	}
 
@@ -60,7 +62,7 @@ public final class ModerationResult {
 		this.categories = categories;
 	}
 
-	public CategoryScores getCategoryScores() {
+	public @Nullable CategoryScores getCategoryScores() {
 		return this.categoryScores;
 	}
 
@@ -95,9 +97,9 @@ public final class ModerationResult {
 
 		private boolean flagged;
 
-		private Categories categories;
+		private @Nullable Categories categories;
 
-		private CategoryScores categoryScores;
+		private @Nullable CategoryScores categoryScores;
 
 		public Builder flagged(boolean flagged) {
 			this.flagged = flagged;

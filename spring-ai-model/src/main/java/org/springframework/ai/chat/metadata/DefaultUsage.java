@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Default implementation of the {@link Usage} interface.
@@ -39,7 +40,7 @@ public class DefaultUsage implements Usage {
 
 	private final int totalTokens;
 
-	private final Object nativeUsage;
+	private final @Nullable Object nativeUsage;
 
 	/**
 	 * Create a new DefaultUsage with promptTokens, completionTokens, totalTokens and
@@ -53,7 +54,8 @@ public class DefaultUsage implements Usage {
 	 * @param nativeUsage the native usage object returned by the model provider, or
 	 * {@code null} to return the map of prompt, completion and total tokens.
 	 */
-	public DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens, Object nativeUsage) {
+	public DefaultUsage(@Nullable Integer promptTokens, @Nullable Integer completionTokens,
+			@Nullable Integer totalTokens, @Nullable Object nativeUsage) {
 		this.promptTokens = promptTokens != null ? promptTokens : 0;
 		this.completionTokens = completionTokens != null ? completionTokens : 0;
 		this.totalTokens = totalTokens != null ? totalTokens
@@ -123,7 +125,7 @@ public class DefaultUsage implements Usage {
 	@Override
 	@JsonProperty("nativeUsage")
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public Object getNativeUsage() {
+	public @Nullable Object getNativeUsage() {
 		return this.nativeUsage;
 	}
 

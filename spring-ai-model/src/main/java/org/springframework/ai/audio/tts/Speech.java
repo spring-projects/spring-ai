@@ -63,7 +63,8 @@ public class Speech implements ModelResult<byte[]> {
 
 	@Override
 	public ResultMetadata getMetadata() {
-		return null;
+		return new ResultMetadata() {
+		};
 	}
 
 }

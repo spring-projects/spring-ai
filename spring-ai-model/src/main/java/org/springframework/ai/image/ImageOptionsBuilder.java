@@ -16,6 +16,8 @@
 
 package org.springframework.ai.image;
 
+import org.jspecify.annotations.Nullable;
+
 public final class ImageOptionsBuilder {
 
 	private final DefaultImageModelOptions options = new DefaultImageModelOptions();
@@ -64,20 +66,20 @@ public final class ImageOptionsBuilder {
 
 	private static class DefaultImageModelOptions implements ImageOptions {
 
-		private Integer n;
+		private @Nullable Integer n;
 
-		private String model;
+		private @Nullable String model;
 
-		private Integer width;
+		private @Nullable Integer width;
 
-		private Integer height;
+		private @Nullable Integer height;
 
-		private String responseFormat;
+		private @Nullable String responseFormat;
 
-		private String style;
+		private @Nullable String style;
 
 		@Override
-		public Integer getN() {
+		public @Nullable Integer getN() {
 			return this.n;
 		}
 
@@ -86,7 +88,7 @@ public final class ImageOptionsBuilder {
 		}
 
 		@Override
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 
@@ -95,7 +97,7 @@ public final class ImageOptionsBuilder {
 		}
 
 		@Override
-		public String getResponseFormat() {
+		public @Nullable String getResponseFormat() {
 			return this.responseFormat;
 		}
 
@@ -104,7 +106,7 @@ public final class ImageOptionsBuilder {
 		}
 
 		@Override
-		public Integer getWidth() {
+		public @Nullable Integer getWidth() {
 			return this.width;
 		}
 
@@ -113,7 +115,7 @@ public final class ImageOptionsBuilder {
 		}
 
 		@Override
-		public Integer getHeight() {
+		public @Nullable Integer getHeight() {
 			return this.height;
 		}
 
@@ -122,7 +124,7 @@ public final class ImageOptionsBuilder {
 		}
 
 		@Override
-		public String getStyle() {
+		public @Nullable String getStyle() {
 			return this.style;
 		}
 

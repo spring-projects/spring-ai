@@ -21,6 +21,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata.Builder;
 
 /**
@@ -30,11 +32,11 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata.Builder;
 
 public class DefaultChatGenerationMetadataBuilder implements Builder {
 
-	private String finishReason;
+	private @Nullable String finishReason;
 
-	private Map<String, Object> metadata = new HashMap<>();
+	private final Map<String, Object> metadata = new HashMap<>();
 
-	private Set<String> contentFilters = new HashSet<>();
+	private final Set<String> contentFilters = new HashSet<>();
 
 	DefaultChatGenerationMetadataBuilder() {
 	}

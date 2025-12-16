@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.util.Assert;
@@ -62,7 +64,8 @@ public class ChatResponse implements ModelResponse<Generation> {
 	 * about the use of the AI provider's API.
 	 */
 	public ChatResponse(List<Generation> generations, ChatResponseMetadata chatResponseMetadata) {
-		this.chatResponseMetadata = chatResponseMetadata;
+		Assert.notNull(generations, "'generations' must not be null");
+		this.chatResponseMetadata = Objects.requireNonNullElse(chatResponseMetadata, new ChatResponseMetadata());
 		this.generations = List.copyOf(generations);
 	}
 
@@ -86,7 +89,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 	/**
 	 * @return Returns the first {@link Generation} in the generations list.
 	 */
-	public Generation getResult() {
+	public @Nullable Generation getResult() {
 		if (CollectionUtils.isEmpty(this.generations)) {
 			return null;
 		}
@@ -151,7 +154,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 
 	public static final class Builder {
 
-		private List<Generation> generations;
+		private @Nullable List<Generation> generations;
 
 		private ChatResponseMetadata.Builder chatResponseMetadataBuilder;
 
@@ -189,6 +192,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 		}
 
 		public ChatResponse build() {
+			Assert.notNull(this.generations, "'generations' must not be null");
 			return new ChatResponse(this.generations, this.chatResponseMetadataBuilder.build());
 		}
 

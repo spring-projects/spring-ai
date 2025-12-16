@@ -21,7 +21,7 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 
 /**
- * An utility class to provide support methods handling {@link Usage}.
+ * A utility class to provide support methods handling {@link Usage}.
  *
  * @author Ilayaperumal Gopinathan
  */

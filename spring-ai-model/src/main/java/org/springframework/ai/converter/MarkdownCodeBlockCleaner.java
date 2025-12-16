@@ -16,6 +16,8 @@
 
 package org.springframework.ai.converter;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A {@link ResponseTextCleaner} that removes markdown code block formatting from LLM
  * responses. This cleaner handles:
@@ -30,7 +32,7 @@ package org.springframework.ai.converter;
 public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 
 	@Override
-	public String clean(String text) {
+	public @Nullable String clean(@Nullable String text) {
 		if (text == null || text.isEmpty()) {
 			return text;
 		}

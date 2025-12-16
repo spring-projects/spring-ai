@@ -19,6 +19,8 @@ package org.springframework.ai.image;
 import java.util.List;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.util.CollectionUtils;
 
@@ -75,7 +77,7 @@ public class ImageResponse implements ModelResponse<ImageGeneration> {
 	 * @return Returns the first {@link ImageGeneration} in the generations list.
 	 */
 	@Override
-	public ImageGeneration getResult() {
+	public @Nullable ImageGeneration getResult() {
 		if (CollectionUtils.isEmpty(this.imageGenerations)) {
 			return null;
 		}
