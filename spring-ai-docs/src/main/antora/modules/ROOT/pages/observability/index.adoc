@@ -138,7 +138,7 @@ They measure the time spent in the advisor (including the time spend on the inne
 == Chat Model
 
 NOTE: Observability features are currently supported only for `ChatModel` implementations from the following AI model
-providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, OpenAI, Vertex AI, MiniMax, Moonshot, QianFan, Zhipu AI.
+providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, OpenAI, Vertex AI, MiniMax, Moonshot, QianFan, IBM watsonx.ai, Zhipu AI.
 Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
