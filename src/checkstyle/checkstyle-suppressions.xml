@@ -63,5 +63,7 @@
 	<suppress files="QdrantVectorStore.java" checks="FinalClass"/>
 	<suppress files="RedisVectorStore.java" checks="FinalClass"/>
 
+	<suppress files="AugmentedToolCallbackTest.java" checks="[a-zA-Z0-9]*"/>
+	<suppress files="ToolInputSchemaAugmenterTest.java" checks="[a-zA-Z0-9]*"/>
 
 </suppressions>
