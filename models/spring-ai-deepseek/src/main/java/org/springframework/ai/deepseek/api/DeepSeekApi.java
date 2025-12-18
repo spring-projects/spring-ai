@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.ai.model.NoopApiKey;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -90,7 +91,9 @@ public class DeepSeekApi {
 		this.betaPrefixPath = betaPrefixPath;
 
 		Consumer<HttpHeaders> finalHeaders = h -> {
+			if (!(apiKey instanceof NoopApiKey)) {
 			h.setBearerAuth(apiKey.getValue());
+			}
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 		};
