@@ -1,4 +1,4 @@
-= IBM Watsonx Moderation
+= IBM watsonx.ai Moderation
 
 This functionality has been moved to the Spring AI Community repository.
 
