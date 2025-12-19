@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.tool.augment;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -247,6 +248,7 @@ class AugmentedToolCallbackTest {
 	@DisplayName("Call Method Tests")
 	class CallMethodTests {
 
+		@SuppressWarnings("null")
 		@Test
 		@DisplayName("Should call delegate with processed input")
 		void shouldCallDelegateWithProcessedInput() {
@@ -338,6 +340,7 @@ class AugmentedToolCallbackTest {
 			verify(mockDelegate).call(toolInput, mockToolContext);
 		}
 
+		@SuppressWarnings("null")
 		@Test
 		@DisplayName("Should remove extended arguments when configured")
 		void shouldRemoveExtendedArgumentsWhenConfigured() throws Exception {
@@ -388,6 +391,7 @@ class AugmentedToolCallbackTest {
 			}));
 		}
 
+		@SuppressWarnings("null")
 		@Test
 		@DisplayName("Should preserve extended arguments when not configured to remove")
 		void shouldPreserveExtendedArgumentsWhenNotConfiguredToRemove() throws Exception {
@@ -438,6 +442,7 @@ class AugmentedToolCallbackTest {
 			}));
 		}
 
+		@SuppressWarnings("null")
 		@Test
 		@DisplayName("Should handle null consumer gracefully")
 		void shouldHandleNullConsumerGracefully() {
@@ -483,6 +488,7 @@ class AugmentedToolCallbackTest {
 	@DisplayName("Integration Tests")
 	class IntegrationTests {
 
+		@SuppressWarnings("null")
 		@Test
 		@DisplayName("Should handle complete workflow with consumer processing")
 		void shouldHandleCompleteWorkflowWithConsumerProcessing() {
