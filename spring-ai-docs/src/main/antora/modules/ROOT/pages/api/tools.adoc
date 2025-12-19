@@ -1342,7 +1342,7 @@ Common use cases include:
 
 === Quick Start
 
-1. **Define augmented arguments** as a Java Record:
+**Define augmented arguments** as a Java Record:
 
 [source,java]
 ----
@@ -1355,7 +1355,7 @@ public record AgentThinking(
 ) {}
 ----
 
-2. **Wrap your tool** with `AugmentedToolCallbackProvider`:
+**Wrap your tool** with `AugmentedToolCallbackProvider`:
 
 [source,java]
 ----
@@ -1371,7 +1371,7 @@ AugmentedToolCallbackProvider<AgentThinking> provider = AugmentedToolCallbackPro
     .build();
 ----
 
-3. **Use with ChatClient**:
+**Use with ChatClient**:
 
 [source,java]
 ----
