@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,9 +125,21 @@ public class ZhiPuAiImageModel implements ImageModel {
 			if (runtimeImageOptions.getModel() != null) {
 				zhiPuAiImageOptionsBuilder.model(runtimeImageOptions.getModel());
 			}
+			if (runtimeImageOptions.getWidth() != null && runtimeImageOptions.getHeight() != null) {
+				zhiPuAiImageOptionsBuilder.size(runtimeImageOptions.getWidth() + "x" + runtimeImageOptions.getHeight());
+			}
 			if (runtimeImageOptions instanceof ZhiPuAiImageOptions runtimeZhiPuAiImageOptions) {
 				if (runtimeZhiPuAiImageOptions.getUser() != null) {
 					zhiPuAiImageOptionsBuilder.user(runtimeZhiPuAiImageOptions.getUser());
+				}
+				if (runtimeZhiPuAiImageOptions.getSize() != null) {
+					zhiPuAiImageOptionsBuilder.size(runtimeZhiPuAiImageOptions.getSize());
+				}
+				if (runtimeZhiPuAiImageOptions.getQuality() != null) {
+					zhiPuAiImageOptionsBuilder.quality(runtimeZhiPuAiImageOptions.getQuality());
+				}
+				if (runtimeZhiPuAiImageOptions.getWatermarkEnabled() != null) {
+					zhiPuAiImageOptionsBuilder.watermarkEnabled(runtimeZhiPuAiImageOptions.getWatermarkEnabled());
 				}
 			}
 		}
