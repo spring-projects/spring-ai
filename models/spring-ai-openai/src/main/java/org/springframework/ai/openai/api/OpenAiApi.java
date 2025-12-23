@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -1492,7 +1493,7 @@ public class OpenAiApi {
 			@JsonProperty("refusal") String refusal,
 			@JsonProperty("audio") AudioOutput audioOutput,
 			@JsonProperty("annotations") List<Annotation> annotations,
-			@JsonProperty("reasoning_content") String reasoningContent
+			@JsonProperty("reasoning_content") @JsonAlias("reasoning") String reasoningContent
 	) { // @formatter:on
 
 		/**
