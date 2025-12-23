@@ -29,24 +29,20 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Restore Maven Build-Cache (~/.m2/build-cache)
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
         if: ${{ github.event_name != 'schedule' }}
-        uses: actions/cache/restore@v4
+        uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml', '!**/target/**') }}
+          # See pr-check.yml for an explanation of the key format
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Build all modules with unit tests
         run: |
           ./mvnw --batch-mode -ntp --update-snapshots clean install
-
-      - name: Save Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml', '!**/target/**') }}
 
       - name: Upload Spring-AI Built Artifacts
         uses: actions/upload-artifact@v4
@@ -84,13 +80,14 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Restore Maven Build-Cache (~/.m2/build-cache)
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
         if: ${{ github.event_name != 'schedule' }}
-        uses: actions/cache/restore@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml', '!**/target/**') }}
+          key: build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
@@ -114,12 +111,6 @@ jobs:
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
 
-      - name: Save Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml', '!**/target/**') }}
-
   test-openai:
     name: Test OpenAI
     if: ${{ github.repository_owner == 'spring-projects' }}
@@ -136,13 +127,13 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Restore Maven Build-Cache (~/.m2/build-cache)
-        if: ${{ github.event_name != 'schedule' }}
-        uses: actions/cache/restore@v4
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml', '!**/target/**') }}
+          key: build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
@@ -166,12 +157,6 @@ jobs:
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
 
-      - name: Save Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml', '!**/target/**') }}
-
   test-remaining:
     name: Test Remaining (MCP, Google GenAI, Chroma, PgVector)
     if: ${{ github.repository_owner == 'spring-projects' }}
@@ -188,13 +173,13 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Restore Maven Build-Cache (~/.m2/build-cache)
-        if: ${{ github.event_name != 'schedule' }}
-        uses: actions/cache/restore@v4
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml', '!**/target/**') }}
+          key: build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
@@ -217,12 +202,6 @@ jobs:
             -Pci-fast-integration-tests \
             -Dfailsafe.rerunFailingTestsCount=3 \
             verify
-
-      - name: Save Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml', '!**/target/**') }}
 
   handle-documentation:
     name: Generate and upload javadocs, trigger antora reference doc
@@ -285,13 +264,13 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Restore Maven Build-Cache (~/.m2/build-cache)
-        if: ${{ github.event_name != 'schedule' }}
-        uses: actions/cache/restore@v4
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml', '!**/target/**') }}
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Deploy to Artifactory
