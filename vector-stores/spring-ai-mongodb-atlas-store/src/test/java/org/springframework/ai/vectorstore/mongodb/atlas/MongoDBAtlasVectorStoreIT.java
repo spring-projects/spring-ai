@@ -308,6 +308,50 @@ class MongoDBAtlasVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
+	@Test
+	void customPathNameTest() {
+		this.contextRunner.run(context -> {
+			MongoTemplate mongoTemplate = context.getBean(MongoTemplate.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			// Create a vector store with custom pathName
+			String customPathName = "custom_embedding";
+			String customCollectionName = "vector_store_custom_path";
+			MongoDBAtlasVectorStore vectorStore = MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
+				.collectionName(customCollectionName)
+				.pathName(customPathName)
+				.initializeSchema(true)
+				.build();
+
+			// Clean up collection before test
+			mongoTemplate.getCollection(customCollectionName).deleteMany(new org.bson.Document());
+
+			// Add a document
+			Document document = new Document("Test content for custom pathName",
+					Collections.singletonMap("meta1", "value1"));
+			vectorStore.add(List.of(document));
+			Thread.sleep(5000); // Wait for indexing
+
+			// Verify the document was saved with the custom pathName
+			org.bson.Document savedDocument = mongoTemplate.findById(document.getId(), org.bson.Document.class,
+					customCollectionName);
+			assertThat(savedDocument).isNotNull();
+			assertThat(savedDocument.containsKey(customPathName)).isTrue();
+			assertThat(savedDocument.get(customPathName)).isNotNull();
+			assertThat(savedDocument.containsKey("embedding")).isFalse(); // Should not
+																			// have
+																			// default
+																			// field name
+
+			// Verify similarity search still works with custom pathName
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Test content").topK(1).build());
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(document.getId());
+			assertThat(results.get(0).getText()).isEqualTo("Test content for custom pathName");
+		});
+	}
+
 	public static String getText(String uri) {
 		var resource = new DefaultResourceLoader().getResource(uri);
 		try {
