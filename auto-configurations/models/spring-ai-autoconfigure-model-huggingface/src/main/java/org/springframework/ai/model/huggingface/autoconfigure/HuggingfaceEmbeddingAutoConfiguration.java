@@ -18,15 +18,11 @@ package org.springframework.ai.model.huggingface.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
 
-import org.springframework.ai.chat.observation.ChatModelObservationConvention;
-import org.springframework.ai.huggingface.HuggingfaceChatModel;
+import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.huggingface.HuggingfaceEmbeddingModel;
 import org.springframework.ai.huggingface.api.HuggingfaceApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -43,28 +39,26 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
- * {@link AutoConfiguration Auto-configuration} for HuggingFace Chat Model.
+ * {@link AutoConfiguration Auto-configuration} for HuggingFace Embedding Model.
  *
- * @author Mark Pollack
- * @author Josh Long
- * @author Soby Chacko
- * @author Ilayaperumal Gopinathan
  * @author Myeongdeok Kang
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, HuggingfaceApiAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
-@ConditionalOnClass(HuggingfaceChatModel.class)
-@ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.HUGGINGFACE,
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+		HuggingfaceApiAutoConfiguration.class })
+@ConditionalOnClass(HuggingfaceApi.class)
+@ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.HUGGINGFACE,
 		matchIfMissing = true)
-@EnableConfigurationProperties({ HuggingfaceConnectionProperties.class, HuggingfaceChatProperties.class })
-public class HuggingfaceChatAutoConfiguration {
+@EnableConfigurationProperties({ HuggingfaceConnectionProperties.class, HuggingfaceEmbeddingProperties.class })
+public class HuggingfaceEmbeddingAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean(name = "huggingfaceChatApi")
-	@ConditionalOnProperty(prefix = HuggingfaceChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-			matchIfMissing = true)
-	public HuggingfaceApi huggingfaceChatApi(HuggingfaceConnectionDetails connectionDetails,
-			HuggingfaceChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+	@Qualifier("huggingfaceEmbeddingApi")
+	@ConditionalOnMissingBean(name = "huggingfaceEmbeddingApi")
+	@ConditionalOnProperty(prefix = HuggingfaceEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public HuggingfaceApi huggingfaceEmbeddingApi(HuggingfaceConnectionDetails connectionDetails,
+			HuggingfaceEmbeddingProperties embeddingProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandlerProvider) {
 
 		String apiKey = connectionDetails.getApiKey();
@@ -77,7 +71,7 @@ public class HuggingfaceChatAutoConfiguration {
 		ResponseErrorHandler responseErrorHandler = responseErrorHandlerProvider.getIfAvailable(() -> null);
 
 		HuggingfaceApi.Builder apiBuilder = HuggingfaceApi.builder()
-			.baseUrl(chatProperties.getUrl())
+			.baseUrl(embeddingProperties.getUrl())
 			.apiKey(apiKey)
 			.restClientBuilder(restClientBuilder);
 
@@ -90,27 +84,23 @@ public class HuggingfaceChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(prefix = HuggingfaceChatProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
-			matchIfMissing = true)
-	public HuggingfaceChatModel huggingfaceChatModel(@Qualifier("huggingfaceChatApi") HuggingfaceApi huggingfaceApi,
-			HuggingfaceChatProperties chatProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention, RetryTemplate retryTemplate,
-			ObjectProvider<ToolExecutionEligibilityPredicate> huggingfaceToolExecutionEligibilityPredicate) {
+	@ConditionalOnProperty(prefix = HuggingfaceEmbeddingProperties.CONFIG_PREFIX, name = "enabled",
+			havingValue = "true", matchIfMissing = true)
+	public HuggingfaceEmbeddingModel huggingfaceEmbeddingModel(
+			@Qualifier("huggingfaceEmbeddingApi") HuggingfaceApi huggingfaceApi,
+			HuggingfaceEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention, RetryTemplate retryTemplate) {
 
-		var chatModel = HuggingfaceChatModel.builder()
+		var embeddingModel = HuggingfaceEmbeddingModel.builder()
 			.huggingfaceApi(huggingfaceApi)
-			.defaultOptions(chatProperties.getOptions())
-			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(huggingfaceToolExecutionEligibilityPredicate
-				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.defaultOptions(embeddingProperties.getOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.retryTemplate(retryTemplate)
 			.build();
 
-		observationConvention.ifAvailable(chatModel::setObservationConvention);
+		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
-		return chatModel;
+		return embeddingModel;
 	}
 
 }
