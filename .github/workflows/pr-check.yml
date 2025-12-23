@@ -19,20 +19,14 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Restore Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache/restore@v4
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml', '!**/target/**') }}
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             build-cache-${{ runner.os }}-
 
       - name: Run tests
         run: |
           ./mvnw -ntp -B -U test
-
-      - name: Save Maven Build-Cache (~/.m2/build-cache)
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml', '!**/target/**') }}
