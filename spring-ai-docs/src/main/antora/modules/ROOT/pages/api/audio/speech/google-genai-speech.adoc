@@ -1,0 +1,353 @@
+= Google GenAI Text-to-Speech (TTS)
+
+== Introduction
+
+Google GenAI provides natural-sounding text-to-speech capabilities through the Gemini TTS API. The API offers ultra-realistic voice synthesis with support for single-speaker and multi-speaker conversations across 24+ languages with 30+ distinct voices. Gemini TTS enables developers to create engaging audio content with prompt-based style control for accent, pace, and delivery.
+
+== Prerequisites
+
+. Create a Google Cloud account and obtain an API key for the Gemini API. You can sign up at the https://aistudio.google.com/app/apikey[Google AI Studio].
+. Add the `spring-ai-google-genai` dependency to your project's build file. For more information, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Google GenAI Text-to-Speech Client.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai-tts</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai-tts'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+NOTE: Alternatively, you can use the main `spring-ai-starter-model-google-genai` starter which includes chat, embedding, and TTS support.
+
+== Speech Properties
+
+=== Connection Properties
+
+The prefix `spring.ai.google-genai` is used as the property prefix for *all* Google GenAI related configurations (both connection and TTS specific settings).
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.google-genai.api-key  | Your Google GenAI API key.           | -
+| spring.ai.google-genai.base-url | The base URL for the Google GenAI API. | https://generativelanguage.googleapis.com
+|====
+
+=== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the audio speech auto-configurations are now configured via top level properties with the prefix `spring.ai.model.audio.speech`.
+
+To enable: spring.ai.model.audio.speech=google-genai
+
+To disable: spring.ai.model.audio.speech=none (or any value which doesn't match google-genai)
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.google-genai.tts` is used as the property prefix to configure the Google GenAI Text-to-Speech client specifically.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+
+| spring.ai.model.audio.speech   | Enable Audio Speech Model |  google-genai
+| spring.ai.google-genai.tts.options.model | The model to use for TTS generation. | gemini-2.5-flash-preview-tts
+| spring.ai.google-genai.tts.options.voice | The voice to use for single-speaker TTS.  | Kore
+|====
+
+TIP: All properties prefixed with `spring.ai.google-genai.tts.options` can be overridden at runtime.
+
+[[available-voices]]
+.Available Voices
+The Gemini TTS API provides 30+ voices across 24+ languages, including:
+
+* **Kore**: Neutral, versatile voice
+* **Puck**: Warm, friendly voice
+* **Charon**: Deep, authoritative voice
+* **Zephyr**: Light, energetic voice
+* And many more voices with different characteristics and language support
+
+Refer to the https://ai.google.dev/gemini-api/docs/speech-generation[Google Speech Generation Documentation] for the complete list of available voices.
+
+== Runtime Options [[speech-options]]
+
+The `GeminiTtsOptions` class provides options to use when making a text-to-speech request. On start-up, the options specified by `spring.ai.google-genai.tts` are used, but you can override these at runtime. The following options are available:
+
+* `model`: The model name for text-to-speech generation (e.g., "gemini-2.5-flash-preview-tts", "gemini-2.5-pro-preview-tts").
+* `voice`: The voice name for single-speaker text-to-speech (mutually exclusive with `speakerVoiceConfigs`).
+* `speakerVoiceConfigs`: A list of speaker voice configurations for multi-speaker text-to-speech (mutually exclusive with `voice`). Supports up to 2 speakers.
+* `speed`: The speech speed/rate. Note: Gemini TTS controls pace via text prompts (e.g., "Speak at a faster pace"), not via this parameter. This field exists for `TextToSpeechOptions` interface compatibility.
+
+For example:
+
+[source,java]
+----
+GeminiTtsOptions ttsOptions = GeminiTtsOptions.builder()
+    .model("gemini-2.5-flash-preview-tts")
+    .voice("Puck")
+    .build();
+
+TextToSpeechPrompt prompt = new TextToSpeechPrompt(
+    "Hello, this is a text-to-speech example.",
+    ttsOptions
+);
+TextToSpeechResponse response = geminiTtsModel.call(prompt);
+byte[] audioData = response.getResult().getOutput();
+----
+
+=== Single-Speaker TTS
+
+For single-speaker synthesis, specify a voice using the `voice` option:
+
+[source,java]
+----
+GeminiTtsOptions options = GeminiTtsOptions.builder()
+    .model("gemini-2.5-flash-preview-tts")
+    .voice("Kore")
+    .build();
+
+TextToSpeechPrompt prompt = new TextToSpeechPrompt(
+    "Welcome to Spring AI with Google Gemini TTS!",
+    options
+);
+
+byte[] audioData = geminiTtsModel.call(prompt).getResult().getOutput();
+----
+
+=== Multi-Speaker Conversations
+
+For dialogue with multiple speakers, use speaker voice configurations:
+
+[source,java]
+----
+// Define speakers with their voice assignments (using convenience method)
+GeminiTtsApi.SpeakerVoiceConfig joe = GeminiTtsApi.SpeakerVoiceConfig.of("Joe", "Kore");
+GeminiTtsApi.SpeakerVoiceConfig jane = GeminiTtsApi.SpeakerVoiceConfig.of("Jane", "Puck");
+
+// Configure multi-speaker options
+GeminiTtsOptions options = GeminiTtsOptions.builder()
+    .model("gemini-2.5-flash-preview-tts")
+    .speakerVoiceConfigs(List.of(joe, jane))
+    .build();
+
+// Provide dialogue text with speaker labels
+String conversation = """
+    TTS the following conversation between Joe and Jane:
+    Joe: How's it going today Jane?
+    Jane: Not too bad, how about you?
+    Joe: Pretty good, thanks for asking!
+    """;
+
+TextToSpeechPrompt prompt = new TextToSpeechPrompt(conversation, options);
+byte[] audioData = geminiTtsModel.call(prompt).getResult().getOutput();
+----
+
+=== Prompt-Based Style Control
+
+Gemini TTS allows you to control accent, pace, and delivery style through natural language directives in your text:
+
+[source,java]
+----
+// Control accent, pace, and style through prompts
+String styledText = """
+    Say in a British accent with a slow, dramatic pace:
+    To be, or not to be, that is the question.
+    """;
+
+byte[] audioData = geminiTtsModel.call(styledText);
+----
+
+You can also control emotional tone and delivery:
+
+[source,java]
+----
+String cheerfulText = "Say cheerfully: Have a wonderful day!";
+byte[] audioData = geminiTtsModel.call(cheerfulText);
+----
+
+== Manual Configuration
+
+Add the `spring-ai-google-genai` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-google-genai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-google-genai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `GeminiTtsModel`:
+
+[source,java]
+----
+GeminiTtsApi geminiTtsApi = new GeminiTtsApi(System.getenv("GOOGLE_API_KEY"));
+
+GeminiTtsOptions defaultOptions = GeminiTtsOptions.builder()
+    .model("gemini-2.5-flash-preview-tts")
+    .voice("Kore")
+    .build();
+
+GeminiTtsModel geminiTtsModel = GeminiTtsModel.builder()
+    .geminiTtsApi(geminiTtsApi)
+    .defaultOptions(defaultOptions)
+    .build();
+
+// The call will use the default options configured above
+TextToSpeechPrompt prompt = new TextToSpeechPrompt("Hello, this is a text-to-speech example.");
+TextToSpeechResponse response = geminiTtsModel.call(prompt);
+
+byte[] audioData = response.getResult().getOutput();
+----
+
+Alternatively, you can use the constructor directly:
+
+[source,java]
+----
+GeminiTtsApi geminiTtsApi = new GeminiTtsApi(System.getenv("GOOGLE_API_KEY"));
+
+GeminiTtsOptions defaultOptions = GeminiTtsOptions.builder()
+    .model("gemini-2.5-flash-preview-tts")
+    .voice("Puck")
+    .build();
+
+GeminiTtsModel geminiTtsModel = new GeminiTtsModel(geminiTtsApi, defaultOptions);
+
+// Simple convenience method
+byte[] audioData = geminiTtsModel.call("Hello, world!");
+----
+
+== Audio Format
+
+Gemini TTS returns PCM audio with the following specifications:
+
+* **Format**: PCM (s16le)
+* **Sample Rate**: 24kHz
+* **Channels**: Mono
+
+The `getFormat()` method on `GeminiTtsOptions` always returns "pcm" as this is the only format currently supported by the Gemini TTS API.
+
+[IMPORTANT]
+====
+**Streaming Support:** The Gemini API doesn't support streaming text-to-speech. Audio generation is performed as a complete operation, with the full audio returned in a single response.
+====
+
+=== Converting PCM to Other Formats
+
+To convert the PCM audio to other formats like WAV or MP3, you can use audio processing libraries like FFmpeg:
+
+[source,bash]
+----
+# Convert PCM to WAV using FFmpeg
+ffmpeg -f s16le -ar 24000 -ac 1 -i output.pcm output.wav
+
+# Convert PCM to MP3 using FFmpeg
+ffmpeg -f s16le -ar 24000 -ac 1 -i output.pcm output.mp3
+----
+
+You can also use Java libraries like javax.sound for WAV conversion:
+
+[source,java]
+----
+import javax.sound.sampled.*;
+import java.io.*;
+
+public byte[] convertPcmToWav(byte[] pcmData) throws IOException {
+    AudioFormat format = new AudioFormat(
+        24000,  // Sample rate
+        16,     // Sample size in bits
+        1,      // Channels (mono)
+        true,   // Signed
+        false   // Little endian
+    );
+
+    ByteArrayInputStream bais = new ByteArrayInputStream(pcmData);
+    AudioInputStream audioInputStream = new AudioInputStream(bais, format, pcmData.length / format.getFrameSize());
+
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    AudioSystem.write(audioInputStream, AudioFileFormat.Type.WAVE, baos);
+
+    return baos.toByteArray();
+}
+----
+
+== Configuration Example
+
+Here's a complete Spring Boot configuration example:
+
+[source,java]
+----
+@Configuration
+public class TtsConfiguration {
+
+    @Bean
+    public GeminiTtsModel geminiTtsModel(
+            @Value("${spring.ai.google-genai.api-key}") String apiKey) {
+
+        GeminiTtsApi api = new GeminiTtsApi(apiKey);
+
+        GeminiTtsOptions defaultOptions = GeminiTtsOptions.builder()
+            .model("gemini-2.5-flash-preview-tts")
+            .voice("Kore")
+            .build();
+
+        return GeminiTtsModel.builder()
+            .geminiTtsApi(api)
+            .defaultOptions(defaultOptions)
+            .build();
+    }
+}
+----
+
+With application properties:
+
+[source,yaml]
+----
+spring:
+  ai:
+    google-genai:
+      api-key: ${GOOGLE_API_KEY}
+    model:
+      audio:
+        speech: google-genai
+----
+
+== Additional Resources
+
+For more information about Gemini TTS, including rate limits and API options, see:
+
+* https://ai.google.dev/gemini-api/docs/speech-generation[Gemini Speech Generation Documentation]
+* https://ai.google.dev/gemini-api/docs/speech-generation/rate-limit-options[Rate Limits and Options]
+
+== Example Code
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai/src/test/java/org/springframework/ai/google/genai/tts/GeminiTtsModelIT.java[GeminiTtsModelIT.java] test provides examples of how to use the library with both single-speaker and multi-speaker TTS.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai/src/test/java/org/springframework/ai/google/genai/tts/api/GeminiTtsApiIT.java[GeminiTtsApiIT.java] test provides examples of using the low-level `GeminiTtsApi`.
