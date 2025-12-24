@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
+import org.springframework.ai.mistralai.ocr.MistralOcrApi;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -32,20 +33,27 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ilayaperumal Gopinathan
  * @author Ricken Bazolo
  * @author Issam El-atif
+ * @author Nicolas Krier
  */
-public class MistralModelConfigurationTests {
+class MistralModelConfigurationTests {
 
-	private final ApplicationContextRunner chatContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiChatAutoConfiguration.class));
+	private final ApplicationContextRunner chatContextRunner = createApplicationContextRunner(
+			MistralAiChatAutoConfiguration.class);
 
-	private final ApplicationContextRunner embeddingContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class));
+	private final ApplicationContextRunner embeddingContextRunner = createApplicationContextRunner(
+			MistralAiEmbeddingAutoConfiguration.class);
 
-	private final ApplicationContextRunner moderationContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiModerationAutoConfiguration.class));
+	private final ApplicationContextRunner moderationContextRunner = createApplicationContextRunner(
+			MistralAiModerationAutoConfiguration.class);
+
+	private final ApplicationContextRunner ocrContextRunner = createApplicationContextRunner(
+			MistralAiOcrAutoConfiguration.class);
+
+	private static ApplicationContextRunner createApplicationContextRunner(Class<?> autoConfigurationClass) {
+		return new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(autoConfigurationClass));
+	}
 
 	@Test
 	void chatModelActivation() {
@@ -120,6 +128,24 @@ public class MistralModelConfigurationTests {
 				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(MistralAiChatModel.class)).isEmpty();
 			});
+	}
+
+	@Test
+	void ocrModelActivation() {
+		this.ocrContextRunner.run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).hasSingleBean(MistralOcrApi.class);
+		});
+
+		this.ocrContextRunner.withPropertyValues("spring.ai.model.ocr=mistral").run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).hasSingleBean(MistralOcrApi.class);
+		});
+
+		this.ocrContextRunner.withPropertyValues("spring.ai.model.ocr=none").run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).doesNotHaveBean(MistralOcrApi.class);
+		});
 	}
 
 }
