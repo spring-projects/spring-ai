@@ -41,26 +41,8 @@ dependencies {
 }
 ----
 
-TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
-
-For Amazon OpenSearch Service, use these dependencies instead:
-
-[source,xml]
-----
-<dependency>
-    <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-starter-vector-store-opensearch</artifactId>
-</dependency>
-----
-
-or for Gradle:
-
-[source,groovy]
-----
-dependencies {
-    implementation 'org.springframework.ai:spring-ai-starter-vector-store-opensearch'
-}
-----
+TIP: For both self-hosted and Amazon OpenSearch Service, use the same dependency.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 Please have a look at the list of xref:#_configuration_properties[configuration parameters] for the vector store to learn about the default values and configuration options.
 
@@ -126,7 +108,10 @@ Properties starting with `spring.ai.vectorstore.opensearch.*` are used to config
 |`spring.ai.vectorstore.opensearch.password`| Password for the specified username | -
 |`spring.ai.vectorstore.opensearch.index-name`| Name of the index to store vectors | `spring-ai-document-index`
 |`spring.ai.vectorstore.opensearch.initialize-schema`| Whether to initialize the required schema | `false`
-|`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use | `cosinesimil`
+|`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use (cosinesimil, l1, l2, linf, innerproduct) | `cosinesimil`
+|`spring.ai.vectorstore.opensearch.use-approximate-knn`| Whether to use approximate k-NN for faster searches. If true, uses HNSW-based approximate search. If false, uses exact brute-force k-NN. See link:https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/[Approximate k-NN] and link:https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script/[Exact k-NN] | `false`
+|`spring.ai.vectorstore.opensearch.dimensions`| Number of dimensions for vector embeddings. Used when creating index mapping for approximate k-NN. If not set, uses the embedding model's dimensions. | `1536`
+|`spring.ai.vectorstore.opensearch.mapping-json`| Custom JSON mapping for the index. Overrides default mapping generation. | -
 |`spring.ai.vectorstore.opensearch.read-timeout`| Time to wait for response from the opposite endpoint. 0 - infinity. | -
 |`spring.ai.vectorstore.opensearch.connect-timeout`| Time to wait until connection established. 0 - infinity. | -
 |`spring.ai.vectorstore.opensearch.path-prefix`| Path prefix for OpenSearch API endpoints. Useful when OpenSearch is behind a reverse proxy with a non-root path. | -
@@ -209,6 +194,8 @@ public VectorStore vectorStore(OpenSearchClient openSearchClient, EmbeddingModel
     return OpenSearchVectorStore.builder(openSearchClient, embeddingModel)
         .index("custom-index")                // Optional: defaults to "spring-ai-document-index"
         .similarityFunction("l2")             // Optional: defaults to "cosinesimil"
+        .useApproximateKnn(true)              // Optional: defaults to false (exact k-NN)
+        .dimensions(1536)                     // Optional: defaults to 1536 or embedding model's dimensions
         .initializeSchema(true)               // Optional: defaults to false
         .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
         .build();

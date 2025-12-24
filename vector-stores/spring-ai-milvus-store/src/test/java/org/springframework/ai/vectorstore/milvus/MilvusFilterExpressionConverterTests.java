@@ -155,4 +155,183 @@ public class MilvusFilterExpressionConverterTests {
 			.isEqualTo("metadata[\"price\"] > 1000 && metadata[\"temperature\"] < 25 && metadata[\"humidity\"] <= 80");
 	}
 
+	@Test
+	public void testNin() {
+		// region not in ["A", "B", "C"]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(NIN, new Key("region"), new Value(List.of("A", "B", "C"))));
+		assertThat(vectorExpr).isEqualTo("metadata[\"region\"] not in [\"A\",\"B\",\"C\"]");
+	}
+
+	@Test
+	public void testNullValue() {
+		// status == null
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("status"), new Value(null)));
+		assertThat(vectorExpr).isEqualTo("metadata[\"status\"] == null");
+	}
+
+	@Test
+	public void testEmptyString() {
+		// name == ""
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("name"), new Value("")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"name\"] == \"\"");
+	}
+
+	@Test
+	public void testNumericString() {
+		// id == "12345"
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("id"), new Value("12345")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"id\"] == \"12345\"");
+	}
+
+	@Test
+	public void testLongValue() {
+		// timestamp >= 1640995200000L
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(GTE, new Key("timestamp"), new Value(1640995200000L)));
+		assertThat(vectorExpr).isEqualTo("metadata[\"timestamp\"] >= 1640995200000");
+	}
+
+	@Test
+	public void testFloatValue() {
+		// score >= 4.5f
+		String vectorExpr = this.converter.convertExpression(new Expression(GTE, new Key("score"), new Value(4.5f)));
+		assertThat(vectorExpr).isEqualTo("metadata[\"score\"] >= 4.5");
+	}
+
+	@Test
+	public void testMixedTypesList() {
+		// tags in [1, "priority", true]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("tags"), new Value(List.of(1, "priority", true))));
+		assertThat(vectorExpr).isEqualTo("metadata[\"tags\"] in [1,\"priority\",true]");
+	}
+
+	@Test
+	public void testEmptyList() {
+		// categories in []
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("categories"), new Value(List.of())));
+		assertThat(vectorExpr).isEqualTo("metadata[\"categories\"] in []");
+	}
+
+	@Test
+	public void testSingleItemList() {
+		// status in ["active"]
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(IN, new Key("status"), new Value(List.of("active"))));
+		assertThat(vectorExpr).isEqualTo("metadata[\"status\"] in [\"active\"]");
+	}
+
+	@Test
+	public void testKeyWithDots() {
+		// "value.field" >= 18
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(GTE, new Key("value.field"), new Value(18)));
+		assertThat(vectorExpr).isEqualTo("metadata[\"value.field\"] >= 18");
+	}
+
+	@Test
+	public void testKeyWithSpecialCharacters() {
+		// "field-name_with@symbols" == "value"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("field-name_with@symbols"), new Value("value")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"field-name_with@symbols\"] == \"value\"");
+	}
+
+	@Test
+	public void testTripleAnd() {
+		// value >= 100 AND type == "primary" AND region == "X"
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
+				new Expression(AND, new Expression(GTE, new Key("value"), new Value(100)),
+						new Expression(EQ, new Key("type"), new Value("primary"))),
+				new Expression(EQ, new Key("region"), new Value("X"))));
+
+		assertThat(vectorExpr).isEqualTo(
+				"metadata[\"value\"] >= 100 && metadata[\"type\"] == \"primary\" && metadata[\"region\"] == \"X\"");
+	}
+
+	@Test
+	public void testTripleOr() {
+		// value < 50 OR value > 200 OR type == "special"
+		String vectorExpr = this.converter.convertExpression(new Expression(OR,
+				new Expression(OR, new Expression(LT, new Key("value"), new Value(50)),
+						new Expression(GT, new Key("value"), new Value(200))),
+				new Expression(EQ, new Key("type"), new Value("special"))));
+
+		assertThat(vectorExpr)
+			.isEqualTo("metadata[\"value\"] < 50 || metadata[\"value\"] > 200 || metadata[\"type\"] == \"special\"");
+	}
+
+	@Test
+	public void testNegativeNumbers() {
+		// temperature >= -20 AND temperature <= -5
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(GTE, new Key("temperature"), new Value(-20)),
+					new Expression(LTE, new Key("temperature"), new Value(-5))));
+
+		assertThat(vectorExpr).isEqualTo("metadata[\"temperature\"] >= -20 && metadata[\"temperature\"] <= -5");
+	}
+
+	@Test
+	public void testZeroValues() {
+		// count == 0
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("count"), new Value(0)));
+		assertThat(vectorExpr).isEqualTo("metadata[\"count\"] == 0");
+	}
+
+	@Test
+	public void testBooleanFalse() {
+		// enabled == false
+		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("enabled"), new Value(false)));
+		assertThat(vectorExpr).isEqualTo("metadata[\"enabled\"] == false");
+	}
+
+	@Test
+	public void testVeryLongString() {
+		// Test with a very long string value
+		String longValue = "This is a very long string that might be used as a value in a filter expression to test how the converter handles lengthy text content that could potentially cause issues with string manipulation";
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("content"), new Value(longValue)));
+		assertThat(vectorExpr).isEqualTo("metadata[\"content\"] == \"" + longValue + "\"");
+	}
+
+	@Test
+	public void testRangeQuery() {
+		// value >= 10 AND value <= 100
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(GTE, new Key("value"), new Value(10)),
+					new Expression(LTE, new Key("value"), new Value(100))));
+
+		assertThat(vectorExpr).isEqualTo("metadata[\"value\"] >= 10 && metadata[\"value\"] <= 100");
+	}
+
+	@Test
+	public void testComplexOrWithMultipleFields() {
+		// type == "primary" OR status == "active" OR priority > 5
+		String vectorExpr = this.converter.convertExpression(new Expression(OR,
+				new Expression(OR, new Expression(EQ, new Key("type"), new Value("primary")),
+						new Expression(EQ, new Key("status"), new Value("active"))),
+				new Expression(GT, new Key("priority"), new Value(5))));
+
+		assertThat(vectorExpr).isEqualTo(
+				"metadata[\"type\"] == \"primary\" || metadata[\"status\"] == \"active\" || metadata[\"priority\"] > 5");
+	}
+
+	@Test
+	public void testDoubleQuotedKey() {
+		// "field with spaces" == "value"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("\"field with spaces\""), new Value("value")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"field with spaces\"] == \"value\"");
+	}
+
+	@Test
+	public void testSingleQuotedKey() {
+		// 'field with spaces' == "value"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("'field with spaces'"), new Value("value")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"field with spaces\"] == \"value\"");
+	}
+
 }

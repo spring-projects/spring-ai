@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
@@ -99,7 +99,7 @@ public class ZhiPuAiEmbeddingModelObservationIT {
 
 		@Bean
 		public ZhiPuAiApi zhiPuAiApi() {
-			return new ZhiPuAiApi(System.getenv("ZHIPU_AI_API_KEY"));
+			return ZhiPuAiApi.builder().apiKey(System.getenv("ZHIPU_AI_API_KEY")).build();
 		}
 
 		@Bean
@@ -107,7 +107,7 @@ public class ZhiPuAiEmbeddingModelObservationIT {
 				TestObservationRegistry observationRegistry) {
 			return new ZhiPuAiEmbeddingModel(zhiPuAiApi, MetadataMode.EMBED,
 					ZhiPuAiEmbeddingOptions.builder().model(ZhiPuAiApi.DEFAULT_EMBEDDING_MODEL).build(),
-					RetryTemplate.defaultInstance(), observationRegistry);
+					new RetryTemplate(), observationRegistry);
 		}
 
 	}

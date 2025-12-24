@@ -19,7 +19,6 @@ package org.springframework.ai.document;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -112,8 +111,9 @@ public final class DefaultContentFormatter implements ContentFormatter {
 				.replace(TEMPLATE_VALUE_PLACEHOLDER, metadataEntry.getValue().toString()))
 			.collect(Collectors.joining(this.metadataSeparator));
 
+		var text = document.getText() != null ? document.getText() : "";
 		return this.textTemplate.replace(TEMPLATE_METADATA_STRING_PLACEHOLDER, metadataText)
-			.replace(TEMPLATE_CONTENT_PLACEHOLDER, document.getText());
+			.replace(TEMPLATE_CONTENT_PLACEHOLDER, text);
 	}
 
 	/**
@@ -121,13 +121,13 @@ public final class DefaultContentFormatter implements ContentFormatter {
 	 * @param metadata Document metadata.
 	 * @return Returns the filtered by configured mode metadata.
 	 */
-	protected Map<String, Object> metadataFilter(Map<String, Object> metadata, MetadataMode metadataMode) {
+	private Map<String, Object> metadataFilter(Map<String, Object> metadata, MetadataMode metadataMode) {
 
 		if (metadataMode == MetadataMode.ALL) {
-			return new HashMap<String, Object>(metadata);
+			return metadata;
 		}
 		if (metadataMode == MetadataMode.NONE) {
-			return new HashMap<String, Object>(Collections.emptyMap());
+			return Collections.emptyMap();
 		}
 
 		Set<String> usableMetadataKeys = new HashSet<>(metadata.keySet());
@@ -139,10 +139,10 @@ public final class DefaultContentFormatter implements ContentFormatter {
 			usableMetadataKeys.removeAll(this.excludedEmbedMetadataKeys);
 		}
 
-		return new HashMap<String, Object>(metadata.entrySet()
+		return metadata.entrySet()
 			.stream()
 			.filter(e -> usableMetadataKeys.contains(e.getKey()))
-			.collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	public String getMetadataTemplate() {

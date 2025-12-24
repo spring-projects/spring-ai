@@ -79,7 +79,7 @@ The prefix spring.ai.openai.moderation is used as the property prefix for config
 | spring.ai.openai.moderation.api-key    | The API Key           |  -
 | spring.ai.openai.moderation.organization-id | Optionally you can specify which organization is used for an API request. |  -
 | spring.ai.openai.moderation.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.moderation.options.model  | ID of the model to use for moderation. | text-moderation-latest
+| spring.ai.openai.moderation.options.model  | ID of the model to use for moderation. | omni-moderation-latest
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
@@ -97,7 +97,7 @@ For example:
 [source,java]
 ----
 OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
-    .model("text-moderation-latest")
+    .model("omni-moderation-latest")
     .build();
 
 ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);
@@ -180,7 +180,7 @@ OpenAiModerationApi openAiModerationApi = new OpenAiModerationApi(System.getenv(
 OpenAiModerationModel openAiModerationModel = new OpenAiModerationModel(this.openAiModerationApi);
 
 OpenAiModerationOptions moderationOptions = OpenAiModerationOptions.builder()
-    .model("text-moderation-latest")
+    .model("omni-moderation-latest")
     .build();
 
 ModerationPrompt moderationPrompt = new ModerationPrompt("Text to be moderated", this.moderationOptions);

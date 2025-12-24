@@ -31,11 +31,11 @@ public record SimpleApiKey(String value) implements ApiKey {
 
 	/**
 	 * Create a new SimpleApiKey.
-	 * @param value the API key value, must not be null or empty
-	 * @throws IllegalArgumentException if value is null or empty
+	 * @param value the API key value, must not be null
+	 * @throws IllegalArgumentException if value is null
 	 */
 	public SimpleApiKey(String value) {
-		Assert.notNull(value, "API key value must not be null or empty");
+		Assert.notNull(value, "API key value must not be null");
 		this.value = value;
 	}
 

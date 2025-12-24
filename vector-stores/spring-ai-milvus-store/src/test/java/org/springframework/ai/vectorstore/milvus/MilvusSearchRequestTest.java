@@ -79,4 +79,72 @@ class MilvusSearchRequestTest {
 		assertThat(request.getSearchParamsJson()).isEqualTo(searchParamsJson);
 	}
 
+	@Test
+	void shouldBuildRequestWithOnlyQuery() {
+		String query = "test query";
+		MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder().query(query).build();
+
+		assertThat(request.getQuery()).isEqualTo(query);
+		assertThat(request.getTopK()).isEqualTo(SearchRequest.DEFAULT_TOP_K);
+		assertThat(request.getSimilarityThreshold()).isEqualTo(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
+		assertThat(request.getNativeExpression()).isNull();
+	}
+
+	@Test
+	void shouldBuildRequestWithOnlyTopK() {
+		int topK = 1;
+		MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder().topK(topK).build();
+
+		assertThat(request.getQuery()).isEmpty();
+		assertThat(request.getTopK()).isEqualTo(topK);
+		assertThat(request.getSimilarityThreshold()).isEqualTo(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
+	}
+
+	@Test
+	void shouldBuildRequestWithOnlySimilarityThreshold() {
+		double threshold = 0.95;
+		MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder().similarityThreshold(threshold).build();
+
+		assertThat(request.getQuery()).isEmpty();
+		assertThat(request.getTopK()).isEqualTo(SearchRequest.DEFAULT_TOP_K);
+		assertThat(request.getSimilarityThreshold()).isEqualTo(threshold);
+	}
+
+	@Test
+	void shouldHandleEmptyQuery() {
+		MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder().query("").topK(1).build();
+
+		assertThat(request.getQuery()).isEmpty();
+		assertThat(request.getTopK()).isEqualTo(1);
+	}
+
+	@Test
+	void shouldHandleComplexNativeExpression() {
+		String complexExpression = "(level > 1 AND type = 'type1') OR (mode IN ['mode1'] AND value >= 0.1)";
+		MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder().nativeExpression(complexExpression).build();
+
+		assertThat(request.getNativeExpression()).isEqualTo(complexExpression);
+	}
+
+	@Test
+	void shouldHandleComplexSearchParamsJson() {
+		String complexJson = "{\"values\":{\"value1\":1,\"value2\":1.1},\"value\":{\"value\":1,\"value\":1}}";
+		MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder().searchParamsJson(complexJson).build();
+
+		assertThat(request.getSearchParamsJson()).isEqualTo(complexJson);
+	}
+
+	@Test
+	void shouldUpdateFieldsWithMultipleCalls() {
+		MilvusSearchRequest request = MilvusSearchRequest.milvusBuilder()
+			.query("initial")
+			.query("updated")
+			.topK(1)
+			.topK(1)
+			.build();
+
+		assertThat(request.getQuery()).isEqualTo("updated");
+		assertThat(request.getTopK()).isEqualTo(1);
+	}
+
 }

@@ -35,7 +35,7 @@ Assuming you have already loaded data into a `VectorStore`, you can perform Retr
 ----
 ChatResponse response = ChatClient.builder(chatModel)
         .build().prompt()
-        .advisors(new QuestionAnswerAdvisor(vectorStore))
+        .advisors(QuestionAnswerAdvisor.builder(vectorStore).build())
         .user(userText)
         .call()
         .chatResponse();

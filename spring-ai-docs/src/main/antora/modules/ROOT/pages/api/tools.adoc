@@ -385,7 +385,7 @@ Besides the `@ToolParam` annotation, you can also use the `@Schema` annotation f
 
 ==== Adding Tools to `ChatClient` and `ChatModel`
 
-When using the programmatic specification approach, you can pass the `MethodToolCallback` instance to the `tools()` method of `ChatClient`.
+When using the programmatic specification approach, you can pass the `MethodToolCallback` instance to the `toolCallbacks()` method of `ChatClient`.
 The tool will only be available for the specific chat request it's added to.
 
 [source,java]
@@ -393,14 +393,14 @@ The tool will only be available for the specific chat request it's added to.
 ToolCallback toolCallback = ...
 ChatClient.create(chatModel)
     .prompt("What day is tomorrow?")
-    .tools(toolCallback)
+    .toolCallbacks(toolCallback)
     .call()
     .content();
 ----
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `MethodToolCallback` instance to the `defaultTools()` method.
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `MethodToolCallback` instance to the `defaultToolCallbacks()` method.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
@@ -410,7 +410,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools(toolCallback)
+    .defaultToolCallbacks(toolCallback)
     .build();
 ----
 
@@ -424,7 +424,7 @@ ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(toolCallback)
-    .build():
+    .build();
 Prompt prompt = new Prompt("What day is tomorrow?", chatOptions);
 chatModel.call(prompt);
 ----
@@ -508,21 +508,21 @@ NOTE: Some types are not supported. See xref:_function_tool_limitations[] for mo
 
 ==== Adding Tools to `ChatClient`
 
-When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance to the `tools()` method of `ChatClient`. The tool will only be available for the specific chat request it's added to.
+When using the programmatic specification approach, you can pass the `FunctionToolCallback` instance to the `toolCallbacks()` method of `ChatClient`. The tool will only be available for the specific chat request it's added to.
 
 [source,java]
 ----
 ToolCallback toolCallback = ...
 ChatClient.create(chatModel)
     .prompt("What's the weather like in Copenhagen?")
-    .tools(toolCallback)
+    .toolCallbacks(toolCallback)
     .call()
     .content();
 ----
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `FunctionToolCallback` instance to the `defaultTools()` method.
+When using the programmatic specification approach, you can add default tools to a `ChatClient.Builder` by passing the `FunctionToolCallback` instance to the `defaultToolCallbacks()` method.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
@@ -532,7 +532,7 @@ WARNING: Default tools are shared across all the chat requests performed by all 
 ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatClient chatClient = ChatClient.builder(chatModel)
-    .defaultTools(toolCallback)
+    .defaultToolCallbacks(toolCallback)
     .build();
 ----
 
@@ -546,7 +546,7 @@ ChatModel chatModel = ...
 ToolCallback toolCallback = ...
 ChatOptions chatOptions = ToolCallingChatOptions.builder()
     .toolCallbacks(toolCallback)
-    .build():
+    .build();
 Prompt prompt = new Prompt("What's the weather like in Copenhagen?", chatOptions);
 chatModel.call(prompt);
 ----
@@ -618,7 +618,7 @@ class WeatherTools {
 
 ==== Adding Tools to `ChatClient`
 
-When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `tools()` method of `ChatClient`.
+When using the dynamic specification approach, you can pass the tool name (i.e. the function bean name) to the `toolNames()` method of `ChatClient`.
 The tool will only be available for the specific chat request it's added to.
 
 [source,java]
@@ -632,7 +632,7 @@ ChatClient.create(chatModel)
 
 ==== Adding Default Tools to `ChatClient`
 
-When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool name to the `defaultTools()` method.
+When using the dynamic specification approach, you can add default tools to a `ChatClient.Builder` by passing the tool name to the `defaultToolNames()` method.
 If both default and runtime tools are provided, the runtime tools will completely override the default tools.
 
 WARNING: Default tools are shared across all the chat requests performed by all the `ChatClient` instances built from the same `ChatClient.Builder`. They are useful for tools that are commonly used across different chat requests, but they can also be dangerous if not used carefully, risking to make them available when they shouldn't.
@@ -789,7 +789,7 @@ When building tools from a method, the `ToolDefinition` is automatically generat
 [source,java]
 ----
 Method method = ReflectionUtils.findMethod(DateTimeTools.class, "getCurrentDateTime");
-ToolDefinition toolDefinition = ToolDefinition.from(method);
+ToolDefinition toolDefinition = ToolDefinitions.from(method);
 ----
 
 The `ToolDefinition` generated from a method includes the method name as the tool name, the method name as the tool description, and the JSON schema of the method input parameters. If the method is annotated with `@Tool`, the tool name and description will be taken from the annotation, if set.
@@ -1107,6 +1107,70 @@ public class DefaultToolExecutionEligibilityPredicate implements ToolExecutionEl
 
 You can provide your custom implementation of `ToolExecutionEligibilityPredicate` when creating the `ChatModel` bean.
 
+=== Advisor-Controlled Tool Execution with ToolCallAdvisor
+
+As an alternative to the framework-controlled tool execution, you can use the `ToolCallAdvisor` to implement tool calling as part of the xref:api/chatclient.adoc#_advisors[advisor chain]. This approach provides several advantages:
+
+* **Observability**: Other advisors in the chain can intercept and observe each tool call iteration
+* **Integration with Chat Memory**: Works seamlessly with Chat Memory advisors for conversation history management
+* **Extensibility**: The advisor can be extended to customize the tool calling behavior
+
+The `ToolCallAdvisor` implements the tool calling loop and disables the model's internal tool execution. When the model requests a tool call, the advisor executes the tool and sends the result back to the model, continuing until no more tool calls are needed.
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(toolCallAdvisor)
+    .build();
+
+String response = chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .call()
+    .content();
+----
+
+==== Configuration Options
+
+The `ToolCallAdvisor.Builder` supports the following configuration options:
+
+- `toolCallingManager`: The `ToolCallingManager` instance to use for executing tool calls. If not provided, a default instance is used.
+- `advisorOrder`: The order in which the advisor is applied in the chain. Must be between `BaseAdvisor.HIGHEST_PRECEDENCE` and `BaseAdvisor.LOWEST_PRECEDENCE`.
+- `conversationHistoryEnabled`: Controls whether the advisor maintains conversation history internally during tool call iterations. Default is `true`.
+
+==== Conversation History Management
+
+By default (`conversationHistoryEnabled=true`), the `ToolCallAdvisor` maintains the full conversation history internally during tool call iterations. Each subsequent LLM call includes all previous messages.
+
+When set to `false`, only the last tool response message is passed to the next iteration. This is useful when integrating with a Chat Memory advisor that already manages conversation history:
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .conversationHistoryEnabled(false)  // Let ChatMemory handle history
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)  // Before ToolCallAdvisor
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor, toolCallAdvisor)
+    .build();
+----
+
+==== Return Direct
+
+The `ToolCallAdvisor` supports the "return direct" feature, allowing tools to bypass the LLM and return results directly to the client. When a tool execution has `returnDirect=true`, the advisor breaks out of the tool calling loop and returns the tool result directly.
+
+For more details about `ToolCallAdvisor`, see xref:api/advisors-recursive.adoc#_toolcalladvisor[Recursive Advisors - ToolCallAdvisor].
+
 === User-Controlled Tool Execution
 
 There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`.
@@ -1197,7 +1261,7 @@ public interface ToolExecutionExceptionProcessor {
 }
 ----
 
-If you're using any of the Spring AI Spring Boot Starters, `DefaultToolExecutionExceptionProcessor` is the autoconfigured implementation of the `ToolExecutionExceptionProcessor` interface. By default, the error message is sent back to the model. The `DefaultToolExecutionExceptionProcessor` constructor lets you set the `alwaysThrow` attribute to `true` or `false`. If `true`, an exception will be thrown instead of sending an error message back to the model.
+If you're using any of the Spring AI Spring Boot Starters, `DefaultToolExecutionExceptionProcessor` is the autoconfigured implementation of the `ToolExecutionExceptionProcessor` interface. By default, the error message of `RuntimeException` is sent back to the model, while checked exceptions and Errors (e.g., `IOException`, `OutOfMemoryError`) are always thrown. The `DefaultToolExecutionExceptionProcessor` constructor lets you set the `alwaysThrow` attribute to `true` or `false`. If `true`, an exception will be thrown instead of sending an error message back to the model.
 
 You can use the ``spring.ai.tools.throw-exception-on-error` property to control the behavior of the `DefaultToolExecutionExceptionProcessor` bean:
 
@@ -1263,6 +1327,74 @@ ToolCallbackResolver toolCallbackResolver(List<FunctionCallback> toolCallbacks) 
 ----
 
 The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to resolve tools dynamically at runtime, supporting both xref:_framework_controlled_tool_execution[] and xref:_user_controlled_tool_execution[].
+
+[[tool-argument-augmentation]]
+== Tool Argument Augmentation
+
+Spring AI provides a utility for **dynamic augmentation of tool input schemas** with additional arguments. This allows capturing extra information from the model—such as reasoning or metadata—without modifying the underlying tool implementation.
+
+Common use cases include:
+
+* **Inner Thinking/Reasoning**: Capture the model's step-by-step reasoning before executing a tool
+* **Memory Enhancement**: Extract insights to store in long-term memory
+* **Analytics & Tracking**: Collect metadata, user intent, or usage patterns
+* **Multi-Agent Coordination**: Pass agent identifiers or coordination signals
+
+=== Quick Start
+
+**Define augmented arguments** as a Java Record:
+
+[source,java]
+----
+public record AgentThinking(
+    @ToolParam(description = "Your reasoning for calling this tool", required = true)
+    String innerThought,
+
+    @ToolParam(description = "Confidence level (low, medium, high)", required = false)
+    String confidence
+) {}
+----
+
+**Wrap your tool** with `AugmentedToolCallbackProvider`:
+
+[source,java]
+----
+AugmentedToolCallbackProvider<AgentThinking> provider = AugmentedToolCallbackProvider
+    .<AgentThinking>builder()
+    .toolObject(new MyTools())  // Your @Tool annotated class
+    .argumentType(AgentThinking.class)
+    .argumentConsumer(event -> {
+        AgentThinking thinking = event.arguments();
+        log.info("Tool: {} | Reasoning: {}", event.toolDefinition().name(), thinking.innerThought());
+    })
+    .removeExtraArgumentsAfterProcessing(true)
+    .build();
+----
+
+**Use with ChatClient**:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultToolCallbacks(provider)
+    .build();
+----
+
+The LLM sees the augmented schema with your additional fields. Your consumer receives the `AgentThinking` record, while the original tool receives only its expected arguments.
+
+=== Core Components
+
+* `AugmentedToolCallbackProvider<T>` - Wraps tool objects or providers, augmenting all tools with the specified Record type
+* `AugmentedToolCallback<T>` - Wraps individual `ToolCallback` instances
+* `AugmentedArgumentEvent<T>` - Contains `toolDefinition()`, `rawInput()`, and `arguments()` for consumers
+* `ToolInputSchemaAugmenter` - Low-level utility for schema manipulation
+
+=== Configuration
+
+The `removeExtraArgumentsAfterProcessing` option controls whether augmented arguments are passed to the original tool:
+
+* `true` (default) - Remove augmented arguments before calling the tool
+* `false` - Preserve augmented arguments in the input (if the tool can ignore extra fields)
 
 == Observability
 

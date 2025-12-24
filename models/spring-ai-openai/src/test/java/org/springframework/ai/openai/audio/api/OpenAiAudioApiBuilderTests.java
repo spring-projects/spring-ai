@@ -16,20 +16,20 @@
 
 package org.springframework.ai.openai.audio.api;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -37,15 +37,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Filip Hrisafov
@@ -65,7 +63,7 @@ class OpenAiAudioApiBuilderTests {
 
 	@Test
 	void testFullBuilder() {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		HttpHeaders headers = new HttpHeaders();
 		headers.add("Custom-Header", "test-value");
 		RestClient.Builder restClientBuilder = RestClient.builder();
 		WebClient.Builder webClientBuilder = WebClient.builder();
@@ -135,13 +133,13 @@ class OpenAiAudioApiBuilderTests {
 
 		@BeforeEach
 		void setUp() throws IOException {
-			mockWebServer = new MockWebServer();
-			mockWebServer.start();
+			this.mockWebServer = new MockWebServer();
+			this.mockWebServer.start();
 		}
 
 		@AfterEach
 		void tearDown() throws IOException {
-			mockWebServer.shutdown();
+			this.mockWebServer.shutdown();
 		}
 
 		@Test
@@ -149,14 +147,14 @@ class OpenAiAudioApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			OpenAiAudioApi api = OpenAiAudioApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
 				.setBody("Audio bytes as string");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiAudioApi.SpeechRequest request = OpenAiAudioApi.SpeechRequest.builder()
 				.model(OpenAiAudioApi.TtsModel.TTS_1.value)
@@ -164,13 +162,13 @@ class OpenAiAudioApiBuilderTests {
 				.build();
 			ResponseEntity<byte[]> response = api.createSpeech(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.createSpeech(request);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 
@@ -179,14 +177,14 @@ class OpenAiAudioApiBuilderTests {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			OpenAiAudioApi api = OpenAiAudioApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
-				.baseUrl(mockWebServer.url("/").toString())
+				.baseUrl(this.mockWebServer.url("/").toString())
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)
 				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
 				.setBody("Audio bytes as string");
-			mockWebServer.enqueue(mockResponse);
-			mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
+			this.mockWebServer.enqueue(mockResponse);
 
 			OpenAiAudioApi.SpeechRequest request = OpenAiAudioApi.SpeechRequest.builder()
 				.model(OpenAiAudioApi.TtsModel.TTS_1.value)
@@ -194,13 +192,13 @@ class OpenAiAudioApiBuilderTests {
 				.build();
 			List<ResponseEntity<byte[]>> response = api.stream(request).collectList().block();
 			assertThat(response).hasSize(1);
-			RecordedRequest recordedRequest = mockWebServer.takeRequest();
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key1");
 
 			response = api.stream(request).collectList().block();
 			assertThat(response).hasSize(1);
 
-			recordedRequest = mockWebServer.takeRequest();
+			recordedRequest = this.mockWebServer.takeRequest();
 			assertThat(recordedRequest.getHeader(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer key2");
 		}
 

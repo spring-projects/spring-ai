@@ -32,14 +32,10 @@ public class AzureOpenAiImageOptionsProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.azure.openai.image";
 
 	@NestedConfigurationProperty
-	private AzureOpenAiImageOptions options = AzureOpenAiImageOptions.builder().build();
+	private final AzureOpenAiImageOptions options = AzureOpenAiImageOptions.builder().build();
 
 	public AzureOpenAiImageOptions getOptions() {
 		return this.options;
-	}
-
-	public void setOptions(AzureOpenAiImageOptions options) {
-		this.options = options;
 	}
 
 }

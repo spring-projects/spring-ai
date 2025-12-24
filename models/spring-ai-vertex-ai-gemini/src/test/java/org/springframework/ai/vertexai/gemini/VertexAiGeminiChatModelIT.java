@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,23 +20,26 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import io.micrometer.observation.ObservationRegistry;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -46,24 +49,30 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
+import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetyRating;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
+import org.springframework.ai.vertexai.gemini.schema.JsonSchemaConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.lang.NonNull;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_PROJECT_ID", matches = ".*")
-@EnabledIfEnvironmentVariable(named = "VERTEX_AI_GEMINI_LOCATION", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
 class VertexAiGeminiChatModelIT {
 
 	@Autowired
@@ -117,7 +126,7 @@ class VertexAiGeminiChatModelIT {
 	@Test
 	@Disabled
 	void testSafetySettings() {
-		List<VertexAiGeminiSafetySetting> safetySettings = List.of(new VertexAiGeminiSafetySetting.Builder()
+		List<VertexAiGeminiSafetySetting> safetySettings = List.of(VertexAiGeminiSafetySetting.builder()
 			.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
 			.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
 			.build());
@@ -130,7 +139,7 @@ class VertexAiGeminiChatModelIT {
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
 
-	@NotNull
+	@NonNull
 	private Prompt createPrompt(VertexAiGeminiChatOptions chatOptions) {
 		String request = "Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.";
 		String name = "Bob";
@@ -209,6 +218,104 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	@Test
+	void beanOutputConverterRecordsWithResponseSchema() {
+
+		// Use the Google GenAI API to set the response schema
+		beanOutputConverterRecordsWithStructuredOutput(jsonSchemaText -> {
+			ObjectNode jsonSchema = JsonSchemaConverter.fromJson(jsonSchemaText);
+			ObjectNode openApiSchema = JsonSchemaConverter.convertToOpenApiSchema(jsonSchema);
+			JsonSchemaGenerator.convertTypeValuesToUpperCase(openApiSchema);
+
+			return VertexAiGeminiChatOptions.builder()
+				.responseSchema(openApiSchema.toString())
+				.responseMimeType("application/json")
+				.build();
+		});
+	}
+
+	@Test
+	void beanOutputConverterRecordsWithOutputSchema() {
+		// Use the unified Spring AI API (StructuredOutputChatOptions) to set the output
+		// schema.
+		beanOutputConverterRecordsWithStructuredOutput(
+				jsonSchema -> VertexAiGeminiChatOptions.builder().outputSchema(jsonSchema).build());
+	}
+
+	private void beanOutputConverterRecordsWithStructuredOutput(Function<String, ChatOptions> chatOptionsProvider) {
+
+		BeanOutputConverter<ActorsFilmsRecord> outputConvert = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+
+		String schema = outputConvert.getJsonSchema();
+
+		Prompt prompt = Prompt.builder()
+			.content("Generate the filmography of 5 movies for Tom Hanks.")
+			.chatOptions(chatOptionsProvider.apply(schema))
+			.build();
+
+		Generation generation = this.chatModel.call(prompt).getResult();
+
+		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecords() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecordsNative() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void listOutputConverterBean() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void listOutputConverterBeanNative() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
 	void textStream() {
 
 		String generationTextFromStream = this.chatModel
@@ -224,6 +331,70 @@ class VertexAiGeminiChatModelIT {
 
 		// logger.info("{}", actorsFilms);
 		assertThat(generationTextFromStream).isNotEmpty();
+	}
+
+	@Test
+	void logprobs() {
+		VertexAiGeminiChatOptions chatOptions = VertexAiGeminiChatOptions.builder()
+			.logprobs(1)
+			.responseLogprobs(true)
+			.build();
+
+		var logprobs = (VertexAiGeminiApi.LogProbs) this.chatModel
+			.call(new Prompt("Explain Bulgaria? Answer in 10 paragraphs.", chatOptions))
+			.getResult()
+			.getOutput()
+			.getMetadata()
+			.get("logprobs");
+
+		assertThat(logprobs).isNotNull();
+		assertThat(logprobs.avgLogprobs()).isNotZero();
+		assertThat(logprobs.topCandidates()).isNotEmpty();
+		assertThat(logprobs.chosenCandidates()).isNotEmpty();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void safetyRatingsMetadataIsPresent() {
+		// Use safety settings with BLOCK_LOW_AND_ABOVE to ensure safety evaluation occurs
+		// and ratings are returned (similar to Python SDK example)
+		List<VertexAiGeminiSafetySetting> safetySettings = List.of(
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build(),
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build(),
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build(),
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build());
+
+		// Use a prompt that should trigger safety evaluation
+		String prompt = "Write a list of 5 disrespectful things that I might say to the universe after stubbing my toe in the dark:";
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt(prompt, VertexAiGeminiChatOptions.builder().safetySettings(safetySettings).build()));
+
+		// Safety ratings should be present in the AssistantMessage metadata
+		var safetyRatings = (List<VertexAiGeminiSafetyRating>) response.getResult()
+			.getOutput()
+			.getMetadata()
+			.get("safetyRatings");
+
+		assertThat(safetyRatings).isNotNull();
+		assertThat(safetyRatings).isNotEmpty();
+
+		// Verify safety rating structure
+		VertexAiGeminiSafetyRating firstRating = safetyRatings.get(0);
+		assertThat(firstRating.category()).isNotNull();
+		assertThat(firstRating.probability()).isNotNull();
 	}
 
 	@Test
@@ -318,8 +489,8 @@ class VertexAiGeminiChatModelIT {
 	 * Helper method to create a VertexAI instance for tests
 	 */
 	private VertexAI vertexAiApi() {
-		String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
-		String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+		String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 		return new VertexAI.Builder().setProjectId(projectId)
 			.setLocation(location)
 			.setTransport(Transport.REST)
@@ -394,6 +565,47 @@ class VertexAiGeminiChatModelIT {
 	}
 
 	/**
+	 * See https://github.com/spring-projects/spring-ai/pull/4599
+	 */
+	@Test
+	void testMixedPartsMessages() {
+		VertexAiGeminiChatModel chatModelWithTools = VertexAiGeminiChatModel.builder()
+			.vertexAI(vertexAiApi())
+			.defaultOptions(VertexAiGeminiChatOptions.builder().model("gemini-2.5-pro").temperature(0.0).build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithTools).build();
+
+		// Create a prompt that will encourage gemini to explain why it is calling tools
+		// as it does.
+		AlarmTools alarmTools = new AlarmTools();
+		String response = chatClient.prompt()
+			.tools(new CurrentTimeTools(), alarmTools)
+			.system("You MUST include reasoning when you issue tool calls.")
+			.user("Set an alarm for an hour from now, and tell me what time that was for.")
+			.call()
+			.content();
+
+		assertThat(response).contains("I have set an alarm for 11:10 AM.");
+		assertThat(alarmTools.getAlarm()).isEqualTo("2025-05-08T11:10:10+02:00");
+	}
+
+	public static class AlarmTools {
+
+		private String alarm;
+
+		@Tool(description = "Set a user alarm for the given time, provided in ISO-8601 format")
+		void setAlarm(String time) {
+			this.alarm = time;
+		}
+
+		public String getAlarm() {
+			return this.alarm;
+		}
+
+	}
+
+	/**
 	 * Tool class that returns a JSON array to test the jsonToStruct method's ability to
 	 * handle JSON arrays. This specifically tests the PR changes that improve the
 	 * jsonToStruct method to handle JSON arrays in addition to JSON objects.
@@ -434,8 +646,8 @@ class VertexAiGeminiChatModelIT {
 
 		@Bean
 		public VertexAI vertexAiApi() {
-			String projectId = System.getenv("VERTEX_AI_GEMINI_PROJECT_ID");
-			String location = System.getenv("VERTEX_AI_GEMINI_LOCATION");
+			String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+			String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 			return new VertexAI.Builder().setProjectId(projectId)
 				.setLocation(location)
 				.setTransport(Transport.REST)

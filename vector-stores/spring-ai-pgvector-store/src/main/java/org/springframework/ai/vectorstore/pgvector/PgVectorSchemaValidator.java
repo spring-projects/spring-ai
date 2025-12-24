@@ -33,13 +33,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class PgVectorSchemaValidator {
+class PgVectorSchemaValidator {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorSchemaValidator.class);
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
+	PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -64,7 +64,7 @@ public class PgVectorSchemaValidator {
 
 	}
 
-	public boolean isTableExists(String schemaName, String tableName) {
+	boolean isTableExists(String schemaName, String tableName) {
 		String sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
@@ -131,7 +131,7 @@ public class PgVectorSchemaValidator {
 
 		}
 		catch (DataAccessException | IllegalStateException e) {
-			logger.error("Error while validating table schema" + e.getMessage());
+			logger.error("Error while validating table schema{}", e.getMessage());
 			logger
 				.error("Failed to operate with the specified table in the database. To resolve this issue, please ensure the following steps are completed:\n"
 						+ "1. Ensure the necessary PostgreSQL extensions are enabled. Run the following SQL commands:\n"

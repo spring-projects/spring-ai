@@ -49,19 +49,19 @@ public abstract class BaseOllamaIT {
 	/**
 	 * Initialize the Ollama container and API with the specified model. This method
 	 * should be called from @BeforeAll in subclasses.
-	 * @param model the Ollama model to initialize (must not be null or empty)
+	 * @param models the Ollama models to initialize (must not be null or empty)
 	 * @return configured OllamaApi instance
 	 * @throws IllegalArgumentException if model is null or empty
 	 */
-	protected static OllamaApi initializeOllama(final String model) {
-		Assert.hasText(model, "Model name must be provided");
+	protected static OllamaApi initializeOllama(String... models) {
+		Assert.notEmpty(models, "at least one model name must be provided");
 
 		if (!SKIP_CONTAINER_CREATION) {
 			ollamaContainer = new OllamaContainer(OllamaImage.DEFAULT_IMAGE).withReuse(true);
 			ollamaContainer.start();
 		}
 
-		final OllamaApi api = buildOllamaApiWithModel(model);
+		final OllamaApi api = buildOllamaApiWithModel(models);
 		ollamaApi.set(api);
 		return api;
 	}
@@ -84,20 +84,22 @@ public abstract class BaseOllamaIT {
 		}
 	}
 
-	private static OllamaApi buildOllamaApiWithModel(final String model) {
+	private static OllamaApi buildOllamaApiWithModel(String... models) {
 		final String baseUrl = SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
 		final OllamaApi api = OllamaApi.builder().baseUrl(baseUrl).build();
-		ensureModelIsPresent(api, model);
+		ensureModelIsPresent(api, models);
 		return api;
 	}
 
-	private static void ensureModelIsPresent(final OllamaApi ollamaApi, final String model) {
+	private static void ensureModelIsPresent(final OllamaApi ollamaApi, String... models) {
 		final var modelManagementOptions = ModelManagementOptions.builder()
 			.maxRetries(DEFAULT_MAX_RETRIES)
 			.timeout(DEFAULT_TIMEOUT)
 			.build();
 		final var ollamaModelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
-		ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
+		for (String model : models) {
+			ollamaModelManager.pullModel(model, PullModelStrategy.WHEN_MISSING);
+		}
 	}
 
 }

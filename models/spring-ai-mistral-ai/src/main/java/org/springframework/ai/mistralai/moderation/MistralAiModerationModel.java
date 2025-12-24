@@ -23,6 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationRequest;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResponse;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResult;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
@@ -34,16 +37,13 @@ import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-
-import static org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationRequest;
-import static org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResponse;
-import static org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResult;
 
 /**
  * @author Ricken Bazolo
+ * @author Jason Smith
  */
 public class MistralAiModerationModel implements ModerationModel {
 
@@ -54,17 +54,6 @@ public class MistralAiModerationModel implements ModerationModel {
 	private final RetryTemplate retryTemplate;
 
 	private final MistralAiModerationOptions defaultOptions;
-
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE,
-				MistralAiModerationOptions.builder()
-					.model(MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue())
-					.build());
-	}
-
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, MistralAiModerationOptions options) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE, options);
-	}
 
 	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, RetryTemplate retryTemplate,
 			MistralAiModerationOptions options) {
@@ -78,7 +67,8 @@ public class MistralAiModerationModel implements ModerationModel {
 
 	@Override
 	public ModerationResponse call(ModerationPrompt moderationPrompt) {
-		return this.retryTemplate.execute(ctx -> {
+
+		return RetryUtils.execute(this.retryTemplate, () -> {
 
 			var instructions = moderationPrompt.getInstructions().getText();
 
@@ -89,7 +79,8 @@ public class MistralAiModerationModel implements ModerationModel {
 						MistralAiModerationRequest.class);
 			}
 			else {
-				// moderationPrompt.getOptions() never null but model can be empty, cause
+				// moderationPrompt.getOptions() never null but model can be empty,
+				// cause
 				// by ModerationPrompt constructor
 				moderationRequest = ModelOptionsUtils.merge(toMistralAiModerationOptions(moderationPrompt.getOptions()),
 						moderationRequest, MistralAiModerationRequest.class);
@@ -102,10 +93,10 @@ public class MistralAiModerationModel implements ModerationModel {
 	}
 
 	private ModerationResponse convertResponse(ResponseEntity<MistralAiModerationResponse> moderationResponseEntity,
-			MistralAiModerationRequest openAiModerationRequest) {
+			MistralAiModerationRequest mistralAiModerationRequest) {
 		var moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
-			logger.warn("No moderation response returned for request: {}", openAiModerationRequest);
+			logger.warn("No moderation response returned for request: {}", mistralAiModerationRequest);
 			return new ModerationResponse(new Generation());
 		}
 
@@ -166,6 +157,41 @@ public class MistralAiModerationModel implements ModerationModel {
 			mistralAiModerationOptionsBuilder.model(runtimeModerationOptions.getModel());
 		}
 		return mistralAiModerationOptionsBuilder.build();
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static final class Builder {
+
+		private MistralAiModerationApi mistralAiModerationApi;
+
+		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
+
+		private MistralAiModerationOptions options = MistralAiModerationOptions.builder()
+			.model(MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue())
+			.build();
+
+		public Builder mistralAiModerationApi(MistralAiModerationApi mistralAiModerationApi) {
+			this.mistralAiModerationApi = mistralAiModerationApi;
+			return this;
+		}
+
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			this.retryTemplate = retryTemplate;
+			return this;
+		}
+
+		public Builder options(MistralAiModerationOptions options) {
+			this.options = options;
+			return this;
+		}
+
+		public MistralAiModerationModel build() {
+			return new MistralAiModerationModel(this.mistralAiModerationApi, this.retryTemplate, this.options);
+		}
+
 	}
 
 }

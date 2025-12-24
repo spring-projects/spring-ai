@@ -39,7 +39,17 @@ public final class EmbeddingUtils {
 	}
 
 	public static float[] toPrimitive(List<Float> floats) {
-		return toPrimitive(floats.toArray(new Float[floats.size()]));
+		if (floats == null) {
+			return null;
+		}
+		if (floats.isEmpty()) {
+			return EMPTY_FLOAT_ARRAY;
+		}
+		final float[] result = new float[floats.size()];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = floats.get(i);
+		}
+		return result;
 	}
 
 	public static float[] toPrimitive(final Float[] array) {
@@ -72,7 +82,7 @@ public final class EmbeddingUtils {
 
 	public static List<Float> toList(float[] floats) {
 
-		List<Float> output = new ArrayList<Float>();
+		List<Float> output = new ArrayList<>();
 		for (float value : floats) {
 			output.add(value);
 		}

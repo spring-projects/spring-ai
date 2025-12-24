@@ -30,9 +30,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 import org.springframework.ai.anthropic.api.StreamHelper.ChatCompletionResponseBuilder;
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
@@ -45,8 +48,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
@@ -63,9 +64,13 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Jonghoon Park
  * @author Claudio Silva Junior
  * @author Filip Hrisafov
+ * @author Soby Chacko
+ * @author Austin Dase
  * @since 1.0.0
  */
 public final class AnthropicApi {
+
+	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
 
 	public static Builder builder() {
 		return new Builder();
@@ -77,11 +82,21 @@ public final class AnthropicApi {
 
 	public static final String DEFAULT_MESSAGE_COMPLETIONS_PATH = "/v1/messages";
 
+	public static final String FILES_PATH = "/v1/files";
+
 	public static final String DEFAULT_ANTHROPIC_VERSION = "2023-06-01";
 
-	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04,pdfs-2024-09-25";
+	public static final String DEFAULT_ANTHROPIC_BETA_VERSION = "tools-2024-04-04,pdfs-2024-09-25,structured-outputs-2025-11-13";
 
-	public static final String BETA_MAX_TOKENS = "max-tokens-3-5-sonnet-2024-07-15";
+	public static final String BETA_EXTENDED_CACHE_TTL = "extended-cache-ttl-2025-04-11";
+
+	public static final String BETA_SKILLS = "skills-2025-10-02";
+
+	public static final String BETA_FILES_API = "files-api-2025-04-14";
+
+	public static final String BETA_CODE_EXECUTION = "code-execution-2025-08-25";
+
+	public static final String CODE_EXECUTION_TOOL_TYPE = "code_execution_20250825";
 
 	private static final String HEADER_X_API_KEY = "x-api-key";
 
@@ -142,13 +157,27 @@ public final class AnthropicApi {
 	}
 
 	/**
+	 * Create a new client api.
+	 * @param completionsPath path to append to the base URL.
+	 * @param restClient RestClient instance.
+	 * @param webClient WebClient instance.
+	 * @param apiKey Anthropic api Key.
+	 */
+	public AnthropicApi(String completionsPath, RestClient restClient, WebClient webClient, ApiKey apiKey) {
+		this.completionsPath = completionsPath;
+		this.restClient = restClient;
+		this.webClient = webClient;
+		this.apiKey = apiKey;
+	}
+
+	/**
 	 * Creates a model response for the given chat conversation.
 	 * @param chatRequest The chat completion request.
 	 * @return Entity response with {@link ChatCompletionResponse} as a body and HTTP
 	 * status code and headers.
 	 */
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest) {
-		return chatCompletionEntity(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionEntity(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -159,7 +188,7 @@ public final class AnthropicApi {
 	 * status code and headers.
 	 */
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
@@ -185,7 +214,7 @@ public final class AnthropicApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest) {
-		return chatCompletionStream(chatRequest, new LinkedMultiValueMap<>());
+		return chatCompletionStream(chatRequest, new HttpHeaders());
 	}
 
 	/**
@@ -196,7 +225,7 @@ public final class AnthropicApi {
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest,
-			MultiValueMap<String, String> additionalHttpHeader) {
+			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
 		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
@@ -222,6 +251,8 @@ public final class AnthropicApi {
 			.filter(event -> event.type() != EventType.PING)
 			// Detect if the chunk is part of a streaming function call.
 			.map(event -> {
+				logger.debug("Received event: {}", event);
+
 				if (this.streamHelper.isToolUseStart(event)) {
 					isInsideTool.set(true);
 				}
@@ -246,8 +277,99 @@ public final class AnthropicApi {
 			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
 	}
 
+	// ------------------------------------------------------------------------
+	// Files API Methods
+	// ------------------------------------------------------------------------
+
+	/**
+	 * Get metadata for a specific file generated by Skills or uploaded via Files API.
+	 * @param fileId The file ID to retrieve (format: file_*)
+	 * @return File metadata including filename, size, mime type, and expiration
+	 */
+	public FileMetadata getFileMetadata(String fileId) {
+		Assert.hasText(fileId, "File ID cannot be empty");
+
+		return this.restClient.get()
+			.uri(FILES_PATH + "/{id}", fileId)
+			.headers(headers -> {
+				addDefaultHeadersIfMissing(headers);
+				// Append files-api beta to existing beta headers if not already present
+				String existingBeta = headers.getFirst(HEADER_ANTHROPIC_BETA);
+				if (existingBeta != null && !existingBeta.contains(BETA_FILES_API)) {
+					headers.set(HEADER_ANTHROPIC_BETA, existingBeta + "," + BETA_FILES_API);
+				}
+				else if (existingBeta == null) {
+					headers.set(HEADER_ANTHROPIC_BETA, BETA_FILES_API);
+				}
+			})
+			.retrieve()
+			.body(FileMetadata.class);
+	}
+
+	/**
+	 * Download file content as byte array. Suitable for small to medium files.
+	 * @param fileId The file ID to download
+	 * @return File content as bytes
+	 */
+	public byte[] downloadFile(String fileId) {
+		Assert.hasText(fileId, "File ID cannot be empty");
+
+		return this.restClient.get()
+			.uri(FILES_PATH + "/{id}/content", fileId)
+			.headers(headers -> {
+				addDefaultHeadersIfMissing(headers);
+				// Append files-api beta to existing beta headers if not already present
+				String existingBeta = headers.getFirst(HEADER_ANTHROPIC_BETA);
+				if (existingBeta != null && !existingBeta.contains(BETA_FILES_API)) {
+					headers.set(HEADER_ANTHROPIC_BETA, existingBeta + "," + BETA_FILES_API);
+				}
+				else if (existingBeta == null) {
+					headers.set(HEADER_ANTHROPIC_BETA, BETA_FILES_API);
+				}
+			})
+			.retrieve()
+			.body(byte[].class);
+	}
+
+	/**
+	 * List all files with optional pagination.
+	 * @param limit Maximum number of results per page (default 20, max 100)
+	 * @param page Pagination token from previous response
+	 * @return Paginated list of files
+	 */
+	public FilesListResponse listFiles(Integer limit, String page) {
+		return this.restClient.get()
+			.uri(uriBuilder -> {
+				uriBuilder.path(FILES_PATH);
+				if (limit != null) {
+					uriBuilder.queryParam("limit", limit);
+				}
+				if (page != null) {
+					uriBuilder.queryParam("page", page);
+				}
+				return uriBuilder.build();
+			})
+			.retrieve()
+			.body(FilesListResponse.class);
+	}
+
+	/**
+	 * Delete a file. Files expire automatically after 24 hours, but this allows
+	 * immediate cleanup.
+	 * @param fileId The file ID to delete
+	 */
+	public void deleteFile(String fileId) {
+		Assert.hasText(fileId, "File ID cannot be empty");
+
+		this.restClient.delete().uri(FILES_PATH + "/{id}", fileId).retrieve().toBodilessEntity();
+	}
+
+	// ------------------------------------------------------------------------
+	// Private Helper Methods
+	// ------------------------------------------------------------------------
+
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
-		if (!headers.containsKey(HEADER_X_API_KEY)) {
+		if (!headers.containsHeader(HEADER_X_API_KEY)) {
 			String apiKeyValue = this.apiKey.getValue();
 			if (StringUtils.hasText(apiKeyValue)) {
 				headers.add(HEADER_X_API_KEY, apiKeyValue);
@@ -265,14 +387,34 @@ public final class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-sonnet-4-5 model.
+		 */
+		CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
+
+		/**
+		 * The claude-opus-4-5 model.
+		 */
+		CLAUDE_OPUS_4_5("claude-opus-4-5"),
+
+		/**
+		 * The claude-haiku-4-5 model.
+		 */
+		CLAUDE_HAIKU_4_5("claude-haiku-4-5"),
+
+		/**
+		 * The claude-opus-4-1 model.
+		 */
+		CLAUDE_OPUS_4_1("claude-opus-4-1"),
+
+		/**
 		 * The claude-opus-4-0 model.
 		 */
-		CLAUDE_OPUS_4("claude-opus-4-0"),
+		CLAUDE_OPUS_4_0("claude-opus-4-0"),
 
 		/**
 		 * The claude-sonnet-4-0 model.
 		 */
-		CLAUDE_SONNET_4("claude-sonnet-4-0"),
+		CLAUDE_SONNET_4_0("claude-sonnet-4-0"),
 
 		/**
 		 * The claude-3-7-sonnet-latest model.
@@ -280,7 +422,7 @@ public final class AnthropicApi {
 		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
 
 		/**
-		 * The claude-3-5-sonnet-latest model.
+		 * The claude-3-5-sonnet-latest model.(Deprecated on October 28, 2025)
 		 */
 		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
 
@@ -302,18 +444,7 @@ public final class AnthropicApi {
 		/**
 		 * The CLAUDE_3_HAIKU
 		 */
-		CLAUDE_3_HAIKU("claude-3-haiku-20240307"),
-
-		// Legacy models
-		/**
-		 * The CLAUDE_2_1 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2_1("claude-2.1"),
-
-		/**
-		 * The CLAUDE_2_0 (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_2("claude-2.0");
+		CLAUDE_3_HAIKU("claude-3-haiku-20240307");
 
 		// @formatter:on
 
@@ -381,6 +512,266 @@ public final class AnthropicApi {
 		DISABLED
 
 	}
+
+	/**
+	 * Types of Claude Skills.
+	 */
+	public enum SkillType {
+
+		/**
+		 * Pre-built skills provided by Anthropic (xlsx, pptx, docx, pdf).
+		 */
+		@JsonProperty("anthropic")
+		ANTHROPIC("anthropic"),
+
+		/**
+		 * Custom skills uploaded to the workspace.
+		 */
+		@JsonProperty("custom")
+		CUSTOM("custom");
+
+		private final String value;
+
+		SkillType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	/**
+	 * Pre-built Anthropic Skills for document generation.
+	 */
+	public enum AnthropicSkill {
+
+		// @formatter:off
+		/**
+		 * Excel spreadsheet generation and manipulation.
+		 */
+		XLSX("xlsx", "Excel spreadsheet generation"),
+
+		/**
+		 * PowerPoint presentation creation.
+		 */
+		PPTX("pptx", "PowerPoint presentation creation"),
+
+		/**
+		 * Word document generation.
+		 */
+		DOCX("docx", "Word document generation"),
+
+		/**
+		 * PDF document creation.
+		 */
+		PDF("pdf", "PDF document creation");
+		// @formatter:on
+
+		private final String skillId;
+
+		private final String description;
+
+		AnthropicSkill(String skillId, String description) {
+			this.skillId = skillId;
+			this.description = description;
+		}
+
+		public String getSkillId() {
+			return this.skillId;
+		}
+
+		public String getDescription() {
+			return this.description;
+		}
+
+		/**
+		 * Convert to a Skill record with latest version.
+		 * @return Skill record
+		 */
+		public Skill toSkill() {
+			return new Skill(SkillType.ANTHROPIC, this.skillId, "latest");
+		}
+
+		/**
+		 * Convert to a Skill record with specific version.
+		 * @param version Version string
+		 * @return Skill record
+		 */
+		public Skill toSkill(String version) {
+			return new Skill(SkillType.ANTHROPIC, this.skillId, version);
+		}
+
+	}
+
+	/**
+	 * Represents a Claude Skill - either pre-built Anthropic skill or custom skill.
+	 * Skills are collections of instructions, scripts, and resources that extend Claude's
+	 * capabilities for specific domains.
+	 *
+	 * @param type The skill type: "anthropic" for pre-built skills, "custom" for uploaded
+	 * skills
+	 * @param skillId Skill identifier - short name for Anthropic skills (e.g., "xlsx",
+	 * "pptx"), generated ID for custom skills
+	 * @param version Optional version - "latest", date-based (e.g., "20251013"), or epoch
+	 * timestamp
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record Skill(@JsonProperty("type") SkillType type, @JsonProperty("skill_id") String skillId,
+			@JsonProperty("version") String version) {
+
+		/**
+		 * Create a Skill with default "latest" version.
+		 * @param type Skill type
+		 * @param skillId Skill ID
+		 */
+		public Skill(SkillType type, String skillId) {
+			this(type, skillId, "latest");
+		}
+
+		public static SkillBuilder builder() {
+			return new SkillBuilder();
+		}
+
+		public static final class SkillBuilder {
+
+			private SkillType type;
+
+			private String skillId;
+
+			private String version = "latest";
+
+			public SkillBuilder type(SkillType type) {
+				this.type = type;
+				return this;
+			}
+
+			public SkillBuilder skillId(String skillId) {
+				this.skillId = skillId;
+				return this;
+			}
+
+			public SkillBuilder version(String version) {
+				this.version = version;
+				return this;
+			}
+
+			public Skill build() {
+				Assert.notNull(this.type, "Skill type cannot be null");
+				Assert.hasText(this.skillId, "Skill ID cannot be empty");
+				return new Skill(this.type, this.skillId, this.version);
+			}
+
+		}
+
+	}
+
+	/**
+	 * Container for Claude Skills in a chat completion request. Maximum of 8 skills per
+	 * request.
+	 *
+	 * @param skills List of skills to make available to Claude
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record SkillContainer(@JsonProperty("skills") List<Skill> skills) {
+
+		public SkillContainer {
+			Assert.notNull(skills, "Skills list cannot be null");
+			Assert.notEmpty(skills, "Skills list cannot be empty");
+			if (skills.size() > 8) {
+				throw new IllegalArgumentException("Maximum of 8 skills per request. Provided: " + skills.size());
+			}
+		}
+
+		public static SkillContainerBuilder builder() {
+			return new SkillContainerBuilder();
+		}
+
+		public static final class SkillContainerBuilder {
+
+			private final List<Skill> skills = new ArrayList<>();
+
+			public SkillContainerBuilder skill(Skill skill) {
+				Assert.notNull(skill, "Skill cannot be null");
+				this.skills.add(skill);
+				return this;
+			}
+
+			public SkillContainerBuilder skill(SkillType type, String skillId) {
+				return skill(new Skill(type, skillId));
+			}
+
+			public SkillContainerBuilder skill(SkillType type, String skillId, String version) {
+				return skill(new Skill(type, skillId, version));
+			}
+
+			public SkillContainerBuilder anthropicSkill(AnthropicSkill skill) {
+				return skill(skill.toSkill());
+			}
+
+			public SkillContainerBuilder anthropicSkill(AnthropicSkill skill, String version) {
+				return skill(skill.toSkill(version));
+			}
+
+			public SkillContainerBuilder customSkill(String skillId) {
+				return skill(SkillType.CUSTOM, skillId);
+			}
+
+			public SkillContainerBuilder customSkill(String skillId, String version) {
+				return skill(SkillType.CUSTOM, skillId, version);
+			}
+
+			public SkillContainerBuilder skills(List<Skill> skills) {
+				Assert.notNull(skills, "Skills list cannot be null");
+				this.skills.addAll(skills);
+				return this;
+			}
+
+			public SkillContainer build() {
+				return new SkillContainer(new ArrayList<>(this.skills));
+			}
+
+		}
+
+	}
+
+	// @formatter:off
+	/**
+	 * Metadata for a file generated by Claude Skills or uploaded via Files API.
+	 * Files expire after a certain period (typically 24 hours).
+	 *
+	 * @param id Unique file identifier (format: file_*)
+	 * @param filename Original filename with extension
+	 * @param size File size in bytes
+	 * @param mimeType MIME type (e.g., application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+	 * @param createdAt When the file was created (ISO 8601 timestamp)
+	 * @param expiresAt When the file will be automatically deleted (ISO 8601 timestamp)
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record FileMetadata(
+			@JsonProperty("id") String id,
+			@JsonProperty("filename") String filename,
+			@JsonProperty("size") Long size,
+			@JsonProperty("mime_type") String mimeType,
+			@JsonProperty("created_at") String createdAt,
+			@JsonProperty("expires_at") String expiresAt) {
+	}
+
+	/**
+	 * Paginated list of files response from the Files API.
+	 *
+	 * @param data List of file metadata objects
+	 * @param hasMore Whether more results exist
+	 * @param nextPage Pagination token for next page
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record FilesListResponse(
+			@JsonProperty("data") List<FileMetadata> data,
+			@JsonProperty("has_more") Boolean hasMore,
+			@JsonProperty("next_page") String nextPage) {
+	}
+	// @formatter:on
 
 	/**
 	 * The event type of the streamed chunk.
@@ -466,8 +857,10 @@ public final class AnthropicApi {
 	 * <a href="https://docs.anthropic.com/claude/docs/models-overview">models</a> for
 	 * additional details and options.
 	 * @param messages Input messages.
-	 * @param system System prompt. A system prompt is a way of providing context and
-	 * instructions to Claude, such as specifying a particular goal or role. See our
+	 * @param system System prompt. Can be a String (for compatibility) or a
+	 * List&lt;ContentBlock&gt; (for caching support). A system prompt is a way of
+	 * providing context and instructions to Claude, such as specifying a particular goal
+	 * or role. See our
 	 * <a href="https://docs.anthropic.com/claude/docs/system-prompts">guide</a> to system
 	 * prompts.
 	 * @param maxTokens The maximum number of tokens to generate before stopping. Note
@@ -500,15 +893,19 @@ public final class AnthropicApi {
 	 * return tool_use content blocks that represent the model's use of those tools. You
 	 * can then run those tools using the tool input generated by the model and then
 	 * optionally return results back to the model using tool_result content blocks.
+	 * @param toolChoice How the model should use the provided tools. The model can use a
+	 * specific tool, any available tool, decide by itself, or not use tools at all.
 	 * @param thinking Configuration for the model's thinking mode. When enabled, the
 	 * model can perform more in-depth reasoning before responding to a query.
+	 * @param outputFormat Output format configuration for structured outputs.
+	 * @param container Container for Claude Skills configuration.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("messages") List<AnthropicMessage> messages,
-		@JsonProperty("system") String system,
+		@JsonProperty("system") Object system,
 		@JsonProperty("max_tokens") Integer maxTokens,
 		@JsonProperty("metadata") Metadata metadata,
 		@JsonProperty("stop_sequences") List<String> stopSequences,
@@ -517,17 +914,22 @@ public final class AnthropicApi {
 		@JsonProperty("top_p") Double topP,
 		@JsonProperty("top_k") Integer topK,
 		@JsonProperty("tools") List<Tool> tools,
-		@JsonProperty("thinking") ThinkingConfig thinking) {
+		@JsonProperty("tool_choice") ToolChoice toolChoice,
+		@JsonProperty("thinking") ThinkingConfig thinking,
+		@JsonProperty("output_format") OutputFormat outputFormat,
+		@JsonProperty("container") SkillContainer container) {
 		// @formatter:on
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				Double temperature, Boolean stream) {
-			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null);
+			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null, null,
+					null, null);
 		}
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, String system, Integer maxTokens,
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				List<String> stopSequences, Double temperature, Boolean stream) {
-			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null);
+			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null,
+					null, null, null);
 		}
 
 		public static ChatCompletionRequestBuilder builder() {
@@ -536,6 +938,15 @@ public final class AnthropicApi {
 
 		public static ChatCompletionRequestBuilder from(ChatCompletionRequest request) {
 			return new ChatCompletionRequestBuilder(request);
+		}
+
+		@JsonInclude(Include.NON_NULL)
+		public record OutputFormat(@JsonProperty("type") String type,
+				@JsonProperty("schema") Map<String, Object> schema) {
+
+			public OutputFormat(String jsonSchema) {
+				this("json_schema", ModelOptionsUtils.jsonToMap(jsonSchema));
+			}
 		}
 
 		/**
@@ -549,6 +960,18 @@ public final class AnthropicApi {
 		@JsonInclude(Include.NON_NULL)
 		public record Metadata(@JsonProperty("user_id") String userId) {
 
+		}
+
+		/**
+		 * @param type is the cache type supported by anthropic. <a href=
+		 * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record CacheControl(@JsonProperty("type") String type, @JsonProperty("ttl") String ttl) {
+
+			public CacheControl(String type) {
+				this(type, "5m");
+			}
 		}
 
 		/**
@@ -571,7 +994,7 @@ public final class AnthropicApi {
 
 		private List<AnthropicMessage> messages;
 
-		private String system;
+		private Object system;
 
 		private Integer maxTokens;
 
@@ -589,7 +1012,13 @@ public final class AnthropicApi {
 
 		private List<Tool> tools;
 
+		private ToolChoice toolChoice;
+
 		private ChatCompletionRequest.ThinkingConfig thinking;
+
+		private ChatCompletionRequest.OutputFormat outputFormat;
+
+		private SkillContainer container;
 
 		private ChatCompletionRequestBuilder() {
 		}
@@ -606,7 +1035,10 @@ public final class AnthropicApi {
 			this.topP = request.topP;
 			this.topK = request.topK;
 			this.tools = request.tools;
+			this.toolChoice = request.toolChoice;
 			this.thinking = request.thinking;
+			this.outputFormat = request.outputFormat;
+			this.container = request.container;
 		}
 
 		public ChatCompletionRequestBuilder model(ChatModel model) {
@@ -624,7 +1056,7 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder system(String system) {
+		public ChatCompletionRequestBuilder system(Object system) {
 			this.system = system;
 			return this;
 		}
@@ -669,6 +1101,11 @@ public final class AnthropicApi {
 			return this;
 		}
 
+		public ChatCompletionRequestBuilder toolChoice(ToolChoice toolChoice) {
+			this.toolChoice = toolChoice;
+			return this;
+		}
+
 		public ChatCompletionRequestBuilder thinking(ChatCompletionRequest.ThinkingConfig thinking) {
 			this.thinking = thinking;
 			return this;
@@ -679,9 +1116,27 @@ public final class AnthropicApi {
 			return this;
 		}
 
+		public ChatCompletionRequestBuilder outputFormat(ChatCompletionRequest.OutputFormat outputFormat) {
+			this.outputFormat = outputFormat;
+			return this;
+		}
+
+		public ChatCompletionRequestBuilder container(SkillContainer container) {
+			this.container = container;
+			return this;
+		}
+
+		public ChatCompletionRequestBuilder skills(List<Skill> skills) {
+			if (skills != null && !skills.isEmpty()) {
+				this.container = new SkillContainer(skills);
+			}
+			return this;
+		}
+
 		public ChatCompletionRequest build() {
 			return new ChatCompletionRequest(this.model, this.messages, this.system, this.maxTokens, this.metadata,
-					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools, this.thinking);
+					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools,
+					this.toolChoice, this.thinking, this.outputFormat, this.container);
 		}
 
 	}
@@ -714,6 +1169,53 @@ public final class AnthropicApi {
 		@JsonProperty("content") List<ContentBlock> content,
 		@JsonProperty("role") Role role) {
 		// @formatter:on
+	}
+
+	/**
+	 * Citations configuration for document ContentBlocks.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record CitationsConfig(@JsonProperty("enabled") Boolean enabled) {
+	}
+
+	/**
+	 * Citation response structure from Anthropic API. Maps to the actual API response
+	 * format for citations. Contains location information that varies by document type:
+	 * character indices for plain text, page numbers for PDFs, or content block indices
+	 * for custom content.
+	 *
+	 * @param type The citation location type ("char_location", "page_location", or
+	 * "content_block_location")
+	 * @param citedText The text that was cited from the document
+	 * @param documentIndex The index of the document that was cited (0-based)
+	 * @param documentTitle The title of the document that was cited
+	 * @param startCharIndex The starting character index for "char_location" type
+	 * (0-based, inclusive)
+	 * @param endCharIndex The ending character index for "char_location" type (exclusive)
+	 * @param startPageNumber The starting page number for "page_location" type (1-based,
+	 * inclusive)
+	 * @param endPageNumber The ending page number for "page_location" type (exclusive)
+	 * @param startBlockIndex The starting content block index for
+	 * "content_block_location" type (0-based, inclusive)
+	 * @param endBlockIndex The ending content block index for "content_block_location"
+	 * type (exclusive)
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record CitationResponse(@JsonProperty("type") String type, @JsonProperty("cited_text") String citedText,
+			@JsonProperty("document_index") Integer documentIndex, @JsonProperty("document_title") String documentTitle,
+
+			// For char_location type
+			@JsonProperty("start_char_index") Integer startCharIndex,
+			@JsonProperty("end_char_index") Integer endCharIndex,
+
+			// For page_location type
+			@JsonProperty("start_page_number") Integer startPageNumber,
+			@JsonProperty("end_page_number") Integer endPageNumber,
+
+			// For content_block_location type
+			@JsonProperty("start_block_index") Integer startBlockIndex,
+			@JsonProperty("end_block_index") Integer endBlockIndex) {
 	}
 
 	/**
@@ -750,15 +1252,27 @@ public final class AnthropicApi {
 
 		// tool_result response only
 		@JsonProperty("tool_use_id") String toolUseId,
-		@JsonProperty("content") String content,
+		@JsonProperty("content") Object content,
 
 		// Thinking only
 		@JsonProperty("signature") String signature,
 		@JsonProperty("thinking") String thinking,
 
 		// Redacted Thinking only
-		@JsonProperty("data") String data
-		) {
+		@JsonProperty("data") String data,
+
+		// cache object
+		@JsonProperty("cache_control") CacheControl cacheControl,
+
+		// Citation fields
+		@JsonProperty("title") String title,
+		@JsonProperty("context") String context,
+		@JsonProperty("citations") Object citations, // Can be CitationsConfig for requests or List<CitationResponse> for responses
+
+		// File fields (for Skills-generated files)
+		@JsonProperty("file_id") String fileId,
+		@JsonProperty("filename") String filename
+	) {
 		// @formatter:on
 
 		/**
@@ -776,7 +1290,8 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Type type, Source source) {
-			this(type, source, null, null, null, null, null, null, null, null, null, null);
+			this(type, source, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null);
 		}
 
 		/**
@@ -784,7 +1299,8 @@ public final class AnthropicApi {
 		 * @param source The source of the content.
 		 */
 		public ContentBlock(Source source) {
-			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null);
+			this(Type.IMAGE, source, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null);
 		}
 
 		/**
@@ -792,7 +1308,13 @@ public final class AnthropicApi {
 		 * @param text The text of the content.
 		 */
 		public ContentBlock(String text) {
-			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null);
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null);
+		}
+
+		public ContentBlock(String text, CacheControl cache) {
+			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, cache, null, null, null,
+					null, null);
 		}
 
 		// Tool result
@@ -802,8 +1324,9 @@ public final class AnthropicApi {
 		 * @param toolUseId The id of the tool use.
 		 * @param content The content of the tool result.
 		 */
-		public ContentBlock(Type type, String toolUseId, String content) {
-			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null);
+		public ContentBlock(Type type, String toolUseId, Object content) {
+			this(type, null, null, null, null, null, null, toolUseId, content, null, null, null, null, null, null, null,
+					null, null);
 		}
 
 		/**
@@ -814,7 +1337,8 @@ public final class AnthropicApi {
 		 * @param index The index of the content block.
 		 */
 		public ContentBlock(Type type, Source source, String text, Integer index) {
-			this(type, source, text, index, null, null, null, null, null, null, null, null);
+			this(type, source, text, index, null, null, null, null, null, null, null, null, null, null, null, null,
+					null, null);
 		}
 
 		// Tool use input JSON delta streaming
@@ -826,7 +1350,26 @@ public final class AnthropicApi {
 		 * @param input The input of the tool use.
 		 */
 		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
-			this(type, null, null, null, id, name, input, null, null, null, null, null);
+			this(type, null, null, null, id, name, input, null, null, null, null, null, null, null, null, null, null,
+					null);
+		}
+
+		/**
+		 * Create a document ContentBlock with citations and optional caching.
+		 * @param source The document source
+		 * @param title Optional document title
+		 * @param context Optional document context
+		 * @param citationsEnabled Whether citations are enabled
+		 * @param cacheControl Optional cache control (can be null)
+		 */
+		public ContentBlock(Source source, String title, String context, boolean citationsEnabled,
+				CacheControl cacheControl) {
+			this(Type.DOCUMENT, source, null, null, null, null, null, null, null, null, null, null, cacheControl, title,
+					context, citationsEnabled ? new CitationsConfig(true) : null, null, null);
+		}
+
+		public static ContentBlockBuilder from(ContentBlock contentBlock) {
+			return new ContentBlockBuilder(contentBlock);
 		}
 
 		/**
@@ -859,7 +1402,7 @@ public final class AnthropicApi {
 			TEXT_DELTA("text_delta"),
 
 			/**
-			 * When using extended thinking with streaming enabled, you’ll receive
+			 * When using extended thinking with streaming enabled, you'll receive
 			 * thinking content via thinking_delta events. These deltas correspond to the
 			 * thinking field of the thinking content blocks.
 			 */
@@ -902,7 +1445,38 @@ public final class AnthropicApi {
 			 * Redacted Thinking message.
 			 */
 			@JsonProperty("redacted_thinking")
-			REDACTED_THINKING("redacted_thinking");
+			REDACTED_THINKING("redacted_thinking"),
+
+			/**
+			 * File content block representing a file generated by Skills. Used in
+			 * {@link org.springframework.ai.anthropic.SkillsResponseHelper} to extract
+			 * file IDs for downloading generated documents.
+			 */
+			@JsonProperty("file")
+			FILE("file"),
+
+			/**
+			 * Bash code execution tool result returned in Skills responses. Observed in
+			 * actual API responses where file IDs are nested within this content block.
+			 * Required for JSON deserialization.
+			 */
+			@JsonProperty("bash_code_execution_tool_result")
+			BASH_CODE_EXECUTION_TOOL_RESULT("bash_code_execution_tool_result"),
+
+			/**
+			 * Text editor code execution tool result returned in Skills responses.
+			 * Observed in actual API responses. Required for JSON deserialization.
+			 */
+			@JsonProperty("text_editor_code_execution_tool_result")
+			TEXT_EDITOR_CODE_EXECUTION_TOOL_RESULT("text_editor_code_execution_tool_result"),
+
+			/**
+			 * Server-side tool use returned in Skills responses. Observed in actual API
+			 * responses when Skills invoke server-side tools. Required for JSON
+			 * deserialization.
+			 */
+			@JsonProperty("server_tool_use")
+			SERVER_TOOL_USE("server_tool_use");
 
 			public final String value;
 
@@ -935,7 +1509,8 @@ public final class AnthropicApi {
 			@JsonProperty("type") String type,
 			@JsonProperty("media_type") String mediaType,
 			@JsonProperty("data") String data,
-			@JsonProperty("url") String url) {
+			@JsonProperty("url") String url,
+			@JsonProperty("content") List<ContentBlock> content) {
 			// @formatter:on
 
 			/**
@@ -944,15 +1519,144 @@ public final class AnthropicApi {
 			 * @param data The content data.
 			 */
 			public Source(String mediaType, String data) {
-				this("base64", mediaType, data, null);
+				this("base64", mediaType, data, null, null);
 			}
 
 			public Source(String url) {
-				this("url", null, null, url);
+				this("url", null, null, url, null);
+			}
+
+			public Source(List<ContentBlock> content) {
+				this("content", null, null, null, content);
 			}
 
 		}
 
+		public static class ContentBlockBuilder {
+
+			private Type type;
+
+			private Source source;
+
+			private String text;
+
+			private Integer index;
+
+			private String id;
+
+			private String name;
+
+			private Map<String, Object> input;
+
+			private String toolUseId;
+
+			private Object content;
+
+			private String signature;
+
+			private String thinking;
+
+			private String data;
+
+			private CacheControl cacheControl;
+
+			private String title;
+
+			private String context;
+
+			private Object citations;
+
+			public ContentBlockBuilder(ContentBlock contentBlock) {
+				this.type = contentBlock.type;
+				this.source = contentBlock.source;
+				this.text = contentBlock.text;
+				this.index = contentBlock.index;
+				this.id = contentBlock.id;
+				this.name = contentBlock.name;
+				this.input = contentBlock.input;
+				this.toolUseId = contentBlock.toolUseId;
+				this.content = contentBlock.content;
+				this.signature = contentBlock.signature;
+				this.thinking = contentBlock.thinking;
+				this.data = contentBlock.data;
+				this.cacheControl = contentBlock.cacheControl;
+				this.title = contentBlock.title;
+				this.context = contentBlock.context;
+				this.citations = contentBlock.citations;
+			}
+
+			public ContentBlockBuilder type(Type type) {
+				this.type = type;
+				return this;
+			}
+
+			public ContentBlockBuilder source(Source source) {
+				this.source = source;
+				return this;
+			}
+
+			public ContentBlockBuilder text(String text) {
+				this.text = text;
+				return this;
+			}
+
+			public ContentBlockBuilder index(Integer index) {
+				this.index = index;
+				return this;
+			}
+
+			public ContentBlockBuilder id(String id) {
+				this.id = id;
+				return this;
+			}
+
+			public ContentBlockBuilder name(String name) {
+				this.name = name;
+				return this;
+			}
+
+			public ContentBlockBuilder input(Map<String, Object> input) {
+				this.input = input;
+				return this;
+			}
+
+			public ContentBlockBuilder toolUseId(String toolUseId) {
+				this.toolUseId = toolUseId;
+				return this;
+			}
+
+			public ContentBlockBuilder content(Object content) {
+				this.content = content;
+				return this;
+			}
+
+			public ContentBlockBuilder signature(String signature) {
+				this.signature = signature;
+				return this;
+			}
+
+			public ContentBlockBuilder thinking(String thinking) {
+				this.thinking = thinking;
+				return this;
+			}
+
+			public ContentBlockBuilder data(String data) {
+				this.data = data;
+				return this;
+			}
+
+			public ContentBlockBuilder cacheControl(CacheControl cacheControl) {
+				this.cacheControl = cacheControl;
+				return this;
+			}
+
+			public ContentBlock build() {
+				return new ContentBlock(this.type, this.source, this.text, this.index, this.id, this.name, this.input,
+						this.toolUseId, this.content, this.signature, this.thinking, this.data, this.cacheControl,
+						this.title, this.context, this.citations, null, null);
+			}
+
+		}
 	}
 
 	///////////////////////////////////////
@@ -962,17 +1666,157 @@ public final class AnthropicApi {
 	/**
 	 * Tool description.
 	 *
+	 * @param type The type of the tool (e.g., "code_execution_20250825" for code
+	 * execution).
 	 * @param name The name of the tool.
 	 * @param description A description of the tool.
 	 * @param inputSchema The input schema of the tool.
+	 * @param cacheControl Optional cache control for this tool.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(
 	// @formatter:off
+		@JsonProperty("type") String type,
 		@JsonProperty("name") String name,
 		@JsonProperty("description") String description,
-		@JsonProperty("input_schema") Map<String, Object> inputSchema) {
+		@JsonProperty("input_schema") Map<String, Object> inputSchema,
+		@JsonProperty("cache_control") CacheControl cacheControl) {
 		// @formatter:on
+
+		/**
+		 * Constructor for backward compatibility without type or cache control.
+		 */
+		public Tool(String name, String description, Map<String, Object> inputSchema) {
+			this(null, name, description, inputSchema, null);
+		}
+
+		/**
+		 * Constructor for backward compatibility without cache control.
+		 */
+		public Tool(String type, String name, String description, Map<String, Object> inputSchema) {
+			this(type, name, description, inputSchema, null);
+		}
+
+	}
+
+	/**
+	 * Base interface for tool choice options.
+	 */
+	@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type",
+			visible = true)
+	@JsonSubTypes({ @JsonSubTypes.Type(value = ToolChoiceAuto.class, name = "auto"),
+			@JsonSubTypes.Type(value = ToolChoiceAny.class, name = "any"),
+			@JsonSubTypes.Type(value = ToolChoiceTool.class, name = "tool"),
+			@JsonSubTypes.Type(value = ToolChoiceNone.class, name = "none") })
+	public interface ToolChoice {
+
+		@JsonProperty("type")
+		String type();
+
+	}
+
+	/**
+	 * Auto tool choice - the model will automatically decide whether to use tools.
+	 *
+	 * @param type The type of tool choice, always "auto".
+	 * @param disableParallelToolUse Whether to disable parallel tool use. Defaults to
+	 * false. If set to true, the model will output at most one tool use.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceAuto(@JsonProperty("type") String type,
+			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+
+		/**
+		 * Create an auto tool choice with default settings.
+		 */
+		public ToolChoiceAuto() {
+			this("auto", null);
+		}
+
+		/**
+		 * Create an auto tool choice with specific parallel tool use setting.
+		 * @param disableParallelToolUse Whether to disable parallel tool use.
+		 */
+		public ToolChoiceAuto(Boolean disableParallelToolUse) {
+			this("auto", disableParallelToolUse);
+		}
+
+	}
+
+	/**
+	 * Any tool choice - the model will use any available tools.
+	 *
+	 * @param type The type of tool choice, always "any".
+	 * @param disableParallelToolUse Whether to disable parallel tool use. Defaults to
+	 * false. If set to true, the model will output exactly one tool use.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceAny(@JsonProperty("type") String type,
+			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+
+		/**
+		 * Create an any tool choice with default settings.
+		 */
+		public ToolChoiceAny() {
+			this("any", null);
+		}
+
+		/**
+		 * Create an any tool choice with specific parallel tool use setting.
+		 * @param disableParallelToolUse Whether to disable parallel tool use.
+		 */
+		public ToolChoiceAny(Boolean disableParallelToolUse) {
+			this("any", disableParallelToolUse);
+		}
+
+	}
+
+	/**
+	 * Tool choice - the model will use the specified tool.
+	 *
+	 * @param type The type of tool choice, always "tool".
+	 * @param name The name of the tool to use.
+	 * @param disableParallelToolUse Whether to disable parallel tool use. Defaults to
+	 * false. If set to true, the model will output exactly one tool use.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceTool(@JsonProperty("type") String type, @JsonProperty("name") String name,
+			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+
+		/**
+		 * Create a tool choice for a specific tool.
+		 * @param name The name of the tool to use.
+		 */
+		public ToolChoiceTool(String name) {
+			this("tool", name, null);
+		}
+
+		/**
+		 * Create a tool choice for a specific tool with parallel tool use setting.
+		 * @param name The name of the tool to use.
+		 * @param disableParallelToolUse Whether to disable parallel tool use.
+		 */
+		public ToolChoiceTool(String name, Boolean disableParallelToolUse) {
+			this("tool", name, disableParallelToolUse);
+		}
+
+	}
+
+	/**
+	 * None tool choice - the model will not be allowed to use tools.
+	 *
+	 * @param type The type of tool choice, always "none".
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ToolChoiceNone(@JsonProperty("type") String type) implements ToolChoice {
+
+		/**
+		 * Create a none tool choice.
+		 */
+		public ToolChoiceNone() {
+			this("none");
+		}
+
 	}
 
 	// CB START EVENT
@@ -1003,8 +1847,19 @@ public final class AnthropicApi {
 		@JsonProperty("model") String model,
 		@JsonProperty("stop_reason") String stopReason,
 		@JsonProperty("stop_sequence") String stopSequence,
-		@JsonProperty("usage") Usage usage) {
+		@JsonProperty("usage") Usage usage,
+		@JsonProperty("container") Container container) {
 		// @formatter:on
+
+		/**
+		 * Container information for Skills execution context. Contains container_id that
+		 * can be reused across multi-turn conversations.
+		 *
+		 * @param id Container identifier (format: container_*)
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Container(@JsonProperty("id") String id) {
+		}
 	}
 
 	// CB DELTA EVENT
@@ -1020,7 +1875,9 @@ public final class AnthropicApi {
 	public record Usage(
 	// @formatter:off
 		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens) {
+		@JsonProperty("output_tokens") Integer outputTokens,
+		@JsonProperty("cache_creation_input_tokens") Integer cacheCreationInputTokens,
+		@JsonProperty("cache_read_input_tokens") Integer cacheReadInputTokens) {
 		// @formatter:off
 	}
 
@@ -1060,8 +1917,7 @@ public final class AnthropicApi {
 		  * @return True if the event is empty, false otherwise.
 		*/
 		public boolean isEmpty() {
-			return (this.index == null || this.id == null || this.name == null
-					|| !StringUtils.hasText(this.partialJson));
+			return (this.index == null || this.id == null || this.name == null);
 		}
 
 		ToolUseAggregationEvent withIndex(Integer index) {
@@ -1172,7 +2028,6 @@ public final class AnthropicApi {
 			@JsonProperty("thinking") String thinking,
 			@JsonProperty("signature") String signature) implements ContentBlockBody {
 		}
-		
 	}
 	// @formatter:on
 
@@ -1382,7 +2237,7 @@ public final class AnthropicApi {
 	}
 	// @formatter:on
 
-	public static class Builder {
+	public static final class Builder {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 

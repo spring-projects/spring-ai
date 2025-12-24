@@ -43,7 +43,7 @@ import org.springframework.util.StringUtils;
  * @author Manuel Andreo Garcia
  * @author Ilayaperumal Gopinathan
  */
-@ConditionalOnClass({ OpenAIClientBuilder.class })
+@ConditionalOnClass(OpenAIClientBuilder.class)
 @EnableConfigurationProperties(AzureOpenAiConnectionProperties.class)
 public class AzureOpenAiClientBuilderConfiguration {
 

@@ -38,6 +38,7 @@ import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 /**
@@ -98,7 +99,7 @@ public class ChatClientResponseEntityTests {
 			.prompt()
 			.user("Tell me about them")
 			.call()
-			.responseEntity(new ParameterizedTypeReference<List<MyBean>>() {
+			.responseEntity(new ParameterizedTypeReference<>() {
 
 			});
 
@@ -136,8 +137,104 @@ public class ChatClientResponseEntityTests {
 		assertThat(userMessage.getText()).contains("Tell me about Max");
 	}
 
-	record MyBean(String name, int age) {
+	@Test
+	public void whenEmptyResponseContentThenHandleGracefully() {
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage(""))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
 
+		assertThatThrownBy(() -> ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(MyBean.class)).isInstanceOf(RuntimeException.class);
+	}
+
+	@Test
+	public void whenInvalidJsonResponseThenThrows() {
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("invalid json content"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		assertThatThrownBy(() -> ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(MyBean.class)).isInstanceOf(RuntimeException.class);
+	}
+
+	@Test
+	public void whenParameterizedTypeWithMapThenParseCorrectly() {
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("""
+				{
+					"key1": "value1",
+					"key2": "value2",
+					"key3": "value3"
+				}
+				"""))));
+
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, Map<String, String>> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(new ParameterizedTypeReference<Map<String, String>>() {
+			});
+
+		assertThat(responseEntity.getEntity()).containsEntry("key1", "value1");
+		assertThat(responseEntity.getEntity()).containsEntry("key2", "value2");
+		assertThat(responseEntity.getEntity()).containsEntry("key3", "value3");
+	}
+
+	@Test
+	public void whenEmptyArrayResponseThenReturnEmptyList() {
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("[]"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, List<MyBean>> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("test")
+			.call()
+			.responseEntity(new ParameterizedTypeReference<List<MyBean>>() {
+			});
+
+		assertThat(responseEntity.getEntity()).isEmpty();
+	}
+
+	@Test
+	public void whenBooleanPrimitiveResponseThenParseCorrectly() {
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("true"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, Boolean> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("Is this true?")
+			.call()
+			.responseEntity(Boolean.class);
+
+		assertThat(responseEntity.getEntity()).isTrue();
+	}
+
+	@Test
+	public void whenIntegerResponseThenParseCorrectly() {
+		var chatResponse = new ChatResponse(List.of(new Generation(new AssistantMessage("1"))));
+		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
+
+		ResponseEntity<ChatResponse, Integer> responseEntity = ChatClient.builder(this.chatModel)
+			.build()
+			.prompt()
+			.user("What is the answer?")
+			.call()
+			.responseEntity(Integer.class);
+
+		assertThat(responseEntity.getEntity()).isEqualTo(1);
+	}
+
+	record MyBean(String name, int age) {
 	}
 
 }

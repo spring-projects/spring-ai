@@ -5,7 +5,7 @@ For developers and businesses, you can leverage the API access and build directl
 
 Spring AI supports the Anthropic link:https://docs.anthropic.com/claude/reference/messages_post[Messaging API] for sync and streaming text generations.
 
-TIP: Anthropic’s Claude models are also available through Amazon Bedrock Converse.
+TIP: Anthropic's Claude models are also available through Amazon Bedrock Converse.
 Spring AI provides dedicated xref:api/chat/bedrock-converse.adoc[Amazon Bedrock Converse Anthropic] client implementations as well.
 
 == Prerequisites
@@ -40,7 +40,7 @@ spring:
 export ANTHROPIC_API_KEY=<your-anthropic-api-key>
 ----
 
-You can also set this configuration programmatically in your application code:
+You can also get this configuration programmatically in your application code:
 
 [source,java]
 ----
@@ -149,18 +149,16 @@ The prefix `spring.ai.anthropic.chat` is the property prefix that lets you confi
 
 | spring.ai.anthropic.chat.enabled (Removed and no longer valid) | Enable Anthropic chat model.  | true
 | spring.ai.model.chat | Enable Anthropic chat model.  | anthropic
-| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307` | `claude-3-7-sonnet-latest`
+| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-sonnet-4-5`, `claude-opus-4-5`, `claude-haiku-4-5`, `claude-opus-4-1`, `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-5-haiku-latest`, `claude-3-opus-latest`, `claude-3-haiku-20240307` | `claude-sonnet-4-5`
 | spring.ai.anthropic.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.anthropic.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | 500
 | spring.ai.anthropic.chat.options.stop-sequence | Custom text sequences that will cause the model to stop generating. Our models will normally stop when they have naturally completed their turn, which will result in a response stop_reason of "end_turn". If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter. If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence. | -
 | spring.ai.anthropic.chat.options.top-p | Use nucleus sampling. In nucleus sampling, we compute the cumulative distribution over all the options for each subsequent token in decreasing probability order and cut it off once it reaches a particular probability specified by top_p. You should either alter temperature or top_p, but not both. Recommended for advanced use cases only. You usually only need to use temperature. | -
 | spring.ai.anthropic.chat.options.top-k | Only sample from the top K options for each subsequent token. Used to remove "long tail" low probability responses. Learn more technical details here. Recommended for advanced use cases only. You usually only need to use temperature. | -
-| spring.ai.anthropic.chat.options.toolNames | List of tools, identified by their names, to enable for tool calling in a single prompt requests. Tools with those names must exist in the toolCallbacks registry. | -
-| spring.ai.anthropic.chat.options.toolCallbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.anthropic.chat.options.tool-names | List of tools, identified by their names, to enable for tool calling in a single prompt requests. Tools with those names must exist in the toolCallbacks registry. | -
+| spring.ai.anthropic.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.anthropic.chat.options.toolChoice | Controls which (if any) tool is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a tool. Specifying a particular tool via `{"type: "tool", "name": "my_tool"}` forces the model to call that tool. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
 | spring.ai.anthropic.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
-| (**deprecated** - replaced by `toolNames`) spring.ai.anthropic.chat.options.functions | List of functions, identified by their names, to enable for function calling in a single prompt requests. Functions with those names must exist in the functionCallbacks registry. | -
-| (**deprecated** - replaced by `toolCallbacks`) spring.ai.anthropic.chat.options.functionCallbacks | Tool Function Callbacks to register with the ChatModel. | -
-| (**deprecated** - replaced by a negated `internal-tool-execution-enabled`) spring.ai.anthropic.chat.options.proxy-tool-calls | If true, the Spring AI will not handle the function calls internally, but will proxy them to the client. Then is the client's responsibility to handle the function calls, dispatch them to the appropriate function, and return the results. If false (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | false
 | spring.ai.anthropic.chat.options.http-headers | Optional HTTP headers to be added to the chat completion request. | -
 |====
 
@@ -190,6 +188,586 @@ ChatResponse response = chatModel.call(
 ----
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Prompt Caching
+
+Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching[prompt caching feature] allows you to cache frequently used prompts to reduce costs and improve response times for repeated interactions.
+When you cache a prompt, subsequent identical requests can reuse the cached content, significantly reducing the number of input tokens processed.
+
+[NOTE]
+====
+*Supported Models*
+
+Prompt caching is currently supported on Claude Sonnet 4.5, Claude Opus 4.5, Claude Haiku 4.5, Claude Opus 4, Claude Sonnet 4, Claude Sonnet 3.7, Claude Sonnet 3.5, Claude Haiku 3.5, Claude Haiku 3, and Claude Opus 3.
+
+*Token Requirements*
+
+Different models have different minimum token thresholds for cache effectiveness:
+- Claude Sonnet 4: 1024+ tokens
+- Claude Haiku models: 2048+ tokens
+- Other models: 1024+ tokens
+====
+
+=== Cache Strategies
+
+Spring AI provides strategic cache placement through the `AnthropicCacheStrategy` enum.
+Each strategy automatically places cache breakpoints at optimal locations while staying within Anthropic's 4-breakpoint limit.
+
+[cols="2,3,5", stripes=even]
+|====
+| Strategy | Breakpoints Used | Use Case
+
+| `NONE`
+| 0
+| Disables prompt caching completely.
+Use when requests are one-off or content is too small to benefit from caching.
+
+| `SYSTEM_ONLY`
+| 1
+| Caches system message content.
+Tools are cached implicitly via Anthropic's automatic ~20-block lookback mechanism.
+Use when system prompts are large and stable with fewer than 20 tools.
+
+| `TOOLS_ONLY`
+| 1
+| Caches tool definitions only. System messages remain uncached and are processed fresh on each request.
+Use when tool definitions are large and stable (5000+ tokens) but system prompts change frequently or vary per tenant/context.
+
+| `SYSTEM_AND_TOOLS`
+| 2
+| Caches both tool definitions (breakpoint 1) and system message (breakpoint 2) explicitly.
+Use when you have 20+ tools (beyond automatic lookback) or want deterministic caching of both components.
+System changes don't invalidate tool cache.
+
+| `CONVERSATION_HISTORY`
+| 1-4
+| Caches entire conversation history up to the current user question.
+Use for multi-turn conversations with chat memory where conversation history grows over time.
+|====
+
+IMPORTANT: Due to Anthropic's cascade invalidation, changing tool definitions will invalidate ALL downstream cache breakpoints (system, messages).
+Tool stability is critical when using `SYSTEM_AND_TOOLS` or `CONVERSATION_HISTORY` strategies.
+
+=== Enabling Prompt Caching
+
+Enable prompt caching by setting `cacheOptions` on `AnthropicChatOptions` and choosing a `strategy`.
+
+==== System-Only Caching
+
+Best for: Stable system prompts with <20 tools (tools cached implicitly via automatic lookback).
+
+[source,java]
+----
+// Cache system message content (tools cached implicitly)
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a helpful AI assistant with extensive knowledge..."),
+            new UserMessage("What is machine learning?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+==== Tools-Only Caching
+
+Best for: Large stable tool sets with dynamic system prompts (multi-tenant apps, A/B testing).
+
+[source,java]
+----
+// Cache tool definitions, system prompt processed fresh each time
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a " + persona + " assistant..."), // Dynamic per-tenant
+            new UserMessage("What's the weather like in San Francisco?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.TOOLS_ONLY)
+                .build())
+            .toolCallbacks(weatherToolCallback) // Large tool set cached
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+==== System and Tools Caching
+
+Best for: 20+ tools (beyond automatic lookback) or when both components should be cached independently.
+
+[source,java]
+----
+// Cache both tool definitions and system message with independent breakpoints
+// Changing system won't invalidate tool cache (but changing tools invalidates both)
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are a weather analysis assistant..."),
+            new UserMessage("What's the weather like in San Francisco?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+                .build())
+            .toolCallbacks(weatherToolCallback) // 20+ tools
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+==== Conversation History Caching
+
+[source,java]
+----
+// Cache conversation history with ChatClient and memory (cache breakpoint on last user message)
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultSystem("You are a personalized career counselor...")
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
+        .conversationId(conversationId)
+        .build())
+    .build();
+
+String response = chatClient.prompt()
+    .user("What career advice would you give me?")
+    .options(AnthropicChatOptions.builder()
+        .model("claude-sonnet-4")
+        .cacheOptions(AnthropicCacheOptions.builder()
+            .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+            .build())
+        .maxTokens(500)
+        .build())
+    .call()
+    .content();
+----
+
+==== Using ChatClient Fluent API
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .system("You are an expert document analyst...")
+    .user("Analyze this large document: " + document)
+    .options(AnthropicChatOptions.builder()
+        .model("claude-sonnet-4")
+        .cacheOptions(AnthropicCacheOptions.builder()
+            .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+            .build())
+        .build())
+    .call()
+    .content();
+----
+
+=== Advanced Caching Options
+
+==== Per-Message TTL (5m or 1h)
+
+By default, cached content uses a 5-minute TTL.
+You can set a 1-hour TTL for specific message types.
+When 1-hour TTL is used, Spring AI automatically sets the required Anthropic beta header.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(new SystemMessage(largeSystemPrompt)),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+----
+
+NOTE: Extended TTL uses Anthropic beta feature `extended-cache-ttl-2025-04-11`.
+
+==== Cache Eligibility Filters
+
+Control when cache breakpoints are used by setting minimum content lengths and an optional token-based length function:
+
+[source,java]
+----
+AnthropicCacheOptions cache = AnthropicCacheOptions.builder()
+    .strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+    .messageTypeMinContentLength(MessageType.SYSTEM, 1024)
+    .messageTypeMinContentLength(MessageType.USER, 1024)
+    .messageTypeMinContentLength(MessageType.ASSISTANT, 1024)
+    .contentLengthFunction(text -> MyTokenCounter.count(text))
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(/* messages */),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(cache)
+            .build()
+    )
+);
+----
+
+NOTE: Tool Definitions are always considered for caching if `SYSTEM_AND_TOOLS` strategy is used, regardless of content length.
+
+=== Usage Example
+
+Here's a complete example demonstrating prompt caching with cost tracking:
+
+[source,java]
+----
+// Create system content that will be reused multiple times
+String largeSystemPrompt = "You are an expert software architect specializing in distributed systems...";
+
+// First request - creates cache
+ChatResponse firstResponse = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(largeSystemPrompt),
+            new UserMessage("What is microservices architecture?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+
+// Access cache-related token usage
+AnthropicApi.Usage firstUsage = (AnthropicApi.Usage) firstResponse.getMetadata()
+    .getUsage().getNativeUsage();
+
+System.out.println("Cache creation tokens: " + firstUsage.cacheCreationInputTokens());
+System.out.println("Cache read tokens: " + firstUsage.cacheReadInputTokens());
+
+// Second request with same system prompt - reads from cache  
+ChatResponse secondResponse = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(largeSystemPrompt),
+            new UserMessage("What are the benefits of event sourcing?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(500)
+            .build()
+    )
+);
+
+AnthropicApi.Usage secondUsage = (AnthropicApi.Usage) secondResponse.getMetadata()
+    .getUsage().getNativeUsage();
+
+System.out.println("Cache creation tokens: " + secondUsage.cacheCreationInputTokens()); // Should be 0
+System.out.println("Cache read tokens: " + secondUsage.cacheReadInputTokens()); // Should be > 0
+----
+
+=== Token Usage Tracking
+
+The `Usage` record provides detailed information about cache-related token consumption.
+To access Anthropic-specific cache metrics, use the `getNativeUsage()` method:
+
+[source,java]
+----
+AnthropicApi.Usage usage = (AnthropicApi.Usage) response.getMetadata()
+    .getUsage().getNativeUsage();
+----
+
+Cache-specific metrics include:
+
+* `cacheCreationInputTokens()`: Returns the number of tokens used when creating a cache entry
+* `cacheReadInputTokens()`: Returns the number of tokens read from an existing cache entry
+
+When you first send a cached prompt:
+- `cacheCreationInputTokens()` will be greater than 0
+- `cacheReadInputTokens()` will be 0
+
+When you send the same cached prompt again:
+- `cacheCreationInputTokens()` will be 0
+- `cacheReadInputTokens()` will be greater than 0
+
+=== Real-World Use Cases
+
+==== Legal Document Analysis
+
+Analyze large legal contracts or compliance documents efficiently by caching document content across multiple questions:
+
+[source,java]
+----
+// Load a legal contract (PDF or text)
+String legalContract = loadDocument("merger-agreement.pdf"); // ~3000 tokens
+
+// System prompt with legal expertise
+String legalSystemPrompt = "You are an expert legal analyst specializing in corporate law. " +
+    "Analyze the following contract and provide precise answers about terms, obligations, and risks: " +
+    legalContract;
+
+// First analysis - creates cache
+ChatResponse riskAnalysis = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(legalSystemPrompt),
+            new UserMessage("What are the key termination clauses and associated penalties?")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(1000)
+            .build()
+    )
+);
+
+// Subsequent questions reuse cached document - 90% cost savings
+ChatResponse obligationAnalysis = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage(legalSystemPrompt), // Same content - cache hit
+            new UserMessage("List all financial obligations and payment schedules.")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .maxTokens(1000)
+            .build()
+    )
+);
+----
+
+==== Batch Code Review
+
+Process multiple code files with consistent review criteria while caching the review guidelines:
+
+[source,java]
+----
+// Define comprehensive code review guidelines
+String reviewGuidelines = """
+    You are a senior software engineer conducting code reviews. Apply these criteria:
+    - Security vulnerabilities and best practices
+    - Performance optimizations and memory usage
+    - Code maintainability and readability
+    - Testing coverage and edge cases
+    - Design patterns and architecture compliance
+    """;
+
+List<String> codeFiles = Arrays.asList(
+    "UserService.java", "PaymentController.java", "SecurityConfig.java"
+);
+
+List<String> reviews = new ArrayList<>();
+
+for (String filename : codeFiles) {
+    String sourceCode = loadSourceFile(filename);
+    
+    ChatResponse review = chatModel.call(
+        new Prompt(
+            List.of(
+                new SystemMessage(reviewGuidelines), // Cached across all reviews
+                new UserMessage("Review this " + filename + " code:\n\n" + sourceCode)
+            ),
+            AnthropicChatOptions.builder()
+                .model("claude-sonnet-4")
+                .cacheOptions(AnthropicCacheOptions.builder()
+                    .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                    .build())
+                .maxTokens(800)
+                .build()
+        )
+    );
+    
+    reviews.add(review.getResult().getOutput().getText());
+}
+
+// Guidelines cached after first request, subsequent reviews are faster and cheaper
+----
+
+==== Multi-Tenant SaaS with Shared Tools
+
+Build a multi-tenant application where tools are shared but system prompts are customized per tenant:
+
+[source,java]
+----
+// Define large shared tool set (used by all tenants)
+List<FunctionCallback> sharedTools = Arrays.asList(
+    weatherToolCallback,    // ~500 tokens
+    calendarToolCallback,   // ~800 tokens
+    emailToolCallback,      // ~700 tokens
+    analyticsToolCallback,  // ~600 tokens
+    reportingToolCallback,  // ~900 tokens
+    // ... 20+ more tools, totaling 5000+ tokens
+);
+
+@Service
+public class MultiTenantAIService {
+
+    public String handleTenantRequest(String tenantId, String userQuery) {
+        // Get tenant-specific configuration
+        TenantConfig config = tenantRepository.findById(tenantId);
+
+        // Dynamic system prompt per tenant
+        String tenantSystemPrompt = String.format("""
+            You are %s's AI assistant. Company values: %s.
+            Brand voice: %s. Compliance requirements: %s.
+            """, config.companyName(), config.values(),
+                 config.brandVoice(), config.compliance());
+
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                List.of(
+                    new SystemMessage(tenantSystemPrompt), // Different per tenant, NOT cached
+                    new UserMessage(userQuery)
+                ),
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4")
+                    .cacheOptions(AnthropicCacheOptions.builder()
+                        .strategy(AnthropicCacheStrategy.TOOLS_ONLY) // Cache tools only
+                        .build())
+                    .toolCallbacks(sharedTools) // Cached once, shared across all tenants
+                    .maxTokens(800)
+                    .build()
+            )
+        );
+
+        return response.getResult().getOutput().getText();
+    }
+}
+
+// Tools cached once (5000 tokens @ 10% = 500 token cost for cache hits)
+// Each tenant's unique system prompt processed fresh (200-500 tokens @ 100%)
+// Total per request: ~700-1000 tokens vs 5500+ without TOOLS_ONLY
+----
+
+==== Customer Support with Knowledge Base
+
+Create a customer support system that caches your product knowledge base for consistent, accurate responses:
+
+[source,java]
+----
+// Load comprehensive product knowledge
+String knowledgeBase = """
+    PRODUCT DOCUMENTATION:
+    - API endpoints and authentication methods
+    - Common troubleshooting procedures
+    - Billing and subscription details
+    - Integration guides and examples
+    - Known issues and workarounds
+    """ + loadProductDocs(); // ~2500 tokens
+
+@Service
+public class CustomerSupportService {
+
+    public String handleCustomerQuery(String customerQuery, String customerId) {
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                List.of(
+                    new SystemMessage("You are a helpful customer support agent. " +
+                        "Use this knowledge base to provide accurate solutions: " + knowledgeBase),
+                    new UserMessage("Customer " + customerId + " asks: " + customerQuery)
+                ),
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4")
+                    .cacheOptions(AnthropicCacheOptions.builder()
+                        .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                        .build())
+                    .maxTokens(600)
+                    .build()
+            )
+        );
+
+        return response.getResult().getOutput().getText();
+    }
+}
+
+// Knowledge base is cached across all customer queries
+// Multiple support agents can benefit from the same cached content
+----
+
+=== Best Practices
+
+1. **Choose the Right Strategy**:
+   - Use `SYSTEM_ONLY` for stable system prompts with <20 tools (tools cached implicitly via automatic lookback)
+   - Use `TOOLS_ONLY` for large stable tool sets (5000+ tokens) with dynamic system prompts (multi-tenant, A/B testing)
+   - Use `SYSTEM_AND_TOOLS` when you have 20+ tools (beyond automatic lookback) or want both cached independently
+   - Use `CONVERSATION_HISTORY` with ChatClient memory for multi-turn conversations
+   - Use `NONE` to explicitly disable caching
+
+2. **Understand Cascade Invalidation**: Anthropic's cache hierarchy (`tools → system → messages`) means changes flow downward:
+   - Changing **tools** invalidates: tools + system + messages (all caches) ❌❌❌
+   - Changing **system** invalidates: system + messages (tools cache remains valid) ✅❌❌
+   - Changing **messages** invalidates: messages only (tools and system caches remain valid) ✅✅❌
+
+   **Tool stability is critical** when using `SYSTEM_AND_TOOLS` or `CONVERSATION_HISTORY` strategies.
+
+3. **SYSTEM_AND_TOOLS Independence**: With `SYSTEM_AND_TOOLS`, changing the system message does NOT invalidate the tool cache, allowing efficient reuse of cached tools even when system prompts vary.
+
+4. **Meet Token Requirements**: Focus on caching content that meets the minimum token requirements (1024+ tokens for Sonnet 4, 2048+ for Haiku models).
+
+5. **Reuse Identical Content**: Caching works best with exact matches of prompt content. Even small changes will require a new cache entry.
+
+6. **Monitor Token Usage**: Use the cache usage statistics to track cache effectiveness:
+   ```java
+   AnthropicApi.Usage usage = (AnthropicApi.Usage) response.getMetadata().getUsage().getNativeUsage();
+   if (usage != null) {
+       System.out.println("Cache creation: " + usage.cacheCreationInputTokens());
+       System.out.println("Cache read: " + usage.cacheReadInputTokens());
+   }
+   ```
+
+7. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
+
+8. **Cache Lifetime**: Default TTL is 5 minutes; set 1-hour TTL per message type via `messageTypeTtl(...)`. Each cache access resets the timer.
+
+9. **Tool Caching Limitations**: Be aware that tool-based interactions may not provide cache usage metadata in the response.
+
+=== Implementation Details
+
+The prompt caching implementation in Spring AI follows these key design principles:
+
+1. **Strategic Cache Placement**: Cache breakpoints are automatically placed at optimal locations based on the chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
+   - `CONVERSATION_HISTORY` places cache breakpoints on: tools (if present), system message, and the last user message
+   - This enables Anthropic's prefix matching to incrementally cache the growing conversation history
+   - Each turn builds on the previous cached prefix, maximizing cache reuse
+
+2. **Provider Portability**: Cache configuration is done through `AnthropicChatOptions` rather than individual messages, preserving compatibility when switching between different AI providers.
+
+3. **Thread Safety**: The cache breakpoint tracking is implemented with thread-safe mechanisms to handle concurrent requests correctly.
+
+4. **Automatic Content Ordering**: The implementation ensures proper on-the-wire ordering of JSON content blocks and cache controls according to Anthropic's API requirements.
+
+5. **Aggregate Eligibility Checking**: For `CONVERSATION_HISTORY`, the implementation considers all message types (user, assistant, tool) within the last ~20 content blocks when determining if the combined content meets the minimum token threshold for caching.
+
+=== Future Enhancements
+
+The current cache strategies are designed to handle **90% of common use cases** effectively. For applications requiring more granular control, future enhancements may include:
+
+- **Message-level cache control** for fine-grained breakpoint placement
+- **Multi-block content caching** within individual messages  
+- **Advanced cache boundary selection** for complex tool scenarios
+- **Mixed TTL strategies** for optimized cache hierarchies
+
+These enhancements will maintain full backward compatibility while unlocking Anthropic's complete prompt caching capabilities for specialized use cases.
 
 == Thinking
 
@@ -357,6 +935,135 @@ You can register custom Java Tools with the `AnthropicChatModel` and have the An
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/tools.adoc[Tool Calling].
 
+=== Tool Choice
+
+The `tool_choice` parameter allows you to control how the model uses the provided tools. This feature gives you fine-grained control over tool execution behavior.
+
+For complete API details, see the https://docs.anthropic.com/en/api/messages#body-tool-choice[Anthropic tool_choice documentation].
+
+==== Tool Choice Options
+
+Spring AI provides four tool choice strategies through the `AnthropicApi.ToolChoice` interface:
+
+* **`ToolChoiceAuto`** (default): The model automatically decides whether to use tools or respond with text
+* **`ToolChoiceAny`**: The model must use at least one of the available tools
+* **`ToolChoiceTool`**: The model must use a specific tool by name
+* **`ToolChoiceNone`**: The model cannot use any tools
+
+==== Disabling Parallel Tool Use
+
+All tool choice options (except `ToolChoiceNone`) support a `disableParallelToolUse` parameter. When set to `true`, the model will output at most one tool use.
+
+==== Usage Examples
+
+===== Auto Mode (Default Behavior)
+
+Let the model decide whether to use tools:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceAuto())
+            .toolCallbacks(weatherToolCallback)
+            .build()
+    )
+);
+----
+
+===== Force Tool Use (Any)
+
+Require the model to use at least one tool:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceAny())
+            .toolCallbacks(weatherToolCallback, calculatorToolCallback)
+            .build()
+    )
+);
+----
+
+===== Force Specific Tool
+
+Require the model to use a specific tool by name:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceTool("get_weather"))
+            .toolCallbacks(weatherToolCallback, calculatorToolCallback)
+            .build()
+    )
+);
+----
+
+===== Disable Tool Use
+
+Prevent the model from using any tools:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceNone())
+            .toolCallbacks(weatherToolCallback)
+            .build()
+    )
+);
+----
+
+===== Disable Parallel Tool Use
+
+Force the model to use only one tool at a time:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What's the weather in San Francisco and what's 2+2?",
+        AnthropicChatOptions.builder()
+            .toolChoice(new AnthropicApi.ToolChoiceAuto(true)) // disableParallelToolUse = true
+            .toolCallbacks(weatherToolCallback, calculatorToolCallback)
+            .build()
+    )
+);
+----
+
+==== Using ChatClient API
+
+You can also use tool choice with the fluent ChatClient API:
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("What's the weather in San Francisco?")
+    .options(AnthropicChatOptions.builder()
+        .toolChoice(new AnthropicApi.ToolChoiceTool("get_weather"))
+        .build())
+    .call()
+    .content();
+----
+
+==== Use Cases
+
+* **Validation**: Use `ToolChoiceTool` to ensure a specific tool is called for critical operations
+* **Efficiency**: Use `ToolChoiceAny` when you know a tool must be used to avoid unnecessary text generation
+* **Control**: Use `ToolChoiceNone` to temporarily disable tool access while keeping tool definitions registered
+* **Sequential Processing**: Use `disableParallelToolUse` to force sequential tool execution for dependent operations
+
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, pdf, images, data formats. 
@@ -408,6 +1115,1085 @@ var userMessage = new UserMessage(
         List.of(new Media(new MimeType("application", "pdf"), pdfData)));
 
 var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+----
+
+== Citations
+
+Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/citations[Citations API] allows Claude to reference specific parts of provided documents when generating responses.
+When citation documents are included in a prompt, Claude can cite the source material, and citation metadata (character ranges, page numbers, or content blocks) is returned in the response metadata.
+
+Citations help improve:
+
+* **Accuracy verification**: Users can verify Claude's responses against source material
+* **Transparency**: See exactly which parts of documents informed the response
+* **Compliance**: Meet requirements for source attribution in regulated industries
+* **Trust**: Build confidence by showing where information came from
+
+[NOTE]
+====
+*Supported Models*
+
+Citations are supported on Claude 3.7 Sonnet and Claude 4 models (Opus and Sonnet).
+
+*Document Types*
+
+Three types of citation documents are supported:
+
+* **Plain Text**: Text content with character-level citations
+* **PDF**: PDF documents with page-level citations
+* **Custom Content**: User-defined content blocks with block-level citations
+====
+
+=== Creating Citation Documents
+
+Use the `CitationDocument` builder to create documents that can be cited:
+
+==== Plain Text Documents
+
+[source,java]
+----
+CitationDocument document = CitationDocument.builder()
+    .plainText("The Eiffel Tower was completed in 1889 in Paris, France. " +
+               "It stands 330 meters tall and was designed by Gustave Eiffel.")
+    .title("Eiffel Tower Facts")
+    .citationsEnabled(true)
+    .build();
+----
+
+==== PDF Documents
+
+[source,java]
+----
+// From file path
+CitationDocument document = CitationDocument.builder()
+    .pdfFile("path/to/document.pdf")
+    .title("Technical Specification")
+    .citationsEnabled(true)
+    .build();
+
+// From byte array
+byte[] pdfBytes = loadPdfBytes();
+CitationDocument document = CitationDocument.builder()
+    .pdf(pdfBytes)
+    .title("Product Manual")
+    .citationsEnabled(true)
+    .build();
+----
+
+==== Custom Content Blocks
+
+For fine-grained citation control, use custom content blocks:
+
+[source,java]
+----
+CitationDocument document = CitationDocument.builder()
+    .customContent(
+        "The Great Wall of China is approximately 21,196 kilometers long.",
+        "It was built over many centuries, starting in the 7th century BC.",
+        "The wall was constructed to protect Chinese states from invasions."
+    )
+    .title("Great Wall Facts")
+    .citationsEnabled(true)
+    .build();
+----
+
+=== Using Citations in Requests
+
+Include citation documents in your chat options:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "When was the Eiffel Tower built and how tall is it?",
+        AnthropicChatOptions.builder()
+            .model("claude-3-7-sonnet-latest")
+            .maxTokens(1024)
+            .citationDocuments(document)
+            .build()
+    )
+);
+----
+
+==== Multiple Documents
+
+You can provide multiple documents for Claude to reference:
+
+[source,java]
+----
+CitationDocument parisDoc = CitationDocument.builder()
+    .plainText("Paris is the capital city of France with a population of 2.1 million.")
+    .title("Paris Information")
+    .citationsEnabled(true)
+    .build();
+
+CitationDocument eiffelDoc = CitationDocument.builder()
+    .plainText("The Eiffel Tower was designed by Gustave Eiffel for the 1889 World's Fair.")
+    .title("Eiffel Tower History")
+    .citationsEnabled(true)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What is the capital of France and who designed the Eiffel Tower?",
+        AnthropicChatOptions.builder()
+            .model("claude-3-7-sonnet-latest")
+            .citationDocuments(parisDoc, eiffelDoc)
+            .build()
+    )
+);
+----
+
+=== Accessing Citations
+
+Citations are returned in the response metadata:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+// Get citations from metadata
+@SuppressWarnings("unchecked")
+List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
+
+// Optional: Get citation count directly from metadata
+Integer citationCount = (Integer) response.getMetadata().get("citationCount");
+System.out.println("Total citations: " + citationCount);
+
+// Process each citation
+for (Citation citation : citations) {
+    System.out.println("Document: " + citation.getDocumentTitle());
+    System.out.println("Location: " + citation.getLocationDescription());
+    System.out.println("Cited text: " + citation.getCitedText());
+    System.out.println("Document index: " + citation.getDocumentIndex());
+    System.out.println();
+}
+----
+
+=== Citation Types
+
+Citations contain different location information depending on the document type:
+
+==== Character Location (Plain Text)
+
+For plain text documents, citations include character indices:
+
+[source,java]
+----
+Citation citation = citations.get(0);
+if (citation.getType() == Citation.LocationType.CHAR_LOCATION) {
+    int start = citation.getStartCharIndex();
+    int end = citation.getEndCharIndex();
+    String text = citation.getCitedText();
+    System.out.println("Characters " + start + "-" + end + ": " + text);
+}
+----
+
+==== Page Location (PDF)
+
+For PDF documents, citations include page numbers:
+
+[source,java]
+----
+Citation citation = citations.get(0);
+if (citation.getType() == Citation.LocationType.PAGE_LOCATION) {
+    int startPage = citation.getStartPageNumber();
+    int endPage = citation.getEndPageNumber();
+    System.out.println("Pages " + startPage + "-" + endPage);
+}
+----
+
+==== Content Block Location (Custom Content)
+
+For custom content, citations reference specific content blocks:
+
+[source,java]
+----
+Citation citation = citations.get(0);
+if (citation.getType() == Citation.LocationType.CONTENT_BLOCK_LOCATION) {
+    int startBlock = citation.getStartBlockIndex();
+    int endBlock = citation.getEndBlockIndex();
+    System.out.println("Content blocks " + startBlock + "-" + endBlock);
+}
+----
+
+=== Complete Example
+
+Here's a complete example demonstrating citation usage:
+
+[source,java]
+----
+// Create a citation document
+CitationDocument document = CitationDocument.builder()
+    .plainText("Spring AI is an application framework for AI engineering. " +
+               "It provides a Spring-friendly API for developing AI applications. " +
+               "The framework includes abstractions for chat models, embedding models, " +
+               "and vector databases.")
+    .title("Spring AI Overview")
+    .citationsEnabled(true)
+    .build();
+
+// Call the model with the document
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What is Spring AI?",
+        AnthropicChatOptions.builder()
+            .model("claude-3-7-sonnet-latest")
+            .maxTokens(1024)
+            .citationDocuments(document)
+            .build()
+    )
+);
+
+// Display the response
+System.out.println("Response: " + response.getResult().getOutput().getText());
+System.out.println("\nCitations:");
+
+// Process citations
+List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
+
+if (citations != null && !citations.isEmpty()) {
+    for (int i = 0; i < citations.size(); i++) {
+        Citation citation = citations.get(i);
+        System.out.println("\n[" + (i + 1) + "] " + citation.getDocumentTitle());
+        System.out.println("    Location: " + citation.getLocationDescription());
+        System.out.println("    Text: " + citation.getCitedText());
+    }
+} else {
+    System.out.println("No citations were provided in the response.");
+}
+----
+
+=== Best Practices
+
+1. **Use descriptive titles**: Provide meaningful titles for citation documents to help users identify sources in the citations.
+2. **Check for null citations**: Not all responses will include citations, so always validate the citations metadata exists before accessing it.
+3. **Consider document size**: Larger documents provide more context but consume more input tokens and may affect response time.
+4. **Leverage multiple documents**: When answering questions that span multiple sources, provide all relevant documents in a single request rather than making multiple calls.
+5. **Use appropriate document types**: Choose plain text for simple content, PDF for existing documents, and custom content blocks when you need fine-grained control over citation granularity.
+
+=== Real-World Use Cases
+
+==== Legal Document Analysis
+
+Analyze contracts and legal documents while maintaining source attribution:
+
+[source,java]
+----
+CitationDocument contract = CitationDocument.builder()
+    .pdfFile("merger-agreement.pdf")
+    .title("Merger Agreement 2024")
+    .citationsEnabled(true)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What are the key termination clauses in this contract?",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .maxTokens(2000)
+            .citationDocuments(contract)
+            .build()
+    )
+);
+
+// Citations will reference specific pages in the PDF
+----
+
+==== Customer Support Knowledge Base
+
+Provide accurate customer support answers with verifiable sources:
+
+[source,java]
+----
+CitationDocument kbArticle1 = CitationDocument.builder()
+    .plainText(loadKnowledgeBaseArticle("authentication"))
+    .title("Authentication Guide")
+    .citationsEnabled(true)
+    .build();
+
+CitationDocument kbArticle2 = CitationDocument.builder()
+    .plainText(loadKnowledgeBaseArticle("billing"))
+    .title("Billing FAQ")
+    .citationsEnabled(true)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "How do I reset my password and update my billing information?",
+        AnthropicChatOptions.builder()
+            .model("claude-3-7-sonnet-latest")
+            .citationDocuments(kbArticle1, kbArticle2)
+            .build()
+    )
+);
+
+// Citations show which KB articles were referenced
+----
+
+==== Research and Compliance
+
+Generate reports that require source citations for compliance:
+
+[source,java]
+----
+CitationDocument clinicalStudy = CitationDocument.builder()
+    .pdfFile("clinical-trial-results.pdf")
+    .title("Clinical Trial Phase III Results")
+    .citationsEnabled(true)
+    .build();
+
+CitationDocument regulatoryGuidance = CitationDocument.builder()
+    .plainText(loadRegulatoryDocument())
+    .title("FDA Guidance Document")
+    .citationsEnabled(true)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Summarize the efficacy findings and regulatory implications.",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4")
+            .maxTokens(3000)
+            .citationDocuments(clinicalStudy, regulatoryGuidance)
+            .build()
+    )
+);
+
+// Citations provide audit trail for compliance
+----
+
+=== Citation Document Options
+
+==== Context Field
+
+Optionally provide context about the document that won't be cited but can guide Claude's understanding:
+
+[source,java]
+----
+CitationDocument document = CitationDocument.builder()
+    .plainText("...")
+    .title("Legal Contract")
+    .context("This is a merger agreement dated January 2024 between Company A and Company B")
+    .build();
+----
+
+==== Controlling Citations
+
+By default, citations are disabled for all documents (opt-in behavior).
+To enable citations, explicitly set `citationsEnabled(true)`:
+
+[source,java]
+----
+CitationDocument document = CitationDocument.builder()
+    .plainText("The Eiffel Tower was completed in 1889...")
+    .title("Historical Facts")
+    .citationsEnabled(true)  // Explicitly enable citations for this document
+    .build();
+----
+
+You can also provide documents without citations for background context:
+
+[source,java]
+----
+CitationDocument backgroundDoc = CitationDocument.builder()
+    .plainText("Background information about the industry...")
+    .title("Context Document")
+    // citationsEnabled defaults to false - Claude will use this but not cite it
+    .build();
+----
+
+[NOTE]
+====
+Anthropic requires consistent citation settings across all documents in a request.
+You cannot mix citation-enabled and citation-disabled documents in the same request.
+====
+
+== Skills
+
+Anthropic's https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview[Skills API] extends Claude's capabilities with specialized, pre-packaged abilities for document generation.
+Skills enable Claude to create actual downloadable files - Excel spreadsheets, PowerPoint presentations, Word documents, and PDFs - rather than just describing what these documents might contain.
+
+Skills solve a fundamental limitation of traditional LLMs:
+
+* **Traditional Claude**: "Here's how your sales report would look..." (text description only)
+* **With Skills**: Creates an actual `sales_report.xlsx` file you can download and open in Excel
+
+[NOTE]
+====
+*Supported Models*
+
+Skills are supported on Claude Sonnet 4, Claude Sonnet 4.5, Claude Opus 4, and later models.
+
+*Requirements*
+
+* Skills require the code execution capability (automatically enabled by Spring AI)
+* Maximum of 8 skills per request
+* Generated files are available for download via the Files API for 24 hours
+====
+
+=== Pre-built Anthropic Skills
+
+Spring AI provides type-safe access to Anthropic's pre-built skills through the `AnthropicSkill` enum:
+
+[cols="2,3,4", stripes=even]
+|====
+| Skill | Description | Generated File Type
+
+| `XLSX`
+| Excel spreadsheet generation and manipulation
+| `.xlsx` (Microsoft Excel)
+
+| `PPTX`
+| PowerPoint presentation creation
+| `.pptx` (Microsoft PowerPoint)
+
+| `DOCX`
+| Word document generation
+| `.docx` (Microsoft Word)
+
+| `PDF`
+| PDF document creation
+| `.pdf` (Portable Document Format)
+|====
+
+=== Basic Usage
+
+Enable skills by adding them to your `AnthropicChatOptions`:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create an Excel spreadsheet with Q1 2025 sales data. " +
+        "Include columns for Month, Revenue, and Expenses with 3 rows of sample data.",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .build()
+    )
+);
+
+// Claude will generate an actual Excel file
+String responseText = response.getResult().getOutput().getText();
+System.out.println(responseText);
+// Output: "I've created an Excel spreadsheet with your Q1 2025 sales data..."
+----
+
+=== Multiple Skills
+
+You can enable multiple skills in a single request (up to 8):
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a sales report with both an Excel file containing the raw data " +
+        "and a PowerPoint presentation summarizing the key findings.",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(8192)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+            .build()
+    )
+);
+----
+
+=== Using SkillContainer for Advanced Configuration
+
+For more control, use `SkillContainer` directly:
+
+[source,java]
+----
+AnthropicApi.SkillContainer container = AnthropicApi.SkillContainer.builder()
+    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+    .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX, "20251013") // Specific version
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the quarterly report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .skillContainer(container)
+            .build()
+    )
+);
+----
+
+=== Using ChatClient Fluent API
+
+Skills work seamlessly with the ChatClient fluent API:
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("Create a PowerPoint presentation about Spring AI with 3 slides: " +
+          "Title, Key Features, and Getting Started")
+    .options(AnthropicChatOptions.builder()
+        .model("claude-sonnet-4-5")
+        .maxTokens(4096)
+        .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+        .build())
+    .call()
+    .content();
+----
+
+=== Streaming with Skills
+
+Skills work with streaming responses:
+
+[source,java]
+----
+Flux<ChatResponse> responseFlux = chatModel.stream(
+    new Prompt(
+        "Create a Word document explaining machine learning concepts",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.DOCX)
+            .build()
+    )
+);
+
+responseFlux.subscribe(response -> {
+    String content = response.getResult().getOutput().getText();
+    System.out.print(content);
+});
+----
+
+=== Downloading Generated Files
+
+When Claude generates files using Skills, the response contains file IDs that can be used to download the actual files via the Files API.
+Spring AI provides the `SkillsResponseHelper` utility class for extracting file IDs and downloading files.
+
+==== Extracting File IDs
+
+[source,java]
+----
+import org.springframework.ai.anthropic.SkillsResponseHelper;
+
+ChatResponse response = chatModel.call(prompt);
+
+// Extract all file IDs from the response
+List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+for (String fileId : fileIds) {
+    System.out.println("Generated file ID: " + fileId);
+}
+----
+
+==== Getting File Metadata
+
+Before downloading, you can retrieve file metadata:
+
+[source,java]
+----
+@Autowired
+private AnthropicApi anthropicApi;
+
+// Get metadata for a specific file
+String fileId = fileIds.get(0);
+AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileId);
+
+System.out.println("Filename: " + metadata.filename());     // e.g., "sales_report.xlsx"
+System.out.println("Size: " + metadata.size() + " bytes");  // e.g., 5082
+System.out.println("MIME Type: " + metadata.mimeType());    // e.g., "application/vnd..."
+----
+
+==== Downloading File Content
+
+[source,java]
+----
+// Download file content as bytes
+byte[] fileContent = anthropicApi.downloadFile(fileId);
+
+// Save to local file system
+Path outputPath = Path.of("downloads", metadata.filename());
+Files.write(outputPath, fileContent);
+
+System.out.println("Saved file to: " + outputPath);
+----
+
+==== Convenience Method: Download All Files
+
+The `SkillsResponseHelper` provides a convenience method to download all generated files at once:
+
+[source,java]
+----
+// Download all files to a target directory
+Path targetDir = Path.of("generated-files");
+Files.createDirectories(targetDir);
+
+List<Path> savedFiles = SkillsResponseHelper.downloadAllFiles(response, anthropicApi, targetDir);
+
+for (Path file : savedFiles) {
+    System.out.println("Downloaded: " + file.getFileName() +
+                       " (" + Files.size(file) + " bytes)");
+}
+----
+
+==== Complete File Download Example
+
+Here's a complete example showing Skills usage with file download:
+
+[source,java]
+----
+@Service
+public class DocumentGenerationService {
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+
+    public DocumentGenerationService(AnthropicChatModel chatModel, AnthropicApi anthropicApi) {
+        this.chatModel = chatModel;
+        this.anthropicApi = anthropicApi;
+    }
+
+    public Path generateSalesReport(String quarter, Path outputDir) throws IOException {
+        // Generate Excel report using Skills
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                "Create an Excel spreadsheet with " + quarter + " sales data. " +
+                "Include Month, Revenue, Expenses, and Profit columns.",
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4-5")
+                    .maxTokens(4096)
+                    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                    .build()
+            )
+        );
+
+        // Extract file IDs from the response
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+        if (fileIds.isEmpty()) {
+            throw new RuntimeException("No file was generated");
+        }
+
+        // Download the generated file
+        String fileId = fileIds.get(0);
+        AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileId);
+        byte[] content = anthropicApi.downloadFile(fileId);
+
+        // Save to output directory
+        Path outputPath = outputDir.resolve(metadata.filename());
+        Files.write(outputPath, content);
+
+        return outputPath;
+    }
+}
+----
+
+=== Files API Operations
+
+The `AnthropicApi` provides direct access to the Files API:
+
+[cols="2,4", stripes=even]
+|====
+| Method | Description
+
+| `getFileMetadata(fileId)`
+| Get metadata including filename, size, MIME type, and expiration time
+
+| `downloadFile(fileId)`
+| Download file content as byte array
+
+| `listFiles(limit, page)`
+| List files with pagination support
+
+| `deleteFile(fileId)`
+| Delete a file immediately (files auto-expire after 24 hours)
+|====
+
+==== Listing Files
+
+[source,java]
+----
+// List files with pagination
+AnthropicApi.FilesListResponse files = anthropicApi.listFiles(20, null);
+
+for (AnthropicApi.FileMetadata file : files.data()) {
+    System.out.println(file.id() + ": " + file.filename());
+}
+
+// Check for more pages
+if (files.hasMore()) {
+    AnthropicApi.FilesListResponse nextPage = anthropicApi.listFiles(20, files.nextPage());
+    // Process next page...
+}
+----
+
+==== Extracting Container ID
+
+For multi-turn conversations with Skills, you may need to extract the container ID:
+
+[source,java]
+----
+String containerId = SkillsResponseHelper.extractContainerId(response);
+
+if (containerId != null) {
+    System.out.println("Container ID for reuse: " + containerId);
+}
+----
+
+=== Best Practices
+
+1. **Use appropriate models**: Skills work best with Claude Sonnet 4 and later models. Ensure you're using a supported model.
+
+2. **Set sufficient max tokens**: Document generation can require significant tokens. Use `maxTokens(4096)` or higher for complex documents.
+
+3. **Be specific in prompts**: Provide clear, detailed instructions about document structure, content, and formatting.
+
+4. **Handle file downloads promptly**: Generated files expire after 24 hours. Download files soon after generation.
+
+5. **Check for file IDs**: Always verify that file IDs were returned before attempting downloads. Some prompts may result in text responses without file generation.
+
+6. **Use defensive error handling**: Wrap file operations in try-catch blocks to handle network issues or expired files gracefully.
+
+[source,java]
+----
+List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+if (fileIds.isEmpty()) {
+    // Claude may have responded with text instead of generating a file
+    String text = response.getResult().getOutput().getText();
+    log.warn("No files generated. Response: {}", text);
+    return;
+}
+
+try {
+    byte[] content = anthropicApi.downloadFile(fileIds.get(0));
+    // Process file...
+} catch (Exception e) {
+    log.error("Failed to download file: {}", e.getMessage());
+}
+----
+
+=== Real-World Use Cases
+
+==== Automated Report Generation
+
+Generate formatted business reports from data:
+
+[source,java]
+----
+@Service
+public class ReportService {
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+
+    public byte[] generateMonthlyReport(SalesData data) throws IOException {
+        String prompt = String.format(
+            "Create a PowerPoint presentation summarizing monthly sales performance. " +
+            "Total Revenue: $%,.2f, Total Expenses: $%,.2f, Net Profit: $%,.2f. " +
+            "Include charts and key insights. Create 5 slides: " +
+            "1) Title, 2) Revenue Overview, 3) Expense Breakdown, " +
+            "4) Profit Analysis, 5) Recommendations.",
+            data.revenue(), data.expenses(), data.profit()
+        );
+
+        ChatResponse response = chatModel.call(
+            new Prompt(prompt,
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4-5")
+                    .maxTokens(8192)
+                    .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+                    .build()
+            )
+        );
+
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        return anthropicApi.downloadFile(fileIds.get(0));
+    }
+}
+----
+
+==== Data Export Service
+
+Export structured data to Excel format:
+
+[source,java]
+----
+@RestController
+public class ExportController {
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+    private final CustomerRepository customerRepository;
+
+    @GetMapping("/export/customers")
+    public ResponseEntity<byte[]> exportCustomers() throws IOException {
+        List<Customer> customers = customerRepository.findAll();
+
+        String dataDescription = customers.stream()
+            .map(c -> String.format("%s, %s, %s", c.name(), c.email(), c.tier()))
+            .collect(Collectors.joining("\n"));
+
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                "Create an Excel spreadsheet with customer data. " +
+                "Columns: Name, Email, Tier. Format the header row with bold text. " +
+                "Data:\n" + dataDescription,
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4-5")
+                    .maxTokens(4096)
+                    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                    .build()
+            )
+        );
+
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        byte[] content = anthropicApi.downloadFile(fileIds.get(0));
+        AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileIds.get(0));
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + metadata.filename() + "\"")
+            .contentType(MediaType.parseMediaType(metadata.mimeType()))
+            .body(content);
+    }
+}
+----
+
+==== Multi-Format Document Generation
+
+Generate multiple document formats from a single request:
+
+[source,java]
+----
+public Map<String, byte[]> generateProjectDocumentation(ProjectInfo project) throws IOException {
+    ChatResponse response = chatModel.call(
+        new Prompt(
+            "Create project documentation for: " + project.name() + "\n" +
+            "Description: " + project.description() + "\n\n" +
+            "Generate:\n" +
+            "1. An Excel file with the project timeline and milestones\n" +
+            "2. A PowerPoint overview presentation (3-5 slides)\n" +
+            "3. A Word document with detailed specifications",
+            AnthropicChatOptions.builder()
+                .model("claude-sonnet-4-5")
+                .maxTokens(16384)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.DOCX)
+                .build()
+        )
+    );
+
+    Map<String, byte[]> documents = new HashMap<>();
+    List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+    for (String fileId : fileIds) {
+        AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileId);
+        byte[] content = anthropicApi.downloadFile(fileId);
+        documents.put(metadata.filename(), content);
+    }
+
+    return documents;
+}
+----
+
+=== Combining Skills with Other Features
+
+Skills can be combined with other Anthropic features like Prompt Caching:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are an expert data analyst and document creator..."),
+            new UserMessage("Create a financial summary spreadsheet")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .build()
+    )
+);
+----
+
+=== Custom Skills
+
+In addition to pre-built skills, Anthropic supports custom skills that you can create for specialized document templates, formatting rules, or domain-specific behaviors.
+Custom skills are `SKILL.md` files with instructions that you upload to your Anthropic workspace.
+Once uploaded, you can use them in Spring AI alongside pre-built skills.
+
+Custom skills are ideal for:
+
+* **Corporate branding**: Apply consistent headers, footers, logos, and color schemes
+* **Compliance requirements**: Add required disclaimers, confidentiality notices, or audit trails
+* **Document templates**: Enforce specific structures for reports, proposals, or specifications
+* **Domain expertise**: Include industry-specific terminology, calculations, or formatting rules
+
+For details on creating custom skills, refer to the https://platform.claude.com/docs/en/api/skills-guide[Anthropic Skills API documentation].
+
+==== Uploading a Custom Skill
+
+Upload your skill using the Anthropic API.
+Note the specific format requirements for the `files[]` parameter:
+
+[source,bash]
+----
+curl -X POST "https://api.anthropic.com/v1/skills" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: skills-2025-10-02" \
+  -F "display_title=My Custom Skill" \
+  -F "files[]=@SKILL.md;filename=my-skill-name/SKILL.md"
+----
+
+[IMPORTANT]
+====
+* Use `files[]=` (with square brackets), not `files=`
+* The `filename` parameter must include a directory matching the `name` field in your SKILL.md YAML frontmatter
+* After uploading, verify your skill appears in the Anthropic Console under **Settings > Capabilities**
+====
+
+The response contains your skill ID:
+
+[source,json]
+----
+{
+  "id": "skill_01AbCdEfGhIjKlMnOpQrStUv",
+  "display_title": "My Custom Skill",
+  "source": "custom",
+  "latest_version": "1765845644409101"
+}
+----
+
+==== Using Custom Skills in Spring AI
+
+Reference your custom skill by its ID using the `.customSkill()` method:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a quarterly sales report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")
+            .build()
+    )
+);
+----
+
+==== Combining Pre-built and Custom Skills
+
+You can use both pre-built and custom skills in the same request.
+This allows you to leverage Anthropic's document generation capabilities while applying your organization's specific requirements:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a sales report spreadsheet",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)  // Pre-built
+            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")     // Your custom skill
+            .build()
+    )
+);
+----
+
+==== Using SkillContainer with Custom Skills
+
+For more control over skill versions, use `SkillContainer` directly:
+
+[source,java]
+----
+AnthropicApi.SkillContainer container = AnthropicApi.SkillContainer.builder()
+    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+    .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")                    // Uses latest version
+    .customSkill("skill_02XyZaBcDeFgHiJkLmNoPq", "1765845644409101")  // Specific version
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(8192)
+            .skillContainer(container)
+            .build()
+    )
+);
+----
+
+==== Updating a Custom Skill
+
+To update an existing skill, upload a new version to the `/versions` endpoint:
+
+[source,bash]
+----
+curl -X POST "https://api.anthropic.com/v1/skills/YOUR_SKILL_ID/versions" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: skills-2025-10-02" \
+  -F "files[]=@SKILL.md;filename=my-skill-name/SKILL.md"
+----
+
+When using `latest` as the version (the default), the new version is picked up automatically.
+
+==== Complete Custom Skills Example
+
+Here's a complete example showing a service that optionally applies a custom branding skill:
+
+[source,java]
+----
+@Service
+public class BrandedDocumentService {
+
+    private static final String BRANDING_SKILL_ID = "skill_01AbCdEfGhIjKlMnOpQrStUv";
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+
+    public BrandedDocumentService(AnthropicChatModel chatModel, AnthropicApi anthropicApi) {
+        this.chatModel = chatModel;
+        this.anthropicApi = anthropicApi;
+    }
+
+    public byte[] generateReport(String prompt, boolean includeBranding) throws IOException {
+        // Build options with document skill
+        AnthropicChatOptions.Builder optionsBuilder = AnthropicChatOptions.builder()
+                .model("claude-sonnet-4-5")
+                .maxTokens(8192)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX);
+
+        // Add custom branding skill if requested
+        if (includeBranding) {
+            optionsBuilder.customSkill(BRANDING_SKILL_ID);
+        }
+
+        ChatResponse response = chatModel.call(
+            new Prompt(prompt, optionsBuilder.build())
+        );
+
+        // Extract and download the generated file
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+        if (fileIds.isEmpty()) {
+            throw new RuntimeException("No file was generated");
+        }
+
+        return anthropicApi.downloadFile(fileIds.get(0));
+    }
+}
 ----
 
 == Sample Controller
@@ -484,13 +2270,13 @@ Next, create a `AnthropicChatModel` and use it for text generations:
 [source,java]
 ----
 var anthropicApi = new AnthropicApi(System.getenv("ANTHROPIC_API_KEY"));
-
-var chatModel = new AnthropicChatModel(this.anthropicApi,
-        AnthropicChatOptions.builder()
-            .model("claude-3-opus-20240229")
+var anthropicChatOptions = AnthropicChatOptions.builder()
+            .model("claude-3-7-sonnet-20250219")
             .temperature(0.4)
             .maxTokens(200)
-        .build());
+        .build()
+var chatModel = AnthropicChatModel.builder().anthropicApi(anthropicApi)
+                .defaultOptions(anthropicChatOptions).build();
 
 ChatResponse response = this.chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));

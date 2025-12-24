@@ -36,8 +36,7 @@ import org.springframework.ai.vectorstore.CouchbaseSimilarityFunction;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.couchbase.CouchbaseAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.couchbase.autoconfigure.CouchbaseAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,8 +63,8 @@ class CouchbaseSearchVectorStoreAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(CouchbaseAutoConfiguration.class,
-				CouchbaseSearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
+				CouchbaseSearchVectorStoreAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				OpenAiEmbeddingAutoConfiguration.class))
 		.withPropertyValues("spring.couchbase.connection-string=" + couchbaseContainer.getConnectionString(),
 				"spring.couchbase.username=" + couchbaseContainer.getUsername(),
 				"spring.couchbase.password=" + couchbaseContainer.getPassword(),
@@ -113,8 +112,8 @@ class CouchbaseSearchVectorStoreAutoConfigurationIT {
 	public void propertiesTest() {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(CouchbaseAutoConfiguration.class,
-					CouchbaseSearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-					SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
+					CouchbaseSearchVectorStoreAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.couchbase.connection-string=" + couchbaseContainer.getConnectionString(),
 					"spring.couchbase.username=" + couchbaseContainer.getUsername(),
 					"spring.couchbase.password=" + couchbaseContainer.getPassword(),

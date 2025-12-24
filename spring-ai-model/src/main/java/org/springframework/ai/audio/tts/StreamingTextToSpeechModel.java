@@ -25,6 +25,7 @@ import org.springframework.ai.model.StreamingModel;
  *
  * @author Alexandros Pappas
  */
+@FunctionalInterface
 public interface StreamingTextToSpeechModel extends StreamingModel<TextToSpeechPrompt, TextToSpeechResponse> {
 
 	default Flux<byte[]> stream(String text) {

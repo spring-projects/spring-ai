@@ -16,8 +16,10 @@
 
 package org.springframework.ai.vectorstore.weaviate;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -27,43 +29,150 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class WeaviateVectorStoreOptionsTests {
 
+	private WeaviateVectorStoreOptions options;
+
+	@BeforeEach
+	void setUp() {
+		this.options = new WeaviateVectorStoreOptions();
+	}
+
 	@Test
 	void shouldPassWithValidInputs() {
-		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
-		options.setObjectClass("CustomObjectClass");
-		options.setContentFieldName("customContentFieldName");
+		this.options.setObjectClass("CustomObjectClass");
+		this.options.setContentFieldName("customContentFieldName");
+
+		assertThat(this.options.getObjectClass()).isEqualTo("CustomObjectClass");
+		assertThat(this.options.getContentFieldName()).isEqualTo("customContentFieldName");
 	}
 
 	@Test
 	void shouldFailWithNullObjectClass() {
-		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
-
-		assertThatThrownBy(() -> options.setObjectClass(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.options.setObjectClass(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("objectClass cannot be null or empty");
 	}
 
 	@Test
 	void shouldFailWithEmptyObjectClass() {
-		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
+		assertThatThrownBy(() -> this.options.setObjectClass("")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("objectClass cannot be null or empty");
+	}
 
-		assertThatThrownBy(() -> options.setObjectClass("")).isInstanceOf(IllegalArgumentException.class)
+	@Test
+	void shouldFailWithWhitespaceOnlyObjectClass() {
+		assertThatThrownBy(() -> this.options.setObjectClass("   ")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("objectClass cannot be null or empty");
 	}
 
 	@Test
 	void shouldFailWithNullContentFieldName() {
-		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
-
-		assertThatThrownBy(() -> options.setContentFieldName(null)).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.options.setContentFieldName(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("contentFieldName cannot be null or empty");
 	}
 
 	@Test
 	void shouldFailWithEmptyContentFieldName() {
-		WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
-
-		assertThatThrownBy(() -> options.setContentFieldName("")).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.options.setContentFieldName("")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("contentFieldName cannot be null or empty");
+	}
+
+	@Test
+	void shouldFailWithWhitespaceOnlyContentFieldName() {
+		assertThatThrownBy(() -> this.options.setContentFieldName("   ")).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("contentFieldName cannot be null or empty");
+	}
+
+	@Test
+	void shouldFailWithNullMetaFieldPrefix() {
+		assertThatThrownBy(() -> this.options.setMetaFieldPrefix(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("metaFieldPrefix can be empty but not null");
+	}
+
+	@Test
+	void shouldPassWithEmptyMetaFieldPrefix() {
+		this.options.setMetaFieldPrefix("");
+		assertThat(this.options.getMetaFieldPrefix()).isEqualTo("");
+	}
+
+	@Test
+	void shouldPassWithValidMetaFieldPrefix() {
+		this.options.setMetaFieldPrefix("meta_");
+		assertThat(this.options.getMetaFieldPrefix()).isEqualTo("meta_");
+	}
+
+	@Test
+	void shouldPassWithWhitespaceMetaFieldPrefix() {
+		this.options.setMetaFieldPrefix("   ");
+		assertThat(this.options.getMetaFieldPrefix()).isEqualTo("   ");
+	}
+
+	@Test
+	void shouldHandleDefaultValues() {
+		// Test that default constructor sets appropriate defaults
+		WeaviateVectorStoreOptions defaultOptions = new WeaviateVectorStoreOptions();
+
+		// Verify getters don't throw exceptions with default state
+		// Note: Adjust these assertions based on actual default values in your
+		// implementation
+		assertThat(defaultOptions.getObjectClass()).isNotNull();
+		assertThat(defaultOptions.getContentFieldName()).isNotNull();
+		assertThat(defaultOptions.getMetaFieldPrefix()).isNotNull();
+	}
+
+	@Test
+	void shouldHandleSpecialCharactersInObjectClass() {
+		String objectClassWithSpecialChars = "Object_Class-123";
+		this.options.setObjectClass(objectClassWithSpecialChars);
+		assertThat(this.options.getObjectClass()).isEqualTo(objectClassWithSpecialChars);
+	}
+
+	@Test
+	void shouldHandleSpecialCharactersInContentFieldName() {
+		String contentFieldWithSpecialChars = "content_field_name";
+		this.options.setContentFieldName(contentFieldWithSpecialChars);
+		assertThat(this.options.getContentFieldName()).isEqualTo(contentFieldWithSpecialChars);
+	}
+
+	@Test
+	void shouldHandleSpecialCharactersInMetaFieldPrefix() {
+		String metaPrefixWithSpecialChars = "meta-prefix_";
+		this.options.setMetaFieldPrefix(metaPrefixWithSpecialChars);
+		assertThat(this.options.getMetaFieldPrefix()).isEqualTo(metaPrefixWithSpecialChars);
+	}
+
+	@Test
+	void shouldHandleMultipleSetterCallsOnSameField() {
+		this.options.setObjectClass("FirstObjectClass");
+		assertThat(this.options.getObjectClass()).isEqualTo("FirstObjectClass");
+
+		this.options.setObjectClass("SecondObjectClass");
+		assertThat(this.options.getObjectClass()).isEqualTo("SecondObjectClass");
+
+		this.options.setContentFieldName("firstContentField");
+		assertThat(this.options.getContentFieldName()).isEqualTo("firstContentField");
+
+		this.options.setContentFieldName("secondContentField");
+		assertThat(this.options.getContentFieldName()).isEqualTo("secondContentField");
+	}
+
+	@Test
+	void shouldPreserveStateAfterPartialSetup() {
+		this.options.setObjectClass("PartialObjectClass");
+
+		// Attempt to set invalid content field
+		assertThatThrownBy(() -> this.options.setContentFieldName(null)).isInstanceOf(IllegalArgumentException.class);
+
+		// Verify object class is still set correctly
+		assertThat(this.options.getObjectClass()).isEqualTo("PartialObjectClass");
+	}
+
+	@Test
+	void shouldValidateCaseSensitivity() {
+		this.options.setObjectClass("TestClass");
+		assertThat(this.options.getObjectClass()).isEqualTo("TestClass");
+
+		this.options.setObjectClass("testclass");
+		assertThat(this.options.getObjectClass()).isEqualTo("testclass");
+		assertThat(this.options.getObjectClass()).isNotEqualTo("TestClass");
 	}
 
 }

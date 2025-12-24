@@ -26,7 +26,11 @@ public enum ChatClientAttributes {
 
 	//@formatter:off
 
-	OUTPUT_FORMAT("spring.ai.chat.client.output.format");
+	OUTPUT_FORMAT("spring.ai.chat.client.output.format"),
+
+	STRUCTURED_OUTPUT_SCHEMA("spring.ai.chat.client.structured.output.schema"),
+
+	STRUCTURED_OUTPUT_NATIVE("spring.ai.chat.client.structured.output.native");
 
 	//@formatter:on
 

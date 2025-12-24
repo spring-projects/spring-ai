@@ -139,7 +139,7 @@ public class TitanEmbeddingBedrockApi extends
 		/**
 		 * TitanEmbeddingRequest builder.
 		 */
-		public static class Builder {
+		public static final class Builder {
 
 			private String inputText;
 			private String inputImage;

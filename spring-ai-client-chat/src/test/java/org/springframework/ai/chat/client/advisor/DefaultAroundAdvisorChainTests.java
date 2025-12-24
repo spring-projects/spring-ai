@@ -77,6 +77,14 @@ class DefaultAroundAdvisorChainTests {
 	}
 
 	@Test
+	void getObservationConventionIsNullThenUseDefault() {
+		AdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.create())
+			.observationConvention(null)
+			.build();
+		assertThat(chain).isNotNull();
+	}
+
+	@Test
 	void getObservationRegistry() {
 		ObservationRegistry observationRegistry = ObservationRegistry.create();
 		AdvisorChain chain = DefaultAroundAdvisorChain.builder(observationRegistry).build();
@@ -123,6 +131,137 @@ class DefaultAroundAdvisorChainTests {
 
 		chain.nextStream(ChatClientRequest.builder().prompt(new Prompt("Hello")).build()).blockLast();
 		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new StreamAdvisor[0]));
+	}
+
+	@Test
+	void whenAfterAdvisorIsNullThenThrowException() {
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP).build();
+
+		assertThatThrownBy(() -> chain.copy(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("The after call advisor must not be null");
+	}
+
+	@Test
+	void whenAdvisorNotInChainThenThrowException() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+		CallAdvisor notInChain = createMockAdvisor("notInChain", 3);
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		assertThatThrownBy(() -> chain.copy(notInChain)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("The specified advisor is not part of the chain")
+			.hasMessageContaining("notInChain");
+	}
+
+	@Test
+	void whenAdvisorIsLastInChainThenReturnEmptyChain() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+		CallAdvisor advisor3 = createMockAdvisor("advisor3", 3);
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2, advisor3))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor3);
+
+		assertThat(newChain.getCallAdvisors()).isEmpty();
+	}
+
+	@Test
+	void whenAdvisorIsFirstInChainThenReturnChainWithRemainingAdvisors() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+		CallAdvisor advisor3 = createMockAdvisor("advisor3", 3);
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2, advisor3))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor1);
+
+		assertThat(newChain.getCallAdvisors()).hasSize(2);
+		assertThat(newChain.getCallAdvisors().get(0).getName()).isEqualTo("advisor2");
+		assertThat(newChain.getCallAdvisors().get(1).getName()).isEqualTo("advisor3");
+	}
+
+	@Test
+	void whenAdvisorIsInMiddleOfChainThenReturnChainWithRemainingAdvisors() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+		CallAdvisor advisor3 = createMockAdvisor("advisor3", 3);
+		CallAdvisor advisor4 = createMockAdvisor("advisor4", 4);
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2, advisor3, advisor4))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor2);
+
+		assertThat(newChain.getCallAdvisors()).hasSize(2);
+		assertThat(newChain.getCallAdvisors().get(0).getName()).isEqualTo("advisor3");
+		assertThat(newChain.getCallAdvisors().get(1).getName()).isEqualTo("advisor4");
+	}
+
+	@Test
+	void whenCopyingChainThenOriginalChainRemainsUnchanged() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+		CallAdvisor advisor3 = createMockAdvisor("advisor3", 3);
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2, advisor3))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor1);
+
+		// Original chain should still have all advisors
+		assertThat(chain.getCallAdvisors()).hasSize(3);
+		assertThat(chain.getCallAdvisors().get(0).getName()).isEqualTo("advisor1");
+		assertThat(chain.getCallAdvisors().get(1).getName()).isEqualTo("advisor2");
+		assertThat(chain.getCallAdvisors().get(2).getName()).isEqualTo("advisor3");
+
+		// New chain should only have remaining advisors
+		assertThat(newChain.getCallAdvisors()).hasSize(2);
+		assertThat(newChain.getCallAdvisors().get(0).getName()).isEqualTo("advisor2");
+		assertThat(newChain.getCallAdvisors().get(1).getName()).isEqualTo("advisor3");
+	}
+
+	@Test
+	void whenCopyingChainThenObservationRegistryIsPreserved() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		ObservationRegistry customRegistry = ObservationRegistry.create();
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(customRegistry)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor1);
+
+		assertThat(newChain.getObservationRegistry()).isSameAs(customRegistry);
+	}
+
+	private CallAdvisor createMockAdvisor(String name, int order) {
+		return new CallAdvisor() {
+			@Override
+			public String getName() {
+				return name;
+			}
+
+			@Override
+			public int getOrder() {
+				return order;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+				return chain.nextCall(request);
+			}
+		};
 	}
 
 }

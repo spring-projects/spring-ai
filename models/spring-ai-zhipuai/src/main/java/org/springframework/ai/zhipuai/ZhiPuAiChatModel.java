@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
@@ -69,8 +70,8 @@ import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
 import org.springframework.ai.zhipuai.api.ZhiPuApiConstants;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -226,7 +227,17 @@ public class ZhiPuAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
-		var assistantMessage = new AssistantMessage(choice.message().content(), metadata, toolCalls);
+		String textContent = choice.message().content();
+		String reasoningContent = choice.message().reasoningContent();
+
+		ZhiPuAiAssistantMessage.Builder builder = new ZhiPuAiAssistantMessage.Builder();
+		var assistantMessage = builder.content(textContent)
+			.reasoningContent(reasoningContent)
+			.properties(metadata)
+			.toolCalls(toolCalls)
+			.media(List.of())
+			.build();
+
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 		return new Generation(assistantMessage, generationMetadata);
@@ -249,8 +260,8 @@ public class ZhiPuAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ResponseEntity<ChatCompletion> completionEntity = this.retryTemplate
-					.execute(ctx -> this.zhiPuAiApi.chatCompletionEntity(request));
+				ResponseEntity<ChatCompletion> completionEntity = RetryUtils.execute(this.retryTemplate,
+						() -> this.zhiPuAiApi.chatCompletionEntity(request));
 
 				var chatCompletion = completionEntity.getBody();
 
@@ -308,8 +319,8 @@ public class ZhiPuAiChatModel implements ChatModel {
 			Prompt requestPrompt = buildRequestPrompt(prompt);
 			ChatCompletionRequest request = createRequest(requestPrompt, true);
 
-			Flux<ChatCompletionChunk> completionChunks = this.retryTemplate
-				.execute(ctx -> this.zhiPuAiApi.chatCompletionStream(request));
+			Flux<ChatCompletionChunk> completionChunks = RetryUtils.execute(this.retryTemplate,
+					() -> this.zhiPuAiApi.chatCompletionStream(request));
 
 			// For chunked responses, only the first chunk contains the choice role.
 			// The rest of the chunks with same ID share the same role.
@@ -357,10 +368,17 @@ public class ZhiPuAiChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
-							return Flux.defer(() -> {
-								// FIXME: bounded elastic needs to be used since tool calling
-								//  is currently only synchronous
-								var toolExecutionResult = this.toolCallingManager.executeToolCalls(requestPrompt, response);
+							// FIXME: bounded elastic needs to be used since tool calling
+							//  is currently only synchronous
+							return Flux.deferContextual(ctx -> {
+								ToolExecutionResult toolExecutionResult;
+								try {
+									ToolCallReactiveContextHolder.setContext(ctx);
+									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
+								}
+								finally {
+									ToolCallReactiveContextHolder.clearContext();
+								}
 								if (toolExecutionResult.returnDirect()) {
 									// Return tool execution result directly to the client.
 									return Flux.just(ChatResponse.builder().from(response)
@@ -503,7 +521,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 					}).toList();
 				}
 				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls));
+						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -514,7 +532,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 				return toolMessage.getResponses()
 					.stream()
 					.map(tr -> new ChatCompletionMessage(tr.responseData(), ChatCompletionMessage.Role.TOOL, tr.name(),
-							tr.id(), null))
+							tr.id(), null, null))
 					.toList();
 			}
 			else {
@@ -566,16 +584,6 @@ public class ZhiPuAiChatModel implements ChatModel {
 			throw new IllegalArgumentException(
 					"Unsupported media data type: " + mediaContentData.getClass().getSimpleName());
 		}
-	}
-
-	private ChatOptions buildRequestOptions(ZhiPuAiApi.ChatCompletionRequest request) {
-		return ChatOptions.builder()
-			.model(request.model())
-			.maxTokens(request.maxTokens())
-			.stopSequences(request.stop())
-			.temperature(request.temperature())
-			.topP(request.topP())
-			.build();
 	}
 
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {

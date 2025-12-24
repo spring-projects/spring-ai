@@ -23,14 +23,51 @@ import org.springframework.ai.model.ChatModelDescription;
  *
  * @author Siarhei Blashuk
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public enum OllamaModel implements ChatModelDescription {
+
+	QWEN_2_5_3B("qwen2.5:3b"),
 
 	/**
 	 * Qwen 2.5
 	 */
 	QWEN_2_5_7B("qwen2.5"),
+
+	/**
+	 * Flagship vision-language model of Qwen and also a significant leap from the
+	 * previous Qwen2-VL.
+	 */
+	QWEN2_5_VL("qwen2.5vl"),
+
+	/**
+	 * Qwen3 is the latest generation of large language models in Qwen series, offering a
+	 * comprehensive suite of dense and mixture-of-experts (MoE) models.
+	 */
+	QWEN3_7B("qwen3:7b"),
+
+	/**
+	 * Qwen3 4B
+	 */
+	QWEN3_4B("qwen3:4b"),
+
+	/**
+	 * Qwen3 4B with thinking support. This variant auto-enables thinking by default in
+	 * Ollama 0.12+, providing separate reasoning traces in the response.
+	 * @see OllamaChatOptions#thinkOption
+	 */
+	QWEN3_4B_THINKING("qwen3:4b-thinking"),
+
+	/**
+	 * Qwen3 1.7b
+	 */
+	QWEN_3_1_7_B("qwen3:1.7b"),
+
+	/**
+	 * Qwen3 0.6b
+	 */
+	QWEN_3_06B("qwen3:0.6b"),
 
 	/**
 	 * QwQ is the reasoning model of the Qwen series.
@@ -138,6 +175,11 @@ public enum OllamaModel implements ChatModelDescription {
 	 * Gemma is a lightweight model with 2 billion and 7 billion
 	 */
 	GEMMA("gemma"),
+
+	/**
+	 * The current, most capable model that runs on a single GPU.
+	 */
+	GEMMA3("gemma3"),
 
 	/**
 	 * Uncensored Llama 2 model

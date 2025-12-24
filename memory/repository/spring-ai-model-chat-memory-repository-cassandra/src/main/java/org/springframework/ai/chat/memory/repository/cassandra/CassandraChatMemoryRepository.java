@@ -207,20 +207,16 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 	private Message getMessage(UdtValue udt) {
 		String content = udt.getString(this.conf.messageUdtContentColumn);
 		Map<String, Object> props = Map.of(CONVERSATION_TS, udt.getInstant(this.conf.messageUdtTimestampColumn));
-		switch (MessageType.valueOf(udt.getString(this.conf.messageUdtTypeColumn))) {
-			case ASSISTANT:
-				return new AssistantMessage(content, props);
-			case USER:
-				return UserMessage.builder().text(content).metadata(props).build();
-			case SYSTEM:
-				return SystemMessage.builder().text(content).metadata(props).build();
-			case TOOL:
+		return switch (MessageType.valueOf(udt.getString(this.conf.messageUdtTypeColumn))) {
+			case ASSISTANT -> AssistantMessage.builder().content(content).properties(props).build();
+			case USER -> UserMessage.builder().text(content).metadata(props).build();
+			case SYSTEM -> SystemMessage.builder().text(content).metadata(props).build();
+			case TOOL ->
 				// todo – persist ToolResponse somehow
-				return new ToolResponseMessage(List.of(), props);
-			default:
-				throw new IllegalStateException(
-						String.format("unknown message type %s", udt.getString(this.conf.messageUdtTypeColumn)));
-		}
+				ToolResponseMessage.builder().responses(List.of()).metadata(props).build();
+			default -> throw new IllegalStateException(
+					String.format("unknown message type %s", udt.getString(this.conf.messageUdtTypeColumn)));
+		};
 	}
 
 }

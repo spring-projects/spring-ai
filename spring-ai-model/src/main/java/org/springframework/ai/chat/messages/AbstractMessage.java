@@ -16,17 +16,13 @@
 
 package org.springframework.ai.chat.messages;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
-import org.springframework.util.StreamUtils;
 
 /**
  * The AbstractMessage class is an abstract implementation of the Message interface. It
@@ -50,8 +46,7 @@ public abstract class AbstractMessage implements Message {
 	/**
 	 * The content of the message.
 	 */
-	@Nullable
-	protected final String textContent;
+	protected final @Nullable String textContent;
 
 	/**
 	 * Additional options for the message to influence the response, not a generative map.
@@ -78,33 +73,11 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	/**
-	 * Create a new AbstractMessage with the given message type, resource, and metadata.
-	 * @param messageType the message type
-	 * @param resource the resource
-	 * @param metadata the metadata
-	 */
-	protected AbstractMessage(MessageType messageType, Resource resource, Map<String, Object> metadata) {
-		Assert.notNull(messageType, "Message type must not be null");
-		Assert.notNull(resource, "Resource must not be null");
-		Assert.notNull(metadata, "Metadata must not be null");
-		try (InputStream inputStream = resource.getInputStream()) {
-			this.textContent = StreamUtils.copyToString(inputStream, Charset.defaultCharset());
-		}
-		catch (IOException ex) {
-			throw new RuntimeException("Failed to read resource", ex);
-		}
-		this.messageType = messageType;
-		this.metadata = new HashMap<>(metadata);
-		this.metadata.put(MESSAGE_TYPE, messageType);
-	}
-
-	/**
 	 * Get the content of the message.
 	 * @return the content of the message
 	 */
 	@Override
-	@Nullable
-	public String getText() {
+	public @Nullable String getText() {
 		return this.textContent;
 	}
 

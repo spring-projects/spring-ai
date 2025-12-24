@@ -23,24 +23,22 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.tts.Speech;
-import org.springframework.ai.audio.tts.StreamingTextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 /**
- * Implementation of the {@link TextToSpeechModel} and {@link StreamingTextToSpeechModel}
- * interfaces
+ * Implementation of the {@link TextToSpeechModel} interface for ElevenLabs TTS API.
  *
  * @author Alexandros Pappas
  */
-public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, StreamingTextToSpeechModel {
+public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -73,8 +71,8 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		byte[] audioData = retryTemplate.execute(context -> {
-			var response = elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
+		byte[] audioData = RetryUtils.execute(this.retryTemplate, () -> {
+			var response = this.elevenLabsApi.textToSpeech(requestContext.request, requestContext.voiceId,
 					requestContext.queryParameters);
 			if (response.getBody() == null) {
 				logger.warn("No speech response returned for request: {}", requestContext.request);
@@ -90,9 +88,10 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		RequestContext requestContext = prepareRequest(prompt);
 
-		return retryTemplate.execute(context -> elevenLabsApi
-			.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
-			.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
+		return RetryUtils.execute(this.retryTemplate,
+				() -> this.elevenLabsApi
+					.textToSpeechStream(requestContext.request, requestContext.voiceId, requestContext.queryParameters)
+					.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())))));
 	}
 
 	private RequestContext prepareRequest(TextToSpeechPrompt prompt) {
@@ -102,10 +101,6 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		MultiValueMap<String, String> queryParameters = buildQueryParameters(options);
 
 		return new RequestContext(request, voiceId, queryParameters);
-	}
-
-	private record RequestContext(ElevenLabsApi.SpeechRequest request, String voiceId,
-			MultiValueMap<String, String> queryParameters) {
 	}
 
 	private MultiValueMap<String, String> buildQueryParameters(ElevenLabsTextToSpeechOptions options) {
@@ -185,7 +180,7 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		return this.defaultOptions;
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
 		private ElevenLabsApi elevenLabsApi;
 
@@ -209,11 +204,15 @@ public class ElevenLabsTextToSpeechModel implements TextToSpeechModel, Streaming
 		}
 
 		public ElevenLabsTextToSpeechModel build() {
-			Assert.notNull(elevenLabsApi, "ElevenLabsApi must not be null");
-			Assert.notNull(defaultOptions, "ElevenLabsSpeechOptions must not be null");
-			return new ElevenLabsTextToSpeechModel(elevenLabsApi, defaultOptions, retryTemplate);
+			Assert.notNull(this.elevenLabsApi, "ElevenLabsApi must not be null");
+			Assert.notNull(this.defaultOptions, "ElevenLabsSpeechOptions must not be null");
+			return new ElevenLabsTextToSpeechModel(this.elevenLabsApi, this.defaultOptions, this.retryTemplate);
 		}
 
+	}
+
+	private record RequestContext(ElevenLabsApi.SpeechRequest request, String voiceId,
+			MultiValueMap<String, String> queryParameters) {
 	}
 
 }

@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -136,9 +136,6 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final Logger logger = LoggerFactory.getLogger(Neo4jVectorStore.class);
 
-	@Deprecated(forRemoval = true)
-	public static final int DEFAULT_EMBEDDING_DIMENSION = 1536;
-
 	public static final int DEFAULT_TRANSACTION_SIZE = 10_000;
 
 	public static final String DEFAULT_LABEL = "Document";
@@ -205,7 +202,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	@Override
 	public void doAdd(List<Document> documents) {
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		var rows = documents.stream()

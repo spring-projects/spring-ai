@@ -31,8 +31,8 @@ import org.springframework.ai.embedding.observation.EmbeddingModelObservationDoc
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -58,7 +58,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 
 	@Test
 	void observationForEmbeddingOperation() {
-		var options = OllamaOptions.builder().model(OllamaModel.NOMIC_EMBED_TEXT.getName()).build();
+		var options = OllamaEmbeddingOptions.builder().model(OllamaModel.NOMIC_EMBED_TEXT.getName()).build();
 
 		EmbeddingRequest embeddingRequest = new EmbeddingRequest(List.of("Here comes the sun"), options);
 
@@ -97,12 +97,12 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 		}
 
 		@Bean
-		public OllamaApi openAiApi() {
+		public OllamaApi ollamaApi() {
 			return initializeOllama(MODEL);
 		}
 
 		@Bean
-		public OllamaEmbeddingModel openAiEmbeddingModel(OllamaApi ollamaApi,
+		public OllamaEmbeddingModel ollamaEmbeddingModel(OllamaApi ollamaApi,
 				TestObservationRegistry observationRegistry) {
 			return OllamaEmbeddingModel.builder().ollamaApi(ollamaApi).observationRegistry(observationRegistry).build();
 		}

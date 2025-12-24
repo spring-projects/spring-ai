@@ -23,11 +23,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -40,11 +40,11 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 
 	protected final List<Media> media;
 
-	public UserMessage(String textContent) {
+	public UserMessage(@Nullable String textContent) {
 		this(textContent, new ArrayList<>(), Map.of());
 	}
 
-	private UserMessage(String textContent, Collection<Media> media, Map<String, Object> metadata) {
+	private UserMessage(@Nullable String textContent, Collection<Media> media, Map<String, Object> metadata) {
 		super(MessageType.USER, textContent, metadata);
 		Assert.notNull(media, "media cannot be null");
 		Assert.noNullElements(media, "media cannot have null elements");
@@ -57,14 +57,8 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 
 	@Override
 	public String toString() {
-		return "UserMessage{" + "content='" + getText() + '\'' + ", properties=" + this.metadata + ", messageType="
+		return "UserMessage{" + "content='" + getText() + '\'' + ", metadata=" + this.metadata + ", messageType="
 				+ this.messageType + '}';
-	}
-
-	@Override
-	@NonNull
-	public String getText() {
-		return this.textContent;
 	}
 
 	@Override
@@ -73,24 +67,26 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 	}
 
 	public UserMessage copy() {
-		return new Builder().text(getText()).media(List.copyOf(getMedia())).metadata(Map.copyOf(getMetadata())).build();
+		return mutate().build();
 	}
 
 	public Builder mutate() {
-		return new Builder().text(getText()).media(List.copyOf(getMedia())).metadata(Map.copyOf(getMetadata()));
+		Builder builder = new Builder().media(List.copyOf(getMedia())).metadata(Map.copyOf(getMetadata()));
+		if (this.textContent != null) {
+			builder.text(this.textContent);
+		}
+		return builder;
 	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static class Builder {
+	public static final class Builder {
 
-		@Nullable
-		private String textContent;
+		private @Nullable String textContent;
 
-		@Nullable
-		private Resource resource;
+		private @Nullable Resource resource;
 
 		private List<Media> media = new ArrayList<>();
 
@@ -111,10 +107,8 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 			return this;
 		}
 
-		public Builder media(@Nullable Media... media) {
-			if (media != null) {
-				this.media = Arrays.asList(media);
-			}
+		public Builder media(Media... media) {
+			this.media = Arrays.asList(media);
 			return this;
 		}
 

@@ -19,7 +19,6 @@ package org.springframework.ai.oci.cohere;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import com.oracle.bmc.generativeaiinference.GenerativeAiInference;
 import com.oracle.bmc.generativeaiinference.model.BaseChatRequest;
@@ -68,8 +67,6 @@ import org.springframework.util.StringUtils;
 public class OCICohereChatModel implements ChatModel {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
-
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
 
 	/**
 	 * The {@link GenerativeAiInference} client used to interact with OCI GenAI service.
@@ -200,7 +197,7 @@ public class OCICohereChatModel implements ChatModel {
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
 				.finishReason(resp.getFinishReason().getValue())
 				.build();
-			AssistantMessage message = new AssistantMessage(resp.getText(), Map.of());
+			AssistantMessage message = AssistantMessage.builder().content(resp.getText()).properties(Map.of()).build();
 			generations.add(new Generation(message, metadata));
 			return generations;
 		}
@@ -247,7 +244,7 @@ public class OCICohereChatModel implements ChatModel {
 			.maxTokens(options.getMaxTokens())
 			.topK(options.getTopK())
 			.topP(options.getTopP())
-			.temperature(Objects.requireNonNullElse(options.getTemperature(), DEFAULT_TEMPERATURE))
+			.temperature(options.getTemperature())
 			.preambleOverride(options.getPreambleOverride())
 			.stopSequences(options.getStopSequences())
 			.documents(options.getDocuments())

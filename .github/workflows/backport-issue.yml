@@ -7,6 +7,6 @@ on:
 
 jobs:
   backport-issue:
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-backport-issue.yml@v5
+    uses: spring-io/spring-github-workflows/.github/workflows/spring-backport-issue.yml@main
     secrets:
       GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}

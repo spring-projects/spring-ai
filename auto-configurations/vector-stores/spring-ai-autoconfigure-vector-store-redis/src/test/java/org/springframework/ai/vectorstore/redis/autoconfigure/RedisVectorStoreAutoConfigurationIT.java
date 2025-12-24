@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Brian Sam-Bodden
  */
 @Testcontainers
 class RedisVectorStoreAutoConfigurationIT {
@@ -57,13 +58,17 @@ class RedisVectorStoreAutoConfigurationIT {
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
 
+	// Use host and port explicitly since getRedisURI() might not be consistent
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(RedisAutoConfiguration.class, RedisVectorStoreAutoConfiguration.class))
+		.withConfiguration(
+				AutoConfigurations.of(DataRedisAutoConfiguration.class, RedisVectorStoreAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
-		.withPropertyValues("spring.data.redis.url=" + redisContainer.getRedisURI())
+		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
+				"spring.data.redis.port=" + redisContainer.getFirstMappedPort())
 		.withPropertyValues("spring.ai.vectorstore.redis.initialize-schema=true")
 		.withPropertyValues("spring.ai.vectorstore.redis.index=myIdx")
-		.withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:");
+		.withPropertyValues("spring.ai.vectorstore.redis.prefix=doc:")
+		.withPropertyValues("spring.data.redis.client-type=jedis");
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

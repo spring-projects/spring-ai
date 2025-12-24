@@ -25,8 +25,8 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -40,7 +40,7 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class })
+@AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(StabilityAiApi.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.STABILITY_AI,
 		matchIfMissing = true)

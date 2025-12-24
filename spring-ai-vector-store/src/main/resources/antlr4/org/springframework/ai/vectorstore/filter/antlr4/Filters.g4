@@ -30,6 +30,8 @@ booleanExpression
     : identifier compare constant                                 # CompareExpression
     | identifier IN constantArray                                 # InExpression
     | identifier (NOT IN | NIN) constantArray                     # NinExpression
+    | identifier IS NULL                                          # IsNullExpression
+    | identifier IS NOT NULL                                      # IsNotNullExpression
     | left=booleanExpression operator=AND right=booleanExpression # AndExpression
     | left=booleanExpression operator=OR right=booleanExpression  # OrExpression
     | LEFT_PARENTHESIS booleanExpression RIGHT_PARENTHESIS        # GroupExpression
@@ -50,11 +52,14 @@ identifier
     ;
 
 constant
-    : (MINUS | PLUS)? INTEGER_VALUE # IntegerConstant
+    : (MINUS | PLUS)? INTEGER_VALUE LONG_SUFFIX # LongConstant
+    | (MINUS | PLUS)? INTEGER_VALUE # IntegerConstant
     | (MINUS | PLUS)? DECIMAL_VALUE # DecimalConstant
     | QUOTED_STRING+                # TextConstant
     | BOOLEAN_VALUE                 # BooleanConstant
     ;
+
+LONG_SUFFIX : [lL];
 
 WHERE : 'WHERE' | 'where';
 
@@ -78,6 +83,8 @@ OR: 'OR' | 'or' | '||';
 IN: 'IN' | 'in';
 NIN: 'NIN' | 'nin';
 NOT: 'NOT' | 'not';
+IS: 'IS' | 'is';
+NULL: 'NULL' | 'null';
 
 BOOLEAN_VALUE
     : 'TRUE' | 'true' | 'FALSE' | 'false'
@@ -97,7 +104,7 @@ DECIMAL_VALUE
     ;
 
 IDENTIFIER
-    : (LETTER | DIGIT | '_')+
+    : (LETTER | '_') (LETTER | DIGIT | '_')*
     ;
 
 fragment DECIMAL_DIGITS

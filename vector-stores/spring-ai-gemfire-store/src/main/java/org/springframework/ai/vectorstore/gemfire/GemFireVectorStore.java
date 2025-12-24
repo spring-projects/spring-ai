@@ -32,11 +32,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
@@ -45,6 +46,8 @@ import org.springframework.http.MediaType;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunctions;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -114,6 +117,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	private final String[] fields;
 
+	private final FilterExpressionConverter filterExpressionConverter;
+
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
 	 * create new GemFireVectorStore instances.
@@ -133,7 +138,24 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		String base = UriComponentsBuilder.fromUriString(DEFAULT_URI)
 			.build(builder.sslEnabled ? "s" : "", builder.host, builder.port)
 			.toString();
-		this.client = WebClient.create(base);
+		WebClient.Builder webClientBuilder = WebClient.builder().baseUrl(base);
+
+		ExchangeFilterFunction authenticationFilterFunction = null;
+
+		if (builder.isUsingTokenAuthentication()) {
+			authenticationFilterFunction = new BearerTokenAuthenticationFilterFunction(builder.token);
+		}
+		else if (builder.isUsingBasicAuthentication()) {
+			authenticationFilterFunction = ExchangeFilterFunctions.basicAuthentication(builder.username,
+					builder.password);
+		}
+
+		if (authenticationFilterFunction != null) {
+			webClientBuilder.filter(authenticationFilterFunction);
+		}
+
+		this.client = webClientBuilder.build();
+		this.filterExpressionConverter = new GemFireAiSearchFilterExpressionConverter();
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
@@ -201,7 +223,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		UploadRequest upload = new UploadRequest(documents.stream()
 			.map(document -> new UploadRequest.Embedding(document.getId(), embeddings.get(documents.indexOf(document)),
@@ -243,17 +265,17 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@Override
-	@Nullable
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		String filterQuery = null;
 		if (request.hasFilterExpression()) {
-			throw new UnsupportedOperationException("GemFire currently does not support metadata filter expressions.");
+			filterQuery = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 		}
 		float[] floatVector = this.embeddingModel.embed(request.getQuery());
 		return this.client.post()
 			.uri("/" + this.indexName + QUERY)
 			.contentType(MediaType.APPLICATION_JSON)
 			.bodyValue(new QueryRequest(floatVector, request.getTopK(), request.getTopK(), // TopKPerBucket
-					true))
+					true, filterQuery))
 			.retrieve()
 			.bodyToFlux(QueryResponse.class)
 			.filter(r -> r.score >= request.getSimilarityThreshold())
@@ -474,11 +496,20 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		@JsonProperty("include-metadata")
 		private final boolean includeMetadata;
 
+		@JsonProperty("filter-query")
+		@JsonInclude(JsonInclude.Include.NON_NULL)
+		private final String filterQuery;
+
 		QueryRequest(float[] vector, int k, int kPerBucket, boolean includeMetadata) {
+			this(vector, k, kPerBucket, includeMetadata, null);
+		}
+
+		QueryRequest(float[] vector, int k, int kPerBucket, boolean includeMetadata, String filterQuery) {
 			this.vector = vector;
 			this.k = k;
 			this.kPerBucket = kPerBucket;
 			this.includeMetadata = includeMetadata;
+			this.filterQuery = filterQuery;
 		}
 
 		public float[] getVector() {
@@ -495,6 +526,10 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		public boolean isIncludeMetadata() {
 			return this.includeMetadata;
+		}
+
+		public String getFilterQuery() {
+			return this.filterQuery;
 		}
 
 	}
@@ -575,6 +610,12 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		private String[] fields = GemFireVectorStore.DEFAULT_FIELDS;
 
 		private boolean initializeSchema = false;
+
+		private String username;
+
+		private String password;
+
+		private String token;
 
 		private Builder(EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -696,6 +737,50 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
 			return this;
+		}
+
+		/**
+		 * Sets the username to authenticate requests with
+		 * @param username the username to authenticate or unauthenticated if not set
+		 * @return the builder instance
+		 */
+		public Builder username(String username) {
+			this.username = username;
+			return this;
+		}
+
+		/**
+		 * Sets the password to authenticate requests with
+		 * @param password the password to authenticate if username is also provided
+		 * @return the builder instance
+		 */
+		public Builder password(String password) {
+			this.password = password;
+			return this;
+		}
+
+		/**
+		 * Sets the token to authenticate requests with
+		 * @param token the token to use for authentication
+		 * @return the builder instance
+		 */
+		public Builder token(String token) {
+			this.token = token;
+			return this;
+		}
+
+		/**
+		 * @return true if a token has been provided
+		 */
+		public boolean isUsingTokenAuthentication() {
+			return this.token != null;
+		}
+
+		/**
+		 * @return true if a username and password have been provided
+		 */
+		public boolean isUsingBasicAuthentication() {
+			return this.username != null && this.password != null;
 		}
 
 		@Override

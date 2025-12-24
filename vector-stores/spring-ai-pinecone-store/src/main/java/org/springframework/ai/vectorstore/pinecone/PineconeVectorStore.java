@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -137,7 +137,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param namespace The namespace to add the documents to
 	 */
 	public void add(List<Document> documents, String namespace) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		List<VectorWithUnsignedIndices> upsertVectors = new ArrayList<>();
 		for (Document document : documents) {
@@ -301,7 +301,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private Map<String, Object> extractMetadata(Struct metadataStruct) {
 		try {
 			String json = JsonFormat.printer().print(metadataStruct);
-			Map<String, Object> metadata = this.objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
+			Map<String, Object> metadata = this.objectMapper.readValue(json, new TypeReference<>() {
 
 			});
 			metadata.remove(this.pineconeContentFieldName);

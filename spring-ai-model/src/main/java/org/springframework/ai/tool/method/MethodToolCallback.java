@@ -23,6 +23,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,11 +80,13 @@ public final class MethodToolCallback implements ToolCallback {
 				: DEFAULT_RESULT_CONVERTER;
 	}
 
+	@SuppressWarnings("null")
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return this.toolDefinition;
 	}
 
+	@SuppressWarnings("null")
 	@Override
 	public ToolMetadata getToolMetadata() {
 		return this.toolMetadata;
@@ -100,13 +103,13 @@ public final class MethodToolCallback implements ToolCallback {
 
 		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());
 
-		validateToolContextSupport(toolContext);
+		this.validateToolContextSupport(toolContext);
 
-		Map<String, Object> toolArguments = extractToolArguments(toolInput);
+		Map<String, Object> toolArguments = this.extractToolArguments(toolInput);
 
-		Object[] methodArguments = buildMethodArguments(toolArguments, toolContext);
+		Object[] methodArguments = this.buildMethodArguments(toolArguments, toolContext);
 
-		Object result = callMethod(methodArguments);
+		Object result = this.callMethod(methodArguments);
 
 		logger.debug("Successful execution of tool: {}", this.toolDefinition.name());
 
@@ -125,11 +128,19 @@ public final class MethodToolCallback implements ToolCallback {
 	}
 
 	private Map<String, Object> extractToolArguments(String toolInput) {
-		return JsonParser.fromJson(toolInput, new TypeReference<>() {
-		});
+		try {
+			return JsonParser.fromJson(toolInput, new TypeReference<>() {
+			});
+		}
+		catch (Exception ex) {
+			logger.warn("Conversion from JSON failed", ex);
+			Throwable cause = (ex.getCause() instanceof JsonProcessingException) ? ex.getCause() : ex;
+			throw new ToolExecutionException(this.getToolDefinition(), cause);
+		}
 	}
 
 	// Based on the implementation in MethodToolCallback.
+	@SuppressWarnings("null")
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
 		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
 			if (parameter.getType().isAssignableFrom(ToolContext.class)) {
@@ -145,16 +156,24 @@ public final class MethodToolCallback implements ToolCallback {
 		if (value == null) {
 			return null;
 		}
+		try {
+			if (type instanceof Class<?>) {
+				return JsonParser.toTypedObject(value, (Class<?>) type);
+			}
 
-		if (type instanceof Class<?>) {
-			return JsonParser.toTypedObject(value, (Class<?>) type);
+			// For generic types, use the fromJson method that accepts Type
+
+			String json = JsonParser.toJson(value);
+			return JsonParser.fromJson(json, type);
 		}
-
-		// For generic types, use the fromJson method that accepts Type
-		String json = JsonParser.toJson(value);
-		return JsonParser.fromJson(json, type);
+		catch (Exception ex) {
+			logger.warn("Conversion from JSON failed", ex);
+			Throwable cause = (ex.getCause() instanceof JsonProcessingException) ? ex.getCause() : ex;
+			throw new ToolExecutionException(this.getToolDefinition(), cause);
+		}
 	}
 
+	@SuppressWarnings("null")
 	@Nullable
 	private Object callMethod(Object[] methodArguments) {
 		if (isObjectNotPublic() || isMethodNotPublic()) {
@@ -232,6 +251,7 @@ public final class MethodToolCallback implements ToolCallback {
 			return this;
 		}
 
+		@SuppressWarnings("null")
 		public MethodToolCallback build() {
 			return new MethodToolCallback(this.toolDefinition, this.toolMetadata, this.toolMethod, this.toolObject,
 					this.toolCallResultConverter);

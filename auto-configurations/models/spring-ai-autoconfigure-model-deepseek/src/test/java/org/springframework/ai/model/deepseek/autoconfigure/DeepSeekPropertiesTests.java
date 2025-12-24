@@ -19,15 +19,15 @@ package org.springframework.ai.model.deepseek.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Hyunsang Han
+ * @author Issam El-atif
  */
 public class DeepSeekPropertiesTests {
 
@@ -41,8 +41,7 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.chat.options.model=MODEL_XYZ",
 				"spring.ai.deepseek.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, DeepSeekChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(DeepSeekChatProperties.class);
 				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
@@ -70,8 +69,7 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.chat.options.model=MODEL_XYZ",
 				"spring.ai.deepseek.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, DeepSeekChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(DeepSeekChatProperties.class);
 				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
@@ -108,8 +106,7 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.chat.options.user=userXYZ"
 				)
 			// @formatter:on
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, DeepSeekChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(DeepSeekChatProperties.class);
 				var connectionProperties = context.getBean(DeepSeekConnectionProperties.class);
@@ -132,7 +129,7 @@ public class DeepSeekPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.deepseek.api-key=API_KEY", "spring.ai.deepseek.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=none")
-			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DeepSeekChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(DeepSeekChatModel.class)).isEmpty();
@@ -140,7 +137,7 @@ public class DeepSeekPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.deepseek.api-key=API_KEY", "spring.ai.deepseek.base-url=TEST_BASE_URL")
-			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DeepSeekChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DeepSeekChatModel.class)).isNotEmpty();
@@ -149,7 +146,7 @@ public class DeepSeekPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.deepseek.api-key=API_KEY", "spring.ai.deepseek.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=deepseek")
-			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(DeepSeekChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(DeepSeekChatModel.class)).isNotEmpty();

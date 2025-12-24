@@ -44,6 +44,8 @@ public class WeaviateVectorStoreProperties {
 
 	private String contentFieldName = "content";
 
+	private String metaFieldPrefix = "meta_";
+
 	private ConsistentLevel consistencyLevel = WeaviateVectorStore.ConsistentLevel.ONE;
 
 	/**
@@ -89,7 +91,7 @@ public class WeaviateVectorStoreProperties {
 	 * @since 1.1.0
 	 */
 	public String getContentFieldName() {
-		return contentFieldName;
+		return this.contentFieldName;
 	}
 
 	/**
@@ -97,6 +99,20 @@ public class WeaviateVectorStoreProperties {
 	 */
 	public void setContentFieldName(String contentFieldName) {
 		this.contentFieldName = contentFieldName;
+	}
+
+	/**
+	 * @since 1.1.0
+	 */
+	public String getMetaFieldPrefix() {
+		return this.metaFieldPrefix;
+	}
+
+	/**
+	 * @since 1.1.0
+	 */
+	public void setMetaFieldPrefix(String metaFieldPrefix) {
+		this.metaFieldPrefix = metaFieldPrefix;
 	}
 
 	public ConsistentLevel getConsistencyLevel() {

@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -95,8 +95,6 @@ import org.springframework.util.StringUtils;
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(WeaviateVectorStore.class);
-
-	private static final String METADATA_FIELD_PREFIX = "meta_";
 
 	private static final String METADATA_FIELD_NAME = "metadata";
 
@@ -162,7 +160,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		this.consistencyLevel = builder.consistencyLevel;
 		this.filterMetadataFields = builder.filterMetadataFields;
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
-				this.filterMetadataFields.stream().map(MetadataField::name).toList());
+				this.filterMetadataFields.stream().map(MetadataField::name).toList(),
+				this.options.getMetaFieldPrefix());
 		this.weaviateSimilaritySearchFields = buildWeaviateSimilaritySearchFields();
 	}
 
@@ -182,7 +181,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		searchWeaviateFieldList.add(Field.builder().name(this.options.getContentFieldName()).build());
 		searchWeaviateFieldList.add(Field.builder().name(METADATA_FIELD_NAME).build());
 		searchWeaviateFieldList.addAll(this.filterMetadataFields.stream()
-			.map(mf -> Field.builder().name(METADATA_FIELD_PREFIX + mf.name()).build())
+			.map(mf -> Field.builder().name(this.options.getMetaFieldPrefix() + mf.name()).build())
 			.toList());
 		searchWeaviateFieldList.add(Field.builder()
 			.name(ADDITIONAL_FIELD_NAME)
@@ -202,7 +201,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			return;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		List<WeaviateObject> weaviateObjects = documents.stream()
@@ -260,7 +259,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		// expressions on them.
 		for (MetadataField mf : this.filterMetadataFields) {
 			if (document.getMetadata().containsKey(mf.name())) {
-				fields.put(METADATA_FIELD_PREFIX + mf.name(), document.getMetadata().get(mf.name()));
+				fields.put(this.options.getMetaFieldPrefix() + mf.name(), document.getMetadata().get(mf.name()));
 			}
 		}
 
@@ -545,22 +544,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			super(embeddingModel);
 			Assert.notNull(weaviateClient, "WeaviateClient must not be null");
 			this.weaviateClient = weaviateClient;
-		}
-
-		/**
-		 * Configures the Weaviate object class.
-		 * @param objectClass the object class to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if objectClass is null or empty
-		 * @deprecated Use
-		 * {@link org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.Builder#options(WeaviateVectorStoreOptions)}
-		 * instead.
-		 */
-		@Deprecated
-		public Builder objectClass(String objectClass) {
-			Assert.hasText(objectClass, "objectClass must not be empty");
-			this.options.setObjectClass(objectClass);
-			return this;
 		}
 
 		/**

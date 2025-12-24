@@ -2,6 +2,27 @@
 = Observability
 
 Spring AI builds upon the observability features in the Spring ecosystem to provide insights into AI-related operations.
+
+The spring-boot-actuator module is required for enabling observability.
+Add the Spring Boot Actuator dependency to your project's Maven `pom.xml` build file:
+
+[source,xml]
+----
+<dependency>
+ <groupId>org.springframework.boot</groupId>
+ <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+}
+----
+
 Spring AI provides metrics and tracing capabilities for its core components: `ChatClient` (including `Advisor`),
 `ChatModel`, `EmbeddingModel`, `ImageModel`, and `VectorStore`.
 
@@ -54,21 +75,22 @@ They measure the time spent performing the invocation and propagate the related 
 |`spring.ai.chat.client.user.text` (deprecated) | Chat client user text. Optional. Superseded by `gen_ai.prompt`.
 |===
 
-=== Prompt Content
+=== Prompt and Completion Data
 
-The `ChatClient` prompt content is typically big and possibly containing sensitive information.
+The `ChatClient` prompt and completion data is typically big and possibly containing sensitive information.
 For those reasons, it is not exported by default.
 
-Spring AI supports logging the prompt content to help with debugging and troubleshooting.
+Spring AI supports logging the prompt and completion data to help with debugging and troubleshooting.
 
 [cols="6,3,1", stripes=even]
 |====
 | Property | Description | Default
 
 | `spring.ai.chat.client.observations.log-prompt` |  Whether to log the chat client prompt content. | `false`
+| `spring.ai.chat.client.observations.log-completion` |  Whether to log the chat client completion content. | `false`
 |====
 
-WARNING: If you enable logging of the chat client prompt content, there's a risk of exposing sensitive or private information. Please, be careful!
+WARNING: If you enable logging of the chat client prompt and completion data, there's a risk of exposing sensitive or private information. Please, be careful!
 
 === Input Data (Deprecated)
 
@@ -116,7 +138,7 @@ They measure the time spent in the advisor (including the time spend on the inne
 == Chat Model
 
 NOTE: Observability features are currently supported only for `ChatModel` implementations from the following AI model
-providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, OpenAI, Vertex AI, MiniMax, Moonshot, QianFan, Zhiu AI.
+providers: Anthropic, Azure OpenAI, Mistral AI, Ollama, OpenAI, Vertex AI, MiniMax, Moonshot, QianFan, Zhipu AI.
 Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded when calling the ChatModel `call` or `stream` methods. 
@@ -363,3 +385,161 @@ Spring AI supports logging vector search response data, useful for troubleshooti
 |===
 
 WARNING: If you enable logging of the vector search response data, there's a risk of exposing sensitive or private information. Please, be careful!
+
+== More Metrics Reference
+
+This section documents the metrics emitted by Spring AI components as they appear in Prometheus.
+
+=== Metric Naming Conventions
+
+Spring AI uses Micrometer. Base metric names use dots (e.g., `gen_ai.client.operation`), which Prometheus exports with underscores and standard suffixes:
+
+* **Timers** → `<base>_seconds_count`, `<base>_seconds_sum`, `<base>_seconds_max`, and (when supported) `<base>_active_count`
+* **Counters** → `<base>_total` (monotonic)
+
+[NOTE]
+====
+The following shows how base metric names expand to Prometheus time series.
+
+[cols="2,3", options="header", stripes=even]
+|===
+| Base metric name | Exported time series
+| `gen_ai.client.operation` |
+`gen_ai_client_operation_seconds_count` +
+`gen_ai_client_operation_seconds_sum` +
+`gen_ai_client_operation_seconds_max` +
+`gen_ai_client_operation_active_count`
+| `db.vector.client.operation` |
+`db_vector_client_operation_seconds_count` +
+`db_vector_client_operation_seconds_sum` +
+`db_vector_client_operation_seconds_max` +
+`db_vector_client_operation_active_count`
+|===
+====
+
+==== References
+
+* OpenTelemetry — https://opentelemetry.io/docs/specs/semconv/gen-ai/[Semantic Conventions for Generative AI (overview)]
+* Micrometer — https://docs.micrometer.io/micrometer/reference/concepts/naming.html[Naming Meters]
+
+=== Chat Client Metrics
+
+[cols="2,2,1,3", stripes=even]
+|===
+|Metric Name | Type | Unit | Description
+
+|`gen_ai_chat_client_operation_seconds_sum`
+|Timer
+|seconds
+|Total time spent in ChatClient operations (call/stream)
+
+|`gen_ai_chat_client_operation_seconds_count`
+|Counter
+|count
+|Number of completed ChatClient operations
+
+|`gen_ai_chat_client_operation_seconds_max`
+|Gauge
+|seconds
+|Maximum observed duration of ChatClient operations
+
+|`gen_ai_chat_client_operation_active_count`
+|Gauge
+|count
+|Number of ChatClient operations currently in flight
+|===
+
+*Active vs Completed*: `*_active_count` shows in-flight calls; the `_seconds_*` series reflect only completed calls.
+
+=== Chat Model Metrics (Model provider execution)
+
+[cols="2,2,1,3", stripes=even]
+|===
+|Metric Name | Type | Unit | Description
+
+|`gen_ai_client_operation_seconds_sum`
+|Timer
+|seconds
+|Total time executing chat model operations
+
+|`gen_ai_client_operation_seconds_count`
+|Counter
+|count
+|Number of completed chat model operations
+
+|`gen_ai_client_operation_seconds_max`
+|Gauge
+|seconds
+|Maximum observed duration for chat model operations
+
+|`gen_ai_client_operation_active_count`
+|Gauge
+|count
+|Number of chat model operations currently in flight
+|===
+
+==== Token Usage
+
+[cols="2,2,1,3", stripes=even]
+|===
+|Metric Name | Type | Unit | Description
+
+|`gen_ai_client_token_usage_total`
+|Counter
+|tokens
+|Total tokens consumed, labeled by token type
+|===
+
+==== Labels
+
+[cols="2,3", options="header", stripes=even]
+|===
+|Label | Meaning
+|`gen_ai_token_type=input` | Prompt tokens sent to the model
+|`gen_ai_token_type=output` | Completion tokens returned by the model
+|`gen_ai_token_type=total` | Input + output
+|===
+
+=== Vector Store Metrics
+
+[cols="2,2,1,3", stripes=even]
+|===
+|Metric Name | Type | Unit | Description
+
+|`db_vector_client_operation_seconds_sum`
+|Timer
+|seconds
+|Total time spent in vector store operations (add/delete/query)
+
+|`db_vector_client_operation_seconds_count`
+|Counter
+|count
+|Number of completed vector store operations
+
+|`db_vector_client_operation_seconds_max`
+|Gauge
+|seconds
+|Maximum observed duration for vector store operations
+
+|`db_vector_client_operation_active_count`
+|Gauge
+|count
+|Number of vector store operations currently in flight
+|===
+
+==== Labels
+
+[cols="2,3", options="header", stripes=even]
+|===
+|Label | Meaning
+|`db_operation_name` | Operation type (`add`, `delete`, `query`)
+|`db_system` | Vector DB/provider (`redis`, `chroma`, `pgvector`, …)
+|`spring_ai_kind` | `vector_store`
+|===
+
+=== Understanding Active vs Completed
+
+* **Active (`*_active_count`)** — instantaneous gauge of in-progress operations (concurrency/load).
+* **Completed (`*_seconds_sum|count|max`)** — statistics for operations that have finished:
+* `_seconds_sum / _seconds_count` → average latency
+* `_seconds_max` → high-water mark since last scrape (subject to registry behavior)

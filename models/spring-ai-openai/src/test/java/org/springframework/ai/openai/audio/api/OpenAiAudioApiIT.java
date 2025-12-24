@@ -27,10 +27,10 @@ import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.Voice;
 import org.springframework.ai.openai.api.OpenAiAudioApi.StructuredResponse;
+import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionModels;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranscriptionRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TranslationRequest;
 import org.springframework.ai.openai.api.OpenAiAudioApi.TtsModel;
-import org.springframework.ai.openai.api.OpenAiAudioApi.WhisperModel;
 import org.springframework.util.FileCopyUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,7 @@ public class OpenAiAudioApiIT {
 
 		byte[] speech = this.audioApi
 			.createSpeech(SpeechRequest.builder()
-				.model(TtsModel.TTS_1_HD.getValue())
+				.model(TtsModel.GPT_4_O_MINI_TTS.getValue())
 				.input("Hello, my name is Chris and I love Spring A.I.")
 				.voice(Voice.ONYX.getValue())
 				.build())
@@ -63,24 +63,29 @@ public class OpenAiAudioApiIT {
 		FileCopyUtils.copy(speech, new File("target/speech.mp3"));
 
 		StructuredResponse translation = this.audioApi
-			.createTranslation(
-					TranslationRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
-					StructuredResponse.class)
+			.createTranslation(TranslationRequest.builder()
+				.model(TranscriptionModels.WHISPER_1.getValue())
+				.file(speech)
+				.fileName("speech.mp3")
+				.build(), StructuredResponse.class)
 			.getBody();
 
 		assertThat(translation.text().replaceAll(",", "")).isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionEnglish = this.audioApi
-			.createTranscription(
-					TranscriptionRequest.builder().model(WhisperModel.WHISPER_1.getValue()).file(speech).build(),
-					StructuredResponse.class)
+			.createTranscription(TranscriptionRequest.builder()
+				.model(TranscriptionModels.WHISPER_1.getValue())
+				.file(speech)
+				.fileName("speech.mp3")
+				.build(), StructuredResponse.class)
 			.getBody();
 
 		assertThat(transcriptionEnglish.text().replaceAll(",", ""))
 			.isEqualTo("Hello my name is Chris and I love Spring AI.");
 
 		StructuredResponse transcriptionDutch = this.audioApi
-			.createTranscription(TranscriptionRequest.builder().file(speech).language("nl").build(),
+			.createTranscription(
+					TranscriptionRequest.builder().file(speech).fileName("speech.mp3").language("nl").build(),
 					StructuredResponse.class)
 			.getBody();
 

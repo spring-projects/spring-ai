@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,7 @@ import org.springframework.util.Assert;
  * }</pre>
  *
  * @author Christian Tzolov
+ * @author Sun Yuhan
  */
 public class FilterExpressionTextParser {
 
@@ -239,6 +240,16 @@ public class FilterExpressionTextParser {
 					this.visitIdentifier(ctx.identifier()), this.visit(ctx.constant()));
 		}
 
+		@Override
+		public Filter.Operand visitIsNullExpression(FiltersParser.IsNullExpressionContext ctx) {
+			return new Filter.Expression(Filter.ExpressionType.ISNULL, this.visitIdentifier(ctx.identifier()));
+		}
+
+		@Override
+		public Filter.Operand visitIsNotNullExpression(FiltersParser.IsNotNullExpressionContext ctx) {
+			return new Filter.Expression(Filter.ExpressionType.ISNOTNULL, this.visitIdentifier(ctx.identifier()));
+		}
+
 		private Filter.ExpressionType covertCompare(String compare) {
 			if (!COMP_EXPRESSION_TYPE_MAP.containsKey(compare)) {
 				throw new RuntimeException("Unknown compare operator: " + compare);
@@ -264,6 +275,14 @@ public class FilterExpressionTextParser {
 		@Override
 		public Filter.Operand visitNotExpression(NotExpressionContext ctx) {
 			return new Filter.Expression(Filter.ExpressionType.NOT, this.visit(ctx.booleanExpression()), null);
+		}
+
+		@Override
+		public Filter.Operand visitLongConstant(FiltersParser.LongConstantContext ctx) {
+			String text = ctx.getText();
+			// Remove the trailing 'l' or 'L'
+			long value = Long.parseLong(text.substring(0, text.length() - 1));
+			return new Filter.Value(value);
 		}
 
 		public Filter.Expression castToExpression(Filter.Operand expression) {

@@ -20,8 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,29 +29,32 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit Tests for MiniMax auto-configurations' conditional enabling of models.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Issam El-atif
  */
 public class MinimaxModelConfigurationTests {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class))
+	private final ApplicationContextRunner chatContextRunner = new ApplicationContextRunner()
+		.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+		.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL");
+
+	private final ApplicationContextRunner embeddingContextRunner = new ApplicationContextRunner()
+		.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
 		.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL");
 
 	@Test
 	void chatModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MiniMaxChatAutoConfiguration.class)).run(context -> {
+		this.chatContextRunner.run(context -> {
 			assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isNotEmpty();
 		});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none")
+		this.chatContextRunner.withPropertyValues("spring.ai.model.chat=none", "spring.ai.model.embedding=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.chat=minimax", "spring.ai.model.embedding=none")
+		this.chatContextRunner.withPropertyValues("spring.ai.model.chat=minimax", "spring.ai.model.embedding=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isNotEmpty();
@@ -61,25 +63,20 @@ public class MinimaxModelConfigurationTests {
 
 	@Test
 	void embeddingModelActivation() {
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
-			});
+		this.embeddingContextRunner.run(context -> {
+			assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
+		});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.embedding=none")
-			.run(context -> {
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isEmpty();
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isEmpty();
-			});
+		this.embeddingContextRunner.withPropertyValues("spring.ai.model.embedding=none").run(context -> {
+			assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isEmpty();
+		});
 
-		this.contextRunner.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
-			.withPropertyValues("spring.ai.model.embedding=minimax")
-			.run(context -> {
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
-				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
-			});
+		this.embeddingContextRunner.withPropertyValues("spring.ai.model.embedding=minimax").run(context -> {
+			assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
+		});
 	}
 
 }

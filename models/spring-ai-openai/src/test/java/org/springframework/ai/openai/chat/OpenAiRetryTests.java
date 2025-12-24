@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,11 +65,11 @@ import org.springframework.ai.openai.api.OpenAiImageApi.OpenAiImageResponse;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -109,7 +109,7 @@ public class OpenAiRetryTests {
 	public void beforeEach() {
 		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
-		this.retryTemplate.registerListener(this.retryListener);
+		this.retryTemplate.setRetryListener(this.retryListener);
 
 		this.chatModel = OpenAiChatModel.builder()
 			.openAiApi(this.openAiApi)
@@ -145,8 +145,8 @@ public class OpenAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.retryCount).isEqualTo(2);
 	}
 
 	@Test
@@ -157,7 +157,7 @@ public class OpenAiRetryTests {
 	}
 
 	@Test
-	@Disabled("Currently stream() does not implmement retry")
+	@Disabled("Currently stream() does not implement retry")
 	public void openAiChatStreamTransientError() {
 
 		var choice = new ChatCompletionChunk.ChunkChoice(ChatCompletionFinishReason.STOP, 0,
@@ -174,12 +174,12 @@ public class OpenAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.retryCount).isEqualTo(2);
 	}
 
 	@Test
-	@Disabled("Currently stream() does not implmement retry")
+	@Disabled("Currently stream() does not implement retry")
 	public void openAiChatStreamNonTransientError() {
 		given(this.openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 			.willThrow(new RuntimeException("Non Transient Error"));
@@ -202,8 +202,8 @@ public class OpenAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.retryCount).isEqualTo(2);
 	}
 
 	@Test
@@ -229,8 +229,8 @@ public class OpenAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(expectedResponse.text());
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.retryCount).isEqualTo(2);
 	}
 
 	@Test
@@ -256,8 +256,8 @@ public class OpenAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getUrl()).isEqualTo("url678");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
+		assertThat(this.retryListener.retryCount).isEqualTo(2);
 	}
 
 	@Test
@@ -270,19 +270,19 @@ public class OpenAiRetryTests {
 
 	private static class TestRetryListener implements RetryListener {
 
-		int onErrorRetryCount = 0;
+		int retryCount = 0;
 
 		int onSuccessRetryCount = 0;
 
 		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
+		public void onRetrySuccess(final RetryPolicy retryPolicy, final Retryable<?> retryable, final Object result) {
+			// Count successful retries - we increment when we succeed after a failure
+			this.onSuccessRetryCount++;
 		}
 
 		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
+		public void beforeRetry(RetryPolicy retryPolicy, Retryable<?> retryable) {
+			this.retryCount++;
 		}
 
 	}

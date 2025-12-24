@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
@@ -41,11 +40,11 @@ import org.springframework.ai.mistralai.api.MistralAiApi.EmbeddingList;
 import org.springframework.ai.mistralai.api.MistralAiApi.EmbeddingRequest;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,6 +55,7 @@ import static org.mockito.BDDMockito.given;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Alexandros Pappas
+ * @author Jason Smith
  */
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -75,7 +75,7 @@ public class MistralAiRetryTests {
 	public void beforeEach() {
 		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
-		this.retryTemplate.registerListener(this.retryListener);
+		this.retryTemplate.setRetryListener(this.retryListener);
 
 		this.chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(this.mistralAiApi)
@@ -87,9 +87,10 @@ public class MistralAiRetryTests {
 				.build())
 			.retryTemplate(this.retryTemplate)
 			.build();
-		this.embeddingModel = new MistralAiEmbeddingModel(this.mistralAiApi, MetadataMode.EMBED,
-				MistralAiEmbeddingOptions.builder().withModel(MistralAiApi.EmbeddingModel.EMBED.getValue()).build(),
-				this.retryTemplate);
+		this.embeddingModel = MistralAiEmbeddingModel.builder()
+			.mistralAiApi(this.mistralAiApi)
+			.retryTemplate(this.retryTemplate)
+			.build();
 	}
 
 	@Test
@@ -109,7 +110,7 @@ public class MistralAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -138,7 +139,7 @@ public class MistralAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -166,7 +167,7 @@ public class MistralAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -178,6 +179,19 @@ public class MistralAiRetryTests {
 			.call(new org.springframework.ai.embedding.EmbeddingRequest(List.of("text1", "text2"), null)));
 	}
 
+	@Test
+	public void mistralAiChatMixedTransientAndNonTransientErrors() {
+		given(this.mistralAiApi.chatCompletionEntity(isA(ChatCompletionRequest.class)))
+			.willThrow(new TransientAiException("Transient Error"))
+			.willThrow(new RuntimeException("Non Transient Error"));
+
+		// Should fail immediately on non-transient error, no further retries
+		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
+
+		// Should have 1 retry attempt before hitting non-transient error
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(1);
+	}
+
 	private static class TestRetryListener implements RetryListener {
 
 		int onErrorRetryCount = 0;
@@ -185,14 +199,15 @@ public class MistralAiRetryTests {
 		int onSuccessRetryCount = 0;
 
 		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
+		public void beforeRetry(final RetryPolicy retryPolicy, final Retryable<?> retryable) {
+			// Count each retry attempt
+			this.onErrorRetryCount++;
 		}
 
 		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
+		public void onRetrySuccess(final RetryPolicy retryPolicy, final Retryable<?> retryable, final Object result) {
+			// Count successful retries - we increment when we succeed after a failure
+			this.onSuccessRetryCount++;
 		}
 
 	}

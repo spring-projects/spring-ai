@@ -33,15 +33,14 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -52,6 +51,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * {@link AutoConfiguration Auto-configuration} for DeepSeek Chat Model.
  *
  * @author Geng Rong
+ * @author Hyunsang Han
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
@@ -59,8 +59,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 @EnableConfigurationProperties({ DeepSeekConnectionProperties.class, DeepSeekChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.DEEPSEEK,
 		matchIfMissing = true)
-@ImportAutoConfiguration(classes = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-		WebClientAutoConfiguration.class, ToolCallingAutoConfiguration.class })
 public class DeepSeekChatAutoConfiguration {
 
 	@Bean

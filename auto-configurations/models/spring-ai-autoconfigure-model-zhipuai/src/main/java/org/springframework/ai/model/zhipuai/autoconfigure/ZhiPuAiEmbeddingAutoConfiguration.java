@@ -19,6 +19,7 @@ package org.springframework.ai.model.zhipuai.autoconfigure;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
+import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
@@ -29,14 +30,15 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Embedding {@link AutoConfiguration Auto-configuration} for ZhiPuAI.
@@ -54,13 +56,16 @@ public class ZhiPuAiEmbeddingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ZhiPuAiEmbeddingModel zhiPuAiEmbeddingModel(ZhiPuAiConnectionProperties commonProperties,
-			ZhiPuAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
-			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+			ZhiPuAiEmbeddingProperties embeddingProperties,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, RetryTemplate retryTemplate,
+			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var zhiPuAiApi = zhiPuAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				embeddingProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
+				embeddingProperties.getApiKey(), commonProperties.getApiKey(),
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
 		var embeddingModel = new ZhiPuAiEmbeddingModel(zhiPuAiApi, embeddingProperties.getMetadataMode(),
 				embeddingProperties.getOptions(), retryTemplate,
@@ -72,7 +77,8 @@ public class ZhiPuAiEmbeddingAutoConfiguration {
 	}
 
 	private ZhiPuAiApi zhiPuAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl, "ZhiPuAI base URL must be set");
@@ -80,7 +86,13 @@ public class ZhiPuAiEmbeddingAutoConfiguration {
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		Assert.hasText(resolvedApiKey, "ZhiPuAI API key must be set");
 
-		return new ZhiPuAiApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
+		return ZhiPuAiApi.builder()
+			.baseUrl(resolvedBaseUrl)
+			.apiKey(new SimpleApiKey(resolvedApiKey))
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
+			.responseErrorHandler(responseErrorHandler)
+			.build();
 	}
 
 }

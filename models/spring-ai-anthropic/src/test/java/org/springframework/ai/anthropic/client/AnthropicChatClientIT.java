@@ -35,13 +35,16 @@ import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.tool.MockWeatherService;
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.test.CurlyBracketEscaper;
+import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -108,7 +111,26 @@ class AnthropicChatClientIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
-				.entity(new ParameterizedTypeReference<List<ActorsFilms>>() {
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void listOutputConverterBean2() {
+
+		// @formatter:off
+		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+				.options(AnthropicChatOptions.builder()
+					.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
+					.build())
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -141,7 +163,7 @@ class AnthropicChatClientIT {
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
-				.entity(new ParameterizedTypeReference<Map<String, Object>>() {
+				.entity(new ParameterizedTypeReference<>() {
 				});
 		// @formatter:on
 
@@ -304,7 +326,7 @@ class AnthropicChatClientIT {
 	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
-		// TODO: add url method that wrapps the checked exception.
+		// TODO: add url method that wraps the checked exception.
 		URL url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
 		// @formatter:off
@@ -325,7 +347,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_5_SONNET)
+				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
@@ -337,6 +359,41 @@ class AnthropicChatClientIT {
 
 		logger.info("Response: {}", content);
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
+	}
+
+	@ParameterizedTest(name = "{0} : {displayName} ")
+	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	void streamToolCallingResponseShouldNotContainToolCallMessages(String modelName) {
+
+		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
+
+		Flux<ChatResponse> responses = chatClient.prompt()
+			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.tools(new MyTools())
+			.user("Get current weather in Amsterdam and Paris")
+			// .user("Get current weather in Amsterdam. Please don't explain that you will
+			// call tools.")
+			.stream()
+			.chatResponse();
+
+		List<ChatResponse> chatResponses = responses.collectList().block();
+
+		assertThat(chatResponses).isNotEmpty();
+
+		// Verify that none of the ChatResponse objects have tool calls
+		chatResponses.forEach(chatResponse -> {
+			logger.info("ChatResponse Results: {}", chatResponse.getResults());
+			assertThat(chatResponse.hasToolCalls()).isFalse();
+		});
+	}
+
+	public static class MyTools {
+
+		@Tool(description = "Get the current weather forecast by city name")
+		String getCurrentDateTime(String cityName) {
+			return "For " + cityName + " Weather is hot and sunny with a temperature of 20 degrees";
+		}
+
 	}
 
 	record ActorsFilms(String actor, List<String> movies) {

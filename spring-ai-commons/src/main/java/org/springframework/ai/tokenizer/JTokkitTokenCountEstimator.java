@@ -16,9 +16,12 @@
 
 package org.springframework.ai.tokenizer;
 
+import java.util.Base64;
+
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
 import com.knuddels.jtokkit.api.EncodingType;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
@@ -34,18 +37,28 @@ import org.springframework.util.CollectionUtils;
  */
 public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 
+	/**
+	 * The JTokkit encoding instance used for token counting.
+	 */
 	private final Encoding estimator;
 
+	/**
+	 * Creates a new JTokkitTokenCountEstimator with default CL100K_BASE encoding.
+	 */
 	public JTokkitTokenCountEstimator() {
 		this(EncodingType.CL100K_BASE);
 	}
 
-	public JTokkitTokenCountEstimator(EncodingType tokenEncodingType) {
+	/**
+	 * Creates a new JTokkitTokenCountEstimator with the specified encoding type.
+	 * @param tokenEncodingType the encoding type to use for token counting
+	 */
+	public JTokkitTokenCountEstimator(final EncodingType tokenEncodingType) {
 		this.estimator = Encodings.newLazyEncodingRegistry().getEncoding(tokenEncodingType);
 	}
 
 	@Override
-	public int estimate(String text) {
+	public int estimate(final @Nullable String text) {
 		if (text == null) {
 			return 0;
 		}
@@ -53,7 +66,7 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 	}
 
 	@Override
-	public int estimate(MediaContent content) {
+	public int estimate(final MediaContent content) {
 		int tokenCount = 0;
 
 		if (content.getText() != null) {
@@ -61,16 +74,15 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 		}
 
 		if (!CollectionUtils.isEmpty(content.getMedia())) {
-
 			for (Media media : content.getMedia()) {
-
 				tokenCount += this.estimate(media.getMimeType().toString());
 
 				if (media.getData() instanceof String textData) {
 					tokenCount += this.estimate(textData);
 				}
 				else if (media.getData() instanceof byte[] binaryData) {
-					tokenCount += binaryData.length; // This is likely incorrect.
+					String base64 = Base64.getEncoder().encodeToString(binaryData);
+					tokenCount += this.estimate(base64);
 				}
 			}
 		}
@@ -79,7 +91,7 @@ public class JTokkitTokenCountEstimator implements TokenCountEstimator {
 	}
 
 	@Override
-	public int estimate(Iterable<MediaContent> contents) {
+	public int estimate(final Iterable<MediaContent> contents) {
 		int totalSize = 0;
 		for (MediaContent mediaContent : contents) {
 			totalSize += this.estimate(mediaContent);

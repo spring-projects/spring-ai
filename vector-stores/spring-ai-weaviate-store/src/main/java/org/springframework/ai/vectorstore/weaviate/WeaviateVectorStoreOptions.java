@@ -22,7 +22,7 @@ import org.springframework.util.Assert;
  * Provided Weaviate vector option configuration.
  *
  * @author Jonghoon Park
- * @since 1.1.0.
+ * @since 1.1.0
  */
 public class WeaviateVectorStoreOptions {
 
@@ -30,8 +30,10 @@ public class WeaviateVectorStoreOptions {
 
 	private String contentFieldName = "content";
 
+	private String metaFieldPrefix = "meta_";
+
 	public String getObjectClass() {
-		return objectClass;
+		return this.objectClass;
 	}
 
 	public void setObjectClass(String objectClass) {
@@ -40,12 +42,21 @@ public class WeaviateVectorStoreOptions {
 	}
 
 	public String getContentFieldName() {
-		return contentFieldName;
+		return this.contentFieldName;
 	}
 
 	public void setContentFieldName(String contentFieldName) {
 		Assert.hasText(contentFieldName, "contentFieldName cannot be null or empty");
 		this.contentFieldName = contentFieldName;
+	}
+
+	public String getMetaFieldPrefix() {
+		return this.metaFieldPrefix;
+	}
+
+	public void setMetaFieldPrefix(String metaFieldPrefix) {
+		Assert.notNull(metaFieldPrefix, "metaFieldPrefix can be empty but not null");
+		this.metaFieldPrefix = metaFieldPrefix;
 	}
 
 }
