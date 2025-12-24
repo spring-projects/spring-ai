@@ -652,7 +652,8 @@ public class OpenAiChatModel implements ChatModel {
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
+					OpenAiChatOptions.builder().tools(this.getFunctionTools(toolDefinitions))
+							.extraBody(request.extraBody()).build(), request,
 					ChatCompletionRequest.class);
 		}
 
