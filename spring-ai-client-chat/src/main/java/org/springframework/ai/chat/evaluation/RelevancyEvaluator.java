@@ -162,7 +162,7 @@ public class RelevancyEvaluator implements Evaluator {
 	}
 
 	record Response(
-			@JsonPropertyDescription("Provides a short explanation how the query is or is not in line with the context information provided")
+			@JsonPropertyDescription("Provides a short explanation of how the response for the query is or is not in line with the context information provided")
 			String reasoning,
 			@JsonPropertyDescription("Indicates whether the response for the query is in line with the context information provided")
 			boolean isInLine) {
