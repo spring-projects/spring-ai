@@ -34,12 +34,26 @@ public class OllamaConnectionProperties {
 	 */
 	private String baseUrl = "http://localhost:11434";
 
+	/**
+	 * API key for authenticating requests to Ollama API server.
+	 * If provided, it will be sent as a Bearer token in the Authorization header.
+	 */
+	private String apiKey;
+
 	public String getBaseUrl() {
 		return this.baseUrl;
 	}
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	public String getApiKey() {
+		return this.apiKey;
+	}
+
+	public void setApiKey(String apiKey) {
+		this.apiKey = apiKey;
 	}
 
 }
