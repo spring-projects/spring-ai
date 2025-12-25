@@ -16,11 +16,14 @@
 
 package org.springframework.ai.chat.observation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.observation.ModelObservationContext;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.util.Assert;
 
 /**
  * Context used to store metadata for chat model exchanges.
@@ -41,9 +44,9 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 
 	public static final class Builder {
 
-		private Prompt prompt;
+		private @Nullable Prompt prompt;
 
-		private String provider;
+		private @Nullable String provider;
 
 		private Builder() {
 		}
@@ -59,6 +62,8 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 		}
 
 		public ChatModelObservationContext build() {
+			Assert.state(this.prompt != null, "Prompt must not be null");
+			Assert.state(this.provider != null, "Provider must not be null");
 			return new ChatModelObservationContext(this.prompt, this.provider);
 		}
 

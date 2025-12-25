@@ -117,7 +117,7 @@ public final class MessageWindowChatMemory implements ChatMemory {
 
 	public static final class Builder {
 
-		private ChatMemoryRepository chatMemoryRepository;
+		private ChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
 
 		private int maxMessages = DEFAULT_MAX_MESSAGES;
 
@@ -135,9 +135,6 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		}
 
 		public MessageWindowChatMemory build() {
-			if (this.chatMemoryRepository == null) {
-				this.chatMemoryRepository = new InMemoryChatMemoryRepository();
-			}
 			return new MessageWindowChatMemory(this.chatMemoryRepository, this.maxMessages);
 		}
 

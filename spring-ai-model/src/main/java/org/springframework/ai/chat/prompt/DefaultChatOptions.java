@@ -20,29 +20,31 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Default implementation for the {@link ChatOptions}.
  */
 public class DefaultChatOptions implements ChatOptions {
 
-	private String model;
+	private @Nullable String model;
 
-	private Double frequencyPenalty;
+	private @Nullable Double frequencyPenalty;
 
-	private Integer maxTokens;
+	private @Nullable Integer maxTokens;
 
-	private Double presencePenalty;
+	private @Nullable Double presencePenalty;
 
-	private List<String> stopSequences;
+	private @Nullable List<String> stopSequences;
 
-	private Double temperature;
+	private @Nullable Double temperature;
 
-	private Integer topK;
+	private @Nullable Integer topK;
 
-	private Double topP;
+	private @Nullable Double topP;
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
@@ -51,7 +53,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
@@ -60,7 +62,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
@@ -69,7 +71,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
@@ -78,7 +80,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences != null ? Collections.unmodifiableList(this.stopSequences) : null;
 	}
 
@@ -87,7 +89,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
@@ -96,7 +98,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
@@ -105,7 +107,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
@@ -117,14 +119,30 @@ public class DefaultChatOptions implements ChatOptions {
 	@SuppressWarnings("unchecked")
 	public <T extends ChatOptions> T copy() {
 		DefaultChatOptions copy = new DefaultChatOptions();
-		copy.setModel(this.getModel());
-		copy.setFrequencyPenalty(this.getFrequencyPenalty());
-		copy.setMaxTokens(this.getMaxTokens());
-		copy.setPresencePenalty(this.getPresencePenalty());
-		copy.setStopSequences(this.getStopSequences() != null ? new ArrayList<>(this.getStopSequences()) : null);
-		copy.setTemperature(this.getTemperature());
-		copy.setTopK(this.getTopK());
-		copy.setTopP(this.getTopP());
+		if (this.model != null) {
+			copy.setModel(this.model);
+		}
+		if (this.frequencyPenalty != null) {
+			copy.setFrequencyPenalty(this.frequencyPenalty);
+		}
+		if (this.maxTokens != null) {
+			copy.setMaxTokens(this.maxTokens);
+		}
+		if (this.presencePenalty != null) {
+			copy.setPresencePenalty(this.presencePenalty);
+		}
+		if (this.stopSequences != null) {
+			copy.setStopSequences(new ArrayList<>(this.stopSequences));
+		}
+		if (this.temperature != null) {
+			copy.setTemperature(this.temperature);
+		}
+		if (this.topK != null) {
+			copy.setTopK(this.topK);
+		}
+		if (this.topP != null) {
+			copy.setTopP(this.topP);
+		}
 		return (T) copy;
 	}
 

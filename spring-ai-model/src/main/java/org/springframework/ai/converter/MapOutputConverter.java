@@ -20,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.lang.NonNull;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.support.MessageBuilder;
@@ -40,13 +39,14 @@ public class MapOutputConverter extends AbstractMessageOutputConverter<Map<Strin
 	}
 
 	@Override
-	public Map<String, Object> convert(@NonNull String text) {
+	public Map<String, Object> convert(String text) {
 		if (text.startsWith("```json") && text.endsWith("```")) {
 			text = text.substring(7, text.length() - 3);
 		}
 
 		Message<?> message = MessageBuilder.withPayload(text.getBytes(StandardCharsets.UTF_8)).build();
-		return (Map) this.getMessageConverter().fromMessage(message, HashMap.class);
+		Map result = (Map) this.getMessageConverter().fromMessage(message, HashMap.class);
+		return result == null ? new HashMap<>() : result;
 	}
 
 	@Override

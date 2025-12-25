@@ -16,6 +16,8 @@
 
 package org.springframework.ai.moderation;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A builder class for creating instances of ModerationOptions. Use the builder() method
  * to obtain a new instance of ModerationOptionsBuilder. Use the withModel() method to set
@@ -48,10 +50,10 @@ public final class ModerationOptionsBuilder {
 
 	private class ModerationModelOptionsImpl implements ModerationOptions {
 
-		private String model;
+		private @Nullable String model;
 
 		@Override
-		public String getModel() {
+		public @Nullable String getModel() {
 			return this.model;
 		}
 

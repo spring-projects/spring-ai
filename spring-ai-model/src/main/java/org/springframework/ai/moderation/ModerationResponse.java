@@ -16,8 +16,11 @@
 
 package org.springframework.ai.moderation;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.ModelResponse;
 
@@ -35,25 +38,28 @@ public class ModerationResponse implements ModelResponse<Generation> {
 
 	private final ModerationResponseMetadata moderationResponseMetadata;
 
-	private final Generation generations;
+	private final @Nullable Generation generation;
 
-	public ModerationResponse(Generation generations) {
-		this(generations, new ModerationResponseMetadata());
+	public ModerationResponse(@Nullable Generation generation) {
+		this(generation, new ModerationResponseMetadata());
 	}
 
-	public ModerationResponse(Generation generations, ModerationResponseMetadata moderationResponseMetadata) {
+	public ModerationResponse(@Nullable Generation generation, ModerationResponseMetadata moderationResponseMetadata) {
 		this.moderationResponseMetadata = moderationResponseMetadata;
-		this.generations = generations;
+		this.generation = generation;
 	}
 
 	@Override
-	public Generation getResult() {
-		return this.generations;
+	public @Nullable Generation getResult() {
+		return this.generation;
 	}
 
 	@Override
 	public List<Generation> getResults() {
-		return List.of(this.generations);
+		if (this.generation == null) {
+			return Collections.emptyList();
+		}
+		return List.of(this.generation);
 	}
 
 	@Override
@@ -64,7 +70,7 @@ public class ModerationResponse implements ModelResponse<Generation> {
 	@Override
 	public String toString() {
 		return "ModerationResponse{" + "moderationResponseMetadata=" + this.moderationResponseMetadata
-				+ ", generations=" + this.generations + '}';
+				+ ", generations=" + this.generation + '}';
 	}
 
 	@Override
@@ -76,12 +82,12 @@ public class ModerationResponse implements ModelResponse<Generation> {
 			return false;
 		}
 		return Objects.equals(this.moderationResponseMetadata, that.moderationResponseMetadata)
-				&& Objects.equals(this.generations, that.generations);
+				&& Objects.equals(this.generation, that.generation);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.moderationResponseMetadata, this.generations);
+		return Objects.hash(this.moderationResponseMetadata, this.generation);
 	}
 
 }

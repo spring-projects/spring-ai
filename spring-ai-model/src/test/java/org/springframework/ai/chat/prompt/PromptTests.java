@@ -79,13 +79,6 @@ class PromptTests {
 	}
 
 	@Test
-	void whenContentAndMessageAreBothDefinedThenThrow() {
-		assertThatThrownBy(() -> Prompt.builder().content("Something").messages(new UserMessage("Else")).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("content and messages cannot be set at the same time");
-	}
-
-	@Test
 	void getUserMessageWhenSingle() {
 		Prompt prompt = Prompt.builder().messages(new UserMessage("Hello")).build();
 

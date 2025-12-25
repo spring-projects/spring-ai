@@ -20,8 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Interface representing metadata associated with an AI model's response.
@@ -37,8 +36,7 @@ public interface ResponseMetadata {
 	 * @param <T> value type
 	 * @return entry or {@code null} if not present
 	 */
-	@Nullable
-	<T> T get(String key);
+	@Nullable <T> T get(String key);
 
 	/**
 	 * Gets an entry from the context. Throws exception when entry is not present.
@@ -47,7 +45,6 @@ public interface ResponseMetadata {
 	 * @throws IllegalArgumentException if not present
 	 * @return entry
 	 */
-	@NonNull
 	<T> T getRequired(Object key);
 
 	/**

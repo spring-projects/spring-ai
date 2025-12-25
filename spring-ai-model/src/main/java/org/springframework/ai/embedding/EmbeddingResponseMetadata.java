@@ -32,9 +32,9 @@ import org.springframework.ai.model.ResponseMetadata;
  */
 public class EmbeddingResponseMetadata extends AbstractResponseMetadata implements ResponseMetadata {
 
-	private String model;
+	private String model = "";
 
-	private Usage usage;
+	private Usage usage = new EmptyUsage();
 
 	public EmbeddingResponseMetadata() {
 	}
@@ -53,7 +53,7 @@ public class EmbeddingResponseMetadata extends AbstractResponseMetadata implemen
 	 * The model that handled the request.
 	 */
 	public String getModel() {
-		return this.model != null ? this.model : "";
+		return this.model;
 	}
 
 	public void setModel(String model) {
@@ -65,7 +65,7 @@ public class EmbeddingResponseMetadata extends AbstractResponseMetadata implemen
 	 * @see Usage
 	 */
 	public Usage getUsage() {
-		return this.usage != null ? this.usage : new EmptyUsage();
+		return this.usage;
 	}
 
 	public void setUsage(Usage usage) {

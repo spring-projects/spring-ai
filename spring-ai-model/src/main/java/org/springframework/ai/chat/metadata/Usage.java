@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.metadata;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Abstract Data Type (ADT) encapsulating metadata on the usage of an AI provider's API
  * per AI request.
@@ -63,6 +65,6 @@ public interface Usage {
 	 * Return the usage data from the underlying model API response.
 	 * @return the object of type inferred by the API response.
 	 */
-	Object getNativeUsage();
+	@Nullable Object getNativeUsage();
 
 }
