@@ -211,4 +211,49 @@ class DeepSeekStreamFunctionCallingHelperTest {
 		assertThat(result).isNotNull();
 	}
 
+	@Test
+	void merge_sameIdToolCallChunks_shouldMergeProperly() {
+		// Tests merge() behavior when chunks with same ID arrive separately.
+		// This happens when finish_reason is not "tool_calls", causing
+		// isStreamingToolFunctionCallFinish() to return false and windowUntil()
+		// to fail grouping. Without same-ID merging, this creates multiple
+		// tool calls with empty names, causing IllegalArgumentException.
+
+		// Chunk 1: ID + function name
+		ToolCall toolCall1 = new ToolCall("call_123", "function",
+				new ChatCompletionFunction("get_weather", ""));
+		ChatCompletionMessage msg1 = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, List.of(toolCall1));
+		ChatCompletionChunk chunk1 = new ChatCompletionChunk("chat-1",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, msg1, null)), 123L, "deepseek-chat", null, null,
+				null, null);
+
+		// Chunk 2: Same ID, empty name, partial arguments
+		ToolCall toolCall2 = new ToolCall("call_123", "function",
+				new ChatCompletionFunction("", "{\"city\""));
+		ChatCompletionMessage msg2 = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, List.of(toolCall2));
+		ChatCompletionChunk chunk2 = new ChatCompletionChunk("chat-1",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, msg2, null)), null, null, null, null, null, null);
+
+		// Chunk 3: Same ID, empty name, remaining arguments
+		ToolCall toolCall3 = new ToolCall("call_123", "function",
+				new ChatCompletionFunction("", ":\"Seoul\"}"));
+		ChatCompletionMessage msg3 = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, List.of(toolCall3));
+		ChatCompletionChunk chunk3 = new ChatCompletionChunk("chat-1",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, msg3, null)), null, null, null, null, null, null);
+
+		// Merge all chunks
+		ChatCompletionChunk merged1 = this.helper.merge(chunk1, chunk2);
+		ChatCompletionChunk merged2 = this.helper.merge(merged1, chunk3);
+
+		// Verify: should have exactly one tool call with complete data
+		assertThat(merged2.choices()).hasSize(1);
+		var finalChoice = merged2.choices().get(0);
+		assertThat(finalChoice.delta().toolCalls()).hasSize(1);
+
+		ToolCall finalToolCall = finalChoice.delta().toolCalls().get(0);
+		assertThat(finalToolCall.id()).isEqualTo("call_123");
+		assertThat(finalToolCall.function().name()).isEqualTo("get_weather");
+		assertThat(finalToolCall.function().arguments()).isEqualTo("{\"city\":\"Seoul\"}");
+	}
+
 }
