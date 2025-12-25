@@ -353,4 +353,119 @@ class StTemplateRendererTests {
 					"Not all variables were replaced in the template. Missing variable names are: [user]");
 	}
 
+	/**
+	 * Tests that keepMissingVariables is false by default, so missing variables are rendered as empty strings.
+	 */
+	@Test
+	void shouldDefaultToNotKeepMissingVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder()
+				.validationMode(ValidationMode.NONE)
+				.build();
+
+		String result = renderer.apply("{name}", Map.of());
+		assertThat(result).isEmpty();
+	}
+
+	/**
+	 * Tests basic functionality: missing variables are preserved as placeholders
+	 * while provided variables are rendered normally.
+	 */
+	@Test
+	void shouldPreservePlaceholderForMissingVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder()
+				.validationMode(ValidationMode.NONE)
+				.keepMissingVariables(true)
+				.build();
+
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("name", "Alice");
+
+		String template = "Hello {name}, today is {date}";
+		String result = renderer.apply(template, variables);
+
+		assertThat(result).isEqualTo("Hello Alice, today is {date}");
+	}
+
+	/**
+	 * Tests that multiple missing variables are all preserved in their original placeholder form.
+	 */
+	@Test
+	void shouldKeepPlaceholdersForMultipleMissingVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder()
+				.validationMode(ValidationMode.NONE)
+				.keepMissingVariables(true)
+				.build();
+
+		Map<String, Object> variables = Map.of("a", 1);
+
+		String template = "{a} {b} {c}";
+		String result = renderer.apply(template, variables);
+
+		assertThat(result).isEqualTo("1 {b} {c}");
+	}
+
+	/**
+	 * Tests that keepMissingVariables cannot be enabled with THROW validation mode,
+	 * as they are semantically incompatible.
+	 */
+	@Test
+	void shouldNotAllowThrowValidationModeWhenKeepMissingVariables() {
+		assertThatThrownBy(() -> StTemplateRenderer.builder()
+				.validationMode(ValidationMode.THROW)
+				.keepMissingVariables(true)
+				.build())
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("keepMissingVariables can only be enabled when validationMode is NONE");
+	}
+
+	/**
+	 * Tests that keepMissingVariables cannot be enabled with WARN validation mode,
+	 * as they are semantically incompatible.
+	 */
+	@Test
+	void shouldNotAllowWarnValidationModeWhenKeepMissingVariables() {
+		assertThatThrownBy(() -> StTemplateRenderer.builder()
+				.validationMode(ValidationMode.WARN)
+				.keepMissingVariables(true)
+				.build())
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("keepMissingVariables can only be enabled when validationMode is NONE");
+	}
+
+	/**
+	 * Tests that keepMissingVariables respects custom delimiter tokens when preserving placeholders.
+	 */
+	@Test
+	void shouldRespectCustomDelimitersWhenKeepMissingVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder()
+				.startDelimiterToken('<')
+				.endDelimiterToken('>')
+				.validationMode(ValidationMode.NONE)
+				.keepMissingVariables(true)
+				.build();
+
+		Map<String, Object> variables = Map.of("name", "Spring AI");
+		String result = renderer.apply("Hello <name>, today is <date>", variables);
+
+		assertThat(result).isEqualTo("Hello Spring AI, today is <date>");
+	}
+
+	/**
+	 * Tests that StringTemplate built-in functions work correctly and missing variables are still preserved.
+	 */
+	@Test
+	void shouldNotInterfereWithBuiltInFunctionsWhenKeepMissingVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder()
+				.validationMode(ValidationMode.NONE)
+				.keepMissingVariables(true)
+				.build();
+
+		Map<String, Object> variables = Map.of("items", new String[] {"a", "b"});
+		String template = "{first(items)} {last(items)} {missing}";
+		String result = renderer.apply(template, variables);
+
+		assertThat(result).isEqualTo("a b {missing}");
+	}
+
+
 }

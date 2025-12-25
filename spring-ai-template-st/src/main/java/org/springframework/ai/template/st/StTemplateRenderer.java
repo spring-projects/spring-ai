@@ -67,6 +67,8 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 	private static final boolean DEFAULT_VALIDATE_ST_FUNCTIONS = false;
 
+	private static final boolean DEFAULT_KEEP_MISSING_VARIABLES = false;
+
 	private final char startDelimiterToken;
 
 	private final char endDelimiterToken;
@@ -74,6 +76,8 @@ public class StTemplateRenderer implements TemplateRenderer {
 	private final ValidationMode validationMode;
 
 	private final boolean validateStFunctions;
+
+	private final boolean keepMissingVariables;
 
 	/**
 	 * Constructs a new {@code StTemplateRenderer} with the specified delimiter tokens,
@@ -88,12 +92,13 @@ public class StTemplateRenderer implements TemplateRenderer {
 	 * template
 	 */
 	public StTemplateRenderer(char startDelimiterToken, char endDelimiterToken, ValidationMode validationMode,
-			boolean validateStFunctions) {
+			boolean validateStFunctions, boolean keepMissingVariables) {
 		Assert.notNull(validationMode, "validationMode cannot be null");
 		this.startDelimiterToken = startDelimiterToken;
 		this.endDelimiterToken = endDelimiterToken;
 		this.validationMode = validationMode;
 		this.validateStFunctions = validateStFunctions;
+		this.keepMissingVariables = keepMissingVariables;
 	}
 
 	@Override
@@ -103,6 +108,17 @@ public class StTemplateRenderer implements TemplateRenderer {
 		Assert.noNullElements(variables.keySet(), "variables keys cannot be null");
 
 		ST st = createST(template);
+		// If keepMissingVariables is enabled, first fill missing variables with placeholders.
+		if (this.keepMissingVariables) {
+			Set<String> allVars = getInputVariables(st);
+			Set<String> missingVars = new HashSet<>(allVars);
+			missingVars.removeAll(variables.keySet());
+
+			for (String missingVar : missingVars) {
+				st.add(missingVar, String.format("%c%s%c",
+						this.startDelimiterToken, missingVar, this.endDelimiterToken));
+			}
+		}
 		for (Map.Entry<String, Object> entry : variables.entrySet()) {
 			st.add(entry.getKey(), entry.getValue());
 		}
@@ -211,6 +227,8 @@ public class StTemplateRenderer implements TemplateRenderer {
 
 		private boolean validateStFunctions = DEFAULT_VALIDATE_ST_FUNCTIONS;
 
+		private boolean keepMissingVariables = DEFAULT_KEEP_MISSING_VARIABLES;
+
 		private Builder() {
 		}
 
@@ -267,13 +285,52 @@ public class StTemplateRenderer implements TemplateRenderer {
 		}
 
 		/**
+		 * Configures the renderer to keep missing variables in their original placeholder
+		 * form instead of letting StringTemplate render them as empty strings.
+		 *
+		 * <p>When enabled, variables that are referenced in the template but not provided in
+		 * the input map will be rendered as their placeholder text (for example:
+		 * {@code "{username}"} remains {@code "{username}"} in the final output).</p>
+		 *
+		 * <p><b>Important:</b> {@code keepMissingVariables(true)} can only be used when
+		 * {@code validationMode} is set to {@link ValidationMode#NONE}. If validation is
+		 * enabled ({@link ValidationMode#WARN} or {@link ValidationMode#THROW}), enabling
+		 * this flag will result in an {@link IllegalArgumentException} when building the
+		 * renderer.</p>
+		 *
+		 * <p>Example usage:</p>
+		 * <pre>{@code
+		 * TemplateRenderer renderer = StTemplateRenderer.builder()
+		 *         .validationMode(ValidationMode.NONE)
+		 *         .keepMissingVariables(true)
+		 *         .build();
+		 *
+		 * String result = renderer.apply("Hello, {name}, today is {date}",
+		 *         Map.of("name", "Alice"));
+		 * // result: "Hello, Alice, today is {date}"
+		 * }</pre>
+		 *
+		 * @param keepMissingVariables whether to keep missing variables as placeholders
+		 *                             (e.g. "{var}") in the rendered output
+		 * @return this builder instance for chaining
+		 */
+		public Builder keepMissingVariables(boolean keepMissingVariables) {
+			this.keepMissingVariables = keepMissingVariables;
+			return this;
+		}
+
+		/**
 		 * Builds and returns a new {@link StTemplateRenderer} instance with the
 		 * configured settings.
 		 * @return A configured {@link StTemplateRenderer}.
 		 */
 		public StTemplateRenderer build() {
+			if (this.keepMissingVariables && this.validationMode != ValidationMode.NONE) {
+				throw new IllegalArgumentException(
+						"keepMissingVariables can only be enabled when validationMode is NONE.");
+			}
 			return new StTemplateRenderer(this.startDelimiterToken, this.endDelimiterToken, this.validationMode,
-					this.validateStFunctions);
+					this.validateStFunctions, this.keepMissingVariables);
 		}
 
 	}
