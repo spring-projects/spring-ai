@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Soby Chacko
  */
-@SpringBootTest(classes = AzureOpenAiChatModelObservationIT.TestConfiguration.class)
+@SpringBootTest
 @RequiresAzureCredentials
 class AzureOpenAiChatModelObservationIT {
 
