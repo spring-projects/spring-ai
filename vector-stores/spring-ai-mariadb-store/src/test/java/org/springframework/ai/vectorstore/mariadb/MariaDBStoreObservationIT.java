@@ -47,12 +47,10 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocu
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -60,6 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Diego Dupin
+ * @author Eddú Meléndez
  */
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 @Testcontainers
@@ -77,9 +76,7 @@ public class MariaDBStoreObservationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("test.spring.ai.vectorstore.mariadb.distanceType=COSINE",
-				// JdbcTemplate configuration
-				"app.datasource.url=" + mariadbContainer.getJdbcUrl(), "app.datasource.username=mariadb",
-				"app.datasource.password=mariadbpwd", "app.datasource.type=com.zaxxer.hikari.HikariDataSource");
+				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("meta1", "meta1")),
@@ -190,10 +187,12 @@ public class MariaDBStoreObservationIT {
 		}
 
 		@Bean
-		@Primary
-		@ConfigurationProperties("app.datasource")
 		public DataSourceProperties dataSourceProperties() {
-			return new DataSourceProperties();
+			DataSourceProperties properties = new DataSourceProperties();
+			properties.setUrl(mariadbContainer.getJdbcUrl());
+			properties.setUsername(mariadbContainer.getUsername());
+			properties.setPassword(mariadbContainer.getPassword());
+			return properties;
 		}
 
 		@Bean
