@@ -2,7 +2,7 @@
 = Chat Client API
 
 The `ChatClient` offers a fluent API for communicating with an AI Model.
-It supports both a synchronous and streaming programming model.  
+It supports both a synchronous and streaming programming model.
 
 [NOTE]
 ====
@@ -99,12 +99,12 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ChatClientConfig {
-    
+
     @Bean
     public ChatClient openAiChatClient(OpenAiChatModel chatModel) {
         return ChatClient.create(chatModel);
     }
-    
+
     @Bean
     public ChatClient anthropicChatClient(AnthropicChatModel chatModel) {
         return ChatClient.create(chatModel);
@@ -119,24 +119,24 @@ You can then inject these beans into your application components using the `@Qua
 
 @Configuration
 public class ChatClientExample {
-    
+
     @Bean
     CommandLineRunner cli(
             @Qualifier("openAiChatClient") ChatClient openAiChatClient,
             @Qualifier("anthropicChatClient") ChatClient anthropicChatClient) {
-        
+
         return args -> {
             var scanner = new Scanner(System.in);
             ChatClient chat;
-            
+
             // Model selection
             System.out.println("\nSelect your AI model:");
             System.out.println("1. OpenAI");
             System.out.println("2. Anthropic");
             System.out.print("Enter your choice (1 or 2): ");
-            
+
             String choice = scanner.nextLine().trim();
-            
+
             if (choice.equals("1")) {
                 chat = openAiChatClient;
                 System.out.println("Using OpenAI model");
@@ -144,13 +144,13 @@ public class ChatClientExample {
                 chat = anthropicChatClient;
                 System.out.println("Using Anthropic model");
             }
-            
+
             // Use the selected chat client
             System.out.print("\nEnter your question: ");
             String input = scanner.nextLine();
             String response = chat.prompt(input).call().content();
             System.out.println("ASSISTANT: " + response);
-            
+
             scanner.close();
         };
     }
@@ -167,15 +167,15 @@ This is particularly useful when you need to work with multiple OpenAI-compatibl
 
 @Service
 public class MultiModelService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(MultiModelService.class);
-    
+
     @Autowired
     private OpenAiChatModel baseChatModel;
-    
+
     @Autowired
     private OpenAiApi baseOpenAiApi;
-    
+
     public void multiClientFlow() {
         try {
             // Derive a new OpenAiApi for Groq (Llama3)
@@ -183,31 +183,31 @@ public class MultiModelService {
                 .baseUrl("https://api.groq.com/openai")
                 .apiKey(System.getenv("GROQ_API_KEY"))
                 .build();
-            
+
             // Derive a new OpenAiApi for OpenAI GPT-4
             OpenAiApi gpt4Api = baseOpenAiApi.mutate()
                 .baseUrl("https://api.openai.com")
                 .apiKey(System.getenv("OPENAI_API_KEY"))
                 .build();
-            
+
             // Derive a new OpenAiChatModel for Groq
             OpenAiChatModel groqModel = baseChatModel.mutate()
                 .openAiApi(groqApi)
                 .defaultOptions(OpenAiChatOptions.builder().model("llama3-70b-8192").temperature(0.5).build())
                 .build();
-            
+
             // Derive a new OpenAiChatModel for GPT-4
             OpenAiChatModel gpt4Model = baseChatModel.mutate()
                 .openAiApi(gpt4Api)
                 .defaultOptions(OpenAiChatOptions.builder().model("gpt-4").temperature(0.7).build())
                 .build();
-            
+
             // Simple prompt for both models
             String prompt = "What is the capital of France?";
-            
+
             String groqResponse = ChatClient.builder(groqModel).build().prompt(prompt).call().content();
             String gpt4Response = ChatClient.builder(gpt4Model).build().prompt(prompt).call().content();
-            
+
             logger.info("Groq (Llama3) response: {}", groqResponse);
             logger.info("OpenAI GPT-4 response: {}", gpt4Response);
         }
@@ -619,7 +619,7 @@ For more information on model-specific `ChatOptions` implementations, refer to t
 The `description` explains the function's purpose and helps the AI model choose the correct function for an accurate response.
 The `function` argument is a Java function instance that the model will execute when necessary.
 
-* `defaultFunctions(String... functionNames)`: The bean names of `java.util.Function`s defined in the application context.
+* `defaultFunctions(String... functionNames)`: The bean names of ``java.util.Function``s defined in the application context.
 
 * `defaultUser(String text)`, `defaultUser(Resource text)`, `defaultUser(Consumer<UserSpec> userSpecConsumer)`: These methods let you define the user text.
 The `Consumer<UserSpec>` allows you to use a lambda to specify the user text and any default parameters.
@@ -647,7 +647,7 @@ java.util.function.Function<I, O> function)`
 
 == Advisors
 
-The xref:api/advisors.adoc[Advisors API] provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications. 
+The xref:api/advisors.adoc[Advisors API] provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications.
 
 A common pattern when calling an AI model with user text is to append or augment the prompt with contextual data.
 
@@ -779,7 +779,7 @@ The combined use of imperative and reactive programming models in `ChatClient` i
 Often an application will be either reactive or imperative, but not both.
 
 
-* When customizing the HTTP client interactions of a Model implementation, both the RestClient and the WebClient must be configured. 
+* When customizing the HTTP client interactions of a Model implementation, both the RestClient and the WebClient must be configured.
 
 [IMPORTANT]
 ====
