@@ -26,7 +26,8 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolDefinition(String name, String description, String inputSchema) implements ToolDefinition {
+public record DefaultToolDefinition(String name, String description, String inputSchema,
+		String outputSchema) implements ToolDefinition {
 
 	public DefaultToolDefinition {
 		Assert.hasText(name, "name cannot be null or empty");
@@ -46,6 +47,8 @@ public record DefaultToolDefinition(String name, String description, String inpu
 
 		private String inputSchema;
 
+		private String outputSchema;
+
 		private Builder() {
 		}
 
@@ -64,12 +67,17 @@ public record DefaultToolDefinition(String name, String description, String inpu
 			return this;
 		}
 
+		public Builder outputSchema(String outputSchema) {
+			this.outputSchema = outputSchema;
+			return this;
+		}
+
 		public ToolDefinition build() {
 			if (!StringUtils.hasText(this.description)) {
 				Assert.hasText(this.name, "toolName cannot be null or empty");
 				this.description = ParsingUtils.reConcatenateCamelCase(this.name, " ");
 			}
-			return new DefaultToolDefinition(this.name, this.description, this.inputSchema);
+			return new DefaultToolDefinition(this.name, this.description, this.inputSchema, this.outputSchema);
 		}
 
 	}
