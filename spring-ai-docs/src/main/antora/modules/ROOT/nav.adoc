@@ -67,7 +67,7 @@
 **** xref:api/image/zhipuai-image.adoc[ZhiPuAI]
 **** xref:api/image/qianfan-image.adoc[QianFan]
 
-*** xref:api/audio[Audio Models]
+*** xref:api/audio.adoc[Audio Models]
 **** xref:api/audio/transcriptions.adoc[]
 ***** xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI]
 ***** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
@@ -75,7 +75,7 @@
 ***** xref:api/audio/speech/openai-speech.adoc[OpenAI]
 ***** xref:api/audio/speech/elevenlabs-speech.adoc[ElevenLabs]
 
-*** xref:api/moderation[Moderation Models]
+*** xref:api/moderation.adoc[Moderation Models]
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]
 **** xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI]
 // ** xref:api/generic-model.adoc[]
