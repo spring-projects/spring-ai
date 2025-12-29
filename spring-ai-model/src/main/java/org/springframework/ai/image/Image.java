@@ -16,7 +16,13 @@
 
 package org.springframework.ai.image;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Base64;
 import java.util.Objects;
+import java.util.Optional;
+
+import org.springframework.util.StringUtils;
 
 public class Image {
 
@@ -70,6 +76,17 @@ public class Image {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.url, this.b64Json);
+	}
+
+	public Optional<byte[]> getB64JsonAsBytes() {
+		if (!StringUtils.hasText(this.b64Json)) {
+			return Optional.empty();
+		}
+		return Optional.of(Base64.getDecoder().decode(this.b64Json));
+	}
+
+	public Optional<InputStream> getB64JsonAsInputStream() {
+		return getB64JsonAsBytes().map(ByteArrayInputStream::new);
 	}
 
 }

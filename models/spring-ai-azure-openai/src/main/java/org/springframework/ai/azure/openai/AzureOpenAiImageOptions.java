@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageResponseFormat;
 
 /**
  * The configuration information for a image generation request.
@@ -81,7 +82,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	 * b64_json.
 	 */
 	@JsonProperty("response_format")
-	private String responseFormat;
+	private ImageResponseFormat responseFormat;
 
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
@@ -150,11 +151,19 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	@Override
 	public String getResponseFormat() {
+		return (this.responseFormat != null) ? this.responseFormat.getValue() : null;
+	}
+
+	public ImageResponseFormat getResponseFormatEnum() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
+	public void setResponseFormat(ImageResponseFormat responseFormat) {
 		this.responseFormat = responseFormat;
+	}
+
+	public void setResponseFormat(String responseFormat) {
+		this.responseFormat = ImageResponseFormat.fromValue(responseFormat);
 	}
 
 	public String getSize() {
@@ -276,6 +285,11 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 		public Builder deploymentName(String deploymentName) {
 			this.options.setDeploymentName(deploymentName);
+			return this;
+		}
+
+		public Builder responseFormat(ImageResponseFormat responseFormat) {
+			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
