@@ -477,6 +477,10 @@
 							<artifactId>nullaway</artifactId>
 							<version>${nullaway.version}</version>
 						</path>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-configuration-processor</artifactId>
+						</path>
 					</annotationProcessorPaths>
 				</configuration>
 				<executions>
