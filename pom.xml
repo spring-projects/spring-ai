@@ -355,7 +355,7 @@
 		<compiler.jdk.version>[21.0.8,)</compiler.jdk.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
-		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
+		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
 		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
 		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
@@ -602,8 +602,6 @@
 					<overview>
 						${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 					<detectJavaApiLink>false</detectJavaApiLink>
-					<detectOfflineLinks>false</detectOfflineLinks>
-					<failOnError>false</failOnError>
 					<doclint>none</doclint>
 				</configuration>
 				<executions>
@@ -613,6 +611,9 @@
 						<goals>
 							<goal>jar</goal>
 						</goals>
+						<configuration>
+							<failOnError>false</failOnError>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
