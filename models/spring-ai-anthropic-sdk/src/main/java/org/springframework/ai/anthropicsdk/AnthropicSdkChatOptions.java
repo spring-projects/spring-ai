@@ -1,0 +1,589 @@
+/*
+ * Copyright 2023-2025 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.anthropicsdk;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import com.anthropic.models.messages.Metadata;
+import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.ThinkingConfigParam;
+import com.anthropic.models.messages.ToolChoice;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.util.Assert;
+
+/**
+ * Chat options for the Anthropic SDK-based chat model. This class provides configuration
+ * options for chat completion requests using the official Anthropic Java SDK.
+ *
+ * @author Soby Chacko
+ * @since 1.0.0
+ */
+@JsonInclude(Include.NON_NULL)
+public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions implements ToolCallingChatOptions {
+
+	/**
+	 * Default model to use for chat completions.
+	 */
+	public static final String DEFAULT_MODEL = Model.CLAUDE_SONNET_4_20250514.asString();
+
+	/**
+	 * Default max tokens for chat completions.
+	 */
+	public static final Integer DEFAULT_MAX_TOKENS = 4096;
+
+	/**
+	 * Maximum number of tokens to generate in the response.
+	 */
+	@Nullable private Integer maxTokens;
+
+	/**
+	 * Request metadata containing user ID for abuse detection.
+	 */
+	@Nullable private Metadata metadata;
+
+	/**
+	 * Sequences that will cause the model to stop generating.
+	 */
+	@Nullable private List<String> stopSequences;
+
+	/**
+	 * Sampling temperature between 0 and 1. Higher values make output more random.
+	 */
+	@Nullable private Double temperature;
+
+	/**
+	 * Nucleus sampling parameter. The model considers tokens with top_p probability mass.
+	 */
+	@Nullable private Double topP;
+
+	/**
+	 * Only sample from the top K options for each subsequent token.
+	 */
+	@Nullable private Integer topK;
+
+	/**
+	 * Tool choice configuration for controlling tool usage behavior.
+	 */
+	@Nullable private ToolChoice toolChoice;
+
+	/**
+	 * Extended thinking configuration for Claude's reasoning capabilities.
+	 */
+	@Nullable private ThinkingConfigParam thinking;
+
+	/**
+	 * Whether to disable parallel tool use. When true, the model will use at most one
+	 * tool per response.
+	 */
+	@Nullable private Boolean disableParallelToolUse;
+
+	/**
+	 * Collection of tool callbacks for tool calling.
+	 */
+	@JsonIgnore
+	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+
+	/**
+	 * Collection of tool names to be resolved at runtime.
+	 */
+	@JsonIgnore
+	private Set<String> toolNames = new HashSet<>();
+
+	/**
+	 * Whether to enable internal tool execution in the chat model.
+	 */
+	@JsonIgnore
+	@Nullable private Boolean internalToolExecutionEnabled;
+
+	/**
+	 * Context to be passed to tools during execution.
+	 */
+	@JsonIgnore
+	private Map<String, Object> toolContext = new HashMap<>();
+
+	/**
+	 * Cache strategy for prompt caching.
+	 */
+	@JsonIgnore
+	@Nullable private AnthropicSdkCacheStrategy cacheStrategy;
+
+	/**
+	 * Creates a new builder for AnthropicSdkChatOptions.
+	 * @return a new builder instance
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	@Override
+	@Nullable public Integer getMaxTokens() {
+		return this.maxTokens;
+	}
+
+	public void setMaxTokens(@Nullable Integer maxTokens) {
+		this.maxTokens = maxTokens;
+	}
+
+	@Nullable public Metadata getMetadata() {
+		return this.metadata;
+	}
+
+	public void setMetadata(@Nullable Metadata metadata) {
+		this.metadata = metadata;
+	}
+
+	@Override
+	@Nullable public List<String> getStopSequences() {
+		return this.stopSequences;
+	}
+
+	public void setStopSequences(@Nullable List<String> stopSequences) {
+		this.stopSequences = stopSequences;
+	}
+
+	@Override
+	@Nullable public Double getTemperature() {
+		return this.temperature;
+	}
+
+	public void setTemperature(@Nullable Double temperature) {
+		this.temperature = temperature;
+	}
+
+	@Override
+	@Nullable public Double getTopP() {
+		return this.topP;
+	}
+
+	public void setTopP(@Nullable Double topP) {
+		this.topP = topP;
+	}
+
+	@Override
+	@Nullable public Integer getTopK() {
+		return this.topK;
+	}
+
+	public void setTopK(@Nullable Integer topK) {
+		this.topK = topK;
+	}
+
+	@Nullable public ToolChoice getToolChoice() {
+		return this.toolChoice;
+	}
+
+	public void setToolChoice(@Nullable ToolChoice toolChoice) {
+		this.toolChoice = toolChoice;
+	}
+
+	@Nullable public ThinkingConfigParam getThinking() {
+		return this.thinking;
+	}
+
+	public void setThinking(@Nullable ThinkingConfigParam thinking) {
+		this.thinking = thinking;
+	}
+
+	@Nullable public Boolean getDisableParallelToolUse() {
+		return this.disableParallelToolUse;
+	}
+
+	public void setDisableParallelToolUse(@Nullable Boolean disableParallelToolUse) {
+		this.disableParallelToolUse = disableParallelToolUse;
+	}
+
+	@Override
+	public List<ToolCallback> getToolCallbacks() {
+		return this.toolCallbacks;
+	}
+
+	@Override
+	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
+		this.toolCallbacks = toolCallbacks;
+	}
+
+	@Override
+	public Set<String> getToolNames() {
+		return this.toolNames;
+	}
+
+	@Override
+	public void setToolNames(Set<String> toolNames) {
+		Assert.notNull(toolNames, "toolNames cannot be null");
+		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
+		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
+		this.toolNames = toolNames;
+	}
+
+	@Override
+	@Nullable public Boolean getInternalToolExecutionEnabled() {
+		return this.internalToolExecutionEnabled;
+	}
+
+	@Override
+	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+	}
+
+	@Override
+	public Map<String, Object> getToolContext() {
+		return this.toolContext;
+	}
+
+	@Override
+	public void setToolContext(Map<String, Object> toolContext) {
+		this.toolContext = toolContext;
+	}
+
+	@Nullable public AnthropicSdkCacheStrategy getCacheStrategy() {
+		return this.cacheStrategy;
+	}
+
+	public void setCacheStrategy(@Nullable AnthropicSdkCacheStrategy cacheStrategy) {
+		this.cacheStrategy = cacheStrategy;
+	}
+
+	@Override
+	@Nullable public Double getFrequencyPenalty() {
+		// Not supported by Anthropic API
+		return null;
+	}
+
+	@Override
+	@Nullable public Double getPresencePenalty() {
+		// Not supported by Anthropic API
+		return null;
+	}
+
+	@Override
+	public AnthropicSdkChatOptions copy() {
+		return builder().from(this).build();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof AnthropicSdkChatOptions that)) {
+			return false;
+		}
+		return Objects.equals(this.getModel(), that.getModel()) && Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.metadata, that.metadata)
+				&& Objects.equals(this.stopSequences, that.stopSequences)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.toolChoice, that.toolChoice)
+				&& Objects.equals(this.thinking, that.thinking)
+				&& Objects.equals(this.disableParallelToolUse, that.disableParallelToolUse)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
+				&& Objects.equals(this.toolNames, that.toolNames)
+				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.cacheStrategy, that.cacheStrategy);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
+				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
+				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.cacheStrategy);
+	}
+
+	@Override
+	public String toString() {
+		return "AnthropicSdkChatOptions{" + "model='" + this.getModel() + '\'' + ", maxTokens=" + this.maxTokens
+				+ ", metadata=" + this.metadata + ", stopSequences=" + this.stopSequences + ", temperature="
+				+ this.temperature + ", topP=" + this.topP + ", topK=" + this.topK + ", toolChoice=" + this.toolChoice
+				+ ", thinking=" + this.thinking + ", disableParallelToolUse=" + this.disableParallelToolUse
+				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
+				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
+				+ this.toolContext + ", cacheStrategy=" + this.cacheStrategy + '}';
+	}
+
+	/**
+	 * Builder for creating {@link AnthropicSdkChatOptions} instances.
+	 */
+	public static final class Builder {
+
+		private final AnthropicSdkChatOptions options = new AnthropicSdkChatOptions();
+
+		private Builder() {
+		}
+
+		/**
+		 * Copies all settings from an existing options instance.
+		 * @param fromOptions the options to copy from
+		 * @return this builder
+		 */
+		public Builder from(AnthropicSdkChatOptions fromOptions) {
+			// Parent class fields
+			this.options.setBaseUrl(fromOptions.getBaseUrl());
+			this.options.setApiKey(fromOptions.getApiKey());
+			this.options.setModel(fromOptions.getModel());
+			this.options.setTimeout(fromOptions.getTimeout());
+			this.options.setMaxRetries(fromOptions.getMaxRetries());
+			this.options.setProxy(fromOptions.getProxy());
+			this.options.setCustomHeaders(fromOptions.getCustomHeaders() != null
+					? new HashMap<>(fromOptions.getCustomHeaders()) : new HashMap<>());
+			// Child class fields
+			this.options.setMaxTokens(fromOptions.getMaxTokens());
+			this.options.setMetadata(fromOptions.getMetadata());
+			this.options.setStopSequences(
+					fromOptions.getStopSequences() != null ? new ArrayList<>(fromOptions.getStopSequences()) : null);
+			this.options.setTemperature(fromOptions.getTemperature());
+			this.options.setTopP(fromOptions.getTopP());
+			this.options.setTopK(fromOptions.getTopK());
+			this.options.setToolChoice(fromOptions.getToolChoice());
+			this.options.setThinking(fromOptions.getThinking());
+			this.options.setDisableParallelToolUse(fromOptions.getDisableParallelToolUse());
+			this.options.setToolCallbacks(new ArrayList<>(fromOptions.getToolCallbacks()));
+			this.options.setToolNames(new HashSet<>(fromOptions.getToolNames()));
+			this.options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
+			this.options.setToolContext(new HashMap<>(fromOptions.getToolContext()));
+			this.options.setCacheStrategy(fromOptions.getCacheStrategy());
+			return this;
+		}
+
+		/**
+		 * Merges non-null settings from another options instance.
+		 * @param from the options to merge from
+		 * @return this builder
+		 */
+		public Builder merge(AnthropicSdkChatOptions from) {
+			// Parent class fields
+			if (from.getBaseUrl() != null) {
+				this.options.setBaseUrl(from.getBaseUrl());
+			}
+			if (from.getApiKey() != null) {
+				this.options.setApiKey(from.getApiKey());
+			}
+			if (from.getModel() != null) {
+				this.options.setModel(from.getModel());
+			}
+			if (from.getTimeout() != null) {
+				this.options.setTimeout(from.getTimeout());
+			}
+			if (from.getMaxRetries() != null) {
+				this.options.setMaxRetries(from.getMaxRetries());
+			}
+			if (from.getProxy() != null) {
+				this.options.setProxy(from.getProxy());
+			}
+			if (from.getCustomHeaders() != null && !from.getCustomHeaders().isEmpty()) {
+				this.options.setCustomHeaders(new HashMap<>(from.getCustomHeaders()));
+			}
+			// Child class fields
+			if (from.getMaxTokens() != null) {
+				this.options.setMaxTokens(from.getMaxTokens());
+			}
+			if (from.getMetadata() != null) {
+				this.options.setMetadata(from.getMetadata());
+			}
+			if (from.getStopSequences() != null) {
+				this.options.setStopSequences(new ArrayList<>(from.getStopSequences()));
+			}
+			if (from.getTemperature() != null) {
+				this.options.setTemperature(from.getTemperature());
+			}
+			if (from.getTopP() != null) {
+				this.options.setTopP(from.getTopP());
+			}
+			if (from.getTopK() != null) {
+				this.options.setTopK(from.getTopK());
+			}
+			if (from.getToolChoice() != null) {
+				this.options.setToolChoice(from.getToolChoice());
+			}
+			if (from.getThinking() != null) {
+				this.options.setThinking(from.getThinking());
+			}
+			if (from.getDisableParallelToolUse() != null) {
+				this.options.setDisableParallelToolUse(from.getDisableParallelToolUse());
+			}
+			if (!from.getToolCallbacks().isEmpty()) {
+				this.options.setToolCallbacks(new ArrayList<>(from.getToolCallbacks()));
+			}
+			if (!from.getToolNames().isEmpty()) {
+				this.options.setToolNames(new HashSet<>(from.getToolNames()));
+			}
+			if (from.getInternalToolExecutionEnabled() != null) {
+				this.options.setInternalToolExecutionEnabled(from.getInternalToolExecutionEnabled());
+			}
+			if (!from.getToolContext().isEmpty()) {
+				this.options.setToolContext(new HashMap<>(from.getToolContext()));
+			}
+			if (from.getCacheStrategy() != null) {
+				this.options.setCacheStrategy(from.getCacheStrategy());
+			}
+			return this;
+		}
+
+		public Builder model(String model) {
+			this.options.setModel(model);
+			return this;
+		}
+
+		public Builder model(Model model) {
+			this.options.setModel(model.asString());
+			return this;
+		}
+
+		public Builder maxTokens(Integer maxTokens) {
+			this.options.setMaxTokens(maxTokens);
+			return this;
+		}
+
+		public Builder metadata(Metadata metadata) {
+			this.options.setMetadata(metadata);
+			return this;
+		}
+
+		public Builder stopSequences(List<String> stopSequences) {
+			this.options.setStopSequences(stopSequences);
+			return this;
+		}
+
+		public Builder stopSequences(String... stopSequences) {
+			this.options.setStopSequences(Arrays.asList(stopSequences));
+			return this;
+		}
+
+		public Builder temperature(Double temperature) {
+			this.options.setTemperature(temperature);
+			return this;
+		}
+
+		public Builder topP(Double topP) {
+			this.options.setTopP(topP);
+			return this;
+		}
+
+		public Builder topK(Integer topK) {
+			this.options.setTopK(topK);
+			return this;
+		}
+
+		public Builder toolChoice(ToolChoice toolChoice) {
+			this.options.setToolChoice(toolChoice);
+			return this;
+		}
+
+		public Builder thinking(ThinkingConfigParam thinking) {
+			this.options.setThinking(thinking);
+			return this;
+		}
+
+		public Builder disableParallelToolUse(Boolean disableParallelToolUse) {
+			this.options.setDisableParallelToolUse(disableParallelToolUse);
+			return this;
+		}
+
+		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
+			this.options.setToolCallbacks(toolCallbacks);
+			return this;
+		}
+
+		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
+			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
+			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return this;
+		}
+
+		public Builder toolNames(Set<String> toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.setToolNames(toolNames);
+			return this;
+		}
+
+		public Builder toolNames(String... toolNames) {
+			Assert.notNull(toolNames, "toolNames cannot be null");
+			this.options.toolNames.addAll(Set.of(toolNames));
+			return this;
+		}
+
+		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
+			return this;
+		}
+
+		public Builder toolContext(Map<String, Object> toolContext) {
+			if (this.options.toolContext == null) {
+				this.options.toolContext = toolContext;
+			}
+			else {
+				this.options.toolContext.putAll(toolContext);
+			}
+			return this;
+		}
+
+		public Builder cacheStrategy(AnthropicSdkCacheStrategy cacheStrategy) {
+			this.options.setCacheStrategy(cacheStrategy);
+			return this;
+		}
+
+		public Builder baseUrl(String baseUrl) {
+			this.options.setBaseUrl(baseUrl);
+			return this;
+		}
+
+		public Builder apiKey(String apiKey) {
+			this.options.setApiKey(apiKey);
+			return this;
+		}
+
+		public Builder timeout(java.time.Duration timeout) {
+			this.options.setTimeout(timeout);
+			return this;
+		}
+
+		public Builder maxRetries(Integer maxRetries) {
+			this.options.setMaxRetries(maxRetries);
+			return this;
+		}
+
+		public Builder proxy(java.net.Proxy proxy) {
+			this.options.setProxy(proxy);
+			return this;
+		}
+
+		public Builder customHeaders(Map<String, String> customHeaders) {
+			this.options.setCustomHeaders(customHeaders);
+			return this;
+		}
+
+		public AnthropicSdkChatOptions build() {
+			return this.options;
+		}
+
+	}
+
+}
