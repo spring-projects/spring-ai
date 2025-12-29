@@ -37,7 +37,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
  * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  * @see <a href=
- * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
+ * "https://github.com/ollama/ollama/blob/main/docs/modelfile.mdx#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
