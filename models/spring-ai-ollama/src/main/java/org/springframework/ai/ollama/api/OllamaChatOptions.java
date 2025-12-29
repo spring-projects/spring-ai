@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -43,14 +44,15 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Nicolas Krier
  * @since 0.8.0
  * @see <a href=
- * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
+ * "https://github.com/ollama/ollama/blob/main/docs/modelfile.mdx#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class OllamaChatOptions implements ToolCallingChatOptions {
+public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
 
@@ -791,6 +793,18 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		this.toolContext = toolContext;
 	}
 
+	@Override
+	@JsonIgnore
+	public String getOutputSchema() {
+		return ModelOptionsUtils.toJsonString(this.format);
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String outputSchema) {
+		this.format = ModelOptionsUtils.jsonToMap(outputSchema);
+	}
+
 	/**
 	 * Convert the {@link OllamaChatOptions} object to a {@link Map} of key/value pairs.
 	 * @return The {@link Map} of key/value pairs.
@@ -1135,6 +1149,11 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
+			return this;
+		}
+
+		public Builder outputSchema(String outputSchema) {
+			this.options.setOutputSchema(outputSchema);
 			return this;
 		}
 
