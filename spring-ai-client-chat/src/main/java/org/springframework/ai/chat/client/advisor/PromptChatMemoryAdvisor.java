@@ -203,7 +203,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
-		private ChatMemory chatMemory;
+		private final ChatMemory chatMemory;
 
 		private Builder(ChatMemory chatMemory) {
 			this.chatMemory = chatMemory;

@@ -16,7 +16,7 @@
 
 package org.springframework.ai.chat.client;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a {@link org.springframework.ai.model.Model} response that includes the
@@ -32,13 +32,11 @@ import org.springframework.lang.Nullable;
  */
 public record ResponseEntity<R, E>(@Nullable R response, @Nullable E entity) {
 
-	@Nullable
-	public R getResponse() {
+	public @Nullable R getResponse() {
 		return this.response;
 	}
 
-	@Nullable
-	public E getEntity() {
+	public @Nullable E getEntity() {
 		return this.entity;
 	}
 
