@@ -17,9 +17,7 @@
 /**
  * Chat client API.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.chat.client;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;
