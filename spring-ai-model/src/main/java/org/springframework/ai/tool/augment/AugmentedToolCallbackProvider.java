@@ -19,6 +19,8 @@ package org.springframework.ai.tool.augment;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
@@ -33,7 +35,7 @@ public class AugmentedToolCallbackProvider<T extends Record> implements ToolCall
 
 	private final boolean removeExtraArgumentsAfterProcessing;
 
-	private Consumer<AugmentedArgumentEvent<T>> argumentConsumer;
+	private final Consumer<AugmentedArgumentEvent<T>> argumentConsumer;
 
 	private final Class<T> argumentType;
 
@@ -75,15 +77,15 @@ public class AugmentedToolCallbackProvider<T extends Record> implements ToolCall
 	 */
 	public static class Builder<T extends Record> {
 
-		private ToolCallbackProvider delegate;
+		private @Nullable ToolCallbackProvider delegate;
 
 		private boolean removeExtraArgumentsAfterProcessing = true;
 
-		private Consumer<AugmentedArgumentEvent<T>> argumentConsumer;
+		private @Nullable Consumer<AugmentedArgumentEvent<T>> argumentConsumer;
 
-		private Class<T> argumentType;
+		private @Nullable Class<T> argumentType;
 
-		private Object toolObject;
+		private @Nullable Object toolObject;
 
 		/**
 		 * Sets the delegate ToolCallbackProvider
@@ -160,9 +162,12 @@ public class AugmentedToolCallbackProvider<T extends Record> implements ToolCall
 				return new AugmentedToolCallbackProvider<>(this.toolObject, this.argumentType, this.argumentConsumer,
 						this.removeExtraArgumentsAfterProcessing);
 			}
-			else {
+			else if (this.delegate != null) { // Redundant if condition to please NullAway
 				return new AugmentedToolCallbackProvider<>(this.delegate, this.argumentType, this.argumentConsumer,
 						this.removeExtraArgumentsAfterProcessing);
+			}
+			else {
+				throw new IllegalStateException();
 			}
 		}
 

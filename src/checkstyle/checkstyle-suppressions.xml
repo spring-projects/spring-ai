@@ -66,4 +66,24 @@
 	<suppress files="AugmentedToolCallbackTest.java" checks="[a-zA-Z0-9]*"/>
 	<suppress files="ToolInputSchemaAugmenterTest.java" checks="[a-zA-Z0-9]*"/>
 
+	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
+	<!-- This list will gradually shrink as we migrate to JSpecify -->
+	<suppress files="advisors" id="bannedNullabilityImports" />
+	<suppress files="auto-configurations" id="bannedNullabilityImports" />
+	<suppress files="document-readers" id="bannedNullabilityImports" />
+	<suppress files="mcp" id="bannedNullabilityImports" />
+	<suppress files="memory" id="bannedNullabilityImports" />
+	<suppress files="models" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-client-chat" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-rag" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-retry" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-spring-boot-docker-compose" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-spring-cloud-bindings" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-test" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-vector-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores" id="bannedNullabilityImports" />
+
 </suppressions>

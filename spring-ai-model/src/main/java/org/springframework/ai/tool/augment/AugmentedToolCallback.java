@@ -21,13 +21,13 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.augment.ToolInputSchemaAugmenter.AugmentedArgumentType;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.json.JsonParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -48,22 +48,22 @@ public class AugmentedToolCallback<T extends Record> implements ToolCallback {
 	/**
 	 * The augmented ToolDefinition that includes the augmented input schema.
 	 */
-	private ToolDefinition augmentedToolDefinition;
+	private final ToolDefinition augmentedToolDefinition;
 
 	/**
 	 * The record class type that defines the structure of the augmented arguments.
 	 */
-	private Class<T> augmentedArgumentsClass;
+	private final Class<T> augmentedArgumentsClass;
 
 	/**
 	 * A consumer that processes the augmented arguments extracted from the tool input.
 	 */
-	private Consumer<AugmentedArgumentEvent<T>> augmentedArgumentsConsumer;
+	private final @Nullable Consumer<AugmentedArgumentEvent<T>> augmentedArgumentsConsumer;
 
 	/**
 	 * The list of tool argument types that have been added to the tool input schema.
 	 */
-	private List<AugmentedArgumentType> augmentedArgumentTypes;
+	private final List<AugmentedArgumentType> augmentedArgumentTypes;
 
 	/**
 	 * A flag indicating whether to remove the augmented arguments from the tool input
@@ -73,7 +73,7 @@ public class AugmentedToolCallback<T extends Record> implements ToolCallback {
 	private boolean removeAugmentedArgumentsAfterProcessing = false;
 
 	public AugmentedToolCallback(ToolCallback delegate, Class<T> augmentedArgumentsClass,
-			Consumer<AugmentedArgumentEvent<T>> augmentedArgumentsConsumer,
+			@Nullable Consumer<AugmentedArgumentEvent<T>> augmentedArgumentsConsumer,
 			boolean removeExtraArgumentsAfterProcessing) {
 		Assert.notNull(delegate, "Delegate ToolCallback must not be null");
 		Assert.notNull(augmentedArgumentsClass, "Argument types must not be null");
