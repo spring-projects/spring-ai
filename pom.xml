@@ -377,7 +377,7 @@
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
 		<error-prone.version>2.44.0</error-prone.version>
-		<nullaway.version>0.12.12</nullaway.version>
+		<nullaway.version>0.12.13</nullaway.version>
 
 		<disable.checks>false</disable.checks>
 

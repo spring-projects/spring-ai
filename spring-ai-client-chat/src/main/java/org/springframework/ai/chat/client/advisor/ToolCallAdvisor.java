@@ -132,19 +132,20 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			// TODO: check that this is tool call is sufficiant for all chat models
 			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
 			// finish status as well)
-			isToolCall = chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().hasToolCalls();
+			ChatResponse chatResponse = chatClientResponse.chatResponse();
+			isToolCall = chatResponse != null && chatResponse.hasToolCalls();
 
 			if (isToolCall) {
-
+				Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
 				ToolExecutionResult toolExecutionResult = this.toolCallingManager
-					.executeToolCalls(processedChatClientRequest.prompt(), chatClientResponse.chatResponse());
+					.executeToolCalls(processedChatClientRequest.prompt(), chatResponse);
 
 				if (toolExecutionResult.returnDirect()) {
 
 					// Return tool execution result directly to the application client.
 					chatClientResponse = chatClientResponse.mutate()
 						.chatResponse(ChatResponse.builder()
-							.from(chatClientResponse.chatResponse())
+							.from(chatResponse)
 							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 							.build())
 						.build();

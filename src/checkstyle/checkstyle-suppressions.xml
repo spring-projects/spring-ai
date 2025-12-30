@@ -74,7 +74,6 @@
 	<suppress files="mcp" id="bannedNullabilityImports" />
 	<suppress files="memory" id="bannedNullabilityImports" />
 	<suppress files="models" id="bannedNullabilityImports" />
-	<suppress files="spring-ai-client-chat" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-rag" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-retry" id="bannedNullabilityImports" />
