@@ -295,4 +295,178 @@ class OpenAiApiIT {
 		}
 	}
 
+	// Responses API Tests
+
+	@Test
+	void responseEntity() {
+		// Create a simple response request
+		OpenAiApi.ResponseRequest request = new OpenAiApi.ResponseRequest("Say hello in one sentence", "gpt-4o");
+
+		ResponseEntity<OpenAiApi.Response> response = this.openAiApi.responseEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().id()).isNotNull();
+		assertThat(response.getBody().object()).isEqualTo("response");
+		assertThat(response.getBody().status()).isEqualTo("completed");
+		assertThat(response.getBody().model()).contains("gpt-4o");
+		assertThat(response.getBody().output()).isNotEmpty();
+
+		// Verify output contains a message with text content
+		OpenAiApi.Response.OutputItem firstOutput = response.getBody().output().get(0);
+		assertThat(firstOutput).isNotNull();
+		assertThat(firstOutput.content()).isNotEmpty();
+
+		// Find and verify text content
+		boolean hasTextContent = firstOutput.content()
+			.stream()
+			.anyMatch(content -> "output_text".equals(content.type()) && content.text() != null
+					&& !content.text().isEmpty());
+		assertThat(hasTextContent).isTrue();
+
+		// Verify usage information
+		assertThat(response.getBody().usage()).isNotNull();
+		assertThat(response.getBody().usage().totalTokens()).isPositive();
+	}
+
+	@Test
+	void responseStream() {
+		// Create a streaming response request
+		OpenAiApi.ResponseRequest request = new OpenAiApi.ResponseRequest("Count from 1 to 3", "gpt-4o", true);
+
+		Flux<OpenAiApi.ResponseStreamEvent> eventStream = this.openAiApi.responseStream(request);
+
+		assertThat(eventStream).isNotNull();
+
+		List<OpenAiApi.ResponseStreamEvent> events = eventStream.collectList().block();
+
+		assertThat(events).isNotNull();
+		assertThat(events).isNotEmpty();
+
+		// Verify we received the expected event types
+		boolean hasCreatedEvent = events.stream().anyMatch(e -> "response.created".equals(e.type()));
+		boolean hasOutputEvent = events.stream()
+			.anyMatch(e -> e.type() != null && e.type().contains("output") || e.type().contains("delta"));
+		boolean hasCompletedEvent = events.stream()
+			.anyMatch(e -> e.type() != null && e.type().contains("completed") || e.type().contains("done"));
+
+		assertThat(hasCreatedEvent || hasOutputEvent || hasCompletedEvent).isTrue();
+
+		// Verify at least some events have sequence numbers
+		boolean hasSequenceNumbers = events.stream().anyMatch(e -> e.sequenceNumber() != null);
+		assertThat(hasSequenceNumbers).isTrue();
+	}
+
+	@Test
+	void responseWithInstructionsAndConfiguration() {
+		// Create a request with custom configuration
+		OpenAiApi.ResponseRequest request = new OpenAiApi.ResponseRequest("gpt-4o", // model
+				"What is 2+2?", // input
+				"You are a helpful math tutor", // instructions
+				100, // maxOutputTokens
+				null, // maxToolCalls
+				0.7, // temperature
+				null, // topP
+				null, // tools
+				null, // toolChoice
+				null, // parallelToolCalls
+				false, // stream
+				true, // store
+				null, // metadata
+				null, // conversation
+				null, // previousResponseId
+				null, // text
+				null, // reasoning
+				null, // include
+				null, // truncation
+				null, // serviceTier
+				null, // promptCacheKey
+				null, // promptCacheRetention
+				null, // safetyIdentifier
+				null // background
+		);
+
+		ResponseEntity<OpenAiApi.Response> response = this.openAiApi.responseEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().status()).isEqualTo("completed");
+		assertThat(response.getBody().temperature()).isEqualTo(0.7);
+		assertThat(response.getBody().store()).isTrue();
+
+		// Verify the response contains an answer
+		String outputText = response.getBody()
+			.output()
+			.stream()
+			.filter(item -> "message".equals(item.type()))
+			.flatMap(item -> item.content().stream())
+			.filter(content -> "output_text".equals(content.type()))
+			.map(OpenAiApi.Response.ContentItem::text)
+			.findFirst()
+			.orElse(null);
+
+		assertThat(outputText).isNotNull();
+		assertThat(outputText).containsAnyOf("4", "four");
+	}
+
+	@Test
+	void responseWithWebSearchTool() {
+		// Create a web_search tool configuration
+		// The web_search tool allows the model to search the internet for current
+		// information
+		var webSearchTool = java.util.Map.of("type", "web_search");
+
+		// Create a request that requires current information from the web
+		OpenAiApi.ResponseRequest request = new OpenAiApi.ResponseRequest("gpt-4o", // model
+				"What is the current weather in San Francisco?", // input - requires web
+																	// search
+				null, // instructions
+				null, // maxOutputTokens
+				null, // maxToolCalls
+				null, // temperature
+				null, // topP
+				List.of(webSearchTool), // tools - enable web_search
+				null, // toolChoice
+				null, // parallelToolCalls
+				false, // stream
+				null, // store
+				null, // metadata
+				null, // conversation
+				null, // previousResponseId
+				null, // text
+				null, // reasoning
+				List.of("web_search_call.action.sources"), // include - get search sources
+				null, // truncation
+				null, // serviceTier
+				null, // promptCacheKey
+				null, // promptCacheRetention
+				null, // safetyIdentifier
+				null // background
+		);
+
+		ResponseEntity<OpenAiApi.Response> response = this.openAiApi.responseEntity(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+		assertThat(response.getBody().status()).isEqualTo("completed");
+		assertThat(response.getBody().output()).isNotEmpty();
+
+		// Verify that web_search tool was called
+		boolean hasWebSearchCall = response.getBody()
+			.output()
+			.stream()
+			.anyMatch(item -> "web_search_call".equals(item.type()));
+
+		assertThat(hasWebSearchCall).as("Response should contain a web_search_call output item").isTrue();
+
+		// Verify the final response contains information (likely from web search)
+		boolean hasMessageOutput = response.getBody().output().stream().anyMatch(item -> "message".equals(item.type()));
+
+		assertThat(hasMessageOutput).as("Response should contain a message with the answer").isTrue();
+
+		// Verify usage information includes the web search
+		assertThat(response.getBody().usage()).isNotNull();
+		assertThat(response.getBody().usage().totalTokens()).isPositive();
+	}
+
 }
