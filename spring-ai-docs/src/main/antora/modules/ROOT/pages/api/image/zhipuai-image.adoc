@@ -104,6 +104,9 @@ The prefix `spring.ai.zhipuai.image` is the property prefix that lets you config
 | spring.ai.zhipuai.image.api-key        | Optional overrides the spring.ai.zhipuai.api-key to provide chat specific api-key |  -
 | spring.ai.zhipuai.image.options.model  | The model to use for image generation.  | cogview-3
 | spring.ai.zhipuai.image.options.user   | A unique identifier representing your end-user, which can help ZhiPuAI to monitor and detect abuse. | -
+| spring.ai.zhipuai.image.options.size | The image size, for example 1024x1024. Recommended values: `1024x1024` (default), `768x1344`, `864x1152`, `1344x768`, `1152x864`, `1440x720`, `720x1440`. Custom sizes must be `512-2048px`, divisible by `16`, and total pixels less than `<= 2^21`. | -
+| spring.ai.zhipuai.image.options.quality | The quality of the generated image. Supported values: `hd`, `standard` (default `standard`, only supported by `cogview-4-250304`). | -
+| spring.ai.zhipuai.image.options.watermark-enabled | Whether to enable watermarking on generated images. Disabling watermarks is only available to users who have signed a disclaimer. | -
 |====
 
 ==== Connection Properties
