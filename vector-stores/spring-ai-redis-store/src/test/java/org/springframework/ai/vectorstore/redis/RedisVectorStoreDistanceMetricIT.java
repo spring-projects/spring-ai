@@ -16,9 +16,17 @@
 
 package org.springframework.ai.vectorstore.redis;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.redis.testcontainers.RedisStackContainer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import redis.clients.jedis.JedisPooled;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
@@ -32,13 +40,6 @@ import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfigurat
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.JedisPooled;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
