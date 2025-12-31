@@ -127,10 +127,18 @@ public class OpenAiStreamFunctionCallingHelper {
 			}
 			var currentToolCall = current.toolCalls().iterator().next();
 			if (StringUtils.hasText(currentToolCall.id())) {
-				if (lastPreviousTooCall != null) {
-					toolCalls.add(lastPreviousTooCall);
+				// When windowUntil() fails to group chunks
+				// (e.g., incorrect finish_reason),
+				// same-ID chunks arrive separately and must be merged to avoid errors.
+				if (lastPreviousTooCall != null && currentToolCall.id().equals(lastPreviousTooCall.id())) {
+					toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
 				}
-				toolCalls.add(currentToolCall);
+				else {
+					if (lastPreviousTooCall != null) {
+						toolCalls.add(lastPreviousTooCall);
+					}
+					toolCalls.add(currentToolCall);
+				}
 			}
 			else {
 				toolCalls.add(merge(lastPreviousTooCall, currentToolCall));
