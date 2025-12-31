@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2023-2024 the original author or authors.
+  ~ Copyright 2023-2025 the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -35,9 +35,6 @@
 		<connection>git://github.com/spring-projects/spring-ai.git</connection>
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
-
-	<properties>
-	</properties>
 
 	<dependencyManagement>
 		<dependencies>
@@ -86,12 +83,6 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>io.micrometer</groupId>
-			<artifactId>micrometer-observation-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 
 		<!-- test dependencies -->
