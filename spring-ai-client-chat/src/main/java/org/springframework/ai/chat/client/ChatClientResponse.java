@@ -36,6 +36,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 	public ChatClientResponse {
 		Assert.notNull(context, "context cannot be null");
 		Assert.noNullElements(context.keySet(), "context keys cannot be null");
+		Assert.noNullElements(context.values(), "context values cannot be null");
 	}
 
 	public ChatClientResponse copy() {
@@ -66,12 +67,15 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 
 		public Builder context(Map<String, Object> context) {
 			Assert.notNull(context, "context cannot be null");
+			Assert.noNullElements(context.keySet(), "context keys cannot be null");
+			Assert.noNullElements(context.values(), "context values cannot be null");
 			this.context.putAll(context);
 			return this;
 		}
 
 		public Builder context(String key, Object value) {
 			Assert.notNull(key, "key cannot be null");
+			Assert.notNull(value, "value cannot be null");
 			this.context.put(key, value);
 			return this;
 		}
