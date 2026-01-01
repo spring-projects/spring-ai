@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -58,6 +60,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+
+	private static final Logger logger = LoggerFactory.getLogger(VectorStoreChatMemoryAdvisor.class);
 
 	public static final String TOP_K = "chat_memory_vector_store_top_k";
 
@@ -123,10 +127,14 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
 		String conversationId = getConversationId(request.context(), this.defaultConversationId);
 		String query = request.prompt().getUserMessage() != null ? request.prompt().getUserMessage().getText() : "";
+		logger.debug("[{}] before: conversationId='{}', query='{}'", getName(), conversationId, query);
+
 		int topK = getChatMemoryTopK(request.context());
 		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
 		SearchRequest searchRequest = SearchRequest.builder().query(query).topK(topK).filterExpression(filter).build();
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequest);
+		logger.debug("[{}] before: retrieved {} documents from vector store with topK={}", getName(),
+				documents != null ? documents.size() : 0, topK);
 
 		String longTermMemory = documents == null ? ""
 				: documents.stream().map(Document::getText).collect(Collectors.joining(System.lineSeparator()));
@@ -142,6 +150,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
 		if (userMessage != null) {
 			this.vectorStore.write(toDocuments(List.of(userMessage), conversationId));
+			logger.debug("[{}] before: stored user message in vector store for conversationId='{}'", getName(),
+					conversationId);
 		}
 
 		return processedChatClientRequest;
@@ -153,6 +163,9 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+		String conversationId = this.getConversationId(chatClientResponse.context(), this.defaultConversationId);
+		logger.debug("[{}] after: processing response for conversationId='{}'", getName(), conversationId);
+
 		List<Message> assistantMessages = new ArrayList<>();
 		if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
@@ -161,8 +174,8 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.vectorStore.write(toDocuments(assistantMessages,
-				this.getConversationId(chatClientResponse.context(), this.defaultConversationId)));
+		this.vectorStore.write(toDocuments(assistantMessages, conversationId));
+		logger.debug("[{}] after: stored {} assistant messages in vector store", getName(), assistantMessages.size());
 		return chatClientResponse;
 	}
 

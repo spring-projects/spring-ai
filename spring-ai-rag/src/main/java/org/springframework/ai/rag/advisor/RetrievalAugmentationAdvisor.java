@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -59,6 +61,8 @@ import org.springframework.util.Assert;
  * @see <a href="https://export.arxiv.org/abs/2410.20878">arXiv:2410.20878</a>
  */
 public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
+
+	private static final Logger logger = LoggerFactory.getLogger(RetrievalAugmentationAdvisor.class);
 
 	public static final String DOCUMENT_CONTEXT = "rag_document_context";
 
@@ -105,6 +109,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, @Nullable AdvisorChain advisorChain) {
+		logger.debug("[{}] before: userQuery='{}'", getName(), chatClientRequest.prompt().getUserMessage().getText());
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
 		// 0. Create a query from the user text, parameters, and conversation history.
@@ -119,10 +124,12 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		for (var queryTransformer : this.queryTransformers) {
 			transformedQuery = queryTransformer.apply(transformedQuery);
 		}
+		logger.debug("[{}] before: applied {} query transformers", getName(), this.queryTransformers.size());
 
 		// 2. Expand query into one or multiple queries.
 		List<Query> expandedQueries = this.queryExpander != null ? this.queryExpander.expand(transformedQuery)
 				: List.of(transformedQuery);
+		logger.debug("[{}] before: expanded into {} queries", getName(), expandedQueries.size());
 
 		// 3. Get similar documents for each query.
 		Map<Query, List<List<Document>>> documentsForQuery = expandedQueries.stream()
@@ -135,6 +142,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		// 4. Combine documents retrieved based on multiple queries and from multiple data
 		// sources.
 		List<Document> documents = this.documentJoiner.join(documentsForQuery);
+		logger.debug("[{}] before: retrieved and joined {} documents", getName(), documents.size());
 
 		// 5. Post-process the documents.
 		for (var documentPostProcessor : this.documentPostProcessors) {
@@ -144,6 +152,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 		// 5. Augment user query with the document contextual data.
 		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
+		logger.debug("[{}] before: augmented query with document context", getName());
 
 		// 6. Update ChatClientRequest with augmented prompt.
 		return chatClientRequest.mutate()
@@ -163,6 +172,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, @Nullable AdvisorChain advisorChain) {
+		logger.debug("[{}] after: processing response", getName());
 		ChatResponse.Builder chatResponseBuilder;
 		if (chatClientResponse.chatResponse() == null) {
 			chatResponseBuilder = ChatResponse.builder();
@@ -171,6 +181,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 			chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse());
 		}
 		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, chatClientResponse.context().get(DOCUMENT_CONTEXT));
+		logger.debug("[{}] after: added document context metadata to response", getName());
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponseBuilder.build())
 			.context(chatClientResponse.context())

@@ -19,6 +19,8 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -45,6 +47,8 @@ import org.springframework.util.Assert;
  * @since 1.0.0
  */
 public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
+
+	private static final Logger logger = LoggerFactory.getLogger(MessageChatMemoryAdvisor.class);
 
 	private final ChatMemory chatMemory;
 
@@ -78,9 +82,11 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
 		String conversationId = getConversationId(chatClientRequest.context(), this.defaultConversationId);
+		logger.debug("[{}] before: conversationId='{}'", getName(), conversationId);
 
 		// 1. Retrieve the chat memory for the current conversation.
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
+		logger.debug("[{}] before: retrieved {} messages from memory", getName(), memoryMessages.size());
 
 		// 2. Advise the request messages list.
 		List<Message> processedMessages = new ArrayList<>(memoryMessages);
@@ -94,12 +100,16 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		// 4. Add the new user message to the conversation memory.
 		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
 		this.chatMemory.add(conversationId, userMessage);
+		logger.debug("[{}] before: added user message to memory for conversationId='{}'", getName(), conversationId);
 
 		return processedChatClientRequest;
 	}
 
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+		String conversationId = this.getConversationId(chatClientResponse.context(), this.defaultConversationId);
+		logger.debug("[{}] after: processing response for conversationId='{}'", getName(), conversationId);
+
 		List<Message> assistantMessages = new ArrayList<>();
 		if (chatClientResponse.chatResponse() != null) {
 			assistantMessages = chatClientResponse.chatResponse()
@@ -108,8 +118,8 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 				.map(g -> (Message) g.getOutput())
 				.toList();
 		}
-		this.chatMemory.add(this.getConversationId(chatClientResponse.context(), this.defaultConversationId),
-				assistantMessages);
+		this.chatMemory.add(conversationId, assistantMessages);
+		logger.debug("[{}] after: added {} assistant messages to memory", getName(), assistantMessages.size());
 		return chatClientResponse;
 	}
 
