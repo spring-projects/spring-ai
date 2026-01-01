@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -29,9 +30,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.github.victools.jsonschema.generator.Option;
+import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import org.jspecify.annotations.Nullable;
@@ -64,7 +67,9 @@ import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
-	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+	private static final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+
+	private static final MapTypeReference MAP_TYPE_REFERENCE = new MapTypeReference();
 
 	/**
 	 * The target class type reference to which the output will be converted.
@@ -190,9 +195,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	private void generateSchema() {
 		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
 				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
-				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
-				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
+		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+				OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
@@ -221,14 +225,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param text The LLM output in string format.
 	 * @return The parsed output in the desired target type.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public T convert(String text) {
 		try {
 			// Clean the text using the configured text cleaner
 			text = this.textCleaner.clean(text);
 
-			return (T) this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
+			return this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
 		}
 		catch (JsonProcessingException e) {
 			logger.error(SENSITIVE_DATA_MARKER,
@@ -276,12 +279,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	public Map<String, Object> getJsonSchemaMap() {
 		try {
-			return this.objectMapper.readValue(this.jsonSchema, Map.class);
+			return this.objectMapper.readValue(this.jsonSchema, MAP_TYPE_REFERENCE);
 		}
 		catch (JsonProcessingException ex) {
 			logger.error("Could not parse the JSON Schema to a Map object", ex);
 			throw new IllegalStateException(ex);
 		}
+	}
+
+	private static final class MapTypeReference extends TypeReference<Map<String, Object>> {
+
 	}
 
 }
