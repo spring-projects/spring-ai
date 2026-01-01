@@ -24,7 +24,6 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.OpenAiModerationModel;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -46,7 +45,6 @@ public class OpenAiModelConfigurationTests {
 	void chatModelActivation() {
 		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context.getBeansOfType(OpenAiApi.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiChatModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiImageModel.class)).isEmpty();
@@ -312,17 +310,6 @@ public class OpenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(OpenAiAudioSpeechModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiAudioTranscriptionModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiModerationModel.class)).isNotEmpty();
-			});
-	}
-
-	@Test
-	void openAiApiBean() {
-		// Test that OpenAiApi bean is registered and can be injected
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
-			.run(context -> {
-				assertThat(context.getBeansOfType(OpenAiApi.class)).hasSize(1);
-				OpenAiApi openAiApi = context.getBean(OpenAiApi.class);
-				assertThat(openAiApi).isNotNull();
 			});
 	}
 
