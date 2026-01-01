@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 public class MistralAiApiToolFunctionCallIT {
 
-	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.LARGE.getValue();
+	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_LARGE.getValue();
 
 	private final Logger logger = LoggerFactory.getLogger(MistralAiApiToolFunctionCallIT.class);
 
