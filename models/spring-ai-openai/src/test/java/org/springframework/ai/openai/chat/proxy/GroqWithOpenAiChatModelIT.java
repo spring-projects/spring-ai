@@ -64,7 +64,7 @@ import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = GroqWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GROQ_API_KEY", matches = ".+")
 // @Disabled("Due to rate limiting it is hard to run it in one go")
 class GroqWithOpenAiChatModelIT {

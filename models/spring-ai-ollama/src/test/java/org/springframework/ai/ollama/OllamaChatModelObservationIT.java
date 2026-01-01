@@ -50,7 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Thomas Vitale
  * @author Alexandros Pappas
  */
-@SpringBootTest(classes = OllamaChatModelObservationIT.Config.class)
+@SpringBootTest
 public class OllamaChatModelObservationIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
