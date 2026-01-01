@@ -54,7 +54,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(MethodToolCallbackProvider.class);
 
-	private final List<Object> toolObjects;
+	private List<Object> toolObjects;
 
 	private MethodToolCallbackProvider(List<Object> toolObjects) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
@@ -79,6 +79,10 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 						+ "Did you mean to pass a ToolCallback or ToolCallbackProvider? If so, you have to use .toolCallbacks() instead of .tool()");
 			}
 		}
+	}
+
+	public void setToolObjects(List<Object> toolObjects) {
+		this.toolObjects = toolObjects;
 	}
 
 	@Override
