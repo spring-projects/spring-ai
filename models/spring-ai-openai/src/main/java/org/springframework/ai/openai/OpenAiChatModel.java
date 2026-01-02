@@ -651,9 +651,10 @@ public class OpenAiChatModel implements ChatModel {
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			request = ModelOptionsUtils.merge(
-					OpenAiChatOptions.builder().tools(this.getFunctionTools(toolDefinitions)).build(), request,
-					ChatCompletionRequest.class);
+			request = ModelOptionsUtils.merge(OpenAiChatOptions.builder()
+				.tools(this.getFunctionTools(toolDefinitions))
+				.extraBody(request.extraBody())
+				.build(), request, ChatCompletionRequest.class);
 		}
 
 		// Remove `streamOptions` from the request if it is not a streaming request
