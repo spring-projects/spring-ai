@@ -33,7 +33,6 @@ import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.util.Assert;
 
 /**
@@ -92,7 +91,7 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.build();
 
 		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+		Message userMessage = processedChatClientRequest.prompt().getLastUserOrToolResponseMessage();
 		this.chatMemory.add(conversationId, userMessage);
 
 		return processedChatClientRequest;
