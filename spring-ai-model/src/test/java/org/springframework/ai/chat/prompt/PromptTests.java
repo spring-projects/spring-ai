@@ -20,8 +20,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -303,6 +305,87 @@ class PromptTests {
 		assertThat(prompt.getInstructions()).hasSize(2);
 		assertThat(prompt.getUserMessage().getText()).isEqualTo("User message");
 		assertThat(prompt.getSystemMessage().getText()).isEqualTo("System message");
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenOnlyUserMessage() {
+		Prompt prompt = Prompt.builder().messages(new UserMessage("Hello")).build();
+
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenOnlyToolResponse() {
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
+		Prompt prompt = Prompt.builder().messages(toolResponse).build();
+
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenBothPresent() {
+		UserMessage userMsg = new UserMessage("User question");
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
+
+		Prompt prompt = Prompt.builder().messages(userMsg, new AssistantMessage("AI response"), toolResponse).build();
+
+		// Should return the last one chronologically (toolResponse)
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenMultipleUserMessages() {
+		Prompt prompt = Prompt.builder()
+			.messages(new UserMessage("First question"), new UserMessage("Second question"))
+			.build();
+
+		// Should return the last UserMessage
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEqualTo("Second question");
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenOnlySystemAndAssistant() {
+		Prompt prompt = Prompt.builder().messages(new SystemMessage("System"), new AssistantMessage("AI")).build();
+
+		// Should return empty UserMessage
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEmpty();
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWhenEmpty() {
+		Prompt prompt = Prompt.builder().messages(List.of()).build();
+
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEmpty();
+	}
+
+	@Test
+	void getLastUserOrToolResponseMessageWithMixedOrdering() {
+		// Test with tool response before user message
+		UserMessage userMsg = new UserMessage("Latest user message");
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
+
+		Prompt prompt = Prompt.builder().messages(toolResponse, new SystemMessage("System"), userMsg).build();
+
+		// Should return the last UserMessage
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isNotNull();
+		assertThat(prompt.getLastUserOrToolResponseMessage()).isInstanceOf(UserMessage.class);
+		assertThat(prompt.getLastUserOrToolResponseMessage().getText()).isEqualTo("Latest user message");
 	}
 
 }
