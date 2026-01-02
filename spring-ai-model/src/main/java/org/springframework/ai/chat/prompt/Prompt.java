@@ -126,6 +126,20 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	/**
+	 * Get the last user or tool response message in the prompt. If no user or tool
+	 * response message is found, an empty UserMessage is returned.
+	 */
+	public Message getLastUserOrToolResponseMessage() {
+		for (int i = this.messages.size() - 1; i >= 0; i--) {
+			Message message = this.messages.get(i);
+			if (message instanceof UserMessage || message instanceof ToolResponseMessage) {
+				return message;
+			}
+		}
+		return new UserMessage("");
+	}
+
+	/**
 	 * Get all user messages in the prompt.
 	 * @return a list of all user messages in the prompt
 	 */
