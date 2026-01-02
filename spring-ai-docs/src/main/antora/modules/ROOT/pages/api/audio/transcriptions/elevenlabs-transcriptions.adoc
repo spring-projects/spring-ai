@@ -1,0 +1,243 @@
+= ElevenLabs Speech-to-Text (STT)
+
+== Introduction
+
+ElevenLabs provides accurate speech recognition and transcription services powered by advanced AI models. The ElevenLabs Speech-to-Text API enables developers to convert audio content into text with support for multiple languages, speaker diarization, word-level timestamps, and more.
+
+Spring AI supports the https://elevenlabs.io/docs/api-reference/speech-to-text[ElevenLabs Speech-to-Text API] through the `ElevenLabsAudioTranscriptionModel`.
+
+== Prerequisites
+
+. Create an ElevenLabs account and obtain an API key. You can sign up at the https://elevenlabs.io/sign-up[ElevenLabs signup page]. Your API key can be found on your profile page after logging in.
+. Add the `spring-ai-elevenlabs` dependency to your project's build file. For more information, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the ElevenLabs Speech-to-Text Client.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-elevenlabs</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-elevenlabs'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Transcription Properties
+
+=== Connection Properties
+
+The prefix `spring.ai.elevenlabs` is used as the property prefix for *all* ElevenLabs related configurations (both connection and transcription specific settings). This is defined in `ElevenLabsConnectionProperties`.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.elevenlabs.base-url | The base URL for the ElevenLabs API. | https://api.elevenlabs.io
+| spring.ai.elevenlabs.api-key  | Your ElevenLabs API key.           | -
+|====
+
+=== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the audio transcription auto-configurations are now configured via top level properties with the prefix `spring.ai.model.audio.transcription`.
+
+To enable, spring.ai.model.audio.transcription=elevenlabs (It is enabled by default)
+
+To disable, spring.ai.model.audio.transcription=none (or any value which doesn't match elevenlabs)
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.elevenlabs.audio.transcription` is used as the property prefix to configure the ElevenLabs Speech-to-Text client. This is defined in `ElevenLabsAudioTranscriptionProperties`.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+
+| spring.ai.model.audio.transcription | Enable Audio Transcription Model | elevenlabs
+| spring.ai.elevenlabs.audio.transcription.options.model | The ID of the model to use for transcription. Available models: `eleven_flash_v2_5` (recommended for low-latency), `eleven_v2_flash`, `eleven_flash_v2`, `eleven_turbo_v2`, `eleven_turbo_v2_5`, or `eleven_multilingual_v2`. | eleven_flash_v2_5
+| spring.ai.elevenlabs.audio.transcription.options.language-code | The language code of the audio. Supplying the language in ISO-639-1 or ISO-639-3 format will improve accuracy and latency. Examples: "en", "eng", "es", "spa", "fr", "fra". | -
+| spring.ai.elevenlabs.audio.transcription.options.enable-diarization | Enable speaker diarization to identify different speakers in the audio. | false
+| spring.ai.elevenlabs.audio.transcription.options.num-speakers | The number of speakers in the audio (required when diarization is enabled). | -
+| spring.ai.elevenlabs.audio.transcription.options.enable-word-timestamps | Enable word-level timestamps in the transcription output. | false
+|====
+
+NOTE: The base URL and API key can also be configured *specifically* for transcription using `spring.ai.elevenlabs.audio.transcription.base-url` and `spring.ai.elevenlabs.audio.transcription.api-key`. However, it is generally recommended to use the global `spring.ai.elevenlabs` prefix for simplicity, unless you have a specific reason to use different credentials for different ElevenLabs services. The more specific `audio.transcription` properties will override the global ones.
+
+TIP: All properties prefixed with `spring.ai.elevenlabs.audio.transcription.options` can be overridden at runtime.
+
+== Runtime Options [[transcription-options]]
+
+The `ElevenLabsAudioTranscriptionOptions` class provides options to use when making a transcription request. On start-up, the options specified by `spring.ai.elevenlabs.audio.transcription` are used, but you can override these at runtime.
+
+The following options are available:
+
+* `model`: The ID of the model to use for transcription
+* `languageCode`: The language code of the audio (ISO-639-1 or ISO-639-3)
+* `enableDiarization`: Enable speaker diarization
+* `numSpeakers`: Number of speakers (required when diarization is enabled)
+* `enableWordTimestamps`: Enable word-level timestamps
+
+For example:
+
+[source,java]
+----
+ElevenLabsAudioTranscriptionOptions transcriptionOptions = ElevenLabsAudioTranscriptionOptions.builder()
+    .model("eleven_flash_v2_5")
+    .languageCode("en")
+    .enableWordTimestamps(true)
+    .build();
+
+Resource audioFile = new FileSystemResource("/path/to/audio.mp3");
+AudioTranscriptionPrompt transcriptionPrompt = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = elevenLabsTranscriptionModel.call(transcriptionPrompt);
+
+String transcribedText = response.getResult().getOutput();
+----
+
+=== Using Speaker Diarization
+
+You can enable speaker diarization to identify different speakers in the audio:
+
+[source,java]
+----
+ElevenLabsAudioTranscriptionOptions transcriptionOptions = ElevenLabsAudioTranscriptionOptions.builder()
+    .model("eleven_flash_v2_5")
+    .enableDiarization(true)
+    .numSpeakers(2) // Specify the number of speakers
+    .build();
+
+Resource audioFile = new FileSystemResource("/path/to/conversation.mp3");
+AudioTranscriptionPrompt transcriptionPrompt = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = elevenLabsTranscriptionModel.call(transcriptionPrompt);
+
+// Access diarization information from metadata
+ElevenLabsAudioTranscriptionMetadata metadata =
+    (ElevenLabsAudioTranscriptionMetadata) response.getResult().getMetadata();
+
+if (metadata.getWords() != null) {
+    metadata.getWords().forEach(word -> {
+        System.out.println("Speaker " + word.speaker() + ": " + word.text() +
+                          " [" + word.start() + "s - " + word.end() + "s]");
+    });
+}
+----
+
+=== Using Word Timestamps
+
+Enable word-level timestamps to get precise timing information for each word:
+
+[source,java]
+----
+ElevenLabsAudioTranscriptionOptions transcriptionOptions = ElevenLabsAudioTranscriptionOptions.builder()
+    .model("eleven_flash_v2_5")
+    .enableWordTimestamps(true)
+    .build();
+
+Resource audioFile = new FileSystemResource("/path/to/audio.mp3");
+AudioTranscriptionPrompt transcriptionPrompt = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = elevenLabsTranscriptionModel.call(transcriptionPrompt);
+
+// Access word timestamps from metadata
+ElevenLabsAudioTranscriptionMetadata metadata =
+    (ElevenLabsAudioTranscriptionMetadata) response.getResult().getMetadata();
+
+if (metadata.getWords() != null) {
+    metadata.getWords().forEach(word -> {
+        System.out.println(word.text() + " [" + word.start() + "s - " + word.end() + "s]");
+    });
+}
+----
+
+== Manual Configuration
+
+Add the `spring-ai-elevenlabs` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-elevenlabs</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-elevenlabs'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create an `ElevenLabsAudioTranscriptionModel`:
+
+[source,java]
+----
+ElevenLabsSpeechToTextApi elevenLabsSpeechToTextApi = ElevenLabsSpeechToTextApi.builder()
+    .apiKey(System.getenv("ELEVEN_LABS_API_KEY"))
+    .build();
+
+ElevenLabsAudioTranscriptionModel elevenLabsTranscriptionModel =
+    ElevenLabsAudioTranscriptionModel.builder()
+        .elevenLabsSpeechToTextApi(elevenLabsSpeechToTextApi)
+        .defaultOptions(ElevenLabsAudioTranscriptionOptions.builder()
+            .model("eleven_flash_v2_5")
+            .enableWordTimestamps(true)
+            .build())
+        .build();
+
+// The call will use the default options configured above
+Resource audioFile = new FileSystemResource("/path/to/audio.mp3");
+AudioTranscriptionPrompt transcriptionPrompt = new AudioTranscriptionPrompt(audioFile);
+AudioTranscriptionResponse response = elevenLabsTranscriptionModel.call(transcriptionPrompt);
+
+String transcribedText = response.getResult().getOutput();
+----
+
+== Convenience Methods
+
+The `TranscriptionModel` interface provides convenient methods for quick transcriptions:
+
+[source,java]
+----
+// Simple transcription - returns just the text
+Resource audioFile = new FileSystemResource("/path/to/audio.mp3");
+String transcribedText = elevenLabsTranscriptionModel.transcribe(audioFile);
+
+// Transcription with runtime options
+ElevenLabsAudioTranscriptionOptions options = ElevenLabsAudioTranscriptionOptions.builder()
+    .languageCode("en")
+    .enableWordTimestamps(true)
+    .build();
+String transcribedText = elevenLabsTranscriptionModel.transcribe(audioFile, options);
+----
+
+TIP: The `transcribe()` convenience methods handle the prompt creation and response extraction for you, returning just the transcribed text as a String. For access to full response metadata, use `call(AudioTranscriptionPrompt)` instead.
+
+== Example Code
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-elevenlabs/src/test/java/org/springframework/ai/elevenlabs/ElevenLabsAudioTranscriptionModelIT.java[ElevenLabsAudioTranscriptionModelIT.java] test provides examples of how to use the library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-elevenlabs/src/test/java/org/springframework/ai/elevenlabs/api/ElevenLabsSpeechToTextApiIT.java[ElevenLabsSpeechToTextApiIT.java] test provides examples of using the low-level API directly.
+
