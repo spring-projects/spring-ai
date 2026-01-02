@@ -175,7 +175,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
 				requestOptions.getKeepAlive(), OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()),
-				requestOptions.getTruncate());
+				requestOptions.getTruncate(), requestOptions.getDimensions());
 	}
 
 	/**

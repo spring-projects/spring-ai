@@ -194,7 +194,14 @@ public enum OllamaModel implements ChatModelDescription {
 	/**
 	 * State-of-the-art large embedding model from mixedbread.ai
 	 */
-	MXBAI_EMBED_LARGE("mxbai-embed-large");
+	MXBAI_EMBED_LARGE("mxbai-embed-large"),
+
+	/**
+	 * A multilingual text embedding model with 8B parameters. Supports 100+ languages and
+	 * features a 32k context window. It offers a high embedding dimension of up to 4096,
+	 * which supports user-defined output dimensions ranging from 32 to 4096.
+	 */
+	QWEN3_EMBED_8B("qwen3-embedding:8b");
 
 	private final String id;
 
