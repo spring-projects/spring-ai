@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,19 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.util.ResourceUtils;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Nicolas Krier
  */
-public class OllamaModelOptionsTests {
+class OllamaModelOptionsTests {
 
 	@Test
-	public void testBasicOptions() {
+	void testBasicOptions() {
 		var options = OllamaChatOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
 
 		var optionsMap = options.toMap();
@@ -42,7 +45,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testAllNumericOptions() {
+	void testAllNumericOptions() {
 		var options = OllamaChatOptions.builder()
 			.numCtx(2048)
 			.numBatch(512)
@@ -90,7 +93,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testBooleanOptions() {
+	void testBooleanOptions() {
 		var options = OllamaChatOptions.builder()
 			.truncate(true)
 			.useNUMA(true)
@@ -116,7 +119,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testModelAndFormat() {
+	void testModelAndFormat() {
 		var options = OllamaChatOptions.builder().model("llama2").format("json").build();
 
 		var optionsMap = options.toMap();
@@ -125,7 +128,15 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFunctionAndToolOptions() {
+	void testOutputSchemaOption() {
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var options = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+
+		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+	}
+
+	@Test
+	void testFunctionAndToolOptions() {
 		var options = OllamaChatOptions.builder()
 			.toolNames("function1")
 			.toolNames("function2")
@@ -145,7 +156,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFunctionOptionsWithMutableSet() {
+	void testFunctionOptionsWithMutableSet() {
 		Set<String> functionSet = new HashSet<>();
 		functionSet.add("function1");
 		functionSet.add("function2");
@@ -156,7 +167,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFromOptions() {
+	void testFromOptions() {
 		var originalOptions = OllamaChatOptions.builder()
 			.model("llama2")
 			.temperature(0.7)
@@ -174,7 +185,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFunctionOptionsNotInMap() {
+	void testFunctionOptionsNotInMap() {
 		var options = OllamaChatOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
 
 		var optionsMap = options.toMap();
@@ -191,7 +202,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testDeprecatedMethods() {
+	void testDeprecatedMethods() {
 		var options = OllamaChatOptions.builder()
 			.model("llama2")
 			.temperature(0.7)
@@ -209,7 +220,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testEmptyOptions() {
+	void testEmptyOptions() {
 		var options = OllamaChatOptions.builder().build();
 
 		var optionsMap = options.toMap();
@@ -224,7 +235,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testNullValuesNotIncludedInMap() {
+	void testNullValuesNotIncludedInMap() {
 		var options = OllamaChatOptions.builder().model("llama2").temperature(null).topK(null).stop(null).build();
 
 		var optionsMap = options.toMap();
@@ -235,7 +246,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testZeroValuesIncludedInMap() {
+	void testZeroValuesIncludedInMap() {
 		var options = OllamaChatOptions.builder().temperature(0.0).topK(0).mainGPU(0).numGPU(0).seed(0).build();
 
 		var optionsMap = options.toMap();
