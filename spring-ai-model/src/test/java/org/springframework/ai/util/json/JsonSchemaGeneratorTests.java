@@ -670,6 +670,43 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeWithJSpecifyNullableField() throws JsonProcessingException {
+		String schema = JsonSchemaGenerator.generateForType(JSpecifyNullablePerson.class);
+		JsonNode schemaNode = JsonParser.getObjectMapper().readTree(schema);
+
+		// Assert properties contains all fields including nullable
+		assertThat(schemaNode.get("properties").has("id")).isTrue();
+		assertThat(schemaNode.get("properties").has("name")).isTrue();
+		assertThat(schemaNode.get("properties").has("email")).isTrue();
+
+		// Current behavior: JSpecify @Nullable on record component is still treated as
+		// required
+		JsonNode requiredArray = schemaNode.get("required");
+		assertThat(requiredArray.isArray()).isTrue();
+		boolean hasId = false;
+		boolean hasName = false;
+		boolean hasEmail = false;
+		for (JsonNode field : requiredArray) {
+			String fieldName = field.asText();
+			if ("id".equals(fieldName)) {
+				hasId = true;
+			}
+			else if ("name".equals(fieldName)) {
+				hasName = true;
+			}
+			else if ("email".equals(fieldName)) {
+				hasEmail = true;
+			}
+		}
+		assertThat(hasId).isTrue();
+		assertThat(hasName).isTrue();
+		assertThat(hasEmail).isTrue();
+
+		// Assert additionalProperties is false
+		assertThat(schemaNode.get("additionalProperties").asBoolean()).isFalse();
+	}
+
+	@Test
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
@@ -743,6 +780,10 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record NullablePerson(int id, String name, @Nullable String email) {
+
+	}
+
+	record JSpecifyNullablePerson(int id, String name, @org.jspecify.annotations.Nullable String email) {
 
 	}
 
