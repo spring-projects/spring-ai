@@ -370,14 +370,14 @@ This advisor uses a vector store to provide question-answering capabilities, imp
 
 * `RetrievalAugmentationAdvisor`
 +
- Advisor that implements common Retrieval Augmented Generation (RAG) flows using the building blocks defined in the `org.springframework.ai.rag` package and following the Modular RAG Architecture.
+Advisor that implements common Retrieval Augmented Generation (RAG) flows using the building blocks defined in the `org.springframework.ai.rag` package and following the Modular RAG Architecture.
 
 
 ===== Reasoning Advisor
 * `ReReadingAdvisor`
 +
 Implements a re-reading strategy for LLM reasoning, dubbed RE2, to enhance understanding in the input phase. 
-Based on the article: [Re-Reading Improves Reasoning in LLMs](https://arxiv.org/pdf/2309.06275).
+Based on the article: https://arxiv.org/pdf/2309.06275[Re-Reading Improves Reasoning in LLMs].
 
 
 ===== Content Safety Advisor
