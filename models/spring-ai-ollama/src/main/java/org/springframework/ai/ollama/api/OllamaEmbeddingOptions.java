@@ -44,7 +44,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 @JsonInclude(Include.NON_NULL)
 public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
-	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "keep_alive", "truncate");
+	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "keep_alive", "truncate", "dimensions");
 
 	// Following fields are options which must be set when the model is loaded into
 	// memory.
@@ -70,6 +70,15 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 */
 	@JsonProperty("keep_alive")
 	private String keepAlive;
+
+
+	/**
+	 * The dimensions of the embedding output. This allows you to specify the size of the embedding vector
+	 * that should be returned by the model. Not all models support this parameter.
+	 */
+	@JsonProperty("dimensions")
+	private Integer dimensions;
+
 
 	/**
 	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
@@ -152,6 +161,7 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	@JsonProperty("num_thread")
 	private Integer numThread;
 
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -181,6 +191,7 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 				.useMMap(fromOptions.getUseMMap())
 				.useMLock(fromOptions.getUseMLock())
 				.numThread(fromOptions.getNumThread())
+				.dimensions(fromOptions.getDimensions())
 				.build();
 	}
 
@@ -284,10 +295,12 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		this.numThread = numThread;
 	}
 
-	@Override
-	@JsonIgnore
 	public Integer getDimensions() {
-		return null;
+		return this.dimensions;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 	/**
@@ -313,12 +326,12 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		}
 		OllamaEmbeddingOptions that = (OllamaEmbeddingOptions) o;
 		return Objects.equals(this.model, that.model) && Objects.equals(this.keepAlive, that.keepAlive)
-				&& Objects.equals(this.truncate, that.truncate);
+				&& Objects.equals(this.truncate, that.truncate) && Objects.equals(this.dimensions, that.dimensions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.model, this.keepAlive, this.truncate);
+		return Objects.hash(this.model, this.keepAlive, this.truncate, this.dimensions);
 	}
 
 	public static final class Builder {
@@ -387,6 +400,11 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 		public Builder numThread(Integer numThread) {
 			this.options.numThread = numThread;
+			return this;
+		}
+
+		public Builder dimensions(Integer dimensions) {
+			this.options.dimensions = dimensions;
 			return this;
 		}
 

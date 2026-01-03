@@ -659,7 +659,8 @@ public final class OllamaApi {
 			@JsonProperty("input") List<String> input,
 			@JsonProperty("keep_alive") String keepAlive,
 			@JsonProperty("options") Map<String, Object> options,
-			@JsonProperty("truncate") Boolean truncate) {
+			@JsonProperty("truncate") Boolean truncate,
+			@JsonProperty("dimensions") Integer dimensions) {
 
 		/**
 		 * Shortcut constructor to create a EmbeddingRequest without options.
@@ -667,7 +668,7 @@ public final class OllamaApi {
 		 * @param input The text or list of text to generate embeddings for.
 		 */
 		public EmbeddingsRequest(String model, String input) {
-			this(model, List.of(input), null, null, null);
+			this(model, List.of(input), null, null, null, null);
 		}
 	}
 
