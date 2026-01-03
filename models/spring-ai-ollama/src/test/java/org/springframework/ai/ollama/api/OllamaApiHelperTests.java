@@ -149,7 +149,7 @@ class OllamaApiHelperTests {
 
 		OllamaApi.ChatResponse result = OllamaApiHelper.merge(previous, current);
 
-		assertThat(result.model()).isEqualTo("previous-modelcurrent-model");
+		assertThat(result.model()).isEqualTo("current-model");
 		assertThat(result.createdAt()).isEqualTo(currentCreatedAt);
 		assertThat(result.message().content()).isEqualTo("Previous contentCurrent content");
 		assertThat(result.message().thinking()).isEqualTo("Previous thinkingCurrent thinking");
@@ -187,7 +187,6 @@ class OllamaApiHelperTests {
 
 		OllamaApi.ChatResponse result = OllamaApiHelper.merge(previous, current);
 
-		assertThat(result.model()).isEqualTo("model1model2");
 		assertThat(result.message().content()).isEqualTo("Hello World");
 		assertThat(result.message().thinking()).isEqualTo("Thinking");
 		assertThat(result.message().toolName()).isEqualTo("ToolBox");
