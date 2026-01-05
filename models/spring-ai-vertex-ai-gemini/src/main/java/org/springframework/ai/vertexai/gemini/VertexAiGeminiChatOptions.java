@@ -115,7 +115,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions, Struct
 	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
-	 * Optional. Geminie response schema.
+	 * Optional. Gemini response schema.
 	 */
 	private @JsonProperty("responseSchema") String responseSchema;
 
