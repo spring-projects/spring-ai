@@ -16,13 +16,10 @@
 
 package org.springframework.ai.vectorstore.opensearch;
 
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
@@ -36,8 +33,6 @@ import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpress
  * @since 1.0.0
  */
 public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
-
-	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
 
 	private final DateTimeFormatter dateFormat;
 
@@ -105,14 +100,14 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				this.doSingleValue(v, context);
+				this.doSingleValue(normalizeDateString(v), context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
 			}
 		}
 		else {
-			this.doSingleValue(filterValue.value(), context);
+			this.doSingleValue(normalizeDateString(filterValue.value()), context);
 		}
 	}
 
@@ -122,18 +117,7 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 			context.append(this.dateFormat.format(date.toInstant()));
 		}
 		else if (value instanceof String text) {
-			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
-				try {
-					Instant date = Instant.from(this.dateFormat.parse(text));
-					context.append(this.dateFormat.format(date));
-				}
-				catch (DateTimeParseException e) {
-					throw new IllegalArgumentException("Invalid date type:" + text, e);
-				}
-			}
-			else {
-				context.append(text);
-			}
+			emitLuceneString(text, context);
 		}
 		else {
 			context.append(value);

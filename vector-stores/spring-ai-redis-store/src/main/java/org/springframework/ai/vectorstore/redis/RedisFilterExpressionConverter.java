@@ -168,6 +168,11 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 		return new NumericBoundary(value.value(), true);
 	}
 
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
+	}
+
 	static record Numeric(NumericBoundary lower, NumericBoundary upper) {
 
 	}

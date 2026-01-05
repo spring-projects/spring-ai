@@ -16,13 +16,10 @@
 
 package org.springframework.ai.vectorstore.filter.converter;
 
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
@@ -34,8 +31,6 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
  * @author Jemin Huh
  */
 public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterExpressionConverter {
-
-	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
 
 	private final DateTimeFormatter dateFormat;
 
@@ -78,7 +73,7 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 			var formattedList = new StringBuilder("{");
 			int c = 0;
 			for (Object v : list) {
-				this.doSingleValue(v, formattedList);
+				this.doSingleValue(normalizeDateString(v), formattedList);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, formattedList);
 				}
@@ -93,7 +88,7 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 			}
 		}
 		else {
-			this.doSingleValue(filterValue.value(), context);
+			this.doSingleValue(normalizeDateString(filterValue.value()), context);
 		}
 	}
 
@@ -109,6 +104,43 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 		context.append(formattedList).append(".contains(").append(metadata).append(")");
 	}
 
+	/**
+	 * Emit a SpEL-formatted string value with single quote wrapping and escaping by
+	 * appending to the provided context.
+	 * <p>
+	 * Escapes single quotes (using backslash) and backslashes (double backslash)
+	 * according to SpEL string literal rules.
+	 * <p>
+	 * This method prevents SpEL injection attacks by properly escaping special
+	 * characters.
+	 * @param text the string value to format
+	 * @param context the context to append the SpEL string literal to
+	 * @since 2.0.0
+	 */
+	protected static void emitSpelString(String text, StringBuilder context) {
+		context.append("'"); // Opening quote
+
+		for (int i = 0; i < text.length(); i++) {
+			char c = text.charAt(i);
+
+			switch (c) {
+				case '\'':
+					// SpEL: single quote → backslash escaped
+					context.append("\\'");
+					break;
+				case '\\':
+					// SpEL: backslash → double backslash
+					context.append("\\\\");
+					break;
+				default:
+					context.append(c);
+					break;
+			}
+		}
+
+		context.append("'"); // Closing quote
+	}
+
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
 		if (value instanceof Date date) {
@@ -117,20 +149,7 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 			context.append("'");
 		}
 		else if (value instanceof String text) {
-			context.append("'");
-			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
-				try {
-					Instant date = Instant.from(this.dateFormat.parse(text));
-					context.append(this.dateFormat.format(date));
-				}
-				catch (DateTimeParseException e) {
-					throw new IllegalArgumentException("Invalid date type:" + text, e);
-				}
-			}
-			else {
-				context.append(text);
-			}
-			context.append("'");
+			emitSpelString(text, context);
 		}
 		else {
 			context.append(value);

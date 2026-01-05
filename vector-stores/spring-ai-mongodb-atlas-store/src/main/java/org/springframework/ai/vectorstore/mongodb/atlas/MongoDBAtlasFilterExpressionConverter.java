@@ -85,4 +85,16 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 		context.append("\"metadata." + identifier + "\"");
 	}
 
+	/**
+	 * Serialize values using JSON serialization for MongoDB Atlas filter expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
+	}
+
 }
