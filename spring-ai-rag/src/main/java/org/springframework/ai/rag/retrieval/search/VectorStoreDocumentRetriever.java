@@ -19,13 +19,14 @@ package org.springframework.ai.rag.retrieval.search;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -128,13 +129,13 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 	 */
 	public static final class Builder {
 
-		private VectorStore vectorStore;
+		private @Nullable VectorStore vectorStore;
 
-		private Double similarityThreshold;
+		private @Nullable Double similarityThreshold;
 
-		private Integer topK;
+		private @Nullable Integer topK;
 
-		private Supplier<Filter.Expression> filterExpression;
+		private @Nullable Supplier<Filter.Expression> filterExpression;
 
 		private Builder() {
 		}
@@ -165,6 +166,7 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 		}
 
 		public VectorStoreDocumentRetriever build() {
+			Assert.state(this.vectorStore != null, "vectorStore cannot be null");
 			return new VectorStoreDocumentRetriever(this.vectorStore, this.similarityThreshold, this.topK,
 					this.filterExpression);
 		}

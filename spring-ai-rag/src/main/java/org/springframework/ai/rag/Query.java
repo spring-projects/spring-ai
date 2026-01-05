@@ -19,6 +19,8 @@ package org.springframework.ai.rag;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.util.Assert;
 
@@ -55,7 +57,7 @@ public record Query(String text, List<Message> history, Map<String, Object> cont
 
 	public static final class Builder {
 
-		private String text;
+		private @Nullable String text;
 
 		private List<Message> history = List.of();
 
@@ -85,6 +87,7 @@ public record Query(String text, List<Message> history, Map<String, Object> cont
 		}
 
 		public Query build() {
+			Assert.hasText(this.text, "text cannot be null or empty");
 			return new Query(this.text, this.history, this.context);
 		}
 
