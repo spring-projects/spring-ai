@@ -20,9 +20,8 @@
  * This package includes components for handling the generation stage in Retrieval
  * Augmented Generation flows.
  */
-@NonNullApi
-@NonNullFields
+
+@NullMarked
 package org.springframework.ai.rag.generation;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;
