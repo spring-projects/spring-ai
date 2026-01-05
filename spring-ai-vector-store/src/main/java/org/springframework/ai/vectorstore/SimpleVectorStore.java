@@ -111,8 +111,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
-			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(), document.getText(),
-					document.getMetadata(), embedding);
+			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding);
 			this.store.put(document.getId(), storeContent);
 		}
 	}
@@ -133,19 +133,20 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 			.filter(documentFilterPredicate)
 			.map(content -> content
 				.toDocument(EmbeddingMath.cosineSimilarity(userQueryEmbedding, content.getEmbedding())))
-			.filter(document -> document.getScore() >= request.getSimilarityThreshold())
+			.filter(document -> document.getScore() != null && document.getScore() >= request.getSimilarityThreshold())
 			.sorted(Comparator.comparing(Document::getScore).reversed())
 			.limit(request.getTopK())
 			.toList();
 	}
 
+	@SuppressWarnings("NullAway") // guarded by hasFilterExpression==true
 	private Predicate<SimpleVectorStoreContent> doFilterPredicate(SearchRequest request) {
 		return request.hasFilterExpression() ? document -> {
 			StandardEvaluationContext context = new StandardEvaluationContext();
 			context.setVariable("metadata", document.getMetadata());
-			return this.expressionParser
+			return Boolean.TRUE.equals(this.expressionParser
 				.parseExpression(this.filterExpressionConverter.convertExpression(request.getFilterExpression()))
-				.getValue(context, Boolean.class);
+				.getValue(context, Boolean.class));
 		} : document -> true;
 	}
 

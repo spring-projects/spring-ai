@@ -34,7 +34,12 @@ public class CouchbaseAiSearchFilterExpressionConverter extends AbstractFilterEx
 	protected void doExpression(Expression expression, StringBuilder context) {
 		this.convertOperand(expression.left(), context);
 		context.append(getOperationSymbol(expression));
-		this.convertOperand(expression.right(), context);
+		if (expression.right() != null) {
+			this.convertOperand(expression.right(), context);
+		}
+		else {
+			context.append("NULL");
+		}
 	}
 
 	private String getOperationSymbol(Expression exp) {

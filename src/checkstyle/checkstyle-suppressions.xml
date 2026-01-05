@@ -82,7 +82,6 @@
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-cloud-bindings" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-test" id="bannedNullabilityImports" />
-	<suppress files="spring-ai-vector-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores" id="bannedNullabilityImports" />
 
 </suppressions>
