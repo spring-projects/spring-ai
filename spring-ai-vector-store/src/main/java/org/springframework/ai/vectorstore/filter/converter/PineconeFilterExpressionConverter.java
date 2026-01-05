@@ -61,4 +61,9 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 		context.append("\"").append(identifier).append("\": ");
 	}
 
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
+	}
+
 }
