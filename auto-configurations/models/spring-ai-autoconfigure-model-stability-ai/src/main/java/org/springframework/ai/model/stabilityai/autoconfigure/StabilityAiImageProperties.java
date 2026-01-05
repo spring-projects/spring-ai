@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.stabilityai.image";
 
 	@NestedConfigurationProperty
-	private final StabilityAiImageOptions options = StabilityAiImageOptions.builder().build(); // stable-diffusion-v1-6
+	private final StabilityAiImageOptions options = StabilityAiImageOptions.builder().build(); // stable-diffusion-xl-1024-v1-0
 
 	public StabilityAiImageOptions getOptions() {
 		return this.options;
