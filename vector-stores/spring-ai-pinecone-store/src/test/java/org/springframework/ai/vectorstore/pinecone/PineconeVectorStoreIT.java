@@ -31,8 +31,11 @@ import java.util.stream.Collectors;
 import io.pinecone.clients.Pinecone;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -59,12 +62,14 @@ import static org.hamcrest.Matchers.hasSize;
  * @author Ilayaperumal Gopinathan
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
+@Execution(ExecutionMode.SAME_THREAD)
 public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
-	// NOTE: Leave it empty as for free tier as later doesn't support namespaces.
-	private static final String PINECONE_NAMESPACE = "";
+	// Default namespace (empty) so we never create new namespaces (serverless limit 100).
+	// Cleared before each test. Set PINECONE_NAMESPACE env to override.
+	private static String PINECONE_NAMESPACE;
 
 	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";
 
@@ -92,13 +97,68 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 	public static void beforeAll() {
 		Awaitility.setDefaultPollInterval(2, TimeUnit.SECONDS);
 		Awaitility.setDefaultPollDelay(Duration.ZERO);
-		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
+		// Serverless index has high write/read consistency latency; use 2 min for
+		// add/delete
+		Awaitility.setDefaultTimeout(Duration.ofMinutes(2));
+	}
+
+	@BeforeEach
+	public void setUpNamespace() {
+		String env = System.getenv("PINECONE_NAMESPACE");
+		// Default namespace (empty) so we never create a new namespace and hit serverless
+		// limit (100). Cleared before each test. Set PINECONE_NAMESPACE to use a named
+		// namespace instead.
+		PINECONE_NAMESPACE = (env != null) ? env : "";
+	}
+
+	/**
+	 * Seed queries used to sweep the namespace when clearing. Empty-string query often
+	 * does not match all vectors, so we use several diverse queries to find and delete
+	 * every document.
+	 */
+	private static final String[] CLEAR_SEED_QUERIES = { "the", "world", "document", "content", "depression",
+			"spring" };
+
+	/**
+	 * Clears the store's current namespace using only the VectorStore API (search then
+	 * delete by ID in batches). Uses multiple seed queries so all documents are found
+	 * (empty query does not match every vector). Waits until the namespace is empty
+	 * (handles eventual consistency). Use with SAME_THREAD execution so parallel tests do
+	 * not pollute.
+	 */
+	private void clearCurrentNamespace(VectorStore vectorStore) {
+		int topK = 10000;
+		boolean anyDeleted;
+		do {
+			anyDeleted = false;
+			for (String query : CLEAR_SEED_QUERIES) {
+				List<Document> batch = vectorStore
+					.similaritySearch(SearchRequest.builder().query(query).topK(topK).similarityThreshold(0f).build());
+				if (!batch.isEmpty()) {
+					vectorStore.delete(batch.stream().map(Document::getId).toList());
+					anyDeleted = true;
+				}
+			}
+		}
+		while (anyDeleted);
+		Awaitility.await()
+			.atMost(Duration.ofSeconds(60))
+			.pollInterval(Duration.ofMillis(500))
+			.until(() -> vectorStore
+				.similaritySearch(SearchRequest.builder().query("the").topK(1).similarityThreshold(0f).build()),
+					hasSize(0));
+	}
+
+	@Override
+	protected Duration getVerificationTimeout() {
+		return Duration.ofSeconds(90);
 	}
 
 	@Override
 	protected void executeTest(Consumer<VectorStore> testFunction) {
 		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			clearCurrentNamespace(vectorStore);
 			testFunction.accept(vectorStore);
 		});
 	}
@@ -109,15 +169,13 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			clearCurrentNamespace(vectorStore);
 
 			vectorStore.add(this.documents);
 
-			Awaitility.await()
+			List<Document> results = Awaitility.await()
 				.until(() -> vectorStore
 					.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build()), hasSize(1));
-
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("Great Depression").topK(1).build());
 
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
@@ -145,6 +203,7 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			clearCurrentNamespace(vectorStore);
 
 			var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
 					Map.of("country", "Bulgaria"));
@@ -155,36 +214,33 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 			SearchRequest searchRequest = SearchRequest.builder().query("The World").build();
 
-			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(SearchRequest.from(searchRequest).topK(1).build()),
-						hasSize(1));
-
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.from(searchRequest).topK(5).build());
+			List<Document> results = Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.from(searchRequest).topK(5).build()),
+						hasSize(2));
 			assertThat(results).hasSize(2);
 
-			results = vectorStore.similaritySearch(SearchRequest.from(searchRequest)
-				.topK(5)
-				.similarityThresholdAll()
-				.filterExpression("country == 'Bulgaria'")
-				.build());
-			assertThat(results).hasSize(1);
+			results = Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.from(searchRequest)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("country == 'Bulgaria'")
+					.build()), hasSize(1));
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.from(searchRequest)
-				.topK(5)
-				.similarityThresholdAll()
-				.filterExpression("country == 'Netherlands'")
-				.build());
-			assertThat(results).hasSize(1);
+			results = Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.from(searchRequest)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("country == 'Netherlands'")
+					.build()), hasSize(1));
 			assertThat(results.get(0).getId()).isEqualTo(nlDocument.getId());
 
-			results = vectorStore.similaritySearch(SearchRequest.from(searchRequest)
-				.topK(5)
-				.similarityThresholdAll()
-				.filterExpression("NOT(country == 'Netherlands')")
-				.build());
-
-			assertThat(results).hasSize(1);
+			results = Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.from(searchRequest)
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("NOT(country == 'Netherlands')")
+					.build()), hasSize(1));
 			assertThat(results.get(0).getId()).isEqualTo(bgDocument.getId());
 
 			// Remove all documents from the store
@@ -203,6 +259,7 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			clearCurrentNamespace(vectorStore);
 
 			Document document = new Document(UUID.randomUUID().toString(), "Spring AI rocks!!",
 					Collections.singletonMap("meta1", "meta1"));
@@ -211,10 +268,8 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 			SearchRequest springSearchRequest = SearchRequest.builder().query("Spring").topK(5).build();
 
-			Awaitility.await().until(() -> vectorStore.similaritySearch(springSearchRequest), hasSize(1));
-
-			List<Document> results = vectorStore.similaritySearch(springSearchRequest);
-
+			List<Document> results = Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(springSearchRequest), hasSize(1));
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
@@ -230,12 +285,8 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 			SearchRequest fooBarSearchRequest = SearchRequest.builder().query("FooBar").topK(5).build();
 
-			Awaitility.await()
-				.until(() -> vectorStore.similaritySearch(fooBarSearchRequest).get(0).getText(),
-						equalTo("The World is Big and Salvation Lurks Around the Corner"));
-
-			results = vectorStore.similaritySearch(fooBarSearchRequest);
-
+			results = Awaitility.await().until(() -> vectorStore.similaritySearch(fooBarSearchRequest), hasSize(1));
+			assertThat(results.get(0).getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 			assertThat(results).hasSize(1);
 			resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(document.getId());
@@ -256,29 +307,30 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			clearCurrentNamespace(vectorStore);
 
 			vectorStore.add(this.documents);
 
-			Awaitility.await()
+			List<Document> fullResult = Awaitility.await()
 				.until(() -> vectorStore.similaritySearch(
 						SearchRequest.builder().query("Depression").topK(50).similarityThresholdAll().build()),
 						hasSize(3));
+			assertThat(fullResult).hasSize(3);
 
-			List<Document> fullResult = vectorStore
-				.similaritySearch(SearchRequest.builder().query("Depression").topK(5).similarityThresholdAll().build());
-
-			List<Double> scores = fullResult.stream().map(Document::getScore).toList();
-
-			assertThat(scores).hasSize(3);
+			// Sort by score descending so threshold is between true top two
+			List<Double> scores = fullResult.stream()
+				.map(Document::getScore)
+				.sorted((a, b) -> Double.compare(b, a))
+				.toList();
 
 			double similarityThreshold = (scores.get(0) + scores.get(1)) / 2;
 
-			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
-				.query("Depression")
-				.topK(5)
-				.similarityThreshold(similarityThreshold)
-				.build());
-
+			List<Document> results = Awaitility.await()
+				.until(() -> vectorStore.similaritySearch(SearchRequest.builder()
+					.query("Depression")
+					.topK(5)
+					.similarityThreshold(similarityThreshold)
+					.build()), hasSize(1));
 			assertThat(results).hasSize(1);
 			Document resultDoc = results.get(0);
 			assertThat(resultDoc.getId()).isEqualTo(this.documents.get(2).getId());
@@ -299,6 +351,7 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 	void deleteWithComplexFilterExpression() {
 		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			clearCurrentNamespace(vectorStore);
 
 			cleanupExistingDocuments(vectorStore, "Content");
 
@@ -310,9 +363,10 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 			Filter.Expression complexFilter = createComplexFilter();
 			vectorStore.delete(complexFilter);
 
-			awaitDocumentsCount(vectorStore, "Content", 2);
-
-			List<Document> results = searchDocuments(vectorStore, "Content", 5);
+			List<Document> results = Awaitility.await()
+				.atMost(Duration.ofMinutes(3))
+				.pollInterval(Duration.ofSeconds(2))
+				.until(() -> searchDocuments(vectorStore, "Content", 5), hasSize(2));
 			assertThat(results).hasSize(2);
 			assertComplexFilterResults(results);
 

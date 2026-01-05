@@ -80,4 +80,9 @@ public class CouchbaseAiSearchFilterExpressionConverter extends AbstractFilterEx
 		context.append(")");
 	}
 
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
+	}
+
 }

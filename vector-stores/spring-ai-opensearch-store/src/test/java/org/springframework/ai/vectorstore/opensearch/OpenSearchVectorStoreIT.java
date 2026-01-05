@@ -116,11 +116,42 @@ class OpenSearchVectorStoreIT {
 	void cleanDatabase() {
 		getContextRunner().run(context -> {
 			VectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
-			vectorStore.delete(List.of("_all"));
+			cleanupAllDocuments(vectorStore);
 
 			VectorStore anotherVectorStore = context.getBean("anotherVectorStore", OpenSearchVectorStore.class);
-			anotherVectorStore.delete(List.of("_all"));
+			cleanupAllDocuments(anotherVectorStore);
 		});
+	}
+
+	private void cleanupAllDocuments(VectorStore vectorStore) {
+		// Search for all documents using various common queries
+		List<String> queries = List.of("Spring", "World", "Great Depression", "Content", "Salvation", "document",
+				"test");
+		java.util.Set<String> allDocIds = new java.util.HashSet<>();
+
+		for (String query : queries) {
+			try {
+				List<Document> docs = vectorStore
+					.similaritySearch(SearchRequest.builder().query(query).topK(100).similarityThresholdAll().build());
+				docs.forEach(doc -> allDocIds.add(doc.getId()));
+			}
+			catch (Exception e) {
+				// Ignore errors during search
+			}
+		}
+
+		// Delete all found documents
+		if (!allDocIds.isEmpty()) {
+			try {
+				vectorStore.delete(new java.util.ArrayList<>(allDocIds));
+				// Give OpenSearch time to process deletions (eventual consistency)
+				// Don't wait for perfect cleanup as it may time out with many documents
+				Thread.sleep(2000);
+			}
+			catch (Exception e) {
+				// Best effort cleanup - continue even if deletion fails
+			}
+		}
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")

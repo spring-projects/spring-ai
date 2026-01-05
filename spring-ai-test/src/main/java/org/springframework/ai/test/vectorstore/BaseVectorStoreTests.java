@@ -17,10 +17,12 @@
 package org.springframework.ai.test.vectorstore;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -70,12 +72,20 @@ public abstract class BaseVectorStoreTests {
 		return documents;
 	}
 
+	/**
+	 * Timeout for verifying documents exist or are deleted. Override in subclasses for
+	 * stores with higher eventual-consistency latency (e.g. Pinecone serverless).
+	 */
+	protected Duration getVerificationTimeout() {
+		return Duration.ofSeconds(5);
+	}
+
 	private String normalizeValue(Object value) {
 		return value.toString().replaceAll("^\"|\"$", "").trim();
 	}
 
 	private void verifyDocumentsExist(VectorStore vectorStore, List<Document> documents) {
-		await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+		await().atMost(getVerificationTimeout()).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
 			List<Document> results = vectorStore.similaritySearch(
 					SearchRequest.builder().query("The World").topK(documents.size()).similarityThresholdAll().build());
 			assertThat(results).hasSize(documents.size());
@@ -83,7 +93,7 @@ public abstract class BaseVectorStoreTests {
 	}
 
 	private void verifyDocumentsDeleted(VectorStore vectorStore, List<String> deletedIds) {
-		await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+		await().atMost(getVerificationTimeout()).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
 			List<Document> results = vectorStore
 				.similaritySearch(SearchRequest.builder().query("The World").topK(10).similarityThresholdAll().build());
 
@@ -91,6 +101,23 @@ public abstract class BaseVectorStoreTests {
 
 			assertThat(foundIds).doesNotContainAnyElementsOf(deletedIds);
 		});
+	}
+
+	/**
+	 * Waits until a search for "The World" returns the expected number of documents, and
+	 * returns that list. Use after deletes so eventually-consistent stores have time to
+	 * reflect the change. Callers must use the returned list for assertions (do not
+	 * search again) to avoid a race where a second search returns stale/empty results.
+	 */
+	private List<Document> awaitRemainingDocumentCount(VectorStore vectorStore, int expectedCount) {
+		AtomicReference<List<Document>> ref = new AtomicReference<>();
+		await().atMost(getVerificationTimeout()).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("The World").topK(10).similarityThresholdAll().build());
+			assertThat(results).hasSize(expectedCount);
+			ref.set(new ArrayList<>(results));
+		});
+		return ref.get();
 	}
 
 	@Test
@@ -103,9 +130,7 @@ public abstract class BaseVectorStoreTests {
 			vectorStore.delete(idsToDelete);
 			verifyDocumentsDeleted(vectorStore, idsToDelete);
 
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
+			List<Document> results = awaitRemainingDocumentCount(vectorStore, 1);
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(documents.get(2).getId());
 			Map<String, Object> metadata = results.get(0).getMetadata();
@@ -131,9 +156,7 @@ public abstract class BaseVectorStoreTests {
 			vectorStore.delete("country == 'BG'");
 			verifyDocumentsDeleted(vectorStore, bgDocIds);
 
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
+			List<Document> results = awaitRemainingDocumentCount(vectorStore, 1);
 			assertThat(results).hasSize(1);
 			assertThat(normalizeValue(results.get(0).getMetadata().get("country"))).isEqualTo("NL");
 
@@ -158,9 +181,7 @@ public abstract class BaseVectorStoreTests {
 			vectorStore.delete(filterExpression);
 			verifyDocumentsDeleted(vectorStore, bgDocIds);
 
-			List<Document> results = vectorStore
-				.similaritySearch(SearchRequest.builder().query("The World").topK(5).similarityThresholdAll().build());
-
+			List<Document> results = awaitRemainingDocumentCount(vectorStore, 1);
 			assertThat(results).hasSize(1);
 			assertThat(normalizeValue(results.get(0).getMetadata().get("country"))).isEqualTo("NL");
 
