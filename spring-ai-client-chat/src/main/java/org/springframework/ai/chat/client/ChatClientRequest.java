@@ -68,7 +68,7 @@ public record ChatClientRequest(Prompt prompt, Map<String, @Nullable Object> con
 			return this;
 		}
 
-		public Builder context(Map<String, @Nullable Object> context) {
+		public Builder context(Map<String, ? extends @Nullable Object> context) {
 			Assert.notNull(context, "context cannot be null");
 			this.context.putAll(context);
 			return this;
