@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,6 +94,11 @@ public enum AiProvider {
 	 * AI system provided by Spring AI.
 	 */
 	SPRING_AI("spring_ai"),
+
+	/**
+	 * AI system provided by Stability AI.
+	 */
+	STABILITY_AI("stability_ai"),
 
 	/**
 	 * AI system provided by Vertex AI.
