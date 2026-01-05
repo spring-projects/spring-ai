@@ -53,9 +53,7 @@
  * @author Mark Pollack
  * @since 1.0.0
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.vectorstore;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

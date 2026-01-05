@@ -140,8 +140,9 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		for (Document document : documents) {
-			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(), document.getText(),
-					document.getMetadata(), embeddings.get(documents.indexOf(document)));
+			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
+					embeddings.get(documents.indexOf(document)));
 			this.collection.upsert(document.getId(), cbDoc);
 		}
 	}

@@ -30,6 +30,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersBaseVisitor;
 import org.springframework.ai.vectorstore.filter.antlr4.FiltersLexer;
@@ -168,7 +169,7 @@ public class FilterExpressionTextParser {
 
 	public static class FilterExpressionParseException extends RuntimeException {
 
-		public FilterExpressionParseException(String message, Throwable cause) {
+		public FilterExpressionParseException(String message, @Nullable Throwable cause) {
 			super(message, cause);
 		}
 
