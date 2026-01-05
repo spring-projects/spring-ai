@@ -357,8 +357,6 @@ public class OllamaChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-					// FIXME: bounded elastic needs to be used since tool calling
-					//  is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
@@ -379,6 +377,9 @@ public class OllamaChatModel implements ChatModel {
 							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									response);
 						}
+					// NOTE: Tool execution here is still synchronous/blocking.
+					// boundedElastic isolates it from the event loop but can saturate under load.
+					// Consider a reactive tool API (Mono/Flux) or a dedicated executor/bulkhead for true non-blocking behavior.
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
 				else {

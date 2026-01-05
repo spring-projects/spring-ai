@@ -368,8 +368,6 @@ public class ZhiPuAiChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
-							// FIXME: bounded elastic needs to be used since tool calling
-							//  is currently only synchronous
 							return Flux.deferContextual(ctx -> {
 								ToolExecutionResult toolExecutionResult;
 								try {
@@ -389,6 +387,9 @@ public class ZhiPuAiChatModel implements ChatModel {
 									// Send the tool execution result back to the model.
 									return this.stream(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
 								}
+							// NOTE: Tool execution here is still synchronous/blocking.
+							// boundedElastic isolates it from the event loop but can saturate under load.
+							// Consider a reactive tool API (Mono/Flux) or a dedicated executor/bulkhead for true non-blocking behavior.
 							}).subscribeOn(Schedulers.boundedElastic());
 						}
 						return Flux.just(response);
