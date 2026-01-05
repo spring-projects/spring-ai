@@ -270,8 +270,6 @@ public class AnthropicChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 
 					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
 						return Flux.deferContextual(ctx -> {
 							// TODO: factor out the tool execution logic with setting context into a utility.
 							ToolExecutionResult toolExecutionResult;
@@ -293,6 +291,9 @@ public class AnthropicChatModel implements ChatModel {
 								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 										chatResponse);
 							}
+						// NOTE: Tool execution here is still synchronous/blocking.
+						// boundedElastic isolates it from the event loop but can saturate under load.
+						// Consider a reactive tool API (Mono/Flux) or a dedicated executor/bulkhead for true non-blocking behavior.
 						}).subscribeOn(Schedulers.boundedElastic());
 					}
 					else {

@@ -377,8 +377,6 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 			return chatResponseFlux.flatMapSequential(chatResponse -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
-					// FIXME: bounded elastic needs to be used since tool calling
-					// is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
@@ -401,6 +399,9 @@ public class AzureOpenAiChatModel implements ChatModel {
 									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									chatResponse);
 						}
+					// NOTE: Tool execution here is still synchronous/blocking.
+					// boundedElastic isolates it from the event loop but can saturate under load.
+					// Consider a reactive tool API (Mono/Flux) or a dedicated executor/bulkhead for true non-blocking behavior.
 					}).subscribeOn(Schedulers.boundedElastic());
 				}
 
