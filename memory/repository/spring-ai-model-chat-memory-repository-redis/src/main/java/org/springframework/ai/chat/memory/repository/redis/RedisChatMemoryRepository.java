@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
@@ -1176,7 +1177,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	 */
 	public static class Builder {
 
-		private JedisPooled jedisClient;
+		private @Nullable JedisPooled jedisClient;
 
 		private String indexName = RedisChatMemoryConfig.DEFAULT_INDEX_NAME;
 
@@ -1190,7 +1191,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 		private int maxMessagesPerConversation = 100;
 
-		private List<Map<String, String>> metadataFields;
+		private List<Map<String, String>> metadataFields = Collections.emptyList();
 
 		/**
 		 * Sets the JedisPooled client.
