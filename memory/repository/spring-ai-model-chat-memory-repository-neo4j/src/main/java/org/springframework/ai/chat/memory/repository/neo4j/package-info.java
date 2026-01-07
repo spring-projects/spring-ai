@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2026-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,7 @@
  * limitations under the License.
  */
 
+@NullMarked
 package org.springframework.ai.chat.memory.repository.neo4j;
 
-/**
- * @author Enrico Rampazzo
- */
-public enum MediaAttributes implements AttributeGetter {
-
-	ID("id"), MIME_TYPE("mimeType"), DATA("data"), NAME("name"), URL("url"), IDX("idx");
-
-	private final String value;
-
-	MediaAttributes(String value) {
-		this.value = value;
-	}
-
-	public String getValue() {
-		return this.value;
-	}
-
-}
+import org.jspecify.annotations.NullMarked;

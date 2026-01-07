@@ -19,7 +19,7 @@ package org.springframework.ai.chat.memory.repository.neo4j;
 /*
  * @author Enrico Rampazzo
  */
-public enum ToolResponseAttributes {
+public enum ToolResponseAttributes implements AttributeGetter {
 
 	IDX("idx"), RESPONSE_DATA("responseData"), NAME("name"), ID("id");
 
