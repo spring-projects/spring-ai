@@ -377,8 +377,6 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 			return chatResponseFlux.flatMapSequential(chatResponse -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
-					// FIXME: bounded elastic needs to be used since tool calling
-					// is currently only synchronous
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
