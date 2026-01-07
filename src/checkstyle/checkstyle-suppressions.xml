@@ -68,7 +68,6 @@
 
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
 	<!-- This list will gradually shrink as we migrate to JSpecify -->
-	<suppress files="advisors" id="bannedNullabilityImports" />
 	<suppress files="auto-configurations" id="bannedNullabilityImports" />
 	<suppress files="document-readers" id="bannedNullabilityImports" />
 	<suppress files="mcp" id="bannedNullabilityImports" />
