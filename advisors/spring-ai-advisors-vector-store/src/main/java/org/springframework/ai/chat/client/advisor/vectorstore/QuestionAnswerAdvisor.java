@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
@@ -52,6 +54,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class QuestionAnswerAdvisor implements BaseAdvisor {
+
+	private static final Logger logger = LoggerFactory.getLogger(QuestionAnswerAdvisor.class);
 
 	public static final String RETRIEVED_DOCUMENTS = "qa_retrieved_documents";
 
@@ -106,6 +110,8 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 	@Override
 	public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+		logger.debug("[{}] before: userQuery='{}'", getName(), chatClientRequest.prompt().getUserMessage().getText());
+
 		// 1. Search for similar documents in the vector store.
 		var searchRequestToUse = SearchRequest.from(this.searchRequest)
 			.query(chatClientRequest.prompt().getUserMessage().getText())
@@ -113,6 +119,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 			.build();
 
 		List<Document> documents = this.vectorStore.similaritySearch(searchRequestToUse);
+		logger.debug("[{}] before: retrieved {} documents from vector store", getName(), documents.size());
 
 		// 2. Create the context from the documents.
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
@@ -128,6 +135,8 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 			.render(Map.of("query", userMessage.getText(), "question_answer_context", documentContext));
 
 		// 4. Update ChatClientRequest with augmented prompt.
+		logger.debug("[{}] before: augmented user message with {} characters of context", getName(),
+				documentContext.length());
 		return chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedUserText))
 			.context(context)
@@ -136,6 +145,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 
 	@Override
 	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+		logger.debug("[{}] after: processing response", getName());
 		ChatResponse.Builder chatResponseBuilder;
 		if (chatClientResponse.chatResponse() == null) {
 			chatResponseBuilder = ChatResponse.builder();
@@ -144,6 +154,7 @@ public class QuestionAnswerAdvisor implements BaseAdvisor {
 			chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse());
 		}
 		chatResponseBuilder.metadata(RETRIEVED_DOCUMENTS, chatClientResponse.context().get(RETRIEVED_DOCUMENTS));
+		logger.debug("[{}] after: added retrieved documents metadata to response", getName());
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponseBuilder.build())
 			.context(chatClientResponse.context())
