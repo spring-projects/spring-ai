@@ -16,6 +16,8 @@
 
 package org.springframework.ai.retry;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Root of the hierarchy of Model access exceptions that are considered transient - where
  * a previously failed operation might be able to succeed when the operation is retried
@@ -39,7 +41,7 @@ public class TransientAiException extends RuntimeException {
 	 * @param message the exception message
 	 * @param cause the exception cause
 	 */
-	public TransientAiException(final String message, final Throwable cause) {
+	public TransientAiException(final String message, final @Nullable Throwable cause) {
 		super(message, cause);
 	}
 
