@@ -236,7 +236,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 		private McpToolFilter toolFilter = (mcpClient, tool) -> true;
 
-		private List<McpAsyncClient> mcpClients;
+		private List<McpAsyncClient> mcpClients = List.of();
 
 		private McpToolNamePrefixGenerator toolNamePrefixGenerator = new DefaultMcpToolNamePrefixGenerator();
 

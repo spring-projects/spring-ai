@@ -17,6 +17,9 @@
 package org.springframework.ai.mcp;
 
 import io.modelcontextprotocol.spec.McpSchema;
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.Assert;
 
 /**
  * MCP connection info record containing the client and server related metadata.
@@ -30,7 +33,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 public record McpConnectionInfo(// @formatter:off
 	McpSchema.ClientCapabilities clientCapabilities,
 	McpSchema.Implementation clientInfo,
-	McpSchema.InitializeResult initializeResult) { // @formatter:on
+	McpSchema.@Nullable InitializeResult initializeResult) { // @formatter:on
 
 	/**
 	 * Creates a new Builder instance for constructing McpConnectionInfo.
@@ -45,11 +48,11 @@ public record McpConnectionInfo(// @formatter:off
 	 */
 	public static final class Builder {
 
-		private McpSchema.ClientCapabilities clientCapabilities;
+		private McpSchema.@Nullable ClientCapabilities clientCapabilities;
 
-		private McpSchema.Implementation clientInfo;
+		private McpSchema.@Nullable Implementation clientInfo;
 
-		private McpSchema.InitializeResult initializeResult;
+		private McpSchema.@Nullable InitializeResult initializeResult;
 
 		/**
 		 * Private constructor to enforce builder pattern.
@@ -92,6 +95,8 @@ public record McpConnectionInfo(// @formatter:off
 		 * @return a new McpConnectionInfo instance
 		 */
 		public McpConnectionInfo build() {
+			Assert.state(this.clientCapabilities != null, "clientCapabilities should not be null");
+			Assert.state(this.clientInfo != null, "clientInfo should not be null");
 			return new McpConnectionInfo(this.clientCapabilities, this.clientInfo, this.initializeResult);
 		}
 
