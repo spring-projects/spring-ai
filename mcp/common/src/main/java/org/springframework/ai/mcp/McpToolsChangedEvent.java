@@ -29,9 +29,9 @@ import org.springframework.context.ApplicationEvent;
  */
 public class McpToolsChangedEvent extends ApplicationEvent {
 
-	private String connectionName;
+	private final String connectionName;
 
-	private List<Tool> tools;
+	private final List<Tool> tools;
 
 	public McpToolsChangedEvent(String connectionName, List<Tool> tools) {
 		super(connectionName);
