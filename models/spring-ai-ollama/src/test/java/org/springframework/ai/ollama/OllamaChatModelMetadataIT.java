@@ -34,12 +34,12 @@ import org.springframework.context.annotation.Bean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link OllamaChatModel} asserting AI metadata.
+ * ITs for {@link OllamaChatModel} asserting AI metadata.
  *
  * @author Sun Yuhan
  */
-@SpringBootTest(classes = OllamaChatModelMetadataTests.Config.class)
-class OllamaChatModelMetadataTests extends BaseOllamaIT {
+@SpringBootTest(classes = OllamaChatModelMetadataIT.Config.class)
+class OllamaChatModelMetadataIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.QWEN_3_06B.getName();
 
