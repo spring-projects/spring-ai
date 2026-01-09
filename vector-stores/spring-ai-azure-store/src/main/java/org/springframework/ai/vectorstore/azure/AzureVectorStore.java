@@ -43,6 +43,7 @@ import com.azure.search.documents.models.IndexingResult;
 import com.azure.search.documents.models.SearchOptions;
 import com.azure.search.documents.models.VectorSearchOptions;
 import com.azure.search.documents.models.VectorizedQuery;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +60,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -126,14 +126,13 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	private final String metadataFieldName;
 
-	@Nullable
-	private SearchClient searchClient;
+	private final SearchClient searchClient;
 
-	private int defaultTopK;
+	private final int defaultTopK;
 
-	private Double defaultSimilarityThreshold;
+	private final Double defaultSimilarityThreshold;
 
-	private String indexName;
+	private final String indexName;
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
@@ -147,11 +146,12 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		Assert.notNull(builder.filterMetadataFields, "The filterMetadataFields cannot be null");
 
 		this.searchIndexClient = builder.searchIndexClient;
+		this.indexName = builder.indexName;
+		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 		this.initializeSchema = builder.initializeSchema;
 		this.filterMetadataFields = builder.filterMetadataFields;
 		this.defaultTopK = builder.defaultTopK;
 		this.defaultSimilarityThreshold = builder.defaultSimilarityThreshold;
-		this.indexName = builder.indexName;
 		this.contentFieldName = builder.contentFieldName;
 		this.embeddingFieldName = builder.embeddingFieldName;
 		this.metadataFieldName = builder.metadataFieldName;
@@ -239,6 +239,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 			.setVectorSearchOptions(new VectorSearchOptions().setQueries(vectorQuery));
 
 		if (request.hasFilterExpression()) {
+			Assert.notNull(request.getFilterExpression(), "filterExpression should not be null at this point");
 			String oDataFilter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 			searchOptions.setFilter(oDataFilter);
 		}
@@ -268,9 +269,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-
 		if (!this.initializeSchema) {
-			this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 			return;
 		}
 
@@ -315,17 +314,18 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		SearchIndex index = this.searchIndexClient.createOrUpdateIndex(searchIndex);
 
 		logger.info("Created search index: {}", index.getName());
-
-		this.searchClient = this.searchIndexClient.getSearchClient(this.indexName);
 	}
 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-
-		return VectorStoreObservationContext.builder(VectorStoreProvider.AZURE.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.AZURE.value(), operationName)
 			.collectionName(this.indexName)
-			.dimensions(this.embeddingModel.dimensions())
-			.similarityMetric(this.initializeSchema ? VectorStoreSimilarityMetric.COSINE.value() : null);
+			.dimensions(this.embeddingModel.dimensions());
+		if (this.initializeSchema) {
+			builder.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+		}
+		return builder;
 	}
 
 	@Override
