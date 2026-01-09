@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -40,6 +41,7 @@ import com.azure.cosmos.models.CosmosVectorEmbeddingPolicy;
 import com.azure.cosmos.models.CosmosVectorIndexSpec;
 import com.azure.cosmos.models.CosmosVectorIndexType;
 import com.azure.cosmos.models.ExcludedPath;
+import com.azure.cosmos.models.FeedResponse;
 import com.azure.cosmos.models.IncludedPath;
 import com.azure.cosmos.models.IndexingMode;
 import com.azure.cosmos.models.IndexingPolicy;
@@ -54,6 +56,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -67,7 +70,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -113,8 +115,8 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 		this.cosmosClient = builder.cosmosClient;
 		this.containerName = builder.containerName;
 		this.databaseName = builder.databaseName;
-		this.partitionKeyPath = builder.partitionKeyPath;
-		this.vectorStoreThroughput = builder.vectorStoreThroughput;
+		this.partitionKeyPath = Objects.requireNonNullElse(builder.partitionKeyPath, "/id");
+		this.vectorStoreThroughput = builder.vectorStoreThroughput == 0 ? 400 : builder.vectorStoreThroughput;
 		this.vectorDimensions = builder.vectorDimensions;
 		this.metadataFieldsList = builder.metadataFieldsList;
 
@@ -136,15 +138,6 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	private void initializeContainer() {
-
-		// Set defaults if not provided
-		if (this.vectorStoreThroughput == 0) {
-			this.vectorStoreThroughput = 400;
-		}
-		if (this.partitionKeyPath == null) {
-			this.partitionKeyPath = "/id";
-		}
-
 		// handle hierarchical partition key
 		PartitionKeyDefinition subPartitionKeyDefinition = new PartitionKeyDefinition();
 		List<String> pathsFromCommaSeparatedList = new ArrayList<>();
@@ -321,7 +314,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 							new CosmosQueryRequestOptions(), JsonNode.class);
 
 					// Block to retrieve the first page synchronously
-					List<JsonNode> documents = queryFlux.byPage(1).blockFirst().getResults();
+					FeedResponse<JsonNode> jsonNodeFeedResponse = queryFlux.byPage(1).blockFirst();
+					if (jsonNodeFeedResponse == null) {
+						throw new IllegalArgumentException("No document found for id: " + id);
+					}
+					List<JsonNode> documents = jsonNodeFeedResponse.getResults();
 
 					if (documents == null || documents.isEmpty()) {
 						throw new IllegalArgumentException("No document found for id: " + id);
@@ -416,6 +413,9 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				.flatMap(page -> Flux.fromIterable(page.getResults()))
 				.collectList()
 				.block();
+			if (documents == null) {
+				documents = new ArrayList<>();
+			}
 
 			// Collect metadata fields from the documents
 			Map<String, Object> docFields = new HashMap<>();
@@ -471,14 +471,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		private final CosmosAsyncClient cosmosClient;
 
-		@Nullable
-		private String containerName;
+		private @Nullable String containerName;
 
-		@Nullable
-		private String databaseName;
+		private @Nullable String databaseName;
 
-		@Nullable
-		private String partitionKeyPath;
+		private @Nullable String partitionKeyPath;
 
 		private int vectorStoreThroughput = 400;
 
