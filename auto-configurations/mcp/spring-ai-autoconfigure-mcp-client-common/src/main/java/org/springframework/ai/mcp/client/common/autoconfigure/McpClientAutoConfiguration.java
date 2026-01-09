@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
-import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -242,10 +241,8 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientConfigurer mcpAsyncClientConfigurer,
-			McpClientCommonProperties commonProperties,
-			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider,
-			ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry) {
+	public List<McpAsyncClient> mcpAsyncClients(McpAsyncClientFactory mcpAsyncClientFactory,
+			ObjectProvider<List<NamedClientMcpTransport>> transportsProvider) {
 
 		List<McpAsyncClient> mcpAsyncClients = new ArrayList<>();
 
@@ -253,38 +250,7 @@ public class McpClientAutoConfiguration {
 
 		if (!CollectionUtils.isEmpty(namedTransports)) {
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
-
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
-
-				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
-					.clientInfo(clientInfo)
-					.requestTimeout(commonProperties.getRequestTimeout())
-					.sampling(samplingRequest -> clientMcpAsyncHandlersRegistry.handleSampling(namedTransport.name(),
-							samplingRequest))
-					.elicitation(elicitationRequest -> clientMcpAsyncHandlersRegistry
-						.handleElicitation(namedTransport.name(), elicitationRequest))
-					.loggingConsumer(loggingMessageNotification -> clientMcpAsyncHandlersRegistry
-						.handleLogging(namedTransport.name(), loggingMessageNotification))
-					.progressConsumer(progressNotification -> clientMcpAsyncHandlersRegistry
-						.handleProgress(namedTransport.name(), progressNotification))
-					.toolsChangeConsumer(newTools -> clientMcpAsyncHandlersRegistry
-						.handleToolListChanged(namedTransport.name(), newTools))
-					.promptsChangeConsumer(newPrompts -> clientMcpAsyncHandlersRegistry
-						.handlePromptListChanged(namedTransport.name(), newPrompts))
-					.resourcesChangeConsumer(newResources -> clientMcpAsyncHandlersRegistry
-						.handleResourceListChanged(namedTransport.name(), newResources))
-					.capabilities(clientMcpAsyncHandlersRegistry.getCapabilities(namedTransport.name()));
-
-				spec = mcpAsyncClientConfigurer.configure(namedTransport.name(), spec);
-
-				var client = spec.build();
-
-				if (commonProperties.isInitialized()) {
-					client.initialize().block();
-				}
-
+				McpAsyncClient client = mcpAsyncClientFactory.createClient(namedTransport);
 				mcpAsyncClients.add(client);
 			}
 		}
@@ -303,6 +269,25 @@ public class McpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	McpAsyncClientConfigurer mcpAsyncClientConfigurer(ObjectProvider<McpAsyncClientCustomizer> customizerProvider) {
 		return new McpAsyncClientConfigurer(customizerProvider.orderedStream().toList());
+	}
+
+	/**
+	 * Creates the {@link McpAsyncClientFactory} for building MCP async clients.
+	 *
+	 * <p>
+	 * This factory encapsulates the common client creation logic used by both the bulk
+	 * client list and individual named client beans.
+	 * @param commonProperties common MCP client properties
+	 * @param configurer the configurer for customizing clients
+	 * @param clientMcpAsyncHandlersRegistry registry for client event handlers
+	 * @return the MCP async client factory
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	McpAsyncClientFactory mcpAsyncClientFactory(McpClientCommonProperties commonProperties,
+			McpAsyncClientConfigurer configurer, ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry) {
+		return new McpAsyncClientFactory(commonProperties, configurer, clientMcpAsyncHandlersRegistry);
 	}
 
 	/**

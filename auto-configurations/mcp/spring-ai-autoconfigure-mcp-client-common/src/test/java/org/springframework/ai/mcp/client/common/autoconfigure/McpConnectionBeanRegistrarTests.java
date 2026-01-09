@@ -21,7 +21,9 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.McpClient;
+import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
+import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpAsyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -113,6 +115,48 @@ class McpConnectionBeanRegistrarTests {
 				.isTrue());
 	}
 
+	// Async mode tests
+
+	@Test
+	void registersAsyncNamedBeanWhenTypeIsAsync() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC",
+					"spring.ai.mcp.client.sse.connections.async_server.url=http://localhost:8080")
+			.run(context -> {
+				assertThat(context.getBeanFactory().containsBeanDefinition("mcpAsyncClient_async_server")).isTrue();
+				assertThat(context.getBeanFactory().containsBeanDefinition("mcpSyncClient_async_server")).isFalse();
+
+				BeanDefinition def = context.getBeanFactory().getBeanDefinition("mcpAsyncClient_async_server");
+				assertThat(def).isInstanceOf(AbstractBeanDefinition.class);
+				AbstractBeanDefinition abd = (AbstractBeanDefinition) def;
+
+				assertThat(abd.getQualifiers()).anyMatch(q -> McpClient.class.getName().equals(q.getTypeName())
+						&& "async_server".equals(q.getAttribute("value")));
+			});
+	}
+
+	@Test
+	void registersMultipleAsyncNamedBeans() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC",
+					"spring.ai.mcp.client.sse.connections.server_a.url=http://localhost:8080",
+					"spring.ai.mcp.client.sse.connections.server_b.url=http://localhost:8081")
+			.run(context -> {
+				assertThat(context.getBeanFactory().containsBeanDefinition("mcpAsyncClient_server_a")).isTrue();
+				assertThat(context.getBeanFactory().containsBeanDefinition("mcpAsyncClient_server_b")).isTrue();
+			});
+	}
+
+	@Test
+	void registersSyncBeansWhenTypeIsDefault() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.default_server.url=http://localhost:8080")
+			.run(context -> {
+				assertThat(context.getBeanFactory().containsBeanDefinition("mcpSyncClient_default_server")).isTrue();
+				assertThat(context.getBeanFactory().containsBeanDefinition("mcpAsyncClient_default_server")).isFalse();
+			});
+	}
+
 	@Configuration
 	static class TestConfig {
 
@@ -140,6 +184,24 @@ class McpConnectionBeanRegistrarTests {
 		public McpSyncClientFactory mcpSyncClientFactory(McpClientCommonProperties commonProperties,
 				McpSyncClientConfigurer configurer, ClientMcpSyncHandlersRegistry handlersRegistry) {
 			return new McpSyncClientFactory(commonProperties, configurer, handlersRegistry);
+		}
+
+		// Async beans for async mode tests
+
+		@Bean
+		public McpAsyncClientConfigurer mcpAsyncClientConfigurer() {
+			return new McpAsyncClientConfigurer(Collections.emptyList());
+		}
+
+		@Bean
+		public ClientMcpAsyncHandlersRegistry clientMcpAsyncHandlersRegistry() {
+			return mock(ClientMcpAsyncHandlersRegistry.class);
+		}
+
+		@Bean
+		public McpAsyncClientFactory mcpAsyncClientFactory(McpClientCommonProperties commonProperties,
+				McpAsyncClientConfigurer configurer, ClientMcpAsyncHandlersRegistry handlersRegistry) {
+			return new McpAsyncClientFactory(commonProperties, configurer, handlersRegistry);
 		}
 
 	}
