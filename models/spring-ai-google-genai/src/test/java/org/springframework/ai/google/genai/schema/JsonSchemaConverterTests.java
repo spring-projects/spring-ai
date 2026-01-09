@@ -169,6 +169,25 @@ class JsonSchemaConverterTests {
 		}
 
 		@Test
+		void shouldHandleNullableTypes() {
+			String json = """
+					{
+						"type": "object",
+						"properties": {
+							"nickname": {
+								"type": ["string", "null"]
+							}
+						}
+					}
+					""";
+
+			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
+
+			assertThat(result.get("properties").get("nickname").get("type").asText()).isEqualTo("string");
+			assertThat(result.get("properties").get("nickname").get("nullable").asBoolean()).isTrue();
+		}
+
+		@Test
 		void shouldHandleAdditionalProperties() {
 			String json = """
 					{
