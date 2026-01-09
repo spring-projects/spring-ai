@@ -690,7 +690,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.orElse(List.of())
 				.stream()
 				.map(part -> AssistantMessage.builder()
-					.content(part.text().orElse(""))
+					.content(part.thought().isPresent() && part.thought().get() ? "" : part.text().orElse(""))
 					.properties(messageMetadata)
 					.build())
 				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
