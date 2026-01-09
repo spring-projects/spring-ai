@@ -70,11 +70,54 @@
 	<!-- This list will gradually shrink as we migrate to JSpecify -->
 	<suppress files="auto-configurations" id="bannedNullabilityImports" />
 	<suppress files="document-readers" id="bannedNullabilityImports" />
-	<suppress files="models" id="bannedNullabilityImports" />
+
+	<suppress files="models[\\/]spring-ai-anthropic" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-azure-openai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-bedrock" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-bedrock-converse" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-deepseek" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-elevenlabs" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-google-genai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-google-genai-embedding" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-huggingface" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-oci-genai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-ollama" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-postgresml" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-stability-ai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-vertex-ai-gemini" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-zhipuai" id="bannedNullabilityImports" />
+	
 	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-docker-compose" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
-	<suppress files="vector-stores" id="bannedNullabilityImports" />
+
+	<suppress files="vector-stores[\\/]spring-ai-azure-cosmos-db-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-azure-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-cassandra-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-chroma-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-coherence-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-couchbase-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-elasticsearch-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-gemfire-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-hanadb-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-mariadb-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-milvus-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-mongodb-atlas-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-neo4j-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-opensearch-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-oracle-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-pgvector-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-pinecone-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-qdrant-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-redis-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-typesense-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-weaviate-store" id="bannedNullabilityImports" />
 
 </suppressions>
