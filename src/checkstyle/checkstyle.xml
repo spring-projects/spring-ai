@@ -20,6 +20,10 @@
 		"https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="com.puppycrawl.tools.checkstyle.Checker">
 
+	<module name="JavadocPackage">
+		<message key="javadoc.packageInfo" value="Missing package-info.java file. All packages should have a package-info.java file, and annotate the whole package with JSpecify @NullMarked." />
+	</module>
+
 	<!-- For total suppression (without specifying checks) -->
 	<module name="com.puppycrawl.tools.checkstyle.filters.SuppressWithPlainTextCommentFilter">
 		<property name="offCommentFormat" value="CHECKSTYLE.OFF"/>

@@ -120,4 +120,5 @@
 	<suppress files="vector-stores[\\/]spring-ai-typesense-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-weaviate-store" id="bannedNullabilityImports" />
 
+	<suppress files="models|auto-configurations|document-readers|vector-stores|spring-ai-integration-tests|spring-ai-spring-boot-docker-compose|spring-ai-spring-boot-starters|spring-ai-spring-boot-testcontainers" checks="JavadocPackage" />
 </suppressions>
