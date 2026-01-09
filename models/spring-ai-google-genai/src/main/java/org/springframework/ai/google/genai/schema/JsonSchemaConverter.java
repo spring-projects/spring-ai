@@ -64,6 +64,7 @@ public final class JsonSchemaConverter {
 	 */
 	public static ObjectNode convertToOpenApiSchema(ObjectNode jsonSchemaNode) {
 		Assert.notNull(jsonSchemaNode, "JSON Schema node must not be null");
+		Assert.isTrue(!jsonSchemaNode.has("$defs"), "Google's Structured Output schema doesn't support $defs property");
 
 		try {
 			// Convert to OpenAPI schema using our custom conversion logic

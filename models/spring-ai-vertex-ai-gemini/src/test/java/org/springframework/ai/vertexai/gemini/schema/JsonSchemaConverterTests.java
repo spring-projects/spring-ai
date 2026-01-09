@@ -53,6 +53,25 @@ class JsonSchemaConverterTests {
 			.hasMessage("JSON Schema node must not be null");
 	}
 
+	@Test
+	void convertToOpenApiSchemaShouldRejectDefs() {
+		String json = """
+				{
+					"$defs": {
+						"myDef": {
+							"type": "string"
+						}
+					},
+					"type": "object"
+				}
+				""";
+		ObjectNode schema = JsonSchemaConverter.fromJson(json);
+
+		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(schema))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Google's Structured Output schema doesn't support $defs property");
+	}
+
 	@Nested
 	class SchemaConversionTests {
 
