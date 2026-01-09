@@ -69,8 +69,8 @@ class JsonSchemaConverterTests {
 		ObjectNode schema = JsonSchemaConverter.fromJson(json);
 
 		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(schema))
-				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Google's Structured Output schema doesn't support $defs property");
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Google's Structured Output schema doesn't support $defs property");
 	}
 
 	@Test

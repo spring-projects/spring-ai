@@ -84,7 +84,7 @@ class JsonSchemaConverterTests {
 	@Test
 	void fromJsonShouldHandleEmptyString() {
 		assertThatThrownBy(() -> JsonSchemaConverter.fromJson("")).isInstanceOf(RuntimeException.class)
-				.hasMessageContaining("Failed to parse JSON");
+			.hasMessageContaining("Failed to parse JSON");
 	}
 
 	@Test

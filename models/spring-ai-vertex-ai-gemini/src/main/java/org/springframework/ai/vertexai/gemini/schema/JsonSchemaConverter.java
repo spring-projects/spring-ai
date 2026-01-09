@@ -91,8 +91,8 @@ public final class JsonSchemaConverter {
 		Assert.notNull(target, "Target node must not be null");
 		String[] commonProperties = {
 				// Core schema properties
-				"format", "description", "default", "maximum", "minimum", "maxLength", "minLength", "pattern",
-				"enum", "multipleOf", "uniqueItems",
+				"format", "description", "default", "maximum", "minimum", "maxLength", "minLength", "pattern", "enum",
+				"multipleOf", "uniqueItems",
 				// OpenAPI specific properties
 				"example", "deprecated", "readOnly", "writeOnly", "discriminator", "xml", "externalDocs" };
 
@@ -110,7 +110,7 @@ public final class JsonSchemaConverter {
 	 * @param factory The JsonNodeFactory to create new nodes
 	 */
 	private static void handleJsonSchemaSpecifics(ObjectNode source, ObjectNode target,
-												  com.fasterxml.jackson.databind.node.JsonNodeFactory factory) {
+			com.fasterxml.jackson.databind.node.JsonNodeFactory factory) {
 		Assert.notNull(source, "Source node must not be null");
 		Assert.notNull(target, "Target node must not be null");
 		Assert.notNull(factory, "JsonNodeFactory must not be null");
