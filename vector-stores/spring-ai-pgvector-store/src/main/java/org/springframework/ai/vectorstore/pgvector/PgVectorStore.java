@@ -655,11 +655,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 			// @formatter:off
 			return Document.builder()
-					.id(id)
-					.text(content)
-					.metadata(metadata)
-					.score(1.0 - distance)
-					.build(); // @formatter:on
+				.id(id)
+				.text(content)
+				.metadata(metadata)
+				.score(1.0 - distance)
+				.build(); // @formatter:on
 		}
 
 		private Map<String, Object> toMap(PGobject pgObject) {
