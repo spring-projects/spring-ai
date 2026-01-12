@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import com.openai.client.OpenAIClient;
+import com.openai.models.ChatModel;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 public class OpenAiSdkSetupTests {
 
 	@Test
-	void detectModelProvider_returnsAzureOpenAI_whenAzureFlagIsTrue() {
+	void detectModelProvider_returnsMicrosoftFoundry_whenMicrosoftFoundryFlagIsTrue() {
 		OpenAiSdkSetup.ModelProvider result = OpenAiSdkSetup.detectModelProvider(true, false, null, null, null);
 
 		assertEquals(OpenAiSdkSetup.ModelProvider.MICROSOFT_FOUNDRY, result);
@@ -43,7 +44,7 @@ public class OpenAiSdkSetupTests {
 	}
 
 	@Test
-	void detectModelProvider_returnsAzureOpenAI_whenBaseUrlMatchesAzure() {
+	void detectModelProvider_returnsMicrosoftFoundry_whenBaseUrlMatchesAzure() {
 		OpenAiSdkSetup.ModelProvider result = OpenAiSdkSetup.detectModelProvider(false, false,
 				"https://example.openai.azure.com", null, null);
 
@@ -95,6 +96,27 @@ public class OpenAiSdkSetupTests {
 		String result = OpenAiSdkSetup.calculateBaseUrl(null, OpenAiSdkSetup.ModelProvider.GITHUB_MODELS, null, null);
 
 		assertEquals(OpenAiSdkSetup.GITHUB_MODELS_URL, result);
+	}
+
+	@Test
+	void calculateBaseUrl_returnsCorrectMicrosoftFoundryUrl_whenMicrosoftFoundryEndpointProvided() {
+		String endpoint = "https://xxx.openai.azure.com/openai/v1/";
+		String result = OpenAiSdkSetup.calculateBaseUrl(endpoint, OpenAiSdkSetup.ModelProvider.MICROSOFT_FOUNDRY,
+				ChatModel.GPT_5_MINI.asString(), null);
+
+		assertEquals("https://xxx.openai.azure.com/openai/v1", result);
+	}
+
+	@Test
+	void setupSyncClient_returnsClient_whenMicrosoftFoundryEndpointAndApiKeyProvided() {
+		String endpoint = "https://xxx.openai.azure.com/openai/v1/";
+		String apiKey = "test-foundry-api-key";
+		String deploymentName = ChatModel.GPT_5_2.asString();
+
+		OpenAIClient client = OpenAiSdkSetup.setupSyncClient(endpoint, apiKey, null, deploymentName, null, null, true,
+				false, null, Duration.ofSeconds(30), 2, null, null);
+
+		assertNotNull(client);
 	}
 
 }
