@@ -191,10 +191,10 @@ public final class OpenAiSdkSetup {
 		return baseUrl;
 	}
 
-	public static ModelProvider detectModelProvider(boolean isAzure, boolean isGitHubModels, String baseUrl,
+	public static ModelProvider detectModelProvider(boolean isMicrosoftFoundry, boolean isGitHubModels, String baseUrl,
 			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
 
-		if (isAzure) {
+		if (isMicrosoftFoundry) {
 			return ModelProvider.MICROSOFT_FOUNDRY; // Forced by the user
 		}
 		if (isGitHubModels) {
