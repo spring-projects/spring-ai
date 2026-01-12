@@ -140,6 +140,20 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	/**
+	 * Get all system messages in the prompt.
+	 * @return a list of all system messages in the prompt
+	 */
+	public List<SystemMessage> getSystemMessages() {
+		List<SystemMessage> systemMessages = new ArrayList<>();
+		for (Message message : this.messages) {
+			if (message instanceof SystemMessage systemMessage) {
+				systemMessages.add(systemMessage);
+			}
+		}
+		return systemMessages;
+	}
+
+	/**
 	 * Get all user messages in the prompt.
 	 * @return a list of all user messages in the prompt
 	 */
