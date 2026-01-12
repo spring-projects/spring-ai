@@ -100,7 +100,6 @@
 
 	<suppress files="vector-stores[\\/]spring-ai-azure-cosmos-db-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-azure-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-cassandra-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-chroma-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-coherence-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-couchbase-store" id="bannedNullabilityImports" />
