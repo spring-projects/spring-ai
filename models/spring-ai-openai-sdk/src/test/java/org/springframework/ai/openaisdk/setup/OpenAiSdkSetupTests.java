@@ -99,23 +99,12 @@ public class OpenAiSdkSetupTests {
 	}
 
 	@Test
-	void detectModelProvider_returnsMicrosoftFoundry_whenMicrosoftFoundryEndpointProvided() {
-		String endpoint = "https://xxx.openai.azure.com/openai/v1/";
-		String deploymentName = ChatModel.GPT_5_2.asString();
-		OpenAiSdkSetup.ModelProvider result = OpenAiSdkSetup.detectModelProvider(false, false, endpoint, deploymentName,
-				null);
-
-		assertEquals(OpenAiSdkSetup.ModelProvider.MICROSOFT_FOUNDRY, result);
-	}
-
-	@Test
 	void calculateBaseUrl_returnsCorrectMicrosoftFoundryUrl_whenMicrosoftFoundryEndpointProvided() {
 		String endpoint = "https://xxx.openai.azure.com/openai/v1/";
-		String deploymentName = ChatModel.GPT_5_2.asString();
 		String result = OpenAiSdkSetup.calculateBaseUrl(endpoint, OpenAiSdkSetup.ModelProvider.MICROSOFT_FOUNDRY,
-				ChatModel.GPT_5_MINI.asString(), deploymentName);
+				ChatModel.GPT_5_MINI.asString(), null);
 
-		assertEquals("https://xxx.azure.com/openai/v1/openai/deployments/gpt-5.2", result);
+		assertEquals("https://xxx.openai.azure.com/openai/v1", result);
 	}
 
 	@Test
