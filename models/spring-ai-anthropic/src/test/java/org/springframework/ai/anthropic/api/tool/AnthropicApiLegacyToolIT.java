@@ -104,8 +104,8 @@ public class AnthropicApiLegacyToolIT {
 				Role.USER);
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
-				AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(), List.of(chatCompletionMessage), systemPrompt, 500, 0.8,
-				false);
+				AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue(), List.of(chatCompletionMessage), systemPrompt, 500,
+				0.8, false);
 
 		ResponseEntity<ChatCompletionResponse> chatCompletion = doCall(chatCompletionRequest);
 
@@ -143,7 +143,7 @@ public class AnthropicApiLegacyToolIT {
 
 		AnthropicMessage chatCompletionMessage2 = new AnthropicMessage(List.of(new ContentBlock(content)), Role.USER);
 
-		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue(),
+		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue(),
 				List.of(chatCompletionMessage2), null, 500, 0.8, false));
 	}
 
