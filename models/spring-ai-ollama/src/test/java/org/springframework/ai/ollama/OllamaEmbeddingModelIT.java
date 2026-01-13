@@ -59,8 +59,11 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getMetadata().getModel()).isEqualTo(MODEL);
-		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
-		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
+		// Token count varies by Ollama version and tokenizer implementation
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(10);
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(10);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(768);
 	}
@@ -82,8 +85,11 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 		assertThat(embeddingResponse.getResults().get(1).getOutput()).isNotEmpty();
 		assertThat(embeddingResponse.getMetadata().getModel()).contains(ADDITIONAL_MODEL);
-		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isEqualTo(4);
-		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isEqualTo(4);
+		// Token count varies by Ollama version and tokenizer implementation
+		assertThat(embeddingResponse.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(20);
+		assertThat(embeddingResponse.getMetadata().getUsage().getTotalTokens()).isGreaterThan(0)
+			.isLessThanOrEqualTo(20);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(768);
 
