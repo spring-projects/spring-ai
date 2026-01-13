@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletion;
@@ -295,4 +297,18 @@ class OpenAiApiIT {
 		}
 	}
 
+	@Test
+	void nullArgumentsDefaultsToEmpty() throws JsonProcessingException {
+		final String TOOL_FUNCTION_NAME = "CurrentWeather";
+
+		var function = new ChatCompletionMessage.ChatCompletionFunction(TOOL_FUNCTION_NAME, null);
+
+		ObjectMapper mapper = new ObjectMapper();
+		String json = mapper.writeValueAsString(function);
+
+		assertThat(function.arguments()).isEqualTo("{}");
+
+		// 검증 2: JSON 문자열에 arguments 필드가 포함되었는지 확인 ("arguments": "{}")
+		assertThat(json).contains("\"arguments\":\"{}\"");
+	}
 }
