@@ -127,7 +127,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
-			.provider(AiProvider.VERTEX_AI.value())
+			.provider(AiProvider.GOOGLE_GENAI_AI.value())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
