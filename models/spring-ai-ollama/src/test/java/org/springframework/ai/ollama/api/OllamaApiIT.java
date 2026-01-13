@@ -115,7 +115,8 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.embeddings()).hasSize(1);
 		assertThat(response.embeddings().get(0)).hasSize(768);
 		assertThat(response.model()).isEqualTo(EMBEDDING_MODEL);
-		assertThat(response.promptEvalCount()).isEqualTo(5);
+		// Token count varies by Ollama version and tokenizer implementation
+		assertThat(response.promptEvalCount()).isGreaterThan(0).isLessThanOrEqualTo(10);
 		assertThat(response.loadDuration()).isGreaterThan(1);
 		assertThat(response.totalDuration()).isGreaterThan(1);
 	}
