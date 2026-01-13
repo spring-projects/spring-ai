@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.vectorstore;
+package org.springframework.ai.vectorstore.couchbase;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -44,6 +44,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
+import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -99,9 +100,8 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		super(builder);
 
 		Objects.requireNonNull(builder.cluster, "CouchbaseCluster must not be null");
-		Objects.requireNonNull(builder.embeddingModel, "embeddingModel must not be null");
 		this.initializeSchema = builder.initializeSchema;
-		this.embeddingModel = builder.embeddingModel;
+		this.embeddingModel = Objects.requireNonNull(builder.getEmbeddingModel(), "embeddingModel must not be null");
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.cluster = builder.cluster;
 		this.bucket = this.cluster.bucket(builder.bucketName);
