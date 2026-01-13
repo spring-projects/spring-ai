@@ -217,8 +217,11 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 			Map<String, Object> mediaMap = v.asMap();
 			var mediaBuilder = Media.builder()
 				.name(MediaAttributes.NAME.stringFrom(mediaMap))
-				.id(MediaAttributes.ID.stringFrom(mediaMap))
 				.mimeType(MimeType.valueOf(MediaAttributes.MIME_TYPE.stringFrom(mediaMap)));
+			String id = (String) mediaMap.get(MediaAttributes.ID.getValue());
+			if (id != null) {
+				mediaBuilder.id(id);
+			}
 			Object data = MediaAttributes.DATA.objectFrom(mediaMap, Object.class);
 			if (data instanceof String stringData) {
 				mediaBuilder.data(URI.create(stringData));
