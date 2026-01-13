@@ -17,6 +17,7 @@
 package org.springframework.ai.model.vertexai.autoconfigure.gemini;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
@@ -51,6 +52,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author yeonggyu park
  * @since 1.0.0
  */
 @AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
@@ -82,6 +84,15 @@ public class VertexAiGeminiChatAutoConfiguration {
 		if (connectionProperties.getCredentialsUri() != null) {
 			GoogleCredentials credentials = GoogleCredentials
 				.fromStream(connectionProperties.getCredentialsUri().getInputStream());
+
+			if (credentials.createScopedRequired()) {
+				List<String> scopes = connectionProperties.getScopes();
+				if (CollectionUtils.isEmpty(scopes)) {
+					scopes = List.of("https://www.googleapis.com/auth/cloud-platform");
+					vertexAIBuilder.setScopes(scopes);
+				}
+				credentials = credentials.createScoped(scopes);
+			}
 
 			vertexAIBuilder.setCredentials(credentials);
 		}
