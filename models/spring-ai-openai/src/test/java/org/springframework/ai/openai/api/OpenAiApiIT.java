@@ -311,4 +311,5 @@ class OpenAiApiIT {
 		// 검증 2: JSON 문자열에 arguments 필드가 포함되었는지 확인 ("arguments": "{}")
 		assertThat(json).contains("\"arguments\":\"{}\"");
 	}
+
 }
