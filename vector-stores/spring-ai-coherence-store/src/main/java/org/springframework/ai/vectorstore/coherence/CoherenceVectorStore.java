@@ -35,6 +35,7 @@ import com.oracle.coherence.ai.util.Vectors;
 import com.tangosol.net.NamedMap;
 import com.tangosol.net.Session;
 import com.tangosol.util.Filter;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -51,10 +52,10 @@ import org.springframework.util.StringUtils;
 
 /**
  * <p>
- * Integration of Coherence Coherence 24.09+ as a Vector Store.
+ * Integration of Coherence 24.09+ as a Vector Store.
  * </p>
  * <p>
- * Coherence Coherence 24.09 (or later) provides numerous features useful for artificial
+ * Coherence 24.09 (or later) provides numerous features useful for artificial
  * intelligence such as Vectors, Similarity search, HNSW indexes, and binary quantization.
  * </p>
  * <p>
@@ -123,21 +124,22 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Session session;
 
-	private NamedMap<DocumentChunk.Id, DocumentChunk> documentChunks;
+	private @Nullable NamedMap<DocumentChunk.Id, DocumentChunk> documentChunks; // late-init
+																				// field
 
 	/**
 	 * Map name where vectors will be stored.
 	 */
-	private String mapName;
+	private final String mapName;
 
 	/**
 	 * Distance type to use for computing vector distances.
 	 */
-	private DistanceType distanceType;
+	private final DistanceType distanceType;
 
-	private boolean forcedNormalization;
+	private final boolean forcedNormalization;
 
-	private IndexType indexType;
+	private final IndexType indexType;
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
@@ -174,13 +176,13 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 					toFloat32Vector(this.embeddingModel.embed(doc)));
 			chunks.put(id, chunk);
 		}
-		this.documentChunks.putAll(chunks);
+		this.documentChunks().putAll(chunks);
 	}
 
 	@Override
 	public void doDelete(final List<String> idList) {
 		var chunkIds = idList.stream().map(this::toChunkId).toList();
-		this.documentChunks.invokeAll(chunkIds, entry -> {
+		this.documentChunks().invokeAll(chunkIds, entry -> {
 			if (entry.isPresent()) {
 				entry.remove(false);
 				return true;
@@ -202,7 +204,7 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 			.algorithm(getDistanceAlgorithm())
 			.filter(filter);
 
-		var results = this.documentChunks.aggregate(search);
+		var results = this.documentChunks().aggregate(search);
 
 		List<Document> documents = new ArrayList<>(results.size());
 		for (var r : results) {
@@ -260,6 +262,11 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 
 	String getMapName() {
 		return this.mapName;
+	}
+
+	private NamedMap<DocumentChunk.Id, DocumentChunk> documentChunks() {
+		Assert.notNull(this.documentChunks, "documentChunks should not be null by now");
+		return this.documentChunks;
 	}
 
 	@Override
