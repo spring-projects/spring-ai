@@ -129,7 +129,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 			// After Call
 
-			// TODO: check that this is tool call is sufficient for all chat models
+			// TODO: check that this tool call detection is sufficient for all chat models
 			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
 			// finish status as well)
 			isToolCall = chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().hasToolCalls();
