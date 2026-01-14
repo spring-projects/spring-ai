@@ -816,17 +816,15 @@ Document documentV2 = new Document(
 // First, delete the old version using filter expression
 Filter.Expression deleteOldVersion = new Filter.Expression(
     Filter.ExpressionType.AND,
-    Arrays.asList(
-        new Filter.Expression(
-            Filter.ExpressionType.EQ,
-            new Filter.Key("docId"),
-            new Filter.Value("AIML-001")
-        ),
-        new Filter.Expression(
-            Filter.ExpressionType.EQ,
-            new Filter.Key("version"),
-            new Filter.Value("1.0")
-        )
+    new Filter.Expression(
+        Filter.ExpressionType.EQ,
+        new Filter.Key("docId"),
+        new Filter.Value("AIML-001")
+    ),
+    new Filter.Expression(
+        Filter.ExpressionType.EQ,
+        new Filter.Key("version"),
+        new Filter.Value("1.0")
     )
 );
 vectorStore.delete(deleteOldVersion);
