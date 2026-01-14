@@ -34,6 +34,7 @@ public abstract class HanaVectorEntity {
 
 	@Id
 	@Column(name = "_id")
+	@SuppressWarnings("NullAway") // Subclasses will initialize in practice
 	protected String _id;
 
 	public HanaVectorEntity() {
