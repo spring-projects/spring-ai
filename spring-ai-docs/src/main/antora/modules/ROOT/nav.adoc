@@ -106,6 +106,7 @@
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/azure-cosmos-db.adoc[]
+*** xref:api/vectordbs/bedrock-knowledge-base.adoc[]
 *** xref:api/vectordbs/apache-cassandra.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
 *** xref:api/vectordbs/couchbase.adoc[]
