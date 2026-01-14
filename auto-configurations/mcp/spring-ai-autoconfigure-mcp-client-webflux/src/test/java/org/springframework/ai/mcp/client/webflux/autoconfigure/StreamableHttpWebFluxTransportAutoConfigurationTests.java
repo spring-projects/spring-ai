@@ -19,9 +19,9 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -136,11 +136,11 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	}
 
 	@Test
-	void customObjectMapperIsUsed() {
-		this.applicationContext.withUserConfiguration(CustomObjectMapperConfiguration.class)
+	void customJsonMapperIsUsed() {
+		this.applicationContext.withUserConfiguration(CustomJsonMapperConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
 			.run(context -> {
-				assertThat(context.getBean(ObjectMapper.class)).isNotNull();
+				assertThat(context.getBean(JsonMapper.class)).isNotNull();
 				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
 						List.class);
 				assertThat(transports).hasSize(1);
@@ -206,11 +206,11 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 	}
 
 	@Configuration
-	static class CustomObjectMapperConfiguration {
+	static class CustomJsonMapperConfiguration {
 
 		@Bean
-		ObjectMapper objectMapper() {
-			return new ObjectMapper();
+		JsonMapper jsonMapper() {
+			return new JsonMapper();
 		}
 
 	}

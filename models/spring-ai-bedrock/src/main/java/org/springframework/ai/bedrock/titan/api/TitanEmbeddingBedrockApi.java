@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
@@ -61,12 +61,12 @@ public class TitanEmbeddingBedrockApi extends
 	 * @param modelId The model id to use. See the {@link TitanEmbeddingModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and deserialization.
 	 * @param timeout The timeout to use.
 	 */
 	public TitanEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Duration timeout) {
-		super(modelId, credentialsProvider, region, objectMapper, timeout);
+			JsonMapper jsonMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, jsonMapper, timeout);
 	}
 
 	/**
@@ -75,12 +75,12 @@ public class TitanEmbeddingBedrockApi extends
 	 * @param modelId The model id to use. See the {@link TitanEmbeddingModel} for the supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and deserialization.
 	 * @param timeout The timeout to use.
 	 */
 	public TitanEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
-			ObjectMapper objectMapper, Duration timeout) {
-		super(modelId, credentialsProvider, region, objectMapper, timeout);
+			JsonMapper jsonMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, jsonMapper, timeout);
 	}
 
 	@Override

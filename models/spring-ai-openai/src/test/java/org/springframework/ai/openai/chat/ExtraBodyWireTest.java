@@ -18,14 +18,14 @@ package org.springframework.ai.openai.chat;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -57,7 +57,7 @@ class ExtraBodyWireTest {
 
 	private MockWebServer mockWebServer;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final JsonMapper jsonMapper = new JsonMapper();
 
 	@BeforeEach
 	void setUp() throws Exception {
@@ -92,7 +92,7 @@ class ExtraBodyWireTest {
 		// Assert: Verify the wire-level JSON contains flattened extraBody fields
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 		String requestBody = recordedRequest.getBody().readUtf8();
-		JsonNode json = this.objectMapper.readTree(requestBody);
+		JsonNode json = this.jsonMapper.readTree(requestBody);
 
 		// Verify extraBody fields are at top level
 		assertThat(json.has("top_k")).as("top_k should be at top level").isTrue();
@@ -126,7 +126,7 @@ class ExtraBodyWireTest {
 		// Assert: Verify wire-level JSON
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 		String requestBody = recordedRequest.getBody().readUtf8();
-		JsonNode json = this.objectMapper.readTree(requestBody);
+		JsonNode json = this.jsonMapper.readTree(requestBody);
 
 		assertThat(json.has("enable_thinking")).isTrue();
 		assertThat(json.get("enable_thinking").asBoolean()).isTrue();
@@ -162,7 +162,7 @@ class ExtraBodyWireTest {
 		// Assert
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 		String requestBody = recordedRequest.getBody().readUtf8();
-		JsonNode json = this.objectMapper.readTree(requestBody);
+		JsonNode json = this.jsonMapper.readTree(requestBody);
 
 		// Runtime overrides default
 		assertThat(json.get("top_k").asInt()).isEqualTo(100);
@@ -196,7 +196,7 @@ class ExtraBodyWireTest {
 		// Assert
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
 		String requestBody = recordedRequest.getBody().readUtf8();
-		JsonNode json = this.objectMapper.readTree(requestBody);
+		JsonNode json = this.jsonMapper.readTree(requestBody);
 
 		// All vLLM parameters should be at top level
 		assertThat(json.get("top_k").asInt()).isEqualTo(50);

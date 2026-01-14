@@ -24,13 +24,11 @@ import com.azure.ai.openai.models.ImageGenerationQuality;
 import com.azure.ai.openai.models.ImageGenerationResponseFormat;
 import com.azure.ai.openai.models.ImageGenerationStyle;
 import com.azure.ai.openai.models.ImageSize;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageGenerationMetadata;
 import org.springframework.ai.azure.openai.metadata.AzureOpenAiImageResponseMetadata;
@@ -64,7 +62,7 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private final AzureOpenAiImageOptions defaultOptions;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	public AzureOpenAiImageModel(OpenAIClient openAIClient) {
 		this(openAIClient, AzureOpenAiImageOptions.builder().deploymentName(DEFAULT_DEPLOYMENT_NAME).build());
@@ -75,9 +73,8 @@ public class AzureOpenAiImageModel implements ImageModel {
 		Assert.notNull(options, "AzureOpenAiChatOptions must not be null");
 		this.openAIClient = microsoftOpenAiClient;
 		this.defaultOptions = options;
-		this.objectMapper = JsonMapper.builder()
+		this.jsonMapper = JsonMapper.builder()
 			.addModules(JacksonUtils.instantiateAvailableModules())
-			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 			.build();
 	}
@@ -113,9 +110,9 @@ public class AzureOpenAiImageModel implements ImageModel {
 
 	private String toPrettyJson(Object object) {
 		try {
-			return this.objectMapper.writeValueAsString(object);
+			return this.jsonMapper.writeValueAsString(object);
 		}
-		catch (JsonProcessingException e) {
+		catch (JacksonException e) {
 			return "JsonProcessingException:" + e + " [" + object.toString() + "]";
 		}
 	}

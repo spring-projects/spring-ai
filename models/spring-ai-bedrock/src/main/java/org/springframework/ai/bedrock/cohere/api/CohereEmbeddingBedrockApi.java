@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
@@ -62,12 +62,12 @@ public class CohereEmbeddingBedrockApi
 	 * supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and
 	 * deserialization.
 	 */
 	public CohereEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper) {
-		super(modelId, credentialsProvider, region, objectMapper);
+			JsonMapper jsonMapper) {
+		super(modelId, credentialsProvider, region, jsonMapper);
 	}
 
 	/**
@@ -89,29 +89,29 @@ public class CohereEmbeddingBedrockApi
 	 * supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and
 	 * deserialization.
 	 * @param timeout The timeout to use.
 	 */
 	public CohereEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Duration timeout) {
-		super(modelId, credentialsProvider, region, objectMapper, timeout);
+			JsonMapper jsonMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, jsonMapper, timeout);
 	}
 
 	/**
 	 * Create a new CohereEmbeddingBedrockApi instance using the provided credentials
-	 * provider, region and object mapper.
+	 * provider, region and JSON mapper.
 	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the
 	 * supported models.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and
 	 * deserialization.
 	 * @param timeout The timeout to use.
 	 */
 	public CohereEmbeddingBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
-			ObjectMapper objectMapper, Duration timeout) {
-		super(modelId, credentialsProvider, region, objectMapper, timeout);
+			JsonMapper jsonMapper, Duration timeout) {
+		super(modelId, credentialsProvider, region, jsonMapper, timeout);
 	}
 
 	@Override

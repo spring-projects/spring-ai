@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.weaviate.client.WeaviateClient;
 import io.weaviate.client.base.Result;
 import io.weaviate.client.base.WeaviateErrorMessage;
@@ -45,6 +43,8 @@ import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -138,7 +138,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * Used to serialize/deserialize the document metadata when stored/retrieved from the
 	 * weaviate vector store.
 	 */
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final JsonMapper jsonMapper = new JsonMapper();
 
 	/**
 	 * Protected constructor for creating a WeaviateVectorStore instance using the builder
@@ -248,10 +248,10 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		Map<String, Object> fields = new HashMap<>();
 		fields.put(this.options.getContentFieldName(), document.getText());
 		try {
-			String metadataString = this.objectMapper.writeValueAsString(document.getMetadata());
+			String metadataString = this.jsonMapper.writeValueAsString(document.getMetadata());
 			fields.put(METADATA_FIELD_NAME, metadataString);
 		}
-		catch (JsonProcessingException e) {
+		catch (JacksonException e) {
 			throw new RuntimeException("Failed to serialize the Document metadata: " + document.getText());
 		}
 
@@ -322,7 +322,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 				logger.debug("No documents found matching filter expression");
 			}
 		}
-		catch (Exception e) {
+		catch (JacksonException e) {
 			logger.error("Failed to delete documents by filter", e);
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
@@ -406,14 +406,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put(DocumentMetadata.DISTANCE.value(), 1 - certainty);
 
-		try {
-			String metadataJson = (String) item.get(METADATA_FIELD_NAME);
-			if (StringUtils.hasText(metadataJson)) {
-				metadata.putAll(this.objectMapper.readValue(metadataJson, Map.class));
-			}
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		String metadataJson = (String) item.get(METADATA_FIELD_NAME);
+		if (StringUtils.hasText(metadataJson)) {
+			metadata.putAll(this.jsonMapper.readValue(metadataJson, Map.class));
 		}
 
 		// Content

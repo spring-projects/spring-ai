@@ -16,17 +16,16 @@
 
 package org.springframework.ai.openai.api;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,10 +43,10 @@ class OpenAiEmbeddingDeserializerTests {
 
 	private final OpenAiEmbeddingDeserializer deserializer = new OpenAiEmbeddingDeserializer();
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final JsonMapper mapper = new JsonMapper();
 
 	@Test
-	void testDeserializeFloatArray() throws Exception {
+	void testDeserializeFloatArray() {
 		JsonParser parser = mock(JsonParser.class);
 		DeserializationContext context = mock(DeserializationContext.class);
 
@@ -60,7 +59,7 @@ class OpenAiEmbeddingDeserializerTests {
 	}
 
 	@Test
-	void testDeserializeBase64String() throws Exception {
+	void testDeserializeBase64String() {
 		float[] original = new float[] { 4.2f, -1.5f, 0.0f };
 		ByteBuffer buffer = ByteBuffer.allocate(original.length * Float.BYTES);
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -87,12 +86,12 @@ class OpenAiEmbeddingDeserializerTests {
 
 		when(parser.currentToken()).thenReturn(JsonToken.VALUE_NUMBER_INT);
 
-		IOException e = assertThrows(IOException.class, () -> this.deserializer.deserialize(parser, context));
+		JacksonException e = assertThrows(JacksonException.class, () -> this.deserializer.deserialize(parser, context));
 		assertTrue(e.getMessage().contains("Illegal embedding"));
 	}
 
 	@Test
-	void testDeserializeEmbeddingWithFloatArray() throws Exception {
+	void testDeserializeEmbeddingWithFloatArray() {
 		String json = """
 				{
 					"index": 1,
@@ -107,7 +106,7 @@ class OpenAiEmbeddingDeserializerTests {
 	}
 
 	@Test
-	void testDeserializeEmbeddingWithBase64String() throws Exception {
+	void testDeserializeEmbeddingWithBase64String() {
 		float[] original = new float[] { 4.2f, -1.5f, 0.0f };
 		ByteBuffer buffer = ByteBuffer.allocate(original.length * Float.BYTES);
 		buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -139,7 +138,7 @@ class OpenAiEmbeddingDeserializerTests {
 					"object": "embedding"
 				}
 				""";
-		JsonProcessingException ex = assertThrows(JsonProcessingException.class,
+		JacksonException ex = assertThrows(JacksonException.class,
 				() -> this.mapper.readValue(json, OpenAiApi.Embedding.class));
 		assertTrue(ex.getMessage().contains("Illegal embedding"));
 	}

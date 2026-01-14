@@ -20,10 +20,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
@@ -45,7 +45,7 @@ public class TitanEmbeddingBedrockApiIT {
 
 		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
 				TitanEmbeddingModel.TITAN_EMBED_TEXT_V1.id(), EnvironmentVariableCredentialsProvider.create(),
-				Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
+				Region.US_EAST_1.id(), new JsonMapper(), Duration.ofMinutes(2));
 
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().inputText("I like to eat apples.").build();
 
@@ -61,7 +61,7 @@ public class TitanEmbeddingBedrockApiIT {
 
 		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
 				TitanEmbeddingModel.TITAN_EMBED_TEXT_V2.id(), EnvironmentVariableCredentialsProvider.create(),
-				Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
+				Region.US_EAST_1.id(), new JsonMapper(), Duration.ofMinutes(2));
 
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().inputText("I like to eat apples.").build();
 
@@ -77,7 +77,7 @@ public class TitanEmbeddingBedrockApiIT {
 
 		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
 				TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(), EnvironmentVariableCredentialsProvider.create(),
-				Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
+				Region.US_EAST_1.id(), new JsonMapper(), Duration.ofMinutes(2));
 
 		byte[] image = new DefaultResourceLoader().getResource("classpath:/spring_framework.png")
 			.getContentAsByteArray();

@@ -20,9 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
@@ -52,7 +52,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * <ul>
  * <li>Creates WebFlux-based SSE transports for configured MCP server connections
  * <li>Configures WebClient.Builder for HTTP client operations
- * <li>Sets up ObjectMapper for JSON serialization/deserialization
+ * <li>Sets up JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different base URLs
  * </ul>
  *
@@ -78,24 +78,23 @@ public class SseWebFluxTransportAutoConfiguration {
 	 * Each transport is configured with:
 	 * <ul>
 	 * <li>A cloned WebClient.Builder with server-specific base URL
-	 * <li>ObjectMapper for JSON processing
+	 * <li>JsonMapper for JSON processing
 	 * <li>Server connection parameters from properties
 	 * </ul>
 	 * @param connectionDetails the SSE client properties containing server configurations
 	 * @param webClientBuilderProvider the provider for WebClient.Builder
-	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
+	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> sseWebFluxClientTransports(McpSseClientConnectionDetails connectionDetails,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<JsonMapper> jsonMapperProvider) {
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
@@ -103,7 +102,7 @@ public class SseWebFluxTransportAutoConfiguration {
 					? serverParameters.getValue().sseEndpoint() : "/sse";
 			var transport = WebFluxSseClientTransport.builder(webClientBuilder)
 				.sseEndpoint(sseEndpoint)
-				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 				.build();
 			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}

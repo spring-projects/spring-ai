@@ -19,10 +19,10 @@ package org.springframework.ai.bedrock.cohere.api;
 import java.time.Duration;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingModel;
@@ -40,7 +40,7 @@ public class CohereEmbeddingBedrockApiIT {
 
 	CohereEmbeddingBedrockApi api = new CohereEmbeddingBedrockApi(
 			CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id(), EnvironmentVariableCredentialsProvider.create(),
-			Region.US_EAST_1.id(), new ObjectMapper(), Duration.ofMinutes(2));
+			Region.US_EAST_1.id(), new JsonMapper(), Duration.ofMinutes(2));
 
 	@Test
 	public void embedText() {

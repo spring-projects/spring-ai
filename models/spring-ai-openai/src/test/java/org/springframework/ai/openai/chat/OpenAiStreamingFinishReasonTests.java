@@ -18,7 +18,6 @@ package org.springframework.ai.openai.chat;
 
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,7 +111,7 @@ public class OpenAiStreamingFinishReasonTests {
 	}
 
 	@Test
-	void testJsonDeserializationWithEmptyStringFinishReason() throws JsonProcessingException {
+	void testJsonDeserializationWithEmptyStringFinishReason() {
 		// Test the specific JSON from the issue report
 		String problematicJson = """
 				{
@@ -147,7 +146,7 @@ public class OpenAiStreamingFinishReasonTests {
 	}
 
 	@Test
-	void testJsonDeserializationWithNullFinishReason() throws JsonProcessingException {
+	void testJsonDeserializationWithNullFinishReason() {
 		// Test with null finish_reason (should work fine)
 		String validJson = """
 				{

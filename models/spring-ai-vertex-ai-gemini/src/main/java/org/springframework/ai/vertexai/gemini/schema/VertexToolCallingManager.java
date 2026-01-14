@@ -18,7 +18,7 @@ package org.springframework.ai.vertexai.gemini.schema;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;

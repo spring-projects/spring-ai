@@ -169,8 +169,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
 		this.elasticsearchClient = new ElasticsearchClient(new Rest5ClientTransport(builder.restClient,
-				new JacksonJsonpMapper(
-						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))))
+				new JacksonJsonpMapper(new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))))
 			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
 	}
 
