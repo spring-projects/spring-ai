@@ -16,10 +16,10 @@
 
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
@@ -82,11 +82,11 @@ public class McpServerSseWebFluxAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebFluxSseServerTransportProvider webFluxTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerSseProperties serverProperties) {
+	public WebFluxSseServerTransportProvider webFluxTransport(@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper,
+			McpServerSseProperties serverProperties) {
 
 		return WebFluxSseServerTransportProvider.builder()
-			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+			.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 			.basePath(serverProperties.getBaseUrl())
 			.messageEndpoint(serverProperties.getSseMessageEndpoint())
 			.sseEndpoint(serverProperties.getSseEndpoint())

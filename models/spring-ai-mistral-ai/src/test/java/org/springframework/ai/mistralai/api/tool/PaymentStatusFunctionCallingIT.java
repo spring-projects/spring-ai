@@ -22,12 +22,11 @@ import java.util.Map;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -68,12 +67,7 @@ public class PaymentStatusFunctionCallingIT {
 	private final Logger logger = LoggerFactory.getLogger(PaymentStatusFunctionCallingIT.class);
 
 	private static <T> T jsonToObject(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@Test

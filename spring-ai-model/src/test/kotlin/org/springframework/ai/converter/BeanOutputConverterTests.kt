@@ -16,16 +16,16 @@
 
 package org.springframework.ai.converter
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import tools.jackson.databind.json.JsonMapper
 
 class KotlinBeanOutputConverterTests {
 
 	private data class Foo(val bar: String, val baz: String?)
 	private data class FooWithDefault(val bar: String, val baz: Int = 10)
 
-	private val objectMapper = ObjectMapper()
+	private val jsonMapper = JsonMapper()
 
 	@Test
 	fun `test Kotlin data class schema generation using getJsonSchema`() {
@@ -33,7 +33,7 @@ class KotlinBeanOutputConverterTests {
 
 		val schemaJson = converter.jsonSchema
 
-		val schemaNode = objectMapper.readTree(schemaJson)
+		val schemaNode = jsonMapper.readTree(schemaJson)
 
 		val required = schemaNode["required"]
 		assertThat(required).isNotNull
@@ -41,14 +41,14 @@ class KotlinBeanOutputConverterTests {
 		assertThat(required.toString()).contains("baz")
 
 		val properties = schemaNode["properties"]
-		assertThat(properties["bar"]["type"].asText()).isEqualTo("string")
+		assertThat(properties["bar"]["type"].asString()).isEqualTo("string")
 
 		val bazTypeNode = properties["baz"]["type"]
 		if (bazTypeNode.isArray) {
 			assertThat(bazTypeNode.toString()).contains("string")
 			assertThat(bazTypeNode.toString()).contains("null")
 		} else {
-			assertThat(bazTypeNode.asText()).isEqualTo("string")
+			assertThat(bazTypeNode.asString()).isEqualTo("string")
 		}
 	}
 
@@ -58,7 +58,7 @@ class KotlinBeanOutputConverterTests {
 
 		val schemaJson = converter.jsonSchema
 
-		val schemaNode = objectMapper.readTree(schemaJson)
+		val schemaNode = jsonMapper.readTree(schemaJson)
 
 		val required = schemaNode["required"]
 		assertThat(required).isNotNull
@@ -66,9 +66,9 @@ class KotlinBeanOutputConverterTests {
 		assertThat(required.toString()).contains("baz")
 
 		val properties = schemaNode["properties"]
-		assertThat(properties["bar"]["type"].asText()).isEqualTo("string")
+		assertThat(properties["bar"]["type"].asString()).isEqualTo("string")
 
 		val bazTypeNode = properties["baz"]["type"]
-		assertThat(bazTypeNode.asText()).isEqualTo("integer")
+		assertThat(bazTypeNode.asString()).isEqualTo("integer")
 	}
 }

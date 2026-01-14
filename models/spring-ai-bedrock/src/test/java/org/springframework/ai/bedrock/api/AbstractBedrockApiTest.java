@@ -18,7 +18,6 @@ package org.springframework.ai.bedrock.api;
 
 import java.time.Duration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -29,6 +28,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,7 +46,7 @@ class AbstractBedrockApiTest {
 	private AwsCredentialsProvider awsCredentialsProvider = mock(AwsCredentialsProvider.class);
 
 	@Mock
-	private ObjectMapper objectMapper = mock(ObjectMapper.class);
+	private JsonMapper jsonMapper = mock(JsonMapper.class);
 
 	@Test
 	void shouldLoadRegionFromAwsDefaults() {
@@ -54,7 +54,7 @@ class AbstractBedrockApiTest {
 			when(this.awsRegionProviderBuilder.build().getRegion()).thenReturn(Region.AF_SOUTH_1);
 			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
 			AbstractBedrockApi<Object, Object, Object> testBedrockApi = new TestBedrockApi("modelId",
-					this.awsCredentialsProvider, null, this.objectMapper, Duration.ofMinutes(5));
+					this.awsCredentialsProvider, null, this.jsonMapper, Duration.ofMinutes(5));
 			assertThat(testBedrockApi.getRegion()).isEqualTo(Region.AF_SOUTH_1);
 		}
 	}
@@ -65,7 +65,7 @@ class AbstractBedrockApiTest {
 			when(this.awsRegionProviderBuilder.build().getRegion())
 				.thenThrow(SdkClientException.builder().message("failed load").build());
 			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
-			assertThatThrownBy(() -> new TestBedrockApi("modelId", this.awsCredentialsProvider, null, this.objectMapper,
+			assertThatThrownBy(() -> new TestBedrockApi("modelId", this.awsCredentialsProvider, null, this.jsonMapper,
 					Duration.ofMinutes(5)))
 				.isInstanceOf(IllegalArgumentException.class)
 				.hasMessageContaining("failed load");
@@ -75,8 +75,8 @@ class AbstractBedrockApiTest {
 	private static class TestBedrockApi extends AbstractBedrockApi<Object, Object, Object> {
 
 		protected TestBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
-				ObjectMapper objectMapper, Duration timeout) {
-			super(modelId, credentialsProvider, region, objectMapper, timeout);
+				JsonMapper jsonMapper, Duration timeout) {
+			super(modelId, credentialsProvider, region, jsonMapper, timeout);
 		}
 
 		@Override

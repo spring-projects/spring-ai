@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
@@ -56,7 +56,7 @@ import org.springframework.core.log.LogAccessor;
  * Key features:
  * <ul>
  * <li>Creates HTTP client-based SSE transports for configured MCP server connections
- * <li>Configures ObjectMapper for JSON serialization/deserialization
+ * <li>Configures JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different URLs
  * </ul>
  *
@@ -85,12 +85,12 @@ public class SseHttpClientTransportAutoConfiguration {
 	 * <ul>
 	 * <li>A new HttpClient instance
 	 * <li>Server URL from properties
-	 * <li>ObjectMapper for JSON processing
+	 * <li>JsonMapper for JSON processing
 	 * <li>A sync or async HTTP request customizer. Sync takes precedence.
 	 * </ul>
 	 * @param connectionDetails the SSE client connection details containing server
 	 * configurations
-	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
+	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
 	 * @param syncHttpRequestCustomizer provider for
 	 * {@link McpSyncHttpClientRequestCustomizer} if available
@@ -100,11 +100,11 @@ public class SseHttpClientTransportAutoConfiguration {
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> sseHttpClientTransports(McpSseClientConnectionDetails connectionDetails,
-			ObjectProvider<ObjectMapper> objectMapperProvider,
+			ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
 			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
 
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
@@ -123,7 +123,7 @@ public class SseHttpClientTransportAutoConfiguration {
 				var transportBuilder = HttpClientSseClientTransport.builder(baseUrl)
 					.sseEndpoint(sseEndpoint)
 					.clientBuilder(HttpClient.newBuilder())
-					.jsonMapper(new JacksonMcpJsonMapper(objectMapper));
+					.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
 
 				asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
 				syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);

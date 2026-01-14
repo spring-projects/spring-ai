@@ -19,8 +19,8 @@ package org.springframework.ai.tool.augment;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -52,8 +52,6 @@ import static org.mockito.Mockito.when;
  * @author Christian Tzolov
  */
 class AugmentedToolCallbackTest {
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Mock
 	private ToolCallback mockDelegate;
@@ -212,7 +210,7 @@ class AugmentedToolCallbackTest {
 			ToolDefinition augmentedDefinition = callback.getToolDefinition();
 			String augmentedSchema = augmentedDefinition.inputSchema();
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check original field is preserved
 			assertTrue(schemaNode.get("properties").has("originalField"));
@@ -382,7 +380,7 @@ class AugmentedToolCallbackTest {
 			// Then
 			verify(mockDelegate).call(argThat(input -> {
 				try {
-					JsonNode inputNode = objectMapper.readTree(input);
+					JsonNode inputNode = JsonMapper.shared().readTree(input);
 					return inputNode.has("originalField") && !inputNode.has("name") && !inputNode.has("age");
 				}
 				catch (Exception e) {
@@ -433,7 +431,7 @@ class AugmentedToolCallbackTest {
 			// Then
 			verify(mockDelegate).call(argThat(input -> {
 				try {
-					JsonNode inputNode = objectMapper.readTree(input);
+					JsonNode inputNode = JsonMapper.shared().readTree(input);
 					return inputNode.has("originalField") && inputNode.has("name") && inputNode.has("age");
 				}
 				catch (Exception e) {
@@ -539,7 +537,7 @@ class AugmentedToolCallbackTest {
 			// Verify delegate was called with cleaned input (extended args removed)
 			verify(mockDelegate).call(argThat(input -> {
 				try {
-					JsonNode inputNode = objectMapper.readTree(input);
+					JsonNode inputNode = JsonMapper.shared().readTree(input);
 					return inputNode.has("productId") && !inputNode.has("value");
 				}
 				catch (Exception e) {

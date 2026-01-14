@@ -44,15 +44,11 @@
 			<version>${project.version}</version>
 		</dependency>
 
+		<!-- TODO Require merging https://github.com/modelcontextprotocol/java-sdk/pull/742 -->
 		<dependency>
 			<groupId>io.modelcontextprotocol.sdk</groupId>
-			<artifactId>mcp-json-jackson2</artifactId>
+			<artifactId>mcp-json-jackson3</artifactId>
 			<version>${mcp.sdk.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-jsonSchema</artifactId>
 		</dependency>
 
 		<dependency>
@@ -117,7 +113,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
+			<groupId>tools.jackson.module</groupId>
 			<artifactId>jackson-module-kotlin</artifactId>
 			<scope>test</scope>
 		</dependency>

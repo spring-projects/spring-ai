@@ -16,12 +16,12 @@
 
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -35,7 +35,7 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerStreamableHttpWebFluxAutoConfiguration.class,
-				McpServerObjectMapperAutoConfiguration.class));
+				McpServerJsonMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -46,8 +46,8 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 	}
 
 	@Test
-	void objectMapperConfiguration() {
-		this.contextRunner.withBean(ObjectMapper.class, ObjectMapper::new).run(context -> {
+	void jsonMapperConfiguration() {
+		this.contextRunner.withBean(JsonMapper.class, JsonMapper::new).run(context -> {
 			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
@@ -97,13 +97,13 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 	}
 
 	@Test
-	void customObjectMapperIsUsed() {
-		ObjectMapper customObjectMapper = new ObjectMapper();
-		this.contextRunner.withBean("customObjectMapper", ObjectMapper.class, () -> customObjectMapper).run(context -> {
+	void customJsonMapperIsUsed() {
+		JsonMapper customJsonMapper = new JsonMapper();
+		this.contextRunner.withBean("customJsonMapper", JsonMapper.class, () -> customJsonMapper).run(context -> {
 			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
-			// Verify the custom ObjectMapper is used
-			assertThat(context.getBean(ObjectMapper.class)).isSameAs(customObjectMapper);
+			// Verify the custom JsonMapper is used
+			assertThat(context.getBean(JsonMapper.class)).isSameAs(customJsonMapper);
 		});
 	}
 
@@ -122,7 +122,7 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 		this.contextRunner
 			.withBean("customWebFluxProvider", WebFluxStreamableServerTransportProvider.class,
 					() -> WebFluxStreamableServerTransportProvider.builder()
-						.jsonMapper(new JacksonMcpJsonMapper(new ObjectMapper()))
+						.jsonMapper(new JacksonMcpJsonMapper(new JsonMapper()))
 						.messageEndpoint("/custom")
 						.build())
 			.run(context -> {

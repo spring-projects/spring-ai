@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
@@ -63,6 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -1116,7 +1116,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 			}
 			else if (requestOptions.getToolChoice() instanceof String json) {
 				try {
-					var node = ModelOptionsUtils.OBJECT_MAPPER.readTree(json);
+					var node = ModelOptionsUtils.JSON_MAPPER.readTree(json);
 					builder.toolChoice(parseToolChoice(node));
 				}
 				catch (Exception e) {

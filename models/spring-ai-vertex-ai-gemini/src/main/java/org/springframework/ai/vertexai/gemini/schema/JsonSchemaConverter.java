@@ -21,8 +21,12 @@ package org.springframework.ai.vertexai.gemini.schema;
  * @since 1.0.0
  */
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Map;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.Assert;
@@ -44,7 +48,7 @@ public final class JsonSchemaConverter {
 	 */
 	public static ObjectNode fromJson(String jsonString) {
 		try {
-			return (ObjectNode) JsonParser.getObjectMapper().readTree(jsonString);
+			return (ObjectNode) JsonParser.getJsonMapper().readTree(jsonString);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to parse JSON: " + jsonString, e);
@@ -62,7 +66,7 @@ public final class JsonSchemaConverter {
 
 		try {
 			// Convert to OpenAPI schema using our custom conversion logic
-			ObjectNode openApiSchema = convertSchema(jsonSchemaNode, JsonParser.getObjectMapper().getNodeFactory());
+			ObjectNode openApiSchema = convertSchema(jsonSchemaNode, JsonParser.getJsonMapper().getNodeFactory());
 
 			// Add OpenAPI-specific metadata
 			if (!openApiSchema.has("openapi")) {
@@ -108,12 +112,13 @@ public final class JsonSchemaConverter {
 		Assert.notNull(target, "Target node must not be null");
 		if (source.has("properties")) {
 			ObjectNode properties = target.putObject("properties");
-			source.get("properties").fields().forEachRemaining(entry -> {
+			var fields = source.get("properties").properties();
+			for (Map.Entry<String, JsonNode> entry : fields) {
 				if (entry.getValue() instanceof ObjectNode) {
-					properties.set(entry.getKey(), convertSchema((ObjectNode) entry.getValue(),
-							JsonParser.getObjectMapper().getNodeFactory()));
+					properties.set(entry.getKey(),
+							convertSchema((ObjectNode) entry.getValue(), JsonParser.getJsonMapper().getNodeFactory()));
 				}
-			});
+			}
 		}
 
 		// Handle required array
@@ -129,7 +134,7 @@ public final class JsonSchemaConverter {
 			}
 			else if (additionalProps.isObject()) {
 				target.set("additionalProperties",
-						convertSchema((ObjectNode) additionalProps, JsonParser.getObjectMapper().getNodeFactory()));
+						convertSchema((ObjectNode) additionalProps, JsonParser.getJsonMapper().getNodeFactory()));
 			}
 		}
 
@@ -137,7 +142,7 @@ public final class JsonSchemaConverter {
 		if (source.has("items")) {
 			JsonNode items = source.get("items");
 			if (items.isObject()) {
-				target.set("items", convertSchema((ObjectNode) items, JsonParser.getObjectMapper().getNodeFactory()));
+				target.set("items", convertSchema((ObjectNode) items, JsonParser.getJsonMapper().getNodeFactory()));
 			}
 		}
 
@@ -147,7 +152,7 @@ public final class JsonSchemaConverter {
 			if (source.has(combiner)) {
 				JsonNode combinerNode = source.get(combiner);
 				if (combinerNode.isArray()) {
-					target.putArray(combiner).addAll((com.fasterxml.jackson.databind.node.ArrayNode) combinerNode);
+					target.putArray(combiner).addAll((ArrayNode) combinerNode);
 				}
 			}
 		}
@@ -159,8 +164,7 @@ public final class JsonSchemaConverter {
 	 * @param factory The JsonNodeFactory to create new nodes
 	 * @return The converted OpenAPI schema as ObjectNode
 	 */
-	private static ObjectNode convertSchema(ObjectNode source,
-			com.fasterxml.jackson.databind.node.JsonNodeFactory factory) {
+	private static ObjectNode convertSchema(ObjectNode source, JsonNodeFactory factory) {
 		Assert.notNull(source, "Source node must not be null");
 		Assert.notNull(factory, "JsonNodeFactory must not be null");
 
