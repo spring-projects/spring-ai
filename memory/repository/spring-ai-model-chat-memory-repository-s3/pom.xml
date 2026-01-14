@@ -113,12 +113,5 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- jqwik for property-based testing -->
-		<dependency>
-			<groupId>net.jqwik</groupId>
-			<artifactId>jqwik</artifactId>
-			<version>1.9.1</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 </project>

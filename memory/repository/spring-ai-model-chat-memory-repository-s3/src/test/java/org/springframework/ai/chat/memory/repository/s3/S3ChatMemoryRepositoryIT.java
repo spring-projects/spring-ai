@@ -19,6 +19,7 @@ package org.springframework.ai.chat.memory.repository.s3;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
@@ -37,6 +38,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for S3ChatMemoryRepository using LocalStack.
@@ -62,10 +64,7 @@ class S3ChatMemoryRepositoryIT {
 	private S3ChatMemoryRepository repository;
 
 	@BeforeEach
-	void setUp() throws InterruptedException {
-		// Wait a bit for LocalStack to be fully ready
-		Thread.sleep(1000);
-
+	void setUp() {
 		// Create S3 client pointing to LocalStack with path-style access
 		this.s3Client = S3Client.builder()
 			.endpointOverride(localstack.getEndpoint())
@@ -75,29 +74,13 @@ class S3ChatMemoryRepositoryIT {
 			.forcePathStyle(true) // Required for LocalStack
 			.build();
 
-		// Create bucket with retry logic
-		boolean bucketCreated = false;
-		int attempts = 0;
-		while (!bucketCreated && attempts < 5) {
-			try {
-				this.s3Client.createBucket(CreateBucketRequest.builder().bucket(BUCKET_NAME).build());
-				bucketCreated = true;
-			}
-			catch (software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException e) {
-				// Bucket already exists, which is fine
-				bucketCreated = true;
-			}
-			catch (software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException e) {
-				// Bucket already owned by us, which is fine
-				bucketCreated = true;
-			}
-			catch (Exception e) {
-				attempts++;
-				if (attempts >= 5) {
-					throw new RuntimeException("Failed to create bucket after 5 attempts", e);
-				}
-				Thread.sleep(1000); // Wait 1 second before retry
-			}
+		// Create bucket if it doesn't exist
+		try {
+			this.s3Client.createBucket(CreateBucketRequest.builder().bucket(BUCKET_NAME).build());
+		}
+		catch (software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException
+				| software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException e) {
+			// Bucket already exists, which is fine
 		}
 
 		// Create this.repository with unique prefix for each test
@@ -107,8 +90,14 @@ class S3ChatMemoryRepositoryIT {
 			.s3Client(this.s3Client)
 			.bucketName(BUCKET_NAME)
 			.keyPrefix(uniquePrefix)
-
 			.build();
+	}
+
+	@AfterEach
+	void tearDown() {
+		if (this.s3Client != null) {
+			this.s3Client.close();
+		}
 	}
 
 	@Test
@@ -292,6 +281,98 @@ class S3ChatMemoryRepositoryIT {
 		List<Message> retrieved = storageRepository.findByConversationId(conversationId);
 		assertThat(retrieved).hasSize(1);
 		assertThat(retrieved.get(0).getText()).isEqualTo("Test message");
+	}
+
+	@Test
+	void testNullMessagesThrowsException() {
+		// When/Then: Saving null messages should throw IllegalArgumentException
+		assertThatThrownBy(() -> this.repository.saveAll("test-conversation", null))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void testSpecialCharactersInConversationId() {
+		// Given: Conversation ID with special characters (URL-safe)
+		String conversationId = "user-123_session-456";
+		List<Message> messages = List.of(UserMessage.builder().text("Test message").build());
+
+		// When: Saving and retrieving
+		this.repository.saveAll(conversationId, messages);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
+
+		// Then: Messages are correctly stored and retrieved
+		assertThat(retrieved).hasSize(1);
+		assertThat(retrieved.get(0).getText()).isEqualTo("Test message");
+	}
+
+	@Test
+	void testUnicodeInMessageContent() {
+		// Given: Messages with unicode content
+		String conversationId = "unicode-test";
+		List<Message> messages = List.of(UserMessage.builder().text("Hello 你好 مرحبا 🎉").build(),
+				AssistantMessage.builder().content("Response with émojis 🚀 and spëcial çharacters").build());
+
+		// When: Saving and retrieving
+		this.repository.saveAll(conversationId, messages);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
+
+		// Then: Unicode content is preserved
+		assertThat(retrieved).hasSize(2);
+		assertThat(retrieved.get(0).getText()).isEqualTo("Hello 你好 مرحبا 🎉");
+		assertThat(retrieved.get(1).getText()).isEqualTo("Response with émojis 🚀 and spëcial çharacters");
+	}
+
+	@Test
+	void testLargeMessageContent() {
+		// Given: A message with large content
+		String conversationId = "large-content-test";
+		String largeContent = "x".repeat(100_000); // 100KB of content
+		List<Message> messages = List.of(UserMessage.builder().text(largeContent).build());
+
+		// When: Saving and retrieving
+		this.repository.saveAll(conversationId, messages);
+		List<Message> retrieved = this.repository.findByConversationId(conversationId);
+
+		// Then: Large content is preserved
+		assertThat(retrieved).hasSize(1);
+		assertThat(retrieved.get(0).getText()).isEqualTo(largeContent);
+	}
+
+	@Test
+	void testInitializeBucketCreatesNewBucket() {
+		// Given: A repository configured to auto-create bucket
+		String newBucketName = "auto-created-bucket-" + System.currentTimeMillis();
+		S3ChatMemoryRepository autoInitRepository = S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(newBucketName)
+			.keyPrefix("test")
+			.initializeBucket(true)
+			.build();
+
+		// When: Saving messages (triggers bucket creation)
+		List<Message> messages = List.of(UserMessage.builder().text("Test").build());
+		autoInitRepository.saveAll("test-conversation", messages);
+
+		// Then: Messages can be retrieved (bucket was created)
+		List<Message> retrieved = autoInitRepository.findByConversationId("test-conversation");
+		assertThat(retrieved).hasSize(1);
+		assertThat(retrieved.get(0).getText()).isEqualTo("Test");
+	}
+
+	@Test
+	void testMissingBucketWithoutInitializeThrowsException() {
+		// Given: A repository with non-existent bucket and initializeBucket=false
+		String nonExistentBucket = "non-existent-bucket-" + System.currentTimeMillis();
+		S3ChatMemoryRepository noInitRepository = S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(nonExistentBucket)
+			.keyPrefix("test")
+			.initializeBucket(false)
+			.build();
+
+		// When/Then: Operations should throw IllegalStateException
+		assertThatThrownBy(() -> noInitRepository.findConversationIds()).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("does not exist");
 	}
 
 }

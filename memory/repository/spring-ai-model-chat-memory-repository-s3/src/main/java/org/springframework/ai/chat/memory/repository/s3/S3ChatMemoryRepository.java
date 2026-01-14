@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.memory.repository.s3;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,14 +63,17 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	/** JSON file extension for stored conversations. */
 	private static final String JSON_EXTENSION = ".json";
 
-	/** The S3 client for operations. */
-	private final S3Client s3Client;
+	/** JSON content type for S3 objects. */
+	private static final String JSON_CONTENT_TYPE = "application/json";
+
+	/** Shared ObjectMapper instance (thread-safe after configuration). */
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/** The S3 configuration. */
 	private final S3ChatMemoryConfig config;
 
-	/** JSON object mapper for serialization. */
-	private final ObjectMapper objectMapper;
+	/** Flag indicating if bucket existence has been verified. */
+	private volatile boolean bucketVerified = false;
 
 	/**
 	 * Creates a new S3ChatMemoryRepository.
@@ -77,40 +81,60 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	 */
 	public S3ChatMemoryRepository(final S3ChatMemoryConfig configuration) {
 		Assert.notNull(configuration, "config cannot be null");
-
-		this.s3Client = configuration.getS3Client();
 		this.config = configuration;
-		this.objectMapper = new ObjectMapper();
 	}
 
 	/**
-	 * Ensures the S3 bucket exists, creating it if necessary.
+	 * Ensures the S3 bucket exists, creating it if necessary. Uses double-checked locking
+	 * for thread-safe lazy initialization.
 	 */
 	private void ensureBucketExists() {
-		try {
-			this.s3Client.headBucket(HeadBucketRequest.builder().bucket(this.config.getBucketName()).build());
+		if (this.bucketVerified) {
+			return;
 		}
-		catch (NoSuchBucketException e) {
-			if (this.config.isInitializeBucket()) {
-				try {
-					this.s3Client
-						.createBucket(CreateBucketRequest.builder().bucket(this.config.getBucketName()).build());
+
+		synchronized (this) {
+			if (this.bucketVerified) {
+				return;
+			}
+
+			try {
+				this.config.getS3Client()
+					.headBucket(HeadBucketRequest.builder().bucket(this.config.getBucketName()).build());
+				this.bucketVerified = true;
+			}
+			catch (NoSuchBucketException e) {
+				if (this.config.isInitializeBucket()) {
+					try {
+						this.config.getS3Client()
+							.createBucket(CreateBucketRequest.builder().bucket(this.config.getBucketName()).build());
+						this.bucketVerified = true;
+					}
+					catch (S3Exception createException) {
+						throw new IllegalStateException("Failed to create S3 bucket '" + this.config.getBucketName()
+								+ "': " + createException.getMessage(), createException);
+					}
 				}
-				catch (S3Exception createException) {
-					throw new IllegalStateException("Failed to create S3 bucket '" + this.config.getBucketName() + "': "
-							+ createException.getMessage(), createException);
+				else {
+					throw new IllegalStateException("S3 bucket '" + this.config.getBucketName() + "' does not exist. "
+							+ "Create the bucket manually or set " + "spring.ai.chat.memory.repository.s3."
+							+ "initialize-bucket=true");
 				}
 			}
-			else {
-				throw new IllegalStateException("S3 bucket '" + this.config.getBucketName() + "' does not exist. "
-						+ "Create the bucket manually or set " + "spring.ai.chat.memory.repository.s3."
-						+ "initialize-bucket=true");
+			catch (S3Exception e) {
+				throw new IllegalStateException(
+						"Failed to check S3 bucket '" + this.config.getBucketName() + "': " + e.getMessage(), e);
 			}
 		}
-		catch (S3Exception e) {
-			throw new IllegalStateException(
-					"Failed to check S3 bucket '" + this.config.getBucketName() + "': " + e.getMessage(), e);
-		}
+	}
+
+	/**
+	 * Normalizes a key prefix by removing trailing slash if present.
+	 * @param prefix the prefix to normalize
+	 * @return the normalized prefix without trailing slash
+	 */
+	private String normalizePrefix(final String prefix) {
+		return prefix.endsWith("/") ? prefix.substring(0, prefix.length() - 1) : prefix;
 	}
 
 	/**
@@ -132,9 +156,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		String normalizedConversationId = normalizeConversationId(conversationId);
 		Assert.hasText(prefix, "prefix cannot be null or empty");
 
-		String normalizedPrefix = prefix.endsWith("/") ? prefix.substring(0, prefix.length() - 1) : prefix;
-
-		return normalizedPrefix + "/" + normalizedConversationId + JSON_EXTENSION;
+		return normalizePrefix(prefix) + "/" + normalizedConversationId + JSON_EXTENSION;
 	}
 
 	/**
@@ -147,7 +169,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		Assert.hasText(key, "key cannot be null or empty");
 		Assert.hasText(prefix, "prefix cannot be null or empty");
 
-		String normalizedPrefix = prefix.endsWith("/") ? prefix.substring(0, prefix.length() - 1) : prefix;
+		String normalizedPrefix = normalizePrefix(prefix);
 
 		if (!key.startsWith(normalizedPrefix + "/") || !key.endsWith(JSON_EXTENSION)) {
 			return null;
@@ -197,7 +219,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 
 			payload.put("messages", messageList);
 
-			return this.objectMapper.writeValueAsString(payload);
+			return OBJECT_MAPPER.writeValueAsString(payload);
 		}
 		catch (JsonProcessingException e) {
 			throw new IllegalStateException(
@@ -213,7 +235,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	 */
 	private List<Message> deserialize(final String json) {
 		try {
-			JsonNode root = this.objectMapper.readTree(json);
+			JsonNode root = OBJECT_MAPPER.readTree(json);
 
 			if (!root.has("messages")) {
 				throw new IllegalStateException("JSON does not contain 'messages' field");
@@ -226,15 +248,9 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 				String typeStr = messageNode.get("type").asText();
 				String content = messageNode.get("content").asText();
 
-				Long timestamp = messageNode.has("timestamp") ? messageNode.get("timestamp").asLong() : null;
-
 				Map<String, Object> metadata = new HashMap<>();
 				if (messageNode.has("metadata") && !messageNode.get("metadata").isNull()) {
 					metadata = convertMetadata(messageNode.get("metadata"));
-				}
-
-				if (timestamp != null) {
-					metadata.put("timestamp", timestamp);
 				}
 
 				MessageType type = MessageType.valueOf(typeStr);
@@ -256,13 +272,15 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	 * @return the metadata map
 	 */
 	private Map<String, Object> convertMetadata(final JsonNode metadataNode) {
-		return this.objectMapper.convertValue(metadataNode,
+		return OBJECT_MAPPER.convertValue(metadataNode,
 				new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
 				});
 	}
 
 	/**
-	 * Creates a message instance based on type.
+	 * Creates a message instance based on type. Note: TOOL messages do not preserve
+	 * content as the ToolResponseMessage requires structured ToolResponse objects which
+	 * cannot be reconstructed from plain text content.
 	 * @param type the message type
 	 * @param content the message content
 	 * @param metadata the message metadata
@@ -286,12 +304,12 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 
 			ListObjectsV2Request request = ListObjectsV2Request.builder()
 				.bucket(this.config.getBucketName())
-				.prefix(this.config.getKeyPrefix() + "/")
+				.prefix(normalizePrefix(this.config.getKeyPrefix()) + "/")
 				.build();
 
 			ListObjectsV2Response response;
 			do {
-				response = this.s3Client.listObjectsV2(request);
+				response = this.config.getS3Client().listObjectsV2(request);
 
 				for (S3Object s3Object : response.contents()) {
 					String key = s3Object.key();
@@ -326,8 +344,9 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 				.key(key)
 				.build();
 
-			try (ResponseInputStream<GetObjectResponse> response = this.s3Client.getObject(getObjectRequest)) {
-				String json = new String(response.readAllBytes());
+			try (ResponseInputStream<GetObjectResponse> response = this.config.getS3Client()
+				.getObject(getObjectRequest)) {
+				String json = new String(response.readAllBytes(), StandardCharsets.UTF_8);
 				return deserialize(json);
 			}
 		}
@@ -364,10 +383,11 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 			PutObjectRequest putObjectRequest = PutObjectRequest.builder()
 				.bucket(this.config.getBucketName())
 				.key(key)
+				.contentType(JSON_CONTENT_TYPE)
 				.storageClass(this.config.getStorageClass())
 				.build();
 
-			this.s3Client.putObject(putObjectRequest, RequestBody.fromString(json));
+			this.config.getS3Client().putObject(putObjectRequest, RequestBody.fromString(json));
 		}
 		catch (S3Exception e) {
 			throw new IllegalStateException("Failed to save conversation '" + normalizedConversationId
@@ -388,7 +408,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 				.key(key)
 				.build();
 
-			this.s3Client.deleteObject(deleteObjectRequest);
+			this.config.getS3Client().deleteObject(deleteObjectRequest);
 		}
 		catch (S3Exception e) {
 			throw new IllegalStateException("Failed to delete conversation '" + normalizedConversationId
@@ -405,28 +425,13 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	/**
-	 * Builder for S3ChatMemoryRepository.
+	 * Builder for S3ChatMemoryRepository. Delegates to {@link S3ChatMemoryConfig.Builder}
+	 * for configuration.
 	 */
 	public static final class Builder {
 
-		/** The S3 client. */
-		private S3Client s3Client;
+		private final S3ChatMemoryConfig.Builder configBuilder = S3ChatMemoryConfig.builder();
 
-		/** The bucket name. */
-		private String bucketName;
-
-		/** The key prefix. */
-		private String keyPrefix;
-
-		/** Whether to initialize bucket. */
-		private boolean initializeBucket = false;
-
-		/** The storage class. */
-		private software.amazon.awssdk.services.s3.model.StorageClass storageClass;
-
-		/**
-		 * Private constructor.
-		 */
 		private Builder() {
 		}
 
@@ -436,7 +441,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		 * @return this builder
 		 */
 		public Builder s3Client(final S3Client client) {
-			this.s3Client = client;
+			this.configBuilder.s3Client(client);
 			return this;
 		}
 
@@ -446,7 +451,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		 * @return this builder
 		 */
 		public Builder bucketName(final String name) {
-			this.bucketName = name;
+			this.configBuilder.bucketName(name);
 			return this;
 		}
 
@@ -456,7 +461,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		 * @return this builder
 		 */
 		public Builder keyPrefix(final String prefix) {
-			this.keyPrefix = prefix;
+			this.configBuilder.keyPrefix(prefix);
 			return this;
 		}
 
@@ -466,7 +471,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		 * @return this builder
 		 */
 		public Builder initializeBucket(final boolean initialize) {
-			this.initializeBucket = initialize;
+			this.configBuilder.initializeBucket(initialize);
 			return this;
 		}
 
@@ -476,7 +481,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		 * @return this builder
 		 */
 		public Builder storageClass(final software.amazon.awssdk.services.s3.model.StorageClass storage) {
-			this.storageClass = storage;
+			this.configBuilder.storageClass(storage);
 			return this;
 		}
 
@@ -485,15 +490,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		 * @return the S3ChatMemoryRepository instance
 		 */
 		public S3ChatMemoryRepository build() {
-			S3ChatMemoryConfig config = S3ChatMemoryConfig.builder()
-				.s3Client(this.s3Client)
-				.bucketName(this.bucketName)
-				.keyPrefix(this.keyPrefix)
-				.initializeBucket(this.initializeBucket)
-				.storageClass(this.storageClass)
-				.build();
-
-			return new S3ChatMemoryRepository(config);
+			return new S3ChatMemoryRepository(this.configBuilder.build());
 		}
 
 	}
