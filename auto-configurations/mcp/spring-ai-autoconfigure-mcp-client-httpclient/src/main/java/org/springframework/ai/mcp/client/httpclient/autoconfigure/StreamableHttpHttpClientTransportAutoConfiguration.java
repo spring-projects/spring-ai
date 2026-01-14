@@ -21,13 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -55,7 +55,7 @@ import org.springframework.core.log.LogAccessor;
  * <ul>
  * <li>Creates HTTP client-based Streamable HTTP transports for configured MCP server
  * connections
- * <li>Configures ObjectMapper for JSON serialization/deserialization
+ * <li>Configures JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different URLs
  * <li>Adds a sync or async HTTP request customizer. Sync takes precedence.
  * </ul>
@@ -81,11 +81,11 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	 * <ul>
 	 * <li>A new HttpClient instance
 	 * <li>Server URL from properties
-	 * <li>ObjectMapper for JSON processing
+	 * <li>JsonMapper for JSON processing
 	 * </ul>
 	 * @param streamableProperties the Streamable HTTP client properties containing server
 	 * configurations
-	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
+	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
 	 * @param syncHttpRequestCustomizer provider for
 	 * {@link McpSyncHttpClientRequestCustomizer} if available
@@ -95,11 +95,11 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> streamableHttpHttpClientTransports(
-			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<ObjectMapper> objectMapperProvider,
+			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
 			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
 
-		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
 
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 
@@ -114,7 +114,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 				.builder(baseUrl)
 				.endpoint(streamableHttpEndpoint)
 				.clientBuilder(HttpClient.newBuilder())
-				.jsonMapper(new JacksonMcpJsonMapper(objectMapper));
+				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
 
 			asyncHttpRequestCustomizer.ifUnique(transportBuilder::asyncHttpRequestCustomizer);
 			syncHttpRequestCustomizer.ifUnique(transportBuilder::httpRequestCustomizer);

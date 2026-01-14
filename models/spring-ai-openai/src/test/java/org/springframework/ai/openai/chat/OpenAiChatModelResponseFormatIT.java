@@ -18,15 +18,13 @@ package org.springframework.ai.openai.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -51,16 +49,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelResponseFormatIT {
 
-	private static ObjectMapper MAPPER = new ObjectMapper().enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+	private final JsonMapper jsonMapper = JsonMapper.builder()
+		.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+		.build();
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Autowired
 	private OpenAiChatModel openAiChatModel;
 
-	public static boolean isValidJson(String json) {
+	boolean isValidJson(String json) {
 		try {
-			MAPPER.readTree(json);
+			this.jsonMapper.readTree(json);
 		}
 		catch (JacksonException e) {
 			return false;
@@ -69,7 +69,7 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonObject() throws JsonMappingException, JsonProcessingException {
+	void jsonObject() {
 
 		// 400 - ResponseError[error=Error[message='json' is not one of ['json_object',
 		// 'text'] -
@@ -97,7 +97,7 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchema() throws JsonMappingException, JsonProcessingException {
+	void jsonSchema() {
 
 		var jsonSchema = """
 				{
@@ -140,7 +140,7 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchemaThroughIndividualSetters() throws JsonMappingException, JsonProcessingException {
+	void jsonSchemaThroughIndividualSetters() {
 
 		var jsonSchema = """
 				{
@@ -183,7 +183,7 @@ public class OpenAiChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchemaBeanConverter() throws JsonMappingException, JsonProcessingException {
+	void jsonSchemaBeanConverter() {
 
 		@JsonPropertyOrder({ "steps", "final_answer" })
 		record MathReasoning(@JsonProperty(required = true, value = "steps") Steps steps,

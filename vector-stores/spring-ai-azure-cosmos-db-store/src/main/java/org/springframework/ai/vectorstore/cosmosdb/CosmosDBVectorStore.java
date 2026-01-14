@@ -52,14 +52,14 @@ import com.azure.cosmos.models.SqlParameter;
 import com.azure.cosmos.models.SqlQuerySpec;
 import com.azure.cosmos.models.ThroughputProperties;
 import com.azure.cosmos.util.CosmosPagedFlux;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -193,17 +193,15 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	private JsonNode mapCosmosDocument(Document document, float[] queryEmbedding) {
-		ObjectMapper objectMapper = new ObjectMapper();
-
 		String id = document.getId();
 		String content = document.getText();
 
 		// Convert metadata and embedding directly to JsonNode
-		JsonNode metadataNode = objectMapper.valueToTree(document.getMetadata());
-		JsonNode embeddingNode = objectMapper.valueToTree(queryEmbedding);
+		JsonNode metadataNode = JsonMapper.shared().valueToTree(document.getMetadata());
+		JsonNode embeddingNode = JsonMapper.shared().valueToTree(queryEmbedding);
 
 		// Create an ObjectNode specifically
-		ObjectNode objectNode = objectMapper.createObjectNode();
+		ObjectNode objectNode = JsonMapper.shared().createObjectNode();
 
 		// Use put for simple values and set for JsonNode values
 		objectNode.put("id", id);
@@ -421,11 +419,11 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 			Map<String, Object> docFields = new HashMap<>();
 			for (var doc : documents) {
 				JsonNode metadata = doc.get("metadata");
-				metadata.fieldNames().forEachRemaining(field -> {
-					JsonNode value = metadata.get(field);
+				metadata.propertyNames().forEach(property -> {
+					JsonNode value = metadata.get(property);
 					Object parsedValue = value.isTextual() ? value.asText() : value.isNumber() ? value.numberValue()
 							: value.isBoolean() ? value.booleanValue() : value.toString();
-					docFields.put(field, parsedValue);
+					docFields.put(property, parsedValue);
 				});
 			}
 

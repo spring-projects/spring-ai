@@ -20,8 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
@@ -32,6 +30,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -214,7 +214,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 
 	private Map<String, Object> parseIndex(String json) {
 		try {
-			JsonNode rootNode = new ObjectMapper().readTree(json);
+			JsonNode rootNode = JsonMapper.shared().readTree(json);
 			Map<String, Object> indexDetails = new HashMap<>();
 			if (rootNode.isObject()) {
 				if (rootNode.has("name")) {

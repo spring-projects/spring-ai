@@ -18,14 +18,13 @@ package org.springframework.ai.openaisdk.chat;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -47,8 +46,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiSdkChatModelResponseFormatIT {
 
-	private static final ObjectMapper MAPPER = new ObjectMapper()
-		.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+	private static final JsonMapper jsonMapper = JsonMapper.builder()
+		.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+		.build();
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -57,7 +57,7 @@ public class OpenAiSdkChatModelResponseFormatIT {
 
 	public static boolean isValidJson(String json) {
 		try {
-			MAPPER.readTree(json);
+			jsonMapper.readTree(json);
 		}
 		catch (JacksonException e) {
 			return false;
@@ -133,7 +133,7 @@ public class OpenAiSdkChatModelResponseFormatIT {
 	}
 
 	@Test
-	void jsonSchemaThroughIndividualSetters() throws JsonProcessingException {
+	void jsonSchemaThroughIndividualSetters() {
 
 		var jsonSchema = """
 				{

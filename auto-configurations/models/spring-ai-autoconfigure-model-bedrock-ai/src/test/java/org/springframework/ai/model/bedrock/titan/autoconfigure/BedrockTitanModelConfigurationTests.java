@@ -16,8 +16,8 @@
 
 package org.springframework.ai.model.bedrock.titan.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -35,7 +35,7 @@ public class BedrockTitanModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(BedrockTitanEmbeddingAutoConfiguration.class))
-		.withBean(ObjectMapper.class, ObjectMapper::new);
+		.withBean(JsonMapper.class, JsonMapper::new);
 
 	@Test
 	void embeddingModelActivation() {

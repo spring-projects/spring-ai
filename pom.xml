@@ -306,7 +306,7 @@
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>
 		<com.google.genai.version>1.37.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
-		<jsonschema.version>4.38.0</jsonschema.version>
+		<jsonschema.version>5.0.0</jsonschema.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
@@ -350,11 +350,13 @@
 		<!-- testing dependencies -->
 		<okhttp3.version>4.12.0</okhttp3.version>
 		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
-		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
+		<json-unit-assertj.version>5.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.17.1</mcp.sdk.version>
-		<mcp-annotations.version>0.8.0</mcp-annotations.version>
+		<!-- TODO Update to 0.18.0 when released -->
+		<mcp.sdk.version>0.18.0-SNAPSHOT</mcp.sdk.version>
+		<!-- TODO Update to 0.9.0 when released -->
+		<mcp-annotations.version>0.9.0-SNAPSHOT</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>

@@ -16,8 +16,8 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.annotation.UserConfigurations;
@@ -28,41 +28,41 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for {@link McpServerObjectMapperAutoConfiguration}
+ * Integration tests for {@link McpServerJsonMapperAutoConfiguration}
  *
  * @author guan xu
  */
-public class McpServerObjectMapperAutoConfigurationIT {
+public class McpServerJsonMapperAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpServerObjectMapperAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpServerJsonMapperAutoConfiguration.class));
 
 	@Test
-	void defaultMcpServerObjectMapper() {
+	void defaultMcpServerJsonMapper() {
 		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(ObjectMapper.class);
-			assertThat(context).hasBean("mcpServerObjectMapper");
+			assertThat(context).hasSingleBean(JsonMapper.class);
+			assertThat(context).hasBean("mcpServerJsonMapper");
 		});
 	}
 
 	@Test
-	void customizeMcpServerObjectMapper() {
+	void customizeMcpServerJsonMapper() {
 		this.contextRunner.withConfiguration(UserConfigurations.of(TestConfig.class)).run(context -> {
-			assertThat(context).hasSingleBean(ObjectMapper.class);
-			assertThat(context).hasBean("mcpServerObjectMapper");
+			assertThat(context).hasSingleBean(JsonMapper.class);
+			assertThat(context).hasBean("mcpServerJsonMapper");
 
-			var mcpServerObjectMapper = context.getBean("mcpServerObjectMapper", ObjectMapper.class);
-			var customizedMcpServerObjectMapper = context.getBean(TestConfig.class).mcpServerObjectMapper();
-			assertThat(customizedMcpServerObjectMapper).isSameAs(mcpServerObjectMapper);
+			var mcpServerJsonMapper = context.getBean("mcpServerJsonMapper", JsonMapper.class);
+			var customizedMcpServerJsonMapper = context.getBean(TestConfig.class).mcpServerJsonMapper();
+			assertThat(customizedMcpServerJsonMapper).isSameAs(mcpServerJsonMapper);
 		});
 	}
 
 	@Configuration
 	static class TestConfig {
 
-		@Bean(name = "mcpServerObjectMapper")
-		ObjectMapper mcpServerObjectMapper() {
-			return new ObjectMapper();
+		@Bean(name = "mcpServerJsonMapper")
+		JsonMapper mcpServerJsonMapper() {
+			return new JsonMapper();
 		}
 
 	}

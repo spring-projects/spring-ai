@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
@@ -31,6 +30,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
@@ -38,7 +38,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAut
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
@@ -70,7 +70,7 @@ class McpToolCallbackParameterlessToolIT {
 	private final ApplicationContextRunner syncServerContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE", "spring.ai.mcp.server.type=SYNC")
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
+				McpServerJsonMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
 				McpServerStreamableHttpWebFluxAutoConfiguration.class,
 				McpServerAnnotationScannerAutoConfiguration.class,
 				McpServerSpecificationFactoryAutoConfiguration.class));
@@ -100,10 +100,10 @@ class McpToolCallbackParameterlessToolIT {
 
 				McpSyncServer mcpSyncServer = serverContext.getBean(McpSyncServer.class);
 
-				ObjectMapper objectMapper = serverContext.getBean(ObjectMapper.class);
+				JsonMapper jsonMapper = serverContext.getBean(JsonMapper.class);
 
 				String incompleteSchemaJson = "{\"type\":\"object\",\"additionalProperties\":false}";
-				McpSchema.JsonSchema incompleteSchema = objectMapper.readValue(incompleteSchemaJson,
+				McpSchema.JsonSchema incompleteSchema = jsonMapper.readValue(incompleteSchemaJson,
 						McpSchema.JsonSchema.class);
 
 				// Build the tool using the builder pattern

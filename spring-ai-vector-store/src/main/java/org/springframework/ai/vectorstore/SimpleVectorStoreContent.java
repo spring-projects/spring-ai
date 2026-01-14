@@ -24,6 +24,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.content.Content;
 import org.springframework.ai.document.Document;
@@ -53,7 +54,6 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @param text the content text, must not be null
 	 * @param embedding the embedding vector, must not be null
 	 */
-	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
 	public SimpleVectorStoreContent(@JsonProperty("text") @JsonAlias("content") String text,
 			@JsonProperty("embedding") float[] embedding) {
 		this(text, new HashMap<>(), embedding);
@@ -90,14 +90,20 @@ public final class SimpleVectorStoreContent implements Content {
 	 * @param embedding the embedding vector, must not be null
 	 * @throws IllegalArgumentException if any parameter is null or if id is empty
 	 */
-	public SimpleVectorStoreContent(String id, String text, Map<String, Object> metadata, float[] embedding) {
-		Assert.hasText(id, "id must not be null or empty");
+	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+	public SimpleVectorStoreContent(@JsonProperty("id") @Nullable String id,
+			@JsonProperty("text") @JsonAlias("content") String text,
+			@JsonProperty("metadata") Map<String, Object> metadata, @JsonProperty("embedding") float[] embedding) {
+
+		if (id != null) {
+			Assert.hasText(id, "id must not be null or empty");
+		}
 		Assert.notNull(text, "content must not be null");
 		Assert.notNull(metadata, "metadata must not be null");
 		Assert.notNull(embedding, "embedding must not be null");
 		Assert.isTrue(embedding.length > 0, "embedding vector must not be empty");
 
-		this.id = id;
+		this.id = (id != null ? id : new RandomIdGenerator().generateId(text, metadata));
 		this.text = text;
 		this.metadata = Map.copyOf(metadata);
 		this.embedding = Arrays.copyOf(embedding, embedding.length);

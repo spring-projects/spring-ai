@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -51,7 +51,7 @@ public class HuggingfaceChatModel implements ChatModel {
 	/**
 	 * Mapper for converting between Java objects and JSON.
 	 */
-	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final JsonMapper jsonMapper = new JsonMapper();
 
 	/**
 	 * API for text generation inferences.
@@ -97,10 +97,10 @@ public class HuggingfaceChatModel implements ChatModel {
 		for (GenerateResponse generateResponse : generateResponses) {
 			String generatedText = generateResponse.getGeneratedText();
 			AllOfGenerateResponseDetails allOfGenerateResponseDetails = generateResponse.getDetails();
-			Map<String, Object> detailsMap = this.objectMapper.convertValue(allOfGenerateResponseDetails,
-					new TypeReference<>() {
+			Map<String, Object> detailsMap = JsonMapper.shared()
+				.convertValue(allOfGenerateResponseDetails, new TypeReference<>() {
 
-					});
+				});
 			Generation generation = new Generation(
 					AssistantMessage.builder().content(generatedText).properties(detailsMap).build());
 			generations.add(generation);
