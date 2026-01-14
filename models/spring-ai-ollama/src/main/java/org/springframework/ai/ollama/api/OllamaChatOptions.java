@@ -796,6 +796,14 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	@Override
 	@JsonIgnore
 	public String getOutputSchema() {
+		if (this.format == null) {
+			return null;
+		}
+		// If format is a simple string (e.g., "json"), return it as-is
+		if (this.format instanceof String) {
+			return (String) this.format;
+		}
+		// Otherwise, serialize the Map/Object to JSON string (JSON Schema case)
 		return ModelOptionsUtils.toJsonString(this.format);
 	}
 
