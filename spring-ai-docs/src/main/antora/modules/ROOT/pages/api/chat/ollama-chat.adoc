@@ -111,7 +111,7 @@ Here are the advanced request parameter for the Ollama chat model:
 | spring.ai.ollama.chat.enabled (Removed and no longer valid)     | Enable Ollama chat model. | true
 | spring.ai.model.chat      | Enable Ollama chat model. | ollama
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
-| spring.ai.ollama.chat.options.format  | The format to return a response in. Currently, the only accepted value is `json` | -
+| spring.ai.ollama.chat.options.format  | The format to return a response in. Accepts either `"json"` (any JSON structure) or a JSON Schema object (enforced structure). See <<Structured Outputs>> for details. | -
 | spring.ai.ollama.chat.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 |====
 
@@ -431,13 +431,83 @@ where fruits are being displayed, possibly for convenience or aesthetic purposes
 Ollama provides custom https://ollama.com/blog/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`.
 In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
 
+=== Two Modes for Structured Output
+
+Ollama supports two different modes for structured output through the `format` parameter:
+
+1. **Simple "json" Format**: Instructs Ollama to return any valid JSON structure (unpredictable schema)
+2. **JSON Schema Format**: Instructs Ollama to return JSON conforming to a specific schema (predictable structure)
+
+==== Simple "json" Format
+
+Use this when you want JSON output but don't need a specific structure:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "List 3 countries in Europe",
+        OllamaChatOptions.builder()
+            .model("llama3.2")
+            .format("json")  // Any valid JSON
+            .build()
+    ));
+----
+
+The model can return any JSON structure it chooses:
+
+[source,json]
+----
+["France", "Germany", "Italy"]
+// or
+{"countries": ["France", "Germany", "Italy"]}
+// or
+{"data": {"european_countries": ["France", "Germany", "Italy"]}}
+----
+
+==== JSON Schema Format (Recommended for Production)
+
+Use this when you need a guaranteed, predictable structure:
+
+[source,java]
+----
+String jsonSchema = """
+{
+    "type": "object",
+    "properties": {
+        "countries": {
+            "type": "array",
+            "items": { "type": "string" }
+        }
+    },
+    "required": ["countries"]
+}
+""";
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "List 3 countries in Europe",
+        OllamaChatOptions.builder()
+            .model("llama3.2")
+            .outputSchema(jsonSchema)  // Enforced schema
+            .build()
+    ));
+----
+
+The model **must** return this exact structure:
+
+[source,json]
+----
+{"countries": ["France", "Germany", "Italy"]}
+----
+
 === Configuration
 
 Spring AI allows you to configure your response format programmatically using the `OllamaChatOptions` builder.
 
-==== Using the Chat Options Builder
+==== Using the Chat Options Builder with JSON Schema
 
-You can set the response format programmatically with the `OllamaChatOptions` builder as shown below:
+You can set the response format programmatically with the `OllamaChatOptions` builder:
 
 [source,java]
 ----
@@ -467,7 +537,7 @@ String jsonSchema = """
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
-            .format(new ObjectMapper().readValue(jsonSchema, Map.class))
+            .outputSchema(jsonSchema)  // Pass JSON Schema as string
             .build());
 
 ChatResponse response = this.ollamaChatModel.call(this.prompt);
@@ -498,7 +568,7 @@ var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
-            .format(outputConverter.getJsonSchemaMap())
+            .outputSchema(outputConverter.getJsonSchema())  // Get JSON Schema as string
             .build());
 
 ChatResponse response = this.ollamaChatModel.call(this.prompt);
@@ -509,6 +579,30 @@ MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 
 NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation for generating a schema that accurately marks fields as `required`.
 Although this is optional for JSON Schema, it's recommended for the structured response to function correctly.
+
+=== API Methods: `.format()` vs `.outputSchema()`
+
+Spring AI provides two methods for configuring structured output:
+
+[cols="2,3,3", options="header"]
+|====
+| Method | Use Case | Example
+
+| `.format("json")`
+| Simple JSON mode - any structure
+| `.format("json")`
+
+| `.outputSchema(jsonSchemaString)`
+| JSON Schema mode - enforced structure
+| `.outputSchema("{\"type\":\"object\",...}")`
+
+| `.format(mapObject)`
+| JSON Schema mode - alternative API
+| `.format(new ObjectMapper().readValue(schema, Map.class))`
+|====
+
+TIP: For most use cases, use `.outputSchema(jsonSchemaString)` for JSON Schema validation or `.format("json")` for simple JSON output.
+The `.format(Map)` approach is also supported but requires manual JSON parsing.
 
 == OpenAI API Compatibility
 

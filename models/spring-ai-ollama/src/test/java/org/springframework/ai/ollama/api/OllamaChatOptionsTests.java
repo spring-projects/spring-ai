@@ -266,4 +266,101 @@ class OllamaChatOptionsTests {
 		assertThat(optionsMap).containsEntry("seed", 0);
 	}
 
+	/**
+	 * Demonstrates the difference between simple "json" format and JSON Schema format.
+	 *
+	 * Simple "json" format: Tells Ollama to return any valid JSON structure. JSON Schema
+	 * format: Tells Ollama to return JSON matching a specific schema.
+	 */
+	@Test
+	void testSimpleJsonFormatVsJsonSchema() {
+		var simpleJsonOptions = OllamaChatOptions.builder().format("json").build();
+
+		var simpleJsonMap = simpleJsonOptions.toMap();
+		assertThat(simpleJsonMap).containsEntry("format", "json");
+		assertThat(simpleJsonOptions.getFormat()).isEqualTo("json");
+
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var schemaOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+
+		var schemaMap = schemaOptions.toMap();
+		assertThat(schemaMap).containsKey("format");
+		assertThat(schemaMap.get("format")).isInstanceOf(Map.class);
+
+		// Verify the schema contains expected structure
+		@SuppressWarnings("unchecked")
+		Map<String, Object> formatSchema = (Map<String, Object>) schemaMap.get("format");
+		assertThat(formatSchema).containsEntry("type", "object");
+		assertThat(formatSchema).containsKey("properties");
+		assertThat(formatSchema).containsKey("required");
+
+		var formatOnlyOptions = OllamaChatOptions.builder().format("json").build();
+		assertThat(formatOnlyOptions.getOutputSchema()).isEqualTo("json");
+
+		var schemaRoundTrip = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		assertThat(schemaRoundTrip.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+	}
+
+	/**
+	 * Tests that setFormat("json") and getFormat() work correctly for simple JSON format.
+	 */
+	@Test
+	void testSimpleJsonFormatDirectAccess() {
+		var options = OllamaChatOptions.builder().format("json").build();
+
+		assertThat(options.getFormat()).isEqualTo("json");
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsEntry("format", "json");
+
+		// Verify it serializes correctly
+		assertThat(options.getFormat()).isInstanceOf(String.class);
+	}
+
+	/**
+	 * Tests getOutputSchema() properly handles all format types: null, String, and Map.
+	 */
+	@Test
+	void testGetOutputSchemaHandlesAllFormatTypes() {
+		var nullFormatOptions = OllamaChatOptions.builder().build();
+		assertThat(nullFormatOptions.getOutputSchema()).isNull();
+
+		var stringFormatOptions = OllamaChatOptions.builder().format("json").build();
+		assertThat(stringFormatOptions.getOutputSchema()).isEqualTo("json");
+		assertThat(stringFormatOptions.getOutputSchema()).doesNotContain("\"");
+
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var schemaFormatOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		String retrievedSchema = schemaFormatOptions.getOutputSchema();
+
+		// Should be valid JSON
+		assertThat(retrievedSchema).isNotNull();
+		assertThat(retrievedSchema).contains("\"type\"");
+		assertThat(retrievedSchema).contains("\"properties\"");
+		assertThat(retrievedSchema).contains("\"required\"");
+
+		assertThat(retrievedSchema).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+	}
+
+	/**
+	 * Tests that setOutputSchema() properly handles JSON Schema strings.
+	 */
+	@Test
+	void testSetOutputSchemaWithValidJsonSchema() {
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+
+		var options = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+
+		// Format should be a Map, not a String
+		assertThat(options.getFormat()).isInstanceOf(Map.class);
+
+		// toMap() should contain the parsed schema
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsKey("format");
+		assertThat(optionsMap.get("format")).isInstanceOf(Map.class);
+
+		// getOutputSchema() should return the original JSON string (ignoring whitespace)
+		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+	}
+
 }
