@@ -491,6 +491,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bedrock-knowledgebase-store</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Spring Boot Auto-configurations -->
 
 			<!-- Spring AI Retry autoconfiguration-->
@@ -866,6 +872,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Spring Boot starters for the vector stores -->
 
 			<dependency>
@@ -985,6 +997,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-vector-store-weaviate</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-vector-store-bedrock-knowledgebase</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
