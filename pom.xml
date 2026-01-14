@@ -83,6 +83,7 @@
 		<module>vector-stores/spring-ai-redis-semantic-cache</module>
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
+		<module>vector-stores/spring-ai-bedrock-knowledgebase-store</module>
 
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
@@ -154,6 +155,7 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
@@ -175,6 +177,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
 
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-azure-openai</module>
@@ -233,7 +236,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
-		
+
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
