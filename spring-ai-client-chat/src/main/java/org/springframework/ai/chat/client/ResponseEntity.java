@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Represents a {@link org.springframework.ai.model.Model} response that includes the
- * entire response along withe specified response entity type.
+ * entire response along with the specified response entity type.
  *
  * @param <R> the entire response type.
  * @param <E> the converted entity type.

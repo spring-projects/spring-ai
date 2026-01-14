@@ -129,7 +129,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 			// After Call
 
-			// TODO: check that this is tool call is sufficiant for all chat models
+			// TODO: check that this tool call detection is sufficient for all chat models
 			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
 			// finish status as well)
 			ChatResponse chatResponse = chatClientResponse.chatResponse();
@@ -150,7 +150,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 							.build())
 						.build();
 
-					// Interupt the tool calling loop and return the tool execution result
+					// Interrupt the tool calling loop and return the tool execution
+					// result
 					// directly to the client application instead of returning it to the
 					// LLM.
 					break;
