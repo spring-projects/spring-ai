@@ -149,7 +149,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 							.build())
 						.build();
 
-					// Interrupt the tool calling loop and return the tool execution result
+					// Interrupt the tool calling loop and return the tool execution
+					// result
 					// directly to the client application instead of returning it to the
 					// LLM.
 					break;
