@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chroma.vectorstore.common;
 
+import org.springframework.ai.chroma.vectorstore.ChromaVectorStore.ChromaDistanceType;
+
 /**
  * Common value constants for Chroma api.
  *
@@ -30,6 +32,12 @@ public final class ChromaApiConstants {
 	public static final String DEFAULT_DATABASE_NAME = "SpringAiDatabase";
 
 	public static final String DEFAULT_COLLECTION_NAME = "SpringAiCollection";
+
+	public static final int DEFAULT_EF_CONSTRUCTION = 100;
+
+	public static final int DEFAULT_EF_SEARCH = 100;
+
+	public static final ChromaDistanceType DEFAULT_DISTANCE_TYPE = ChromaDistanceType.COSINE;
 
 	private ChromaApiConstants() {
 		// prevents instantiation.
