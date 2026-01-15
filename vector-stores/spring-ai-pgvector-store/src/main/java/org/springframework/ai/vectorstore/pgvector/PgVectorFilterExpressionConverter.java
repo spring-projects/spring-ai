@@ -23,6 +23,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into PgVector metadata filter expression format.
@@ -35,6 +36,7 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression should have a right operand");
 		if (expression.type() == Filter.ExpressionType.IN) {
 			handleIn(expression, context);
 		}
@@ -55,6 +57,7 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	}
 
 	private void convertToConditions(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression should have a right operand");
 		Filter.Value right = (Filter.Value) expression.right();
 		Object value = right.value();
 		if (!(value instanceof List)) {
