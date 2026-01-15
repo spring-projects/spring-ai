@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.neo4j;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -275,6 +276,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		try (var session = this.driver.session(this.sessionConfig)) {
 			StringBuilder condition = new StringBuilder("score >= $threshold");
 			if (request.hasFilterExpression()) {
+				Assert.state(request.getFilterExpression() != null, "filter expression can't be null");
 				condition.append(" AND ")
 					.append(this.filterExpressionConverter.convertExpression(request.getFilterExpression()));
 			}
@@ -328,7 +330,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		row.put("id", document.getId());
 
 		var properties = new HashMap<String, Object>();
-		properties.put(this.textProperty, document.getText());
+		properties.put(this.textProperty, Objects.requireNonNullElse(document.getText(), ""));
 
 		document.getMetadata().forEach((k, v) -> properties.put("metadata." + k, Values.value(v)));
 		row.put("properties", properties);

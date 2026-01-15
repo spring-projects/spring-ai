@@ -21,6 +21,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into Neo4j condition expression format.
@@ -38,6 +39,7 @@ public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressi
 					new Expression(Filter.ExpressionType.IN, expression.left(), expression.right())), context);
 		}
 		else {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
 			this.convertOperand(expression.left(), context);
 			context.append(this.getOperationSymbol(expression));
 			this.convertOperand(expression.right(), context);
