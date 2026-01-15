@@ -16,6 +16,9 @@
 
 package org.springframework.ai.model.zhipuai.autoconfigure;
 
+import io.micrometer.observation.ObservationRegistry;
+
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.RetryUtils;
@@ -55,7 +58,9 @@ public class ZhiPuAiImageAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ZhiPuAiImageModel zhiPuAiImageModel(ZhiPuAiConnectionProperties commonProperties,
 			ZhiPuAiImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -66,13 +71,15 @@ public class ZhiPuAiImageAutoConfiguration {
 		Assert.hasText(apiKey, "ZhiPuAI API key must be set");
 		Assert.hasText(baseUrl, "ZhiPuAI base URL must be set");
 
-		// TODO add ZhiPuAiApi support for image
 		var zhiPuAiImageApi = new ZhiPuAiImageApi(baseUrl, apiKey,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 
-		return new ZhiPuAiImageModel(zhiPuAiImageApi, imageProperties.getOptions(),
-				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE));
+		var imageModel = new ZhiPuAiImageModel(zhiPuAiImageApi, imageProperties.getOptions(),
+				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		observationConvention.ifAvailable(imageModel::setObservationConvention);
+		return imageModel;
 	}
 
 }
