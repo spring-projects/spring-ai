@@ -100,13 +100,6 @@
 
 	<suppress files="vector-stores[\\/]spring-ai-azure-cosmos-db-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-azure-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-chroma-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-coherence-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-couchbase-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-elasticsearch-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-gemfire-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-hanadb-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-mariadb-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-milvus-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-mongodb-atlas-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-neo4j-store" id="bannedNullabilityImports" />

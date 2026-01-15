@@ -28,6 +28,7 @@ import java.util.Optional;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -169,7 +169,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final JdbcTemplate jdbcTemplate;
 
-	private final String schemaName;
+	private final @Nullable String schemaName;
 
 	private final boolean schemaValidation;
 
@@ -443,18 +443,25 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.MARIADB.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.MARIADB.value(), operationName)
 			.collectionName(this.vectorTableName)
 			.dimensions(this.embeddingDimensions())
-			.namespace(this.schemaName)
 			.similarityMetric(getSimilarityMetric());
+		if (this.schemaName != null) {
+			builder.namespace(this.schemaName);
+		}
+		return builder;
 	}
 
 	private String getSimilarityMetric() {
-		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.getDistanceType())) {
+		VectorStoreSimilarityMetric metric = SIMILARITY_TYPE_MAPPING.get(this.distanceType);
+		if (metric != null) {
+			return metric.value();
+		}
+		else {
 			return this.getDistanceType().name();
 		}
-		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 	@Override
@@ -525,8 +532,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		private final JdbcTemplate jdbcTemplate;
 
-		@Nullable
-		private String schemaName;
+		private @Nullable String schemaName;
 
 		private String vectorTableName = DEFAULT_TABLE_NAME;
 
@@ -713,7 +719,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	 * @param embedding The vectors representing the content of the document
 	 */
 	public record MariaDBDocument(String id, @Nullable String content, Map<String, Object> metadata,
-			@Nullable float[] embedding) {
+			float @Nullable [] embedding) {
 	}
 
 }
