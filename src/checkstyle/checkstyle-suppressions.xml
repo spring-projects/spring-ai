@@ -98,7 +98,6 @@
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 
-	<suppress files="vector-stores[\\/]spring-ai-milvus-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-mongodb-atlas-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-neo4j-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-opensearch-store" id="bannedNullabilityImports" />
