@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.mongodb.MongoCommandException;
@@ -263,7 +264,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 				this.batchingStrategy);
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
-			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(), document.getText(),
+			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""),
 					document.getMetadata(), embeddings.get(i));
 			this.mongoTemplate.save(mdbDocument, this.collectionName);
 		}
