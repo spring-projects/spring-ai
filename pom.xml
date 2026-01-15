@@ -281,7 +281,7 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 
 		<!-- production dependencies -->
-		<spring-boot.version>4.0.0</spring-boot.version>
+		<spring-boot.version>4.0.1</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
 		<openai-sdk.version>4.13.0</openai-sdk.version>
