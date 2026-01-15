@@ -176,7 +176,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorStore.class);
 
-	private static Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+	private static final Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
 			VectorStoreSimilarityMetric.EUCLIDEAN, PgDistanceType.NEGATIVE_INNER_PRODUCT,
 			VectorStoreSimilarityMetric.DOT);
@@ -513,10 +513,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private String getSimilarityMetric() {
-		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.getDistanceType())) {
-			return this.getDistanceType().name();
-		}
-		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
+		VectorStoreSimilarityMetric metric = SIMILARITY_TYPE_MAPPING.get(this.distanceType);
+		return metric != null ? metric.value() : this.distanceType.name();
 	}
 
 	@Override
