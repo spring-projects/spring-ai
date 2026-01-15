@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -248,9 +248,7 @@ public class MistralAiApi {
 	/**
 	 * List of well-known Mistral chat models.
 	 *
-	 * @see <a href=
-	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
-	 * Overview</a>
+	 * @see <a href="https://docs.mistral.ai/getting-started/models">Mistral AI Models</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
@@ -259,17 +257,36 @@ public class MistralAiApi {
 		MAGISTRAL_MEDIUM("magistral-medium-latest"),
 		MISTRAL_MEDIUM("mistral-medium-latest"),
 		CODESTRAL("codestral-latest"),
-		LARGE("mistral-large-latest"),
+		DEVSTRAL_MEDIUM("devstral-medium-latest"),
+		MISTRAL_LARGE("mistral-large-latest"),
 		PIXTRAL_LARGE("pixtral-large-latest"),
-		MINISTRAL_3B_LATEST("ministral-3b-latest"),
-		MINISTRAL_8B_LATEST("ministral-8b-latest"),
 		// Free Models
+		MINISTRAL_3B("ministral-3b-latest"),
+		MINISTRAL_8B("ministral-8b-latest"),
+		MINISTRAL_14B("ministral-14b-latest"),
 		MAGISTRAL_SMALL("magistral-small-latest"),
 		DEVSTRAL_SMALL("devstral-small-latest"),
-		SMALL("mistral-small-latest"),
-		PIXTRAL("pixtral-12b-2409"),
+		MISTRAL_SMALL("mistral-small-latest"),
+		PIXTRAL_12B("pixtral-12b-latest"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo");
+		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
+
+		// Deprecated - use the new names above
+		/** @deprecated Use {@link #MISTRAL_LARGE} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		LARGE("mistral-large-latest"),
+		/** @deprecated Use {@link #MISTRAL_SMALL} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		SMALL("mistral-small-latest"),
+		/** @deprecated Use {@link #MINISTRAL_3B} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		MINISTRAL_3B_LATEST("ministral-3b-latest"),
+		/** @deprecated Use {@link #MINISTRAL_8B} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		MINISTRAL_8B_LATEST("ministral-8b-latest"),
+		/** @deprecated Use {@link #PIXTRAL_12B} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		PIXTRAL("pixtral-12b-2409");
 		// @formatter:on
 
 		private final String value;
@@ -292,9 +309,7 @@ public class MistralAiApi {
 	/**
 	 * List of well-known Mistral embedding models.
 	 *
-	 * @see <a href=
-	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
-	 * Overview</a>
+	 * @see <a href="https://docs.mistral.ai/getting-started/models">Mistral AI Models</a>
 	 */
 	public enum EmbeddingModel {
 
