@@ -32,7 +32,6 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
-import org.springframework.ai.image.observation.DefaultImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
@@ -40,24 +39,27 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openaisdk.metadata.OpenAiSdkImageGenerationMetadata;
 import org.springframework.ai.openaisdk.metadata.OpenAiSdkImageResponseMetadata;
 import org.springframework.ai.openaisdk.setup.OpenAiSdkSetup;
+import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
  * Image Model implementation using the OpenAI Java SDK.
  *
  * @author Julien Dubois
+ * @author Yanming Zhou
  */
 public class OpenAiSdkImageModel implements ImageModel {
 
 	private static final String DEFAULT_MODEL_NAME = OpenAiSdkImageOptions.DEFAULT_IMAGE_MODEL;
-
-	private static final ImageModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultImageModelObservationConvention();
 
 	private final Logger logger = LoggerFactory.getLogger(OpenAiSdkImageModel.class);
 
 	private final OpenAIClient openAiClient;
 
 	private final OpenAiSdkImageOptions options;
+
+	public final RetryTemplate retryTemplate;
 
 	private final ObservationRegistry observationRegistry;
 
@@ -83,7 +85,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * @param observationRegistry the observation registry
 	 */
 	public OpenAiSdkImageModel(@Nullable ObservationRegistry observationRegistry) {
-		this(null, null, observationRegistry);
+		this(null, null, null, observationRegistry);
 	}
 
 	/**
@@ -93,7 +95,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 */
 	public OpenAiSdkImageModel(@Nullable OpenAiSdkImageOptions options,
 			@Nullable ObservationRegistry observationRegistry) {
-		this(null, options, observationRegistry);
+		this(null, options, null, observationRegistry);
 	}
 
 	/**
@@ -120,7 +122,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * @param observationRegistry the observation registry
 	 */
 	public OpenAiSdkImageModel(@Nullable OpenAIClient openAIClient, @Nullable ObservationRegistry observationRegistry) {
-		this(openAIClient, null, observationRegistry);
+		this(openAIClient, null, null, observationRegistry);
 	}
 
 	/**
@@ -131,6 +133,18 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 */
 	public OpenAiSdkImageModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiSdkImageOptions options,
 			@Nullable ObservationRegistry observationRegistry) {
+		this(openAiClient, options, null, observationRegistry);
+	}
+
+	/**
+	 * Creates a new OpenAiSdkImageModel with all configuration options.
+	 * @param openAiClient the OpenAI client
+	 * @param options the image options
+	 * @param retryTemplate the retry template
+	 * @param observationRegistry the observation registry
+	 */
+	public OpenAiSdkImageModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiSdkImageOptions options,
+			@Nullable RetryTemplate retryTemplate, @Nullable ObservationRegistry observationRegistry) {
 
 		if (options == null) {
 			this.options = OpenAiSdkImageOptions.builder().model(DEFAULT_MODEL_NAME).build();
@@ -145,6 +159,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders()));
+		this.retryTemplate = Objects.requireNonNullElse(retryTemplate, RetryUtils.DEFAULT_RETRY_TEMPLATE);
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 	}
 
@@ -180,7 +195,8 @@ public class OpenAiSdkImageModel implements ImageModel {
 					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 							this.observationRegistry)
 					.observe(() -> {
-						var images = this.openAiClient.images().generate(imageGenerateParams);
+						var images = RetryUtils.execute(this.retryTemplate,
+								() -> this.openAiClient.images().generate(imageGenerateParams));
 
 						if (images.data().isEmpty() && images.data().get().isEmpty()) {
 							throw new IllegalArgumentException("Image generation failed: no image returned");

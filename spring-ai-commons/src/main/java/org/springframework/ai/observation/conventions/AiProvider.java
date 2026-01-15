@@ -96,6 +96,11 @@ public enum AiProvider {
 	SPRING_AI("spring_ai"),
 
 	/**
+	 * AI system provided by Stability AI.
+	 */
+	STABILITY_AI("stability_ai"),
+
+	/**
 	 * AI system provided by Vertex AI.
 	 */
 	VERTEX_AI("vertex_ai"),
