@@ -40,11 +40,17 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FunctionCallbackInPromptIT extends BaseOllamaIT {
+class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(FunctionCallbackInPromptIT.class);
 
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
+
+	private static final String USER_MESSAGE_TEXT = "What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.";
+
+	private static final String TOOL_DESCRIPTION = "Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.";
+
+	private static final String TOOL_NAME = "CurrentWeatherService";
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -56,7 +62,7 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class));
 
 	@BeforeAll
-	public static void beforeAll() {
+	static void beforeAll() {
 		initializeOllama(MODEL_NAME);
 	}
 
@@ -66,13 +72,11 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			UserMessage userMessage = new UserMessage(
-					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
+			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
 			var promptOptions = OllamaChatOptions.builder()
-				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
-					.description(
-							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
+					.description(TOOL_DESCRIPTION)
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
@@ -81,7 +85,9 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+			var result = response.getResult();
+			assertThat(result).isNotNull();
+			assertThat(result.getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
@@ -91,13 +97,11 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			UserMessage userMessage = new UserMessage(
-					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
+			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
 			var promptOptions = OllamaChatOptions.builder()
-				.toolCallbacks(List.of(FunctionToolCallback.builder("CurrentWeatherService", new MockWeatherService())
-					.description(
-							"Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+				.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_NAME, new MockWeatherService())
+					.description(TOOL_DESCRIPTION)
 					.inputType(MockWeatherService.Request.class)
 					.build()))
 				.build();
@@ -105,8 +109,9 @@ public class FunctionCallbackInPromptIT extends BaseOllamaIT {
 			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
 
 			String content = response.collectList()
-				.block()
+				.blockOptional()
 				.stream()
+				.flatMap(List::stream)
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
