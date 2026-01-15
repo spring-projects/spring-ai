@@ -51,11 +51,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Thomas Vitale
  */
-public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
+class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaFunctionToolBeanIT.class);
 
 	private static final String MODEL_NAME = OllamaModel.QWEN_2_5_3B.getName();
+
+	private static final String USER_MESSAGE_TEXT = "What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.";
+
+	private static final String WEATHER_INFO_TOOL_DESCRIPTION = "Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.";
+
+	private static final String WEATHER_INFO_TOOL_NAME = "weatherInfo";
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -68,7 +74,7 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 		.withUserConfiguration(Config.class);
 
 	@BeforeAll
-	public static void beforeAll() {
+	static void beforeAll() {
 		initializeOllama(MODEL_NAME);
 	}
 
@@ -88,7 +94,9 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+			var result = response.getResult();
+			assertThat(result).isNotNull();
+			assertThat(result.getOutput().getText()).contains("30", "10", "15");
 		});
 
 	}
@@ -99,15 +107,16 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			UserMessage userMessage = new UserMessage(
-					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
+			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			ChatResponse response = chatModel
-				.call(new Prompt(List.of(userMessage), OllamaChatOptions.builder().toolNames("weatherInfo").build()));
+			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME).build()));
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+			var result = response.getResult();
+			assertThat(result).isNotNull();
+			assertThat(result.getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
@@ -117,20 +126,21 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
-			UserMessage userMessage = new UserMessage(
-					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
+			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			Flux<ChatResponse> response = chatModel
-				.stream(new Prompt(List.of(userMessage), OllamaChatOptions.builder().toolNames("weatherInfo").build()));
+			Flux<ChatResponse> response = chatModel.stream(new Prompt(List.of(userMessage),
+					OllamaChatOptions.builder().toolNames(WEATHER_INFO_TOOL_NAME).build()));
 
 			String content = response.collectList()
-				.block()
+				.blockOptional()
 				.stream()
+				.flatMap(List::stream)
 				.map(ChatResponse::getResults)
 				.flatMap(List::stream)
 				.map(Generation::getOutput)
 				.map(AssistantMessage::getText)
 				.collect(Collectors.joining());
+
 			logger.info("Response: {}", content);
 
 			assertThat(content).contains("30", "10", "15");
@@ -144,33 +154,35 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 			OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
 
 			// Test weatherFunction
-			UserMessage userMessage = new UserMessage(
-					"What are the weather conditions in San Francisco, Tokyo, and Paris? Find the temperature in Celsius for each of the three locations.");
+			UserMessage userMessage = new UserMessage(USER_MESSAGE_TEXT);
 
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder().toolNames("weatherInfo").build();
+			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
+				.toolNames(WEATHER_INFO_TOOL_NAME)
+				.build();
 
 			ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), functionOptions));
 
-			logger.info("Response: {}", response.getResult().getOutput().getText());
+			var result = response.getResult();
+			assertThat(result).isNotNull();
 
-			assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+			logger.info("Response: {}", result.getOutput().getText());
+
+			assertThat(result.getOutput().getText()).contains("30", "10", "15");
 		});
 	}
 
 	static class MyTools {
 
+		@SuppressWarnings("unused")
 		@Tool(description = "Find the weather conditions, and temperatures for a location, like a city or state.")
-		public String weatherByLocation(String locationName) {
-			int temperature = 0;
-			if (locationName.equals("San Francisco")) {
-				temperature = 30;
-			}
-			else if (locationName.equals("Tokyo")) {
-				temperature = 10;
-			}
-			else if (locationName.equals("Paris")) {
-				temperature = 15;
-			}
+		String weatherByLocation(String locationName) {
+			var temperature = switch (locationName) {
+				case "San Francisco" -> 30;
+				case "Tokyo" -> 10;
+				case "Paris" -> 15;
+				default -> 0;
+			};
+
 			return "The temperature in " + locationName + " is " + temperature + " degrees Celsius.";
 		}
 
@@ -180,13 +192,13 @@ public class OllamaFunctionToolBeanIT extends BaseOllamaIT {
 	static class Config {
 
 		@Bean
-		@Description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
-		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherInfo() {
+		@Description(WEATHER_INFO_TOOL_DESCRIPTION)
+		Function<MockWeatherService.Request, MockWeatherService.Response> weatherInfo() {
 			return new MockWeatherService();
 		}
 
 		@Bean
-		public MyTools myTools() {
+		MyTools myTools() {
 			return new MyTools();
 		}
 
