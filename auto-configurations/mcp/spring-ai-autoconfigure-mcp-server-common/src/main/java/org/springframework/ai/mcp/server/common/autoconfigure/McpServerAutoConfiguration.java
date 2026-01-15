@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -48,6 +49,8 @@ import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
 import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -59,13 +62,12 @@ import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.core.env.Environment;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.context.support.StandardServletEnvironment;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for the Model Context Protocol (MCP)
@@ -117,7 +119,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
-			Environment environment) {
+			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -214,11 +216,17 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
-		if (environment instanceof StandardServletEnvironment) {
-			serverBuilder.immediateExecution(true);
-		}
+		mcpSyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
+	}
+
+	@Bean
+	@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	McpSyncServerCustomizer servletMcpSyncServerCustomizer() {
+		return serverBuilder -> serverBuilder.immediateExecution(true);
 	}
 
 	@Bean
@@ -231,7 +239,8 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
-			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer) {
+			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
+			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -330,6 +339,7 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
+		asyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}
