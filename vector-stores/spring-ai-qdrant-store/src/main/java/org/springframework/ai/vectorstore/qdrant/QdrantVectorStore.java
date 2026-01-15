@@ -130,11 +130,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
-	private static final String CONTENT_FIELD_NAME = "doc_content";
+	public static final String DEFAULT_CONTENT_FIELD_NAME = "doc_content";
 
 	private final QdrantClient qdrantClient;
 
 	private final String collectionName;
+
+	private final String contentFieldName;
 
 	private final QdrantFilterExpressionConverter filterExpressionConverter = new QdrantFilterExpressionConverter();
 
@@ -156,6 +158,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		this.qdrantClient = builder.qdrantClient;
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
+		this.contentFieldName = builder.contentFieldName;
 	}
 
 	/**
@@ -281,7 +284,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			var metadata = QdrantObjectFactory.toObjectMap(point.getPayloadMap());
 			metadata.put(DocumentMetadata.DISTANCE.value(), 1 - point.getScore());
 
-			var content = (String) metadata.remove(CONTENT_FIELD_NAME);
+			var content = (String) metadata.remove(this.contentFieldName);
 
 			return Document.builder().id(id).text(content).metadata(metadata).score((double) point.getScore()).build();
 		}
@@ -298,7 +301,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private Map<String, Value> toPayload(Document document) {
 		try {
 			var payload = QdrantValueFactory.toValueMap(document.getMetadata());
-			payload.put(CONTENT_FIELD_NAME,
+			payload.put(this.contentFieldName,
 					io.qdrant.client.ValueFactory.value(Objects.requireNonNullElse(document.getText(), "")));
 			return payload;
 		}
@@ -361,6 +364,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
+		private String contentFieldName = DEFAULT_CONTENT_FIELD_NAME;
+
 		private boolean initializeSchema = false;
 
 		/**
@@ -385,6 +390,19 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		public Builder collectionName(String collectionName) {
 			Assert.hasText(collectionName, "collectionName must not be empty");
 			this.collectionName = collectionName;
+			return this;
+		}
+
+		/**
+		 * Configures the Qdrant content field name.
+		 * @param contentFieldName the name of the content field to use (defaults to
+		 * {@value DEFAULT_CONTENT_FIELD_NAME})
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if contentFieldName is null or empty
+		 */
+		public Builder contentFieldName(String contentFieldName) {
+			Assert.hasText(contentFieldName, "contentFieldName must not be empty");
+			this.contentFieldName = contentFieldName;
 			return this;
 		}
 
