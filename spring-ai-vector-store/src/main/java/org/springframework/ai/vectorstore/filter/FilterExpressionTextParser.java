@@ -191,12 +191,24 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitTextConstant(FiltersParser.TextConstantContext ctx) {
-			String onceQuotedText = removeOuterQuotes(ctx.getText());
+			String onceQuotedText = unescapeStringValue(ctx.getText());
 			return new Filter.Value(onceQuotedText);
 		}
 
-		private String removeOuterQuotes(String in) {
-			return in.substring(1, in.length() - 1);
+		/**
+		 * Convert the DSL string representation (enclosed in single or double quotes)
+		 * into a java String object. This not only means removing the enclosing quotes,
+		 * but also un-escaping potential inner quotes, as well as unescaping the escaping
+		 * caracter (the backslash).
+		 */
+		private String unescapeStringValue(String in) {
+			char quoteStyle = in.charAt(0);
+			in = in.substring(1, in.length() - 1);
+			return switch (quoteStyle) {
+				case '"' -> in.replace("\\\"", "\"").replace("\\\\", "\\");
+				case '\'' -> in.replace("\\'", "'").replace("\\\\", "\\");
+				default -> throw new IllegalStateException();
+			};
 		}
 
 		@Override

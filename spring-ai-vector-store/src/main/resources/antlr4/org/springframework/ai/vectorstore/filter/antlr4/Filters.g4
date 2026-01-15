@@ -52,7 +52,7 @@ identifier
 constant
     : (MINUS | PLUS)? INTEGER_VALUE # IntegerConstant
     | (MINUS | PLUS)? DECIMAL_VALUE # DecimalConstant
-    | QUOTED_STRING+                # TextConstant
+    | QUOTED_STRING                 # TextConstant
     | BOOLEAN_VALUE                 # BooleanConstant
     ;
 
