@@ -98,7 +98,6 @@
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 
-	<suppress files="vector-stores[\\/]spring-ai-opensearch-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-oracle-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-pgvector-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-pinecone-store" id="bannedNullabilityImports" />
