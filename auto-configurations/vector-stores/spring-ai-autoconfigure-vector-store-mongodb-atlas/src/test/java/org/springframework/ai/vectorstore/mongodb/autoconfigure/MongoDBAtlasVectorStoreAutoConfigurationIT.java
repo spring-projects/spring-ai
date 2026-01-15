@@ -31,7 +31,6 @@ import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -68,7 +67,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 		return new ApplicationContextRunner().withUserConfiguration(Config.class)
 			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, DataMongoAutoConfiguration.class,
 					MongoDBAtlasVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-					SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
+					OpenAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.vectorstore.mongodb.initialize-schema=true",
 					"spring.ai.vectorstore.mongodb.collection-name=test_collection",
 					"spring.ai.vectorstore.mongodb.index-name=text_index",
