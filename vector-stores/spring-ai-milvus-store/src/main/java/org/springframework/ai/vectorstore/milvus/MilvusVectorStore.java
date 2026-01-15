@@ -20,6 +20,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -249,7 +250,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
-			contentArray.add(document.getText());
+			contentArray.add(Objects.requireNonNullElse(document.getText(), ""));
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
@@ -650,7 +651,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 * COSINE
 		 */
 		public Builder metricType(MetricType metricType) {
-			Assert.notNull(metricType, "Collection Name must not be empty");
+			Assert.notNull(metricType, "metricType must not be null");
 			Assert.isTrue(metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
 					"Only the text metric types IP and L2 are supported");
 			this.metricType = metricType;
