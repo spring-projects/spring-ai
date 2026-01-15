@@ -36,7 +36,6 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -66,8 +65,7 @@ class OpenSearchVectorStoreAutoConfigurationIT {
 	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class))
 		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.opensearch.aws.enabled=false",

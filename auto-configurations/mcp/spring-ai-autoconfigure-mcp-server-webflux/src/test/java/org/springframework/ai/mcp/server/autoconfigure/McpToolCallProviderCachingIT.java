@@ -44,7 +44,6 @@ import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpSer
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -83,8 +82,8 @@ public class McpToolCallProviderCachingIT {
 				ChatClientAutoConfiguration.class));
 
 	private static AutoConfigurations anthropicAutoConfig(Class<?>... additional) {
-		Class<?>[] dependencies = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
-				RestClientAutoConfiguration.class, WebClientAutoConfiguration.class };
+		Class<?>[] dependencies = { ToolCallingAutoConfiguration.class, RestClientAutoConfiguration.class,
+				WebClientAutoConfiguration.class };
 		Class<?>[] all = Stream.concat(Arrays.stream(dependencies), Arrays.stream(additional)).toArray(Class<?>[]::new);
 		return AutoConfigurations.of(all);
 	}

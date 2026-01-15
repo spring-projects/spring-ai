@@ -86,7 +86,6 @@ import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServ
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -119,7 +118,7 @@ public class StreamableMcpAnnotationsManualIT {
 				McpClientAnnotationScannerAutoConfiguration.class,
 				// Anthropic ChatClient Builder
 				AnthropicChatAutoConfiguration.class, ChatClientAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class));
+				ToolCallingAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {
