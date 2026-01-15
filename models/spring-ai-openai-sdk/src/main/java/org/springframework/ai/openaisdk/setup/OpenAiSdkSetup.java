@@ -43,7 +43,7 @@ public final class OpenAiSdkSetup {
 
 	static final String OPENAI_URL = "https://api.openai.com/v1";
 	static final String OPENAI_API_KEY = "OPENAI_API_KEY";
-	static final String AZURE_OPENAI_KEY = "AZURE_OPENAI_KEY";
+	static final String MICROSOFT_FOUNDRY_API_KEY = "MICROSOFT_FOUNDRY_API_KEY";
 	static final String GITHUB_MODELS_URL = "https://models.github.ai/inference";
 	static final String GITHUB_TOKEN = "GITHUB_TOKEN";
 	static final String DEFAULT_USER_AGENT = "spring-ai-openai-sdk";
@@ -191,10 +191,10 @@ public final class OpenAiSdkSetup {
 		return baseUrl;
 	}
 
-	public static ModelProvider detectModelProvider(boolean isAzure, boolean isGitHubModels, String baseUrl,
+	public static ModelProvider detectModelProvider(boolean isMicrosoftFoundry, boolean isGitHubModels, String baseUrl,
 			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
 
-		if (isAzure) {
+		if (isMicrosoftFoundry) {
 			return ModelProvider.MICROSOFT_FOUNDRY; // Forced by the user
 		}
 		if (isGitHubModels) {
@@ -270,8 +270,8 @@ public final class OpenAiSdkSetup {
 		if (modelProvider == ModelProvider.OPEN_AI && System.getenv(OPENAI_API_KEY) != null) {
 			return System.getenv(OPENAI_API_KEY);
 		}
-		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(AZURE_OPENAI_KEY) != null) {
-			return System.getenv(AZURE_OPENAI_KEY);
+		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(MICROSOFT_FOUNDRY_API_KEY) != null) {
+			return System.getenv(MICROSOFT_FOUNDRY_API_KEY);
 		}
 		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(OPENAI_API_KEY) != null) {
 			return System.getenv(OPENAI_API_KEY);

@@ -51,10 +51,10 @@ import org.springframework.util.StringUtils;
 
 /**
  * <p>
- * Integration of Coherence Coherence 24.09+ as a Vector Store.
+ * Integration of Coherence 24.09+ as a Vector Store.
  * </p>
  * <p>
- * Coherence Coherence 24.09 (or later) provides numerous features useful for artificial
+ * Coherence 24.09 (or later) provides numerous features useful for artificial
  * intelligence such as Vectors, Similarity search, HNSW indexes, and binary quantization.
  * </p>
  * <p>
@@ -123,21 +123,22 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 
 	private final Session session;
 
+	@SuppressWarnings("NullAway.Init")
 	private NamedMap<DocumentChunk.Id, DocumentChunk> documentChunks;
 
 	/**
 	 * Map name where vectors will be stored.
 	 */
-	private String mapName;
+	private final String mapName;
 
 	/**
 	 * Distance type to use for computing vector distances.
 	 */
-	private DistanceType distanceType;
+	private final DistanceType distanceType;
 
-	private boolean forcedNormalization;
+	private final boolean forcedNormalization;
 
-	private IndexType indexType;
+	private final IndexType indexType;
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to

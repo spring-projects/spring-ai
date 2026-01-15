@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -50,7 +51,7 @@ public abstract class BaseVectorStoreTests {
 	 */
 	protected abstract void executeTest(Consumer<VectorStore> testFunction);
 
-	protected Document createDocument(String country, Integer year) {
+	protected Document createDocument(String country, @Nullable Integer year) {
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("country", country);
 		if (year != null) {
@@ -70,7 +71,10 @@ public abstract class BaseVectorStoreTests {
 		return documents;
 	}
 
-	private String normalizeValue(Object value) {
+	private @Nullable String normalizeValue(@Nullable Object value) {
+		if (value == null) {
+			return null;
+		}
 		return value.toString().replaceAll("^\"|\"$", "").trim();
 	}
 

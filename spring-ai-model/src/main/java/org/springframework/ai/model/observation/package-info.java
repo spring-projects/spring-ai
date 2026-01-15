@@ -17,9 +17,8 @@
 /**
  * Provides classes for observing model data.
  */
-@NonNullApi
-@NonNullFields
+
+@NullMarked
 package org.springframework.ai.model.observation;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

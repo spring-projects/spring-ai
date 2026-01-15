@@ -29,6 +29,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.Prompt.Builder;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
@@ -82,7 +83,7 @@ final class DefaultChatClientUtils {
 			processedMessages.addAll(inputRequest.getMessages());
 		}
 
-		// User Test => Last in the list
+		// User Text => Last in the list
 		String processedUserText = inputRequest.getUserText();
 		if (StringUtils.hasText(processedUserText)) {
 			if (!CollectionUtils.isEmpty(inputRequest.getUserParams())) {
@@ -151,8 +152,12 @@ final class DefaultChatClientUtils {
 		 * ==========* REQUEST * ==========
 		 */
 
+		Builder promptBuilder = Prompt.builder().messages(processedMessages);
+		if (processedChatOptions != null) {
+			promptBuilder.chatOptions(processedChatOptions);
+		}
 		return ChatClientRequest.builder()
-			.prompt(Prompt.builder().messages(processedMessages).chatOptions(processedChatOptions).build())
+			.prompt(promptBuilder.build())
 			.context(new ConcurrentHashMap<>(inputRequest.getAdvisorParams()))
 			.build();
 	}

@@ -40,6 +40,7 @@ public class ChatClientMessageAggregator {
 
 	private static final Logger logger = LoggerFactory.getLogger(ChatClientMessageAggregator.class);
 
+	@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1350
 	public Flux<ChatClientResponse> aggregateChatClientResponse(Flux<ChatClientResponse> chatClientResponses,
 			Consumer<ChatClientResponse> aggregationHandler) {
 

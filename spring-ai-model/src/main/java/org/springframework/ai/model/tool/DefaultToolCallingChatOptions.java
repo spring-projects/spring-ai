@@ -24,9 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -43,32 +44,23 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 
 	private Map<String, Object> toolContext = new HashMap<>();
 
-	@Nullable
-	private Boolean internalToolExecutionEnabled;
+	private @Nullable Boolean internalToolExecutionEnabled;
 
-	@Nullable
-	private String model;
+	private @Nullable String model;
 
-	@Nullable
-	private Double frequencyPenalty;
+	private @Nullable Double frequencyPenalty;
 
-	@Nullable
-	private Integer maxTokens;
+	private @Nullable Integer maxTokens;
 
-	@Nullable
-	private Double presencePenalty;
+	private @Nullable Double presencePenalty;
 
-	@Nullable
-	private List<String> stopSequences;
+	private @Nullable List<String> stopSequences;
 
-	@Nullable
-	private Double temperature;
+	private @Nullable Double temperature;
 
-	@Nullable
-	private Integer topK;
+	private @Nullable Integer topK;
 
-	@Nullable
-	private Double topP;
+	private @Nullable Double topP;
 
 	@Override
 	public List<ToolCallback> getToolCallbacks() {
@@ -108,8 +100,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Boolean getInternalToolExecutionEnabled() {
+	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
@@ -119,8 +110,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
@@ -129,8 +119,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
@@ -139,8 +128,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
@@ -149,8 +137,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
@@ -159,8 +146,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
 	}
 
@@ -169,8 +155,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
@@ -179,8 +164,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
@@ -189,8 +173,7 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 

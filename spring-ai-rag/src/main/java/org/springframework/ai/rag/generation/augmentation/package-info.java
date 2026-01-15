@@ -17,9 +17,7 @@
 /**
  * RAG Sub-Module: Query Augmentation.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.rag.generation.augmentation;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

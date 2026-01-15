@@ -252,7 +252,7 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.build();
@@ -298,7 +298,7 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.build();
@@ -346,7 +346,7 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)
@@ -396,7 +396,7 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)

@@ -769,7 +769,7 @@ If a new system message is added, all previous system messages are removed from 
 This ensures that the most recent context is always available for the conversation while keeping memory usage bounded.
 
 The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation memory.
-There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository` and `Neo4jChatMemoryRepository`.
+There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository`, `Neo4jChatMemoryRepository`, `CosmosDBChatMemoryRepository`, `MongoChatMemoryRepository`, and `RedisChatMemoryRepository`.
 
 For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] documentation.
 

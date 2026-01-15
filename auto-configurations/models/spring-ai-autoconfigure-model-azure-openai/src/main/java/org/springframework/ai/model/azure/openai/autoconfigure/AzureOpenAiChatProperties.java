@@ -27,12 +27,9 @@ public class AzureOpenAiChatProperties {
 
 	public static final String DEFAULT_DEPLOYMENT_NAME = "gpt-4o";
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
 	@NestedConfigurationProperty
 	private final AzureOpenAiChatOptions options = AzureOpenAiChatOptions.builder()
 		.deploymentName(DEFAULT_DEPLOYMENT_NAME)
-		.temperature(DEFAULT_TEMPERATURE)
 		.build();
 
 	public AzureOpenAiChatOptions getOptions() {

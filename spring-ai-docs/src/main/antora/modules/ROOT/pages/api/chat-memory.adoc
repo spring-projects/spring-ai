@@ -476,6 +476,141 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 ==== Collection Initialization
 The auto-configuration will automatically create the `ai_chat_memory` collection on startup if it does not already exist.
 
+=== RedisChatMemoryRepository
+
+`RedisChatMemoryRepository` is a built-in implementation that uses Redis Stack (with Redis Query Engine and RedisJSON) to store chat messages.
+It is suitable for applications that require high-performance, low-latency chat memory persistence with optional TTL (time-to-live) support and advanced querying capabilities.
+
+The repository stores messages as JSON documents and creates a search index for efficient querying.
+It also provides extended query capabilities through the `AdvancedRedisChatMemoryRepository` interface for searching messages by content, type, time range, and metadata.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-redis</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-redis'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `RedisChatMemoryRepository`, which you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+RedisChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `RedisChatMemoryRepository` manually, you can do so by providing a `JedisPooled` client:
+
+[source,java]
+----
+JedisPooled jedisClient = new JedisPooled("localhost", 6379);
+
+ChatMemoryRepository chatMemoryRepository = RedisChatMemoryRepository.builder()
+    .jedisClient(jedisClient)
+    .indexName("my-chat-index")
+    .keyPrefix("my-chat:")
+    .timeToLive(Duration.ofHours(24))
+    .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.ai.chat.memory.redis.host` | Redis server host | `localhost`
+| `spring.ai.chat.memory.redis.port` | Redis server port | `6379`
+| `spring.ai.chat.memory.redis.index-name` | Name of the Redis search index | `chat-memory-idx`
+| `spring.ai.chat.memory.redis.key-prefix` | Key prefix for chat memory entries | `chat-memory:`
+| `spring.ai.chat.memory.redis.time-to-live` | Time to live for chat memory entries (e.g., `24h`, `30d`) | _no expiration_
+| `spring.ai.chat.memory.redis.initialize-schema` | Whether to initialize the Redis schema on startup | `true`
+| `spring.ai.chat.memory.redis.max-conversation-ids` | Maximum number of conversation IDs to return | `1000`
+| `spring.ai.chat.memory.redis.max-messages-per-conversation` | Maximum number of messages to return per conversation | `1000`
+|===
+
+==== Advanced Querying
+
+The `RedisChatMemoryRepository` also implements `AdvancedRedisChatMemoryRepository`, which provides extended query capabilities:
+
+[source,java]
+----
+// Cast to access advanced features
+AdvancedRedisChatMemoryRepository advancedRepo = (AdvancedRedisChatMemoryRepository) chatMemoryRepository;
+
+// Find messages by type across all conversations
+List<MessageWithConversation> userMessages = advancedRepo.findByType(MessageType.USER, 100);
+
+// Find messages containing specific content
+List<MessageWithConversation> results = advancedRepo.findByContent("Spring AI", 50);
+
+// Find messages within a time range
+List<MessageWithConversation> recentMessages = advancedRepo.findByTimeRange(
+    conversationId,
+    Instant.now().minus(Duration.ofHours(1)),
+    Instant.now(),
+    100
+);
+
+// Find messages by metadata
+List<MessageWithConversation> priorityMessages = advancedRepo.findByMetadata("priority", "high", 50);
+
+// Execute custom Redis queries
+List<MessageWithConversation> customResults = advancedRepo.executeQuery("@type:USER @content:Redis", 100);
+----
+
+==== Metadata Field Indexing
+
+To enable efficient querying on custom metadata fields, you can configure metadata field definitions:
+
+[source,properties]
+----
+spring.ai.chat.memory.redis.metadata-fields[0].name=priority
+spring.ai.chat.memory.redis.metadata-fields[0].type=tag
+spring.ai.chat.memory.redis.metadata-fields[1].name=score
+spring.ai.chat.memory.redis.metadata-fields[1].type=numeric
+spring.ai.chat.memory.redis.metadata-fields[2].name=category
+spring.ai.chat.memory.redis.metadata-fields[2].type=tag
+----
+
+Supported field types are: `tag` (for exact match filtering), `text` (for full-text search), and `numeric` (for range queries).
+
+==== Schema Initialization
+
+The auto-configuration will automatically create the Redis search index on startup if it does not already exist.
+You can disable this behavior by setting `spring.ai.chat.memory.redis.initialize-schema=false`.
+
+==== Requirements
+
+* Redis Stack 7.0 or higher (includes Redis Query Engine and RedisJSON modules)
+* Jedis client library (included as a dependency)
+
 == Memory in Chat Client
 
 When using the ChatClient API, you can provide a `ChatMemory` implementation to maintain conversation context across multiple interactions.

@@ -40,7 +40,6 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 
@@ -133,7 +132,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		// 5. Add all user messages from the current prompt to memory (after system
 		// message is generated)
 		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+		Message userMessage = processedChatClientRequest.prompt().getLastUserOrToolResponseMessage();
 		this.chatMemory.add(conversationId, userMessage);
 
 		return processedChatClientRequest;
@@ -204,7 +203,7 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
-		private ChatMemory chatMemory;
+		private final ChatMemory chatMemory;
 
 		private Builder(ChatMemory chatMemory) {
 			this.chatMemory = chatMemory;

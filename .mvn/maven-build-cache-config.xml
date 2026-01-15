@@ -1,0 +1,57 @@
+<cache xmlns="http://maven.apache.org/BUILD-CACHE-CONFIG/1.2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/BUILD-CACHE-CONFIG/1.2.0 https://maven.apache.org/xsd/build-cache-config-1.2.0.xsd">
+	<input>
+		<global>
+			<includes>
+				<!--  By default, project sources and resources directories are included (src/main/java and src/main/resources)  -->
+				<!--  Here, the goal is to include a wider range of src directories (like src/main/assembly or src/main/antora)  -->
+				<include>src/</include>
+			</includes>
+		</global>
+	</input>
+	<executionControl>
+		<runAlways>
+			<goalsLists>
+				<goalsList artifactId="maven-install-plugin">
+					<goals>
+						<goal>install</goal>
+					</goals>
+				</goalsList>
+				<goalsList artifactId="maven-deploy-plugin">
+					<goals>
+						<goal>deploy</goal>
+					</goals>
+				</goalsList>
+				<goalsList groupId="org.codehaus.mojo" artifactId="flatten-maven-plugin">
+					<goals>
+						<goal>flatten</goal>
+					</goals>
+				</goalsList>
+			</goalsLists>
+		</runAlways>
+		<reconcile>
+			<plugins>
+				<plugin artifactId="maven-surefire-plugin" goal="test">
+					<reconciles>
+						<reconcile propertyName="skip" skipValue="true"/>
+						<reconcile propertyName="skipExec" skipValue="true"/>
+						<reconcile propertyName="skipTests" skipValue="true"/>
+					</reconciles>
+				</plugin>
+				<plugin artifactId="maven-failsafe-plugin" goal="integration-test">
+					<reconciles>
+						<reconcile propertyName="skip" skipValue="true"/>
+						<reconcile propertyName="skipExec" skipValue="true"/>
+						<reconcile propertyName="skipITs" skipValue="true"/>
+						<reconcile propertyName="skipTests" skipValue="true"/>
+					</reconciles>
+				</plugin>
+				<!-- workaround for https://issues.apache.org/jira/browse/MBUILDCACHE-56 -->
+				<plugin artifactId="maven-enforcer-plugin" goal="enforce">
+					<nologs>
+						<nolog propertyName="commandLineRules"/>
+					</nologs>
+				</plugin>
+			</plugins>
+		</reconcile>
+	</executionControl>
+</cache>

@@ -36,9 +36,7 @@ public final class AudioPlayer {
 	}
 
 	public static void main(String[] args) throws Exception {
-
-		play(new BufferedInputStream(new FileInputStream(
-				"/Users/christiantzolov/Dev/projects/spring-ai/models/spring-ai-openai/output.wav")));
+		play(new BufferedInputStream(new FileInputStream(args[0])));
 	}
 
 	public static void play(byte[] data) {

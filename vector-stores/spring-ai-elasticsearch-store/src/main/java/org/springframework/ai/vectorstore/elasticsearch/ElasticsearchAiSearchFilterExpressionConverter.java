@@ -28,6 +28,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * ElasticsearchAiSearchFilterExpressionConverter is a class that converts
@@ -50,13 +51,24 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
 			context.append(getOperationSymbol(expression));
 			context.append("(");
 			this.convertOperand(expression.left(), context);
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
+		else if (expression.type() == Filter.ExpressionType.ISNULL) {
+			context.append("-");
+			this.convertOperand(expression.left(), context);
+			context.append("*");
+		}
+		else if (expression.type() == Filter.ExpressionType.ISNOTNULL) {
+			this.convertOperand(expression.left(), context);
+			context.append("*");
+		}
 		else {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
 			this.convertOperand(expression.left(), context);
 			context.append(getOperationSymbol(expression));
 			this.convertOperand(expression.right(), context);

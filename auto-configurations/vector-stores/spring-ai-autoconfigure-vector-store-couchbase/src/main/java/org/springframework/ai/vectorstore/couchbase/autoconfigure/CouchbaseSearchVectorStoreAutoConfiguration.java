@@ -19,7 +19,7 @@ package org.springframework.ai.vectorstore.couchbase.autoconfigure;
 import com.couchbase.client.java.Cluster;
 
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.CouchbaseSearchVectorStore;
+import org.springframework.ai.vectorstore.couchbase.CouchbaseSearchVectorStore;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

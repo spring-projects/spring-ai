@@ -19,7 +19,7 @@ package org.springframework.ai.chat.memory.repository.neo4j;
 /**
  * @author Enrico Rampazzo
  */
-public enum MediaAttributes {
+public enum MediaAttributes implements AttributeGetter {
 
 	ID("id"), MIME_TYPE("mimeType"), DATA("data"), NAME("name"), URL("url"), IDX("idx");
 

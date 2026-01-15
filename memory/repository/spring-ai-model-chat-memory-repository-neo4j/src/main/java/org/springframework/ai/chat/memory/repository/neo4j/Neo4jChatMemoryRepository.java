@@ -87,7 +87,7 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 					"toolCallLabel", this.config.getToolCallLabel()))
 			.execute(Collectors.mapping(record -> {
 				Map<String, Object> messageMap = record.get("m").asMap();
-				String msgType = messageMap.get(MessageAttributes.MESSAGE_TYPE.getValue()).toString();
+				String msgType = MessageAttributes.MESSAGE_TYPE.stringFrom(messageMap);
 				Message message = null;
 				List<Media> mediaList = List.of();
 				if (!record.get("medias").isNull()) {
@@ -96,19 +96,19 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 				if (msgType.equals(MessageType.USER.getValue())) {
 					message = buildUserMessage(record, messageMap, mediaList);
 				}
-				if (msgType.equals(MessageType.ASSISTANT.getValue())) {
+				else if (msgType.equals(MessageType.ASSISTANT.getValue())) {
 					message = buildAssistantMessage(record, messageMap, mediaList);
 				}
-				if (msgType.equals(MessageType.SYSTEM.getValue())) {
+				else if (msgType.equals(MessageType.SYSTEM.getValue())) {
 					SystemMessage.Builder systemMessageBuilder = SystemMessage.builder()
-						.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString());
+						.text(MessageAttributes.TEXT_CONTENT.stringFrom(messageMap));
 					if (!record.get("metadata").isNull()) {
 						Map<String, Object> retrievedMetadata = record.get("metadata").asMap();
 						systemMessageBuilder.metadata(retrievedMetadata);
 					}
 					message = systemMessageBuilder.build();
 				}
-				if (msgType.equals(MessageType.TOOL.getValue())) {
+				else if (msgType.equals(MessageType.TOOL.getValue())) {
 					message = buildToolMessage(record);
 				}
 				if (message == null) {
@@ -175,9 +175,9 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 		Message message;
 		message = ToolResponseMessage.builder().responses(record.get("toolResponses").asList(v -> {
 			Map<String, Object> trMap = v.asMap();
-			return new ToolResponse((String) trMap.get(ToolResponseAttributes.ID.getValue()),
-					(String) trMap.get(ToolResponseAttributes.NAME.getValue()),
-					(String) trMap.get(ToolResponseAttributes.RESPONSE_DATA.getValue()));
+			return new ToolResponse(ToolResponseAttributes.ID.stringFrom(trMap),
+					ToolResponseAttributes.NAME.stringFrom(trMap),
+					ToolResponseAttributes.RESPONSE_DATA.stringFrom(trMap));
 		})).metadata(record.get("metadata").asMap()).build();
 		return message;
 	}
@@ -185,12 +185,14 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 	private Message buildAssistantMessage(org.neo4j.driver.Record record, Map<String, Object> messageMap,
 			List<Media> mediaList) {
 		Message message = AssistantMessage.builder()
-			.content(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
+			.content(MessageAttributes.TEXT_CONTENT.stringFrom(messageMap))
 			.properties(record.get("metadata").asMap(Map.of()))
 			.toolCalls(record.get("toolCalls").asList(v -> {
 				var toolCallMap = v.asMap();
-				return new AssistantMessage.ToolCall((String) toolCallMap.get("id"), (String) toolCallMap.get("type"),
-						(String) toolCallMap.get("name"), (String) toolCallMap.get("arguments"));
+				return new AssistantMessage.ToolCall(ToolCallAttributes.ID.stringFrom(toolCallMap),
+						ToolCallAttributes.TYPE.stringFrom(toolCallMap),
+						ToolCallAttributes.NAME.stringFrom(toolCallMap),
+						ToolCallAttributes.ARGUMENTS.stringFrom(toolCallMap));
 			}))
 			.media(mediaList)
 			.build();
@@ -202,7 +204,7 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 		Message message;
 		Map<String, Object> metadata = record.get("metadata").asMap();
 		message = UserMessage.builder()
-			.text(messageMap.get(MessageAttributes.TEXT_CONTENT.getValue()).toString())
+			.text(MessageAttributes.TEXT_CONTENT.stringFrom(messageMap))
 			.media(mediaList)
 			.metadata(metadata)
 			.build();
@@ -214,14 +216,18 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 		mediaList = record.get("medias").asList(v -> {
 			Map<String, Object> mediaMap = v.asMap();
 			var mediaBuilder = Media.builder()
-				.name((String) mediaMap.get(MediaAttributes.NAME.getValue()))
-				.id(Optional.ofNullable(mediaMap.get(MediaAttributes.ID.getValue())).map(Object::toString).orElse(null))
-				.mimeType(MimeType.valueOf(mediaMap.get(MediaAttributes.MIME_TYPE.getValue()).toString()));
-			if (mediaMap.get(MediaAttributes.DATA.getValue()) instanceof String stringData) {
+				.name(MediaAttributes.NAME.stringFrom(mediaMap))
+				.mimeType(MimeType.valueOf(MediaAttributes.MIME_TYPE.stringFrom(mediaMap)));
+			String id = (String) mediaMap.get(MediaAttributes.ID.getValue());
+			if (id != null) {
+				mediaBuilder.id(id);
+			}
+			Object data = MediaAttributes.DATA.objectFrom(mediaMap, Object.class);
+			if (data instanceof String stringData) {
 				mediaBuilder.data(URI.create(stringData));
 			}
-			else if (mediaMap.get(MediaAttributes.DATA.getValue()).getClass().isArray()) {
-				mediaBuilder.data(mediaMap.get(MediaAttributes.DATA.getValue()));
+			else if (data.getClass().isArray()) {
+				mediaBuilder.data(data);
 			}
 			return mediaBuilder.build();
 

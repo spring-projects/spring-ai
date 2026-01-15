@@ -19,6 +19,7 @@ package org.springframework.ai.rag.preretrieval.query.transformation;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,6 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.util.PromptAssert;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -112,10 +112,9 @@ public class CompressionQueryTransformer implements QueryTransformer {
 
 	public static final class Builder {
 
-		private ChatClient.Builder chatClientBuilder;
+		private ChatClient.@Nullable Builder chatClientBuilder;
 
-		@Nullable
-		private PromptTemplate promptTemplate;
+		private @Nullable PromptTemplate promptTemplate;
 
 		private Builder() {
 		}
@@ -131,6 +130,7 @@ public class CompressionQueryTransformer implements QueryTransformer {
 		}
 
 		public CompressionQueryTransformer build() {
+			Assert.state(this.chatClientBuilder != null, "chatClientBuilder cannot be null");
 			return new CompressionQueryTransformer(this.chatClientBuilder, this.promptTemplate);
 		}
 

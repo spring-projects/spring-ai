@@ -26,6 +26,7 @@ import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse;
 import io.modelcontextprotocol.json.schema.jackson.DefaultJsonSchemaValidator;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -232,7 +233,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		 */
 		private int advisorOrder = BaseAdvisor.LOWEST_PRECEDENCE - 2000;
 
-		private Type outputType;
+		private @Nullable Type outputType;
 
 		private int maxRepeatAttempts = 3;
 

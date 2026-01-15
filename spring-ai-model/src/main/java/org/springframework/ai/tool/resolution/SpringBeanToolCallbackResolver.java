@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,6 @@ import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -77,7 +77,7 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 	}
 
 	@Override
-	public ToolCallback resolve(String toolName) {
+	public @Nullable ToolCallback resolve(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 
 		logger.debug("ToolCallback resolution attempt from Spring application context");
@@ -160,7 +160,7 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 				.build();
 		}
 		if (bean instanceof BiFunction<?, ?, ?>) {
-			return FunctionToolCallback.builder(toolName, (BiFunction<?, ToolContext, ?>) bean)
+			return FunctionToolCallback.builder(toolName, (BiFunction<?, @Nullable ToolContext, ?>) bean)
 				.description(toolDescription)
 				.inputSchema(generateSchema(toolInputType))
 				.inputType(ParameterizedTypeReference.forType(toolInputType.getType()))
@@ -199,9 +199,9 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 
 	public static final class Builder {
 
-		private GenericApplicationContext applicationContext;
+		private @Nullable GenericApplicationContext applicationContext;
 
-		private SchemaType schemaType;
+		private @Nullable SchemaType schemaType;
 
 		public Builder applicationContext(GenericApplicationContext applicationContext) {
 			this.applicationContext = applicationContext;
@@ -214,6 +214,7 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 		}
 
 		public SpringBeanToolCallbackResolver build() {
+			Assert.state(this.applicationContext != null, "No applicationContext provided");
 			return new SpringBeanToolCallbackResolver(this.applicationContext, this.schemaType);
 		}
 
@@ -244,8 +245,8 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 		}
 
 		@SuppressWarnings("unchecked")
-		public static BiFunction<?, ToolContext, ?> wrapKotlinBiFunction(Object bean) {
-			return (t, u) -> ((Function2<Object, ToolContext, Object>) bean).invoke(t, u);
+		public static BiFunction<?, @Nullable ToolContext, ?> wrapKotlinBiFunction(Object bean) {
+			return (t, u) -> ((Function2<Object, @Nullable ToolContext, Object>) bean).invoke(t, u);
 		}
 
 	}

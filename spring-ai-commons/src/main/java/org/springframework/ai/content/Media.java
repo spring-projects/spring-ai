@@ -19,8 +19,9 @@ package org.springframework.ai.content;
 import java.io.IOException;
 import java.net.URI;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
@@ -75,8 +76,7 @@ public class Media {
 	 * An Id of the media object, usually defined when the model returns a reference to
 	 * media it has been passed.
 	 */
-	@Nullable
-	private final String id;
+	private final @Nullable String id;
 
 	private final MimeType mimeType;
 
@@ -195,8 +195,7 @@ public class Media {
 	 * Get the media id
 	 * @return the media id
 	 */
-	@Nullable
-	public String getId() {
+	public @Nullable String getId() {
 		return this.id;
 	}
 
@@ -209,13 +208,13 @@ public class Media {
 	 */
 	public static final class Builder {
 
-		private String id;
+		private @Nullable String id;
 
-		private MimeType mimeType;
+		private @Nullable MimeType mimeType;
 
-		private Object data;
+		private @Nullable Object data;
 
-		private String name;
+		private @Nullable String name;
 
 		private Builder() {
 		}
@@ -315,6 +314,8 @@ public class Media {
 		 * @throws IllegalArgumentException if mimeType or data are null
 		 */
 		public Media build() {
+			Assert.state(this.mimeType != null, "MimeType must not be null");
+			Assert.state(this.data != null, "Data must not be null");
 			return new Media(this.mimeType, this.data, this.id, this.name);
 		}
 

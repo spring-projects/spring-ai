@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -170,7 +171,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			AssistantMessage assistantMessage) {
 		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
 		messageHistory.add(AssistantMessage.builder()
-			.content(assistantMessage.getText())
+			.content(Objects.requireNonNullElse(assistantMessage.getText(), ""))
 			.properties(assistantMessage.getMetadata())
 			.toolCalls(assistantMessage.getToolCalls())
 			.build());
@@ -252,7 +253,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		}
 
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
-				returnDirect);
+				Objects.requireNonNullElse(returnDirect, false));
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,

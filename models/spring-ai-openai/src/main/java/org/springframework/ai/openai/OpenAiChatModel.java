@@ -548,6 +548,8 @@ public class OpenAiChatModel implements ChatModel {
 					this.defaultOptions.getToolCallbacks()));
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.defaultOptions.getToolContext()));
+			requestOptions
+				.setExtraBody(mergeExtraBody(runtimeOptions.getExtraBody(), this.defaultOptions.getExtraBody()));
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
@@ -555,6 +557,7 @@ public class OpenAiChatModel implements ChatModel {
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
+			requestOptions.setExtraBody(this.defaultOptions.getExtraBody());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -567,6 +570,21 @@ public class OpenAiChatModel implements ChatModel {
 		var mergedHttpHeaders = new HashMap<>(defaultHttpHeaders);
 		mergedHttpHeaders.putAll(runtimeHttpHeaders);
 		return mergedHttpHeaders;
+	}
+
+	private Map<String, Object> mergeExtraBody(Map<String, Object> runtimeExtraBody,
+			Map<String, Object> defaultExtraBody) {
+		if (defaultExtraBody == null && runtimeExtraBody == null) {
+			return null;
+		}
+		var merged = new HashMap<String, Object>();
+		if (defaultExtraBody != null) {
+			merged.putAll(defaultExtraBody);
+		}
+		if (runtimeExtraBody != null) {
+			merged.putAll(runtimeExtraBody); // runtime overrides default
+		}
+		return merged.isEmpty() ? null : merged;
 	}
 
 	/**

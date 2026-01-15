@@ -16,8 +16,9 @@
 
 package org.springframework.ai.audio.tts;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
 
 /**
  * Interface for text-to-speech model options. Defines the common, portable options that
@@ -40,29 +41,25 @@ public interface TextToSpeechOptions extends ModelOptions {
 	 * Returns the model to use for text-to-speech.
 	 * @return The model name.
 	 */
-	@Nullable
-	String getModel();
+	@Nullable String getModel();
 
 	/**
 	 * Returns the voice to use for text-to-speech.
 	 * @return The voice identifier.
 	 */
-	@Nullable
-	String getVoice();
+	@Nullable String getVoice();
 
 	/**
 	 * Returns the output format for the generated audio.
 	 * @return The output format (e.g., "mp3", "wav").
 	 */
-	@Nullable
-	String getFormat();
+	@Nullable String getFormat();
 
 	/**
 	 * Returns the speed of the generated speech.
 	 * @return The speech speed.
 	 */
-	@Nullable
-	Double getSpeed();
+	@Nullable Double getSpeed();
 
 	/**
 	 * Returns a copy of this {@link TextToSpeechOptions}.

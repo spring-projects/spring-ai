@@ -352,6 +352,104 @@ class Neo4jVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void addWithCustomDatabaseName() {
+		this.contextRunner.run(context -> {
+			Driver driver = context.getBean(Driver.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			// Create VectorStore with custom database name (neo4j is the default
+			// database)
+			VectorStore vectorStore = Neo4jVectorStore.builder(driver, embeddingModel)
+				.databaseName("neo4j")
+				.initializeSchema(true)
+				.build();
+
+			// Add documents using doAdd (which should respect the sessionConfig)
+			Document doc = new Document("Test content for custom database", Map.of("testKey", "testValue"));
+			vectorStore.add(List.of(doc));
+
+			// Verify the document was added by querying the specific database directly
+			// This ensures the sessionConfig was used correctly
+			try (var session = driver.session(org.neo4j.driver.SessionConfig.forDatabase("neo4j"))) {
+				var count = session
+					.run("MATCH (n:Document {id: $id}) RETURN count(n) as count", Map.of("id", doc.getId()))
+					.single()
+					.get("count")
+					.asLong();
+				assertThat(count).isEqualTo(1);
+			}
+
+			// Verify through the VectorStore API as well
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Test content").topK(1).build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(doc.getId());
+			assertThat(results.get(0).getText()).isEqualTo("Test content for custom database");
+			assertThat(results.get(0).getMetadata()).containsEntry("testKey", "testValue");
+
+			// Clean up
+			vectorStore.delete(List.of(doc.getId()));
+		});
+	}
+
+	@Test
+	void addWithCustomSessionConfig() {
+		this.contextRunner.run(context -> {
+			Driver driver = context.getBean(Driver.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			// Create VectorStore with custom SessionConfig
+			var sessionConfig = org.neo4j.driver.SessionConfig.forDatabase("neo4j");
+			VectorStore vectorStore = Neo4jVectorStore.builder(driver, embeddingModel)
+				.sessionConfig(sessionConfig)
+				.initializeSchema(true)
+				.build();
+
+			// Add multiple documents to test batch processing
+			List<Document> docs = List.of(
+					new Document("First document with custom session", Map.of("category", "session-test", "index", 1)),
+					new Document("Second document with custom session", Map.of("category", "session-test", "index", 2)),
+					new Document("Third document with custom session", Map.of("category", "session-test", "index", 3)));
+
+			vectorStore.add(docs);
+
+			// Verify documents were added to the correct database by querying directly
+			try (var session = driver.session(sessionConfig)) {
+				var count = session
+					.run("MATCH (n:Document) WHERE n.id IN $ids RETURN count(n) as count",
+							Map.of("ids", docs.stream().map(Document::getId).toList()))
+					.single()
+					.get("count")
+					.asLong();
+				assertThat(count).isEqualTo(3);
+			}
+
+			// Verify all documents were added through VectorStore API
+			List<Document> results = vectorStore.similaritySearch(
+					SearchRequest.builder().query("document custom session").topK(5).similarityThresholdAll().build());
+
+			assertThat(results).hasSize(3);
+			assertThat(results.stream().map(Document::getId).toList())
+				.containsExactlyInAnyOrderElementsOf(docs.stream().map(Document::getId).toList());
+
+			// Verify we can search with filters
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("document custom session")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("index == 2")
+				.build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getMetadata()).containsEntry("index", 2L);
+
+			// Clean up
+			vectorStore.delete(docs.stream().map(Document::getId).toList());
+		});
+	}
+
+	@Test
 	void vectorIndexDimensionsDefaultAndOverwriteWorks() {
 		this.contextRunner.run(context -> {
 			var result = context.getBean(Driver.class)

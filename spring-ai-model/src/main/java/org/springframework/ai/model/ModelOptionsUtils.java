@@ -49,6 +49,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
@@ -85,9 +86,9 @@ public abstract class ModelOptionsUtils {
 
 	private static final ConcurrentHashMap<Class<?>, List<String>> REQUEST_FIELD_NAMES_PER_CLASS = new ConcurrentHashMap<>();
 
-	private static final AtomicReference<SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
+	private static final AtomicReference<@Nullable SchemaGenerator> SCHEMA_GENERATOR_CACHE = new AtomicReference<>();
 
-	private static TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
+	private static final TypeReference<HashMap<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 
 	};
 
@@ -175,7 +176,8 @@ public abstract class ModelOptionsUtils {
 	 * @param acceptedFieldNames the list of field names accepted for the target object.
 	 * @return the merged object represented by the given class.
 	 */
-	public static <T> T merge(Object source, Object target, Class<T> clazz, List<String> acceptedFieldNames) {
+	public static <T> T merge(@Nullable Object source, Object target, Class<T> clazz,
+			@Nullable List<String> acceptedFieldNames) {
 
 		if (source == null) {
 			source = Map.of();
@@ -232,7 +234,7 @@ public abstract class ModelOptionsUtils {
 		}
 		try {
 			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, Object>>() {
+			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, @Nullable Object>>() {
 
 			})
 				.entrySet()
@@ -284,15 +286,15 @@ public abstract class ModelOptionsUtils {
 	 * sourceBean instance.
 	 * @param sourceBean the source bean to copy the values from.
 	 * @param sourceInterfaceClazz the source interface class. Only the fields with the
-	 * same name as the interface methods are copied. This allow the source object to be a
-	 * subclass of the source interface with additional, non-interface fields.
+	 * same name as the interface methods are copied. This allows the source object to be
+	 * a subclass of the source interface with additional, non-interface fields.
 	 * @param targetBeanClazz the target class, a subclass of the ChatOptions, to convert
 	 * into.
 	 * @param <T> the target class type.
 	 * @return a new instance of the targetBeanClazz with the values from the sourceBean
 	 * instance.
 	 */
-	public static <I, S extends I, T extends S> T copyToTarget(S sourceBean, Class<I> sourceInterfaceClazz,
+	public static <I, S extends I, T extends S> @Nullable T copyToTarget(S sourceBean, Class<I> sourceInterfaceClazz,
 			Class<T> targetBeanClazz) {
 
 		Assert.notNull(sourceInterfaceClazz, "SourceOptionsClazz must not be null");
@@ -378,6 +380,18 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static String getJsonSchema(Type inputType, boolean toUpperCaseTypeValues) {
 
+		ObjectNode node = getJsonSchema(inputType);
+
+		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
+			// version of it).
+			toUpperCaseTypeValues(node);
+		}
+
+		return node.toPrettyString();
+	}
+
+	public static ObjectNode getJsonSchema(Type inputType) {
+
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
 
 			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
@@ -399,18 +413,14 @@ public abstract class ModelOptionsUtils {
 			SCHEMA_GENERATOR_CACHE.compareAndSet(null, generator);
 		}
 
+		@SuppressWarnings("NullAway")
 		ObjectNode node = SCHEMA_GENERATOR_CACHE.get().generateSchema(inputType);
 
 		if ((inputType == Void.class) && !node.has("properties")) {
 			node.putObject("properties");
 		}
 
-		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
-			// version of it).
-			toUpperCaseTypeValues(node);
-		}
-
-		return node.toPrettyString();
+		return node;
 	}
 
 	public static void toUpperCaseTypeValues(ObjectNode node) {

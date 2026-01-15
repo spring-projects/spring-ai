@@ -18,7 +18,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '25' # This action actually installs several and the toolchains plugin in maven will select 25 alright, but this makes 25 the 'default'
+          java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 

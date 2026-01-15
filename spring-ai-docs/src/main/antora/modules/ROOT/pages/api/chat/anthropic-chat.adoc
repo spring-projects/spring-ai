@@ -149,7 +149,7 @@ The prefix `spring.ai.anthropic.chat` is the property prefix that lets you confi
 
 | spring.ai.anthropic.chat.enabled (Removed and no longer valid) | Enable Anthropic chat model.  | true
 | spring.ai.model.chat | Enable Anthropic chat model.  | anthropic
-| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-opus-20240229`, `claude-3-sonnet-20240229`, `claude-3-haiku-20240307`, `claude-3-7-sonnet-latest`, `claude-sonnet-4-20250514`, `claude-opus-4-1-20250805` | `claude-opus-4-20250514`
+| spring.ai.anthropic.chat.options.model | This is the Anthropic Chat model to use. Supports: `claude-sonnet-4-5`, `claude-opus-4-5`, `claude-haiku-4-5`, `claude-opus-4-1`, `claude-opus-4-0`, `claude-sonnet-4-0`, `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-5-haiku-latest`, `claude-3-opus-latest`, `claude-3-haiku-20240307` | `claude-sonnet-4-5`
 | spring.ai.anthropic.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify temperature and top_p for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.anthropic.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | 500
 | spring.ai.anthropic.chat.options.stop-sequence | Custom text sequences that will cause the model to stop generating. Our models will normally stop when they have naturally completed their turn, which will result in a response stop_reason of "end_turn". If you want the model to stop generating when it encounters custom strings of text, you can use the stop_sequences parameter. If the model encounters one of the custom sequences, the response stop_reason value will be "stop_sequence" and the response stop_sequence value will contain the matched stop sequence. | -
@@ -198,7 +198,7 @@ When you cache a prompt, subsequent identical requests can reuse the cached cont
 ====
 *Supported Models*
 
-Prompt caching is currently supported on Claude Opus 4, Claude Sonnet 4, Claude Sonnet 3.7, Claude Sonnet 3.5, Claude Haiku 3.5, Claude Haiku 3, and Claude Opus 3.
+Prompt caching is currently supported on Claude Sonnet 4.5, Claude Opus 4.5, Claude Haiku 4.5, Claude Opus 4, Claude Sonnet 4, Claude Sonnet 3.7, Claude Sonnet 3.5, Claude Haiku 3.5, Claude Haiku 3, and Claude Opus 3.
 
 *Token Requirements*
 
@@ -1508,6 +1508,693 @@ CitationDocument backgroundDoc = CitationDocument.builder()
 Anthropic requires consistent citation settings across all documents in a request.
 You cannot mix citation-enabled and citation-disabled documents in the same request.
 ====
+
+== Skills
+
+Anthropic's https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview[Skills API] extends Claude's capabilities with specialized, pre-packaged abilities for document generation.
+Skills enable Claude to create actual downloadable files - Excel spreadsheets, PowerPoint presentations, Word documents, and PDFs - rather than just describing what these documents might contain.
+
+Skills solve a fundamental limitation of traditional LLMs:
+
+* **Traditional Claude**: "Here's how your sales report would look..." (text description only)
+* **With Skills**: Creates an actual `sales_report.xlsx` file you can download and open in Excel
+
+[NOTE]
+====
+*Supported Models*
+
+Skills are supported on Claude Sonnet 4, Claude Sonnet 4.5, Claude Opus 4, and later models.
+
+*Requirements*
+
+* Skills require the code execution capability (automatically enabled by Spring AI)
+* Maximum of 8 skills per request
+* Generated files are available for download via the Files API for 24 hours
+====
+
+=== Pre-built Anthropic Skills
+
+Spring AI provides type-safe access to Anthropic's pre-built skills through the `AnthropicSkill` enum:
+
+[cols="2,3,4", stripes=even]
+|====
+| Skill | Description | Generated File Type
+
+| `XLSX`
+| Excel spreadsheet generation and manipulation
+| `.xlsx` (Microsoft Excel)
+
+| `PPTX`
+| PowerPoint presentation creation
+| `.pptx` (Microsoft PowerPoint)
+
+| `DOCX`
+| Word document generation
+| `.docx` (Microsoft Word)
+
+| `PDF`
+| PDF document creation
+| `.pdf` (Portable Document Format)
+|====
+
+=== Basic Usage
+
+Enable skills by adding them to your `AnthropicChatOptions`:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create an Excel spreadsheet with Q1 2025 sales data. " +
+        "Include columns for Month, Revenue, and Expenses with 3 rows of sample data.",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .build()
+    )
+);
+
+// Claude will generate an actual Excel file
+String responseText = response.getResult().getOutput().getText();
+System.out.println(responseText);
+// Output: "I've created an Excel spreadsheet with your Q1 2025 sales data..."
+----
+
+=== Multiple Skills
+
+You can enable multiple skills in a single request (up to 8):
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a sales report with both an Excel file containing the raw data " +
+        "and a PowerPoint presentation summarizing the key findings.",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(8192)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+            .build()
+    )
+);
+----
+
+=== Using SkillContainer for Advanced Configuration
+
+For more control, use `SkillContainer` directly:
+
+[source,java]
+----
+AnthropicApi.SkillContainer container = AnthropicApi.SkillContainer.builder()
+    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+    .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX, "20251013") // Specific version
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the quarterly report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .skillContainer(container)
+            .build()
+    )
+);
+----
+
+=== Using ChatClient Fluent API
+
+Skills work seamlessly with the ChatClient fluent API:
+
+[source,java]
+----
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .user("Create a PowerPoint presentation about Spring AI with 3 slides: " +
+          "Title, Key Features, and Getting Started")
+    .options(AnthropicChatOptions.builder()
+        .model("claude-sonnet-4-5")
+        .maxTokens(4096)
+        .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+        .build())
+    .call()
+    .content();
+----
+
+=== Streaming with Skills
+
+Skills work with streaming responses:
+
+[source,java]
+----
+Flux<ChatResponse> responseFlux = chatModel.stream(
+    new Prompt(
+        "Create a Word document explaining machine learning concepts",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.DOCX)
+            .build()
+    )
+);
+
+responseFlux.subscribe(response -> {
+    String content = response.getResult().getOutput().getText();
+    System.out.print(content);
+});
+----
+
+=== Downloading Generated Files
+
+When Claude generates files using Skills, the response contains file IDs that can be used to download the actual files via the Files API.
+Spring AI provides the `SkillsResponseHelper` utility class for extracting file IDs and downloading files.
+
+==== Extracting File IDs
+
+[source,java]
+----
+import org.springframework.ai.anthropic.SkillsResponseHelper;
+
+ChatResponse response = chatModel.call(prompt);
+
+// Extract all file IDs from the response
+List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+for (String fileId : fileIds) {
+    System.out.println("Generated file ID: " + fileId);
+}
+----
+
+==== Getting File Metadata
+
+Before downloading, you can retrieve file metadata:
+
+[source,java]
+----
+@Autowired
+private AnthropicApi anthropicApi;
+
+// Get metadata for a specific file
+String fileId = fileIds.get(0);
+AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileId);
+
+System.out.println("Filename: " + metadata.filename());     // e.g., "sales_report.xlsx"
+System.out.println("Size: " + metadata.size() + " bytes");  // e.g., 5082
+System.out.println("MIME Type: " + metadata.mimeType());    // e.g., "application/vnd..."
+----
+
+==== Downloading File Content
+
+[source,java]
+----
+// Download file content as bytes
+byte[] fileContent = anthropicApi.downloadFile(fileId);
+
+// Save to local file system
+Path outputPath = Path.of("downloads", metadata.filename());
+Files.write(outputPath, fileContent);
+
+System.out.println("Saved file to: " + outputPath);
+----
+
+==== Convenience Method: Download All Files
+
+The `SkillsResponseHelper` provides a convenience method to download all generated files at once:
+
+[source,java]
+----
+// Download all files to a target directory
+Path targetDir = Path.of("generated-files");
+Files.createDirectories(targetDir);
+
+List<Path> savedFiles = SkillsResponseHelper.downloadAllFiles(response, anthropicApi, targetDir);
+
+for (Path file : savedFiles) {
+    System.out.println("Downloaded: " + file.getFileName() +
+                       " (" + Files.size(file) + " bytes)");
+}
+----
+
+==== Complete File Download Example
+
+Here's a complete example showing Skills usage with file download:
+
+[source,java]
+----
+@Service
+public class DocumentGenerationService {
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+
+    public DocumentGenerationService(AnthropicChatModel chatModel, AnthropicApi anthropicApi) {
+        this.chatModel = chatModel;
+        this.anthropicApi = anthropicApi;
+    }
+
+    public Path generateSalesReport(String quarter, Path outputDir) throws IOException {
+        // Generate Excel report using Skills
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                "Create an Excel spreadsheet with " + quarter + " sales data. " +
+                "Include Month, Revenue, Expenses, and Profit columns.",
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4-5")
+                    .maxTokens(4096)
+                    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                    .build()
+            )
+        );
+
+        // Extract file IDs from the response
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+        if (fileIds.isEmpty()) {
+            throw new RuntimeException("No file was generated");
+        }
+
+        // Download the generated file
+        String fileId = fileIds.get(0);
+        AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileId);
+        byte[] content = anthropicApi.downloadFile(fileId);
+
+        // Save to output directory
+        Path outputPath = outputDir.resolve(metadata.filename());
+        Files.write(outputPath, content);
+
+        return outputPath;
+    }
+}
+----
+
+=== Files API Operations
+
+The `AnthropicApi` provides direct access to the Files API:
+
+[cols="2,4", stripes=even]
+|====
+| Method | Description
+
+| `getFileMetadata(fileId)`
+| Get metadata including filename, size, MIME type, and expiration time
+
+| `downloadFile(fileId)`
+| Download file content as byte array
+
+| `listFiles(limit, page)`
+| List files with pagination support
+
+| `deleteFile(fileId)`
+| Delete a file immediately (files auto-expire after 24 hours)
+|====
+
+==== Listing Files
+
+[source,java]
+----
+// List files with pagination
+AnthropicApi.FilesListResponse files = anthropicApi.listFiles(20, null);
+
+for (AnthropicApi.FileMetadata file : files.data()) {
+    System.out.println(file.id() + ": " + file.filename());
+}
+
+// Check for more pages
+if (files.hasMore()) {
+    AnthropicApi.FilesListResponse nextPage = anthropicApi.listFiles(20, files.nextPage());
+    // Process next page...
+}
+----
+
+==== Extracting Container ID
+
+For multi-turn conversations with Skills, you may need to extract the container ID:
+
+[source,java]
+----
+String containerId = SkillsResponseHelper.extractContainerId(response);
+
+if (containerId != null) {
+    System.out.println("Container ID for reuse: " + containerId);
+}
+----
+
+=== Best Practices
+
+1. **Use appropriate models**: Skills work best with Claude Sonnet 4 and later models. Ensure you're using a supported model.
+
+2. **Set sufficient max tokens**: Document generation can require significant tokens. Use `maxTokens(4096)` or higher for complex documents.
+
+3. **Be specific in prompts**: Provide clear, detailed instructions about document structure, content, and formatting.
+
+4. **Handle file downloads promptly**: Generated files expire after 24 hours. Download files soon after generation.
+
+5. **Check for file IDs**: Always verify that file IDs were returned before attempting downloads. Some prompts may result in text responses without file generation.
+
+6. **Use defensive error handling**: Wrap file operations in try-catch blocks to handle network issues or expired files gracefully.
+
+[source,java]
+----
+List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+if (fileIds.isEmpty()) {
+    // Claude may have responded with text instead of generating a file
+    String text = response.getResult().getOutput().getText();
+    log.warn("No files generated. Response: {}", text);
+    return;
+}
+
+try {
+    byte[] content = anthropicApi.downloadFile(fileIds.get(0));
+    // Process file...
+} catch (Exception e) {
+    log.error("Failed to download file: {}", e.getMessage());
+}
+----
+
+=== Real-World Use Cases
+
+==== Automated Report Generation
+
+Generate formatted business reports from data:
+
+[source,java]
+----
+@Service
+public class ReportService {
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+
+    public byte[] generateMonthlyReport(SalesData data) throws IOException {
+        String prompt = String.format(
+            "Create a PowerPoint presentation summarizing monthly sales performance. " +
+            "Total Revenue: $%,.2f, Total Expenses: $%,.2f, Net Profit: $%,.2f. " +
+            "Include charts and key insights. Create 5 slides: " +
+            "1) Title, 2) Revenue Overview, 3) Expense Breakdown, " +
+            "4) Profit Analysis, 5) Recommendations.",
+            data.revenue(), data.expenses(), data.profit()
+        );
+
+        ChatResponse response = chatModel.call(
+            new Prompt(prompt,
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4-5")
+                    .maxTokens(8192)
+                    .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+                    .build()
+            )
+        );
+
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        return anthropicApi.downloadFile(fileIds.get(0));
+    }
+}
+----
+
+==== Data Export Service
+
+Export structured data to Excel format:
+
+[source,java]
+----
+@RestController
+public class ExportController {
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+    private final CustomerRepository customerRepository;
+
+    @GetMapping("/export/customers")
+    public ResponseEntity<byte[]> exportCustomers() throws IOException {
+        List<Customer> customers = customerRepository.findAll();
+
+        String dataDescription = customers.stream()
+            .map(c -> String.format("%s, %s, %s", c.name(), c.email(), c.tier()))
+            .collect(Collectors.joining("\n"));
+
+        ChatResponse response = chatModel.call(
+            new Prompt(
+                "Create an Excel spreadsheet with customer data. " +
+                "Columns: Name, Email, Tier. Format the header row with bold text. " +
+                "Data:\n" + dataDescription,
+                AnthropicChatOptions.builder()
+                    .model("claude-sonnet-4-5")
+                    .maxTokens(4096)
+                    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                    .build()
+            )
+        );
+
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        byte[] content = anthropicApi.downloadFile(fileIds.get(0));
+        AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileIds.get(0));
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=\"" + metadata.filename() + "\"")
+            .contentType(MediaType.parseMediaType(metadata.mimeType()))
+            .body(content);
+    }
+}
+----
+
+==== Multi-Format Document Generation
+
+Generate multiple document formats from a single request:
+
+[source,java]
+----
+public Map<String, byte[]> generateProjectDocumentation(ProjectInfo project) throws IOException {
+    ChatResponse response = chatModel.call(
+        new Prompt(
+            "Create project documentation for: " + project.name() + "\n" +
+            "Description: " + project.description() + "\n\n" +
+            "Generate:\n" +
+            "1. An Excel file with the project timeline and milestones\n" +
+            "2. A PowerPoint overview presentation (3-5 slides)\n" +
+            "3. A Word document with detailed specifications",
+            AnthropicChatOptions.builder()
+                .model("claude-sonnet-4-5")
+                .maxTokens(16384)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.DOCX)
+                .build()
+        )
+    );
+
+    Map<String, byte[]> documents = new HashMap<>();
+    List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+    for (String fileId : fileIds) {
+        AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileId);
+        byte[] content = anthropicApi.downloadFile(fileId);
+        documents.put(metadata.filename(), content);
+    }
+
+    return documents;
+}
+----
+
+=== Combining Skills with Other Features
+
+Skills can be combined with other Anthropic features like Prompt Caching:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        List.of(
+            new SystemMessage("You are an expert data analyst and document creator..."),
+            new UserMessage("Create a financial summary spreadsheet")
+        ),
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .cacheOptions(AnthropicCacheOptions.builder()
+                .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+                .build())
+            .build()
+    )
+);
+----
+
+=== Custom Skills
+
+In addition to pre-built skills, Anthropic supports custom skills that you can create for specialized document templates, formatting rules, or domain-specific behaviors.
+Custom skills are `SKILL.md` files with instructions that you upload to your Anthropic workspace.
+Once uploaded, you can use them in Spring AI alongside pre-built skills.
+
+Custom skills are ideal for:
+
+* **Corporate branding**: Apply consistent headers, footers, logos, and color schemes
+* **Compliance requirements**: Add required disclaimers, confidentiality notices, or audit trails
+* **Document templates**: Enforce specific structures for reports, proposals, or specifications
+* **Domain expertise**: Include industry-specific terminology, calculations, or formatting rules
+
+For details on creating custom skills, refer to the https://platform.claude.com/docs/en/api/skills-guide[Anthropic Skills API documentation].
+
+==== Uploading a Custom Skill
+
+Upload your skill using the Anthropic API.
+Note the specific format requirements for the `files[]` parameter:
+
+[source,bash]
+----
+curl -X POST "https://api.anthropic.com/v1/skills" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: skills-2025-10-02" \
+  -F "display_title=My Custom Skill" \
+  -F "files[]=@SKILL.md;filename=my-skill-name/SKILL.md"
+----
+
+[IMPORTANT]
+====
+* Use `files[]=` (with square brackets), not `files=`
+* The `filename` parameter must include a directory matching the `name` field in your SKILL.md YAML frontmatter
+* After uploading, verify your skill appears in the Anthropic Console under **Settings > Capabilities**
+====
+
+The response contains your skill ID:
+
+[source,json]
+----
+{
+  "id": "skill_01AbCdEfGhIjKlMnOpQrStUv",
+  "display_title": "My Custom Skill",
+  "source": "custom",
+  "latest_version": "1765845644409101"
+}
+----
+
+==== Using Custom Skills in Spring AI
+
+Reference your custom skill by its ID using the `.customSkill()` method:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a quarterly sales report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")
+            .build()
+    )
+);
+----
+
+==== Combining Pre-built and Custom Skills
+
+You can use both pre-built and custom skills in the same request.
+This allows you to leverage Anthropic's document generation capabilities while applying your organization's specific requirements:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a sales report spreadsheet",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(4096)
+            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)  // Pre-built
+            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")     // Your custom skill
+            .build()
+    )
+);
+----
+
+==== Using SkillContainer with Custom Skills
+
+For more control over skill versions, use `SkillContainer` directly:
+
+[source,java]
+----
+AnthropicApi.SkillContainer container = AnthropicApi.SkillContainer.builder()
+    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+    .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")                    // Uses latest version
+    .customSkill("skill_02XyZaBcDeFgHiJkLmNoPq", "1765845644409101")  // Specific version
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the report",
+        AnthropicChatOptions.builder()
+            .model("claude-sonnet-4-5")
+            .maxTokens(8192)
+            .skillContainer(container)
+            .build()
+    )
+);
+----
+
+==== Updating a Custom Skill
+
+To update an existing skill, upload a new version to the `/versions` endpoint:
+
+[source,bash]
+----
+curl -X POST "https://api.anthropic.com/v1/skills/YOUR_SKILL_ID/versions" \
+  -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "anthropic-beta: skills-2025-10-02" \
+  -F "files[]=@SKILL.md;filename=my-skill-name/SKILL.md"
+----
+
+When using `latest` as the version (the default), the new version is picked up automatically.
+
+==== Complete Custom Skills Example
+
+Here's a complete example showing a service that optionally applies a custom branding skill:
+
+[source,java]
+----
+@Service
+public class BrandedDocumentService {
+
+    private static final String BRANDING_SKILL_ID = "skill_01AbCdEfGhIjKlMnOpQrStUv";
+
+    private final AnthropicChatModel chatModel;
+    private final AnthropicApi anthropicApi;
+
+    public BrandedDocumentService(AnthropicChatModel chatModel, AnthropicApi anthropicApi) {
+        this.chatModel = chatModel;
+        this.anthropicApi = anthropicApi;
+    }
+
+    public byte[] generateReport(String prompt, boolean includeBranding) throws IOException {
+        // Build options with document skill
+        AnthropicChatOptions.Builder optionsBuilder = AnthropicChatOptions.builder()
+                .model("claude-sonnet-4-5")
+                .maxTokens(8192)
+                .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX);
+
+        // Add custom branding skill if requested
+        if (includeBranding) {
+            optionsBuilder.customSkill(BRANDING_SKILL_ID);
+        }
+
+        ChatResponse response = chatModel.call(
+            new Prompt(prompt, optionsBuilder.build())
+        );
+
+        // Extract and download the generated file
+        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+
+        if (fileIds.isEmpty()) {
+            throw new RuntimeException("No file was generated");
+        }
+
+        return anthropicApi.downloadFile(fileIds.get(0));
+    }
+}
+----
 
 == Sample Controller
 

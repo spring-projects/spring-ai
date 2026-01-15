@@ -19,8 +19,9 @@ package org.springframework.ai.chat.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -31,7 +32,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String, Object> context) {
+public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String, @Nullable Object> context) {
 
 	public ChatClientResponse {
 		Assert.notNull(context, "context cannot be null");
@@ -52,9 +53,9 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 
 	public static final class Builder {
 
-		private ChatResponse chatResponse;
+		private @Nullable ChatResponse chatResponse;
 
-		private Map<String, Object> context = new HashMap<>();
+		private final Map<String, @Nullable Object> context = new HashMap<>();
 
 		private Builder() {
 		}
@@ -64,7 +65,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 			return this;
 		}
 
-		public Builder context(Map<String, Object> context) {
+		public Builder context(Map<String, ? extends @Nullable Object> context) {
 			Assert.notNull(context, "context cannot be null");
 			this.context.putAll(context);
 			return this;
