@@ -98,8 +98,6 @@
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 
-	<suppress files="vector-stores[\\/]spring-ai-azure-cosmos-db-store" id="bannedNullabilityImports" />
-	<suppress files="vector-stores[\\/]spring-ai-azure-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-milvus-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-mongodb-atlas-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-neo4j-store" id="bannedNullabilityImports" />
@@ -108,6 +106,7 @@
 	<suppress files="vector-stores[\\/]spring-ai-pgvector-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-pinecone-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-qdrant-store" id="bannedNullabilityImports" />
+	<suppress files="vector-stores[\\/]spring-ai-redis-semantic-cache" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-redis-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-typesense-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-weaviate-store" id="bannedNullabilityImports" />
