@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.oracle;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts a {@link Filter} into a JSON Path expression.
@@ -39,6 +40,7 @@ public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressi
 
 	@Override
 	protected void doExpression(final Filter.Expression expression, final StringBuilder context) {
+		Assert.state(expression.right() != null, "expression should have a right operand");
 		if (expression.type() == Filter.ExpressionType.NIN) {
 			context.append("!( ");
 			this.convertOperand(expression.left(), context);
