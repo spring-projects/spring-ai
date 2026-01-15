@@ -17,6 +17,11 @@
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisClientConfig;
+import redis.clients.jedis.JedisPooled;
+
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
@@ -33,10 +38,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
-import redis.clients.jedis.DefaultJedisClientConfig;
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisClientConfig;
-import redis.clients.jedis.JedisPooled;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Redis Vector Store.
@@ -55,24 +56,39 @@ import redis.clients.jedis.JedisPooled;
 		matchIfMissing = true)
 public class RedisVectorStoreAutoConfiguration {
 
+	/**
+	 * Creates a default batching strategy for the vector store.
+	 * @return a token count batching strategy
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	BatchingStrategy batchingStrategy() {
 		return new TokenCountBatchingStrategy();
 	}
 
+	/**
+	 * Creates a Redis vector store.
+	 * @param embeddingModel the embedding model
+	 * @param properties the Redis vector store properties
+	 * @param jedisConnectionFactory the Jedis connection factory
+	 * @param observationRegistry the observation registry
+	 * @param convention the custom observation convention
+	 * @param batchingStrategy the batching strategy
+	 * @return the configured Redis vector store
+	 */
 	@Bean
 	@ConditionalOnMissingBean
-	public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, RedisVectorStoreProperties properties,
-			JedisConnectionFactory jedisConnectionFactory, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-			BatchingStrategy batchingStrategy) {
+	public RedisVectorStore vectorStore(final EmbeddingModel embeddingModel,
+			final RedisVectorStoreProperties properties, final JedisConnectionFactory jedisConnectionFactory,
+			final ObjectProvider<ObservationRegistry> observationRegistry,
+			final ObjectProvider<VectorStoreObservationConvention> convention,
+			final BatchingStrategy batchingStrategy) {
 
-		JedisPooled jedisPooled = this.jedisPooled(jedisConnectionFactory);
+		JedisPooled jedisPooled = jedisPooled(jedisConnectionFactory);
 		RedisVectorStore.Builder builder = RedisVectorStore.builder(jedisPooled, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(convention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)
 			.indexName(properties.getIndexName())
 			.prefix(properties.getPrefix());
@@ -84,15 +100,18 @@ public class RedisVectorStoreAutoConfiguration {
 	}
 
 	/**
-	 * Configures the HNSW-related parameters on the builder
+	 * Configures the HNSW-related parameters on the builder.
+	 * @param builder the Redis vector store builder
+	 * @param properties the Redis vector store properties
 	 */
-	private void hnswConfiguration(RedisVectorStore.Builder builder, RedisVectorStoreProperties properties) {
+	private void hnswConfiguration(final RedisVectorStore.Builder builder,
+			final RedisVectorStoreProperties properties) {
 		builder.hnswM(properties.getHnsw().getM())
 			.hnswEfConstruction(properties.getHnsw().getEfConstruction())
 			.hnswEfRuntime(properties.getHnsw().getEfRuntime());
 	}
 
-	private JedisPooled jedisPooled(JedisConnectionFactory jedisConnectionFactory) {
+	private JedisPooled jedisPooled(final JedisConnectionFactory jedisConnectionFactory) {
 
 		String host = jedisConnectionFactory.getHostName();
 		int port = jedisConnectionFactory.getPort();
