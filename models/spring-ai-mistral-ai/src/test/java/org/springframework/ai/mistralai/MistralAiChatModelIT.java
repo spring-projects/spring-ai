@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.ai.mistralai;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -224,7 +223,7 @@ class MistralAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -249,7 +248,7 @@ class MistralAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
@@ -291,7 +290,7 @@ class MistralAiChatModelIT {
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "pixtral-large-latest" })
-	void multiModalityImageUrl(String modelName) throws IOException {
+	void multiModalityImageUrl(String modelName) {
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
@@ -309,7 +308,7 @@ class MistralAiChatModelIT {
 	}
 
 	@Test
-	void streamingMultiModalityImageUrl() throws IOException {
+	void streamingMultiModalityImageUrl() {
 		var userMessage = UserMessage.builder()
 			.text("Explain what do you see on this picture?")
 			.media(List.of(Media.builder()
@@ -341,7 +340,7 @@ class MistralAiChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location")
 				.inputType(MockWeatherService.Request.class)
