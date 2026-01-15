@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -230,7 +231,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
-			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(), document.getText(),
+			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""),
 					document.getMetadata(), embedding.get(i));
 
 			// Conditionally set document ID based on manageDocumentIds flag
@@ -304,14 +306,14 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	}
 
 	public List<Document> similaritySearch(float[] embedding, int topK, double similarityThreshold,
-			Filter.Expression filterExpression) {
+			Filter.@Nullable Expression filterExpression) {
 		return similaritySearch(
 				this.useApproximateKnn ? buildApproximateQuery(embedding, topK, similarityThreshold, filterExpression)
 						: buildExactQuery(embedding, topK, similarityThreshold, filterExpression));
 	}
 
 	private org.opensearch.client.opensearch.core.SearchRequest buildApproximateQuery(float[] embedding, int topK,
-			double similarityThreshold, Filter.Expression filterExpression) {
+			double similarityThreshold, Filter.@Nullable Expression filterExpression) {
 		return new org.opensearch.client.opensearch.core.SearchRequest.Builder().index(this.index)
 			.query(Query.of(builder -> builder.knn(knnQueryBuilder -> knnQueryBuilder
 				.filter(Query
@@ -325,7 +327,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	}
 
 	private org.opensearch.client.opensearch.core.SearchRequest buildExactQuery(float[] embedding, int topK,
-			double similarityThreshold, Filter.Expression filterExpression) {
+			double similarityThreshold, Filter.@Nullable Expression filterExpression) {
 		return new org.opensearch.client.opensearch.core.SearchRequest.Builder()
 			.query(buildExactQuery(embedding, filterExpression))
 			.index(this.index)
@@ -336,7 +338,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			.build();
 	}
 
-	private Query buildExactQuery(float[] embedding, Filter.Expression filterExpression) {
+	private Query buildExactQuery(float[] embedding, Filter.@Nullable Expression filterExpression) {
 		return Query.of(queryBuilder -> queryBuilder.scriptScore(scriptScoreQueryBuilder -> {
 			scriptScoreQueryBuilder
 				.query(queryBuilder2 -> queryBuilder2.queryString(queryStringQuerybuilder -> queryStringQuerybuilder
@@ -356,7 +358,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}));
 	}
 
-	private String getOpenSearchQueryString(Filter.Expression filterExpression) {
+	private String getOpenSearchQueryString(Filter.@Nullable Expression filterExpression) {
 		return Objects.isNull(filterExpression) ? "*"
 				: this.filterExpressionConverter.convertExpression(filterExpression);
 
@@ -378,6 +380,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
+		Assert.notNull(document, "Document must not be null");
 		Document.Builder documentBuilder = document.mutate();
 		if (hit.score() != null) {
 			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - hit.score().floatValue());
