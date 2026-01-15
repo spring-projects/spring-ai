@@ -33,6 +33,7 @@ public class QdrantVectorStorePropertiesTests {
 		var props = new QdrantVectorStoreProperties();
 
 		assertThat(props.getCollectionName()).isEqualTo(QdrantVectorStore.DEFAULT_COLLECTION_NAME);
+		assertThat(props.getContentFieldName()).isEqualTo(QdrantVectorStore.DEFAULT_CONTENT_FIELD_NAME);
 		assertThat(props.getHost()).isEqualTo("localhost");
 		assertThat(props.getPort()).isEqualTo(6334);
 		assertThat(props.isUseTls()).isFalse();
@@ -44,12 +45,14 @@ public class QdrantVectorStorePropertiesTests {
 		var props = new QdrantVectorStoreProperties();
 
 		props.setCollectionName("MY_COLLECTION");
+		props.setContentFieldName("MY_CONTENT_FIELD");
 		props.setHost("MY_HOST");
 		props.setPort(999);
 		props.setUseTls(true);
 		props.setApiKey("MY_API_KEY");
 
 		assertThat(props.getCollectionName()).isEqualTo("MY_COLLECTION");
+		assertThat(props.getContentFieldName()).isEqualTo("MY_CONTENT_FIELD");
 		assertThat(props.getHost()).isEqualTo("MY_HOST");
 		assertThat(props.getPort()).isEqualTo(999);
 		assertThat(props.isUseTls()).isTrue();
