@@ -120,8 +120,8 @@ class PromptTests {
 	@Test
 	void getUserMessagesWhenMultiple() {
 		Prompt prompt = Prompt.builder()
-				.messages(new UserMessage("Hello"), new SystemMessage("System"), new UserMessage("How are you?"))
-				.build();
+			.messages(new UserMessage("Hello"), new SystemMessage("System"), new UserMessage("How are you?"))
+			.build();
 
 		assertThat(prompt.getUserMessages()).hasSize(2);
 		assertThat(prompt.getUserMessages().get(0).getText()).isEqualTo("Hello");
@@ -142,14 +142,14 @@ class PromptTests {
 	@Test
 	void getUserMessagesWithMixedMessageTypes() {
 		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
-				.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
-				.build();
+			.responses(List.of(new ToolResponseMessage.ToolResponse("toolId", "toolName", "result")))
+			.build();
 
 		Prompt prompt = Prompt.builder()
-				.messages(new SystemMessage("System instruction"), new UserMessage("First question"),
-						new AssistantMessage("AI response"), new UserMessage("Second question"), toolResponse,
-						new UserMessage("Third question"))
-				.build();
+			.messages(new SystemMessage("System instruction"), new UserMessage("First question"),
+					new AssistantMessage("AI response"), new UserMessage("Second question"), toolResponse,
+					new UserMessage("Third question"))
+			.build();
 
 		assertThat(prompt.getUserMessages()).hasSize(3);
 		assertThat(prompt.getUserMessages().get(0).getText()).isEqualTo("First question");
