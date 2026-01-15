@@ -50,6 +50,7 @@ class QdrantVectorStoreBuilderTests {
 
 		// Verify default values
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("collectionName", "vector_store");
+		assertThat(vectorStore).hasFieldOrPropertyWithValue("contentFieldName", "doc_content");
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("initializeSchema", false);
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("batchingStrategy.class", TokenCountBatchingStrategy.class);
 	}
@@ -58,11 +59,13 @@ class QdrantVectorStoreBuilderTests {
 	void customConfiguration() {
 		QdrantVectorStore vectorStore = QdrantVectorStore.builder(this.qdrantClient, this.embeddingModel)
 			.collectionName("custom_collection")
+			.contentFieldName("custom_content_field")
 			.initializeSchema(true)
 			.batchingStrategy(new TokenCountBatchingStrategy())
 			.build();
 
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("collectionName", "custom_collection");
+		assertThat(vectorStore).hasFieldOrPropertyWithValue("contentFieldName", "custom_content_field");
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("initializeSchema", true);
 		assertThat(vectorStore).hasFieldOrPropertyWithValue("batchingStrategy.class", TokenCountBatchingStrategy.class);
 	}
