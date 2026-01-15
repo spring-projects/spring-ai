@@ -385,3 +385,276 @@ List<Document> results = vectorStore.searchByRange("query");
 ----
 
 Range search is useful when you want to retrieve all relevant documents above a similarity threshold, rather than limiting to a specific count.
+
+== Semantic Caching
+
+Semantic caching is a powerful optimization technique that leverages Redis vector search capabilities to cache and retrieve AI chat responses based on the *semantic similarity* of user queries rather than exact string matching.
+This enables intelligent response reuse even when users phrase similar questions differently.
+
+=== Why Semantic Caching?
+
+Traditional caching relies on exact key matches, which fails when users ask semantically equivalent questions with different wording:
+
+* "What is the capital of France?"
+* "Tell me France's capital city"
+* "Which city is the capital of France?"
+
+All three queries have the same answer, but traditional caching would treat them as different requests, resulting in redundant LLM API calls.
+Semantic caching solves this by comparing the *meaning* of queries using vector embeddings.
+
+**Benefits:**
+
+* **Reduced API costs**: Avoid redundant calls to expensive LLM APIs
+* **Lower latency**: Return cached responses instantly instead of waiting for model inference
+* **Improved scalability**: Handle higher query volumes without proportional API cost increases
+* **Consistent responses**: Return identical answers for semantically similar questions
+
+=== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Redis Semantic Cache.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-redis-semantic-cache</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis-semantic-cache'
+}
+----
+
+TIP: The auto-configuration provides a default embedding model optimized for semantic caching (`redis/langcache-embed-v1`).
+You can override this by providing your own `EmbeddingModel` bean.
+
+[[semantic-cache-properties]]
+=== Configuration Properties
+
+Properties starting with `spring.ai.vectorstore.redis.semantic-cache.*` configure the semantic cache:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.redis.semantic-cache.enabled`| Enable or disable the semantic cache | `true`
+|`spring.ai.vectorstore.redis.semantic-cache.host`| Redis server host | `localhost`
+|`spring.ai.vectorstore.redis.semantic-cache.port`| Redis server port | `6379`
+|`spring.ai.vectorstore.redis.semantic-cache.similarity-threshold`| Similarity threshold for cache hits (0.0-1.0). Higher values require closer semantic matches. | `0.95`
+|`spring.ai.vectorstore.redis.semantic-cache.index-name`| Name of the Redis search index for cache entries | `semantic-cache-index`
+|`spring.ai.vectorstore.redis.semantic-cache.prefix`| Key prefix for cached entries in Redis | `semantic-cache:`
+|===
+
+Example configuration in `application.yml`:
+
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      redis:
+        semantic-cache:
+          enabled: true
+          host: localhost
+          port: 6379
+          similarity-threshold: 0.85
+          index-name: my-app-cache
+          prefix: "my-app:semantic-cache:"
+----
+
+=== Using the SemanticCacheAdvisor
+
+The `SemanticCacheAdvisor` integrates seamlessly with Spring AI's `ChatClient` advisor pattern.
+It automatically caches responses and returns cached results for similar queries:
+
+[source,java]
+----
+@Autowired
+private SemanticCache semanticCache;
+
+@Autowired
+private ChatModel chatModel;
+
+public void example() {
+    // Create the cache advisor
+    SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
+        .cache(semanticCache)
+        .build();
+
+    // First query - calls the LLM and caches the response
+    ChatResponse response1 = ChatClient.builder(chatModel)
+        .build()
+        .prompt("What is the capital of France?")
+        .advisors(cacheAdvisor)
+        .call()
+        .chatResponse();
+
+    // Similar query - returns cached response (no LLM call)
+    ChatResponse response2 = ChatClient.builder(chatModel)
+        .build()
+        .prompt("Tell me the capital city of France")
+        .advisors(cacheAdvisor)
+        .call()
+        .chatResponse();
+
+    // response1 and response2 contain the same cached answer
+}
+----
+
+The advisor automatically:
+
+1. Checks the cache for semantically similar queries before calling the LLM
+2. Returns cached responses when a match is found above the similarity threshold
+3. Caches new responses after successful LLM calls
+4. Supports both synchronous and streaming chat operations
+
+=== Direct Cache Usage
+
+You can also interact with the `SemanticCache` directly for fine-grained control:
+
+[source,java]
+----
+@Autowired
+private SemanticCache semanticCache;
+
+// Store a response with a query
+semanticCache.set("What is the capital of France?", chatResponse);
+
+// Store with TTL (time-to-live) for automatic expiration
+semanticCache.set("What's the weather today?", weatherResponse, Duration.ofHours(1));
+
+// Retrieve a semantically similar response
+Optional<ChatResponse> cached = semanticCache.get("Tell me France's capital");
+
+if (cached.isPresent()) {
+    // Use the cached response
+    String answer = cached.get().getResult().getOutput().getText();
+}
+
+// Clear all cached entries
+semanticCache.clear();
+----
+
+=== Manual Configuration
+
+For more control, you can manually configure the semantic cache components:
+
+[source,java]
+----
+@Configuration
+public class SemanticCacheConfig {
+
+    @Bean
+    public JedisPooled jedisPooled() {
+        return new JedisPooled("localhost", 6379);
+    }
+
+    @Bean
+    public SemanticCache semanticCache(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
+        return DefaultSemanticCache.builder()
+            .jedisClient(jedisPooled)
+            .embeddingModel(embeddingModel)
+            .distanceThreshold(0.3)           // Lower = stricter matching
+            .indexName("my-semantic-cache")
+            .prefix("cache:")
+            .build();
+    }
+
+    @Bean
+    public SemanticCacheAdvisor semanticCacheAdvisor(SemanticCache cache) {
+        return SemanticCacheAdvisor.builder()
+            .cache(cache)
+            .build();
+    }
+}
+----
+
+=== Cache Isolation with Namespaces
+
+For multi-tenant applications or when you need separate cache spaces, use different index names to isolate cache entries:
+
+[source,java]
+----
+// Create isolated caches for different users or contexts
+SemanticCache user1Cache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .indexName("user-1-cache")
+    .build();
+
+SemanticCache user2Cache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .indexName("user-2-cache")
+    .build();
+
+// Each user gets their own isolated cache space
+SemanticCacheAdvisor user1Advisor = SemanticCacheAdvisor.builder()
+    .cache(user1Cache)
+    .build();
+----
+
+=== Tuning the Similarity Threshold
+
+The similarity threshold determines how closely a query must match a cached entry to be considered a hit.
+The threshold is expressed as a value between 0.0 and 1.0:
+
+* **Higher threshold (e.g., 0.95)**: Requires very close semantic matches.
+Reduces false positives but may miss valid cache hits.
+* **Lower threshold (e.g., 0.70)**: Allows broader semantic matches.
+Increases cache hit rate but may return less relevant cached responses.
+
+[source,java]
+----
+// Strict matching - only very similar queries hit the cache
+SemanticCache strictCache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .distanceThreshold(0.2)  // Strict (distance-based, lower = stricter)
+    .build();
+
+// Lenient matching - broader semantic similarity accepted
+SemanticCache lenientCache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .distanceThreshold(0.5)  // Lenient
+    .build();
+----
+
+TIP: Start with a higher threshold (stricter matching) and gradually lower it based on your application's tolerance for semantic variation.
+
+=== TTL and Cache Expiration
+
+Cached responses can be configured with a time-to-live (TTL) for automatic expiration.
+This is essential for time-sensitive data:
+
+[source,java]
+----
+// Cache weather data for 1 hour
+semanticCache.set("What's the weather in New York?", weatherResponse, Duration.ofHours(1));
+
+// Cache general knowledge indefinitely (no TTL)
+semanticCache.set("What is photosynthesis?", scienceResponse);
+
+// Redis automatically removes expired entries
+----
+
+=== How It Works
+
+The semantic cache operates using the following flow:
+
+1. **Query embedding**: When a query arrives, it is converted to a vector embedding using the configured `EmbeddingModel`
+
+2. **Vector search**: Redis performs a range-based vector search (`VECTOR_RANGE`) to find cached entries within the similarity threshold
+
+3. **Cache hit**: If a semantically similar query is found, the cached `ChatResponse` is returned immediately
+
+4. **Cache miss**: If no match is found, the query proceeds to the LLM, and the response is cached for future use
+
+The implementation leverages Redis's efficient vector indexing (HNSW algorithm) for fast similarity searches, even with large cache sizes.
