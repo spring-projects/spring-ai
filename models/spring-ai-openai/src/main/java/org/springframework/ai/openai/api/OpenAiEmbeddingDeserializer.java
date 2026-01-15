@@ -16,16 +16,16 @@
 
 package org.springframework.ai.openai.api;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Base64;
 
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
 /**
  * Used to deserialize the `embedding` field returned by the model.
@@ -40,11 +40,11 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
  *
  * @author Sun Yuhan
  */
-public class OpenAiEmbeddingDeserializer extends JsonDeserializer<float[]> {
+public class OpenAiEmbeddingDeserializer extends ValueDeserializer<float[]> {
 
 	@Override
 	public float[] deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
-			throws IOException, JacksonException {
+			throws JacksonException {
 		JsonToken token = jsonParser.currentToken();
 		if (token == JsonToken.START_ARRAY) {
 			return jsonParser.readValueAs(float[].class);
@@ -65,7 +65,7 @@ public class OpenAiEmbeddingDeserializer extends JsonDeserializer<float[]> {
 			return embeddingArray;
 		}
 		else {
-			throw new IOException("Illegal embedding: " + token);
+			throw new StreamReadException(jsonParser, "Illegal embedding: " + token);
 		}
 	}
 

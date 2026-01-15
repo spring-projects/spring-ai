@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import com.fasterxml.jackson.databind.json.JsonMapper
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.ai.util.JacksonUtils
+import tools.jackson.databind.json.JsonMapper
 
 /**
  * Kotlin unit tests for [JacksonUtils].
@@ -28,14 +28,14 @@ class JacksonUtilsKotlinTests {
 
 	@Test
 	fun `Deserialize to a Kotlin data class with Jackson modules detected by JacksonUtils#instantiateAvailableModules`() {
-		val jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build()
+		val jsonMapper = JsonMapper()
 		val output = jsonMapper.readValue("{\"name\":\"Robert\",\"age\":42}", User::class.java)
 		Assertions.assertThat(output).isEqualTo(User("Robert", 42))
 	}
 
 	@Test
 	fun `Serialize a Kotlin data class with Jackson modules detected by JacksonUtils#instantiateAvailableModules`() {
-		val jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build()
+		val jsonMapper = JsonMapper()
 		val output = jsonMapper.writeValueAsString(User("Robert", 42))
 		Assertions.assertThat(output).isEqualTo("{\"name\":\"Robert\",\"age\":42}")
 	}

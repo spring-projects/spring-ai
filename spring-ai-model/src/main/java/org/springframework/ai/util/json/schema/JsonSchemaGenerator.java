@@ -25,8 +25,6 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -39,6 +37,8 @@ import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -119,7 +119,7 @@ public final class JsonSchemaGenerator {
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
 	public static String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
-		ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
+		ObjectNode schema = JsonParser.getJsonMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
 
@@ -259,13 +259,13 @@ public final class JsonSchemaGenerator {
 	// Based on the method in ModelOptionsUtils.
 	public static void convertTypeValuesToUpperCase(ObjectNode node) {
 		if (node.isObject()) {
-			node.fields().forEachRemaining(entry -> {
+			node.properties().forEach(entry -> {
 				JsonNode value = entry.getValue();
 				if (value.isObject()) {
 					convertTypeValuesToUpperCase((ObjectNode) value);
 				}
 				else if (value.isArray()) {
-					value.elements().forEachRemaining(element -> {
+					value.forEach(element -> {
 						if (element.isObject() || element.isArray()) {
 							convertTypeValuesToUpperCase((ObjectNode) element);
 						}
@@ -278,7 +278,7 @@ public final class JsonSchemaGenerator {
 			});
 		}
 		else if (node.isArray()) {
-			node.elements().forEachRemaining(element -> {
+			node.forEach(element -> {
 				if (element.isObject() || element.isArray()) {
 					convertTypeValuesToUpperCase((ObjectNode) element);
 				}

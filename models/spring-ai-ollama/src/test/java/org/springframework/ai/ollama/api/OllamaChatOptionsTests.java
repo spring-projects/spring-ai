@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.JacksonException;
 
 import org.springframework.ai.util.ResourceUtils;
 
@@ -139,8 +139,7 @@ class OllamaChatOptionsTests {
 
 	@Test
 	void testOutputSchemaOptionWithJsonAsString() {
-		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json"))
-			.hasCauseInstanceOf(JsonParseException.class)
+		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json")).isInstanceOf(JacksonException.class)
 			.hasMessageContaining("Unrecognized token 'json'");
 	}
 

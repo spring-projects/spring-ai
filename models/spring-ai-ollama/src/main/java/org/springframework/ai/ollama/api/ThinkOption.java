@@ -16,18 +16,18 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.io.IOException;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Represents the thinking option for Ollama models. The think option controls whether
@@ -54,15 +54,15 @@ public sealed interface ThinkOption {
 	/**
 	 * Serializer that writes ThinkOption as raw boolean or string values.
 	 */
-	class ThinkOptionSerializer extends JsonSerializer<ThinkOption> {
+	class ThinkOptionSerializer extends ValueSerializer<ThinkOption> {
 
 		@Override
-		public void serialize(ThinkOption value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+		public void serialize(ThinkOption value, JsonGenerator gen, SerializationContext ctxt) throws JacksonException {
 			if (value == null) {
 				gen.writeNull();
 			}
 			else {
-				gen.writeObject(value.toJsonValue());
+				gen.writePOJO(value.toJsonValue());
 			}
 		}
 
@@ -71,10 +71,10 @@ public sealed interface ThinkOption {
 	/**
 	 * Deserializer that reads boolean or string values into ThinkOption instances.
 	 */
-	class ThinkOptionDeserializer extends JsonDeserializer<ThinkOption> {
+	class ThinkOptionDeserializer extends ValueDeserializer<ThinkOption> {
 
 		@Override
-		public ThinkOption deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+		public ThinkOption deserialize(JsonParser p, DeserializationContext ctxt) {
 			JsonToken token = p.currentToken();
 			if (token == JsonToken.VALUE_TRUE) {
 				return ThinkBoolean.ENABLED;
@@ -88,7 +88,7 @@ public sealed interface ThinkOption {
 			else if (token == JsonToken.VALUE_NULL) {
 				return null;
 			}
-			throw new IOException("Cannot deserialize ThinkOption from token: " + token);
+			throw new IllegalStateException("Cannot deserialize ThinkOption from token: " + token);
 		}
 
 	}

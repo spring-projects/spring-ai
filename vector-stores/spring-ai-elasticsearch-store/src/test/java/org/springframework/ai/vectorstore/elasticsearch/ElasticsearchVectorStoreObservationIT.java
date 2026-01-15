@@ -229,7 +229,7 @@ public class ElasticsearchVectorStoreObservationIT {
 		@Bean
 		ElasticsearchClient elasticsearchClient(Rest5Client restClient) {
 			return new ElasticsearchClient(new Rest5ClientTransport(restClient, new JacksonJsonpMapper(
-					new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
+					new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))));
 		}
 
 	}

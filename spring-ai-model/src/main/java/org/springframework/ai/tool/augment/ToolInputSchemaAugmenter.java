@@ -20,8 +20,8 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -85,7 +85,7 @@ public final class ToolInputSchemaAugmenter {
 
 		try {
 
-			ObjectNode schemaObjectNode = (ObjectNode) ModelOptionsUtils.OBJECT_MAPPER.readTree(jsonSchemaString);
+			ObjectNode schemaObjectNode = (ObjectNode) ModelOptionsUtils.JSON_MAPPER.readTree(jsonSchemaString);
 
 			// Handle properties
 			ObjectNode propertiesNode;
@@ -93,7 +93,7 @@ public final class ToolInputSchemaAugmenter {
 				propertiesNode = (ObjectNode) schemaObjectNode.get("properties");
 			}
 			else {
-				propertiesNode = ModelOptionsUtils.OBJECT_MAPPER.createObjectNode();
+				propertiesNode = ModelOptionsUtils.JSON_MAPPER.createObjectNode();
 				schemaObjectNode.set("properties", propertiesNode);
 			}
 
@@ -113,7 +113,7 @@ public final class ToolInputSchemaAugmenter {
 						requiredArray = (ArrayNode) schemaObjectNode.get("required");
 					}
 					else {
-						requiredArray = JsonParser.getObjectMapper().createArrayNode();
+						requiredArray = JsonParser.getJsonMapper().createArrayNode();
 						schemaObjectNode.set("required", requiredArray);
 					}
 					requiredArray.add(argument.name());
@@ -121,7 +121,7 @@ public final class ToolInputSchemaAugmenter {
 				}
 			}
 
-			return JsonParser.getObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(schemaObjectNode);
+			return JsonParser.getJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(schemaObjectNode);
 
 		}
 		catch (Exception e) {

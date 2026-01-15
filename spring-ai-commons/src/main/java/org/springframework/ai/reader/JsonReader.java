@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.StreamSupport;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentReader;
@@ -45,8 +45,6 @@ public class JsonReader implements DocumentReader {
 	private final Resource resource;
 
 	private final JsonMetadataGenerator jsonMetadataGenerator;
-
-	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * The key from the JSON that we will use as the text to parse into the Document text
@@ -73,15 +71,15 @@ public class JsonReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try {
-			JsonNode rootNode = this.objectMapper.readTree(this.resource.getInputStream());
+			JsonNode rootNode = JsonMapper.shared().readTree(this.resource.getInputStream());
 
 			if (rootNode.isArray()) {
 				return StreamSupport.stream(rootNode.spliterator(), true)
-					.map(jsonNode -> parseJsonNode(jsonNode, this.objectMapper))
+					.map(jsonNode -> parseJsonNode(jsonNode, JsonMapper.shared()))
 					.toList();
 			}
 			else {
-				return Collections.singletonList(parseJsonNode(rootNode, this.objectMapper));
+				return Collections.singletonList(parseJsonNode(rootNode, JsonMapper.shared()));
 			}
 		}
 		catch (IOException e) {
@@ -89,8 +87,8 @@ public class JsonReader implements DocumentReader {
 		}
 	}
 
-	private Document parseJsonNode(JsonNode jsonNode, ObjectMapper objectMapper) {
-		Map<String, Object> item = objectMapper.convertValue(jsonNode, new TypeReference<>() {
+	private Document parseJsonNode(JsonNode jsonNode, JsonMapper jsonMapper) {
+		Map<String, Object> item = jsonMapper.convertValue(jsonNode, new TypeReference<>() {
 
 		});
 		var sb = new StringBuilder();
@@ -107,11 +105,11 @@ public class JsonReader implements DocumentReader {
 	protected List<Document> get(JsonNode rootNode) {
 		if (rootNode.isArray()) {
 			return StreamSupport.stream(rootNode.spliterator(), true)
-				.map(jsonNode -> parseJsonNode(jsonNode, this.objectMapper))
+				.map(jsonNode -> parseJsonNode(jsonNode, JsonMapper.shared()))
 				.toList();
 		}
 		else {
-			return Collections.singletonList(parseJsonNode(rootNode, this.objectMapper));
+			return Collections.singletonList(parseJsonNode(rootNode, JsonMapper.shared()));
 		}
 	}
 
@@ -123,7 +121,7 @@ public class JsonReader implements DocumentReader {
 	 */
 	public List<Document> get(String pointer) {
 		try {
-			JsonNode rootNode = this.objectMapper.readTree(this.resource.getInputStream());
+			JsonNode rootNode = JsonMapper.shared().readTree(this.resource.getInputStream());
 			JsonNode targetNode = rootNode.at(pointer);
 
 			if (targetNode.isMissingNode()) {

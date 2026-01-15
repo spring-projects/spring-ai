@@ -16,8 +16,6 @@
 
 package org.springframework.ai.ollama.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -31,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OllamaDurationFieldsTests {
 
 	@Test
-	public void testDurationFields() throws JsonMappingException, JsonProcessingException {
+	public void testDurationFields() {
 
 		var value = ModelOptionsUtils.jsonToObject("""
 				{

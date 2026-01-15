@@ -16,8 +16,8 @@
 
 package org.springframework.ai.vectorstore.chroma.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi;
 import org.springframework.ai.chroma.vectorstore.ChromaVectorStore;
@@ -45,7 +45,7 @@ import org.springframework.web.client.RestClient;
  * @author Sebastien Deleuze
  */
 @AutoConfiguration
-@ConditionalOnClass({ EmbeddingModel.class, RestClient.class, ChromaVectorStore.class, ObjectMapper.class })
+@ConditionalOnClass({ EmbeddingModel.class, RestClient.class, ChromaVectorStore.class, JsonMapper.class })
 @EnableConfigurationProperties({ ChromaApiProperties.class, ChromaVectorStoreProperties.class })
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.CHROMA,
 		matchIfMissing = true)
@@ -61,14 +61,14 @@ public class ChromaVectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ChromaApi chromaApi(ChromaApiProperties apiProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ChromaConnectionDetails connectionDetails,
-			ObjectMapper objectMapper) {
+			JsonMapper jsonMapper) {
 
 		String chromaUrl = String.format("%s:%s", connectionDetails.getHost(), connectionDetails.getPort());
 
 		var chromaApi = ChromaApi.builder()
 			.baseUrl(chromaUrl)
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.objectMapper(objectMapper)
+			.jsonMapper(jsonMapper)
 			.build();
 
 		if (StringUtils.hasText(connectionDetails.getKeyToken())) {

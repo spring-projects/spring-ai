@@ -19,12 +19,10 @@ package org.springframework.ai.model;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -135,12 +133,11 @@ public class ModelOptionsUtilsTests {
 		assertThat(map.get("name")).isEqualTo("");
 		assertThat(map.get("age")).isEqualTo(30);
 
-		// Custom ObjectMapper: still "" for Map
-		ObjectMapper strictMapper = JsonMapper.builder()
-			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+		// Custom JsonMapper: still "" for Map
+		JsonMapper strictMapper = JsonMapper.builder()
 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			.build()
-			.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, false);
+			.disable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+			.build();
 		Map<String, Object> mapStrict = ModelOptionsUtils.jsonToMap(json, strictMapper);
 		assertThat(mapStrict.get("name")).isEqualTo("");
 	}
@@ -150,22 +147,21 @@ public class ModelOptionsUtilsTests {
 		String json = "{\"name\":\"\", \"age\":30}";
 
 		// POJO with default OBJECT_MAPPER (feature enabled)
-		Person person = ModelOptionsUtils.OBJECT_MAPPER.readValue(json, Person.class);
+		Person person = ModelOptionsUtils.JSON_MAPPER.readValue(json, Person.class);
 		assertThat(person.name).isEqualTo(""); // String remains ""
 		assertThat(person.age).isEqualTo(30); // Integer is fine
 
 		String jsonWithEmptyAge = "{\"name\":\"John\", \"age\":\"\"}";
-		Person person2 = ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithEmptyAge, Person.class);
+		Person person2 = ModelOptionsUtils.JSON_MAPPER.readValue(jsonWithEmptyAge, Person.class);
 		assertThat(person2.name).isEqualTo("John");
 		assertThat(person2.age).isNull(); // Integer: "" → null
 
 		// TODO: Need to investigate why the below fails
 		// // POJO with feature disabled: should fail for Integer field
-		// ObjectMapper strictMapper = JsonMapper.builder()
-		// .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+		// JsonMapper strictMapper = JsonMapper.builder()
 		// .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-		// .build()
-		// .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, false);
+		// .disable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+		// .build();
 		// assertThatThrownBy(() -> strictMapper.readValue(jsonWithEmptyAge,
 		// Person.class)).isInstanceOf(Exception.class);
 	}
@@ -180,42 +176,42 @@ public class ModelOptionsUtilsTests {
 	}
 
 	@Test
-	public void enumCoercion_emptyStringAsNull() throws JsonProcessingException {
+	public void enumCoercion_emptyStringAsNull() {
 		// Test direct enum deserialization with empty string
-		ColorEnum colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"\"", ColorEnum.class);
+		ColorEnum colorEnum = ModelOptionsUtils.JSON_MAPPER.readValue("\"\"", ColorEnum.class);
 		assertThat(colorEnum).isNull();
 
 		// Test direct enum deserialization with valid value
-		colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"RED\"", ColorEnum.class);
+		colorEnum = ModelOptionsUtils.JSON_MAPPER.readValue("\"RED\"", ColorEnum.class);
 		assertThat(colorEnum).isEqualTo(ColorEnum.RED);
 
 		// Test direct enum deserialization with invalid value should throw exception
 		final String jsonInvalid = "\"Invalid\"";
-		assertThatThrownBy(() -> ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonInvalid, ColorEnum.class))
-			.isInstanceOf(JsonProcessingException.class);
+		assertThatThrownBy(() -> ModelOptionsUtils.JSON_MAPPER.readValue(jsonInvalid, ColorEnum.class))
+			.isInstanceOf(RuntimeException.class);
 	}
 
 	@Test
-	public void enumCoercion_objectMapperConfiguration() throws JsonProcessingException {
-		// Test that ModelOptionsUtils.OBJECT_MAPPER has the correct coercion
+	public void enumCoercion_jsonMapperConfiguration() {
+		// Test that ModelOptionsUtils.JSON_MAPPER has the correct coercion
 		// configuration
 		// This validates that our static configuration block is working
 
 		// Empty string should coerce to null for enums
-		ColorEnum colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"\"", ColorEnum.class);
+		ColorEnum colorEnum = ModelOptionsUtils.JSON_MAPPER.readValue("\"\"", ColorEnum.class);
 		assertThat(colorEnum).isNull();
 
 		// Null should remain null
-		colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("null", ColorEnum.class);
+		colorEnum = ModelOptionsUtils.JSON_MAPPER.readValue("null", ColorEnum.class);
 		assertThat(colorEnum).isNull();
 
 		// Valid enum values should deserialize correctly
-		colorEnum = ModelOptionsUtils.OBJECT_MAPPER.readValue("\"BLUE\"", ColorEnum.class);
+		colorEnum = ModelOptionsUtils.JSON_MAPPER.readValue("\"BLUE\"", ColorEnum.class);
 		assertThat(colorEnum).isEqualTo(ColorEnum.BLUE);
 	}
 
 	@Test
-	public void enumCoercion_apiResponseWithFinishReason() throws JsonProcessingException {
+	public void enumCoercion_apiResponseWithFinishReason() {
 		// Test case 1: Empty string finish_reason should deserialize to null
 		String jsonWithEmptyFinishReason = """
 				{
@@ -224,7 +220,7 @@ public class ModelOptionsUtilsTests {
 				}
 				""";
 
-		TestApiResponse response = ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithEmptyFinishReason,
+		TestApiResponse response = ModelOptionsUtils.JSON_MAPPER.readValue(jsonWithEmptyFinishReason,
 				TestApiResponse.class);
 		assertThat(response.id()).isEqualTo("test-123");
 		assertThat(response.finishReason()).isNull();
@@ -238,7 +234,7 @@ public class ModelOptionsUtilsTests {
 				}
 				""";
 
-		response = ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithValidFinishReason, TestApiResponse.class);
+		response = ModelOptionsUtils.JSON_MAPPER.readValue(jsonWithValidFinishReason, TestApiResponse.class);
 		assertThat(response.id()).isEqualTo("test-456");
 		assertThat(response.finishReason()).isEqualTo(TestFinishReason.STOP);
 
@@ -250,7 +246,7 @@ public class ModelOptionsUtilsTests {
 				}
 				""";
 
-		response = ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithNullFinishReason, TestApiResponse.class);
+		response = ModelOptionsUtils.JSON_MAPPER.readValue(jsonWithNullFinishReason, TestApiResponse.class);
 		assertThat(response.id()).isEqualTo("test-789");
 		assertThat(response.finishReason()).isNull();
 
@@ -263,8 +259,7 @@ public class ModelOptionsUtilsTests {
 				""";
 
 		assertThatThrownBy(
-				() -> ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithInvalidFinishReason, TestApiResponse.class))
-			.isInstanceOf(JsonProcessingException.class)
+				() -> ModelOptionsUtils.JSON_MAPPER.readValue(jsonWithInvalidFinishReason, TestApiResponse.class))
 			.hasMessageContaining("INVALID_VALUE");
 	}
 

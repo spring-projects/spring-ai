@@ -21,11 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
@@ -80,7 +78,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private final boolean initializeSchema;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private boolean initialized = false;
 
@@ -98,7 +96,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		if (builder.initializeImmediately) {
 			try {
@@ -244,12 +242,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> jsonToMap(String jsonText) {
-		try {
-			return (Map<String, Object>) this.objectMapper.readValue(jsonText, Map.class);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return (Map<String, Object>) this.jsonMapper.readValue(jsonText, Map.class);
 	}
 
 	@Override

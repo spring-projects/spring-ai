@@ -165,7 +165,7 @@ public List<McpStatelessServerFeatures.SyncResourceSpecification> myResources(..
     var resourceSpecification = new McpStatelessServerFeatures.SyncResourceSpecification(systemInfoResource, (context, request) -> {
         try {
             var systemInfo = Map.of(...);
-            String jsonContent = new ObjectMapper().writeValueAsString(systemInfo);
+            String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
             return new McpSchema.ReadResourceResult(
                     List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
         }

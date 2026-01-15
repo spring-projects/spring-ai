@@ -26,10 +26,6 @@ import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,6 +33,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.util.TextBlockAssertion;
 import org.springframework.core.ParameterizedTypeReference;
@@ -58,7 +57,7 @@ class BeanOutputConverterTest {
 	private ListAppender<ILoggingEvent> logAppender;
 
 	@Mock
-	private ObjectMapper objectMapperMock;
+	private JsonMapper jsonMapperMock;
 
 	@BeforeEach
 	void beforeEach() {
@@ -75,8 +74,8 @@ class BeanOutputConverterTest {
 		var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
 
 		});
-		var objectMapper = converter.getObjectMapper();
-		assertThat(objectMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
+		var jsonMapper = converter.getJsonMapper();
+		assertThat(jsonMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)).isFalse();
 	}
 
 	static class TestClass {
@@ -160,7 +159,7 @@ class BeanOutputConverterTest {
 		@Test
 		void failToConvertInvalidJson() {
 			var converter = new BeanOutputConverter<>(TestClass.class);
-			assertThatThrownBy(() -> converter.convert("{invalid json")).hasCauseInstanceOf(JsonParseException.class);
+			assertThatThrownBy(() -> converter.convert("{invalid json")).hasMessageStartingWith("Unexpected character");
 			assertThat(BeanOutputConverterTest.this.logAppender.list).hasSize(1);
 			final var loggingEvent = BeanOutputConverterTest.this.logAppender.list.get(0);
 			assertThat(loggingEvent.getFormattedMessage())
@@ -208,11 +207,9 @@ class BeanOutputConverterTest {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonPropertyOrder.class);
 			String jsonSchema = converter.getJsonSchema();
 
-			ObjectMapper mapper = new ObjectMapper();
-			JsonNode schemaNode = mapper.readTree(jsonSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(jsonSchema);
 
-			List<String> actualOrder = new ArrayList<>();
-			schemaNode.get("properties").fieldNames().forEachRemaining(actualOrder::add);
+			List<String> actualOrder = new ArrayList<>(schemaNode.get("properties").propertyNames());
 
 			assertThat(actualOrder).containsExactly("string_property", "foo_property", "bar_property");
 		}

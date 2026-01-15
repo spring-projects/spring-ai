@@ -25,8 +25,7 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
 import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
@@ -64,19 +63,19 @@ public class ChromaApi {
 
 	private static final String X_CHROMA_TOKEN_NAME = "x-chroma-token";
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private RestClient restClient;
 
 	@Nullable
 	private String keyToken;
 
-	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
+	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, JsonMapper jsonMapper) {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(h -> h.setContentType(MediaType.APPLICATION_JSON))
 			.build();
-		this.objectMapper = objectMapper;
+		this.jsonMapper = jsonMapper;
 	}
 
 	/**
@@ -314,12 +313,7 @@ public class ChromaApi {
 
 	// Utils
 	public Map<String, Object> where(String text) {
-		try {
-			return this.objectMapper.readValue(text, Map.class);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return this.jsonMapper.readValue(text, Map.class);
 	}
 
 	private void httpHeaders(HttpHeaders headers) {
@@ -630,7 +624,8 @@ public class ChromaApi {
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
-		private ObjectMapper objectMapper = new ObjectMapper();
+		@Nullable
+		private JsonMapper jsonMapper;
 
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
@@ -644,14 +639,15 @@ public class ChromaApi {
 			return this;
 		}
 
-		public Builder objectMapper(ObjectMapper objectMapper) {
-			Assert.notNull(objectMapper, "objectMapper cannot be null");
-			this.objectMapper = objectMapper;
+		public Builder jsonMapper(JsonMapper jsonMapper) {
+			Assert.notNull(jsonMapper, "jsonMapper cannot be null");
+			this.jsonMapper = jsonMapper;
 			return this;
 		}
 
 		public ChromaApi build() {
-			return new ChromaApi(this.baseUrl, this.restClientBuilder, this.objectMapper);
+			return new ChromaApi(this.baseUrl, this.restClientBuilder,
+					(this.jsonMapper != null ? this.jsonMapper : new JsonMapper()));
 		}
 
 	}
