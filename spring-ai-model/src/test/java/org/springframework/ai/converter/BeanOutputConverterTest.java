@@ -207,8 +207,7 @@ class BeanOutputConverterTest {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonPropertyOrder.class);
 			String jsonSchema = converter.getJsonSchema();
 
-			JsonMapper mapper = new JsonMapper();
-			JsonNode schemaNode = mapper.readTree(jsonSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(jsonSchema);
 
 			List<String> actualOrder = new ArrayList<>(schemaNode.get("properties").propertyNames());
 

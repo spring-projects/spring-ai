@@ -56,7 +56,7 @@ public class MistralAiApiToolFunctionCallIT {
 	MistralAiApi completionApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
-		return new JsonMapper().readValue(json, targetClass);
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@Test
@@ -101,8 +101,6 @@ public class MistralAiApiToolFunctionCallIT {
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, MISTRAL_AI_CHAT_MODEL,
 				List.of(functionTool), ToolChoice.AUTO);
-
-		System.out.println(new JsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(chatCompletionRequest));
 
 		ResponseEntity<ChatCompletion> chatCompletion = this.completionApi.chatCompletionEntity(chatCompletionRequest);
 

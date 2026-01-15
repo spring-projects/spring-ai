@@ -46,8 +46,6 @@ public class JsonReader implements DocumentReader {
 
 	private final JsonMetadataGenerator jsonMetadataGenerator;
 
-	private final JsonMapper jsonMapper = new JsonMapper();
-
 	/**
 	 * The key from the JSON that we will use as the text to parse into the Document text
 	 */
@@ -73,15 +71,15 @@ public class JsonReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try {
-			JsonNode rootNode = this.jsonMapper.readTree(this.resource.getInputStream());
+			JsonNode rootNode = JsonMapper.shared().readTree(this.resource.getInputStream());
 
 			if (rootNode.isArray()) {
 				return StreamSupport.stream(rootNode.spliterator(), true)
-					.map(jsonNode -> parseJsonNode(jsonNode, this.jsonMapper))
+					.map(jsonNode -> parseJsonNode(jsonNode, JsonMapper.shared()))
 					.toList();
 			}
 			else {
-				return Collections.singletonList(parseJsonNode(rootNode, this.jsonMapper));
+				return Collections.singletonList(parseJsonNode(rootNode, JsonMapper.shared()));
 			}
 		}
 		catch (IOException e) {
@@ -107,11 +105,11 @@ public class JsonReader implements DocumentReader {
 	protected List<Document> get(JsonNode rootNode) {
 		if (rootNode.isArray()) {
 			return StreamSupport.stream(rootNode.spliterator(), true)
-				.map(jsonNode -> parseJsonNode(jsonNode, this.jsonMapper))
+				.map(jsonNode -> parseJsonNode(jsonNode, JsonMapper.shared()))
 				.toList();
 		}
 		else {
-			return Collections.singletonList(parseJsonNode(rootNode, this.jsonMapper));
+			return Collections.singletonList(parseJsonNode(rootNode, JsonMapper.shared()));
 		}
 	}
 
@@ -123,7 +121,7 @@ public class JsonReader implements DocumentReader {
 	 */
 	public List<Document> get(String pointer) {
 		try {
-			JsonNode rootNode = this.jsonMapper.readTree(this.resource.getInputStream());
+			JsonNode rootNode = JsonMapper.shared().readTree(this.resource.getInputStream());
 			JsonNode targetNode = rootNode.at(pointer);
 
 			if (targetNode.isMissingNode()) {

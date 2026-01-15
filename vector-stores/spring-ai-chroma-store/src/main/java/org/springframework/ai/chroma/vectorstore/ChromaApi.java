@@ -624,7 +624,8 @@ public class ChromaApi {
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
-		private JsonMapper jsonMapper = new JsonMapper();
+		@Nullable
+		private JsonMapper jsonMapper;
 
 		public Builder baseUrl(String baseUrl) {
 			Assert.hasText(baseUrl, "baseUrl cannot be null or empty");
@@ -645,7 +646,8 @@ public class ChromaApi {
 		}
 
 		public ChromaApi build() {
-			return new ChromaApi(this.baseUrl, this.restClientBuilder, this.jsonMapper);
+			return new ChromaApi(this.baseUrl, this.restClientBuilder,
+					(this.jsonMapper != null ? this.jsonMapper : new JsonMapper()));
 		}
 
 	}

@@ -29,47 +29,45 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class ThinkOptionTests {
 
-	private final JsonMapper jsonMapper = new JsonMapper();
-
 	@Test
 	void testThinkBooleanEnabledSerialization() {
 		ThinkOption option = ThinkOption.ThinkBoolean.ENABLED;
-		String json = this.jsonMapper.writeValueAsString(option);
+		String json = JsonMapper.shared().writeValueAsString(option);
 		assertThat(json).isEqualTo("true");
 	}
 
 	@Test
 	void testThinkBooleanDisabledSerialization() {
 		ThinkOption option = ThinkOption.ThinkBoolean.DISABLED;
-		String json = this.jsonMapper.writeValueAsString(option);
+		String json = JsonMapper.shared().writeValueAsString(option);
 		assertThat(json).isEqualTo("false");
 	}
 
 	@Test
 	void testThinkLevelLowSerialization() {
 		ThinkOption option = ThinkOption.ThinkLevel.LOW;
-		String json = this.jsonMapper.writeValueAsString(option);
+		String json = JsonMapper.shared().writeValueAsString(option);
 		assertThat(json).isEqualTo("\"low\"");
 	}
 
 	@Test
 	void testThinkLevelMediumSerialization() {
 		ThinkOption option = ThinkOption.ThinkLevel.MEDIUM;
-		String json = this.jsonMapper.writeValueAsString(option);
+		String json = JsonMapper.shared().writeValueAsString(option);
 		assertThat(json).isEqualTo("\"medium\"");
 	}
 
 	@Test
 	void testThinkLevelHighSerialization() throws Exception {
 		ThinkOption option = ThinkOption.ThinkLevel.HIGH;
-		String json = this.jsonMapper.writeValueAsString(option);
+		String json = JsonMapper.shared().writeValueAsString(option);
 		assertThat(json).isEqualTo("\"high\"");
 	}
 
 	@Test
 	void testDeserializeBooleanTrue() {
 		String json = "true";
-		ThinkOption option = this.jsonMapper.readValue(json, ThinkOption.class);
+		ThinkOption option = JsonMapper.shared().readValue(json, ThinkOption.class);
 		assertThat(option).isEqualTo(ThinkOption.ThinkBoolean.ENABLED);
 		assertThat(option).isInstanceOf(ThinkOption.ThinkBoolean.class);
 		assertThat(((ThinkOption.ThinkBoolean) option).enabled()).isTrue();
@@ -78,7 +76,7 @@ class ThinkOptionTests {
 	@Test
 	void testDeserializeBooleanFalse() {
 		String json = "false";
-		ThinkOption option = this.jsonMapper.readValue(json, ThinkOption.class);
+		ThinkOption option = JsonMapper.shared().readValue(json, ThinkOption.class);
 		assertThat(option).isEqualTo(ThinkOption.ThinkBoolean.DISABLED);
 		assertThat(option).isInstanceOf(ThinkOption.ThinkBoolean.class);
 		assertThat(((ThinkOption.ThinkBoolean) option).enabled()).isFalse();
@@ -87,15 +85,15 @@ class ThinkOptionTests {
 	@Test
 	void testDeserializeStringLow() {
 		String json = "\"low\"";
-		ThinkOption option = this.jsonMapper.readValue(json, ThinkOption.class);
+		ThinkOption option = JsonMapper.shared().readValue(json, ThinkOption.class);
 		assertThat(option).isInstanceOf(ThinkOption.ThinkLevel.class);
 		assertThat(((ThinkOption.ThinkLevel) option).level()).isEqualTo("low");
 	}
 
 	@Test
-	void testDeserializeStringMedium() throws Exception {
+	void testDeserializeStringMedium() {
 		String json = "\"medium\"";
-		ThinkOption option = this.jsonMapper.readValue(json, ThinkOption.class);
+		ThinkOption option = JsonMapper.shared().readValue(json, ThinkOption.class);
 		assertThat(option).isInstanceOf(ThinkOption.ThinkLevel.class);
 		assertThat(((ThinkOption.ThinkLevel) option).level()).isEqualTo("medium");
 	}
@@ -103,7 +101,7 @@ class ThinkOptionTests {
 	@Test
 	void testDeserializeStringHigh() {
 		String json = "\"high\"";
-		ThinkOption option = this.jsonMapper.readValue(json, ThinkOption.class);
+		ThinkOption option = JsonMapper.shared().readValue(json, ThinkOption.class);
 		assertThat(option).isInstanceOf(ThinkOption.ThinkLevel.class);
 		assertThat(((ThinkOption.ThinkLevel) option).level()).isEqualTo("high");
 	}
@@ -111,7 +109,7 @@ class ThinkOptionTests {
 	@Test
 	void testDeserializeNull() {
 		String json = "null";
-		ThinkOption option = this.jsonMapper.readValue(json, ThinkOption.class);
+		ThinkOption option = JsonMapper.shared().readValue(json, ThinkOption.class);
 		assertThat(option).isNull();
 	}
 

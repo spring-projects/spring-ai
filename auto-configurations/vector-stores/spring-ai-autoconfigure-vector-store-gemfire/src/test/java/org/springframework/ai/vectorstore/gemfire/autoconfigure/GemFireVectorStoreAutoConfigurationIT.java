@@ -214,7 +214,7 @@ class GemFireVectorStoreAutoConfigurationIT {
 
 	private Map<String, Object> parseIndex(String json) {
 		try {
-			JsonNode rootNode = new JsonMapper().readTree(json);
+			JsonNode rootNode = JsonMapper.shared().readTree(json);
 			Map<String, Object> indexDetails = new HashMap<>();
 			if (rootNode.isObject()) {
 				if (rootNode.has("name")) {

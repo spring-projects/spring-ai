@@ -35,8 +35,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class GoogleGenAiUsageTests {
 
-	private final JsonMapper jsonMapper = new JsonMapper();
-
 	@Test
 	void testBasicUsageExtraction() {
 		// Create mock usage metadata
@@ -239,7 +237,7 @@ public class GoogleGenAiUsageTests {
 		GoogleGenAiUsage usage = new GoogleGenAiUsage(100, 50, 175, 25, 30, 15, null, null, null, null,
 				GoogleGenAiTrafficType.ON_DEMAND, null);
 
-		String json = this.jsonMapper.writeValueAsString(usage);
+		String json = JsonMapper.shared().writeValueAsString(usage);
 
 		assertThat(json).contains("\"promptTokens\":100");
 		assertThat(json).contains("\"completionTokens\":50");

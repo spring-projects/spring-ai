@@ -391,7 +391,7 @@ public class StreamableMcpAnnotationsManualIT {
 				try {
 					var systemInfo = Map.of("os", System.getProperty("os.name"), "os_version",
 							System.getProperty("os.version"), "java_version", System.getProperty("java.version"));
-					String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
+					String jsonContent = JsonMapper.shared().writeValueAsString(systemInfo);
 					return new McpSchema.ReadResourceResult(List
 						.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
 				}

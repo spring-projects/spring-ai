@@ -78,8 +78,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private final Pinecone pinecone;
 
-	private final JsonMapper jsonMapper;
-
 	private static final Logger logger = LoggerFactory.getLogger(PineconeVectorStore.class);
 
 	/**
@@ -98,7 +96,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		this.pineconeDistanceMetadataFieldName = builder.distanceMetadataFieldName;
 
 		this.pinecone = new Pinecone.Builder(builder.apiKey).build();
-		this.jsonMapper = new JsonMapper();
 	}
 
 	/**
@@ -167,7 +164,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			var structBuilder = Struct.newBuilder();
 			JsonFormat.parser()
 				.ignoringUnknownFields()
-				.merge(this.jsonMapper.writeValueAsString(document.getMetadata()), structBuilder);
+				.merge(JsonMapper.shared().writeValueAsString(document.getMetadata()), structBuilder);
 			structBuilder.putFields(this.pineconeContentFieldName, contentValue(document));
 			return structBuilder.build();
 		}
@@ -301,7 +298,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private Map<String, Object> extractMetadata(Struct metadataStruct) {
 		try {
 			String json = JsonFormat.printer().print(metadataStruct);
-			Map<String, Object> metadata = this.jsonMapper.readValue(json, new TypeReference<>() {
+			Map<String, Object> metadata = JsonMapper.shared().readValue(json, new TypeReference<>() {
 
 			});
 			metadata.remove(this.pineconeContentFieldName);

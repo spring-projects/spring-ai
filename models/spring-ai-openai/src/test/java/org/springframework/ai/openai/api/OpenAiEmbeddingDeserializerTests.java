@@ -43,8 +43,6 @@ class OpenAiEmbeddingDeserializerTests {
 
 	private final OpenAiEmbeddingDeserializer deserializer = new OpenAiEmbeddingDeserializer();
 
-	private final JsonMapper mapper = new JsonMapper();
-
 	@Test
 	void testDeserializeFloatArray() {
 		JsonParser parser = mock(JsonParser.class);
@@ -99,7 +97,7 @@ class OpenAiEmbeddingDeserializerTests {
 					"object": "embedding"
 				}
 				""";
-		OpenAiApi.Embedding embedding = this.mapper.readValue(json, OpenAiApi.Embedding.class);
+		OpenAiApi.Embedding embedding = JsonMapper.shared().readValue(json, OpenAiApi.Embedding.class);
 		assertEquals(1, embedding.index());
 		assertArrayEquals(new float[] { 1.0f, 2.0f, 3.0f }, embedding.embedding(), 0.0001f);
 		assertEquals("embedding", embedding.object());
@@ -123,7 +121,7 @@ class OpenAiEmbeddingDeserializerTests {
 				}
 				""".formatted(base64);
 
-		OpenAiApi.Embedding embedding = this.mapper.readValue(json, OpenAiApi.Embedding.class);
+		OpenAiApi.Embedding embedding = JsonMapper.shared().readValue(json, OpenAiApi.Embedding.class);
 		assertEquals(2, embedding.index());
 		assertArrayEquals(original, embedding.embedding(), 0.0001f);
 		assertEquals("embedding", embedding.object());
@@ -139,7 +137,7 @@ class OpenAiEmbeddingDeserializerTests {
 				}
 				""";
 		JacksonException ex = assertThrows(JacksonException.class,
-				() -> this.mapper.readValue(json, OpenAiApi.Embedding.class));
+				() -> JsonMapper.shared().readValue(json, OpenAiApi.Embedding.class));
 		assertTrue(ex.getMessage().contains("Illegal embedding"));
 	}
 

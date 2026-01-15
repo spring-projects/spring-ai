@@ -135,12 +135,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private final WeaviateFilterExpressionConverter filterExpressionConverter;
 
 	/**
-	 * Used to serialize/deserialize the document metadata when stored/retrieved from the
-	 * weaviate vector store.
-	 */
-	private final JsonMapper jsonMapper = new JsonMapper();
-
-	/**
 	 * Protected constructor for creating a WeaviateVectorStore instance using the builder
 	 * pattern. This constructor initializes the vector store with the configured settings
 	 * from the builder and performs necessary validations.
@@ -248,7 +242,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		Map<String, Object> fields = new HashMap<>();
 		fields.put(this.options.getContentFieldName(), document.getText());
 		try {
-			String metadataString = this.jsonMapper.writeValueAsString(document.getMetadata());
+			String metadataString = JsonMapper.shared().writeValueAsString(document.getMetadata());
 			fields.put(METADATA_FIELD_NAME, metadataString);
 		}
 		catch (JacksonException e) {
@@ -408,7 +402,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		String metadataJson = (String) item.get(METADATA_FIELD_NAME);
 		if (StringUtils.hasText(metadataJson)) {
-			metadata.putAll(this.jsonMapper.readValue(metadataJson, Map.class));
+			metadata.putAll(JsonMapper.shared().readValue(metadataJson, Map.class));
 		}
 
 		// Content

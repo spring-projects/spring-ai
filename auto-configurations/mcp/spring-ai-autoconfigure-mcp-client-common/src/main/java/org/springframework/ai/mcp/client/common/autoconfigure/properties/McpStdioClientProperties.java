@@ -75,7 +75,7 @@ public class McpStdioClientProperties {
 
 	private Map<String, ServerParameters> resourceToServerParameters() {
 		try {
-			Map<String, Map<String, Parameters>> stdioConnection = new JsonMapper()
+			Map<String, Map<String, Parameters>> stdioConnection = JsonMapper.shared()
 				.readValue(this.serversConfiguration.getInputStream(), new TypeReference<>() {
 				});
 

@@ -99,7 +99,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
 			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
 
-		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
 
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 

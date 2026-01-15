@@ -40,10 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ChatCompletionRequestSkillsSerializationTests {
 
-	private final JsonMapper jsonMapper = new JsonMapper();
-
 	@Test
-	void shouldSerializeRequestWithSkills() throws Exception {
+	void shouldSerializeRequestWithSkills() {
 		SkillContainer container = SkillContainer.builder().anthropicSkill(AnthropicSkill.XLSX).build();
 
 		AnthropicMessage message = new AnthropicMessage(List.of(new ContentBlock("Create a spreadsheet")), Role.USER);
@@ -55,7 +53,7 @@ class ChatCompletionRequestSkillsSerializationTests {
 			.container(container)
 			.build();
 
-		String json = this.jsonMapper.writeValueAsString(request);
+		String json = JsonMapper.shared().writeValueAsString(request);
 
 		assertThat(json).contains("\"container\"");
 		assertThat(json).contains("\"skills\"");
@@ -81,7 +79,7 @@ class ChatCompletionRequestSkillsSerializationTests {
 			.container(container)
 			.build();
 
-		String json = this.jsonMapper.writeValueAsString(request);
+		String json = JsonMapper.shared().writeValueAsString(request);
 
 		assertThat(json).contains("\"xlsx\"");
 		assertThat(json).contains("\"pptx\"");
@@ -99,7 +97,7 @@ class ChatCompletionRequestSkillsSerializationTests {
 			.maxTokens(1024)
 			.build();
 
-		String json = this.jsonMapper.writeValueAsString(request);
+		String json = JsonMapper.shared().writeValueAsString(request);
 
 		assertThat(json).doesNotContain("\"container\"");
 	}
@@ -118,7 +116,7 @@ class ChatCompletionRequestSkillsSerializationTests {
 			.skills(skills)
 			.build();
 
-		String json = this.jsonMapper.writeValueAsString(request);
+		String json = JsonMapper.shared().writeValueAsString(request);
 
 		assertThat(json).contains("\"container\"");
 		assertThat(json).contains("\"skills\"");
@@ -151,7 +149,7 @@ class ChatCompletionRequestSkillsSerializationTests {
 				}
 				""";
 
-		ChatCompletionRequest request = this.jsonMapper.readValue(json, ChatCompletionRequest.class);
+		ChatCompletionRequest request = JsonMapper.shared().readValue(json, ChatCompletionRequest.class);
 
 		assertThat(request.container()).isNotNull();
 		assertThat(request.container().skills()).hasSize(1);

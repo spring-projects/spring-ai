@@ -78,8 +78,9 @@ public class StdioTransportAutoConfiguration {
 		List<NamedClientMcpTransport> stdioTransports = new ArrayList<>();
 
 		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
+			// TODO Inject JsonMapper bean instead?
 			var transport = new StdioClientTransport(serverParameters.getValue(),
-					new JacksonMcpJsonMapper(new JsonMapper()));
+					new JacksonMcpJsonMapper(JsonMapper.shared()));
 			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 
 		}

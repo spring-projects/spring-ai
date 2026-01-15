@@ -193,17 +193,15 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 	}
 
 	private JsonNode mapCosmosDocument(Document document, float[] queryEmbedding) {
-		JsonMapper jsonMapper = new JsonMapper();
-
 		String id = document.getId();
 		String content = document.getText();
 
 		// Convert metadata and embedding directly to JsonNode
-		JsonNode metadataNode = jsonMapper.valueToTree(document.getMetadata());
-		JsonNode embeddingNode = jsonMapper.valueToTree(queryEmbedding);
+		JsonNode metadataNode = JsonMapper.shared().valueToTree(document.getMetadata());
+		JsonNode embeddingNode = JsonMapper.shared().valueToTree(queryEmbedding);
 
 		// Create an ObjectNode specifically
-		ObjectNode objectNode = jsonMapper.createObjectNode();
+		ObjectNode objectNode = JsonMapper.shared().createObjectNode();
 
 		// Use put for simple values and set for JsonNode values
 		objectNode.put("id", id);

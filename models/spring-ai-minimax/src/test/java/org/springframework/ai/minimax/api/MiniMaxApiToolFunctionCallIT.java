@@ -49,7 +49,7 @@ public class MiniMaxApiToolFunctionCallIT {
 	MiniMaxApi miniMaxApi = new MiniMaxApi(System.getenv("MINIMAX_API_KEY"));
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
-		return new JsonMapper().readValue(json, targetClass);
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@SuppressWarnings("null")

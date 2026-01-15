@@ -53,8 +53,6 @@ import static org.mockito.Mockito.when;
  */
 class AugmentedToolCallbackTest {
 
-	private static final JsonMapper jsonMapper = new JsonMapper();
-
 	@Mock
 	private ToolCallback mockDelegate;
 
@@ -212,7 +210,7 @@ class AugmentedToolCallbackTest {
 			ToolDefinition augmentedDefinition = callback.getToolDefinition();
 			String augmentedSchema = augmentedDefinition.inputSchema();
 
-			JsonNode schemaNode = jsonMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check original field is preserved
 			assertTrue(schemaNode.get("properties").has("originalField"));
@@ -382,7 +380,7 @@ class AugmentedToolCallbackTest {
 			// Then
 			verify(mockDelegate).call(argThat(input -> {
 				try {
-					JsonNode inputNode = jsonMapper.readTree(input);
+					JsonNode inputNode = JsonMapper.shared().readTree(input);
 					return inputNode.has("originalField") && !inputNode.has("name") && !inputNode.has("age");
 				}
 				catch (Exception e) {
@@ -433,7 +431,7 @@ class AugmentedToolCallbackTest {
 			// Then
 			verify(mockDelegate).call(argThat(input -> {
 				try {
-					JsonNode inputNode = jsonMapper.readTree(input);
+					JsonNode inputNode = JsonMapper.shared().readTree(input);
 					return inputNode.has("originalField") && inputNode.has("name") && inputNode.has("age");
 				}
 				catch (Exception e) {
@@ -539,7 +537,7 @@ class AugmentedToolCallbackTest {
 			// Verify delegate was called with cleaned input (extended args removed)
 			verify(mockDelegate).call(argThat(input -> {
 				try {
-					JsonNode inputNode = jsonMapper.readTree(input);
+					JsonNode inputNode = JsonMapper.shared().readTree(input);
 					return inputNode.has("productId") && !inputNode.has("value");
 				}
 				catch (Exception e) {

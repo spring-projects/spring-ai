@@ -30,9 +30,11 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectWriter;
 import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
@@ -199,19 +201,15 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
-		ObjectNode oldJsonNode = generator.generateSchema(this.type);
-
-		// Convert from old Jackson 2 ObjectNode to new Jackson 3 String representation
-		String jsonSchema = oldJsonNode.toString();
-
-		ObjectWriter objectWriter = this.jsonMapper.writerWithDefaultPrettyPrinter();
+		JsonNode jsonNode = generator.generateSchema(this.type);
+		ObjectWriter objectWriter = this.jsonMapper.writer()
+			.with(new DefaultPrettyPrinter()
+				.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
-			// Parse and pretty-print using Jackson 3
-			Object parsedSchema = this.jsonMapper.readValue(jsonSchema, Object.class);
-			this.jsonSchema = objectWriter.writeValueAsString(parsedSchema);
+			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
 		}
 		catch (JacksonException e) {
-			logger.error("Could not pretty print json schema for jsonNode: {}", oldJsonNode);
+			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
 			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
 		}
 	}

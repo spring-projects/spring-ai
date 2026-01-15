@@ -67,7 +67,7 @@ public class PaymentStatusFunctionCallingIT {
 	private final Logger logger = LoggerFactory.getLogger(PaymentStatusFunctionCallingIT.class);
 
 	private static <T> T jsonToObject(String json, Class<T> targetClass) {
-		return new JsonMapper().readValue(json, targetClass);
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@Test

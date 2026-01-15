@@ -49,10 +49,8 @@ public class ZhiPuAiApiToolFunctionCallIT {
 
 	private final ZhiPuAiApi zhiPuAiApi = ZhiPuAiApi.builder().apiKey(System.getenv("ZHIPU_AI_API_KEY")).build();
 
-	private final JsonMapper jsonMapper = new JsonMapper();
-
 	private <T> T fromJson(String json, Class<T> targetClass) {
-		return this.jsonMapper.readValue(json, targetClass);
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@SuppressWarnings("null")

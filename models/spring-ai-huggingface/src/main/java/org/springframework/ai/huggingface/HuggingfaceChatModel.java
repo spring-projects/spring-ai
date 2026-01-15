@@ -55,11 +55,6 @@ public class HuggingfaceChatModel implements ChatModel {
 	private ApiClient apiClient = new ApiClient();
 
 	/**
-	 * Mapper for converting between Java objects and JSON.
-	 */
-	private JsonMapper jsonMapper = new JsonMapper();
-
-	/**
 	 * API for text generation inferences.
 	 */
 	private TextGenerationInferenceApi textGenApi = new TextGenerationInferenceApi();
@@ -100,10 +95,10 @@ public class HuggingfaceChatModel implements ChatModel {
 		for (GenerateResponse generateResponse : generateResponses) {
 			String generatedText = generateResponse.getGeneratedText();
 			AllOfGenerateResponseDetails allOfGenerateResponseDetails = generateResponse.getDetails();
-			Map<String, Object> detailsMap = this.jsonMapper.convertValue(allOfGenerateResponseDetails,
-					new TypeReference<>() {
+			Map<String, Object> detailsMap = JsonMapper.shared()
+				.convertValue(allOfGenerateResponseDetails, new TypeReference<>() {
 
-					});
+				});
 			Generation generation = new Generation(
 					AssistantMessage.builder().content(generatedText).properties(detailsMap).build());
 			generations.add(generation);

@@ -39,15 +39,12 @@ public class EventParsingTests {
 
 	private static final Logger logger = LoggerFactory.getLogger(EventParsingTests.class);
 
-	private static final JsonMapper jsonMapper = new JsonMapper();
-
 	@Test
 	public void readEvents() throws IOException {
 		String json = new DefaultResourceLoader().getResource("classpath:/sample_events.json")
 			.getContentAsString(Charset.defaultCharset());
 
-		List<StreamEvent> events = jsonMapper.readerFor(new TypeReference<>() {
-
+		List<StreamEvent> events = JsonMapper.shared().readerFor(new TypeReference<>() {
 		}).readValue(json);
 
 		logger.info(events.toString());

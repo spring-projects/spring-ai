@@ -94,7 +94,7 @@ public class SseWebFluxTransportAutoConfiguration {
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
