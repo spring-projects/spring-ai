@@ -514,8 +514,9 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	}
 
-	@SuppressWarnings("NullAway") // fields late-initialized by deserialization from an
-									// http body
+	@SuppressWarnings("NullAway.Init") // fields late-initialized by deserialization from
+										// an
+										// http body
 	private static final class QueryResponse {
 
 		private String key;
@@ -523,10 +524,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 		private float score;
 
 		private Map<String, Object> metadata;
-
-		private String getContent(String field) {
-			return (String) this.metadata.get(field);
-		}
 
 		public void setKey(String key) {
 			this.key = key;
