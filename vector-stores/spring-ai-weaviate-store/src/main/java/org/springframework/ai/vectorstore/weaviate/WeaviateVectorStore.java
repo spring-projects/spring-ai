@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -348,6 +349,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		String graphQLQuery = queryBuilder.build().buildQuery();
 
 		if (request.hasFilterExpression()) {
+			Assert.state(request.getFilterExpression() != null, "filter expression must not be null");
 			// replace the empty 'where:{}' placeholder with real filter.
 			String filter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 			graphQLQuery = graphQLQuery.replace("where:{}", String.format("where:{%s}", filter));
@@ -399,8 +401,11 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		// Additional (System)
 		Map<String, ?> additional = (Map<String, ?>) item.get(ADDITIONAL_FIELD_NAME);
-		double certainty = (Double) additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME);
-		String id = (String) additional.get(ADDITIONAL_ID_FIELD_NAME);
+		Assert.state(additional != null, "additional field should not be null");
+		double certainty = (Double) Objects.requireNonNull(additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME),
+				"missing additional certainty field");
+		String id = (String) Objects.requireNonNull(additional.get(ADDITIONAL_ID_FIELD_NAME),
+				"missing additional id field");
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
