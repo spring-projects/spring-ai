@@ -98,7 +98,6 @@
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 
-	<suppress files="vector-stores[\\/]spring-ai-pinecone-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-qdrant-store" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-redis-semantic-cache" id="bannedNullabilityImports" />
 	<suppress files="vector-stores[\\/]spring-ai-redis-store" id="bannedNullabilityImports" />
