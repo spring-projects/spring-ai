@@ -29,6 +29,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPooled;
@@ -60,7 +61,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -305,7 +305,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	private final Integer hnswEfRuntime;
 
 	// Default range threshold for range searches (0.0 to 1.0)
-	private final Double defaultRangeThreshold;
+	private final @Nullable Double defaultRangeThreshold;
 
 	// Text search configuration
 	private final TextScorer textScorer;
@@ -1142,7 +1142,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		// Process the results and ensure they match the specified similarity threshold
 		List<Document> documents = result.getDocuments().stream().map(this::toDocument).filter(doc -> {
-			boolean isAboveThreshold = doc.getScore() >= radius;
+			boolean isAboveThreshold = doc.getScore() != null && doc.getScore() >= radius;
 			if (logger.isDebugEnabled()) {
 				logger.debug("Document score: {}, raw distance: {}, above_threshold: {}", doc.getScore(),
 						doc.getMetadata().getOrDefault(DISTANCE_FIELD_NAME, "N/A"), isAboveThreshold);
@@ -1321,7 +1321,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private Integer hnswEfRuntime = 10;
 
-		private Double defaultRangeThreshold;
+		private @Nullable Double defaultRangeThreshold;
 
 		// Text search configuration
 		private TextScorer textScorer = DEFAULT_TEXT_SCORER;
