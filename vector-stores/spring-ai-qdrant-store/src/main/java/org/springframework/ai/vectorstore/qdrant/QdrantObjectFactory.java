@@ -24,6 +24,7 @@ import io.qdrant.client.grpc.JsonWithInt.ListValue;
 import io.qdrant.client.grpc.JsonWithInt.Value;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -41,9 +42,9 @@ final class QdrantObjectFactory {
 	private QdrantObjectFactory() {
 	}
 
-	public static Map<String, Object> toObjectMap(Map<String, Value> payload) {
+	public static Map<String, ? super Object> toObjectMap(Map<String, Value> payload) {
 		Assert.notNull(payload, "Payload map must not be null");
-		Map<String, Object> map = new HashMap<>();
+		Map<String, @Nullable Object> map = new HashMap<>();
 		for (Map.Entry<String, Value> entry : payload.entrySet()) {
 			map.put(entry.getKey(), object(entry.getValue()));
 		}
@@ -54,7 +55,7 @@ final class QdrantObjectFactory {
 		return listValue.getValuesList().stream().map(QdrantObjectFactory::object).collect(Collectors.toList());
 	}
 
-	private static Object object(Value value) {
+	private static @Nullable Object object(Value value) {
 
 		return switch (value.getKindCase()) {
 			case INTEGER_VALUE -> value.getIntegerValue();
