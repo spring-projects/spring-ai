@@ -29,6 +29,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
+import org.springframework.util.Assert;
 
 /**
  * @author Anush Shetty
@@ -51,10 +52,12 @@ class QdrantFilterExpressionConverter {
 				mustNotClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(group.content())));
 			}
 			else if (expression.type() == ExpressionType.AND) {
+				Assert.state(expression.right() != null, "expected an expression with a right operand");
 				mustClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.left())));
 				mustClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.right())));
 			}
 			else if (expression.type() == ExpressionType.OR) {
+				Assert.state(expression.right() != null, "expected an expression with a right operand");
 				shouldClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.left())));
 				shouldClauses.add(io.qdrant.client.ConditionFactory.filter(convertOperand(expression.right())));
 			}

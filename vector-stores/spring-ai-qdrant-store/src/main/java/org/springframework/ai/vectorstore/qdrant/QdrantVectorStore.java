@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.qdrant;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -297,7 +298,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private Map<String, Value> toPayload(Document document) {
 		try {
 			var payload = QdrantValueFactory.toValueMap(document.getMetadata());
-			payload.put(CONTENT_FIELD_NAME, io.qdrant.client.ValueFactory.value(document.getText()));
+			payload.put(CONTENT_FIELD_NAME,
+					io.qdrant.client.ValueFactory.value(Objects.requireNonNullElse(document.getText(), "")));
 			return payload;
 		}
 		catch (Exception e) {
