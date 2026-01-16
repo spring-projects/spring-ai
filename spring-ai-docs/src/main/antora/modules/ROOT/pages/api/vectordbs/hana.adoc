@@ -22,7 +22,7 @@ Additionally, you will need a configured `EmbeddingModel` bean. Refer to the xre
 == HanaCloudVectorStore Properties
 
 You can use the following properties in your Spring Boot configuration to customize the SAP Hana vector store.
-It uses `spring.datasource.*` properties to configure the Hana datasource and the `spring.ai.vectorstore.hanadb.*` properties to configure the Hana vector store.
+It uses `spring.datasource.*` properties to configure the Hana datasource and the `spring.ai.vectorstore.hanadb.\*` properties to configure the Hana vector store.
 
 |===
 |Property| Description | Default value
