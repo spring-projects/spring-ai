@@ -397,12 +397,13 @@ public class OpenAiAudioApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record SpeechRequest(
-	// @formatter:off
+// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("input") String input,
 		@JsonProperty("voice") String voice,
 		@JsonProperty("response_format") AudioResponseFormat responseFormat,
-		@JsonProperty("speed") Double speed) {
+		@JsonProperty("speed") Double speed,
+		@JsonProperty("instructions") String instructions) {
 		// @formatter:on
 
 		public static Builder builder() {
@@ -499,6 +500,8 @@ public class OpenAiAudioApi {
 
 			private Double speed;
 
+			private String instructions;
+
 			public Builder model(String model) {
 				this.model = model;
 				return this;
@@ -529,11 +532,17 @@ public class OpenAiAudioApi {
 				return this;
 			}
 
+			public Builder instructions(String instructions) {
+				this.instructions = instructions;
+				return this;
+			}
+
 			public SpeechRequest build() {
 				Assert.hasText(this.model, "model must not be empty");
 				Assert.hasText(this.input, "input must not be empty");
 
-				return new SpeechRequest(this.model, this.input, this.voice, this.responseFormat, this.speed);
+				return new SpeechRequest(this.model, this.input, this.voice, this.responseFormat, this.speed,
+						this.instructions);
 			}
 
 		}
