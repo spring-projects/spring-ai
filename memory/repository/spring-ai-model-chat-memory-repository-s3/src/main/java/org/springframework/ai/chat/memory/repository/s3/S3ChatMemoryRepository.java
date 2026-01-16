@@ -26,6 +26,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -165,7 +166,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	 * @param prefix the key prefix
 	 * @return the conversation ID or null if invalid
 	 */
-	private String extractConversationId(final String key, final String prefix) {
+	private @Nullable String extractConversationId(final String key, final String prefix) {
 		Assert.hasText(key, "key cannot be null or empty");
 		Assert.hasText(prefix, "prefix cannot be null or empty");
 

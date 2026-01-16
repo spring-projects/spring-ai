@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.memory.repository.s3;
 
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.StorageClass;
 
@@ -116,19 +117,19 @@ public final class S3ChatMemoryConfig {
 	public static final class Builder {
 
 		/** The S3 client. */
-		private S3Client s3Client;
+		private @Nullable S3Client s3Client;
 
 		/** The bucket name. */
-		private String bucketName;
+		private @Nullable String bucketName;
 
 		/** The key prefix. */
-		private String keyPrefix;
+		private @Nullable String keyPrefix;
 
 		/** Whether to initialize bucket. */
 		private boolean initializeBucket = false;
 
 		/** The storage class. */
-		private StorageClass storageClass;
+		private @Nullable StorageClass storageClass;
 
 		/**
 		 * Private constructor.
