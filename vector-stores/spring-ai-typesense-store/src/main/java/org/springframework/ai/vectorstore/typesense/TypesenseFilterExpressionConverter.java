@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.typesense;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Filter.Expression} into Typesense metadata filter expression format.
@@ -29,6 +30,7 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 
 	@Override
 	protected void doExpression(Filter.Expression exp, StringBuilder context) {
+		Assert.state(exp.right() != null, "expected non null right operand");
 		this.convertOperand(exp.left(), context);
 		context.append(getOperationSymbol(exp));
 		this.convertOperand(exp.right(), context);
