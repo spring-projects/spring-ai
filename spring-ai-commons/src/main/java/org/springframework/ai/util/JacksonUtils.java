@@ -34,8 +34,9 @@ public abstract class JacksonUtils {
 	/**
 	 * Instantiate well-known Jackson modules available in the classpath.
 	 * <p>
-	 * Supports the follow-modules: <code>Jdk8Module</code>, <code>JavaTimeModule</code>,
-	 * <code>ParameterNamesModule</code> and <code>KotlinModule</code>.
+	 * Supports the following modules: <code>Jdk8Module</code>,
+	 * <code>JavaTimeModule</code>, <code>ParameterNamesModule</code> and
+	 * <code>KotlinModule</code>.
 	 * @return The list of instantiated modules.
 	 */
 	@SuppressWarnings("unchecked")
