@@ -26,6 +26,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -56,10 +57,21 @@ public class OllamaApiAutoConfiguration {
 	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+		
+		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
+		WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder);
+		
+		// Add Authorization header if API key is provided
+		if (StringUtils.hasText(connectionDetails.getApiKey())) {
+			String bearerToken = "Bearer " + connectionDetails.getApiKey();
+			restClientBuilder = restClientBuilder.defaultHeader("Authorization", bearerToken);
+			webClientBuilder = webClientBuilder.defaultHeader("Authorization", bearerToken);
+		}
+		
 		return OllamaApi.builder()
 			.baseUrl(connectionDetails.getBaseUrl())
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(responseErrorHandler)
 			.build();
 	}
@@ -75,6 +87,11 @@ public class OllamaApiAutoConfiguration {
 		@Override
 		public String getBaseUrl() {
 			return this.properties.getBaseUrl();
+		}
+
+		@Override
+		public String getApiKey() {
+			return this.properties.getApiKey();
 		}
 
 	}
