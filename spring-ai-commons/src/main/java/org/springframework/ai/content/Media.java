@@ -382,9 +382,9 @@ public class Media {
 		// Video Formats
 		// -----------------
 		/**
-		 * Public constant mime type for {@code video/x-matros}.
+		 * Public constant mime type for {@code video/x-matroska}.
 		 */
-		public static final MimeType VIDEO_MKV = MimeType.valueOf("video/x-matros");
+		public static final MimeType VIDEO_MKV = MimeType.valueOf("video/x-matroska");
 
 		/**
 		 * Public constant mime type for {@code video/quicktime}.
