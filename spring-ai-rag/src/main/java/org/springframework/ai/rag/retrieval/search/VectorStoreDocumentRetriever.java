@@ -65,7 +65,7 @@ public final class VectorStoreDocumentRetriever implements DocumentRetriever {
 	private final Integer topK;
 
 	// Supplier to allow for lazy evaluation of the filter expression,
-	// which may depend on the execution content. For example, you may want to
+	// which may depend on the execution context. For example, you may want to
 	// filter dynamically based on the current user's identity or tenant ID.
 	private final Supplier<Filter.Expression> filterExpression;
 
