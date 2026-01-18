@@ -28,7 +28,8 @@ public class OracleChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE CONVERSATION_ID = ? ORDER BY \"TIMESTAMP\"";
+    // Adding the third column to match index 3 in JdbcChatMemoryRepository
+    	return "SELECT content, type, \"TIMESTAMP\" FROM SPRING_AI_CHAT_MEMORY WHERE CONVERSATION_ID = ? ORDER BY \"TIMESTAMP\" ASC";
 	}
 
 	@Override

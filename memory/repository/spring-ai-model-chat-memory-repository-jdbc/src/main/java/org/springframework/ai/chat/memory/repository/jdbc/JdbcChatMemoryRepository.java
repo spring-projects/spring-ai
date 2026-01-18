@@ -144,23 +144,28 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private static class MessageRowMapper implements RowMapper<Message> {
 
-		@Override
-		public Message mapRow(ResultSet rs, int i) throws SQLException {
-			var content = rs.getString(1);
-			var type = MessageType.valueOf(rs.getString(2));
+        @Override
+        public Message mapRow(ResultSet rs, int i) throws SQLException {
+            var content = rs.getString(1);
+            var type = MessageType.valueOf(rs.getString(2));
+            var timestamp = rs.getTimestamp(3); // Holt den Zeitstempel aus der 3. Spalte
 
-			return switch (type) {
-				case USER -> new UserMessage(content);
-				case ASSISTANT -> new AssistantMessage(content);
-				case SYSTEM -> new SystemMessage(content);
-				// The content is always stored empty for ToolResponseMessages.
-				// If we want to capture the actual content, we need to extend
-				// AddBatchPreparedStatement to support it.
-				case TOOL -> ToolResponseMessage.builder().responses(List.of()).build();
-			};
-		}
+            var metadata = new java.util.HashMap<String, Object>();
+            if (timestamp != null) {
+                metadata.put("timestamp", timestamp.toInstant());
+            }
 
-	}
+            return switch (type) {
+                case USER -> new UserMessage(content, metadata);
+                case ASSISTANT -> new AssistantMessage(content, metadata);
+                case SYSTEM -> new SystemMessage(content, metadata);
+                case TOOL -> ToolResponseMessage.builder()
+                        .responses(java.util.List.of())
+                        .metadata(metadata)
+                        .build();
+            };
+        }
+    }
 
 	public static final class Builder {
 

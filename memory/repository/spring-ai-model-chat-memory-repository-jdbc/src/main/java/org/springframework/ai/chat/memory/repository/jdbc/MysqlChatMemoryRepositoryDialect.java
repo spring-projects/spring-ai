@@ -26,7 +26,8 @@ public class MysqlChatMemoryRepositoryDialect implements JdbcChatMemoryRepositor
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY `timestamp`";
+    	// Added "timestamp" at the 3rd position to match the updated MessageRowMapper
+    	return "SELECT content, type, `timestamp` FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY `timestamp` ASC";
 	}
 
 	@Override
