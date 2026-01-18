@@ -66,32 +66,48 @@ public class GoogleGenAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public Client googleGenAiClient(GoogleGenAiConnectionProperties connectionProperties) throws IOException {
+	public Client googleGenAiClient(GoogleGenAiConnectionProperties properties) throws IOException {
+		Client.Builder builder = Client.builder();
 
-		Client.Builder clientBuilder = Client.builder();
+		boolean hasVertexConfig = isVertexAiConfiguration(properties);
+		boolean hasApiKey = StringUtils.hasText(properties.getApiKey());
 
-		if (StringUtils.hasText(connectionProperties.getApiKey())) {
-			// Gemini Developer API mode
-			clientBuilder.apiKey(connectionProperties.getApiKey());
+		// Strategic Check: Prevent ambiguous authentication states
+		if (hasVertexConfig && hasApiKey) {
+			throw new IllegalStateException(
+					"Ambiguous configuration: Both Vertex AI and Gemini API settings are present. Please provide only one.");
+		}
+
+		if (hasVertexConfig) {
+			configureVertexAi(builder, properties);
+		}
+		else if (hasApiKey) {
+			builder.apiKey(properties.getApiKey());
 		}
 		else {
-			// Vertex AI mode
-			Assert.hasText(connectionProperties.getProjectId(), "Google GenAI project-id must be set!");
-			Assert.hasText(connectionProperties.getLocation(), "Google GenAI location must be set!");
-
-			clientBuilder.project(connectionProperties.getProjectId())
-				.location(connectionProperties.getLocation())
-				.vertexAI(true);
-
-			if (connectionProperties.getCredentialsUri() != null) {
-				GoogleCredentials credentials = GoogleCredentials
-					.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-				// Note: The new SDK doesn't have a direct setCredentials method,
-				// credentials are handled automatically when vertexAI is true
-			}
+			throw new IllegalStateException(
+					"Incomplete Google GenAI configuration: Provide 'api-key' for Gemini API or 'project-id' and 'location' for Vertex AI.");
 		}
 
-		return clientBuilder.build();
+		return builder.build();
+	}
+
+	private boolean isVertexAiConfiguration(GoogleGenAiConnectionProperties props) {
+		return props.isVertexAi()
+				|| (StringUtils.hasText(props.getProjectId()) && StringUtils.hasText(props.getLocation()));
+	}
+
+	private void configureVertexAi(Client.Builder builder, GoogleGenAiConnectionProperties props) throws IOException {
+		Assert.hasText(props.getProjectId(), "Google GenAI project-id must be set for Vertex AI mode!");
+		Assert.hasText(props.getLocation(), "Google GenAI location must be set for Vertex AI mode!");
+
+		builder.project(props.getProjectId()).location(props.getLocation()).vertexAI(true);
+
+		if (props.getCredentialsUri() != null) {
+			try (var is = props.getCredentialsUri().getInputStream()) {
+				builder.credentials(GoogleCredentials.fromStream(is));
+			}
+		}
 	}
 
 	@Bean
