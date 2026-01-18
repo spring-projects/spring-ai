@@ -178,7 +178,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 				}
 			}
 		}
-		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
+		while (!isValidationSuccess && repeatCounter < this.maxRepeatAttempts);
 
 		return chatClientResponse;
 	}
