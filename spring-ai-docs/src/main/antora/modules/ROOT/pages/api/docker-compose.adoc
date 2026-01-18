@@ -37,9 +37,6 @@ The following service connection factories are provided in the `spring-ai-spring
 | `ChromaConnectionDetails`
 | Containers named `chromadb/chroma`, `ghcr.io/chroma-core/chroma`
 
-| `MongoConnectionDetails`
-| Containers named `mongodb/mongodb-atlas-local`
-
 | `OllamaConnectionDetails`
 | Containers named `ollama/ollama`
 
