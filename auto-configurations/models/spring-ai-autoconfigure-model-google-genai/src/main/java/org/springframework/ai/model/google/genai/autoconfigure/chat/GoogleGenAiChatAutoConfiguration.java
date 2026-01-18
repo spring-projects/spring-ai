@@ -21,6 +21,8 @@ import java.io.IOException;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
@@ -64,34 +66,69 @@ import org.springframework.util.StringUtils;
 @EnableConfigurationProperties({ GoogleGenAiChatProperties.class, GoogleGenAiConnectionProperties.class })
 public class GoogleGenAiChatAutoConfiguration {
 
+	private static final Log logger = LogFactory.getLog(GoogleGenAiChatAutoConfiguration.class);
+
 	@Bean
 	@ConditionalOnMissingBean
-	public Client googleGenAiClient(GoogleGenAiConnectionProperties connectionProperties) throws IOException {
+	public Client googleGenAiClient(GoogleGenAiConnectionProperties properties) throws IOException {
+		Client.Builder builder = Client.builder();
 
-		Client.Builder clientBuilder = Client.builder();
+		boolean hasApiKey = StringUtils.hasText(properties.getApiKey());
+		boolean hasProject = StringUtils.hasText(properties.getProjectId());
+		boolean hasLocation = StringUtils.hasText(properties.getLocation());
+		boolean hasVertexConfig = hasProject && hasLocation;
 
-		if (StringUtils.hasText(connectionProperties.getApiKey())) {
-			// Gemini Developer API mode
-			clientBuilder.apiKey(connectionProperties.getApiKey());
-		}
-		else {
-			// Vertex AI mode
-			Assert.hasText(connectionProperties.getProjectId(), "Google GenAI project-id must be set!");
-			Assert.hasText(connectionProperties.getLocation(), "Google GenAI location must be set!");
-
-			clientBuilder.project(connectionProperties.getProjectId())
-				.location(connectionProperties.getLocation())
-				.vertexAI(true);
-
-			if (connectionProperties.getCredentialsUri() != null) {
-				GoogleCredentials credentials = GoogleCredentials
-					.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-				// Note: The new SDK doesn't have a direct setCredentials method,
-				// credentials are handled automatically when vertexAI is true
+		// Ambiguity Guard: Professional logging
+		if (hasApiKey && hasVertexConfig) {
+			if (properties.isVertexAi()) {
+				logger.info(
+						"Both API Key and Vertex AI config detected. Vertex AI mode is explicitly enabled; the API key will be ignored.");
+			}
+			else {
+				logger.warn("Both API Key and Vertex AI config detected. Defaulting to Gemini Developer API (API Key). "
+						+ "To use Vertex AI instead, set 'spring.ai.google.genai.vertex-ai=true'.");
 			}
 		}
 
-		return clientBuilder.build();
+		// Mode Selection with Fail-Fast Validation
+		if (properties.isVertexAi()) {
+			if (!hasVertexConfig) {
+				throw new IllegalStateException(
+						"Vertex AI mode requires both 'project-id' and 'location' to be configured.");
+			}
+			configureVertexAi(builder, properties);
+		}
+		else if (hasApiKey) {
+			builder.apiKey(properties.getApiKey());
+		}
+		else if (hasVertexConfig) {
+			logger.debug("Project ID and Location detected. Defaulting to Vertex AI mode.");
+			configureVertexAi(builder, properties);
+		}
+		else {
+			throw new IllegalStateException("Incomplete Google GenAI configuration: Provide 'api-key' for Gemini API "
+					+ "or 'project-id' and 'location' for Vertex AI.");
+		}
+
+		return builder.build();
+	}
+
+	private boolean isVertexAiConfiguration(GoogleGenAiConnectionProperties props) {
+		return props.isVertexAi()
+				|| (StringUtils.hasText(props.getProjectId()) && StringUtils.hasText(props.getLocation()));
+	}
+
+	private void configureVertexAi(Client.Builder builder, GoogleGenAiConnectionProperties props) throws IOException {
+		Assert.hasText(props.getProjectId(), "Google GenAI project-id must be set for Vertex AI mode!");
+		Assert.hasText(props.getLocation(), "Google GenAI location must be set for Vertex AI mode!");
+
+		builder.project(props.getProjectId()).location(props.getLocation()).vertexAI(true);
+
+		if (props.getCredentialsUri() != null) {
+			try (var is = props.getCredentialsUri().getInputStream()) {
+				builder.credentials(GoogleCredentials.fromStream(is));
+			}
+		}
 	}
 
 	@Bean
