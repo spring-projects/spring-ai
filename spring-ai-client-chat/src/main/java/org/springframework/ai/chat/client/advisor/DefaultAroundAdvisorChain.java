@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -51,6 +49,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @author Dariusz Jedrzejczyk
  * @author Thomas Vitale
+ * @author Giwan Kim
  * @since 1.0.0
  */
 public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
@@ -59,30 +58,36 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
+	private final List<CallAdvisor> callAdvisors;
+
+	private final List<StreamAdvisor> streamAdvisors;
+
 	private final List<CallAdvisor> originalCallAdvisors;
 
 	private final List<StreamAdvisor> originalStreamAdvisors;
-
-	private final Deque<CallAdvisor> callAdvisors;
-
-	private final Deque<StreamAdvisor> streamAdvisors;
 
 	private final ObservationRegistry observationRegistry;
 
 	private final AdvisorObservationConvention observationConvention;
 
-	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, Deque<CallAdvisor> callAdvisors,
-			Deque<StreamAdvisor> streamAdvisors, @Nullable AdvisorObservationConvention observationConvention) {
+	DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, List<CallAdvisor> callAdvisors,
+			List<StreamAdvisor> streamAdvisors, @Nullable AdvisorObservationConvention observationConvention) {
+		this(observationRegistry, callAdvisors, streamAdvisors, callAdvisors, streamAdvisors, observationConvention);
+	}
+
+	private DefaultAroundAdvisorChain(ObservationRegistry observationRegistry, List<CallAdvisor> callAdvisors,
+			List<StreamAdvisor> streamAdvisors, List<CallAdvisor> originalCallAdvisors,
+			List<StreamAdvisor> originalStreamAdvisors, @Nullable AdvisorObservationConvention observationConvention) {
 
 		Assert.notNull(observationRegistry, "the observationRegistry must be non-null");
 		Assert.notNull(callAdvisors, "the callAdvisors must be non-null");
 		Assert.notNull(streamAdvisors, "the streamAdvisors must be non-null");
 
 		this.observationRegistry = observationRegistry;
-		this.callAdvisors = callAdvisors;
-		this.streamAdvisors = streamAdvisors;
-		this.originalCallAdvisors = List.copyOf(callAdvisors);
-		this.originalStreamAdvisors = List.copyOf(streamAdvisors);
+		this.callAdvisors = List.copyOf(callAdvisors);
+		this.streamAdvisors = List.copyOf(streamAdvisors);
+		this.originalCallAdvisors = List.copyOf(originalCallAdvisors);
+		this.originalStreamAdvisors = List.copyOf(originalStreamAdvisors);
 		this.observationConvention = observationConvention != null ? observationConvention
 				: DEFAULT_OBSERVATION_CONVENTION;
 	}
@@ -99,7 +104,10 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			throw new IllegalStateException("No CallAdvisors available to execute");
 		}
 
-		var advisor = this.callAdvisors.pop();
+		var advisor = this.callAdvisors.get(0);
+		var nextChain = new DefaultAroundAdvisorChain(this.observationRegistry,
+				this.callAdvisors.subList(1, this.callAdvisors.size()), this.streamAdvisors, this.originalCallAdvisors,
+				this.originalStreamAdvisors, this.observationConvention);
 
 		var observationContext = AdvisorObservationContext.builder()
 			.advisorName(advisor.getName())
@@ -111,7 +119,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				var chatClientResponse = advisor.adviseCall(chatClientRequest, this);
+				var chatClientResponse = advisor.adviseCall(chatClientRequest, nextChain);
 				observationContext.setChatClientResponse(chatClientResponse);
 				return chatClientResponse;
 			});
@@ -126,7 +134,10 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 				return Flux.error(new IllegalStateException("No StreamAdvisors available to execute"));
 			}
 
-			var advisor = this.streamAdvisors.pop();
+			var advisor = this.streamAdvisors.get(0);
+			var nextChain = new DefaultAroundAdvisorChain(this.observationRegistry, this.callAdvisors,
+					this.streamAdvisors.subList(1, this.streamAdvisors.size()), this.originalCallAdvisors,
+					this.originalStreamAdvisors, this.observationConvention);
 
 			AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 				.advisorName(advisor.getName())
@@ -140,7 +151,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
 			// @formatter:off
-			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> advisor.adviseStream(chatClientRequest, this)
+			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> advisor.adviseStream(chatClientRequest, nextChain)
 						.doOnError(observation::error)
 						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation)));
@@ -187,16 +198,16 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 		private final ObservationRegistry observationRegistry;
 
-		private final Deque<CallAdvisor> callAdvisors;
+		private final List<CallAdvisor> callAdvisors;
 
-		private final Deque<StreamAdvisor> streamAdvisors;
+		private final List<StreamAdvisor> streamAdvisors;
 
 		private @Nullable AdvisorObservationConvention observationConvention;
 
 		public Builder(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;
-			this.callAdvisors = new ConcurrentLinkedDeque<>();
-			this.streamAdvisors = new ConcurrentLinkedDeque<>();
+			this.callAdvisors = new ArrayList<>();
+			this.streamAdvisors = new ArrayList<>();
 		}
 
 		public Builder observationConvention(@Nullable AdvisorObservationConvention observationConvention) {
@@ -219,7 +230,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 					.toList();
 
 				if (!CollectionUtils.isEmpty(callAroundAdvisorList)) {
-					callAroundAdvisorList.forEach(this.callAdvisors::push);
+					this.callAdvisors.addAll(callAroundAdvisorList);
 				}
 
 				List<StreamAdvisor> streamAroundAdvisorList = advisors.stream()
@@ -228,7 +239,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 					.toList();
 
 				if (!CollectionUtils.isEmpty(streamAroundAdvisorList)) {
-					streamAroundAdvisorList.forEach(this.streamAdvisors::push);
+					this.streamAdvisors.addAll(streamAroundAdvisorList);
 				}
 
 				this.reOrder();
@@ -240,15 +251,8 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 		 * (Re)orders the advisors in priority order based on their Ordered attribute.
 		 */
 		private void reOrder() {
-			ArrayList<CallAdvisor> callAdvisors = new ArrayList<>(this.callAdvisors);
-			OrderComparator.sort(callAdvisors);
-			this.callAdvisors.clear();
-			callAdvisors.forEach(this.callAdvisors::addLast);
-
-			ArrayList<StreamAdvisor> streamAdvisors = new ArrayList<>(this.streamAdvisors);
-			OrderComparator.sort(streamAdvisors);
-			this.streamAdvisors.clear();
-			streamAdvisors.forEach(this.streamAdvisors::addLast);
+			OrderComparator.sort(this.callAdvisors);
+			OrderComparator.sort(this.streamAdvisors);
 		}
 
 		public DefaultAroundAdvisorChain build() {
