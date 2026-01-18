@@ -1,6 +1,13 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M2]]
+== Upgrading to 2.0.0-M2
+
+=== Development-time Services
+
+* Docker Compose and Testcontainers support for MongoDB Atlas is now provided natively by the Spring Boot MongoDB module. The migration should be transparent and not require any code change. Regarding dependencies, you don't need to import `org.springframework.ai:spring-ai-spring-boot-testcontainers` anymore. A dependency on `org.springframework.boot:spring-boot-testcontainers` is sufficient.
+
 [[upgrading-to-2-0-0-M1]]
 == Upgrading to 2.0.0-M1
 
