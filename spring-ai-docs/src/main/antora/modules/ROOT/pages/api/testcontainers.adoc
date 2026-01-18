@@ -44,9 +44,6 @@ The following service connection factories are provided in the `spring-ai-spring
 | `MilvusServiceClientConnectionDetails`
 | Containers of type `MilvusContainer`
 
-| `MongoConnectionDetails`
-| Containers of type `MongoDBAtlasLocalContainer`
-
 | `OllamaConnectionDetails`
 | Containers of type `OllamaContainer`
 
