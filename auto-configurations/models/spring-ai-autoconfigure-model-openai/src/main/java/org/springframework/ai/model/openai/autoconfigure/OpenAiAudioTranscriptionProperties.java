@@ -28,13 +28,25 @@ public class OpenAiAudioTranscriptionProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_TRANSCRIPTION_MODEL = OpenAiAudioApi.TranscriptionModels.WHISPER_1.getValue();
 
+	public static final String DEFAULT_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
+
 	private static final OpenAiAudioApi.TranscriptResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.TranscriptResponseFormat.TEXT;
+
+	private String transcriptionPath = DEFAULT_TRANSCRIPTION_PATH;
 
 	@NestedConfigurationProperty
 	private final OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 		.model(DEFAULT_TRANSCRIPTION_MODEL)
 		.responseFormat(DEFAULT_RESPONSE_FORMAT)
 		.build();
+
+	public String getTranscriptionPath() {
+		return this.transcriptionPath;
+	}
+
+	public void setTranscriptionPath(String transcriptionPath) {
+		this.transcriptionPath = transcriptionPath;
+	}
 
 	public OpenAiAudioTranscriptionOptions getOptions() {
 		return this.options;

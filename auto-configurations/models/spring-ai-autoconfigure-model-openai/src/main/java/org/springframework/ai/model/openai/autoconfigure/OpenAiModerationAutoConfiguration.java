@@ -69,6 +69,7 @@ public class OpenAiModerationAutoConfiguration {
 		var openAiModerationApi = OpenAiModerationApi.builder()
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.moderationPath(moderationProperties.getModerationPath())
 			.headers(resolved.headers())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.responseErrorHandler(responseErrorHandler)
