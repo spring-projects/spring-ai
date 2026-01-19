@@ -27,6 +27,7 @@ import org.apache.pdfbox.pdmodel.PDPageTree;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.destination.PDPageXYZDestination;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineNode;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -135,7 +136,7 @@ public class ParagraphManager {
 		return parentParagraph;
 	}
 
-	private int getPageNumber(PDOutlineItem current) throws IOException {
+	private int getPageNumber(@Nullable PDOutlineItem current) throws IOException {
 		if (current == null) {
 			return -1;
 		}
@@ -189,10 +190,10 @@ public class ParagraphManager {
 	 * @param position The vertical position of the paragraph on the page.
 	 * @param children Sub-paragraphs for this paragraph.
 	 */
-	public record Paragraph(Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
+	public record Paragraph(@Nullable Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
 			int position, List<Paragraph> children) {
 
-		public Paragraph(Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
+		public Paragraph(@Nullable Paragraph parent, String title, int level, int startPageNumber, int endPageNumber,
 				int position) {
 			this(parent, title, level, startPageNumber, endPageNumber, position, new ArrayList<>());
 		}

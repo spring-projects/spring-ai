@@ -17,12 +17,15 @@
 package org.springframework.ai.reader.pdf.layout;
 
 import org.apache.pdfbox.text.TextPosition;
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.Assert;
 
 class CharacterFactory {
 
-	private TextPosition previousTextPosition;
+	private @Nullable TextPosition previousTextPosition;
 
-	private boolean firstCharacterOfLineFound;
+	private final boolean firstCharacterOfLineFound;
 
 	private boolean isCharacterPartOfPreviousWord;
 
@@ -37,8 +40,8 @@ class CharacterFactory {
 	}
 
 	public Character createCharacterFromTextPosition(final TextPosition textPosition,
-			final TextPosition previousTextPosition) {
-		this.setPreviousTextPosition(previousTextPosition);
+			final @Nullable TextPosition previousTextPosition) {
+		this.previousTextPosition = previousTextPosition;
 		this.isCharacterPartOfPreviousWord = this.isCharacterPartOfPreviousWord(textPosition);
 		this.isFirstCharacterOfAWord = this.isFirstCharacterOfAWord(textPosition);
 		this.isCharacterAtTheBeginningOfNewLine = this.isCharacterAtTheBeginningOfNewLine(textPosition);
@@ -53,8 +56,8 @@ class CharacterFactory {
 		if (!this.firstCharacterOfLineFound) {
 			return true;
 		}
-		TextPosition previousTextPosition = this.getPreviousTextPosition();
-		float previousTextYPosition = previousTextPosition.getY();
+		Assert.state(this.previousTextPosition != null, "Text position should have been set");
+		float previousTextYPosition = this.previousTextPosition.getY();
 		return (Math.round(textPosition.getY()) < Math.round(previousTextYPosition));
 	}
 
@@ -62,6 +65,7 @@ class CharacterFactory {
 		if (!this.firstCharacterOfLineFound) {
 			return true;
 		}
+		Assert.state(this.previousTextPosition != null, "Text position should have been set");
 		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(this.previousTextPosition, textPosition);
 		return (numberOfSpaces > 1) || this.isCharacterAtTheBeginningOfNewLine(textPosition);
 	}
@@ -70,16 +74,17 @@ class CharacterFactory {
 		if (!this.firstCharacterOfLineFound) {
 			return false;
 		}
+		Assert.state(this.previousTextPosition != null, "Text position should have been set");
 		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(this.previousTextPosition, textPosition);
 		return (numberOfSpaces > 1 && numberOfSpaces <= ForkPDFLayoutTextStripper.OUTPUT_SPACE_CHARACTER_WIDTH_IN_PT);
 	}
 
 	private boolean isCharacterPartOfPreviousWord(final TextPosition textPosition) {
-		TextPosition previousTextPosition = this.getPreviousTextPosition();
-		if (previousTextPosition.getUnicode().equals(" ")) {
+		Assert.state(this.previousTextPosition != null, "Text position should have been set");
+		if (this.previousTextPosition.getUnicode().equals(" ")) {
 			return false;
 		}
-		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(previousTextPosition, textPosition);
+		double numberOfSpaces = this.numberOfSpacesBetweenTwoCharacters(this.previousTextPosition, textPosition);
 		return (numberOfSpaces <= 1);
 	}
 
@@ -96,14 +101,6 @@ class CharacterFactory {
 		String string = textPosition.getUnicode();
 		char character = !string.isEmpty() ? string.charAt(0) : '\0';
 		return character;
-	}
-
-	private TextPosition getPreviousTextPosition() {
-		return this.previousTextPosition;
-	}
-
-	private void setPreviousTextPosition(final TextPosition previousTextPosition) {
-		this.previousTextPosition = previousTextPosition;
 	}
 
 }

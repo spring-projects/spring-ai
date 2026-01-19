@@ -18,17 +18,17 @@ package org.springframework.ai.reader.pdf.layout;
 
 class Character {
 
-	private char characterValue;
+	private final char characterValue;
 
 	private int index;
 
-	private boolean isCharacterPartOfPreviousWord;
+	private final boolean isCharacterPartOfPreviousWord;
 
-	private boolean isFirstCharacterOfAWord;
+	private final boolean isFirstCharacterOfAWord;
 
-	private boolean isCharacterAtTheBeginningOfNewLine;
+	private final boolean isCharacterAtTheBeginningOfNewLine;
 
-	private boolean isCharacterCloseToPreviousWord;
+	private final boolean isCharacterCloseToPreviousWord;
 
 	Character(char characterValue, int index, boolean isCharacterPartOfPreviousWord, boolean isFirstCharacterOfAWord,
 			boolean isCharacterAtTheBeginningOfNewLine, boolean isCharacterPartOfASentence) {
