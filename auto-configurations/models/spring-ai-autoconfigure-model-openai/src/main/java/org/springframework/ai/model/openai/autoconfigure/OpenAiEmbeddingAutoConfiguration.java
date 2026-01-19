@@ -25,7 +25,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -52,8 +51,7 @@ import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfig
  * @author Issam El-atif
  * @author Yanming Zhou
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class })
 @ConditionalOnClass(OpenAiApi.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
