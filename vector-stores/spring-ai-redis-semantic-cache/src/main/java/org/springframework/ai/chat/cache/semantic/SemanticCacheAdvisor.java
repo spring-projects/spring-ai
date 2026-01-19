@@ -16,8 +16,10 @@
 
 package org.springframework.ai.chat.cache.semantic;
 
+import java.util.Objects;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -29,6 +31,7 @@ import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.util.Assert;
 
 /**
  * An advisor implementation that provides semantic caching capabilities for chat
@@ -191,7 +194,7 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	 */
 	private String extractUserTextFromRequest(ChatClientRequest request) {
 		// Extract the last user message from the prompt
-		return request.prompt().getUserMessage().getText();
+		return Objects.requireNonNullElse(request.prompt().getUserMessage().getText(), "");
 	}
 
 	/**
@@ -208,7 +211,7 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	 */
 	public static class Builder {
 
-		private SemanticCache cache;
+		private @Nullable SemanticCache cache;
 
 		private int order = DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
@@ -249,6 +252,7 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		 * @return A new SemanticCacheAdvisor configured with this builder's settings
 		 */
 		public SemanticCacheAdvisor build() {
+			Assert.notNull(this.cache, "Cache must not be null");
 			return new SemanticCacheAdvisor(this.cache, this.order, this.scheduler);
 		}
 

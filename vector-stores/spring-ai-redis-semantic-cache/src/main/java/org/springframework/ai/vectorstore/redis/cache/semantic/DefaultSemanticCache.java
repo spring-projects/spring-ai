@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,6 +37,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisPooled;
@@ -54,6 +56,7 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
+import org.springframework.util.Assert;
 
 /**
  * Default implementation of SemanticCache using Redis as the backing store. This
@@ -78,8 +81,6 @@ public final class DefaultSemanticCache implements SemanticCache {
 	// Core components
 	private final VectorStore vectorStore;
 
-	private final EmbeddingModel embeddingModel;
-
 	private final double similarityThreshold;
 
 	private final boolean useDistanceThreshold;
@@ -93,10 +94,9 @@ public final class DefaultSemanticCache implements SemanticCache {
 	/**
 	 * Private constructor enforcing builder pattern usage.
 	 */
-	private DefaultSemanticCache(VectorStore vectorStore, EmbeddingModel embeddingModel, double similarityThreshold,
-			String indexName, String prefix, boolean useDistanceThreshold) {
+	private DefaultSemanticCache(VectorStore vectorStore, double similarityThreshold, String indexName, String prefix,
+			boolean useDistanceThreshold) {
 		this.vectorStore = vectorStore;
-		this.embeddingModel = embeddingModel;
 		this.similarityThreshold = similarityThreshold;
 		this.useDistanceThreshold = useDistanceThreshold;
 		this.prefix = prefix;
@@ -123,12 +123,13 @@ public final class DefaultSemanticCache implements SemanticCache {
 	public void set(String query, ChatResponse response) {
 		// Convert response to JSON for storage
 		String responseJson = this.gson.toJson(response);
+		Assert.state(response.getResult() != null, "expected a non-empty response");
 		String responseText = response.getResult().getOutput().getText();
 
 		// Create metadata map for the document
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("response", responseJson);
-		metadata.put("response_text", responseText);
+		metadata.put("response_text", Objects.requireNonNullElse(responseText, ""));
 
 		// Create document with query as text (for embedding) and response in metadata
 		Document document = Document.builder().text(query).metadata(metadata).build();
@@ -173,12 +174,13 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 		// Convert response to JSON
 		String responseJson = this.gson.toJson(response);
+		Assert.state(response.getResult() != null, "expected a non-empty response");
 		String responseText = response.getResult().getOutput().getText();
 
 		// Create metadata
 		Map<String, Object> metadata = new HashMap<>();
 		metadata.put("response", responseJson);
-		metadata.put("response_text", responseText);
+		metadata.put("response_text", Objects.requireNonNullElse(responseText, ""));
 
 		// Create document with generated ID
 		Document document = Document.builder().id(docId).text(query).metadata(metadata).build();
@@ -339,9 +341,9 @@ public final class DefaultSemanticCache implements SemanticCache {
 	 */
 	public static class Builder {
 
-		private VectorStore vectorStore;
+		private @Nullable VectorStore vectorStore;
 
-		private EmbeddingModel embeddingModel;
+		private @Nullable EmbeddingModel embeddingModel;
 
 		private double similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
 
@@ -351,7 +353,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 		private String prefix = DEFAULT_PREFIX;
 
-		private JedisPooled jedisClient;
+		private @Nullable JedisPooled jedisClient;
 
 		// Builder methods with validation
 		public Builder vectorStore(VectorStore vectorStore) {
@@ -409,8 +411,8 @@ public final class DefaultSemanticCache implements SemanticCache {
 					redisStore.afterPropertiesSet();
 				}
 			}
-			return new DefaultSemanticCache(this.vectorStore, this.embeddingModel, this.similarityThreshold,
-					this.indexName, this.prefix, this.useDistanceThreshold);
+			return new DefaultSemanticCache(this.vectorStore, this.similarityThreshold, this.indexName, this.prefix,
+					this.useDistanceThreshold);
 		}
 
 	}
