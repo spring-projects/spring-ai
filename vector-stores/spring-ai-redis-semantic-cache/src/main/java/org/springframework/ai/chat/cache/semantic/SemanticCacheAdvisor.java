@@ -29,7 +29,6 @@ import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.vectorstore.redis.cache.semantic.SemanticCache;
 
 /**
  * An advisor implementation that provides semantic caching capabilities for chat

@@ -30,7 +30,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.vectorstore.redis.cache.semantic.DefaultSemanticCache;
-import org.springframework.ai.vectorstore.redis.cache.semantic.SemanticCache;
+import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
