@@ -83,6 +83,7 @@ The prefix `spring.ai.openai.audio.transcription` is used as the property prefix
 | spring.ai.openai.audio.transcription.api-key    | The API Key           |  -
 | spring.ai.openai.audio.transcription.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.transcription.project-id      | Optionally, you can specify which project is used for an API request. |  -
+| spring.ai.openai.audio.transcription.transcription-path | The API endpoint path for audio transcription. Useful for OpenAI-compatible APIs with different endpoint structures. | /v1/audio/transcriptions
 | spring.ai.openai.audio.transcription.options.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
 | spring.ai.openai.audio.transcription.options.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. |  json
 | spring.ai.openai.audio.transcription.options.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
@@ -96,6 +97,22 @@ The `spring.ai.openai.audio.transcription.base-url`, `spring.ai.openai.audio.tra
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.openai.transcription.options` can be overridden at runtime.
+
+=== Custom API Paths
+
+For OpenAI-compatible APIs (such as LocalAI, Ollama with OpenAI compatibility, or custom proxies) that use different endpoint paths, you can configure the transcription path:
+
+[source,properties]
+----
+spring.ai.openai.audio.transcription.transcription-path=/custom/path/to/transcriptions
+----
+
+This is particularly useful when:
+
+* Using API gateways or proxies that modify standard OpenAI paths
+* Working with OpenAI-compatible services that implement different URL structures
+* Testing against mock endpoints with custom paths
+* Deploying in environments with path-based routing requirements
 
 == Runtime Options [[transcription-options]]
 

@@ -79,6 +79,7 @@ The prefix spring.ai.openai.moderation is used as the property prefix for config
 | spring.ai.openai.moderation.api-key    | The API Key           |  -
 | spring.ai.openai.moderation.organization-id | Optionally you can specify which organization is used for an API request. |  -
 | spring.ai.openai.moderation.project-id      | Optionally, you can specify which project is used for an API request. |  -
+| spring.ai.openai.moderation.moderation-path | The API endpoint path for moderation requests. Useful for OpenAI-compatible APIs with different endpoint structures. | /v1/moderations
 | spring.ai.openai.moderation.options.model  | ID of the model to use for moderation. | omni-moderation-latest
 |====
 
@@ -87,6 +88,22 @@ The `spring.ai.openai.moderation.base-url`, `spring.ai.openai.moderation.api-key
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
 TIP: All properties prefixed with `spring.ai.openai.moderation.options` can be overridden at runtime.
+
+=== Custom API Paths
+
+For OpenAI-compatible APIs (such as LocalAI, custom proxies, or other OpenAI-compatible services) that use different endpoint paths, you can configure the moderation path:
+
+[source,properties]
+----
+spring.ai.openai.moderation.moderation-path=/custom/path/to/moderations
+----
+
+This is particularly useful when:
+
+* Using API gateways or proxies that modify standard OpenAI paths
+* Working with OpenAI-compatible services that implement different URL structures
+* Testing against mock endpoints with custom paths
+* Deploying in environments with path-based routing requirements
 
 == Runtime Options
 The OpenAiModerationOptions class provides the options to use when making a moderation request.
