@@ -238,6 +238,7 @@ public class AnthropicApiBuilderTests {
 						 	"role": "assistant",
 						 	"content": [],
 						 	"model": "claude-opus-3-latest",
+						 	"max_tokens": 500,
 						 	"stop_reason": null,
 						 	"stop_sequence": null,
 							 "usage": {
@@ -253,6 +254,7 @@ public class AnthropicApiBuilderTests {
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
 				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+				.maxTokens(500)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.build();
@@ -285,6 +287,7 @@ public class AnthropicApiBuilderTests {
 						 	"role": "assistant",
 						 	"content": [],
 						 	"model": "claude-opus-3-latest",
+						 	"max_tokens": 500,
 						 	"stop_reason": null,
 						 	"stop_sequence": null,
 							 "usage": {
@@ -299,6 +302,7 @@ public class AnthropicApiBuilderTests {
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
 				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+				.maxTokens(500)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.build();
@@ -331,6 +335,7 @@ public class AnthropicApiBuilderTests {
 								"role": "assistant",
 								"content": [],
 								"model": "claude-opus-4-20250514",
+								"max_tokens": 500,
 								"stop_reason": null,
 								"stop_sequence": null,
 								"usage": {
@@ -347,6 +352,7 @@ public class AnthropicApiBuilderTests {
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
 				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+				.maxTokens(500)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)
@@ -382,6 +388,7 @@ public class AnthropicApiBuilderTests {
 								"role": "assistant",
 								"content": [],
 								"model": "claude-opus-4-20250514",
+								"max_tokens": 500,
 								"stop_reason": null,
 								"stop_sequence": null,
 								"usage": {
@@ -397,6 +404,7 @@ public class AnthropicApiBuilderTests {
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
 				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+				.maxTokens(500)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)

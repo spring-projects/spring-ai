@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
@@ -76,18 +78,16 @@ public final class AnthropicSkillsResponseHelper {
 	 * @param response The chat response
 	 * @return Container ID if present, null otherwise
 	 */
-	public static String extractContainerId(ChatResponse response) {
+	public static @Nullable String extractContainerId(@Nullable ChatResponse response) {
 		if (response == null) {
 			return null;
 		}
 
 		// Try to get container from ChatResponse metadata
-		if (response.getMetadata() != null) {
-			Object anthropicResponse = response.getMetadata().get("anthropic-response");
-			if (anthropicResponse instanceof ChatCompletionResponse chatCompletionResponse) {
-				if (chatCompletionResponse.container() != null) {
-					return chatCompletionResponse.container().id();
-				}
+		Object anthropicResponse = response.getMetadata().get("anthropic-response");
+		if (anthropicResponse instanceof ChatCompletionResponse chatCompletionResponse) {
+			if (chatCompletionResponse.container() != null) {
+				return chatCompletionResponse.container().id();
 			}
 		}
 

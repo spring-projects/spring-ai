@@ -42,7 +42,7 @@ public class DefaultChatGenerationMetadataBuilder implements Builder {
 	}
 
 	@Override
-	public Builder finishReason(String finishReason) {
+	public Builder finishReason(@Nullable String finishReason) {
 		this.finishReason = finishReason;
 		return this;
 	}

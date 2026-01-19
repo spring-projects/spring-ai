@@ -55,6 +55,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.core.KotlinDetector;
+import org.springframework.lang.Contract;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -219,7 +220,7 @@ public abstract class ModelOptionsUtils {
 	 * @param clazz the class to return.
 	 * @return the merged object represented by the given class.
 	 */
-	public static <T> T merge(Object source, Object target, Class<T> clazz) {
+	public static <T> T merge(@Nullable Object source, Object target, Class<T> clazz) {
 		return ModelOptionsUtils.merge(source, target, clazz, null);
 	}
 
@@ -458,7 +459,8 @@ public abstract class ModelOptionsUtils {
 	/**
 	 * Return the runtime value if not empty, or else the default value.
 	 */
-	public static <T> T mergeOption(T runtimeValue, T defaultValue) {
+	@Contract("_, !null -> !null")
+	public static <T> @Nullable T mergeOption(@Nullable T runtimeValue, @Nullable T defaultValue) {
 		return ObjectUtils.isEmpty(runtimeValue) ? defaultValue : runtimeValue;
 	}
 

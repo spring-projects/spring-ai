@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -178,7 +180,7 @@ public class AnthropicChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	public ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 		ChatCompletionRequest request = createRequest(prompt, false);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -194,12 +196,11 @@ public class AnthropicChatModel implements ChatModel {
 				ResponseEntity<ChatCompletionResponse> completionEntity = RetryUtils.execute(this.retryTemplate,
 						() -> this.anthropicApi.chatCompletionEntity(request, this.getAdditionalHttpHeaders(prompt)));
 
-				AnthropicApi.ChatCompletionResponse completionResponse = completionEntity.getBody();
+				AnthropicApi.ChatCompletionResponse completionResponse = Objects
+					.requireNonNull(completionEntity.getBody());
 
 				AnthropicApi.Usage usage = completionResponse.usage();
-
-				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(completionResponse.usage())
-						: new EmptyUsage();
+				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 						previousChatResponse);
 
@@ -209,6 +210,7 @@ public class AnthropicChatModel implements ChatModel {
 				return chatResponse;
 			});
 
+		Assert.state(prompt.getOptions() != null, "prompt.getOptions() must not be null");
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
@@ -228,9 +230,9 @@ public class AnthropicChatModel implements ChatModel {
 		return response;
 	}
 
-	private DefaultUsage getDefaultUsage(AnthropicApi.Usage usage) {
-		Integer inputTokens = usage.inputTokens() != null ? usage.inputTokens() : 0;
-		Integer outputTokens = usage.outputTokens() != null ? usage.outputTokens() : 0;
+	private DefaultUsage getDefaultUsage(AnthropicApi.@Nullable Usage usage) {
+		Integer inputTokens = usage != null && usage.inputTokens() != null ? usage.inputTokens() : 0;
+		Integer outputTokens = usage != null && usage.outputTokens() != null ? usage.outputTokens() : 0;
 		return new DefaultUsage(inputTokens, outputTokens, inputTokens + outputTokens, usage);
 	}
 
@@ -242,7 +244,7 @@ public class AnthropicChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	public Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -263,11 +265,13 @@ public class AnthropicChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = response.flatMap(chatCompletionResponse -> {
 				AnthropicApi.Usage usage = chatCompletionResponse.usage();
-				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(chatCompletionResponse.usage()) : new EmptyUsage();
+				Usage currentChatResponseUsage = usage != null ? this.getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
+				ChatOptions options = prompt.getOptions();
+				Assert.notNull(options, "prompt.getOptions() must not be null");
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, chatResponse)) {
 
 					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
 						// FIXME: bounded elastic needs to be used since tool calling
@@ -313,7 +317,7 @@ public class AnthropicChatModel implements ChatModel {
 		});
 	}
 
-	private ChatResponse toChatResponse(ChatCompletionResponse chatCompletion, Usage usage) {
+	private ChatResponse toChatResponse(@Nullable ChatCompletionResponse chatCompletion, Usage usage) {
 
 		if (chatCompletion == null) {
 			logger.warn("Null chat completion returned");
@@ -332,7 +336,9 @@ public class AnthropicChatModel implements ChatModel {
 					break;
 				case THINKING, THINKING_DELTA:
 					Map<String, Object> thinkingProperties = new HashMap<>();
-					thinkingProperties.put("signature", content.signature());
+					String signature = content.signature();
+					Assert.notNull(signature, "The signature of the content can't be null");
+					thinkingProperties.put("signature", signature);
 					generations.add(new Generation(
 							AssistantMessage.builder()
 								.content(content.thinking())
@@ -342,13 +348,17 @@ public class AnthropicChatModel implements ChatModel {
 					break;
 				case REDACTED_THINKING:
 					Map<String, Object> redactedProperties = new HashMap<>();
-					redactedProperties.put("data", content.data());
+					String data = content.data();
+					Assert.notNull(data, "The data of the content must not be null");
+					redactedProperties.put("data", data);
 					generations.add(new Generation(AssistantMessage.builder().properties(redactedProperties).build(),
 							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
 					break;
 				case TOOL_USE:
 					var functionCallId = content.id();
+					Assert.notNull(functionCallId, "The id of the content must not be null");
 					var functionName = content.name();
+					Assert.notNull(functionName, "The name of the content must not be null");
 					var functionArguments = JsonParser.toJson(content.input());
 					toolCalls.add(
 							new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
@@ -394,7 +404,8 @@ public class AnthropicChatModel implements ChatModel {
 		return new ChatResponse(generations, responseMetadata);
 	}
 
-	private Generation processTextContent(ContentBlock content, String stopReason, CitationContext citationContext) {
+	private Generation processTextContent(ContentBlock content, @Nullable String stopReason,
+			CitationContext citationContext) {
 		// Extract citations if present in the content block
 		if (content.citations() instanceof List) {
 			try {
@@ -436,10 +447,13 @@ public class AnthropicChatModel implements ChatModel {
 	 */
 	private AnthropicApi.CitationResponse parseCitationFromMap(Map<?, ?> citationMap) {
 		String type = (String) citationMap.get("type");
+		Assert.notNull(type, "The citation map must contain a 'type' entry");
 		String citedText = (String) citationMap.get("cited_text");
+		Assert.notNull(citedText, "The citation map must contain a 'cited_text' entry");
 		Integer documentIndex = (Integer) citationMap.get("document_index");
-		String documentTitle = (String) citationMap.get("document_title");
+		Assert.notNull(documentIndex, "The citation map must contain a 'document_index' entry");
 
+		String documentTitle = (String) citationMap.get("document_title");
 		Integer startCharIndex = (Integer) citationMap.get("start_char_index");
 		Integer endCharIndex = (Integer) citationMap.get("end_char_index");
 		Integer startPageNumber = (Integer) citationMap.get("start_page_number");
@@ -457,15 +471,30 @@ public class AnthropicChatModel implements ChatModel {
 	 */
 	private Citation convertToCitation(AnthropicApi.CitationResponse citationResponse) {
 		return switch (citationResponse.type()) {
-			case "char_location" -> Citation.ofCharLocation(citationResponse.citedText(),
-					citationResponse.documentIndex(), citationResponse.documentTitle(),
-					citationResponse.startCharIndex(), citationResponse.endCharIndex());
-			case "page_location" -> Citation.ofPageLocation(citationResponse.citedText(),
-					citationResponse.documentIndex(), citationResponse.documentTitle(),
-					citationResponse.startPageNumber(), citationResponse.endPageNumber());
-			case "content_block_location" -> Citation.ofContentBlockLocation(citationResponse.citedText(),
-					citationResponse.documentIndex(), citationResponse.documentTitle(),
-					citationResponse.startBlockIndex(), citationResponse.endBlockIndex());
+			case "char_location" -> {
+				Integer startCharIndex = citationResponse.startCharIndex();
+				Assert.notNull(startCharIndex, "citationResponse.startCharIndex() must not be null");
+				Integer endCharIndex = citationResponse.endCharIndex();
+				Assert.notNull(endCharIndex, "citationResponse.endCharIndex() must not be null");
+				yield Citation.ofCharLocation(citationResponse.citedText(), citationResponse.documentIndex(),
+						citationResponse.documentTitle(), startCharIndex, endCharIndex);
+			}
+			case "page_location" -> {
+				Integer startPageNumber = citationResponse.startPageNumber();
+				Assert.notNull(startPageNumber, "citationResponse.startPageNumber() must not be null");
+				Integer endPageNumber = citationResponse.endPageNumber();
+				Assert.notNull(endPageNumber, "citationResponse.endPageNumber() must not be null");
+				yield Citation.ofPageLocation(citationResponse.citedText(), citationResponse.documentIndex(),
+						citationResponse.documentTitle(), startPageNumber, endPageNumber);
+			}
+			case "content_block_location" -> {
+				Integer startBlockIndex = citationResponse.startBlockIndex();
+				Assert.notNull(startBlockIndex, "citationResponse.startBlockIndex() must not be null");
+				Integer endBlockIndex = citationResponse.endBlockIndex();
+				Assert.notNull(endBlockIndex, "citationResponse.endBlockIndex() must not be null");
+				yield Citation.ofContentBlockLocation(citationResponse.citedText(), citationResponse.documentIndex(),
+						citationResponse.documentTitle(), startBlockIndex, endBlockIndex);
+			}
 			default -> throw new IllegalArgumentException("Unknown citation type: " + citationResponse.type());
 		};
 	}
@@ -574,14 +603,13 @@ public class AnthropicChatModel implements ChatModel {
 					this.defaultOptions.getToolContext()));
 
 			// Merge cache options that are Json-ignored
-			requestOptions.setCacheOptions(runtimeOptions.getCacheOptions() != null ? runtimeOptions.getCacheOptions()
-					: this.defaultOptions.getCacheOptions());
+			requestOptions.setCacheOptions(runtimeOptions.getCacheOptions());
 
 			// Merge citation documents that are Json-ignored
-			if (runtimeOptions.getCitationDocuments() != null && !runtimeOptions.getCitationDocuments().isEmpty()) {
+			if (!runtimeOptions.getCitationDocuments().isEmpty()) {
 				requestOptions.setCitationDocuments(runtimeOptions.getCitationDocuments());
 			}
-			else if (this.defaultOptions.getCitationDocuments() != null) {
+			else if (!this.defaultOptions.getCitationDocuments().isEmpty()) {
 				requestOptions.setCitationDocuments(this.defaultOptions.getCitationDocuments());
 			}
 
@@ -650,6 +678,7 @@ public class AnthropicChatModel implements ChatModel {
 		request = ModelOptionsUtils.merge(mergeOptions, request, ChatCompletionRequest.class);
 
 		// Add the tool definitions with potential caching
+		Assert.state(requestOptions != null, "AnthropicChatOptions must not be null");
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
 			request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
@@ -752,7 +781,7 @@ public class AnthropicChatModel implements ChatModel {
 	 * @param content The content to serialize
 	 * @return String representation of the content, or null if content is null
 	 */
-	private static String serializeContent(Object content) {
+	private static @Nullable String serializeContent(@Nullable Object content) {
 		if (content == null) {
 			return null;
 		}
@@ -776,7 +805,7 @@ public class AnthropicChatModel implements ChatModel {
 	}
 
 	private static ContentBlock cacheAwareContentBlock(ContentBlock contentBlock, MessageType messageType,
-			CacheEligibilityResolver cacheEligibilityResolver, String basisForLength) {
+			CacheEligibilityResolver cacheEligibilityResolver, @Nullable String basisForLength) {
 		ChatCompletionRequest.CacheControl cacheControl = cacheEligibilityResolver.resolve(messageType, basisForLength);
 		if (cacheControl == null) {
 			return contentBlock;
@@ -916,7 +945,7 @@ public class AnthropicChatModel implements ChatModel {
 	/**
 	 * Build system content - as array if caching, string otherwise.
 	 */
-	private Object buildSystemContent(Prompt prompt, CacheEligibilityResolver cacheEligibilityResolver) {
+	private @Nullable Object buildSystemContent(Prompt prompt, CacheEligibilityResolver cacheEligibilityResolver) {
 
 		String systemText = prompt.getInstructions()
 			.stream()
@@ -984,7 +1013,7 @@ public class AnthropicChatModel implements ChatModel {
 
 	public static final class Builder {
 
-		private AnthropicApi anthropicApi;
+		private @Nullable AnthropicApi anthropicApi;
 
 		private AnthropicChatOptions defaultOptions = AnthropicChatOptions.builder()
 			.model(DEFAULT_MODEL_NAME)
@@ -993,7 +1022,7 @@ public class AnthropicChatModel implements ChatModel {
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
-		private ToolCallingManager toolCallingManager;
+		private @Nullable ToolCallingManager toolCallingManager;
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
@@ -1034,11 +1063,9 @@ public class AnthropicChatModel implements ChatModel {
 		}
 
 		public AnthropicChatModel build() {
-			if (this.toolCallingManager != null) {
-				return new AnthropicChatModel(this.anthropicApi, this.defaultOptions, this.toolCallingManager,
-						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
-			}
-			return new AnthropicChatModel(this.anthropicApi, this.defaultOptions, DEFAULT_TOOL_CALLING_MANAGER,
+			Assert.state(this.anthropicApi != null, "AnthropicApi must not be null");
+			return new AnthropicChatModel(this.anthropicApi, this.defaultOptions,
+					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
 					this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 

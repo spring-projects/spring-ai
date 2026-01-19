@@ -19,11 +19,13 @@ package org.springframework.ai.chat.metadata;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
+import org.springframework.util.Assert;
 
 /**
  * Models common AI provider metadata returned in an AI response.
@@ -132,10 +134,8 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			return this;
 		}
 
-		public Builder keyValue(String key, Object value) {
-			if (key == null) {
-				throw new IllegalArgumentException("Key must not be null");
-			}
+		public Builder keyValue(String key, @Nullable Object value) {
+			Assert.notNull(key, "Key must not be null"); // Defensive check
 			if (value != null) {
 				this.chatResponseMetadata.map.put(key, value);
 			}

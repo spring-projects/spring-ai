@@ -25,6 +25,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.ai.anthropic.Citation;
 import org.springframework.util.Assert;
@@ -123,12 +125,14 @@ public final class CitationDocument {
 
 	}
 
+	@SuppressWarnings("NullAway.Init")
 	private DocumentType type;
 
-	private String title;
+	private @Nullable String title;
 
-	private String context;
+	private @Nullable String context;
 
+	@SuppressWarnings("NullAway.Init")
 	private Object sourceData; // String for text, byte[] for PDF, List<ContentBlock> for
 								// custom
 

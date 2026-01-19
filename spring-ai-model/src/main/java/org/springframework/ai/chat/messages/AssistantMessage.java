@@ -44,7 +44,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	protected final List<Media> media;
 
-	public AssistantMessage(String content) {
+	public AssistantMessage(@Nullable String content) {
 		this(content, Map.of(), List.of(), List.of());
 	}
 
@@ -116,7 +116,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		private Builder() {
 		}
 
-		public Builder content(String content) {
+		public Builder content(@Nullable String content) {
 			this.content = content;
 			return this;
 		}
