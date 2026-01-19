@@ -38,9 +38,13 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_SPEECH_MODEL = OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.getValue();
 
+	public static final String DEFAULT_SPEECH_PATH = "/v1/audio/speech";
+
 	private static final Double SPEED = 1.0;
 
 	private static final String VOICE = OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue();
+
+	private String speechPath = DEFAULT_SPEECH_PATH;
 
 	private static final OpenAiAudioApi.SpeechRequest.AudioResponseFormat DEFAULT_RESPONSE_FORMAT = OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3;
 
@@ -51,6 +55,14 @@ public class OpenAiAudioSpeechProperties extends OpenAiParentProperties {
 		.voice(VOICE)
 		.speed(SPEED)
 		.build();
+
+	public String getSpeechPath() {
+		return this.speechPath;
+	}
+
+	public void setSpeechPath(String speechPath) {
+		this.speechPath = speechPath;
+	}
 
 	public OpenAiAudioSpeechOptions getOptions() {
 		return this.options;

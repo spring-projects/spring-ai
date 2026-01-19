@@ -57,7 +57,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @RestClientTest(OpenAiModerationModelTests.Config.class)
 public class OpenAiModerationModelTests {
 
-	private static String TEST_API_KEY = "sk-1234567890";
+	private static final String TEST_API_KEY = "sk-1234567890";
+
+	private static final String TEST_MODERATION_PATH = "/v1/moderations";
 
 	@Autowired
 	private OpenAiModerationModel openAiModerationModel;
@@ -186,6 +188,7 @@ public class OpenAiModerationModelTests {
 		public OpenAiModerationApi moderationGenerationApi(RestClient.Builder builder) {
 			return OpenAiModerationApi.builder()
 				.apiKey(new SimpleApiKey(TEST_API_KEY))
+				.moderationPath(TEST_MODERATION_PATH)
 				.restClientBuilder(builder)
 				.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 				.build();

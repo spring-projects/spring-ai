@@ -38,6 +38,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiModerationModelNoOpApiKeysIT {
 
+	private static final String TEST_MODERATION_PATH = "/v1/moderations";
+
 	@Autowired
 	private OpenAiModerationModel moderationModel;
 
@@ -55,7 +57,7 @@ public class OpenAiModerationModelNoOpApiKeysIT {
 
 		@Bean
 		public OpenAiModerationApi moderationGenerationApi() {
-			return OpenAiModerationApi.builder().apiKey(new NoopApiKey()).build();
+			return OpenAiModerationApi.builder().apiKey(new NoopApiKey()).moderationPath(TEST_MODERATION_PATH).build();
 		}
 
 		@Bean

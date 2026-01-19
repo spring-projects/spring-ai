@@ -71,6 +71,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 		var openAiAudioApi = OpenAiAudioApi.builder()
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.speechPath(speechProperties.getSpeechPath())
 			.headers(resolved.headers())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))

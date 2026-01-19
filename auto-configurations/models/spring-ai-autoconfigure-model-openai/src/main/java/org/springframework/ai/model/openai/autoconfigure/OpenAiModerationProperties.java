@@ -31,11 +31,23 @@ public class OpenAiModerationProperties extends OpenAiParentProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.openai.moderation";
 
+	public static final String DEFAULT_MODERATION_PATH = "/v1/moderations";
+
+	private String moderationPath = DEFAULT_MODERATION_PATH;
+
 	/**
 	 * Options for OpenAI Moderation API.
 	 */
 	@NestedConfigurationProperty
 	private final OpenAiModerationOptions options = OpenAiModerationOptions.builder().build();
+
+	public String getModerationPath() {
+		return this.moderationPath;
+	}
+
+	public void setModerationPath(String moderationPath) {
+		this.moderationPath = moderationPath;
+	}
 
 	public OpenAiModerationOptions getOptions() {
 		return this.options;
