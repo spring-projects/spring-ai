@@ -65,7 +65,8 @@ public class OpenAiEmbeddingAutoConfiguration {
 	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiConnectionProperties commonProperties,
 			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var openAiApi = openAiApi(embeddingProperties, commonProperties,
@@ -83,7 +84,8 @@ public class OpenAiEmbeddingAutoConfiguration {
 
 	private OpenAiApi openAiApi(OpenAiEmbeddingProperties embeddingProperties,
 			OpenAiConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler, String modelType) {
+			WebClient.Builder webClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			String modelType) {
 
 		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
 				commonProperties, embeddingProperties, modelType);
@@ -96,7 +98,7 @@ public class OpenAiEmbeddingAutoConfiguration {
 			.embeddingsPath(embeddingProperties.getEmbeddingsPath())
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 
