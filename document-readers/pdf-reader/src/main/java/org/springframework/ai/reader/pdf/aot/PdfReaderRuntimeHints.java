@@ -19,10 +19,11 @@ package org.springframework.ai.reader.pdf.aot;
 import java.io.IOException;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.lang.NonNull;
 
 /**
  * The PdfReaderRuntimeHints class is responsible for registering runtime hints for PDFBox
@@ -35,7 +36,7 @@ import org.springframework.lang.NonNull;
 public class PdfReaderRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(@NonNull RuntimeHints hints, ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		try {
 
 			var resolver = new PathMatchingResourcePatternResolver();
