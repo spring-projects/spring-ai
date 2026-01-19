@@ -21,7 +21,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.redis.cache.semantic.DefaultSemanticCache;
-import org.springframework.ai.vectorstore.redis.cache.semantic.SemanticCache;
+import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
