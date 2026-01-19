@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi.ToolChoiceTool;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
@@ -127,8 +126,8 @@ public class AnthropicPropertiesTests {
 
 		// Explicitly disable the chat auto-configuration.
 		new ApplicationContextRunner().withPropertyValues("spring.ai.model.chat=none")
-			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class,
-					RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(RestClientAutoConfiguration.class, AnthropicChatAutoConfiguration.class))
 			.run(context -> assertThat(context.getBeansOfType(AnthropicChatModel.class)).isEmpty());
 	}
 

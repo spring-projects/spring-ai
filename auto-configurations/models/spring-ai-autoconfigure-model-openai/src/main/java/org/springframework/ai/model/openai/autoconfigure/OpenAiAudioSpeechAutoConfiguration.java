@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -47,6 +48,7 @@ import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfig
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
+ * @author Yanming Zhou
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
 		SpringAiRetryAutoConfiguration.class })
@@ -59,7 +61,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiConnectionProperties commonProperties,
-			OpenAiAudioSpeechProperties speechProperties, RetryTemplate retryTemplate,
+			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
 
@@ -75,7 +77,8 @@ public class OpenAiAudioSpeechAutoConfiguration {
 			.responseErrorHandler(responseErrorHandler)
 			.build();
 
-		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions());
+		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions(),
+				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE));
 	}
 
 }

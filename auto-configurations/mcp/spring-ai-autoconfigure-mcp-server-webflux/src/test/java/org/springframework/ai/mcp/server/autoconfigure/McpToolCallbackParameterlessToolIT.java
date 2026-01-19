@@ -43,7 +43,6 @@ import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConver
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -82,8 +81,7 @@ class McpToolCallbackParameterlessToolIT {
 				McpClientAnnotationScannerAutoConfiguration.class));
 
 	private static AutoConfigurations baseAutoConfig(Class<?>... additional) {
-		Class<?>[] dependencies = { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-				WebClientAutoConfiguration.class };
+		Class<?>[] dependencies = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class };
 		Class<?>[] all = Stream.concat(Arrays.stream(dependencies), Arrays.stream(additional)).toArray(Class<?>[]::new);
 		return AutoConfigurations.of(all);
 	}

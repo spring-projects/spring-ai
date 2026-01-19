@@ -17,7 +17,6 @@
 package org.springframework.ai.model.zhipuai.autoconfigure;
 
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 
@@ -32,8 +31,7 @@ public final class ZhiPuAiITUtil {
 	}
 
 	public static AutoConfigurations zhiPuAiToolAutoConfig(Class<?>... additionalAutoConfigurations) {
-		Class<?>[] dependencies = new Class[] { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-				ToolCallingAutoConfiguration.class };
+		Class<?>[] dependencies = new Class[] { RestClientAutoConfiguration.class, ToolCallingAutoConfiguration.class };
 		Class<?>[] allAutoConfigurations = new Class[dependencies.length + additionalAutoConfigurations.length];
 		System.arraycopy(dependencies, 0, allAutoConfigurations, 0, dependencies.length);
 		System.arraycopy(additionalAutoConfigurations, 0, allAutoConfigurations, dependencies.length,
@@ -43,8 +41,7 @@ public final class ZhiPuAiITUtil {
 	}
 
 	public static AutoConfigurations zhiPuAiAutoConfig(Class<?>... additionalAutoConfigurations) {
-		Class<?>[] dependencies = new Class[] { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-				ToolCallingAutoConfiguration.class };
+		Class<?>[] dependencies = new Class[] { RestClientAutoConfiguration.class, ToolCallingAutoConfiguration.class };
 		Class<?>[] allAutoConfigurations = new Class[dependencies.length + additionalAutoConfigurations.length];
 		System.arraycopy(dependencies, 0, allAutoConfigurations, 0, dependencies.length);
 		System.arraycopy(additionalAutoConfigurations, 0, allAutoConfigurations, dependencies.length,
