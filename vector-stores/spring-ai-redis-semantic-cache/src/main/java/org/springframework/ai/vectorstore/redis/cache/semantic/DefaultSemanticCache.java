@@ -13,11 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.redis.cache.semantic;
 
-import com.google.gson.*;
+import java.lang.reflect.Type;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.search.Query;
+import redis.clients.jedis.search.SearchResult;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -28,14 +53,6 @@ import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
-import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.search.Query;
-import redis.clients.jedis.search.SearchResult;
-
-import java.lang.reflect.Type;
-import java.time.Duration;
-import java.util.*;
 
 /**
  * Default implementation of SemanticCache using Redis as the backing store. This
@@ -44,7 +61,7 @@ import java.util.*;
  *
  * @author Brian Sam-Bodden
  */
-public class DefaultSemanticCache implements SemanticCache {
+public final class DefaultSemanticCache implements SemanticCache {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultSemanticCache.class);
 
@@ -104,7 +121,7 @@ public class DefaultSemanticCache implements SemanticCache {
 	@Override
 	public void set(String query, ChatResponse response) {
 		// Convert response to JSON for storage
-		String responseJson = gson.toJson(response);
+		String responseJson = this.gson.toJson(response);
 		String responseText = response.getResult().getOutput().getText();
 
 		// Create metadata map for the document
@@ -119,10 +136,10 @@ public class DefaultSemanticCache implements SemanticCache {
 		// where possible
 		List<Document> existing;
 
-		if (vectorStore instanceof org.springframework.ai.vectorstore.redis.RedisVectorStore redisVectorStore) {
+		if (this.vectorStore instanceof org.springframework.ai.vectorstore.redis.RedisVectorStore redisVectorStore) {
 			// Use the optimized VECTOR_RANGE query which handles thresholding at the DB
 			// level
-			existing = redisVectorStore.searchByRange(query, similarityThreshold);
+			existing = redisVectorStore.searchByRange(query, this.similarityThreshold);
 
 			if (logger.isDebugEnabled()) {
 				logger.debug(
@@ -131,8 +148,8 @@ public class DefaultSemanticCache implements SemanticCache {
 		}
 		else {
 			// Fallback to standard similarity search if not using RedisVectorStore
-			existing = vectorStore.similaritySearch(
-					SearchRequest.builder().query(query).topK(1).similarityThreshold(similarityThreshold).build());
+			existing = this.vectorStore.similaritySearch(
+					SearchRequest.builder().query(query).topK(1).similarityThreshold(this.similarityThreshold).build());
 		}
 
 		// If similar document exists, delete it first
@@ -141,11 +158,11 @@ public class DefaultSemanticCache implements SemanticCache {
 				logger.debug("Replacing similar document with id={} and score={}", existing.get(0).getId(),
 						existing.get(0).getScore());
 			}
-			vectorStore.delete(List.of(existing.get(0).getId()));
+			this.vectorStore.delete(List.of(existing.get(0).getId()));
 		}
 
 		// Add new document to vector store
-		vectorStore.add(List.of(document));
+		this.vectorStore.add(List.of(document));
 	}
 
 	@Override
@@ -154,7 +171,7 @@ public class DefaultSemanticCache implements SemanticCache {
 		String docId = UUID.randomUUID().toString();
 
 		// Convert response to JSON
-		String responseJson = gson.toJson(response);
+		String responseJson = this.gson.toJson(response);
 		String responseText = response.getResult().getOutput().getText();
 
 		// Create metadata
@@ -169,10 +186,10 @@ public class DefaultSemanticCache implements SemanticCache {
 		// where possible
 		List<Document> existing;
 
-		if (vectorStore instanceof RedisVectorStore redisVectorStore) {
+		if (this.vectorStore instanceof RedisVectorStore redisVectorStore) {
 			// Use the optimized VECTOR_RANGE query which handles thresholding at the DB
 			// level
-			existing = redisVectorStore.searchByRange(query, similarityThreshold);
+			existing = redisVectorStore.searchByRange(query, this.similarityThreshold);
 
 			if (logger.isDebugEnabled()) {
 				logger.debug(
@@ -181,8 +198,8 @@ public class DefaultSemanticCache implements SemanticCache {
 		}
 		else {
 			// Fallback to standard similarity search if not using RedisVectorStore
-			existing = vectorStore.similaritySearch(
-					SearchRequest.builder().query(query).topK(1).similarityThreshold(similarityThreshold).build());
+			existing = this.vectorStore.similaritySearch(
+					SearchRequest.builder().query(query).topK(1).similarityThreshold(this.similarityThreshold).build());
 		}
 
 		// If similar document exists, delete it first
@@ -191,15 +208,15 @@ public class DefaultSemanticCache implements SemanticCache {
 				logger.debug("Replacing similar document with id={} and score={}", existing.get(0).getId(),
 						existing.get(0).getScore());
 			}
-			vectorStore.delete(List.of(existing.get(0).getId()));
+			this.vectorStore.delete(List.of(existing.get(0).getId()));
 		}
 
 		// Add document to vector store
-		vectorStore.add(List.of(document));
+		this.vectorStore.add(List.of(document));
 
 		// Get access to Redis client and set TTL
-		if (vectorStore instanceof RedisVectorStore redisStore) {
-			String key = prefix + docId;
+		if (this.vectorStore instanceof RedisVectorStore redisStore) {
+			String key = this.prefix + docId;
 			redisStore.getJedis().expire(key, ttl.getSeconds());
 		}
 	}
@@ -211,19 +228,19 @@ public class DefaultSemanticCache implements SemanticCache {
 		List<Document> similar;
 
 		// Convert distance threshold to similarity threshold if needed
-		double effectiveThreshold = similarityThreshold;
-		if (useDistanceThreshold) {
+		double effectiveThreshold = this.similarityThreshold;
+		if (this.useDistanceThreshold) {
 			// RedisVL uses distance thresholds: distance <= threshold
 			// Spring AI uses similarity thresholds: similarity >= threshold
 			// For COSINE: distance = 2 - 2 * similarity, so similarity = 1 - distance/2
-			effectiveThreshold = 1 - (similarityThreshold / 2);
+			effectiveThreshold = 1 - (this.similarityThreshold / 2);
 			if (logger.isDebugEnabled()) {
-				logger.debug("Converting distance threshold {} to similarity threshold {}", similarityThreshold,
+				logger.debug("Converting distance threshold {} to similarity threshold {}", this.similarityThreshold,
 						effectiveThreshold);
 			}
 		}
 
-		if (vectorStore instanceof org.springframework.ai.vectorstore.redis.RedisVectorStore redisVectorStore) {
+		if (this.vectorStore instanceof org.springframework.ai.vectorstore.redis.RedisVectorStore redisVectorStore) {
 			// Use the optimized VECTOR_RANGE query which handles thresholding at the DB
 			// level
 			similar = redisVectorStore.searchByRange(query, effectiveThreshold);
@@ -238,7 +255,7 @@ public class DefaultSemanticCache implements SemanticCache {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Falling back to standard similarity search (vectorStore is not RedisVectorStore)");
 			}
-			similar = vectorStore.similaritySearch(
+			similar = this.vectorStore.similaritySearch(
 					SearchRequest.builder().query(query).topK(5).similarityThreshold(effectiveThreshold).build());
 		}
 
@@ -252,7 +269,7 @@ public class DefaultSemanticCache implements SemanticCache {
 		// Log results for debugging
 		if (logger.isDebugEnabled()) {
 			logger.debug("Query: '{}', found {} matches with similarity >= {}", query, similar.size(),
-					similarityThreshold);
+					this.similarityThreshold);
 			for (Document doc : similar) {
 				logger.debug("  - Document: id={}, score={}, raw_vector_score={}", doc.getId(), doc.getScore(),
 						doc.getMetadata().getOrDefault("vector_score", "N/A"));
@@ -274,7 +291,7 @@ public class DefaultSemanticCache implements SemanticCache {
 
 		// Attempt to parse stored response
 		try {
-			ChatResponse response = gson.fromJson(responseJson, ChatResponse.class);
+			ChatResponse response = this.gson.fromJson(responseJson, ChatResponse.class);
 			return Optional.of(response);
 		}
 		catch (JsonParseException e) {
@@ -284,7 +301,7 @@ public class DefaultSemanticCache implements SemanticCache {
 
 	@Override
 	public void clear() {
-		Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
+		Optional<JedisPooled> nativeClient = this.vectorStore.getNativeClient();
 		if (nativeClient.isPresent()) {
 			JedisPooled jedis = nativeClient.get();
 
@@ -373,28 +390,26 @@ public class DefaultSemanticCache implements SemanticCache {
 		}
 
 		public DefaultSemanticCache build() {
-			if (vectorStore == null) {
-				if (jedisClient == null) {
+			if (this.vectorStore == null) {
+				if (this.jedisClient == null) {
 					throw new IllegalStateException("Either vectorStore or jedisClient must be provided");
 				}
-				if (embeddingModel == null) {
+				if (this.embeddingModel == null) {
 					throw new IllegalStateException("EmbeddingModel must be provided");
 				}
-				vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
-					.indexName(indexName)
-					.prefix(prefix)
-					.metadataFields( //
-							MetadataField.text("response"), //
-							MetadataField.text("response_text"), //
-							MetadataField.numeric("ttl")) //
+				this.vectorStore = RedisVectorStore.builder(this.jedisClient, this.embeddingModel)
+					.indexName(this.indexName)
+					.prefix(this.prefix)
+					.metadataFields(MetadataField.text("response"), MetadataField.text("response_text"),
+							MetadataField.numeric("ttl"))
 					.initializeSchema(true)
 					.build();
-				if (vectorStore instanceof RedisVectorStore redisStore) {
+				if (this.vectorStore instanceof RedisVectorStore redisStore) {
 					redisStore.afterPropertiesSet();
 				}
 			}
-			return new DefaultSemanticCache(vectorStore, embeddingModel, similarityThreshold, indexName, prefix,
-					useDistanceThreshold);
+			return new DefaultSemanticCache(this.vectorStore, this.embeddingModel, this.similarityThreshold,
+					this.indexName, this.prefix, this.useDistanceThreshold);
 		}
 
 	}
