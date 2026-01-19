@@ -68,7 +68,7 @@ public class OpenAiEmbeddingAutoConfiguration {
 			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
-		var openAiApi = openAiApi(embeddingProperties, commonProperties,
+		var openAiApi = openAiApi(commonProperties, embeddingProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "embedding");
 
@@ -81,8 +81,8 @@ public class OpenAiEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private OpenAiApi openAiApi(OpenAiEmbeddingProperties embeddingProperties,
-			OpenAiConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
+	private OpenAiApi openAiApi(OpenAiConnectionProperties commonProperties,
+			OpenAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler, String modelType) {
 
 		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
@@ -92,7 +92,6 @@ public class OpenAiEmbeddingAutoConfiguration {
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
 			.headers(resolved.headers())
-			.completionsPath(OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH)
 			.embeddingsPath(embeddingProperties.getEmbeddingsPath())
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
