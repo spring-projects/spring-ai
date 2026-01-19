@@ -67,7 +67,8 @@ public class AnthropicChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	public AnthropicApi anthropicApi(AnthropicConnectionProperties connectionProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		return AnthropicApi.builder()
 			.baseUrl(connectionProperties.getBaseUrl())
@@ -76,7 +77,7 @@ public class AnthropicChatAutoConfiguration {
 			.anthropicVersion(connectionProperties.getVersion())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.anthropicBetaFeatures(connectionProperties.getBetaVersion())
 			.build();
 	}

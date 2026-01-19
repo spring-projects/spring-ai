@@ -64,8 +64,9 @@ public class ZhiPuAiChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ZhiPuAiChatModel zhiPuAiChatModel(ZhiPuAiConnectionProperties commonProperties,
 			ZhiPuAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler,
-			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler, ObjectProvider<RetryTemplate> retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention, ToolCallingManager toolCallingManager,
 			ObjectProvider<ToolExecutionEligibilityPredicate> toolExecutionEligibilityPredicate) {
 
@@ -86,7 +87,7 @@ public class ZhiPuAiChatAutoConfiguration {
 
 	private ZhiPuAiApi zhiPuAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl, "ZhiPuAI base URL must be set");
@@ -99,7 +100,7 @@ public class ZhiPuAiChatAutoConfiguration {
 			.apiKey(new SimpleApiKey(resolvedApiKey))
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 
 	}

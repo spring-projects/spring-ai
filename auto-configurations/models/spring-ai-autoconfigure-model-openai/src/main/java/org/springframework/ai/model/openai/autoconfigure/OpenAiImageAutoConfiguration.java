@@ -65,7 +65,7 @@ public class OpenAiImageAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiImageModel openAiImageModel(OpenAiConnectionProperties commonProperties,
 			OpenAiImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<RetryTemplate> retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
@@ -78,7 +78,7 @@ public class OpenAiImageAutoConfiguration {
 			.headers(resolved.headers())
 			.imagesPath(imageProperties.getImagesPath())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 		var imageModel = new OpenAiImageModel(openAiImageApi, imageProperties.getOptions(),
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),

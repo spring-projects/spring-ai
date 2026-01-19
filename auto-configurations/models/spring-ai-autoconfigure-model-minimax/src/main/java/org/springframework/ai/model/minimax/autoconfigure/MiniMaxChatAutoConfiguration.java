@@ -64,7 +64,8 @@ public class MiniMaxChatAutoConfiguration {
 	public MiniMaxChatModel miniMaxChatModel(MiniMaxConnectionProperties commonProperties,
 			MiniMaxChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ToolCallingManager toolCallingManager, ObjectProvider<RetryTemplate> retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
 
@@ -82,7 +83,7 @@ public class MiniMaxChatAutoConfiguration {
 	}
 
 	private MiniMaxApi miniMaxApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			RestClient.Builder restClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl, "MiniMax base URL must be set");
@@ -90,7 +91,8 @@ public class MiniMaxChatAutoConfiguration {
 		String resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		Assert.hasText(resolvedApiKey, "MiniMax API key must be set");
 
-		return new MiniMaxApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder, responseErrorHandler);
+		return new MiniMaxApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
+				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 	}
 
 }

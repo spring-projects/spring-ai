@@ -61,7 +61,8 @@ public class ZhiPuAiEmbeddingAutoConfiguration {
 			ZhiPuAiEmbeddingProperties embeddingProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var zhiPuAiApi = zhiPuAiApi(embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
@@ -80,7 +81,7 @@ public class ZhiPuAiEmbeddingAutoConfiguration {
 
 	private ZhiPuAiApi zhiPuAiApi(String baseUrl, String commonBaseUrl, String apiKey, String commonApiKey,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
 		Assert.hasText(resolvedBaseUrl, "ZhiPuAI base URL must be set");
@@ -93,7 +94,7 @@ public class ZhiPuAiEmbeddingAutoConfiguration {
 			.apiKey(new SimpleApiKey(resolvedApiKey))
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 
