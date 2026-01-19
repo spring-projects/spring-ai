@@ -21,6 +21,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Redis semantic cache.
  *
  * @author Brian Sam-Bodden
+ * @author Eddú Meléndez
  */
 @ConfigurationProperties(prefix = "spring.ai.vectorstore.redis.semantic-cache")
 public class RedisSemanticCacheProperties {
@@ -29,16 +30,6 @@ public class RedisSemanticCacheProperties {
 	 * Enable the Redis semantic cache.
 	 */
 	private boolean enabled = true;
-
-	/**
-	 * Redis server host.
-	 */
-	private String host = "localhost";
-
-	/**
-	 * Redis server port.
-	 */
-	private int port = 6379;
 
 	/**
 	 * Similarity threshold for matching cached responses (0.0 to 1.0). Higher values mean
@@ -62,22 +53,6 @@ public class RedisSemanticCacheProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
-	}
-
-	public String getHost() {
-		return host;
-	}
-
-	public void setHost(String host) {
-		this.host = host;
-	}
-
-	public int getPort() {
-		return port;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
 	}
 
 	public double getSimilarityThreshold() {

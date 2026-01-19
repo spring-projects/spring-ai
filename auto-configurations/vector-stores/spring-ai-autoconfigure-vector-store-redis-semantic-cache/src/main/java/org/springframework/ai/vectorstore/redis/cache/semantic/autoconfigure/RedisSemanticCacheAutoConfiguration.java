@@ -30,6 +30,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.util.StringUtils;
 
 import redis.clients.jedis.JedisPooled;
@@ -38,10 +39,12 @@ import redis.clients.jedis.JedisPooled;
  * Auto-configuration for Redis semantic cache.
  *
  * @author Brian Sam-Bodden
+ * @author Eddú Meléndez
  */
 @AutoConfiguration(after = DataRedisAutoConfiguration.class)
 @ConditionalOnClass({ DefaultSemanticCache.class, JedisPooled.class, CallAdvisor.class, StreamAdvisor.class,
 		TransformersEmbeddingModel.class })
+@ConditionalOnBean(JedisConnectionFactory.class)
 @EnableConfigurationProperties(RedisSemanticCacheProperties.class)
 @ConditionalOnProperty(name = "spring.ai.vectorstore.redis.semantic-cache.enabled", havingValue = "true",
 		matchIfMissing = true)
@@ -71,8 +74,8 @@ public class RedisSemanticCacheAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public JedisPooled jedisClient(RedisSemanticCacheProperties properties) {
-		return new JedisPooled(properties.getHost(), properties.getPort());
+	public JedisPooled jedisClient(JedisConnectionFactory jedisConnectionFactory) {
+		return new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort());
 	}
 
 	@Bean

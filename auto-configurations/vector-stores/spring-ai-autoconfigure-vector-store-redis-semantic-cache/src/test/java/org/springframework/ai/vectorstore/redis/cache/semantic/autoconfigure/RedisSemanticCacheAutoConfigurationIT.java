@@ -63,14 +63,10 @@ class RedisSemanticCacheAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
-				AutoConfigurations.of(RedisSemanticCacheAutoConfiguration.class, DataRedisAutoConfiguration.class))
+				AutoConfigurations.of(DataRedisAutoConfiguration.class, RedisSemanticCacheAutoConfiguration.class))
 		.withUserConfiguration(TestConfig.class)
 		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
-				"spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
-				// Pass the same Redis connection properties to our semantic cache
-				// properties
-				"spring.ai.vectorstore.redis.semantic-cache.host=" + redisContainer.getHost(),
-				"spring.ai.vectorstore.redis.semantic-cache.port=" + redisContainer.getFirstMappedPort());
+				"spring.data.redis.port=" + redisContainer.getFirstMappedPort(), "spring.data.redis.client-type=jedis");
 
 	@Test
 	void autoConfigurationRegistersExpectedBeans() {
