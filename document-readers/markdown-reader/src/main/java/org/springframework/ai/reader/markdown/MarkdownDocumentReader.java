@@ -146,6 +146,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 
 		private final MarkdownDocumentReaderConfig config;
 
+		@SuppressWarnings("NullAway.Init") // visit(Document) happens first in practice
 		private Document.Builder currentDocumentBuilder;
 
 		DocumentVisitor(MarkdownDocumentReaderConfig config) {

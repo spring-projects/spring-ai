@@ -26,6 +26,7 @@ import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,9 +62,9 @@ public class PagePdfDocumentReader implements DocumentReader {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
-	protected String resourceFileName;
+	protected @Nullable String resourceFileName;
 
-	private PdfDocumentReaderConfig config;
+	private final PdfDocumentReaderConfig config;
 
 	public PagePdfDocumentReader(String resourceUrl) {
 		this(new DefaultResourceLoader().getResource(resourceUrl));
@@ -167,7 +168,9 @@ public class PagePdfDocumentReader implements DocumentReader {
 		if (startPageNumber != endPageNumber) {
 			doc.getMetadata().put(METADATA_END_PAGE_NUMBER, endPageNumber);
 		}
-		doc.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
+		if (this.resourceFileName != null) {
+			doc.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
+		}
 		return doc;
 	}
 
