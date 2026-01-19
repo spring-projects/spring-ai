@@ -55,7 +55,7 @@ public class ZhiPuAiImageAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ZhiPuAiImageModel zhiPuAiImageModel(ZhiPuAiConnectionProperties commonProperties,
 			ZhiPuAiImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<RetryTemplate> retryTemplate, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String apiKey = StringUtils.hasText(imageProperties.getApiKey()) ? imageProperties.getApiKey()
 				: commonProperties.getApiKey();
@@ -68,7 +68,8 @@ public class ZhiPuAiImageAutoConfiguration {
 
 		// TODO add ZhiPuAiApi support for image
 		var zhiPuAiImageApi = new ZhiPuAiImageApi(baseUrl, apiKey,
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 
 		return new ZhiPuAiImageModel(zhiPuAiImageApi, imageProperties.getOptions(),
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE));
