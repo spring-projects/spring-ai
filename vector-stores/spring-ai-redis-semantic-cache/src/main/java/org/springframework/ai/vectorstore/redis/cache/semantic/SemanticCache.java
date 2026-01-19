@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.ai.vectorstore.redis.cache.semantic;
 
-import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.vectorstore.VectorStore;
+package org.springframework.ai.vectorstore.redis.cache.semantic;
 
 import java.time.Duration;
 import java.util.Optional;
+
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.vectorstore.VectorStore;
 
 /**
  * Interface defining operations for a semantic cache implementation that stores and
