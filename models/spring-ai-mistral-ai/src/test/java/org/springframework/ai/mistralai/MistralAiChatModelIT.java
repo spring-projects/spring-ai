@@ -504,6 +504,7 @@ class MistralAiChatModelIT {
 		CallAdvisor verifyNativeStructuredOutputAdvisor = new CallAdvisor() {
 			@Override
 			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+				ChatClientResponse response = chain.nextCall(request);
 				if (request.prompt().getOptions() instanceof MistralAiChatOptions options) {
 					ResponseFormat responseFormat = options.getResponseFormat();
 					if (responseFormat != null && responseFormat.getType() == ResponseFormat.Type.JSON_SCHEMA) {
@@ -512,7 +513,7 @@ class MistralAiChatModelIT {
 								responseFormat.getType());
 					}
 				}
-				return chain.nextCall(request);
+				return response;
 			}
 
 			@Override
