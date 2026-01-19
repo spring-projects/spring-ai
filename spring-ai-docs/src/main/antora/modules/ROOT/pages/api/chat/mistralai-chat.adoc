@@ -143,7 +143,7 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.options.randomSeed | This feature is in Beta. If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
 | spring.ai.mistralai.chat.options.stop | Stop generation if this token is detected. Or if one of these tokens is detected when providing an array. | -
 | spring.ai.mistralai.chat.options.topP | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
-| spring.ai.mistralai.chat.options.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.| -
+| spring.ai.mistralai.chat.options.responseFormat | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Setting to `{ "type": "json_schema" }` with a supplied schema enables native structured outputs, which guarantees the model will match your supplied JSON schema. See the <<structured-output>> section for more details.| -
 | spring.ai.mistralai.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
 | spring.ai.mistralai.chat.options.toolChoice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
 | spring.ai.mistralai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
@@ -185,6 +185,78 @@ TIP: In addition to the model specific link:https://github.com/spring-projects/s
 You can register custom Java functions with the `MistralAiChatModel` and have the Mistral AI model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
 This is a powerful technique to connect the LLM capabilities with external tools and APIs.
 Read more about xref:api/tools.adoc[Tool Calling].
+
+== Structured Output [[structured-output]]
+
+Mistral AI supports native structured outputs through JSON Schema, ensuring the model generates responses that strictly conform to your specified structure.
+This feature is available for Mistral Small and later models.
+
+=== Using ChatClient with Native Structured Output
+
+The simplest way to use structured output is with the `ChatClient` high-level API and the `ENABLE_NATIVE_STRUCTURED_OUTPUT` advisor:
+
+[source,java]
+----
+record ActorsFilms(String actor, List<String> movies) {}
+
+ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+    .user("Generate the filmography of 5 movies for Tom Hanks.")
+    .call()
+    .entity(ActorsFilms.class);
+----
+
+This approach automatically:
+- Generates a JSON schema from your Java class
+- Configures the model to use native structured output
+- Parses the response into your specified type
+
+=== Using ResponseFormat Directly
+
+For more control, you can use the `ResponseFormat` class with `MistralAiChatOptions`:
+
+[source,java]
+----
+record MovieRecommendation(String title, String director, int year, String plotSummary) {}
+
+var options = MistralAiChatOptions.builder()
+    .model(MistralAiApi.ChatModel.SMALL.getValue())
+    .responseFormat(ResponseFormat.jsonSchema(MovieRecommendation.class))
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("Recommend a classic science fiction movie.", options));
+----
+
+The `ResponseFormat` class provides several factory methods:
+
+* `ResponseFormat.text()` - Returns plain text output (default)
+* `ResponseFormat.jsonObject()` - Returns valid JSON (no schema enforcement)
+* `ResponseFormat.jsonSchema(Class<?>)` - Generates schema from a Java class
+* `ResponseFormat.jsonSchema(String)` - Uses a JSON schema string
+* `ResponseFormat.jsonSchema(Map)` - Uses a JSON schema map
+
+=== JSON Mode vs Structured Output
+
+Mistral AI supports two JSON-related modes:
+
+* **JSON Mode** (`json_object`): Guarantees valid JSON output, but doesn't enforce a specific structure
+* **Structured Output** (`json_schema`): Guarantees output matching your JSON schema
+
+[source,java]
+----
+// JSON Mode - any valid JSON
+var jsonMode = MistralAiChatOptions.builder()
+    .responseFormat(ResponseFormat.jsonObject())
+    .build();
+
+// Structured Output - specific schema enforced
+var structuredOutput = MistralAiChatOptions.builder()
+    .responseFormat(ResponseFormat.jsonSchema(MyClass.class))
+    .build();
+----
+
+For more information about structured outputs, see the xref:api/structured-output-converter.adoc[Structured Output Converter] documentation.
 
 == Multimodal
 
