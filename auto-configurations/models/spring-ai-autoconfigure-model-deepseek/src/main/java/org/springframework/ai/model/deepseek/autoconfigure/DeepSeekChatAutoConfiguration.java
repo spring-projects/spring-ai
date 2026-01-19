@@ -66,7 +66,7 @@ public class DeepSeekChatAutoConfiguration {
 	public DeepSeekChatModel deepSeekChatModel(DeepSeekConnectionProperties commonProperties,
 			DeepSeekChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
-			ObjectProvider<RetryTemplate> retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<ToolExecutionEligibilityPredicate> deepseekToolExecutionEligibilityPredicate) {
@@ -92,7 +92,7 @@ public class DeepSeekChatAutoConfiguration {
 
 	private DeepSeekApi deepSeekApi(DeepSeekChatProperties chatProperties,
 			DeepSeekConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			WebClient.Builder webClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		String resolvedBaseUrl = StringUtils.hasText(chatProperties.getBaseUrl()) ? chatProperties.getBaseUrl()
 				: commonProperties.getBaseUrl();
@@ -109,7 +109,7 @@ public class DeepSeekChatAutoConfiguration {
 			.betaPrefixPath(chatProperties.getBetaPrefixPath())
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 

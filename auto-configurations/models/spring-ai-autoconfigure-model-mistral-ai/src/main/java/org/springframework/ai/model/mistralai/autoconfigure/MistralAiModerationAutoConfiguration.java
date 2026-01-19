@@ -56,7 +56,8 @@ public class MistralAiModerationAutoConfiguration {
 	@ConditionalOnMissingBean
 	public MistralAiModerationModel mistralAiModerationModel(MistralAiCommonProperties commonProperties,
 			MistralAiModerationProperties moderationProperties, ObjectProvider<RetryTemplate> retryTemplate,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var apiKey = moderationProperties.getApiKey();
 		var baseUrl = moderationProperties.getBaseUrl();
@@ -71,7 +72,7 @@ public class MistralAiModerationAutoConfiguration {
 			.baseUrl(resoledBaseUrl)
 			.apiKey(resolvedApiKey)
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 
 		return MistralAiModerationModel.builder()
