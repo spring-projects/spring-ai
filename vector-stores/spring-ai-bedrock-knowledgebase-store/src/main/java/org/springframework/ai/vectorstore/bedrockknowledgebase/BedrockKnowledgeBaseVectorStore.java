@@ -35,12 +35,13 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.VectorSearchBed
 import software.amazon.awssdk.services.bedrockagentruntime.model.VectorSearchRerankingConfiguration;
 import software.amazon.awssdk.services.bedrockagentruntime.model.VectorSearchRerankingConfigurationType;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -145,11 +146,9 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 
 	private final double defaultSimilarityThreshold;
 
-	@Nullable
-	private final SearchType searchType;
+	@Nullable private final SearchType searchType;
 
-	@Nullable
-	private final String rerankingModelArn;
+	@Nullable private final String rerankingModelArn;
 
 	private final BedrockKnowledgeBaseFilterExpressionConverter filterConverter;
 
@@ -405,14 +404,11 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 
 		private double similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
 
-		@Nullable
-		private SearchType searchType;
+		@Nullable private SearchType searchType;
 
-		@Nullable
-		private String rerankingModelArn;
+		@Nullable private String rerankingModelArn;
 
-		@Nullable
-		private BedrockKnowledgeBaseFilterExpressionConverter filterConverter;
+		@Nullable private BedrockKnowledgeBaseFilterExpressionConverter filterConverter;
 
 		private Builder(final BedrockAgentRuntimeClient client, final String knowledgeBaseId) {
 			Assert.notNull(client, "BedrockAgentRuntimeClient must not be null");

@@ -19,11 +19,11 @@ package org.springframework.ai.vectorstore.bedrockknowledgebase.autoconfigure;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.services.bedrockagentruntime.model.SearchType;
 
 import org.springframework.ai.vectorstore.bedrockknowledgebase.BedrockKnowledgeBaseVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.lang.Nullable;
 import org.springframework.validation.annotation.Validated;
 
 /**
@@ -66,15 +66,13 @@ public class BedrockKnowledgeBaseVectorStoreProperties {
 	/**
 	 * The ID of the Bedrock Knowledge Base to query.
 	 */
-	@Nullable
-	private String knowledgeBaseId;
+	@Nullable private String knowledgeBaseId;
 
 	/**
 	 * The AWS region for the Bedrock service. If not specified, uses the default region
 	 * from the AWS SDK (environment variable, system property, or config file).
 	 */
-	@Nullable
-	private String region;
+	@Nullable private String region;
 
 	/**
 	 * The number of results to return from similarity search.
@@ -95,19 +93,16 @@ public class BedrockKnowledgeBaseVectorStoreProperties {
 	 * (not supported by all vector store types). SEMANTIC uses only semantic (vector)
 	 * search. Default: null (uses KB default behavior)
 	 */
-	@Nullable
-	private SearchType searchType;
+	@Nullable private SearchType searchType;
 
 	/**
 	 * The ARN of the Bedrock reranking model to use for improving relevance. Example:
 	 * arn:aws:bedrock:us-east-1::foundation-model/cohere.rerank-v3-5:0 Default: null (no
 	 * reranking)
 	 */
-	@Nullable
-	private String rerankingModelArn;
+	@Nullable private String rerankingModelArn;
 
-	@Nullable
-	public String getKnowledgeBaseId() {
+	@Nullable public String getKnowledgeBaseId() {
 		return this.knowledgeBaseId;
 	}
 
@@ -115,8 +110,7 @@ public class BedrockKnowledgeBaseVectorStoreProperties {
 		this.knowledgeBaseId = knowledgeBaseId;
 	}
 
-	@Nullable
-	public String getRegion() {
+	@Nullable public String getRegion() {
 		return this.region;
 	}
 
@@ -140,8 +134,7 @@ public class BedrockKnowledgeBaseVectorStoreProperties {
 		this.similarityThreshold = similarityThreshold;
 	}
 
-	@Nullable
-	public SearchType getSearchType() {
+	@Nullable public SearchType getSearchType() {
 		return this.searchType;
 	}
 
@@ -149,8 +142,7 @@ public class BedrockKnowledgeBaseVectorStoreProperties {
 		this.searchType = searchType;
 	}
 
-	@Nullable
-	public String getRerankingModelArn() {
+	@Nullable public String getRerankingModelArn() {
 		return this.rerankingModelArn;
 	}
 

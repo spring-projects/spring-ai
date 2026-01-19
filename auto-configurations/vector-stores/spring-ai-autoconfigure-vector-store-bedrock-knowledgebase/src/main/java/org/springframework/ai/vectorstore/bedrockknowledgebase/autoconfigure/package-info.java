@@ -15,9 +15,9 @@
  */
 
 /**
- * Provides the Amazon Bedrock Knowledge Base vector store implementation.
+ * Auto-configuration for Amazon Bedrock Knowledge Base VectorStore.
  */
 @NullMarked
-package org.springframework.ai.vectorstore.bedrockknowledgebase;
+package org.springframework.ai.vectorstore.bedrockknowledgebase.autoconfigure;
 
 import org.jspecify.annotations.NullMarked;

@@ -17,6 +17,9 @@
 package org.springframework.ai.vectorstore.bedrockknowledgebase;
 
 import java.util.List;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.services.bedrockagentruntime.model.FilterAttribute;
@@ -75,7 +78,7 @@ public class BedrockKnowledgeBaseFilterExpressionConverter {
 	 * @param expression the Spring AI filter expression
 	 * @return the Bedrock RetrievalFilter, or null if expression is null
 	 */
-	public RetrievalFilter convertExpression(final Expression expression) {
+	@Nullable public RetrievalFilter convertExpression(@Nullable final Expression expression) {
 		if (expression == null) {
 			return null;
 		}
@@ -102,14 +105,14 @@ public class BedrockKnowledgeBaseFilterExpressionConverter {
 	}
 
 	private RetrievalFilter convertAnd(final Expression expression) {
-		RetrievalFilter left = convert(asExpression(expression.left()));
-		RetrievalFilter right = convert(asExpression(expression.right()));
+		RetrievalFilter left = convert(asExpression(Objects.requireNonNull(expression.left(), "left operand")));
+		RetrievalFilter right = convert(asExpression(Objects.requireNonNull(expression.right(), "right operand")));
 		return RetrievalFilter.builder().andAll(left, right).build();
 	}
 
 	private RetrievalFilter convertOr(final Expression expression) {
-		RetrievalFilter left = convert(asExpression(expression.left()));
-		RetrievalFilter right = convert(asExpression(expression.right()));
+		RetrievalFilter left = convert(asExpression(Objects.requireNonNull(expression.left(), "left operand")));
+		RetrievalFilter right = convert(asExpression(Objects.requireNonNull(expression.right(), "right operand")));
 		return RetrievalFilter.builder().orAll(left, right).build();
 	}
 
@@ -123,8 +126,8 @@ public class BedrockKnowledgeBaseFilterExpressionConverter {
 	}
 
 	private RetrievalFilter buildComparison(final Expression exp, final ComparisonOp op) {
-		String key = ((Key) exp.left()).key();
-		Object value = extractValue(exp.right());
+		String key = ((Key) Objects.requireNonNull(exp.left(), "left operand")).key();
+		Object value = extractValue(Objects.requireNonNull(exp.right(), "right operand"));
 		FilterAttribute attr = createFilterAttribute(key, value);
 
 		return switch (op) {
@@ -138,16 +141,16 @@ public class BedrockKnowledgeBaseFilterExpressionConverter {
 	}
 
 	private RetrievalFilter convertIn(final Expression expression) {
-		String key = ((Key) expression.left()).key();
-		List<?> values = extractListValue(expression.right());
+		String key = ((Key) Objects.requireNonNull(expression.left(), "left operand")).key();
+		List<?> values = extractListValue(Objects.requireNonNull(expression.right(), "right operand"));
 		List<Document> docs = values.stream().map(this::toDocument).toList();
 		FilterAttribute attr = FilterAttribute.builder().key(key).value(Document.fromList(docs)).build();
 		return RetrievalFilter.builder().in(attr).build();
 	}
 
 	private RetrievalFilter convertNotIn(final Expression expression) {
-		String key = ((Key) expression.left()).key();
-		List<?> values = extractListValue(expression.right());
+		String key = ((Key) Objects.requireNonNull(expression.left(), "left operand")).key();
+		List<?> values = extractListValue(Objects.requireNonNull(expression.right(), "right operand"));
 		List<Document> docs = values.stream().map(this::toDocument).toList();
 		FilterAttribute attr = FilterAttribute.builder().key(key).value(Document.fromList(docs)).build();
 		return RetrievalFilter.builder().notIn(attr).build();

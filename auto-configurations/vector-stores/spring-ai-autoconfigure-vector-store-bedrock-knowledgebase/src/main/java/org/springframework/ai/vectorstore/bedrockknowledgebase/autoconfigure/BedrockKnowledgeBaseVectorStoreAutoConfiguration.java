@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.bedrockknowledgebase.autoconfigure;
 
+import java.util.Objects;
+
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClientBuilder;
@@ -112,7 +114,9 @@ public class BedrockKnowledgeBaseVectorStoreAutoConfiguration {
 	BedrockKnowledgeBaseVectorStore bedrockKnowledgeBaseVectorStore(BedrockAgentRuntimeClient client,
 			BedrockKnowledgeBaseVectorStoreProperties properties) {
 
-		var builder = BedrockKnowledgeBaseVectorStore.builder(client, properties.getKnowledgeBaseId())
+		var builder = BedrockKnowledgeBaseVectorStore
+			.builder(client,
+					Objects.requireNonNull(properties.getKnowledgeBaseId(), "knowledgeBaseId must not be null"))
 			.topK(properties.getTopK())
 			.similarityThreshold(properties.getSimilarityThreshold());
 
