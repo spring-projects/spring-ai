@@ -294,6 +294,7 @@ The following models currently support native structured output:
 * **OpenAI**: GPT-4o and later models with JSON Schema support
 * **Anthropic**: Claude 3.5 Sonnet and later models
 * **Vertex AI Gemini**: Gemini 1.5 Pro and later models
+* **Mistral AI**: Mistral Small and later models with JSON Schema support
 
 NOTE: Some AI models, such as OpenAI, don't support arrays of objects natively at the top level. In such cases, you can use the Spring AI default structured output conversion (without the native structured output advisor).
 
@@ -304,4 +305,4 @@ Some AI Models provide dedicated configuration options to generate structured (u
 * xref:api/chat/openai-chat.adoc#_structured_outputs[OpenAI Structured Outputs] can ensure your model generates responses conforming strictly to your provided JSON Schema. You can choose between the `JSON_OBJECT` that guarantees the message the model generates is valid JSON or `JSON_SCHEMA` with a supplied schema that guarantees the model will generate a response that matches your supplied schema (`spring.ai.openai.chat.options.responseFormat` option).
 * xref:api/chat/azure-openai-chat.adoc[Azure OpenAI] - provides a `spring.ai.azure.openai.chat.options.responseFormat` options specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.
 * xref:api/chat/ollama-chat.adoc[Ollama] - provides a `spring.ai.ollama.chat.options.format` option to specify the format to return a response in. Currently, the only accepted value is `json`.
-* xref:api/chat/mistralai-chat.adoc[Mistral AI] - provides a `spring.ai.mistralai.chat.options.responseFormat` option to specify the format to return a response in. Setting it to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.
+* xref:api/chat/mistralai-chat.adoc[Mistral AI] - provides a `spring.ai.mistralai.chat.options.responseFormat` option to specify the format to return a response in. Setting it to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Additionally, setting it to `{ "type": "json_schema" }` with a supplied schema enables native structured output support, which guarantees the model will generate a response that matches your supplied schema.
