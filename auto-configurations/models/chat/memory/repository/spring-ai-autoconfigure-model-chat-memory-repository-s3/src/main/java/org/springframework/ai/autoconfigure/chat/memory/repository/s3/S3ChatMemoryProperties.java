@@ -16,6 +16,8 @@
 
 package org.springframework.ai.autoconfigure.chat.memory.repository.s3;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -58,7 +60,7 @@ public class S3ChatMemoryProperties {
 	 * Gets the S3 bucket name.
 	 * @return the bucket name
 	 */
-	public String getBucketName() {
+	@Nullable public String getBucketName() {
 		return this.bucketName;
 	}
 

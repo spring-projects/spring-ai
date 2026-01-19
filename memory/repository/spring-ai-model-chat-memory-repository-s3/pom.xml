@@ -34,20 +34,6 @@
 
 
 
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<compilerArgs combine.children="append">
-						<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
-					</compilerArgs>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
-
 	<scm>
 		<url>https://github.com/spring-projects/spring-ai</url>
 		<connection>git://github.com/spring-projects/spring-ai.git</connection>

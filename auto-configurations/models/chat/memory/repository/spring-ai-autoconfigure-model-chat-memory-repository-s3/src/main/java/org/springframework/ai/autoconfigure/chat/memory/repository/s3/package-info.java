@@ -25,4 +25,7 @@
  * @author Yuriy Bezsonov
  * @since 2.0.0
  */
+@NullMarked
 package org.springframework.ai.autoconfigure.chat.memory.repository.s3;
+
+import org.jspecify.annotations.NullMarked;
