@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.chat.cache.semantic;
+
+import java.util.Optional;
+
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -23,11 +30,6 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.vectorstore.redis.cache.semantic.SemanticCache;
-import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.Optional;
 
 /**
  * An advisor implementation that provides semantic caching capabilities for chat
@@ -52,13 +54,13 @@ import java.util.Optional;
  */
 public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
-	/** The underlying semantic cache implementation */
+	/** The underlying semantic cache implementation. */
 	private final SemanticCache cache;
 
-	/** The order of this advisor in the chain */
+	/** The order of this advisor in the chain. */
 	private final int order;
 
-	/** The scheduler for async operations */
+	/** The scheduler for async operations. */
 	private final Scheduler scheduler;
 
 	/**
@@ -114,7 +116,7 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		String userText = extractUserTextFromRequest(request);
 
 		// Check cache first
-		Optional<ChatResponse> cached = cache.get(userText);
+		Optional<ChatResponse> cached = this.cache.get(userText);
 
 		if (cached.isPresent()) {
 			// Create a new ChatClientResponse with the cached response
@@ -126,7 +128,7 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
 		// Cache the response
 		if (response.chatResponse() != null) {
-			cache.set(userText, response.chatResponse());
+			this.cache.set(userText, response.chatResponse());
 		}
 
 		return response;
@@ -147,7 +149,7 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		String userText = extractUserTextFromRequest(request);
 
 		// Check cache first
-		Optional<ChatResponse> cached = cache.get(userText);
+		Optional<ChatResponse> cached = this.cache.get(userText);
 
 		if (cached.isPresent()) {
 			// Create a new ChatClientResponse with the cached response
@@ -161,7 +163,7 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 			if (!responses.isEmpty()) {
 				ChatClientResponse last = responses.get(responses.size() - 1);
 				if (last.chatResponse() != null) {
-					cache.set(userText, last.chatResponse());
+					this.cache.set(userText, last.chatResponse());
 				}
 			}
 			return Flux.fromIterable(responses);

@@ -16,6 +16,12 @@
 
 package org.springframework.ai.chat.cache.semantic;
 
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -23,6 +29,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import redis.clients.jedis.JedisPooled;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
@@ -47,16 +57,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
 
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.JedisPooled;
-
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -71,9 +71,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Brian Sam-Bodden
  */
 @Testcontainers
-@SpringBootTest(classes = SemanticCacheAdvisor2IT.TestApplication.class)
+@SpringBootTest(classes = SemanticCacheAdvisorIT.TestApplication.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
-class SemanticCacheAdvisor2IT {
+class SemanticCacheAdvisorIT {
 
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer("redis/redis-stack:latest")
@@ -101,13 +101,13 @@ class SemanticCacheAdvisor2IT {
 
 	@BeforeEach
 	void setUp() {
-		semanticCache.clear();
-		cacheAdvisor = SemanticCacheAdvisor.builder().cache(semanticCache).build();
+		this.semanticCache.clear();
+		this.cacheAdvisor = SemanticCacheAdvisor.builder().cache(this.semanticCache).build();
 	}
 
 	@AfterEach
 	void tearDown() {
-		semanticCache.clear();
+		this.semanticCache.clear();
 	}
 
 	@Test
@@ -116,10 +116,10 @@ class SemanticCacheAdvisor2IT {
 		String weatherQuestion = "What is the weather like in London today?";
 
 		// First query - should not be cached yet
-		ChatResponse londonResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse londonResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(weatherQuestion)
-			.advisors(cacheAdvisor)
+			.advisors(this.cacheAdvisor)
 			.call()
 			.chatResponse();
 
@@ -127,15 +127,15 @@ class SemanticCacheAdvisor2IT {
 		String londonResponseText = londonResponse.getResult().getOutput().getText();
 
 		// Verify the response was automatically cached
-		Optional<ChatResponse> cachedResponse = semanticCache.get(weatherQuestion);
+		Optional<ChatResponse> cachedResponse = this.semanticCache.get(weatherQuestion);
 		assertThat(cachedResponse).isPresent();
 		assertThat(cachedResponse.get().getResult().getOutput().getText()).isEqualTo(londonResponseText);
 
 		// Same query - should use the cache
-		ChatResponse secondLondonResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse secondLondonResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(weatherQuestion)
-			.advisors(cacheAdvisor)
+			.advisors(this.cacheAdvisor)
 			.call()
 			.chatResponse();
 
@@ -147,20 +147,20 @@ class SemanticCacheAdvisor2IT {
 		String franceQuestion = "What is the capital of France?";
 
 		// Cache the original response
-		ChatResponse franceResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse franceResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(franceQuestion)
-			.advisors(cacheAdvisor)
+			.advisors(this.cacheAdvisor)
 			.call()
 			.chatResponse();
 
 		// Test with similar query using default threshold
 		String similarQuestion = "Tell me the capital city of France?";
 
-		ChatResponse similarResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse similarResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(similarQuestion)
-			.advisors(cacheAdvisor)
+			.advisors(this.cacheAdvisor)
 			.call()
 			.chatResponse();
 
@@ -171,7 +171,7 @@ class SemanticCacheAdvisor2IT {
 		// Test with stricter threshold
 		JedisPooled jedisPooled = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
 		SemanticCache strictCache = DefaultSemanticCache.builder()
-			.embeddingModel(embeddingModel)
+			.embeddingModel(this.embeddingModel)
 			.jedisClient(jedisPooled)
 			.distanceThreshold(0.2) // Very strict
 			.build();
@@ -179,7 +179,7 @@ class SemanticCacheAdvisor2IT {
 		SemanticCacheAdvisor strictAdvisor = SemanticCacheAdvisor.builder().cache(strictCache).build();
 
 		// Cache with strict advisor
-		ChatClient.builder(openAiChatModel)
+		ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(franceQuestion)
 			.advisors(strictAdvisor)
@@ -187,7 +187,7 @@ class SemanticCacheAdvisor2IT {
 			.chatResponse();
 
 		// Similar query with strict threshold - likely a cache miss
-		ChatClient.builder(openAiChatModel)
+		ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(similarQuestion)
 			.advisors(strictAdvisor)
@@ -202,21 +202,21 @@ class SemanticCacheAdvisor2IT {
 	void testTTLSupport() throws InterruptedException {
 		String question = "What is the capital of France?";
 
-		ChatResponse initialResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse initialResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(question)
 			.call()
 			.chatResponse();
 
 		// Set with TTL
-		semanticCache.set(question, initialResponse, Duration.ofSeconds(2));
+		this.semanticCache.set(question, initialResponse, Duration.ofSeconds(2));
 
 		// Verify it exists
-		Optional<ChatResponse> cached = semanticCache.get(question);
+		Optional<ChatResponse> cached = this.semanticCache.get(question);
 		assertThat(cached).isPresent();
 
 		// Verify TTL is set in Redis
-		Optional<JedisPooled> nativeClient = semanticCache.getStore().getNativeClient();
+		Optional<JedisPooled> nativeClient = this.semanticCache.getStore().getNativeClient();
 		assertThat(nativeClient).isPresent();
 		JedisPooled jedis = nativeClient.get();
 
@@ -234,7 +234,7 @@ class SemanticCacheAdvisor2IT {
 		boolean keyExists = jedis.exists(key);
 		assertThat(keyExists).isFalse();
 
-		Optional<ChatResponse> expiredCache = semanticCache.get(question);
+		Optional<ChatResponse> expiredCache = this.semanticCache.get(question);
 		assertThat(expiredCache).isEmpty();
 	}
 
@@ -247,14 +247,14 @@ class SemanticCacheAdvisor2IT {
 		JedisPooled jedisPooled2 = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
 
 		SemanticCache user1Cache = DefaultSemanticCache.builder()
-			.embeddingModel(embeddingModel)
+			.embeddingModel(this.embeddingModel)
 			.jedisClient(jedisPooled1)
 			.distanceThreshold(DEFAULT_DISTANCE_THRESHOLD)
 			.indexName("user1-cache")
 			.build();
 
 		SemanticCache user2Cache = DefaultSemanticCache.builder()
-			.embeddingModel(embeddingModel)
+			.embeddingModel(this.embeddingModel)
 			.jedisClient(jedisPooled2)
 			.distanceThreshold(DEFAULT_DISTANCE_THRESHOLD)
 			.indexName("user2-cache")
@@ -268,7 +268,7 @@ class SemanticCacheAdvisor2IT {
 		SemanticCacheAdvisor user2Advisor = SemanticCacheAdvisor.builder().cache(user2Cache).build();
 
 		// User 1 query
-		ChatResponse user1Response = ChatClient.builder(openAiChatModel)
+		ChatResponse user1Response = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(webQuestion)
 			.advisors(user1Advisor)
@@ -279,7 +279,7 @@ class SemanticCacheAdvisor2IT {
 		assertThat(user1Cache.get(webQuestion)).isPresent();
 
 		// User 2 query - should not get user1's cached response
-		ChatResponse user2Response = ChatClient.builder(openAiChatModel)
+		ChatResponse user2Response = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(webQuestion)
 			.advisors(user2Advisor)
@@ -290,7 +290,7 @@ class SemanticCacheAdvisor2IT {
 		assertThat(user2Cache.get(webQuestion)).isPresent();
 
 		// Verify isolation - each user gets their own cached response
-		ChatResponse user1SecondResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse user1SecondResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(webQuestion)
 			.advisors(user1Advisor)
@@ -299,7 +299,7 @@ class SemanticCacheAdvisor2IT {
 
 		assertThat(user1SecondResponse.getResult().getOutput().getText()).isEqualTo(user1ResponseText);
 
-		ChatResponse user2SecondResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse user2SecondResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(webQuestion)
 			.advisors(user2Advisor)
@@ -319,7 +319,7 @@ class SemanticCacheAdvisor2IT {
 		JedisPooled jedisPooled = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
 
 		SemanticCache testCache = DefaultSemanticCache.builder()
-			.embeddingModel(embeddingModel)
+			.embeddingModel(this.embeddingModel)
 			.jedisClient(jedisPooled)
 			.distanceThreshold(0.25)
 			.build();
@@ -329,7 +329,7 @@ class SemanticCacheAdvisor2IT {
 		String originalQuestion = "What is the largest city in Japan?";
 
 		// Cache the original response
-		ChatResponse originalResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse originalResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(originalQuestion)
 			.advisors(advisor)
@@ -344,7 +344,7 @@ class SemanticCacheAdvisor2IT {
 				"What is Japan's most populous urban area?", "Which Japanese city has the largest population?" };
 
 		for (String similarQuestion : similarQuestions) {
-			ChatResponse response = ChatClient.builder(openAiChatModel)
+			ChatResponse response = ChatClient.builder(this.openAiChatModel)
 				.build()
 				.prompt(similarQuestion)
 				.advisors(advisor)
@@ -372,7 +372,7 @@ class SemanticCacheAdvisor2IT {
 
 		try {
 			// Create a vector store for testing
-			RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
+			RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, this.embeddingModel)
 				.indexName(indexName)
 				.initializeSchema(true)
 				.build();
@@ -418,10 +418,10 @@ class SemanticCacheAdvisor2IT {
 		String prompt = "This is a test prompt.";
 
 		// First call - stores in cache
-		ChatResponse firstResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse firstResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(prompt)
-			.advisors(cacheAdvisor)
+			.advisors(this.cacheAdvisor)
 			.call()
 			.chatResponse();
 
@@ -429,10 +429,10 @@ class SemanticCacheAdvisor2IT {
 		String firstResponseText = firstResponse.getResult().getOutput().getText();
 
 		// Second call - should use cache
-		ChatResponse secondResponse = ChatClient.builder(openAiChatModel)
+		ChatResponse secondResponse = ChatClient.builder(this.openAiChatModel)
 			.build()
 			.prompt(prompt)
-			.advisors(cacheAdvisor)
+			.advisors(this.cacheAdvisor)
 			.call()
 			.chatResponse();
 
@@ -451,10 +451,10 @@ class SemanticCacheAdvisor2IT {
 
 		// Store responses
 		for (int i = 0; i < prompts.length; i++) {
-			ChatResponse response = ChatClient.builder(openAiChatModel)
+			ChatResponse response = ChatClient.builder(this.openAiChatModel)
 				.build()
 				.prompt(prompts[i])
-				.advisors(cacheAdvisor)
+				.advisors(this.cacheAdvisor)
 				.call()
 				.chatResponse();
 			firstResponses[i] = response.getResult().getOutput().getText();
@@ -462,24 +462,24 @@ class SemanticCacheAdvisor2IT {
 
 		// Verify items are cached
 		for (int i = 0; i < prompts.length; i++) {
-			ChatResponse cached = ChatClient.builder(openAiChatModel)
+			ChatResponse cached = ChatClient.builder(this.openAiChatModel)
 				.build()
 				.prompt(prompts[i])
-				.advisors(cacheAdvisor)
+				.advisors(this.cacheAdvisor)
 				.call()
 				.chatResponse();
 			assertThat(cached.getResult().getOutput().getText()).isEqualTo(firstResponses[i]);
 		}
 
 		// Clear cache
-		semanticCache.clear();
+		this.semanticCache.clear();
 
 		// Verify cache is empty
 		for (String prompt : prompts) {
-			ChatResponse afterClear = ChatClient.builder(openAiChatModel)
+			ChatResponse afterClear = ChatClient.builder(this.openAiChatModel)
 				.build()
 				.prompt(prompt)
-				.advisors(cacheAdvisor)
+				.advisors(this.cacheAdvisor)
 				.call()
 				.chatResponse();
 			// After clear, we get a fresh response from the model
@@ -495,7 +495,7 @@ class SemanticCacheAdvisor2IT {
 
 		try {
 			// Create a vector store for testing
-			RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
+			RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, this.embeddingModel)
 				.indexName(indexName)
 				.initializeSchema(true)
 				.build();
@@ -545,29 +545,33 @@ class SemanticCacheAdvisor2IT {
 	@Test
 	void testDirectCacheVerification() {
 		// Test direct cache operations without advisor
-		semanticCache.clear();
+		this.semanticCache.clear();
 
 		// Test with empty cache - should return empty
 		String randomQuery = "Some random sentence.";
-		Optional<ChatResponse> emptyCheck = semanticCache.get(randomQuery);
+		Optional<ChatResponse> emptyCheck = this.semanticCache.get(randomQuery);
 		assertThat(emptyCheck).isEmpty();
 
 		// Create a response and cache it directly
 		String testPrompt = "What is machine learning?";
-		ChatResponse response = ChatClient.builder(openAiChatModel).build().prompt(testPrompt).call().chatResponse();
+		ChatResponse response = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(testPrompt)
+			.call()
+			.chatResponse();
 
 		// Cache the response directly
-		semanticCache.set(testPrompt, response);
+		this.semanticCache.set(testPrompt, response);
 
 		// Verify it's cached
-		Optional<ChatResponse> cachedResponse = semanticCache.get(testPrompt);
+		Optional<ChatResponse> cachedResponse = this.semanticCache.get(testPrompt);
 		assertThat(cachedResponse).isPresent();
 		assertThat(cachedResponse.get().getResult().getOutput().getText())
 			.isEqualTo(response.getResult().getOutput().getText());
 
 		// Test with similar query - might hit or miss depending on similarity
 		String similarQuery = "Explain machine learning to me";
-		semanticCache.get(similarQuery);
+		this.semanticCache.get(similarQuery);
 		// We don't assert presence/absence as it depends on embedding similarity
 	}
 
@@ -583,7 +587,7 @@ class SemanticCacheAdvisor2IT {
 			String testQuestion = "What is Spring Boot?";
 
 			// First query with default configuration
-			ChatResponse response1 = ChatClient.builder(openAiChatModel)
+			ChatResponse response1 = ChatClient.builder(this.openAiChatModel)
 				.build()
 				.prompt(testQuestion)
 				.advisors(defaultAdvisor)
@@ -617,7 +621,7 @@ class SemanticCacheAdvisor2IT {
 
 			// Cache a response
 			String originalQuery = "What is dependency injection?";
-			ChatClient.builder(openAiChatModel)
+			ChatClient.builder(this.openAiChatModel)
 				.build()
 				.prompt(originalQuery)
 				.advisors(strictAdvisor)
@@ -626,7 +630,7 @@ class SemanticCacheAdvisor2IT {
 
 			// Try a similar but not identical query
 			String similarQuery = "Explain dependency injection";
-			ChatClient.builder(openAiChatModel)
+			ChatClient.builder(this.openAiChatModel)
 				.build()
 				.prompt(similarQuery)
 				.advisors(strictAdvisor)

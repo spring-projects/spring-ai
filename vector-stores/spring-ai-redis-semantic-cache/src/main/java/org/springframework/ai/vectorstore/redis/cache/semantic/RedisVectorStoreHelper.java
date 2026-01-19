@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.redis.cache.semantic;
+
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
-import redis.clients.jedis.JedisPooled;
 
 /**
  * Helper utility for creating and configuring Redis-based vector stores for semantic
@@ -26,11 +28,15 @@ import redis.clients.jedis.JedisPooled;
  *
  * @author Brian Sam-Bodden
  */
-public class RedisVectorStoreHelper {
+public final class RedisVectorStoreHelper {
 
 	private static final String DEFAULT_INDEX_NAME = "semantic-cache-idx";
 
 	private static final String DEFAULT_PREFIX = "semantic-cache:";
+
+	private RedisVectorStoreHelper() {
+		// Utility class - prevent instantiation
+	}
 
 	/**
 	 * Creates a pre-configured RedisVectorStore suitable for semantic caching.
