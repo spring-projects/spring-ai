@@ -123,8 +123,9 @@ class OpenAiAudioTranscriptionModelTests {
 
 		@Bean
 		public OpenAiAudioApi openAiAudioApi(RestClient.Builder builder) {
-			return new OpenAiAudioApi("https://api.openai.com", new SimpleApiKey("test-api-key"), new HttpHeaders(),
-					builder, WebClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
+			return new OpenAiAudioApi("https://api.openai.com", new SimpleApiKey("test-api-key"), "/v1/audio/speech",
+					"/v1/audio/transcriptions", new HttpHeaders(), builder, WebClient.builder(),
+					RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
 		}
 
 		@Bean

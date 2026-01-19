@@ -44,6 +44,8 @@ public class OpenAiAudioApiIT {
 
 	OpenAiAudioApi audioApi = OpenAiAudioApi.builder()
 		.apiKey(new SimpleApiKey(System.getenv("OPENAI_API_KEY")))
+		.speechPath("/v1/audio/speech")
+		.transcriptionPath("/v1/audio/transcriptions")
 		.build();
 
 	@SuppressWarnings("null")
