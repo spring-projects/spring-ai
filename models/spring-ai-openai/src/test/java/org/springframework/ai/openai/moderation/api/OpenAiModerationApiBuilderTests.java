@@ -53,6 +53,8 @@ class OpenAiModerationApiBuilderTests {
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
 
+	private static final String TEST_MODERATION_PATH = "/v1/moderations";
+
 	@Test
 	void testMinimalBuilder() {
 		OpenAiModerationApi api = OpenAiModerationApi.builder().apiKey(TEST_API_KEY).build();
@@ -70,6 +72,7 @@ class OpenAiModerationApiBuilderTests {
 		OpenAiModerationApi api = OpenAiModerationApi.builder()
 			.baseUrl(TEST_BASE_URL)
 			.apiKey(TEST_API_KEY)
+			.moderationPath(TEST_MODERATION_PATH)
 			.headers(headers)
 			.restClientBuilder(restClientBuilder)
 			.responseErrorHandler(errorHandler)
@@ -138,6 +141,7 @@ class OpenAiModerationApiBuilderTests {
 			OpenAiModerationApi api = OpenAiModerationApi.builder()
 				.apiKey(() -> Objects.requireNonNull(apiKeys.poll()).getValue())
 				.baseUrl(this.mockWebServer.url("/").toString())
+				.moderationPath(TEST_MODERATION_PATH)
 				.build();
 
 			MockResponse mockResponse = new MockResponse().setResponseCode(200)

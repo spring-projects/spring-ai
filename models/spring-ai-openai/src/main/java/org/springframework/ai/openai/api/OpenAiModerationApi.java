@@ -45,16 +45,20 @@ public class OpenAiModerationApi {
 
 	public static final String DEFAULT_MODERATION_MODEL = "omni-moderation-latest";
 
+	private final String moderationPath;
+
 	private final RestClient restClient;
 
 	/**
 	 * Create a new OpenAI Moderation API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
 	 * @param apiKey OpenAI apiKey.
+	 * @param moderationPath The path to the moderation endpoint.
 	 * @param restClientBuilder the rest client builder to use.
 	 */
-	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, String moderationPath, HttpHeaders headers,
+			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+		this.moderationPath = moderationPath;
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()
@@ -74,9 +78,11 @@ public class OpenAiModerationApi {
 
 	/**
 	 * Create a new OpenAI Moderation API with the provided rest client.
+	 * @param moderationPath The path to the moderation endpoint.
 	 * @param restClient the rest client instance to use.
 	 */
-	public OpenAiModerationApi(RestClient restClient) {
+	public OpenAiModerationApi(String moderationPath, RestClient restClient) {
+		this.moderationPath = moderationPath;
 		this.restClient = restClient;
 	}
 
@@ -85,7 +91,7 @@ public class OpenAiModerationApi {
 		Assert.hasLength(openAiModerationRequest.prompt(), "Prompt cannot be empty.");
 
 		return this.restClient.post()
-			.uri("v1/moderations")
+			.uri(this.moderationPath)
 			.body(openAiModerationRequest)
 			.retrieve()
 			.toEntity(OpenAiModerationResponse.class);
@@ -176,6 +182,8 @@ public class OpenAiModerationApi {
 
 		private ApiKey apiKey;
 
+		private String moderationPath;
+
 		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
@@ -200,6 +208,12 @@ public class OpenAiModerationApi {
 			return this;
 		}
 
+		public Builder moderationPath(String moderationPath) {
+			Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
+			this.moderationPath = moderationPath;
+			return this;
+		}
+
 		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
@@ -220,8 +234,8 @@ public class OpenAiModerationApi {
 
 		public OpenAiModerationApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
-					this.responseErrorHandler);
+			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.moderationPath, this.headers,
+					this.restClientBuilder, this.responseErrorHandler);
 		}
 
 	}
