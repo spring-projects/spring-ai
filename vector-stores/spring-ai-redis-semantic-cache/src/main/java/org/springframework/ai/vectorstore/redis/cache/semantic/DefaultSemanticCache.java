@@ -43,6 +43,7 @@ import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.search.Query;
 import redis.clients.jedis.search.SearchResult;
 
+import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
