@@ -17,6 +17,7 @@
 package org.springframework.ai.autoconfigure.chat.memory.repository.s3;
 
 import java.net.URI;
+import java.util.Objects;
 
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -85,7 +86,7 @@ public class S3ChatMemoryAutoConfiguration {
 
 		return S3ChatMemoryRepository.builder()
 			.s3Client(s3Client)
-			.bucketName(properties.getBucketName())
+			.bucketName(Objects.requireNonNull(properties.getBucketName(), "bucketName must not be null"))
 			.keyPrefix(properties.getKeyPrefix())
 			.initializeBucket(properties.isInitializeBucket())
 			.storageClass(storageClass)

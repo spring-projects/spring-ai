@@ -32,7 +32,7 @@ public class S3ChatMemoryProperties {
 	/**
 	 * The name of the S3 bucket where conversation data will be stored.
 	 */
-	private String bucketName;
+	private @Nullable String bucketName;
 
 	/**
 	 * The prefix to use for S3 object keys. Defaults to "chat-memory".
