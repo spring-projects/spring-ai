@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.AbstractResponseMetadata;
 import org.springframework.ai.model.ResponseMetadata;
+import org.springframework.util.Assert;
 
 /**
  * Models common AI provider metadata returned in an AI response.
@@ -134,9 +135,7 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 		}
 
 		public Builder keyValue(String key, @Nullable Object value) {
-			if (key == null) {
-				throw new IllegalArgumentException("Key must not be null");
-			}
+			Assert.notNull(key, "Key must not be null"); // Defensive check
 			if (value != null) {
 				this.chatResponseMetadata.map.put(key, value);
 			}

@@ -18,6 +18,8 @@ package org.springframework.ai.anthropic.api;
 
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.CacheControl;
 
 /**
@@ -41,9 +43,9 @@ public enum AnthropicCacheType {
 	 */
 	EPHEMERAL(ttl -> new CacheControl("ephemeral", ttl));
 
-	private final Function<String, CacheControl> value;
+	private final Function<@Nullable String, CacheControl> value;
 
-	AnthropicCacheType(Function<String, CacheControl> value) {
+	AnthropicCacheType(Function<@Nullable String, CacheControl> value) {
 		this.value = value;
 	}
 

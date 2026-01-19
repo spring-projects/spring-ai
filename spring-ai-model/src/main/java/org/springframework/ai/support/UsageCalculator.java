@@ -43,8 +43,7 @@ public final class UsageCalculator {
 	public static Usage getCumulativeUsage(final Usage currentUsage,
 			final @Nullable ChatResponse previousChatResponse) {
 		Usage usageFromPreviousChatResponse = null;
-		if (previousChatResponse != null && previousChatResponse.getMetadata() != null
-				&& previousChatResponse.getMetadata().getUsage() != null) {
+		if (previousChatResponse != null) {
 			usageFromPreviousChatResponse = previousChatResponse.getMetadata().getUsage();
 		}
 		else {
@@ -74,7 +73,7 @@ public final class UsageCalculator {
 	 * @param usage the usage to check against.
 	 * @return the boolean value to represent if it is empty.
 	 */
-	public static boolean isEmpty(Usage usage) {
+	public static boolean isEmpty(@Nullable Usage usage) {
 		return usage == null || usage.getTotalTokens() == 0L;
 	}
 

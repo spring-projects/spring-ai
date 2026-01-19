@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -32,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -49,7 +51,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -193,9 +194,10 @@ public final class AnthropicApi {
 	public ResponseEntity<ChatCompletionResponse> chatCompletionEntity(ChatCompletionRequest chatRequest,
 			HttpHeaders additionalHttpHeader) {
 
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
-		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
+		Assert.notNull(chatRequest, "The chat request must not be null");
+		Assert.isTrue(Boolean.FALSE.equals(chatRequest.stream()),
+				"The Chat request must set the stream property to false");
+		Assert.notNull(additionalHttpHeader, "Additional HTTP headers must not be null");
 
 		// @formatter:off
 		return this.restClient.post()
@@ -230,9 +232,10 @@ public final class AnthropicApi {
 	public Flux<ChatCompletionResponse> chatCompletionStream(ChatCompletionRequest chatRequest,
 			HttpHeaders additionalHttpHeader) {
 
-		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
-		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null.");
+		Assert.notNull(chatRequest, "The chat request body must not be null.");
+		Assert.isTrue(Boolean.TRUE.equals(chatRequest.stream()),
+				"The chat request must set the stream property to true");
+		Assert.notNull(additionalHttpHeader, "The additional HTTP headers can not be null");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -292,7 +295,7 @@ public final class AnthropicApi {
 	public FileMetadata getFileMetadata(String fileId) {
 		Assert.hasText(fileId, "File ID cannot be empty");
 
-		return this.restClient.get()
+		return Objects.requireNonNull(this.restClient.get()
 			.uri(FILES_PATH + "/{id}", fileId)
 			.headers(headers -> {
 				addDefaultHeadersIfMissing(headers);
@@ -306,7 +309,7 @@ public final class AnthropicApi {
 				}
 			})
 			.retrieve()
-			.body(FileMetadata.class);
+			.body(FileMetadata.class));
 	}
 
 	/**
@@ -317,7 +320,7 @@ public final class AnthropicApi {
 	public byte[] downloadFile(String fileId) {
 		Assert.hasText(fileId, "File ID cannot be empty");
 
-		return this.restClient.get()
+		return Objects.requireNonNull(this.restClient.get()
 			.uri(FILES_PATH + "/{id}/content", fileId)
 			.headers(headers -> {
 				addDefaultHeadersIfMissing(headers);
@@ -331,7 +334,7 @@ public final class AnthropicApi {
 				}
 			})
 			.retrieve()
-			.body(byte[].class);
+			.body(byte[].class));
 	}
 
 	/**
@@ -340,8 +343,8 @@ public final class AnthropicApi {
 	 * @param page Pagination token from previous response
 	 * @return Paginated list of files
 	 */
-	public FilesListResponse listFiles(Integer limit, String page) {
-		return this.restClient.get()
+	public FilesListResponse listFiles(@Nullable Integer limit, @Nullable String page) {
+		return Objects.requireNonNull(this.restClient.get()
 			.uri(uriBuilder -> {
 				uriBuilder.path(FILES_PATH);
 				if (limit != null) {
@@ -353,7 +356,7 @@ public final class AnthropicApi {
 				return uriBuilder.build();
 			})
 			.retrieve()
-			.body(FilesListResponse.class);
+			.body(FilesListResponse.class));
 	}
 
 	/**
@@ -596,8 +599,7 @@ public final class AnthropicApi {
 		 * @param skillId The skill ID (e.g., "xlsx", "pptx", "docx", "pdf")
 		 * @return The matching AnthropicSkill, or null if not found
 		 */
-		@Nullable
-		public static AnthropicSkill fromId(String skillId) {
+		public static @Nullable AnthropicSkill fromId(@Nullable String skillId) {
 			if (skillId == null) {
 				return null;
 			}
@@ -662,9 +664,9 @@ public final class AnthropicApi {
 
 		public static final class SkillBuilder {
 
-			private SkillType type;
+			private @Nullable SkillType type;
 
-			private String skillId;
+			private @Nullable String skillId;
 
 			private String version = "latest";
 
@@ -1029,29 +1031,30 @@ public final class AnthropicApi {
 	// @formatter:off
 		@JsonProperty("model") String model,
 		@JsonProperty("messages") List<AnthropicMessage> messages,
-		@JsonProperty("system") Object system,
+		@JsonProperty("system") @Nullable Object system,
 		@JsonProperty("max_tokens") Integer maxTokens,
-		@JsonProperty("metadata") Metadata metadata,
-		@JsonProperty("stop_sequences") List<String> stopSequences,
-		@JsonProperty("stream") Boolean stream,
-		@JsonProperty("temperature") Double temperature,
-		@JsonProperty("top_p") Double topP,
-		@JsonProperty("top_k") Integer topK,
-		@JsonProperty("tools") List<Tool> tools,
-		@JsonProperty("tool_choice") ToolChoice toolChoice,
-		@JsonProperty("thinking") ThinkingConfig thinking,
-		@JsonProperty("output_format") OutputFormat outputFormat,
-		@JsonProperty("container") SkillContainer container) {
+		@JsonProperty("metadata") @Nullable Metadata metadata,
+		@JsonProperty("stop_sequences") @Nullable List<String> stopSequences,
+		@JsonProperty("stream") @Nullable Boolean stream,
+		@JsonProperty("temperature") @Nullable Double temperature,
+		@JsonProperty("top_p") @Nullable Double topP,
+		@JsonProperty("top_k") @Nullable Integer topK,
+		@JsonProperty("tools") @Nullable List<Tool> tools,
+		@JsonProperty("tool_choice") @Nullable ToolChoice toolChoice,
+		@JsonProperty("thinking") @Nullable ThinkingConfig thinking,
+		@JsonProperty("output_format") @Nullable OutputFormat outputFormat,
+		@JsonProperty("container") @Nullable SkillContainer container) {
 		// @formatter:on
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
-				Double temperature, Boolean stream) {
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, @Nullable Object system,
+				Integer maxTokens, @Nullable Double temperature, @Nullable Boolean stream) {
 			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null, null,
 					null, null);
 		}
 
-		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
-				List<String> stopSequences, Double temperature, Boolean stream) {
+		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, @Nullable Object system,
+				Integer maxTokens, @Nullable List<String> stopSequences, @Nullable Double temperature,
+				@Nullable Boolean stream) {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null,
 					null, null, null);
 		}
@@ -1091,7 +1094,7 @@ public final class AnthropicApi {
 		 * "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations">Doc</a>
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record CacheControl(@JsonProperty("type") String type, @JsonProperty("ttl") String ttl) {
+		public record CacheControl(@JsonProperty("type") String type, @JsonProperty("ttl") @Nullable String ttl) {
 
 			public CacheControl(String type) {
 				this(type, "5m");
@@ -1114,35 +1117,35 @@ public final class AnthropicApi {
 
 	public static final class ChatCompletionRequestBuilder {
 
-		private String model;
+		private @Nullable String model;
 
-		private List<AnthropicMessage> messages;
+		private @Nullable List<AnthropicMessage> messages;
 
-		private Object system;
+		private @Nullable Object system;
 
-		private Integer maxTokens;
+		private @Nullable Integer maxTokens;
 
-		private ChatCompletionRequest.Metadata metadata;
+		private ChatCompletionRequest.@Nullable Metadata metadata;
 
-		private List<String> stopSequences;
+		private @Nullable List<String> stopSequences;
 
-		private Boolean stream = false;
+		@Nullable private Boolean stream = false;
 
-		private Double temperature;
+		private @Nullable Double temperature;
 
-		private Double topP;
+		private @Nullable Double topP;
 
-		private Integer topK;
+		private @Nullable Integer topK;
 
-		private List<Tool> tools;
+		private @Nullable List<Tool> tools;
 
-		private ToolChoice toolChoice;
+		private @Nullable ToolChoice toolChoice;
 
-		private ChatCompletionRequest.ThinkingConfig thinking;
+		private ChatCompletionRequest.@Nullable ThinkingConfig thinking;
 
-		private ChatCompletionRequest.OutputFormat outputFormat;
+		private ChatCompletionRequest.@Nullable OutputFormat outputFormat;
 
-		private SkillContainer container;
+		private @Nullable SkillContainer container;
 
 		private ChatCompletionRequestBuilder() {
 		}
@@ -1250,7 +1253,7 @@ public final class AnthropicApi {
 			return this;
 		}
 
-		public ChatCompletionRequestBuilder skills(List<Skill> skills) {
+		public ChatCompletionRequestBuilder skills(@Nullable List<Skill> skills) {
 			if (skills != null && !skills.isEmpty()) {
 				this.container = new SkillContainer(skills);
 			}
@@ -1258,6 +1261,10 @@ public final class AnthropicApi {
 		}
 
 		public ChatCompletionRequest build() {
+			Assert.state(this.model != null, "model can't be null");
+			Assert.state(this.messages != null, "messages can't be null");
+			Assert.state(this.maxTokens != null, "maxTokens can't be null");
+
 			return new ChatCompletionRequest(this.model, this.messages, this.system, this.maxTokens, this.metadata,
 					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools,
 					this.toolChoice, this.thinking, this.outputFormat, this.container);
@@ -1327,19 +1334,20 @@ public final class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record CitationResponse(@JsonProperty("type") String type, @JsonProperty("cited_text") String citedText,
-			@JsonProperty("document_index") Integer documentIndex, @JsonProperty("document_title") String documentTitle,
+			@JsonProperty("document_index") Integer documentIndex,
+			@JsonProperty("document_title") @Nullable String documentTitle,
 
 			// For char_location type
-			@JsonProperty("start_char_index") Integer startCharIndex,
-			@JsonProperty("end_char_index") Integer endCharIndex,
+			@JsonProperty("start_char_index") @Nullable Integer startCharIndex,
+			@JsonProperty("end_char_index") @Nullable Integer endCharIndex,
 
 			// For page_location type
-			@JsonProperty("start_page_number") Integer startPageNumber,
-			@JsonProperty("end_page_number") Integer endPageNumber,
+			@JsonProperty("start_page_number") @Nullable Integer startPageNumber,
+			@JsonProperty("end_page_number") @Nullable Integer endPageNumber,
 
 			// For content_block_location type
-			@JsonProperty("start_block_index") Integer startBlockIndex,
-			@JsonProperty("end_block_index") Integer endBlockIndex) {
+			@JsonProperty("start_block_index") @Nullable Integer startBlockIndex,
+			@JsonProperty("end_block_index") @Nullable Integer endBlockIndex) {
 	}
 
 	/**
@@ -1363,39 +1371,39 @@ public final class AnthropicApi {
 	public record ContentBlock(
 	// @formatter:off
 		@JsonProperty("type") Type type,
-		@JsonProperty("source") Source source,
-		@JsonProperty("text") String text,
+		@JsonProperty("source") @Nullable Source source,
+		@JsonProperty("text") @Nullable String text,
 
 		// applicable only for streaming responses.
-		@JsonProperty("index") Integer index,
+		@JsonProperty("index") @Nullable Integer index,
 
 		// tool_use response only
-		@JsonProperty("id") String id,
-		@JsonProperty("name") String name,
-		@JsonProperty("input") Map<String, Object> input,
+		@JsonProperty("id") @Nullable String id,
+		@JsonProperty("name") @Nullable String name,
+		@JsonProperty("input") @Nullable Map<String, Object> input,
 
 		// tool_result response only
-		@JsonProperty("tool_use_id") String toolUseId,
-		@JsonProperty("content") Object content,
+		@JsonProperty("tool_use_id") @Nullable String toolUseId,
+		@JsonProperty("content") @Nullable Object content,
 
 		// Thinking only
-		@JsonProperty("signature") String signature,
-		@JsonProperty("thinking") String thinking,
+		@JsonProperty("signature") @Nullable String signature,
+		@JsonProperty("thinking") @Nullable String thinking,
 
 		// Redacted Thinking only
-		@JsonProperty("data") String data,
+		@JsonProperty("data") @Nullable String data,
 
 		// cache object
-		@JsonProperty("cache_control") CacheControl cacheControl,
+		@JsonProperty("cache_control") @Nullable CacheControl cacheControl,
 
 		// Citation fields
-		@JsonProperty("title") String title,
-		@JsonProperty("context") String context,
-		@JsonProperty("citations") Object citations, // Can be CitationsConfig for requests or List<CitationResponse> for responses
+		@JsonProperty("title") @Nullable String title,
+		@JsonProperty("context") @Nullable String context,
+		@JsonProperty("citations") @Nullable Object citations, // Can be CitationsConfig for requests or List<CitationResponse> for responses
 
 		// File fields (for Skills-generated files)
-		@JsonProperty("file_id") String fileId,
-		@JsonProperty("filename") String filename
+		@JsonProperty("file_id") @Nullable String fileId,
+		@JsonProperty("filename") @Nullable String filename
 	) {
 		// @formatter:on
 
@@ -1431,12 +1439,12 @@ public final class AnthropicApi {
 		 * Create content block
 		 * @param text The text of the content.
 		 */
-		public ContentBlock(String text) {
+		public ContentBlock(@Nullable String text) {
 			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null);
 		}
 
-		public ContentBlock(String text, CacheControl cache) {
+		public ContentBlock(@Nullable String text, @Nullable CacheControl cache) {
 			this(Type.TEXT, null, text, null, null, null, null, null, null, null, null, null, cache, null, null, null,
 					null, null);
 		}
@@ -1460,7 +1468,7 @@ public final class AnthropicApi {
 		 * @param text The text of the content.
 		 * @param index The index of the content block.
 		 */
-		public ContentBlock(Type type, Source source, String text, Integer index) {
+		public ContentBlock(Type type, @Nullable Source source, String text, Integer index) {
 			this(type, source, text, index, null, null, null, null, null, null, null, null, null, null, null, null,
 					null, null);
 		}
@@ -1473,7 +1481,7 @@ public final class AnthropicApi {
 		 * @param name The name of the tool use.
 		 * @param input The input of the tool use.
 		 */
-		public ContentBlock(Type type, String id, String name, Map<String, Object> input) {
+		public ContentBlock(Type type, @Nullable String id, @Nullable String name, Map<String, Object> input) {
 			this(type, null, null, null, id, name, input, null, null, null, null, null, null, null, null, null, null,
 					null);
 		}
@@ -1486,8 +1494,8 @@ public final class AnthropicApi {
 		 * @param citationsEnabled Whether citations are enabled
 		 * @param cacheControl Optional cache control (can be null)
 		 */
-		public ContentBlock(Source source, String title, String context, boolean citationsEnabled,
-				CacheControl cacheControl) {
+		public ContentBlock(Source source, @Nullable String title, @Nullable String context, boolean citationsEnabled,
+				@Nullable CacheControl cacheControl) {
 			this(Type.DOCUMENT, source, null, null, null, null, null, null, null, null, null, null, cacheControl, title,
 					context, citationsEnabled ? new CitationsConfig(true) : null, null, null);
 		}
@@ -1631,10 +1639,10 @@ public final class AnthropicApi {
 		public record Source(
 		// @formatter:off
 			@JsonProperty("type") String type,
-			@JsonProperty("media_type") String mediaType,
-			@JsonProperty("data") String data,
-			@JsonProperty("url") String url,
-			@JsonProperty("content") List<ContentBlock> content) {
+			@JsonProperty("media_type") @Nullable String mediaType,
+			@JsonProperty("data") @Nullable String data,
+			@JsonProperty("url") @Nullable String url,
+			@JsonProperty("content") @Nullable List<ContentBlock> content) {
 			// @formatter:on
 
 			/**
@@ -1660,35 +1668,35 @@ public final class AnthropicApi {
 
 			private Type type;
 
-			private Source source;
+			private @Nullable Source source;
 
-			private String text;
+			private @Nullable String text;
 
-			private Integer index;
+			private @Nullable Integer index;
 
-			private String id;
+			private @Nullable String id;
 
-			private String name;
+			private @Nullable String name;
 
-			private Map<String, Object> input;
+			private @Nullable Map<String, Object> input;
 
-			private String toolUseId;
+			private @Nullable String toolUseId;
 
-			private Object content;
+			private @Nullable Object content;
 
-			private String signature;
+			private @Nullable String signature;
 
-			private String thinking;
+			private @Nullable String thinking;
 
-			private String data;
+			private @Nullable String data;
 
-			private CacheControl cacheControl;
+			private @Nullable CacheControl cacheControl;
 
-			private String title;
+			private @Nullable String title;
 
-			private String context;
+			private @Nullable String context;
 
-			private Object citations;
+			private @Nullable Object citations;
 
 			public ContentBlockBuilder(ContentBlock contentBlock) {
 				this.type = contentBlock.type;
@@ -1800,11 +1808,11 @@ public final class AnthropicApi {
 	@JsonInclude(Include.NON_NULL)
 	public record Tool(
 	// @formatter:off
-		@JsonProperty("type") String type,
+		@JsonProperty("type") @Nullable String type,
 		@JsonProperty("name") String name,
-		@JsonProperty("description") String description,
-		@JsonProperty("input_schema") Map<String, Object> inputSchema,
-		@JsonProperty("cache_control") CacheControl cacheControl) {
+		@JsonProperty("description") @Nullable String description,
+		@JsonProperty("input_schema") @Nullable Map<String, Object> inputSchema,
+		@JsonProperty("cache_control") @Nullable CacheControl cacheControl) {
 		// @formatter:on
 
 		/**
@@ -1817,7 +1825,7 @@ public final class AnthropicApi {
 		/**
 		 * Constructor for backward compatibility without cache control.
 		 */
-		public Tool(String type, String name, String description, Map<String, Object> inputSchema) {
+		public Tool(String type, String name, @Nullable String description, @Nullable Map<String, Object> inputSchema) {
 			this(type, name, description, inputSchema, null);
 		}
 
@@ -1848,7 +1856,7 @@ public final class AnthropicApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ToolChoiceAuto(@JsonProperty("type") String type,
-			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+			@JsonProperty("disable_parallel_tool_use") @Nullable Boolean disableParallelToolUse) implements ToolChoice {
 
 		/**
 		 * Create an auto tool choice with default settings.
@@ -1876,7 +1884,7 @@ public final class AnthropicApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ToolChoiceAny(@JsonProperty("type") String type,
-			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+			@JsonProperty("disable_parallel_tool_use") @Nullable Boolean disableParallelToolUse) implements ToolChoice {
 
 		/**
 		 * Create an any tool choice with default settings.
@@ -1905,7 +1913,7 @@ public final class AnthropicApi {
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ToolChoiceTool(@JsonProperty("type") String type, @JsonProperty("name") String name,
-			@JsonProperty("disable_parallel_tool_use") Boolean disableParallelToolUse) implements ToolChoice {
+			@JsonProperty("disable_parallel_tool_use") @Nullable Boolean disableParallelToolUse) implements ToolChoice {
 
 		/**
 		 * Create a tool choice for a specific tool.
@@ -1964,15 +1972,15 @@ public final class AnthropicApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionResponse(
 	// @formatter:off
-		@JsonProperty("id") String id,
-		@JsonProperty("type") String type,
-		@JsonProperty("role") Role role,
-		@JsonProperty("content") List<ContentBlock> content,
-		@JsonProperty("model") String model,
-		@JsonProperty("stop_reason") String stopReason,
-		@JsonProperty("stop_sequence") String stopSequence,
-		@JsonProperty("usage") Usage usage,
-		@JsonProperty("container") Container container) {
+		@SuppressWarnings("NullAway.Init") @JsonProperty("id") String id,
+		@JsonProperty("type") @Nullable String type,
+		@JsonProperty("role") @Nullable Role role,
+		@SuppressWarnings("NullAway.Init") @JsonProperty("content") List<ContentBlock> content,
+		@SuppressWarnings("NullAway.Init") @JsonProperty("model") String model,
+		@JsonProperty("stop_reason") @Nullable String stopReason,
+		@JsonProperty("stop_sequence") @Nullable String stopSequence,
+		@JsonProperty("usage") @Nullable Usage usage,
+		@JsonProperty("container") @Nullable Container container) {
 		// @formatter:on
 
 		/**
@@ -1998,8 +2006,8 @@ public final class AnthropicApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Usage(
 	// @formatter:off
-		@JsonProperty("input_tokens") Integer inputTokens,
-		@JsonProperty("output_tokens") Integer outputTokens,
+		@JsonProperty("input_tokens") @Nullable Integer inputTokens,
+		@JsonProperty("output_tokens") @Nullable Integer outputTokens,
 		@JsonProperty("cache_creation_input_tokens") Integer cacheCreationInputTokens,
 		@JsonProperty("cache_read_input_tokens") Integer cacheReadInputTokens) {
 		// @formatter:off
@@ -2013,11 +2021,11 @@ public final class AnthropicApi {
 	*/
 	public static class ToolUseAggregationEvent implements StreamEvent {
 
-		private Integer index;
+		private @Nullable Integer index;
 
-		private String id;
+		private @Nullable String id;
 
-		private String name;
+		private @Nullable String name;
 
 		private String partialJson = "";
 
@@ -2044,17 +2052,17 @@ public final class AnthropicApi {
 			return (this.index == null || this.id == null || this.name == null);
 		}
 
-		ToolUseAggregationEvent withIndex(Integer index) {
+		ToolUseAggregationEvent withIndex(@Nullable Integer index) {
 			this.index = index;
 			return this;
 		}
 
-		ToolUseAggregationEvent withId(String id) {
+		ToolUseAggregationEvent withId(@Nullable String id) {
 			this.id = id;
 			return this;
 		}
 
-		ToolUseAggregationEvent withName(String name) {
+		ToolUseAggregationEvent withName(@Nullable String name) {
 			this.name = name;
 			return this;
 		}
@@ -2124,8 +2132,8 @@ public final class AnthropicApi {
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ContentBlockToolUse(
 			@JsonProperty("type") String type,
-			@JsonProperty("id") String id,
-			@JsonProperty("name") String name,
+			@JsonProperty("id") @Nullable String id,
+			@JsonProperty("name") @Nullable String name,
 			@JsonProperty("input") Map<String, Object> input) implements ContentBlockBody {
 		}
 
@@ -2277,7 +2285,7 @@ public final class AnthropicApi {
 	// @formatter:off
 		@JsonProperty("type") EventType type,
 		@JsonProperty("delta") MessageDelta delta,
-		@JsonProperty("usage") MessageDeltaUsage usage) implements StreamEvent {
+		@JsonProperty("usage") @Nullable MessageDeltaUsage usage) implements StreamEvent {
 
 		/**
 		  * @param stopReason The stop reason.
@@ -2367,7 +2375,7 @@ public final class AnthropicApi {
 
 		private String completionsPath = DEFAULT_MESSAGE_COMPLETIONS_PATH;
 
-		private ApiKey apiKey;
+		private @Nullable ApiKey apiKey;
 
 		private String anthropicVersion = DEFAULT_ANTHROPIC_VERSION;
 
