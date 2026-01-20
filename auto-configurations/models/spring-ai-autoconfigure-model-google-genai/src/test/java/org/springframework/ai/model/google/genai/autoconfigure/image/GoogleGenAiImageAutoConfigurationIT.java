@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Integration tests for Google GenAI Image autoconfiguration.
  *
- * Работает в двух режимах: 1. GOOGLE_API_KEY (Gemini Developer API) 2.
+ * Works in 2 configuration options: 1. GOOGLE_API_KEY (Gemini Developer API) 2.
  * GOOGLE_CLOUD_PROJECT + GOOGLE_CLOUD_LOCATION (Vertex AI)
  *
  * @author Danil Temnikov
