@@ -54,14 +54,15 @@ public class ElevenLabsAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ElevenLabsApi elevenLabsApi(ElevenLabsConnectionProperties connectionProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		return ElevenLabsApi.builder()
 			.baseUrl(connectionProperties.getBaseUrl())
 			.apiKey(connectionProperties.getApiKey())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 

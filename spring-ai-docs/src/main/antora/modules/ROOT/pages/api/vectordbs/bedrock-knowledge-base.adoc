@@ -1,0 +1,274 @@
+= Amazon Bedrock Knowledge Base
+
+This section walks you through setting up the Amazon Bedrock Knowledge Base `VectorStore` to perform similarity searches against a pre-configured Knowledge Base.
+
+link:https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html[Amazon Bedrock Knowledge Bases] is a fully managed RAG (Retrieval-Augmented Generation) capability that allows you to connect foundation models to your data sources. Unlike other vector stores, Bedrock Knowledge Base handles document ingestion, chunking, and embedding internally.
+
+== Prerequisites
+
+1. AWS Account with Bedrock access enabled
+2. A configured Bedrock Knowledge Base with at least one data source synced
+3. AWS credentials configured (via environment variables, AWS config file, or IAM role)
+
+[NOTE]
+====
+This vector store is read-only. Documents are managed through the Knowledge Base's data source sync process, not through the `add()` or `delete()` methods.
+====
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Bedrock Knowledge Base Vector Store.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-bedrock-knowledgebase</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-bedrock-knowledgebase'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+[NOTE]
+====
+Unlike other vector stores, Bedrock Knowledge Base does not require an `EmbeddingModel` bean. The Knowledge Base handles embeddings internally during data source synchronization.
+====
+
+To connect to your Knowledge Base, provide the Knowledge Base ID via Spring Boot's `application.properties`:
+
+[source,properties]
+----
+spring.ai.vectorstore.bedrock-knowledge-base.knowledge-base-id=YOUR_KNOWLEDGE_BASE_ID
+spring.ai.vectorstore.bedrock-knowledge-base.region=us-east-1
+----
+
+Or via environment variables:
+
+[source,bash]
+----
+export SPRING_AI_VECTORSTORE_BEDROCK_KNOWLEDGE_BASE_KNOWLEDGE_BASE_ID=YOUR_KNOWLEDGE_BASE_ID
+----
+
+Now you can auto-wire the Vector Store in your application:
+
+[source,java]
+----
+@Autowired VectorStore vectorStore;
+
+// ...
+
+// Retrieve documents similar to a query
+List<Document> results = vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("What is the return policy?")
+        .topK(5)
+        .build());
+----
+
+=== Configuration Properties
+
+You can use the following properties in your Spring Boot configuration to customize the Bedrock Knowledge Base vector store.
+
+[stripes=even]
+|===
+|Property | Description | Default value
+
+|`spring.ai.vectorstore.bedrock-knowledge-base.knowledge-base-id` | The ID of the Bedrock Knowledge Base to query | -
+|`spring.ai.vectorstore.bedrock-knowledge-base.region` | AWS region for the Bedrock service | SDK default
+|`spring.ai.vectorstore.bedrock-knowledge-base.top-k` | Number of results to return | 5
+|`spring.ai.vectorstore.bedrock-knowledge-base.similarity-threshold` | Minimum similarity score (0.0 to 1.0) | 0.0
+|`spring.ai.vectorstore.bedrock-knowledge-base.search-type` | Search type: SEMANTIC or HYBRID | null (KB default)
+|`spring.ai.vectorstore.bedrock-knowledge-base.reranking-model-arn` | ARN of Bedrock reranking model | null (disabled)
+
+|===
+
+== Search Types
+
+Bedrock Knowledge Base supports two search types:
+
+* `SEMANTIC` - Vector similarity search only (default)
+* `HYBRID` - Combines semantic search with keyword search
+
+[NOTE]
+====
+HYBRID search is only available with OpenSearch-based vector stores. S3 Vectors, Aurora PostgreSQL, and other vector store types only support SEMANTIC search.
+====
+
+[source,properties]
+----
+spring.ai.vectorstore.bedrock-knowledge-base.search-type=HYBRID
+----
+
+== Reranking
+
+You can improve search relevance by enabling a Bedrock reranking model:
+
+[source,properties]
+----
+spring.ai.vectorstore.bedrock-knowledge-base.reranking-model-arn=arn:aws:bedrock:us-west-2::foundation-model/amazon.rerank-v1:0
+----
+
+Available reranking models:
+
+* Amazon Rerank 1.0 - Available in us-west-2, ap-northeast-1, ca-central-1, eu-central-1
+* Cohere Rerank 3.5 - Requires AWS Marketplace subscription
+
+== Metadata Filtering
+
+You can leverage the generic, portable link:https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_metadata_filters[metadata filters] with the Bedrock Knowledge Base store.
+
+For example, you can use the text expression language:
+
+[source,java]
+----
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("travel policy")
+        .topK(5)
+        .similarityThreshold(0.5)
+        .filterExpression("department == 'HR' && year >= 2024")
+        .build());
+----
+
+or programmatically using the `Filter.Expression` DSL:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("travel policy")
+        .topK(5)
+        .filterExpression(b.and(
+            b.eq("department", "HR"),
+            b.gte("year", 2024)).build())
+        .build());
+----
+
+=== Supported Filter Operators
+
+[stripes=even]
+|===
+| Spring AI | Bedrock | Description
+
+| EQ | equals | Equal to
+| NE | notEquals | Not equal to
+| GT | greaterThan | Greater than
+| GTE | greaterThanOrEquals | Greater than or equal
+| LT | lessThan | Less than
+| LTE | lessThanOrEquals | Less than or equal
+| IN | in | Value in list
+| NIN | notIn | Value not in list
+| AND | andAll | Logical AND
+| OR | orAll | Logical OR
+| NOT | (negation) | Logical NOT
+
+|===
+
+[NOTE]
+====
+Metadata filtering requires documents in your Knowledge Base to have metadata attributes. For S3 data sources, create `.metadata.json` files alongside your documents.
+====
+
+== Manual Configuration
+
+If you prefer to configure the vector store manually, you can do so by creating the beans directly.
+
+Add this dependency to your project:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-bedrock-knowledgebase-store</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Sample Code
+
+[source,java]
+----
+@Bean
+public BedrockAgentRuntimeClient bedrockAgentRuntimeClient() {
+    return BedrockAgentRuntimeClient.builder()
+        .region(Region.US_EAST_1)
+        .build();
+}
+
+@Bean
+public VectorStore vectorStore(BedrockAgentRuntimeClient client) {
+    return BedrockKnowledgeBaseVectorStore.builder(client, "YOUR_KNOWLEDGE_BASE_ID")
+        .topK(10)
+        .similarityThreshold(0.5)
+        .searchType(SearchType.SEMANTIC)
+        .build();
+}
+----
+
+Then use the vector store:
+
+[source,java]
+----
+List<Document> results = vectorStore.similaritySearch(
+    SearchRequest.builder()
+        .query("What are the company holidays?")
+        .topK(3)
+        .build());
+
+for (Document doc : results) {
+    System.out.println("Content: " + doc.getText());
+    System.out.println("Score: " + doc.getScore());
+    System.out.println("Source: " + doc.getMetadata().get("source"));
+}
+----
+
+== Accessing the Native Client
+
+The Bedrock Knowledge Base Vector Store provides access to the underlying native client through the `getNativeClient()` method:
+
+[source,java]
+----
+BedrockKnowledgeBaseVectorStore vectorStore = context.getBean(BedrockKnowledgeBaseVectorStore.class);
+Optional<BedrockAgentRuntimeClient> nativeClient = vectorStore.getNativeClient();
+
+if (nativeClient.isPresent()) {
+    BedrockAgentRuntimeClient client = nativeClient.get();
+    // Use the native client for Bedrock-specific operations
+}
+----
+
+== Limitations
+
+* **Read-only**: The `add()` and `delete()` methods throw `UnsupportedOperationException`. Documents are managed through the Knowledge Base's data source sync process.
+* **HYBRID search**: Only available with OpenSearch-based vector stores.
+* **Reranking availability**: Model availability varies by AWS region.
+
+== Supported Data Sources
+
+Bedrock Knowledge Base supports multiple data source types. The source location is included in document metadata:
+
+[stripes=even]
+|===
+| Data Source | Metadata Field | Example
+
+| S3 | `source` | `s3://bucket/path/document.pdf`
+| Confluence | `source` | `https://confluence.example.com/page/123`
+| SharePoint | `source` | `https://sharepoint.example.com/doc/456`
+| Salesforce | `source` | `https://salesforce.example.com/record/789`
+| Web Crawler | `source` | `https://example.com/page`
+| Custom | `source` | Custom document ID
+
+|===

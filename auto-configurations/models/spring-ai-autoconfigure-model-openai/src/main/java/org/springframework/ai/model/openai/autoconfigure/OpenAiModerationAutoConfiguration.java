@@ -61,7 +61,8 @@ public class OpenAiModerationAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OpenAiModerationModel openAiModerationModel(OpenAiConnectionProperties commonProperties,
 			OpenAiModerationProperties moderationProperties, ObjectProvider<RetryTemplate> retryTemplate,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
 				commonProperties, moderationProperties, "moderation");
@@ -69,9 +70,10 @@ public class OpenAiModerationAutoConfiguration {
 		var openAiModerationApi = OpenAiModerationApi.builder()
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.moderationPath(moderationProperties.getModerationPath())
 			.headers(resolved.headers())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 		return new OpenAiModerationModel(openAiModerationApi,
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))

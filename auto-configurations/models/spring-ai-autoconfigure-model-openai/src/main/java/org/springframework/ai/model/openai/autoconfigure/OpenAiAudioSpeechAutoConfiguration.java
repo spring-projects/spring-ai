@@ -63,7 +63,8 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	public OpenAiAudioSpeechModel openAiAudioSpeechModel(OpenAiConnectionProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
 				commonProperties, speechProperties, "speech");
@@ -71,10 +72,11 @@ public class OpenAiAudioSpeechAutoConfiguration {
 		var openAiAudioApi = OpenAiAudioApi.builder()
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
+			.speechPath(speechProperties.getSpeechPath())
 			.headers(resolved.headers())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 
 		return new OpenAiAudioSpeechModel(openAiAudioApi, speechProperties.getOptions(),
