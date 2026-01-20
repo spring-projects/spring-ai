@@ -60,7 +60,7 @@ public class S3ChatMemoryProperties {
 	 * Gets the S3 bucket name.
 	 * @return the bucket name
 	 */
-	@Nullable public String getBucketName() {
+	public @Nullable String getBucketName() {
 		return this.bucketName;
 	}
 

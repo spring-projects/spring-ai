@@ -143,7 +143,7 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	 * @param conversationId the conversation ID to normalize
 	 * @return the normalized conversation ID
 	 */
-	private String normalizeConversationId(final String conversationId) {
+	private String normalizeConversationId(final @Nullable String conversationId) {
 		return (conversationId == null || conversationId.trim().isEmpty()) ? "default" : conversationId.trim();
 	}
 

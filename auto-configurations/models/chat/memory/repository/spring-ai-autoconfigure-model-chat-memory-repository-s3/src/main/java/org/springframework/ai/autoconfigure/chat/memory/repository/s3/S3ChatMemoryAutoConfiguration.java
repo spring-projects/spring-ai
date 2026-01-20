@@ -86,7 +86,7 @@ public class S3ChatMemoryAutoConfiguration {
 
 		return S3ChatMemoryRepository.builder()
 			.s3Client(s3Client)
-			.bucketName(Objects.requireNonNull(properties.getBucketName(), "bucketName must not be null"))
+			.bucketName(Objects.requireNonNull(properties.getBucketName()))
 			.keyPrefix(properties.getKeyPrefix())
 			.initializeBucket(properties.isInitializeBucket())
 			.storageClass(storageClass)
