@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TimeZone;
 
 import software.amazon.awssdk.core.SdkNumber;
@@ -69,19 +70,19 @@ public class S3VectorFilterSearchExpressionConverter implements S3VectorFilterEx
 			case GT:
 			case LTE:
 			case LT:
-				return Document.fromMap(Map.of(((Filter.Key) expression.left()).key(),
-						Document.fromMap(Map.of(operationType, wrapValue(expression.right())))));
+				return Document.fromMap(Map.of(((Filter.Key) expression.left()).key(), Document
+					.fromMap(Map.of(operationType, wrapValue(Objects.requireNonNull(expression.right()))))));
 
 			case IN:
 			case NIN:
-				Document document = wrapValue(expression.right());
+				Document document = wrapValue(Objects.requireNonNull(expression.right()));
 				return Document.fromMap(Map.of(((Filter.Key) expression.left()).key(),
 						Document.fromMap(Map.of(operationType, document))));
 
 			case AND:
 			case OR:
-				Document leftDocument = wrapValue(expression.left());
-				Document rightDocument = wrapValue(expression.right());
+				Document leftDocument = wrapValue(Objects.requireNonNull(expression.left()));
+				Document rightDocument = wrapValue(Objects.requireNonNull(expression.right()));
 				return Document.fromMap(Map.of(operationType, Document.fromList(List.of(leftDocument, rightDocument))));
 
 			default:

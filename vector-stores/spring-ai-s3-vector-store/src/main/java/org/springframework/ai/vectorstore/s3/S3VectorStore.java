@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
 import software.amazon.awssdk.services.s3vectors.model.DeleteVectorsRequest;
 import software.amazon.awssdk.services.s3vectors.model.PutInputVector;
@@ -142,8 +144,9 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 			.returnDistance(true);
 
 		if (searchRequest.hasFilterExpression()) {
+			Filter.Expression filterExpression = Objects.requireNonNull(searchRequest.getFilterExpression());
 			software.amazon.awssdk.core.document.Document filter = this.filterExpressionConverter
-				.convertExpression(searchRequest.getFilterExpression());
+				.convertExpression(filterExpression);
 			requestBuilder.filter(filter);
 		}
 
@@ -157,6 +160,9 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 
 	private Document toDocument(QueryOutputVector vector) {
 		Map<String, Object> metadata = DocumentUtils.fromDocument(vector.metadata());
+		if (metadata == null) {
+			metadata = new HashMap<>();
+		}
 		if (vector.distance() != null) {
 			metadata.put("SPRING_AI_S3_DISTANCE", vector.distance());
 		}
@@ -203,9 +209,9 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 
 		private final S3VectorsClient s3VectorsClient;
 
-		private String vectorBucketName;
+		private @Nullable String vectorBucketName;
 
-		private String indexName;
+		private @Nullable String indexName;
 
 		private S3VectorFilterExpressionConverter filterExpressionConverter = new S3VectorFilterSearchExpressionConverter();
 

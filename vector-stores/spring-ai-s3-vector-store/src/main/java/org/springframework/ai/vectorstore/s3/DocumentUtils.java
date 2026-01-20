@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.core.document.Document;
 
 /**
@@ -36,7 +37,7 @@ public final class DocumentUtils {
 	private DocumentUtils() {
 	}
 
-	public static Document toDocument(Object obj) {
+	public static Document toDocument(@Nullable Object obj) {
 		if (obj == null) {
 			return Document.fromNull();
 		}
@@ -89,7 +90,7 @@ public final class DocumentUtils {
 		}
 	}
 
-	public static Map<String, Object> fromDocument(Document document) {
+	public static @Nullable Map<String, Object> fromDocument(Document document) {
 		if (document.isNull()) {
 			return null;
 		}
@@ -101,7 +102,7 @@ public final class DocumentUtils {
 		return mapMetadata;
 	}
 
-	private static Object fromDocumentToObject(Document document) {
+	private static @Nullable Object fromDocumentToObject(Document document) {
 		if (document.isNull()) {
 			return null;
 		}
