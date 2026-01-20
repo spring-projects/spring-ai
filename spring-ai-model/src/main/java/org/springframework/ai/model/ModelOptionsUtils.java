@@ -18,12 +18,9 @@ package org.springframework.ai.model;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -344,8 +341,9 @@ public abstract class ModelOptionsUtils {
 		BeanWrapper sourceBeanWrap = new BeanWrapperImpl(source);
 		BeanWrapper targetBeanWrap = new BeanWrapperImpl(target);
 
-		List<String> interfaceNames = Arrays.stream(sourceInterfaceClazz.getMethods()).map(m -> m.getName()).toList();
-
+		Set<String> interfaceNames = Arrays.stream(sourceInterfaceClazz.getMethods())
+			.map(Method::getName)
+			.collect(Collectors.toSet());
 		for (PropertyDescriptor descriptor : sourceBeanWrap.getPropertyDescriptors()) {
 
 			if (!BEAN_MERGE_FIELD_EXCISIONS.contains(descriptor.getName())
