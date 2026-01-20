@@ -334,16 +334,31 @@ public class AnthropicChatModel implements ChatModel {
 							citationContext);
 					generations.add(textGeneration);
 					break;
-				case THINKING, THINKING_DELTA:
+				case THINKING:
 					Map<String, Object> thinkingProperties = new HashMap<>();
 					String signature = content.signature();
 					Assert.notNull(signature, "The signature of the content can't be null");
+					Assert.notNull(content.thinking(), "The thinking of the content can't be null");
 					thinkingProperties.put("signature", signature);
 					generations.add(new Generation(
 							AssistantMessage.builder()
 								.content(content.thinking())
 								.properties(thinkingProperties)
 								.build(),
+							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
+					break;
+				case THINKING_DELTA:
+					Assert.notNull(content.thinking(), "The thinking of the content can't be null");
+					generations.add(new Generation(AssistantMessage.builder().content(content.thinking()).build(),
+							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
+					break;
+				case SIGNATURE_DELTA:
+					Map<String, Object> signatureProperties = new HashMap<>();
+					String sig = content.signature();
+					Assert.notNull(sig, "The signature of the content can't be null");
+					signatureProperties.put("signature", sig);
+					generations.add(new Generation(
+							AssistantMessage.builder().content("").properties(signatureProperties).build(),
 							ChatGenerationMetadata.builder().finishReason(chatCompletion.stopReason()).build()));
 					break;
 				case REDACTED_THINKING:
@@ -363,6 +378,8 @@ public class AnthropicChatModel implements ChatModel {
 					toolCalls.add(
 							new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
 					break;
+				default:
+					logger.warn("Unsupported content block type: {}", content.type());
 			}
 		}
 
