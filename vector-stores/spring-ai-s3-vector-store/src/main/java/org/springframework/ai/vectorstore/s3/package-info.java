@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,9 @@
  */
 
 /**
- * Provides the API for embedding observations.
+ * S3 Vector Store implementation for Spring AI.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.vectorstore.s3;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;
