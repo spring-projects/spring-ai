@@ -372,9 +372,6 @@ public abstract class ModelOptionsUtils {
 	}
 
 	private static String toGetName(String name) {
-		if (name == null || name.isEmpty()) {
-			return name;
-		}
 		return "get" + Character.toUpperCase(name.charAt(0)) + name.substring(1);
 	}
 
