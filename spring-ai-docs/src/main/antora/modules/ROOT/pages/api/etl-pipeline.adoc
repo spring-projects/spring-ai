@@ -293,6 +293,31 @@ List<Document> splitDocuments = new TokenTextSplitter().apply(this.documents);
 
 The `JsoupDocumentReader` processes HTML documents, converting them into a list of `Document` objects using the JSoup library.
 
+==== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-jsoup-document-reader</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-jsoup-document-reader'
+}
+----
+======
+
 ==== Example
 
 [source,java]
@@ -388,6 +413,31 @@ The reader preserves the text content of the selected elements, but removes any 
 
 The `MarkdownDocumentReader` processes Markdown documents, converting them into a list of `Document` objects.
 
+==== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-markdown-document-reader</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-markdown-document-reader'
+}
+----
+======
+
 ==== Example
 
 [source,java]
@@ -465,10 +515,15 @@ The reader preserves formatting like inline code, lists, and text styling within
 
 
 === PDF Page
-The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents
+The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents.
 
+==== Dependencies
 Add the dependency to your project using Maven or Gradle.
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -477,14 +532,15 @@ Add the dependency to your project using Maven or Gradle.
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
 }
 ----
+======
 
 ==== Example
 
@@ -518,6 +574,10 @@ NOTE: Not all PDF documents contain the PDF catalog.
 ==== Dependencies
 Add the dependency to your project using Maven or Gradle.
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -526,15 +586,15 @@ Add the dependency to your project using Maven or Gradle.
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
 }
 ----
-
+======
 
 ==== Example
 
@@ -564,7 +624,12 @@ public class MyPagePdfDocumentReader {
 The `TikaDocumentReader` uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/3.1.0/formats.html[Tika documentation].
 
 ==== Dependencies
+Add the dependency to your project using Maven or Gradle.
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -573,14 +638,15 @@ The `TikaDocumentReader` uses Apache Tika to extract text from a variety of docu
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-tika-document-reader'
 }
 ----
+======
 
 ==== Example
 
