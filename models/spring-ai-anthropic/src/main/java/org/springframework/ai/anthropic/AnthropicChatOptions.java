@@ -591,9 +591,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
 			AnthropicApi.AnthropicSkill prebuilt = AnthropicApi.AnthropicSkill.fromId(skillIdOrName);
 			if (prebuilt != null) {
-				return skill(prebuilt.toSkill());
+				return this.skill(prebuilt.toSkill());
 			}
-			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName));
+			return this.skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName));
 		}
 
 		/**
@@ -607,9 +607,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			Assert.hasText(version, "Version cannot be empty");
 			AnthropicApi.AnthropicSkill prebuilt = AnthropicApi.AnthropicSkill.fromId(skillIdOrName);
 			if (prebuilt != null) {
-				return skill(prebuilt.toSkill(version));
+				return this.skill(prebuilt.toSkill(version));
 			}
-			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName, version));
+			return this.skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName, version));
 		}
 
 		/**
@@ -628,7 +628,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 */
 		public Builder skill(AnthropicApi.AnthropicSkill anthropicSkill) {
 			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
-			return skill(anthropicSkill.toSkill());
+			return this.skill(anthropicSkill.toSkill());
 		}
 
 		/**
@@ -640,7 +640,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		public Builder skill(AnthropicApi.AnthropicSkill anthropicSkill, String version) {
 			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
 			Assert.hasText(version, "Version cannot be empty");
-			return skill(anthropicSkill.toSkill(version));
+			return this.skill(anthropicSkill.toSkill(version));
 		}
 
 		/**
@@ -670,7 +670,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		public Builder skills(String... skillIds) {
 			Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
 			for (String skillId : skillIds) {
-				skill(skillId);
+				this.skill(skillId);
 			}
 			return this;
 		}
@@ -694,7 +694,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 */
 		@Deprecated
 		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill) {
-			return skill(anthropicSkill);
+			return this.skill(anthropicSkill);
 		}
 
 		/**
@@ -706,7 +706,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 */
 		@Deprecated
 		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill, String version) {
-			return skill(anthropicSkill, version);
+			return this.skill(anthropicSkill, version);
 		}
 
 		/**
@@ -717,7 +717,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 */
 		@Deprecated
 		public Builder customSkill(String skillId) {
-			return skill(skillId);
+			return this.skill(skillId);
 		}
 
 		/**
@@ -729,7 +729,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 */
 		@Deprecated
 		public Builder customSkill(String skillId, String version) {
-			return skill(skillId, version);
+			return this.skill(skillId, version);
 		}
 
 		public AnthropicChatOptions build() {

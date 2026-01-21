@@ -728,9 +728,9 @@ public final class AnthropicApi {
 				Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
 				AnthropicSkill prebuilt = AnthropicSkill.fromId(skillIdOrName);
 				if (prebuilt != null) {
-					return skill(prebuilt.toSkill());
+					return this.skill(prebuilt.toSkill());
 				}
-				return skill(new Skill(SkillType.CUSTOM, skillIdOrName));
+				return this.skill(new Skill(SkillType.CUSTOM, skillIdOrName));
 			}
 
 			/**
@@ -744,9 +744,9 @@ public final class AnthropicApi {
 				Assert.hasText(version, "Version cannot be empty");
 				AnthropicSkill prebuilt = AnthropicSkill.fromId(skillIdOrName);
 				if (prebuilt != null) {
-					return skill(prebuilt.toSkill(version));
+					return this.skill(prebuilt.toSkill(version));
 				}
-				return skill(new Skill(SkillType.CUSTOM, skillIdOrName, version));
+				return this.skill(new Skill(SkillType.CUSTOM, skillIdOrName, version));
 			}
 
 			/**
@@ -756,7 +756,7 @@ public final class AnthropicApi {
 			 */
 			public SkillContainerBuilder skill(AnthropicSkill skill) {
 				Assert.notNull(skill, "AnthropicSkill cannot be null");
-				return skill(skill.toSkill());
+				return this.skill(skill.toSkill());
 			}
 
 			/**
@@ -768,7 +768,7 @@ public final class AnthropicApi {
 			public SkillContainerBuilder skill(AnthropicSkill skill, String version) {
 				Assert.notNull(skill, "AnthropicSkill cannot be null");
 				Assert.hasText(version, "Version cannot be empty");
-				return skill(skill.toSkill(version));
+				return this.skill(skill.toSkill(version));
 			}
 
 			/**
@@ -790,7 +790,7 @@ public final class AnthropicApi {
 			public SkillContainerBuilder skills(String... skillIds) {
 				Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
 				for (String skillId : skillIds) {
-					skill(skillId);
+					this.skill(skillId);
 				}
 				return this;
 			}
@@ -814,7 +814,7 @@ public final class AnthropicApi {
 			 */
 			@Deprecated
 			public SkillContainerBuilder anthropicSkill(AnthropicSkill skill) {
-				return skill(skill);
+				return this.skill(skill);
 			}
 
 			/**
@@ -826,7 +826,7 @@ public final class AnthropicApi {
 			 */
 			@Deprecated
 			public SkillContainerBuilder anthropicSkill(AnthropicSkill skill, String version) {
-				return skill(skill, version);
+				return this.skill(skill, version);
 			}
 
 			/**
@@ -837,7 +837,7 @@ public final class AnthropicApi {
 			 */
 			@Deprecated
 			public SkillContainerBuilder customSkill(String skillId) {
-				return skill(skillId);
+				return this.skill(skillId);
 			}
 
 			/**
@@ -849,7 +849,7 @@ public final class AnthropicApi {
 			 */
 			@Deprecated
 			public SkillContainerBuilder customSkill(String skillId, String version) {
-				return skill(skillId, version);
+				return this.skill(skillId, version);
 			}
 
 			public SkillContainer build() {
