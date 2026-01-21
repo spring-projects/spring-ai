@@ -178,11 +178,13 @@ public class OpenAiModerationApi {
 	 */
 	public static final class Builder {
 
+		private static final String DEFAULT_MODERATION_PATH = "/v1/moderations";
+
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
 
-		private String moderationPath;
+		private String moderationPath = DEFAULT_MODERATION_PATH;
 
 		private HttpHeaders headers = new HttpHeaders();
 
