@@ -19,7 +19,7 @@ package org.springframework.ai.model.tool;
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
- * Mixin interface for ChatModels that support structured output. Provides an unified way
+ * Mixin interface for ChatModels that support structured output. Provides a unified way
  * to set and get the output JSON schema.
  *
  * @author Christian Tzolov

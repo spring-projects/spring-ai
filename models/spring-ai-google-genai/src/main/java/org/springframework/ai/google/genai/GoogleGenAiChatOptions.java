@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -99,7 +100,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
-	 * Optional. Geminie response schema.
+	 * Optional. Gemini response schema.
 	 */
 	private @JsonProperty("responseSchema") String responseSchema;
 
@@ -118,6 +119,26 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * This is part of the thinkingConfig in GenerationConfig.
 	 */
 	private @JsonProperty("thinkingBudget") Integer thinkingBudget;
+
+	/**
+	 * Optional. Whether to include thoughts in the response.
+	 * When true, thoughts are returned if the model supports them and thoughts are available.
+	 *
+	 * <p><strong>IMPORTANT:</strong> For Gemini 3 Pro with function calling,
+	 * this MUST be set to true to avoid validation errors. Thought signatures
+	 * are automatically propagated in multi-turn conversations to maintain context.
+	 *
+	 * <p>Note: Enabling thoughts increases token usage and API costs.
+	 * This is part of the thinkingConfig in GenerationConfig.
+	 */
+	private @JsonProperty("includeThoughts") Boolean includeThoughts;
+
+	/**
+	 * Optional. The level of thinking tokens the model should generate.
+	 * LOW = minimal thinking, HIGH = extensive thinking.
+	 * This is part of the thinkingConfig in GenerationConfig.
+	 */
+	private @JsonProperty("thinkingLevel") GoogleGenAiThinkingLevel thinkingLevel;
 
 	/**
 	 * Optional. Whether to include extended usage metadata in responses.
@@ -212,6 +233,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
 		options.setThinkingBudget(fromOptions.getThinkingBudget());
+		options.setIncludeThoughts(fromOptions.getIncludeThoughts());
+		options.setThinkingLevel(fromOptions.getThinkingLevel());
 		options.setLabels(fromOptions.getLabels());
 		options.setIncludeExtendedUsageMetadata(fromOptions.getIncludeExtendedUsageMetadata());
 		options.setCachedContentName(fromOptions.getCachedContentName());
@@ -371,6 +394,22 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.thinkingBudget = thinkingBudget;
 	}
 
+	public Boolean getIncludeThoughts() {
+		return this.includeThoughts;
+	}
+
+	public void setIncludeThoughts(Boolean includeThoughts) {
+		this.includeThoughts = includeThoughts;
+	}
+
+	public GoogleGenAiThinkingLevel getThinkingLevel() {
+		return this.thinkingLevel;
+	}
+
+	public void setThinkingLevel(GoogleGenAiThinkingLevel thinkingLevel) {
+		this.thinkingLevel = thinkingLevel;
+	}
+
 	public Boolean getIncludeExtendedUsageMetadata() {
 		return this.includeExtendedUsageMetadata;
 	}
@@ -474,6 +513,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				&& Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
 				&& Objects.equals(this.presencePenalty, that.presencePenalty)
 				&& Objects.equals(this.thinkingBudget, that.thinkingBudget)
+				&& Objects.equals(this.includeThoughts, that.includeThoughts)
+				&& this.thinkingLevel == that.thinkingLevel
 				&& Objects.equals(this.maxOutputTokens, that.maxOutputTokens) && Objects.equals(this.model, that.model)
 				&& Objects.equals(this.responseMimeType, that.responseMimeType)
 				&& Objects.equals(this.responseSchema, that.responseSchema)
@@ -487,10 +528,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
-				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.maxOutputTokens, this.model,
-				this.responseMimeType, this.responseSchema, this.toolCallbacks, this.toolNames,
-				this.googleSearchRetrieval, this.safetySettings, this.internalToolExecutionEnabled, this.toolContext,
-				this.labels);
+				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
+				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
+				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
+				this.internalToolExecutionEnabled, this.toolContext, this.labels);
 	}
 
 	@Override
@@ -498,6 +539,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return "GoogleGenAiChatOptions{" + "stopSequences=" + this.stopSequences + ", temperature=" + this.temperature
 				+ ", topP=" + this.topP + ", topK=" + this.topK + ", frequencyPenalty=" + this.frequencyPenalty
 				+ ", presencePenalty=" + this.presencePenalty + ", thinkingBudget=" + this.thinkingBudget
+				+ ", includeThoughts=" + this.includeThoughts + ", thinkingLevel=" + this.thinkingLevel
 				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
@@ -637,6 +679,16 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public Builder thinkingBudget(Integer thinkingBudget) {
 			this.options.setThinkingBudget(thinkingBudget);
+			return this;
+		}
+
+		public Builder includeThoughts(Boolean includeThoughts) {
+			this.options.setIncludeThoughts(includeThoughts);
+			return this;
+		}
+
+		public Builder thinkingLevel(GoogleGenAiThinkingLevel thinkingLevel) {
+			this.options.setThinkingLevel(thinkingLevel);
 			return this;
 		}
 

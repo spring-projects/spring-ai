@@ -21,10 +21,12 @@ import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
- * Converts {@link Expression} into Milvus metadata filter expression format.
- * (https://milvus.io/docs/json_data_type.md)
+ * Converts {@link Expression} into Milvus metadata filter expression format. See Milvus
+ * JSON‑field & filtering docs:
+ * <a href="https://milvus.io/docs/json-field-overview.md">json-field-overview</a>
  *
  * @author Christian Tzolov
  */
@@ -32,6 +34,7 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
+		Assert.state(exp.right() != null, "expected expression.right to be non null");
 		this.convertOperand(exp.left(), context);
 		context.append(getOperationSymbol(exp));
 		this.convertOperand(exp.right(), context);

@@ -133,8 +133,6 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 	private static final String DEFAULT_DEPLOYMENT_NAME = "gpt-4o";
 
-	private static final Double DEFAULT_TEMPERATURE = 0.7;
-
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
@@ -1003,7 +1001,6 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 		private AzureOpenAiChatOptions defaultOptions = AzureOpenAiChatOptions.builder()
 			.deploymentName(DEFAULT_DEPLOYMENT_NAME)
-			.temperature(DEFAULT_TEMPERATURE)
 			.build();
 
 		private ToolCallingManager toolCallingManager;

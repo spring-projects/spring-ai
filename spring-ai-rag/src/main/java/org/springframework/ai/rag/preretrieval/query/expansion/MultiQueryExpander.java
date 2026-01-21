@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.util.PromptAssert;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -139,13 +139,13 @@ public final class MultiQueryExpander implements QueryExpander {
 
 	public static final class Builder {
 
-		private ChatClient.Builder chatClientBuilder;
+		private ChatClient.@Nullable Builder chatClientBuilder;
 
-		private PromptTemplate promptTemplate;
+		private @Nullable PromptTemplate promptTemplate;
 
-		private Boolean includeOriginal;
+		private @Nullable Boolean includeOriginal;
 
-		private Integer numberOfQueries;
+		private @Nullable Integer numberOfQueries;
 
 		private Builder() {
 		}
@@ -171,6 +171,7 @@ public final class MultiQueryExpander implements QueryExpander {
 		}
 
 		public MultiQueryExpander build() {
+			Assert.state(this.chatClientBuilder != null, "chatClientBuilder cannot be null");
 			return new MultiQueryExpander(this.chatClientBuilder, this.promptTemplate, this.includeOriginal,
 					this.numberOfQueries);
 		}

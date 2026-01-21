@@ -19,6 +19,8 @@ package org.springframework.ai.chat.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.util.Assert;
 
@@ -31,7 +33,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
+public record ChatClientRequest(Prompt prompt, Map<String, @Nullable Object> context) {
 
 	public ChatClientRequest {
 		Assert.notNull(prompt, "prompt cannot be null");
@@ -53,9 +55,9 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 
 	public static final class Builder {
 
-		private Prompt prompt;
+		private @Nullable Prompt prompt;
 
-		private Map<String, Object> context = new HashMap<>();
+		private final Map<String, @Nullable Object> context = new HashMap<>();
 
 		private Builder() {
 		}
@@ -66,19 +68,20 @@ public record ChatClientRequest(Prompt prompt, Map<String, Object> context) {
 			return this;
 		}
 
-		public Builder context(Map<String, Object> context) {
+		public Builder context(Map<String, ? extends @Nullable Object> context) {
 			Assert.notNull(context, "context cannot be null");
 			this.context.putAll(context);
 			return this;
 		}
 
-		public Builder context(String key, Object value) {
+		public Builder context(String key, @Nullable Object value) {
 			Assert.notNull(key, "key cannot be null");
 			this.context.put(key, value);
 			return this;
 		}
 
 		public ChatClientRequest build() {
+			Assert.state(this.prompt != null, "prompt cannot be null");
 			return new ChatClientRequest(this.prompt, this.context);
 		}
 

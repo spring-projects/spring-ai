@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.observation;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -27,7 +28,6 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.lang.Nullable;
 
 /**
  * Abstract base class for {@link VectorStore} implementations that provides observation
@@ -43,8 +43,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 
 	private final ObservationRegistry observationRegistry;
 
-	@Nullable
-	private final VectorStoreObservationConvention customObservationConvention;
+	private final @Nullable VectorStoreObservationConvention customObservationConvention;
 
 	protected final EmbeddingModel embeddingModel;
 

@@ -1,0 +1,381 @@
+= OpenAI SDK Image Generation (Official)
+
+Spring AI supports OpenAI's DALL-E image generation models through the OpenAI Java SDK, providing a robust and officially-maintained integration with OpenAI's services including Microsoft Foundry and GitHub Models.
+
+NOTE: This implementation uses the official link:https://github.com/openai/openai-java[OpenAI Java SDK] from OpenAI. For the alternative Spring AI implementation, see xref:api/image/openai-image.adoc[OpenAI Image Generation].
+
+DALL-E is a state-of-the-art image generation model from OpenAI that can create realistic images and art from natural language descriptions.
+
+The OpenAI SDK module automatically detects the service provider (OpenAI, Microsoft Foundry, or GitHub Models) based on the base URL you provide.
+
+== Authentication
+
+Authentication is done using a base URL and an API Key. The implementation provides flexible configuration options through Spring Boot properties or environment variables.
+
+=== Using OpenAI
+
+If you are using OpenAI directly, create an account at https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
+
+The base URL doesn't need to be set as it defaults to `https://api.openai.com/v1`:
+
+[source,properties]
+----
+spring.ai.openai-sdk.api-key=<your-openai-api-key>
+# base-url is optional, defaults to https://api.openai.com/v1
+----
+
+Or using environment variables:
+
+[source,bash]
+----
+export OPENAI_API_KEY=<your-openai-api-key>
+# OPENAI_BASE_URL is optional, defaults to https://api.openai.com/v1
+----
+
+=== Using Microsoft Foundry
+
+Microsoft Foundry is automatically detected when using a Microsoft Foundry URL. You can configure it using properties:
+
+[source,properties]
+----
+spring.ai.openai-sdk.base-url=https://<your-deployment-url>.openai.azure.com
+spring.ai.openai-sdk.api-key=<your-api-key>
+spring.ai.openai-sdk.microsoft-deployment-name=<your-deployment-name>
+----
+
+Or using environment variables:
+
+[source,bash]
+----
+export OPENAI_BASE_URL=https://<your-deployment-url>.openai.azure.com
+export OPENAI_API_KEY=<your-api-key>
+----
+
+**Passwordless Authentication (Recommended for Azure):**
+
+Microsoft Foundry supports passwordless authentication without providing an API key, which is more secure when running on Azure.
+
+To enable passwordless authentication, add the `com.azure:azure-identity` dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.azure</groupId>
+    <artifactId>azure-identity</artifactId>
+</dependency>
+----
+
+Then configure without an API key:
+
+[source,properties]
+----
+spring.ai.openai-sdk.base-url=https://<your-deployment-url>.openai.azure.com
+spring.ai.openai-sdk.microsoft-deployment-name=<your-deployment-name>
+# No api-key needed - will use Azure credentials from environment
+----
+
+=== Using GitHub Models
+
+GitHub Models is automatically detected when using the GitHub Models base URL. You'll need to create a GitHub Personal Access Token (PAT) with the `models:read` scope.
+
+[source,properties]
+----
+spring.ai.openai-sdk.base-url=https://models.inference.ai.azure.com
+spring.ai.openai-sdk.api-key=github_pat_XXXXXXXXXXX
+----
+
+Or using environment variables:
+
+[source,bash]
+----
+export OPENAI_BASE_URL=https://models.inference.ai.azure.com
+export OPENAI_API_KEY=github_pat_XXXXXXXXXXX
+----
+
+TIP: For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) in your properties: 
+
+[source,properties]
+----
+spring.ai.openai-sdk.api-key=${OPENAI_API_KEY}
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the OpenAI SDK Image Model.
+To enable it add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai-sdk</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai-sdk'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Configuration Properties
+
+==== Connection Properties
+
+The prefix `spring.ai.openai-sdk` is used as the property prefix that lets you configure the OpenAI SDK client.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.openai-sdk.base-url        | The URL to connect to. Auto-detects from `OPENAI_BASE_URL` environment variable if not set. |  https://api.openai.com/v1
+| spring.ai.openai-sdk.api-key         | The API Key. Auto-detects from `OPENAI_API_KEY` environment variable if not set. |  -
+| spring.ai.openai-sdk.organization-id | Optionally specify which organization to use for API requests. |  -
+| spring.ai.openai-sdk.timeout         | Request timeout duration. |  -
+| spring.ai.openai-sdk.max-retries     | Maximum number of retry attempts for failed requests. |  -
+| spring.ai.openai-sdk.proxy           | Proxy settings for OpenAI client (Java `Proxy` object). |  -
+| spring.ai.openai-sdk.custom-headers  | Custom HTTP headers to include in requests. Map of header name to header value. |  -
+|====
+
+==== Microsoft Foundry Properties
+
+The OpenAI SDK implementation provides native support for Microsoft Foundry with automatic configuration:
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.openai-sdk.microsoft-foundry           | Enable Microsoft Foundry mode. Auto-detected if base URL contains `openai.azure.com`, `cognitiveservices.azure.com`, or `.openai.microsoftFoundry.com`. |  false
+| spring.ai.openai-sdk.microsoft-deployment-name | Microsoft Foundry deployment name. If not specified, the model name will be used. Also accessible via alias `deployment-name`. |  -
+| spring.ai.openai-sdk.microsoft-foundry-service-version | Microsoft Foundry API service version. |  -
+| spring.ai.openai-sdk.credential      | Credential object for passwordless authentication (requires `com.azure:azure-identity` dependency). |  -
+|====
+
+TIP: Microsoft Foundry supports passwordless authentication. Add the `com.azure:azure-identity` dependency and the implementation will automatically attempt to use Azure credentials from the environment when no API key is provided.
+
+==== GitHub Models Properties
+
+Native support for GitHub Models is available:
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.openai-sdk.github-models   | Enable GitHub Models mode. Auto-detected if base URL contains `models.github.ai` or `models.inference.ai.azure.com`. |  false
+|====
+
+TIP: GitHub Models requires a Personal Access Token with the `models:read` scope. Set it via the `OPENAI_API_KEY` environment variable or the `spring.ai.openai-sdk.api-key` property.
+
+==== Image Model Properties
+
+The prefix `spring.ai.openai-sdk.image` is the property prefix for configuring the image model implementation:
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.openai-sdk.image.options.model        | The model to use for image generation. Available models: `dall-e-2`, `dall-e-3`. See the https://platform.openai.com/docs/models[models] page for more information. | `dall-e-3`
+| spring.ai.openai-sdk.image.options.n            | The number of images to generate. Must be between 1 and 10. For `dall-e-3`, only n=1 is supported.  | -
+| spring.ai.openai-sdk.image.options.quality      | The quality of the image that will be generated. `hd` creates images with finer details and greater consistency across the image. This parameter is only supported for `dall-e-3`. Available values: `standard`, `hd`. | -
+| spring.ai.openai-sdk.image.options.response-format | The format in which the generated images are returned. Must be one of `url` or `b64_json`. | -
+| spring.ai.openai-sdk.image.options.size         | The size of the generated images. Must be one of `256x256`, `512x512`, or `1024x1024` for `dall-e-2`. Must be one of `1024x1024`, `1792x1024`, or `1024x1792` for `dall-e-3` models. | -
+| spring.ai.openai-sdk.image.options.width        | The width of the generated images. Must be one of 256, 512, or 1024 for `dall-e-2`.  | -
+| spring.ai.openai-sdk.image.options.height       | The height of the generated images. Must be one of 256, 512, or 1024 for `dall-e-2`. | -
+| spring.ai.openai-sdk.image.options.style        | The style of the generated images. Must be one of `vivid` or `natural`. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This parameter is only supported for `dall-e-3`. | -
+| spring.ai.openai-sdk.image.options.user         | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
+|====
+
+TIP: All properties prefixed with `spring.ai.openai-sdk.image.options` can be overridden at runtime by adding request-specific <<image-options>> to the `ImagePrompt` call.
+
+== Runtime Options [[image-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai-sdk/src/main/java/org/springframework/ai/openaisdk/OpenAiSdkImageOptions.java[OpenAiSdkImageOptions.java] provides the OpenAI configurations, such as the model to use, quality, size, style, and number of images to generate.
+
+The default options can be configured using the `spring.ai.openai-sdk.image.options` properties as well.
+
+At start-time use the `OpenAiSdkImageModel` constructor to set the default options used for all image generation requests.
+At run-time you can override the default options, using a `OpenAiSdkImageOptions` instance as part of your `ImagePrompt`.
+
+For example to override the default model and quality for a specific request:
+
+[source,java]
+----
+ImageResponse response = imageModel.call(
+    new ImagePrompt("A light cream colored mini golden doodle",
+        OpenAiSdkImageOptions.builder()
+            .model("dall-e-3")
+            .quality("hd")
+            .N(1)
+            .width(1024)
+            .height(1024)
+            .style("vivid")
+        .build()));
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai-sdk/src/main/java/org/springframework/ai/openaisdk/OpenAiSdkImageOptions.java[OpenAiSdkImageOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-openai-sdk` to your pom (or gradle) dependencies.
+
+Add an `application.properties` file under the `src/main/resources` directory to configure the OpenAI SDK image model:
+
+[source,application.properties]
+----
+spring.ai.openai-sdk.api-key=YOUR_API_KEY
+spring.ai.openai-sdk.image.options.model=dall-e-3
+----
+
+TIP: Replace the `api-key` with your OpenAI credentials.
+
+This will create an `OpenAiSdkImageModel` implementation that you can inject into your classes.
+Here is an example of a simple `@RestController` class that uses the image model.
+
+[source,java]
+----
+@RestController
+public class ImageController {
+
+    private final ImageModel imageModel;
+
+    @Autowired
+    public ImageController(ImageModel imageModel) {
+        this.imageModel = imageModel;
+    }
+
+    @GetMapping("/ai/image")
+    public Map<String, Object> generateImage(
+            @RequestParam(value = "prompt", defaultValue = "A light cream colored mini golden doodle") String prompt) {
+        ImageResponse response = this.imageModel.call(
+            new ImagePrompt(prompt,
+                OpenAiSdkImageOptions.builder()
+                    .quality("hd")
+                    .N(1)
+                    .width(1024)
+                    .height(1024)
+                .build()));
+        
+        String imageUrl = response.getResult().getOutput().getUrl();
+        return Map.of("url", imageUrl);
+    }
+}
+----
+
+== Manual Configuration
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai-sdk/src/main/java/org/springframework/ai/openaisdk/OpenAiSdkImageModel.java[OpenAiSdkImageModel] implements the `ImageModel` and uses the official OpenAI Java SDK to connect to the OpenAI service.
+
+If you are not using Spring Boot auto-configuration, you can manually configure the OpenAI SDK Image Model.
+For this add the `spring-ai-openai-sdk` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai-sdk</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai-sdk'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+NOTE: The `spring-ai-openai-sdk` dependency provides access also to the `OpenAiSdkChatModel` and `OpenAiSdkEmbeddingModel`.
+For more information about the `OpenAiSdkChatModel` refer to the xref:api/chat/openai-sdk-chat.adoc[OpenAI SDK Chat] section.
+
+Next, create an `OpenAiSdkImageModel` instance and use it to generate images:
+
+[source,java]
+----
+var imageOptions = OpenAiSdkImageOptions.builder()
+    .model("dall-e-3")
+    .quality("hd")
+    .apiKey(System.getenv("OPENAI_API_KEY"))
+    .build();
+
+var imageModel = new OpenAiSdkImageModel(imageOptions);
+
+ImageResponse response = imageModel.call(
+    new ImagePrompt("A light cream colored mini golden doodle",
+        OpenAiSdkImageOptions.builder()
+            .N(1)
+            .width(1024)
+            .height(1024)
+        .build()));
+----
+
+The `OpenAiSdkImageOptions` provides the configuration information for the image generation requests.
+The options class offers a `builder()` for easy options creation.
+
+=== Microsoft Foundry Configuration
+
+For Microsoft Foundry:
+
+[source,java]
+----
+var imageOptions = OpenAiSdkImageOptions.builder()
+    .baseUrl("https://your-resource.openai.azure.com")
+    .apiKey(System.getenv("OPENAI_API_KEY"))
+    .deploymentName("dall-e-3")
+    .azureOpenAIServiceVersion(AzureOpenAIServiceVersion.V2024_10_01_PREVIEW)
+    .azure(true)  // Enables Microsoft Foundry mode
+    .build();
+
+var imageModel = new OpenAiSdkImageModel(imageOptions);
+----
+
+TIP: Microsoft Foundry supports passwordless authentication. Add the `com.azure:azure-identity` dependency to your project. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
+
+=== GitHub Models Configuration
+
+For GitHub Models:
+
+[source,java]
+----
+var imageOptions = OpenAiSdkImageOptions.builder()
+    .baseUrl("https://models.inference.ai.azure.com")
+    .apiKey(System.getenv("GITHUB_TOKEN"))
+    .model("dall-e-3")
+    .githubModels(true)
+    .build();
+
+var imageModel = new OpenAiSdkImageModel(imageOptions);
+----
+
+== Observability
+
+The OpenAI SDK implementation supports Spring AI's observability features through Micrometer.
+All image model operations are instrumented for monitoring and tracing.
+
+== Additional Resources
+
+* link:https://github.com/openai/openai-java[Official OpenAI Java SDK]
+* link:https://platform.openai.com/docs/api-reference/images[OpenAI Images API Documentation]
+* link:https://platform.openai.com/docs/guides/images[OpenAI Image Generation Guide]
+* link:https://platform.openai.com/docs/models[OpenAI Models]
+* link:https://learn.microsoft.com/en-us/azure/ai-foundry/[Microsoft Foundry Documentation]
+* link:https://github.com/marketplace/models[GitHub Models]

@@ -1,6 +1,57 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M2]]
+== Upgrading to 2.0.0-M2
+
+=== Development-time Services
+
+* Docker Compose and Testcontainers support for MongoDB Atlas is now provided natively by the Spring Boot MongoDB module. The migration should be transparent and not require any code change. Regarding dependencies, you don't need to import `org.springframework.ai:spring-ai-spring-boot-testcontainers` anymore. A dependency on `org.springframework.boot:spring-boot-testcontainers` is sufficient.
+
+[[upgrading-to-2-0-0-M1]]
+== Upgrading to 2.0.0-M1
+
+=== Breaking Changes
+
+==== Default Temperature Configuration Removed
+
+Spring AI no longer provides default temperature values for chat model autoconfiguration properties. Previously, Spring AI set a default temperature of `0.7` for most chat models. This default has been removed to allow each AI provider's native default temperature to be used.
+
+===== Impact
+
+If your application did not explicitly configure a temperature value and relied on Spring AI's default of `0.7`, you may notice different behavior after upgrading. The actual default will now be determined by each AI provider's API, which may vary:
+
+* Some providers default to `1.0`
+* Some providers default to `0.7`
+* Some providers have model-specific defaults
+
+===== Migration
+
+If you want to maintain the previous behavior, explicitly set the temperature in your configuration:
+
+[source,properties]
+----
+# Example for OpenAI
+spring.ai.openai.chat.options.temperature=0.7
+
+# Example for Anthropic
+spring.ai.anthropic.chat.options.temperature=0.7
+
+# Example for Azure OpenAI
+spring.ai.azure.openai.chat.options.temperature=0.7
+----
+
+Or programmatically when building requests:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("Your prompt here",
+        OpenAiChatOptions.builder()
+            .temperature(0.7)
+            .build()));
+----
+
 [[upgrading-to-1-1-0-RC1]]
 == Upgrading to 1.1.0-RC1
 

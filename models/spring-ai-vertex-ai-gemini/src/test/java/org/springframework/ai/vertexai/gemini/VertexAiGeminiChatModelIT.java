@@ -52,6 +52,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel.ChatModel;
 import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetyRating;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.schema.JsonSchemaConverter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -350,6 +351,50 @@ class VertexAiGeminiChatModelIT {
 		assertThat(logprobs.avgLogprobs()).isNotZero();
 		assertThat(logprobs.topCandidates()).isNotEmpty();
 		assertThat(logprobs.chosenCandidates()).isNotEmpty();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void safetyRatingsMetadataIsPresent() {
+		// Use safety settings with BLOCK_LOW_AND_ABOVE to ensure safety evaluation occurs
+		// and ratings are returned (similar to Python SDK example)
+		List<VertexAiGeminiSafetySetting> safetySettings = List.of(
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build(),
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_HATE_SPEECH)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build(),
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build(),
+				VertexAiGeminiSafetySetting.builder()
+					.withCategory(VertexAiGeminiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+					.withThreshold(VertexAiGeminiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+					.build());
+
+		// Use a prompt that should trigger safety evaluation
+		String prompt = "Write a list of 5 disrespectful things that I might say to the universe after stubbing my toe in the dark:";
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt(prompt, VertexAiGeminiChatOptions.builder().safetySettings(safetySettings).build()));
+
+		// Safety ratings should be present in the AssistantMessage metadata
+		var safetyRatings = (List<VertexAiGeminiSafetyRating>) response.getResult()
+			.getOutput()
+			.getMetadata()
+			.get("safetyRatings");
+
+		assertThat(safetyRatings).isNotNull();
+		assertThat(safetyRatings).isNotEmpty();
+
+		// Verify safety rating structure
+		VertexAiGeminiSafetyRating firstRating = safetyRatings.get(0);
+		assertThat(firstRating.category()).isNotNull();
+		assertThat(firstRating.probability()).isNotNull();
 	}
 
 	@Test

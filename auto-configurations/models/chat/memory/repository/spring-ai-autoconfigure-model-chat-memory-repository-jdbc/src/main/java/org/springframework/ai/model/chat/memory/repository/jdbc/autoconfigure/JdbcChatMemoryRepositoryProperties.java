@@ -17,7 +17,7 @@
 package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.sql.init.DatabaseInitializationMode;
+import org.springframework.boot.jdbc.init.DatabaseInitializationProperties;
 
 /**
  * @author Jonathan Leijendekker
@@ -26,52 +26,15 @@ import org.springframework.boot.sql.init.DatabaseInitializationMode;
  * @since 1.0.0
  */
 @ConfigurationProperties(JdbcChatMemoryRepositoryProperties.CONFIG_PREFIX)
-public class JdbcChatMemoryRepositoryProperties {
+public class JdbcChatMemoryRepositoryProperties extends DatabaseInitializationProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc";
 
 	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql";
 
-	/**
-	 * Whether to initialize the schema on startup. Values: embedded, always, never.
-	 * Default is embedded.
-	 */
-	private DatabaseInitializationMode initializeSchema = DatabaseInitializationMode.EMBEDDED;
-
-	/**
-	 * Locations of schema (DDL) scripts. Supports comma-separated list. Default is
-	 * classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql
-	 */
-	private String schema = DEFAULT_SCHEMA_LOCATION;
-
-	/**
-	 * Platform to use in initialization scripts if the @@platform@@ placeholder is used.
-	 * Auto-detected by default.
-	 */
-	private String platform;
-
-	public DatabaseInitializationMode getInitializeSchema() {
-		return this.initializeSchema;
-	}
-
-	public void setInitializeSchema(DatabaseInitializationMode initializeSchema) {
-		this.initializeSchema = initializeSchema;
-	}
-
-	public String getPlatform() {
-		return this.platform;
-	}
-
-	public void setPlatform(String platform) {
-		this.platform = platform;
-	}
-
-	public String getSchema() {
-		return this.schema;
-	}
-
-	public void setSchema(String schema) {
-		this.schema = schema;
+	@Override
+	public String getDefaultSchemaLocation() {
+		return DEFAULT_SCHEMA_LOCATION;
 	}
 
 }

@@ -17,6 +17,7 @@
 package org.springframework.ai.tool.method;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -138,7 +139,7 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	public static final class Builder {
 
-		private List<Object> toolObjects;
+		private List<Object> toolObjects = new ArrayList<>();
 
 		private Builder() {
 		}

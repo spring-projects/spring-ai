@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
+import org.springframework.ai.openai.api.OpenAiEmbeddingDeserializer;
 import org.springframework.ai.openai.api.OpenAiImageApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
@@ -310,6 +311,19 @@ class OpenAiRuntimeHintsTests {
 
 		assertThat(containsAudioApi).isTrue();
 		assertThat(containsImageApi).isTrue();
+	}
+
+	@Test
+	void verifyExplicitlyRegisteredEmbeddingClasses() {
+		this.openAiRuntimeHints.registerHints(this.runtimeHints, null);
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		this.runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+
+		// Verify the three classes explicitly registered in OpenAiRuntimeHints
+		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.Embedding.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OpenAiApi.EmbeddingList.class))).isTrue();
+		assertThat(registeredTypes.contains(TypeReference.of(OpenAiEmbeddingDeserializer.class))).isTrue();
 	}
 
 }

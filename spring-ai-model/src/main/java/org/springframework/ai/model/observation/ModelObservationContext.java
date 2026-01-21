@@ -17,9 +17,9 @@
 package org.springframework.ai.model.observation;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.observation.AiOperationMetadata;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -37,8 +37,7 @@ public class ModelObservationContext<REQ, RES> extends Observation.Context {
 
 	private final AiOperationMetadata operationMetadata;
 
-	@Nullable
-	private RES response;
+	private @Nullable RES response;
 
 	public ModelObservationContext(REQ request, AiOperationMetadata operationMetadata) {
 		Assert.notNull(request, "request cannot be null");
@@ -55,8 +54,7 @@ public class ModelObservationContext<REQ, RES> extends Observation.Context {
 		return this.operationMetadata;
 	}
 
-	@Nullable
-	public RES getResponse() {
+	public @Nullable RES getResponse() {
 		return this.response;
 	}
 

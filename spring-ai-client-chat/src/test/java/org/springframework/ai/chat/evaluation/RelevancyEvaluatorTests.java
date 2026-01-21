@@ -38,7 +38,7 @@ class RelevancyEvaluatorTests {
 			.hasMessageContaining("chatClientBuilder cannot be null");
 
 		assertThatThrownBy(() -> RelevancyEvaluator.builder().chatClientBuilder(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 

@@ -48,7 +48,7 @@ class EmbeddingModelObservationContextTests {
 		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
 			.embeddingRequest(null)
 			.provider("test-provider")
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("request cannot be null");
+			.build()).isInstanceOf(IllegalStateException.class).hasMessage("request cannot be null");
 	}
 
 	@Test
@@ -58,7 +58,7 @@ class EmbeddingModelObservationContextTests {
 		assertThatThrownBy(() -> EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
 			.provider(null)
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessage("provider cannot be null or empty");
+			.build()).isInstanceOf(IllegalStateException.class).hasMessage("provider cannot be null or empty");
 	}
 
 	@Test

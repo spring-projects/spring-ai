@@ -17,4 +17,7 @@
 /**
  * Core observation abstractions.
  */
+@NullMarked
 package org.springframework.ai.observation;
+
+import org.jspecify.annotations.NullMarked;

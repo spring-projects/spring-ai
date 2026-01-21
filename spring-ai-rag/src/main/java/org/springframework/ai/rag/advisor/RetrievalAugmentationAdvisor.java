@@ -20,9 +20,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -42,7 +44,6 @@ import org.springframework.ai.rag.retrieval.join.DocumentJoiner;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.core.task.support.ContextPropagatingTaskDecorator;
-import org.springframework.lang.Nullable;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.util.Assert;
 
@@ -64,8 +65,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	private final List<QueryTransformer> queryTransformers;
 
-	@Nullable
-	private final QueryExpander queryExpander;
+	private final @Nullable QueryExpander queryExpander;
 
 	private final DocumentRetriever documentRetriever;
 
@@ -108,8 +108,9 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
 		// 0. Create a query from the user text, parameters, and conversation history.
+		String text = chatClientRequest.prompt().getUserMessage().getText();
 		Query originalQuery = Query.builder()
-			.text(chatClientRequest.prompt().getUserMessage().getText())
+			.text(Objects.requireNonNullElse(text, ""))
 			.history(chatClientRequest.prompt().getInstructions())
 			.context(context)
 			.build();
@@ -142,10 +143,10 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		}
 		context.put(DOCUMENT_CONTEXT, documents);
 
-		// 5. Augment user query with the document contextual data.
+		// 6. Augment user query with the document contextual data.
 		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
 
-		// 6. Update ChatClientRequest with augmented prompt.
+		// 7. Update ChatClientRequest with augmented prompt.
 		return chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedQuery.text()))
 			.context(context)
@@ -170,7 +171,10 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		else {
 			chatResponseBuilder = ChatResponse.builder().from(chatClientResponse.chatResponse());
 		}
-		chatResponseBuilder.metadata(DOCUMENT_CONTEXT, chatClientResponse.context().get(DOCUMENT_CONTEXT));
+		Object ctx = chatClientResponse.context().get(DOCUMENT_CONTEXT);
+		if (ctx != null) {
+			chatResponseBuilder.metadata(DOCUMENT_CONTEXT, ctx);
+		}
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponseBuilder.build())
 			.context(chatClientResponse.context())
@@ -199,23 +203,23 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 
 	public static final class Builder {
 
-		private List<QueryTransformer> queryTransformers;
+		private @Nullable List<QueryTransformer> queryTransformers;
 
-		private QueryExpander queryExpander;
+		private @Nullable QueryExpander queryExpander;
 
-		private DocumentRetriever documentRetriever;
+		private @Nullable DocumentRetriever documentRetriever;
 
-		private DocumentJoiner documentJoiner;
+		private @Nullable DocumentJoiner documentJoiner;
 
-		private List<DocumentPostProcessor> documentPostProcessors;
+		private @Nullable List<DocumentPostProcessor> documentPostProcessors;
 
-		private QueryAugmenter queryAugmenter;
+		private @Nullable QueryAugmenter queryAugmenter;
 
-		private TaskExecutor taskExecutor;
+		private @Nullable TaskExecutor taskExecutor;
 
-		private Scheduler scheduler;
+		private @Nullable Scheduler scheduler;
 
-		private Integer order;
+		private @Nullable Integer order;
 
 		private Builder() {
 		}
@@ -282,6 +286,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		}
 
 		public RetrievalAugmentationAdvisor build() {
+			Assert.state(this.documentRetriever != null, "documentRetriever cannot be null");
 			return new RetrievalAugmentationAdvisor(this.queryTransformers, this.queryExpander, this.documentRetriever,
 					this.documentJoiner, this.documentPostProcessors, this.queryAugmenter, this.taskExecutor,
 					this.scheduler, this.order);

@@ -52,6 +52,7 @@ class ChatClientToolsWithGenericArgumentTypesIT {
 	@BeforeEach
 	void beforeEach() {
 		arguments.clear();
+		callCounter.set(0);
 	}
 
 	@Autowired

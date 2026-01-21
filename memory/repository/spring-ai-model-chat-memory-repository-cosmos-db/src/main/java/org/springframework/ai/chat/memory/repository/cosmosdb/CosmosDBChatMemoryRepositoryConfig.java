@@ -16,9 +16,12 @@
 
 package org.springframework.ai.chat.memory.repository.cosmosdb;
 
+import java.util.Objects;
+
 import com.azure.cosmos.CosmosAsyncClient;
 import com.azure.cosmos.CosmosAsyncContainer;
 import com.azure.cosmos.CosmosAsyncDatabase;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -47,7 +50,7 @@ public final class CosmosDBChatMemoryRepositoryConfig {
 	private CosmosAsyncContainer container;
 
 	private CosmosDBChatMemoryRepositoryConfig(Builder builder) {
-		this.cosmosClient = builder.cosmosClient;
+		this.cosmosClient = Objects.requireNonNull(builder.cosmosClient);
 		this.databaseName = builder.databaseName;
 		this.containerName = builder.containerName;
 		this.partitionKeyPath = builder.partitionKeyPath;
@@ -86,7 +89,7 @@ public final class CosmosDBChatMemoryRepositoryConfig {
 
 	public static final class Builder {
 
-		private CosmosAsyncClient cosmosClient;
+		private @Nullable CosmosAsyncClient cosmosClient;
 
 		private String databaseName = DEFAULT_DATABASE_NAME;
 

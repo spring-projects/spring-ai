@@ -34,6 +34,7 @@ import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link org.springframework.ai.vectorstore.filter.Filter.Expression} into CQL
@@ -90,12 +91,14 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 	}
 
 	private void doBinaryOperation(String operator, Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "right expression assumed to be non-null");
 		this.convertOperand(expression.left(), context);
 		context.append(operator);
 		this.convertOperand(expression.right(), context);
 	}
 
 	private void doField(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "right expression assumed to be non-null");
 		doKey((Key) expression.left(), context);
 		doOperand(expression.type(), context);
 		ColumnMetadata column = getColumn(((Key) expression.left()).key()).get();

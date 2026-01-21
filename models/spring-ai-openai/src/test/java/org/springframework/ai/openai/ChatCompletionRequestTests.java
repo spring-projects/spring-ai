@@ -162,6 +162,70 @@ class ChatCompletionRequestTests {
 		assertThat(request.tools().get(0).getFunction().getName()).isEqualTo(TOOL_FUNCTION_NAME);
 	}
 
+	@Test
+	void extraBodyIsMergedIntoRequest() {
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder()
+				.model("gpt-4")
+				.extraBody(Map.of("default_key", "default_value", "shared_key", "default"))
+				.build())
+			.build();
+
+		var prompt = client.buildRequestPrompt(new Prompt("Test",
+				OpenAiChatOptions.builder()
+					.extraBody(Map.of("runtime_key", "runtime_value", "shared_key", "runtime"))
+					.build()));
+
+		var request = client.createRequest(prompt, false);
+
+		// Verify extraBody is present in the request
+		assertThat(request.extraBody()).isNotNull();
+		// Default key should be present
+		assertThat(request.extraBody()).containsEntry("default_key", "default_value");
+		// Runtime key should be present
+		assertThat(request.extraBody()).containsEntry("runtime_key", "runtime_value");
+		// Runtime should override default for shared key
+		assertThat(request.extraBody()).containsEntry("shared_key", "runtime");
+	}
+
+	@Test
+	void extraBodyFromDefaultOptionsOnly() {
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder()
+				.model("gpt-4")
+				.extraBody(Map.of("top_k", 50, "repetition_penalty", 1.1))
+				.build())
+			.build();
+
+		var prompt = client.buildRequestPrompt(new Prompt("Test"));
+
+		var request = client.createRequest(prompt, false);
+
+		// Verify extraBody from default options is present
+		assertThat(request.extraBody()).isNotNull();
+		assertThat(request.extraBody()).containsEntry("top_k", 50);
+		assertThat(request.extraBody()).containsEntry("repetition_penalty", 1.1);
+	}
+
+	@Test
+	void extraBodyFromRuntimeOptionsOnly() {
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder().model("gpt-4").build())
+			.build();
+
+		var prompt = client.buildRequestPrompt(
+				new Prompt("Test", OpenAiChatOptions.builder().extraBody(Map.of("enable_thinking", true)).build()));
+
+		var request = client.createRequest(prompt, false);
+
+		// Verify extraBody from runtime options is present
+		assertThat(request.extraBody()).isNotNull();
+		assertThat(request.extraBody()).containsEntry("enable_thinking", true);
+	}
+
 	static class TestToolCallback implements ToolCallback {
 
 		private final ToolDefinition toolDefinition;

@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -58,7 +60,7 @@ public class CompositeResponseTextCleaner implements ResponseTextCleaner {
 	}
 
 	@Override
-	public String clean(String text) {
+	public @Nullable String clean(@Nullable String text) {
 		String result = text;
 		for (ResponseTextCleaner cleaner : this.cleaners) {
 			result = cleaner.clean(result);

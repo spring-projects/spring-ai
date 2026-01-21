@@ -24,11 +24,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.id.IdGenerator;
 import org.springframework.ai.document.id.RandomIdGenerator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -90,12 +90,12 @@ public class Document {
 	/**
 	 * Document string content.
 	 */
-	private final String text;
+	private final @Nullable String text;
 
 	/**
 	 * Document media content
 	 */
-	private final Media media;
+	private final @Nullable Media media;
 
 	/**
 	 * Metadata for the document. It should not be nested and values should be restricted
@@ -118,8 +118,7 @@ public class Document {
 	 * <p>
 	 * Higher values typically indicate greater relevance or similarity.
 	 */
-	@Nullable
-	private final Double score;
+	private final @Nullable Double score;
 
 	/**
 	 * Mutable, ephemeral, content to text formatter. Defaults to Document text.
@@ -128,27 +127,28 @@ public class Document {
 	private ContentFormatter contentFormatter = DEFAULT_CONTENT_FORMATTER;
 
 	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-	public Document(@JsonProperty("content") String content) {
+	public Document(@JsonProperty("content") @Nullable String content) {
 		this(content, new HashMap<>());
 	}
 
-	public Document(String text, Map<String, Object> metadata) {
+	public Document(@Nullable String text, Map<String, Object> metadata) {
 		this(new RandomIdGenerator().generateId(), text, null, metadata, null);
 	}
 
-	public Document(String id, String text, Map<String, Object> metadata) {
+	public Document(String id, @Nullable String text, Map<String, Object> metadata) {
 		this(id, text, null, metadata, null);
 	}
 
-	public Document(Media media, Map<String, Object> metadata) {
+	public Document(@Nullable Media media, Map<String, Object> metadata) {
 		this(new RandomIdGenerator().generateId(), null, media, metadata, null);
 	}
 
-	public Document(String id, Media media, Map<String, Object> metadata) {
+	public Document(String id, @Nullable Media media, Map<String, Object> metadata) {
 		this(id, null, media, metadata, null);
 	}
 
-	private Document(String id, String text, Media media, Map<String, Object> metadata, @Nullable Double score) {
+	private Document(String id, @Nullable String text, @Nullable Media media, Map<String, Object> metadata,
+			@Nullable Double score) {
 		Assert.hasText(id, "id cannot be null or empty");
 		Assert.notNull(metadata, "metadata cannot be null");
 		Assert.noNullElements(metadata.keySet(), "metadata cannot have null keys");
@@ -184,8 +184,7 @@ public class Document {
 	 * @see #isText()
 	 * @see #getMedia()
 	 */
-	@Nullable
-	public String getText() {
+	public @Nullable String getText() {
 		return this.text;
 	}
 
@@ -205,8 +204,7 @@ public class Document {
 	 * @see #isText()
 	 * @see #getText()
 	 */
-	@Nullable
-	public Media getMedia() {
+	public @Nullable Media getMedia() {
 		return this.media;
 	}
 
@@ -240,8 +238,7 @@ public class Document {
 		return this.metadata;
 	}
 
-	@Nullable
-	public Double getScore() {
+	public @Nullable Double getScore() {
 		return this.score;
 	}
 
@@ -290,16 +287,15 @@ public class Document {
 
 	public static final class Builder {
 
-		private String id;
+		private @Nullable String id;
 
-		private String text;
+		private @Nullable String text;
 
-		private Media media;
+		private @Nullable Media media;
 
 		private Map<String, Object> metadata = new HashMap<>();
 
-		@Nullable
-		private Double score;
+		private @Nullable Double score;
 
 		private IdGenerator idGenerator = new RandomIdGenerator();
 
@@ -379,7 +375,8 @@ public class Document {
 
 		public Document build() {
 			if (!StringUtils.hasText(this.id)) {
-				this.id = this.idGenerator.generateId(this.text, this.metadata);
+				var text = this.text != null ? this.text : "";
+				this.id = this.idGenerator.generateId(text, this.metadata);
 			}
 			return new Document(this.id, this.text, this.media, this.metadata, this.score);
 		}

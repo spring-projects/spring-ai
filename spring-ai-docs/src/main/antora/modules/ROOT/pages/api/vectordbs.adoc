@@ -397,6 +397,7 @@ These are the available implementations of the `VectorStore` interface:
 * xref:api/vectordbs/hana.adoc[SAP Hana Vector Store] - The https://news.sap.com/2024/04/sap-hana-cloud-vector-engine-ai-with-business-context/[SAP HANA] vector store.
 * xref:api/vectordbs/typesense.adoc[Typesense Vector Store] - The https://typesense.org/docs/0.24.0/api/vector-search.html[Typesense] vector store.
 * xref:api/vectordbs/weaviate.adoc[Weaviate Vector Store] - The https://weaviate.io/[Weaviate] vector store.
+* xref:api/vectordbs/s3-vector-store.adoc[S3 Vector Store] - The https://aws.amazon.com/s3/features/vectors/[AWS S3] vector store.
 * link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-vector-store/src/main/java/org/springframework/ai/vectorstore/SimpleVectorStore.java[SimpleVectorStore] - A simple implementation of persistent vector storage, good for educational purposes.
 
 More implementations may be supported in future releases.
@@ -644,6 +645,25 @@ Consider the following example:
 Expression exp = b.and(b.in("genre", "drama", "documentary"), b.not(b.lt("year", 2020))).build();
 ----
 
+You can also use the following operators:
+
+[source,text]
+----
+IS: 'IS' | 'is';
+NULL: 'NULL' | 'null';
+NOT NULL: 'NOT NULL' | 'not null';
+----
+
+Consider the following example:
+
+[source,java]
+----
+Expression exp = b.and(b.isNull("year")).build();
+Expression exp = b.and(b.isNotNull("year")).build();
+----
+
+NOTE: `IS NULL` and `IS NOT NULL` have not been implemented in all vector stores yet.
+
 == Deleting Documents from Vector Store
 
 The Vector Store interface provides multiple methods for deleting documents, allowing you to remove data either by specific document IDs or using filter expressions.
@@ -797,17 +817,15 @@ Document documentV2 = new Document(
 // First, delete the old version using filter expression
 Filter.Expression deleteOldVersion = new Filter.Expression(
     Filter.ExpressionType.AND,
-    Arrays.asList(
-        new Filter.Expression(
-            Filter.ExpressionType.EQ,
-            new Filter.Key("docId"),
-            new Filter.Value("AIML-001")
-        ),
-        new Filter.Expression(
-            Filter.ExpressionType.EQ,
-            new Filter.Key("version"),
-            new Filter.Value("1.0")
-        )
+    new Filter.Expression(
+        Filter.ExpressionType.EQ,
+        new Filter.Key("docId"),
+        new Filter.Value("AIML-001")
+    ),
+    new Filter.Expression(
+        Filter.ExpressionType.EQ,
+        new Filter.Key("version"),
+        new Filter.Value("1.0")
     )
 );
 vectorStore.delete(deleteOldVersion);

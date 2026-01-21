@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.content.Media;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.util.Assert;
@@ -46,7 +48,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		this(content, Map.of(), List.of(), List.of());
 	}
 
-	protected AssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
+	protected AssistantMessage(@Nullable String content, Map<String, Object> properties, List<ToolCall> toolCalls,
 			List<Media> media) {
 		super(MessageType.ASSISTANT, content, properties);
 		Assert.notNull(toolCalls, "Tool calls must not be null");
@@ -103,7 +105,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 	public static final class Builder {
 
-		private String content;
+		private @Nullable String content;
 
 		private Map<String, Object> properties = Map.of();
 

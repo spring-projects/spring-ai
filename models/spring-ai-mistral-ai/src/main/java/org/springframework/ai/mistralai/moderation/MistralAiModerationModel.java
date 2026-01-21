@@ -97,7 +97,7 @@ public class MistralAiModerationModel implements ModerationModel {
 		var moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
 			logger.warn("No moderation response returned for request: {}", mistralAiModerationRequest);
-			return new ModerationResponse(new Generation());
+			return new ModerationResponse(null);
 		}
 
 		List<ModerationResult> moderationResults = new ArrayList<>();

@@ -21,13 +21,15 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.victools.jsonschema.generator.FieldScope;
 import com.github.victools.jsonschema.generator.MemberScope;
+import com.github.victools.jsonschema.generator.MethodScope;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigPart;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.lang.Nullable;
+import org.springframework.core.Nullness;
 import org.springframework.util.StringUtils;
 
 /**
@@ -63,8 +65,7 @@ public final class SpringAiSchemaModule implements Module {
 	/**
 	 * Extract description from {@code @ToolParam(description = ...)} for the given field.
 	 */
-	@Nullable
-	private String resolveDescription(MemberScope<?, ?> member) {
+	private @Nullable String resolveDescription(MemberScope<?, ?> member) {
 		var toolParamAnnotation = member.getAnnotationConsideringFieldAndGetter(ToolParam.class);
 		if (toolParamAnnotation != null && StringUtils.hasText(toolParamAnnotation.description())) {
 			return toolParamAnnotation.description();
@@ -104,8 +105,17 @@ public final class SpringAiSchemaModule implements Module {
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
 		}
 
-		var nullableAnnotation = member.getAnnotationConsideringFieldAndGetter(Nullable.class);
-		if (nullableAnnotation != null) {
+		Nullness nullness;
+		if (member instanceof FieldScope fs) {
+			nullness = Nullness.forField(fs.getRawMember());
+		}
+		else if (member instanceof MethodScope ms) {
+			nullness = Nullness.forMethodReturnType(ms.getRawMember());
+		}
+		else {
+			throw new IllegalStateException("Unsupported member type: " + member);
+		}
+		if (nullness == Nullness.NULLABLE) {
 			return false;
 		}
 

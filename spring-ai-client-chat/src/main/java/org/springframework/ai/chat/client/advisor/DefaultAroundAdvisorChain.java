@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -39,7 +40,6 @@ import org.springframework.ai.chat.client.advisor.observation.AdvisorObservation
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
 import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.core.OrderComparator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -191,8 +191,7 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 		private final Deque<StreamAdvisor> streamAdvisors;
 
-		@Nullable
-		private AdvisorObservationConvention observationConvention;
+		private @Nullable AdvisorObservationConvention observationConvention;
 
 		public Builder(ObservationRegistry observationRegistry) {
 			this.observationRegistry = observationRegistry;

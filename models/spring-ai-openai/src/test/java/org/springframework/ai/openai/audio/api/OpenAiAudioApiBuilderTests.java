@@ -54,6 +54,10 @@ class OpenAiAudioApiBuilderTests {
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
 
+	private static final String TEST_SPEECH_PATH = "/v1/audio/speech";
+
+	private static final String TEST_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
+
 	@Test
 	void testMinimalBuilder() {
 		OpenAiAudioApi api = OpenAiAudioApi.builder().apiKey(TEST_API_KEY).build();
@@ -72,6 +76,8 @@ class OpenAiAudioApiBuilderTests {
 		OpenAiAudioApi api = OpenAiAudioApi.builder()
 			.baseUrl(TEST_BASE_URL)
 			.apiKey(TEST_API_KEY)
+			.speechPath(TEST_SPEECH_PATH)
+			.transcriptionPath(TEST_TRANSCRIPTION_PATH)
 			.headers(headers)
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)

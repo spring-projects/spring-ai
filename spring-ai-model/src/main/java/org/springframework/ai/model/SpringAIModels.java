@@ -44,6 +44,8 @@ public final class SpringAIModels {
 
 	public static final String OPENAI = "openai";
 
+	public static final String OPENAI_SDK = "openai-sdk";
+
 	public static final String POSTGRESML = "postgresml";
 
 	public static final String STABILITY_AI = "stabilityai";

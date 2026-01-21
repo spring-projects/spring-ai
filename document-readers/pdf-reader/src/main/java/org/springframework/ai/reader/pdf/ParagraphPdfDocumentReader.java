@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +67,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 
 	private final ParagraphManager paragraphTextExtractor;
 
-	protected String resourceFileName;
+	protected @Nullable String resourceFileName;
 
 	private PdfDocumentReaderConfig config;
 
@@ -145,7 +146,7 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		return documents;
 	}
 
-	protected Document toDocument(Paragraph from, Paragraph to) {
+	protected @Nullable Document toDocument(Paragraph from, Paragraph to) {
 
 		String docText = this.getTextBetweenParagraphs(from, to);
 
@@ -164,7 +165,9 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		document.getMetadata().put(METADATA_START_PAGE, from.startPageNumber());
 		document.getMetadata().put(METADATA_END_PAGE, from.endPageNumber());
 		document.getMetadata().put(METADATA_LEVEL, from.level());
-		document.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
+		if (this.resourceFileName != null) {
+			document.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
+		}
 	}
 
 	public String getTextBetweenParagraphs(Paragraph fromParagraph, Paragraph toParagraph) {

@@ -8,7 +8,10 @@ link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] ex
 
 * Store vectors and the associated metadata within hashes or JSON documents
 * Retrieve vectors
-* Perform vector searches
+* Perform vector similarity searches (KNN)
+* Perform range-based vector searches with radius threshold
+* Perform full-text searches on TEXT fields
+* Support for multiple distance metrics (COSINE, L2, IP) and vector algorithms (HNSW, FLAT)
 
 == Prerequisites
 
@@ -119,6 +122,13 @@ Properties starting with `spring.ai.vectorstore.redis.*` are used to configure t
 |`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.redis.index-name` | The name of the index to store the vectors | `spring-ai-index`
 |`spring.ai.vectorstore.redis.prefix` | The prefix for Redis keys | `embedding:`
+|`spring.ai.vectorstore.redis.distance-metric` | Distance metric for vector similarity (COSINE, L2, IP) | `COSINE`
+|`spring.ai.vectorstore.redis.vector-algorithm` | Vector indexing algorithm (HNSW, FLAT) | `HNSW`
+|`spring.ai.vectorstore.redis.hnsw-m` | HNSW: Number of maximum outgoing connections | `16`
+|`spring.ai.vectorstore.redis.hnsw-ef-construction` | HNSW: Number of maximum connections during index building | `200`
+|`spring.ai.vectorstore.redis.hnsw-ef-runtime` | HNSW: Number of connections to consider during search | `10`
+|`spring.ai.vectorstore.redis.default-range-threshold` | Default radius threshold for range searches | `0.8`
+|`spring.ai.vectorstore.redis.text-scorer` | Text scoring algorithm (BM25, TFIDF, BM25STD, DISMAX, DOCSCORE) | `BM25`
 |===
 
 == Metadata Filtering
@@ -207,9 +217,19 @@ public VectorStore vectorStore(JedisPooled jedisPooled, EmbeddingModel embedding
     return RedisVectorStore.builder(jedisPooled, embeddingModel)
         .indexName("custom-index")                // Optional: defaults to "spring-ai-index"
         .prefix("custom-prefix")                  // Optional: defaults to "embedding:"
-        .metadataFields(                         // Optional: define metadata fields for filtering
+        .contentFieldName("content")              // Optional: field for document content
+        .embeddingFieldName("embedding")          // Optional: field for vector embeddings
+        .vectorAlgorithm(Algorithm.HNSW)          // Optional: HNSW or FLAT (defaults to HNSW)
+        .distanceMetric(DistanceMetric.COSINE)    // Optional: COSINE, L2, or IP (defaults to COSINE)
+        .hnswM(16)                                // Optional: HNSW connections (defaults to 16)
+        .hnswEfConstruction(200)                  // Optional: HNSW build parameter (defaults to 200)
+        .hnswEfRuntime(10)                        // Optional: HNSW search parameter (defaults to 10)
+        .defaultRangeThreshold(0.8)               // Optional: default radius for range searches
+        .textScorer(TextScorer.BM25)              // Optional: text scoring algorithm (defaults to BM25)
+        .metadataFields(                          // Optional: define metadata fields for filtering
             MetadataField.tag("country"),
-            MetadataField.numeric("year"))
+            MetadataField.numeric("year"),
+            MetadataField.text("description"))
         .initializeSchema(true)                   // Optional: defaults to false
         .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
         .build();
@@ -244,3 +264,397 @@ if (nativeClient.isPresent()) {
 ----
 
 The native client gives you access to Redis-specific features and operations that might not be exposed through the `VectorStore` interface.
+
+== Distance Metrics
+
+The Redis Vector Store supports three distance metrics for vector similarity:
+
+* **COSINE**: Cosine similarity (default) - measures the cosine of the angle between vectors
+* **L2**: Euclidean distance - measures the straight-line distance between vectors
+* **IP**: Inner Product - measures the dot product between vectors
+
+Each metric is automatically normalized to a 0-1 similarity score, where 1 is most similar.
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+    .distanceMetric(DistanceMetric.COSINE)  // or L2, IP
+    .build();
+----
+
+== HNSW Algorithm Configuration
+
+The Redis Vector Store uses the HNSW (Hierarchical Navigable Small World) algorithm by default for efficient approximate nearest neighbor search. You can tune the HNSW parameters for your specific use case:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+    .vectorAlgorithm(Algorithm.HNSW)
+    .hnswM(32)                    // Maximum outgoing connections per node (default: 16)
+    .hnswEfConstruction(100)      // Connections during index building (default: 200)
+    .hnswEfRuntime(50)            // Connections during search (default: 10)
+    .build();
+----
+
+Parameter guidelines:
+
+* **M**: Higher values improve recall but increase memory usage and index time. Typical values: 12-48.
+* **EF_CONSTRUCTION**: Higher values improve index quality but increase build time. Typical values: 100-500.
+* **EF_RUNTIME**: Higher values improve search accuracy but increase latency. Typical values: 10-100.
+
+For smaller datasets or when exact results are required, use the FLAT algorithm instead:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+    .vectorAlgorithm(Algorithm.FLAT)
+    .build();
+----
+
+== Text Search
+
+The Redis Vector Store provides text search capabilities using Redis Query Engine's full-text search features. This allows you to find documents based on keywords and phrases in TEXT fields:
+
+[source,java]
+----
+// Search for documents containing specific text
+List<Document> textResults = vectorStore.searchByText(
+    "machine learning",   // search query
+    "content",            // field to search (must be TEXT type)
+    10,                   // limit
+    "category == 'AI'"    // optional filter expression
+);
+----
+
+Text search supports:
+
+* Single word searches
+* Phrase searches with exact matching when `inOrder` is true
+* Term-based searches with OR semantics when `inOrder` is false
+* Stopword filtering to ignore common words
+* Multiple text scoring algorithms
+
+Configure text search behavior at construction time:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+    .textScorer(TextScorer.TFIDF)                    // Text scoring algorithm
+    .inOrder(true)                                   // Match terms in order
+    .stopwords(Set.of("is", "a", "the", "and"))      // Ignore common words
+    .metadataFields(MetadataField.text("description")) // Define TEXT fields
+    .build();
+----
+
+=== Text Scoring Algorithms
+
+Several text scoring algorithms are available:
+
+* **BM25**: Modern version of TF-IDF with term saturation (default)
+* **TFIDF**: Classic term frequency-inverse document frequency
+* **BM25STD**: Standardized BM25
+* **DISMAX**: Disjunction max
+* **DOCSCORE**: Document score
+
+Scores are normalized to a 0-1 range for consistency with vector similarity scores.
+
+== Range Search
+
+The range search returns all documents within a specified radius threshold, rather than a fixed number of nearest neighbors:
+
+[source,java]
+----
+// Search with explicit radius
+List<Document> rangeResults = vectorStore.searchByRange(
+    "AI and machine learning",  // query
+    0.8,                        // radius (similarity threshold)
+    "category == 'AI'"          // optional filter expression
+);
+----
+
+You can also set a default range threshold at construction time:
+
+[source,java]
+----
+RedisVectorStore vectorStore = RedisVectorStore.builder(jedisPooled, embeddingModel)
+    .defaultRangeThreshold(0.8)  // Set default threshold
+    .build();
+
+// Use default threshold
+List<Document> results = vectorStore.searchByRange("query");
+----
+
+Range search is useful when you want to retrieve all relevant documents above a similarity threshold, rather than limiting to a specific count.
+
+== Semantic Caching
+
+Semantic caching is a powerful optimization technique that leverages Redis vector search capabilities to cache and retrieve AI chat responses based on the *semantic similarity* of user queries rather than exact string matching.
+This enables intelligent response reuse even when users phrase similar questions differently.
+
+=== Why Semantic Caching?
+
+Traditional caching relies on exact key matches, which fails when users ask semantically equivalent questions with different wording:
+
+* "What is the capital of France?"
+* "Tell me France's capital city"
+* "Which city is the capital of France?"
+
+All three queries have the same answer, but traditional caching would treat them as different requests, resulting in redundant LLM API calls.
+Semantic caching solves this by comparing the *meaning* of queries using vector embeddings.
+
+**Benefits:**
+
+* **Reduced API costs**: Avoid redundant calls to expensive LLM APIs
+* **Lower latency**: Return cached responses instantly instead of waiting for model inference
+* **Improved scalability**: Handle higher query volumes without proportional API cost increases
+* **Consistent responses**: Return identical answers for semantically similar questions
+
+=== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Redis Semantic Cache.
+To enable it, add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-vector-store-redis-semantic-cache</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-redis-semantic-cache'
+}
+----
+
+TIP: The auto-configuration provides a default embedding model optimized for semantic caching (`redis/langcache-embed-v1`).
+You can override this by providing your own `EmbeddingModel` bean.
+
+[[semantic-cache-properties]]
+=== Configuration Properties
+
+Properties starting with `spring.ai.vectorstore.redis.semantic-cache.*` configure the semantic cache:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.vectorstore.redis.semantic-cache.enabled`| Enable or disable the semantic cache | `true`
+|`spring.ai.vectorstore.redis.semantic-cache.host`| Redis server host | `localhost`
+|`spring.ai.vectorstore.redis.semantic-cache.port`| Redis server port | `6379`
+|`spring.ai.vectorstore.redis.semantic-cache.similarity-threshold`| Similarity threshold for cache hits (0.0-1.0). Higher values require closer semantic matches. | `0.95`
+|`spring.ai.vectorstore.redis.semantic-cache.index-name`| Name of the Redis search index for cache entries | `semantic-cache-index`
+|`spring.ai.vectorstore.redis.semantic-cache.prefix`| Key prefix for cached entries in Redis | `semantic-cache:`
+|===
+
+Example configuration in `application.yml`:
+
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      redis:
+        semantic-cache:
+          enabled: true
+          host: localhost
+          port: 6379
+          similarity-threshold: 0.85
+          index-name: my-app-cache
+          prefix: "my-app:semantic-cache:"
+----
+
+=== Using the SemanticCacheAdvisor
+
+The `SemanticCacheAdvisor` integrates seamlessly with Spring AI's `ChatClient` advisor pattern.
+It automatically caches responses and returns cached results for similar queries:
+
+[source,java]
+----
+@Autowired
+private SemanticCache semanticCache;
+
+@Autowired
+private ChatModel chatModel;
+
+public void example() {
+    // Create the cache advisor
+    SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
+        .cache(semanticCache)
+        .build();
+
+    // First query - calls the LLM and caches the response
+    ChatResponse response1 = ChatClient.builder(chatModel)
+        .build()
+        .prompt("What is the capital of France?")
+        .advisors(cacheAdvisor)
+        .call()
+        .chatResponse();
+
+    // Similar query - returns cached response (no LLM call)
+    ChatResponse response2 = ChatClient.builder(chatModel)
+        .build()
+        .prompt("Tell me the capital city of France")
+        .advisors(cacheAdvisor)
+        .call()
+        .chatResponse();
+
+    // response1 and response2 contain the same cached answer
+}
+----
+
+The advisor automatically:
+
+1. Checks the cache for semantically similar queries before calling the LLM
+2. Returns cached responses when a match is found above the similarity threshold
+3. Caches new responses after successful LLM calls
+4. Supports both synchronous and streaming chat operations
+
+=== Direct Cache Usage
+
+You can also interact with the `SemanticCache` directly for fine-grained control:
+
+[source,java]
+----
+@Autowired
+private SemanticCache semanticCache;
+
+// Store a response with a query
+semanticCache.set("What is the capital of France?", chatResponse);
+
+// Store with TTL (time-to-live) for automatic expiration
+semanticCache.set("What's the weather today?", weatherResponse, Duration.ofHours(1));
+
+// Retrieve a semantically similar response
+Optional<ChatResponse> cached = semanticCache.get("Tell me France's capital");
+
+if (cached.isPresent()) {
+    // Use the cached response
+    String answer = cached.get().getResult().getOutput().getText();
+}
+
+// Clear all cached entries
+semanticCache.clear();
+----
+
+=== Manual Configuration
+
+For more control, you can manually configure the semantic cache components:
+
+[source,java]
+----
+@Configuration
+public class SemanticCacheConfig {
+
+    @Bean
+    public JedisPooled jedisPooled() {
+        return new JedisPooled("localhost", 6379);
+    }
+
+    @Bean
+    public SemanticCache semanticCache(JedisPooled jedisPooled, EmbeddingModel embeddingModel) {
+        return DefaultSemanticCache.builder()
+            .jedisClient(jedisPooled)
+            .embeddingModel(embeddingModel)
+            .distanceThreshold(0.3)           // Lower = stricter matching
+            .indexName("my-semantic-cache")
+            .prefix("cache:")
+            .build();
+    }
+
+    @Bean
+    public SemanticCacheAdvisor semanticCacheAdvisor(SemanticCache cache) {
+        return SemanticCacheAdvisor.builder()
+            .cache(cache)
+            .build();
+    }
+}
+----
+
+=== Cache Isolation with Namespaces
+
+For multi-tenant applications or when you need separate cache spaces, use different index names to isolate cache entries:
+
+[source,java]
+----
+// Create isolated caches for different users or contexts
+SemanticCache user1Cache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .indexName("user-1-cache")
+    .build();
+
+SemanticCache user2Cache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .indexName("user-2-cache")
+    .build();
+
+// Each user gets their own isolated cache space
+SemanticCacheAdvisor user1Advisor = SemanticCacheAdvisor.builder()
+    .cache(user1Cache)
+    .build();
+----
+
+=== Tuning the Similarity Threshold
+
+The similarity threshold determines how closely a query must match a cached entry to be considered a hit.
+The threshold is expressed as a value between 0.0 and 1.0:
+
+* **Higher threshold (e.g., 0.95)**: Requires very close semantic matches.
+Reduces false positives but may miss valid cache hits.
+* **Lower threshold (e.g., 0.70)**: Allows broader semantic matches.
+Increases cache hit rate but may return less relevant cached responses.
+
+[source,java]
+----
+// Strict matching - only very similar queries hit the cache
+SemanticCache strictCache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .distanceThreshold(0.2)  // Strict (distance-based, lower = stricter)
+    .build();
+
+// Lenient matching - broader semantic similarity accepted
+SemanticCache lenientCache = DefaultSemanticCache.builder()
+    .jedisClient(jedisPooled)
+    .embeddingModel(embeddingModel)
+    .distanceThreshold(0.5)  // Lenient
+    .build();
+----
+
+TIP: Start with a higher threshold (stricter matching) and gradually lower it based on your application's tolerance for semantic variation.
+
+=== TTL and Cache Expiration
+
+Cached responses can be configured with a time-to-live (TTL) for automatic expiration.
+This is essential for time-sensitive data:
+
+[source,java]
+----
+// Cache weather data for 1 hour
+semanticCache.set("What's the weather in New York?", weatherResponse, Duration.ofHours(1));
+
+// Cache general knowledge indefinitely (no TTL)
+semanticCache.set("What is photosynthesis?", scienceResponse);
+
+// Redis automatically removes expired entries
+----
+
+=== How It Works
+
+The semantic cache operates using the following flow:
+
+1. **Query embedding**: When a query arrives, it is converted to a vector embedding using the configured `EmbeddingModel`
+
+2. **Vector search**: Redis performs a range-based vector search (`VECTOR_RANGE`) to find cached entries within the similarity threshold
+
+3. **Cache hit**: If a semantically similar query is found, the cached `ChatResponse` is returned immediately
+
+4. **Cache miss**: If no match is found, the query proceeds to the LLM, and the response is cached for future use
+
+The implementation leverages Redis's efficient vector indexing (HNSW algorithm) for fast similarity searches, even with large cache sizes.
