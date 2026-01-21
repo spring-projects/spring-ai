@@ -35,7 +35,7 @@ class AnthropicChatOptionsSkillsTests {
 
 	@Test
 	void shouldBuildOptionsWithSingleSkill() {
-		AnthropicChatOptions options = AnthropicChatOptions.builder().anthropicSkill(AnthropicSkill.XLSX).build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX).build();
 
 		assertThat(options.getSkillContainer()).isNotNull();
 		assertThat(options.getSkillContainer().skills()).hasSize(1);
@@ -46,9 +46,9 @@ class AnthropicChatOptionsSkillsTests {
 	@Test
 	void shouldBuildOptionsWithMultipleSkills() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.anthropicSkill(AnthropicSkill.PPTX)
-			.customSkill("my-custom-skill")
+			.skill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.PPTX)
+			.skill("my-custom-skill")
 			.build();
 
 		assertThat(options.getSkillContainer()).isNotNull();
@@ -61,7 +61,7 @@ class AnthropicChatOptionsSkillsTests {
 
 	@Test
 	void shouldBuildOptionsWithSkillContainer() {
-		SkillContainer container = SkillContainer.builder().anthropicSkill(AnthropicSkill.DOCX).build();
+		SkillContainer container = SkillContainer.builder().skill(AnthropicSkill.DOCX).build();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder().skillContainer(container).build();
 
@@ -71,9 +71,7 @@ class AnthropicChatOptionsSkillsTests {
 
 	@Test
 	void shouldBuildOptionsWithSkillVersion() {
-		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX, "20251013")
-			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX, "20251013").build();
 
 		assertThat(options.getSkillContainer()).isNotNull();
 		assertThat(options.getSkillContainer().skills()).hasSize(1);
@@ -82,7 +80,7 @@ class AnthropicChatOptionsSkillsTests {
 
 	@Test
 	void shouldBuildOptionsWithCustomSkillVersion() {
-		AnthropicChatOptions options = AnthropicChatOptions.builder().customSkill("my-skill", "1.0.0").build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().skill("my-skill", "1.0.0").build();
 
 		assertThat(options.getSkillContainer()).isNotNull();
 		assertThat(options.getSkillContainer().skills()).hasSize(1);
@@ -93,7 +91,7 @@ class AnthropicChatOptionsSkillsTests {
 
 	@Test
 	void shouldCopyOptionsWithSkills() {
-		SkillContainer container = SkillContainer.builder().anthropicSkill(AnthropicSkill.PDF).build();
+		SkillContainer container = SkillContainer.builder().skill(AnthropicSkill.PDF).build();
 
 		AnthropicChatOptions original = AnthropicChatOptions.builder()
 			.model("claude-sonnet-4-5")
@@ -112,13 +110,13 @@ class AnthropicChatOptionsSkillsTests {
 
 	@Test
 	void shouldIncludeSkillsInEqualsAndHashCode() {
-		SkillContainer container = SkillContainer.builder().anthropicSkill(AnthropicSkill.XLSX).build();
+		SkillContainer container = SkillContainer.builder().skill(AnthropicSkill.XLSX).build();
 
 		AnthropicChatOptions options1 = AnthropicChatOptions.builder().skillContainer(container).build();
 
 		AnthropicChatOptions options2 = AnthropicChatOptions.builder().skillContainer(container).build();
 
-		AnthropicChatOptions options3 = AnthropicChatOptions.builder().anthropicSkill(AnthropicSkill.PPTX).build();
+		AnthropicChatOptions options3 = AnthropicChatOptions.builder().skill(AnthropicSkill.PPTX).build();
 
 		assertThat(options1).isEqualTo(options2);
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
@@ -146,9 +144,9 @@ class AnthropicChatOptionsSkillsTests {
 	@Test
 	void shouldAddMultipleSkillsSequentially() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.anthropicSkill(AnthropicSkill.PPTX)
-			.anthropicSkill(AnthropicSkill.DOCX)
+			.skill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.PPTX)
+			.skill(AnthropicSkill.DOCX)
 			.build();
 
 		assertThat(options.getSkillContainer()).isNotNull();
@@ -157,11 +155,11 @@ class AnthropicChatOptionsSkillsTests {
 
 	@Test
 	void shouldPreserveExistingSkillsWhenAddingNew() {
-		SkillContainer initialContainer = SkillContainer.builder().anthropicSkill(AnthropicSkill.XLSX).build();
+		SkillContainer initialContainer = SkillContainer.builder().skill(AnthropicSkill.XLSX).build();
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.skillContainer(initialContainer)
-			.anthropicSkill(AnthropicSkill.PPTX)
+			.skill(AnthropicSkill.PPTX)
 			.build();
 
 		assertThat(options.getSkillContainer()).isNotNull();
@@ -173,7 +171,7 @@ class AnthropicChatOptionsSkillsTests {
 	@Test
 	void shouldSetSkillContainerViaGetter() {
 		AnthropicChatOptions options = new AnthropicChatOptions();
-		SkillContainer container = SkillContainer.builder().anthropicSkill(AnthropicSkill.PDF).build();
+		SkillContainer container = SkillContainer.builder().skill(AnthropicSkill.PDF).build();
 
 		options.setSkillContainer(container);
 
@@ -192,10 +190,10 @@ class AnthropicChatOptionsSkillsTests {
 	@Test
 	void shouldMaintainSkillOrderWhenAdding() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.customSkill("skill-a")
-			.anthropicSkill(AnthropicSkill.PPTX)
-			.customSkill("skill-b")
+			.skill(AnthropicSkill.XLSX)
+			.skill("skill-a")
+			.skill(AnthropicSkill.PPTX)
+			.skill("skill-b")
 			.build();
 
 		assertThat(options.getSkillContainer().skills()).hasSize(4);
