@@ -1146,13 +1146,13 @@ The `ToolCallAdvisor.Builder` supports the following configuration options:
 
 By default (`conversationHistoryEnabled=true`), the `ToolCallAdvisor` maintains the full conversation history internally during tool call iterations. Each subsequent LLM call includes all previous messages.
 
-When set to `false`, only the last tool response message is passed to the next iteration. This is useful when integrating with a Chat Memory advisor that already manages conversation history:
+Use the `.disableMemory()` method to disable internal conversation history management. When disabled, only the last tool response message is passed to the next iteration. This is useful when integrating with a Chat Memory advisor that already manages conversation history:
 
 [source,java]
 ----
 var toolCallAdvisor = ToolCallAdvisor.builder()
     .toolCallingManager(toolCallingManager)
-    .conversationHistoryEnabled(false)  // Let ChatMemory handle history
+    .disableMemory()  // Let ChatMemory handle history
     .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
     .build();
 

@@ -150,9 +150,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 						.build();
 
 					// Interrupt the tool calling loop and return the tool execution
-					// result
-					// directly to the client application instead of returning it to the
-					// LLM.
+					// result directly to the client application instead of returning
+					// it to the LLM.
 					break;
 				}
 
@@ -170,7 +169,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			ChatClientResponse chatClientResponse, ToolExecutionResult toolExecutionResult) {
 
 		if (!this.conversationHistoryEnabled) {
-			return List.of(toolExecutionResult.conversationHistory()
+			return List.of(chatClientRequest.prompt().getSystemMessage(), toolExecutionResult.conversationHistory()
 				.get(toolExecutionResult.conversationHistory().size() - 1));
 		}
 
@@ -267,6 +266,16 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 */
 		public T conversationHistoryEnabled(boolean conversationHistoryEnabled) {
 			this.conversationHistoryEnabled = conversationHistoryEnabled;
+			return self();
+		}
+
+		/**
+		 * Disables internal conversation history. You need a ChatMemory Advisor
+		 * registered next in the chain.
+		 * @return this Builder instance for method chaining
+		 */
+		public T disableMemory() {
+			this.conversationHistoryEnabled = false;
 			return self();
 		}
 
