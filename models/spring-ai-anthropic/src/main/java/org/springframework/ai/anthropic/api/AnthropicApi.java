@@ -17,6 +17,8 @@
 package org.springframework.ai.anthropic.api;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,6 +49,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -461,6 +464,387 @@ public final class AnthropicApi {
 		DISABLED
 
 	}
+
+	/**
+	 * Types of Claude Skills.
+	 */
+	public enum SkillType {
+
+		/**
+		 * Pre-built skills provided by Anthropic (xlsx, pptx, docx, pdf).
+		 */
+		@JsonProperty("anthropic")
+		ANTHROPIC("anthropic"),
+
+		/**
+		 * Custom skills uploaded to the workspace.
+		 */
+		@JsonProperty("custom")
+		CUSTOM("custom");
+
+		private final String value;
+
+		SkillType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
+	/**
+	 * Pre-built Anthropic Skills for document generation.
+	 */
+	public enum AnthropicSkill {
+
+		// @formatter:off
+		/**
+		 * Excel spreadsheet generation and manipulation.
+		 */
+		XLSX("xlsx", "Excel spreadsheet generation"),
+
+		/**
+		 * PowerPoint presentation creation.
+		 */
+		PPTX("pptx", "PowerPoint presentation creation"),
+
+		/**
+		 * Word document generation.
+		 */
+		DOCX("docx", "Word document generation"),
+
+		/**
+		 * PDF document creation.
+		 */
+		PDF("pdf", "PDF document creation");
+		// @formatter:on
+
+		private static final Map<String, AnthropicSkill> BY_ID;
+
+		static {
+			Map<String, AnthropicSkill> map = new HashMap<>();
+			for (AnthropicSkill skill : values()) {
+				map.put(skill.skillId.toLowerCase(), skill);
+			}
+			BY_ID = Collections.unmodifiableMap(map);
+		}
+
+		private final String skillId;
+
+		private final String description;
+
+		AnthropicSkill(String skillId, String description) {
+			this.skillId = skillId;
+			this.description = description;
+		}
+
+		/**
+		 * Look up a pre-built Anthropic skill by its ID.
+		 * @param skillId The skill ID (e.g., "xlsx", "pptx", "docx", "pdf")
+		 * @return The matching AnthropicSkill, or null if not found
+		 */
+		@Nullable
+		public static AnthropicSkill fromId(String skillId) {
+			if (skillId == null) {
+				return null;
+			}
+			return BY_ID.get(skillId.toLowerCase());
+		}
+
+		public String getSkillId() {
+			return this.skillId;
+		}
+
+		public String getDescription() {
+			return this.description;
+		}
+
+		/**
+		 * Convert to a Skill record with latest version.
+		 * @return Skill record
+		 */
+		public Skill toSkill() {
+			return new Skill(SkillType.ANTHROPIC, this.skillId, "latest");
+		}
+
+		/**
+		 * Convert to a Skill record with specific version.
+		 * @param version Version string
+		 * @return Skill record
+		 */
+		public Skill toSkill(String version) {
+			return new Skill(SkillType.ANTHROPIC, this.skillId, version);
+		}
+
+	}
+
+	/**
+	 * Represents a Claude Skill - either pre-built Anthropic skill or custom skill.
+	 * Skills are collections of instructions, scripts, and resources that extend Claude's
+	 * capabilities for specific domains.
+	 *
+	 * @param type The skill type: "anthropic" for pre-built skills, "custom" for uploaded
+	 * skills
+	 * @param skillId Skill identifier - short name for Anthropic skills (e.g., "xlsx",
+	 * "pptx"), generated ID for custom skills
+	 * @param version Optional version - "latest", date-based (e.g., "20251013"), or epoch
+	 * timestamp
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record Skill(@JsonProperty("type") SkillType type, @JsonProperty("skill_id") String skillId,
+			@JsonProperty("version") String version) {
+
+		/**
+		 * Create a Skill with default "latest" version.
+		 * @param type Skill type
+		 * @param skillId Skill ID
+		 */
+		public Skill(SkillType type, String skillId) {
+			this(type, skillId, "latest");
+		}
+
+		public static SkillBuilder builder() {
+			return new SkillBuilder();
+		}
+
+		public static final class SkillBuilder {
+
+			private SkillType type;
+
+			private String skillId;
+
+			private String version = "latest";
+
+			public SkillBuilder type(SkillType type) {
+				this.type = type;
+				return this;
+			}
+
+			public SkillBuilder skillId(String skillId) {
+				this.skillId = skillId;
+				return this;
+			}
+
+			public SkillBuilder version(String version) {
+				this.version = version;
+				return this;
+			}
+
+			public Skill build() {
+				Assert.notNull(this.type, "Skill type cannot be null");
+				Assert.hasText(this.skillId, "Skill ID cannot be empty");
+				return new Skill(this.type, this.skillId, this.version);
+			}
+
+		}
+
+	}
+
+	/**
+	 * Container for Claude Skills in a chat completion request. Maximum of 8 skills per
+	 * request.
+	 *
+	 * @param skills List of skills to make available to Claude
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record SkillContainer(@JsonProperty("skills") List<Skill> skills) {
+
+		public SkillContainer {
+			Assert.notNull(skills, "Skills list cannot be null");
+			Assert.notEmpty(skills, "Skills list cannot be empty");
+			if (skills.size() > 8) {
+				throw new IllegalArgumentException("Maximum of 8 skills per request. Provided: " + skills.size());
+			}
+		}
+
+		public static SkillContainerBuilder builder() {
+			return new SkillContainerBuilder();
+		}
+
+		public static final class SkillContainerBuilder {
+
+			private final List<Skill> skills = new ArrayList<>();
+
+			/**
+			 * Add a skill by its ID or name. Automatically detects whether it's a
+			 * pre-built Anthropic skill (xlsx, pptx, docx, pdf) or a custom skill ID.
+			 * @param skillIdOrName The skill ID or name
+			 * @return this builder
+			 */
+			public SkillContainerBuilder skill(String skillIdOrName) {
+				Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
+				AnthropicSkill prebuilt = AnthropicSkill.fromId(skillIdOrName);
+				if (prebuilt != null) {
+					return this.skill(prebuilt.toSkill());
+				}
+				return this.skill(new Skill(SkillType.CUSTOM, skillIdOrName));
+			}
+
+			/**
+			 * Add a skill by its ID or name with a specific version.
+			 * @param skillIdOrName The skill ID or name
+			 * @param version The version (e.g., "latest", "20251013")
+			 * @return this builder
+			 */
+			public SkillContainerBuilder skill(String skillIdOrName, String version) {
+				Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
+				Assert.hasText(version, "Version cannot be empty");
+				AnthropicSkill prebuilt = AnthropicSkill.fromId(skillIdOrName);
+				if (prebuilt != null) {
+					return this.skill(prebuilt.toSkill(version));
+				}
+				return this.skill(new Skill(SkillType.CUSTOM, skillIdOrName, version));
+			}
+
+			/**
+			 * Add a pre-built Anthropic skill using the enum.
+			 * @param skill The Anthropic skill enum value
+			 * @return this builder
+			 */
+			public SkillContainerBuilder skill(AnthropicSkill skill) {
+				Assert.notNull(skill, "AnthropicSkill cannot be null");
+				return this.skill(skill.toSkill());
+			}
+
+			/**
+			 * Add a pre-built Anthropic skill with a specific version.
+			 * @param skill The Anthropic skill enum value
+			 * @param version The version
+			 * @return this builder
+			 */
+			public SkillContainerBuilder skill(AnthropicSkill skill, String version) {
+				Assert.notNull(skill, "AnthropicSkill cannot be null");
+				Assert.hasText(version, "Version cannot be empty");
+				return this.skill(skill.toSkill(version));
+			}
+
+			/**
+			 * Add a Skill record directly.
+			 * @param skill The skill record
+			 * @return this builder
+			 */
+			public SkillContainerBuilder skill(Skill skill) {
+				Assert.notNull(skill, "Skill cannot be null");
+				this.skills.add(skill);
+				return this;
+			}
+
+			/**
+			 * Add multiple skills by their IDs or names.
+			 * @param skillIds The skill IDs or names
+			 * @return this builder
+			 */
+			public SkillContainerBuilder skills(String... skillIds) {
+				Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
+				for (String skillId : skillIds) {
+					this.skill(skillId);
+				}
+				return this;
+			}
+
+			/**
+			 * Add multiple skills from a list of IDs or names.
+			 * @param skillIds The list of skill IDs or names
+			 * @return this builder
+			 */
+			public SkillContainerBuilder skills(List<String> skillIds) {
+				Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
+				skillIds.forEach(this::skill);
+				return this;
+			}
+
+			/**
+			 * Add a pre-built Anthropic skill.
+			 * @param skill The Anthropic skill enum value
+			 * @return this builder
+			 * @deprecated Use {@link #skill(AnthropicSkill)} instead
+			 */
+			@Deprecated
+			public SkillContainerBuilder anthropicSkill(AnthropicSkill skill) {
+				return this.skill(skill);
+			}
+
+			/**
+			 * Add a pre-built Anthropic skill with version.
+			 * @param skill The Anthropic skill enum value
+			 * @param version The version
+			 * @return this builder
+			 * @deprecated Use {@link #skill(AnthropicSkill, String)} instead
+			 */
+			@Deprecated
+			public SkillContainerBuilder anthropicSkill(AnthropicSkill skill, String version) {
+				return this.skill(skill, version);
+			}
+
+			/**
+			 * Add a custom skill by ID.
+			 * @param skillId The custom skill ID
+			 * @return this builder
+			 * @deprecated Use {@link #skill(String)} instead
+			 */
+			@Deprecated
+			public SkillContainerBuilder customSkill(String skillId) {
+				return this.skill(skillId);
+			}
+
+			/**
+			 * Add a custom skill with version.
+			 * @param skillId The custom skill ID
+			 * @param version The version
+			 * @return this builder
+			 * @deprecated Use {@link #skill(String, String)} instead
+			 */
+			@Deprecated
+			public SkillContainerBuilder customSkill(String skillId, String version) {
+				return this.skill(skillId, version);
+			}
+
+			public SkillContainer build() {
+				return new SkillContainer(new ArrayList<>(this.skills));
+			}
+
+		}
+
+	}
+
+	// @formatter:off
+	/**
+	 * Metadata for a file generated by Claude Skills or uploaded via Files API.
+	 * Files expire after a certain period (typically 24 hours).
+	 *
+	 * @param id Unique file identifier (format: file_*)
+	 * @param filename Original filename with extension
+	 * @param size File size in bytes
+	 * @param mimeType MIME type (e.g., application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+	 * @param createdAt When the file was created (ISO 8601 timestamp)
+	 * @param expiresAt When the file will be automatically deleted (ISO 8601 timestamp)
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record FileMetadata(
+			@JsonProperty("id") String id,
+			@JsonProperty("filename") String filename,
+			@JsonProperty("size") Long size,
+			@JsonProperty("mime_type") String mimeType,
+			@JsonProperty("created_at") String createdAt,
+			@JsonProperty("expires_at") String expiresAt) {
+	}
+
+	/**
+	 * Paginated list of files response from the Files API.
+	 *
+	 * @param data List of file metadata objects
+	 * @param hasMore Whether more results exist
+	 * @param nextPage Pagination token for next page
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record FilesListResponse(
+			@JsonProperty("data") List<FileMetadata> data,
+			@JsonProperty("has_more") Boolean hasMore,
+			@JsonProperty("next_page") String nextPage) {
+	}
+	// @formatter:on
 
 	/**
 	 * The event type of the streamed chunk.
@@ -1383,8 +1767,8 @@ public final class AnthropicApi {
 
 			/**
 			 * File content block representing a file generated by Skills. Used in
-			 * {@link org.springframework.ai.anthropic.SkillsResponseHelper} to extract
-			 * file IDs for downloading generated documents.
+			 * {@link org.springframework.ai.anthropic.AnthropicSkillsResponseHelper} to
+			 * extract file IDs for downloading generated documents.
 			 */
 			@JsonProperty("file")
 			FILE("file"),
