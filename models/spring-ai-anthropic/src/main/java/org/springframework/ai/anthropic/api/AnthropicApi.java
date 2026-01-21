@@ -783,27 +783,6 @@ public final class AnthropicApi {
 			}
 
 			/**
-			 * Add a skill with explicit type.
-			 * @param type The skill type
-			 * @param skillId The skill ID
-			 * @return this builder
-			 */
-			public SkillContainerBuilder skill(SkillType type, String skillId) {
-				return skill(new Skill(type, skillId));
-			}
-
-			/**
-			 * Add a skill with explicit type and version.
-			 * @param type The skill type
-			 * @param skillId The skill ID
-			 * @param version The version
-			 * @return this builder
-			 */
-			public SkillContainerBuilder skill(SkillType type, String skillId, String version) {
-				return skill(new Skill(type, skillId, version));
-			}
-
-			/**
 			 * Add multiple skills by their IDs or names.
 			 * @param skillIds The skill IDs or names
 			 * @return this builder
@@ -824,17 +803,6 @@ public final class AnthropicApi {
 			public SkillContainerBuilder skills(List<String> skillIds) {
 				Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
 				skillIds.forEach(this::skill);
-				return this;
-			}
-
-			/**
-			 * Add multiple Skill records.
-			 * @param skills The skill records
-			 * @return this builder
-			 */
-			public SkillContainerBuilder skillRecords(List<Skill> skills) {
-				Assert.notNull(skills, "Skills list cannot be null");
-				this.skills.addAll(skills);
 				return this;
 			}
 

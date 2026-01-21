@@ -44,7 +44,7 @@ class ChatCompletionRequestSkillsSerializationTests {
 
 	@Test
 	void shouldSerializeRequestWithSkills() throws Exception {
-		SkillContainer container = SkillContainer.builder().anthropicSkill(AnthropicSkill.XLSX).build();
+		SkillContainer container = SkillContainer.builder().skill(AnthropicSkill.XLSX).build();
 
 		AnthropicMessage message = new AnthropicMessage(List.of(new ContentBlock("Create a spreadsheet")), Role.USER);
 
@@ -67,9 +67,9 @@ class ChatCompletionRequestSkillsSerializationTests {
 	@Test
 	void shouldSerializeMultipleSkills() throws Exception {
 		SkillContainer container = SkillContainer.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.anthropicSkill(AnthropicSkill.PPTX, "20251013")
-			.customSkill("custom-skill")
+			.skill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.PPTX, "20251013")
+			.skill("custom-skill")
 			.build();
 
 		AnthropicMessage message = new AnthropicMessage(List.of(new ContentBlock("Create documents")), Role.USER);

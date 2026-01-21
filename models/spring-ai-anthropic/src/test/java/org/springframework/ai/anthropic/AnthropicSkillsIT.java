@@ -69,7 +69,7 @@ class AnthropicSkillsIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 			.maxTokens(4096)
-			.anthropicSkill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.XLSX)
 			.toolChoice(new AnthropicApi.ToolChoiceAny())
 			.internalToolExecutionEnabled(false)
 			.build();
@@ -133,7 +133,7 @@ class AnthropicSkillsIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 			.maxTokens(4096)
-			.anthropicSkill(AnthropicSkill.PPTX)
+			.skill(AnthropicSkill.PPTX)
 			.toolChoice(new AnthropicApi.ToolChoiceAny())
 			.internalToolExecutionEnabled(false)
 			.build();
@@ -192,8 +192,8 @@ class AnthropicSkillsIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 			.maxTokens(4096)
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.anthropicSkill(AnthropicSkill.PPTX)
+			.skill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.PPTX)
 			.toolChoice(new AnthropicApi.ToolChoiceAny())
 			.internalToolExecutionEnabled(false)
 			.build();
