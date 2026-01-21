@@ -853,13 +853,17 @@ public class OpenAiAudioApi {
 	 */
 	public static final class Builder {
 
+		private static final String DEFAULT_SPEECH_PATH = "/v1/audio/speech";
+
+		private static final String DEFAULT_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
+
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
 
-		private String speechPath;
+		private String speechPath = DEFAULT_SPEECH_PATH;
 
-		private String transcriptionPath;
+		private String transcriptionPath = DEFAULT_TRANSCRIPTION_PATH;
 
 		private HttpHeaders headers = new HttpHeaders();
 
