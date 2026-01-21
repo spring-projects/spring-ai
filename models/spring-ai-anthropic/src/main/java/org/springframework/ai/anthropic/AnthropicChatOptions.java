@@ -572,8 +572,78 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		}
 
 		/**
-		 * Add a single skill to the request. Creates a SkillContainer if one doesn't
-		 * exist.
+		 * Add a skill by its ID or name. Automatically detects whether it's a pre-built
+		 * Anthropic skill (xlsx, pptx, docx, pdf) or a custom skill ID.
+		 *
+		 * <p>
+		 * Example: <pre>{@code
+		 * AnthropicChatOptions options = AnthropicChatOptions.builder()
+		 *     .model("claude-sonnet-4-5")
+		 *     .skill("xlsx")                          // Pre-built skill
+		 *     .skill("skill_01abc123...")             // Custom skill
+		 *     .build();
+		 * }</pre>
+		 * @param skillIdOrName The skill ID or name
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(String skillIdOrName) {
+			Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
+			AnthropicApi.AnthropicSkill prebuilt = AnthropicApi.AnthropicSkill.fromId(skillIdOrName);
+			if (prebuilt != null) {
+				return this.skill(prebuilt.toSkill());
+			}
+			return this.skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName));
+		}
+
+		/**
+		 * Add a skill by its ID or name with a specific version.
+		 * @param skillIdOrName The skill ID or name
+		 * @param version The version (e.g., "latest", "20251013")
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(String skillIdOrName, String version) {
+			Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
+			Assert.hasText(version, "Version cannot be empty");
+			AnthropicApi.AnthropicSkill prebuilt = AnthropicApi.AnthropicSkill.fromId(skillIdOrName);
+			if (prebuilt != null) {
+				return this.skill(prebuilt.toSkill(version));
+			}
+			return this.skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName, version));
+		}
+
+		/**
+		 * Add a pre-built Anthropic skill using the enum.
+		 *
+		 * <p>
+		 * Example: <pre>{@code
+		 * AnthropicChatOptions options = AnthropicChatOptions.builder()
+		 *     .model("claude-sonnet-4-5")
+		 *     .skill(AnthropicSkill.XLSX)
+		 *     .skill(AnthropicSkill.PPTX)
+		 *     .build();
+		 * }</pre>
+		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(AnthropicApi.AnthropicSkill anthropicSkill) {
+			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
+			return this.skill(anthropicSkill.toSkill());
+		}
+
+		/**
+		 * Add a pre-built Anthropic skill with specific version.
+		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * @param version Version of the skill (e.g., "latest", "20251013")
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(AnthropicApi.AnthropicSkill anthropicSkill, String version) {
+			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
+			Assert.hasText(version, "Version cannot be empty");
+			return this.skill(anthropicSkill.toSkill(version));
+		}
+
+		/**
+		 * Add a Skill record directly.
 		 * @param skill Skill to add
 		 * @return Builder for method chaining
 		 */
@@ -592,13 +662,38 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		}
 
 		/**
+		 * Add multiple skills by their IDs or names.
+		 * @param skillIds The skill IDs or names
+		 * @return Builder for method chaining
+		 */
+		public Builder skills(String... skillIds) {
+			Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
+			for (String skillId : skillIds) {
+				this.skill(skillId);
+			}
+			return this;
+		}
+
+		/**
+		 * Add multiple skills from a list of IDs or names.
+		 * @param skillIds The list of skill IDs or names
+		 * @return Builder for method chaining
+		 */
+		public Builder skills(List<String> skillIds) {
+			Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
+			skillIds.forEach(this::skill);
+			return this;
+		}
+
+		/**
 		 * Add an Anthropic pre-built skill (xlsx, pptx, docx, pdf).
 		 * @param anthropicSkill Pre-built Anthropic skill to add
 		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(AnthropicApi.AnthropicSkill)} instead
 		 */
+		@Deprecated
 		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill) {
-			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
-			return skill(anthropicSkill.toSkill());
+			return this.skill(anthropicSkill);
 		}
 
 		/**
@@ -606,21 +701,22 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 * @param anthropicSkill Pre-built Anthropic skill to add
 		 * @param version Version of the skill (e.g., "latest", "20251013")
 		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(AnthropicApi.AnthropicSkill, String)} instead
 		 */
+		@Deprecated
 		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill, String version) {
-			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
-			Assert.hasText(version, "Version cannot be empty");
-			return skill(anthropicSkill.toSkill(version));
+			return this.skill(anthropicSkill, version);
 		}
 
 		/**
 		 * Add a custom skill by ID.
 		 * @param skillId Custom skill ID
 		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(String)} instead
 		 */
+		@Deprecated
 		public Builder customSkill(String skillId) {
-			Assert.hasText(skillId, "Skill ID cannot be empty");
-			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillId));
+			return this.skill(skillId);
 		}
 
 		/**
@@ -628,11 +724,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 * @param skillId Custom skill ID
 		 * @param version Version of the skill
 		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(String, String)} instead
 		 */
+		@Deprecated
 		public Builder customSkill(String skillId, String version) {
-			Assert.hasText(skillId, "Skill ID cannot be empty");
-			Assert.hasText(version, "Version cannot be empty");
-			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillId, version));
+			return this.skill(skillId, version);
 		}
 
 		public AnthropicChatOptions build() {
