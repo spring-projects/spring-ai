@@ -99,13 +99,14 @@ class AnthropicSkillsIT {
 			.containsAnyOf("spreadsheet", "excel", "xlsx", "created", "file");
 
 		// Extract file IDs from the response
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 		assertThat(fileIds).as("Skills response should contain at least one file ID").isNotEmpty();
 
 		logger.info("Extracted {} file ID(s): {}", fileIds.size(), fileIds);
 
 		// Download all files
-		List<Path> downloadedFiles = SkillsResponseHelper.downloadAllFiles(response, this.anthropicApi, tempDir);
+		List<Path> downloadedFiles = AnthropicSkillsResponseHelper.downloadAllFiles(response, this.anthropicApi,
+				tempDir);
 		assertThat(downloadedFiles).as("Should download at least one file").isNotEmpty();
 
 		// Verify files exist and have content
@@ -156,13 +157,14 @@ class AnthropicSkillsIT {
 			.containsAnyOf("presentation", "powerpoint", "pptx", "slide", "created", "file");
 
 		// Extract file IDs from the response
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 		assertThat(fileIds).as("Skills response should contain at least one file ID").isNotEmpty();
 
 		logger.info("Extracted {} file ID(s): {}", fileIds.size(), fileIds);
 
 		// Download all files
-		List<Path> downloadedFiles = SkillsResponseHelper.downloadAllFiles(response, this.anthropicApi, tempDir);
+		List<Path> downloadedFiles = AnthropicSkillsResponseHelper.downloadAllFiles(response, this.anthropicApi,
+				tempDir);
 		assertThat(downloadedFiles).as("Should download at least one file").isNotEmpty();
 
 		// Verify files exist and have content
@@ -215,13 +217,14 @@ class AnthropicSkillsIT {
 			.containsAnyOf("spreadsheet", "presentation", "created", "file", "xlsx", "pptx");
 
 		// Extract file IDs from the response
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 		assertThat(fileIds).as("Skills response should contain at least one file ID").isNotEmpty();
 
 		logger.info("Extracted {} file ID(s): {}", fileIds.size(), fileIds);
 
 		// Download all files
-		List<Path> downloadedFiles = SkillsResponseHelper.downloadAllFiles(response, this.anthropicApi, tempDir);
+		List<Path> downloadedFiles = AnthropicSkillsResponseHelper.downloadAllFiles(response, this.anthropicApi,
+				tempDir);
 		assertThat(downloadedFiles).as("Should download at least one file").isNotEmpty();
 		assertThat(downloadedFiles.size()).as("Should download multiple files").isGreaterThanOrEqualTo(2);
 
