@@ -21,16 +21,18 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.github.victools.jsonschema.generator.Option;
+import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.core.util.DefaultIndenter;
 import tools.jackson.core.util.DefaultPrettyPrinter;
 import tools.jackson.databind.DeserializationFeature;
@@ -64,7 +66,9 @@ import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
-	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+	private static final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+
+	private static final MapTypeReference MAP_TYPE_REFERENCE = new MapTypeReference();
 
 	/**
 	 * The target class type reference to which the output will be converted.
@@ -189,9 +193,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	private void generateSchema() {
 		JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
 				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
-				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
-				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
+		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+				OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
@@ -222,7 +225,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * subclasses.
 	 * @param jsonNode the JSON schema, in the form of a JSON node
 	 */
-	protected void postProcessSchema(@NonNull JsonNode jsonNode) {
+	@SuppressWarnings("unused")
+	protected void postProcessSchema(JsonNode jsonNode) {
 	}
 
 	/**
@@ -230,14 +234,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @param text The LLM output in string format.
 	 * @return The parsed output in the desired target type.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public T convert(String text) {
 		try {
 			// Clean the text using the configured text cleaner
 			text = this.textCleaner.clean(text);
 
-			return (T) this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
+			return this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
 		}
 		catch (JacksonException e) {
 			logger.error(SENSITIVE_DATA_MARKER,
@@ -285,12 +288,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	public Map<String, Object> getJsonSchemaMap() {
 		try {
-			return this.jsonMapper.readValue(this.jsonSchema, Map.class);
+			return this.jsonMapper.readValue(this.jsonSchema, MAP_TYPE_REFERENCE);
 		}
 		catch (JacksonException ex) {
 			logger.error("Could not parse the JSON Schema to a Map object", ex);
 			throw new IllegalStateException(ex);
 		}
+	}
+
+	private static final class MapTypeReference extends TypeReference<Map<String, Object>> {
+
 	}
 
 }
