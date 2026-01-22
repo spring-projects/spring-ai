@@ -52,6 +52,7 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.BeanWrapperImpl;
