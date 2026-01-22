@@ -55,6 +55,7 @@ import org.springframework.util.StringUtils;
  * Default implementation of {@link ToolCallingManager}.
  *
  * @author Thomas Vitale
+ * @author chabinhwang
  * @since 1.0.0
  */
 public final class DefaultToolCallingManager implements ToolCallingManager {
