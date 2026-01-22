@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ *		https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -211,18 +211,16 @@ public class OpenAiChatModel implements ChatModel {
 					return new ChatResponse(List.of());
 				}
 
-			// @formatter:off
 				List<Generation> generations = choices.stream().map(choice -> {
-					Map<String, Object> metadata = Map.of(
-							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
-							"role", choice.message().role() != null ? choice.message().role().name() : "",
-							"index", choice.index() != null ? choice.index() : 0,
-							"finishReason", getFinishReasonJson(choice.finishReason()),
-							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
-							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
+					Map<String, Object> metadata = Map.of("id", chatCompletion.id() != null ? chatCompletion.id() : "",
+							"role", choice.message().role() != null ? choice.message().role().name() : "", "index",
+							choice.index() != null ? choice.index() : 0, "finishReason",
+							getFinishReasonJson(choice.finishReason()), "refusal",
+							StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+							"annotations", choice.message().annotations() != null ? choice.message().annotations()
+									: List.of(Map.of()));
 					return buildGeneration(choice, metadata, request);
 				}).toList();
-				// @formatter:on
 
 				RateLimit rateLimit = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(completionEntity);
 
@@ -308,21 +306,21 @@ public class OpenAiChatModel implements ChatModel {
 						// If an id is not provided, set to "NO_ID" (for compatible APIs).
 						String id = chatCompletion2.id() == null ? "NO_ID" : chatCompletion2.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> { // @formatter:off
+						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
 							if (choice.message().role() != null) {
 								roleMap.putIfAbsent(id, choice.message().role().name());
 							}
-							Map<String, Object> metadata = Map.of(
-									"id", id,
-									"role", roleMap.getOrDefault(id, ""),
-									"index", choice.index() != null ? choice.index() : 0,
-									"finishReason", getFinishReasonJson(choice.finishReason()),
-									"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
-									"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(),
-									"reasoningContent", choice.message().reasoningContent() != null ? choice.message().reasoningContent() : "");
+							Map<String, Object> metadata = Map.of("id", id, "role", roleMap.getOrDefault(id, ""),
+									"index", choice.index() != null ? choice.index() : 0, "finishReason",
+									getFinishReasonJson(choice.finishReason()), "refusal",
+									StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
+									"annotations",
+									choice.message().annotations() != null ? choice.message().annotations() : List.of(),
+									"reasoningContent", choice.message().reasoningContent() != null
+											? choice.message().reasoningContent() : "");
 							return buildGeneration(choice, metadata, request);
 						}).toList();
-						// @formatter:on
+
 						OpenAiApi.Usage usage = chatCompletion2.usage();
 						Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
@@ -361,12 +359,11 @@ public class OpenAiChatModel implements ChatModel {
 					return firstResponse;
 				});
 
-			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
-					//  is currently only synchronous
-					return Flux.deferContextual(ctx -> {
+					// is currently only synchronous
+					Flux<ChatResponse> toolExecutionFlux = Flux.deferContextual(ctx -> {
 						ToolExecutionResult toolExecutionResult;
 						try {
 							ToolCallReactiveContextHolder.setContext(ctx);
@@ -377,25 +374,30 @@ public class OpenAiChatModel implements ChatModel {
 						}
 						if (toolExecutionResult.returnDirect()) {
 							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder().from(response)
-									.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-									.build());
+							return Flux.just(ChatResponse.builder()
+								.from(response)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
 						}
 						else {
 							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+							return this.internalStream(
+									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
 									response);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
+
+					// Use Flux.concat to ensure the current response is emitted before
+					// the tool execution flux.
+					return Flux.concat(Flux.just(response), toolExecutionFlux);
 				}
 				else {
 					return Flux.just(response);
 				}
 			})
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-			// @formatter:on
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 
