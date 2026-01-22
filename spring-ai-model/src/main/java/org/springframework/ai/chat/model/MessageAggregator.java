@@ -79,6 +79,7 @@ public class MessageAggregator {
 			messageTextContentRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
+			generationMetadataRef.set(ChatGenerationMetadata.NULL);
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
@@ -121,7 +122,7 @@ public class MessageAggregator {
 					metadataPromptMetadataRef.set(chatResponse.getMetadata().getPromptMetadata());
 				}
 				if (chatResponse.getMetadata().getRateLimit() != null
-						&& !(metadataRateLimitRef.get() instanceof EmptyRateLimit)) {
+						&& !(chatResponse.getMetadata().getRateLimit() instanceof EmptyRateLimit)) {
 					metadataRateLimitRef.set(chatResponse.getMetadata().getRateLimit());
 				}
 				if (StringUtils.hasText(chatResponse.getMetadata().getId())) {
@@ -175,6 +176,7 @@ public class MessageAggregator {
 			messageTextContentRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
+			generationMetadataRef.set(ChatGenerationMetadata.NULL);
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
