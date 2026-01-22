@@ -685,7 +685,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		else {
 			return candidate.content().get().parts().orElse(List.of()).stream().map(part -> {
-				Map<String, Object> partMessageMetadata = new HashMap<>(messageMetadata);
+				var partMessageMetadata = new HashMap<>(messageMetadata);
 				partMessageMetadata.put("isThought", part.thought().orElse(false));
 				return AssistantMessage.builder()
 					.content(part.text().orElse(""))
