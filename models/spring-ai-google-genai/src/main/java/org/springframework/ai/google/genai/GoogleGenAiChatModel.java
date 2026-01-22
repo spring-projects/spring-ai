@@ -684,17 +684,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
 		else {
-			return candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.map(part -> AssistantMessage.builder()
-					.content(part.thought().isPresent() && part.thought().get() ? "" : part.text().orElse(""))
-					.properties(messageMetadata)
-					.build())
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
+			return candidate.content().get().parts().orElse(List.of()).stream().map(part -> {
+				Map<String, Object> partMessageMetadata = new HashMap<>(messageMetadata);
+				partMessageMetadata.put("isThought", part.thought().orElse(false));
+				return AssistantMessage.builder()
+					.content(part.text().orElse(""))
+					.properties(partMessageMetadata)
+					.build();
+			}).map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata)).toList();
 		}
 	}
 
