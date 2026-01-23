@@ -8,8 +8,6 @@ on:
         required: false
   push:
     branches: docs-build
-# env:
-#   GRADLE_ENTERPRISE_SECRET_ACCESS_KEY: ${{ secrets.GRADLE_ENTERPRISE_SECRET_ACCESS_KEY }}
 permissions:
   contents: write
 jobs:
@@ -24,19 +22,11 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '25'
+        java-version: '21'
         distribution: 'temurin'
-    # - name: Set up refname build
-    #   if: github.event.inputs.build-refname
-    #   run: |
-    #     git fetch --depth 1 https://github.com/$GITHUB_REPOSITORY ${{ github.event.inputs.build-refname }}
-    #     export BUILD_REFNAME=${{ github.event.inputs.build-refname }}
-    #     echo "BUILD_REFNAME=$BUILD_REFNAME" >> $GITHUB_ENV
-    #     export BUILD_VERSION=$(git cat-file --textconv FETCH_HEAD:pom.xml | python3 -c "import xml.etree.ElementTree as xml; from sys import stdin; print(xml.parse(stdin).getroot().find('{http://maven.apache.org/POM/4.0.0}version').text)")
-    #     echo BUILD_VERSION=$BUILD_VERSION >> $GITHUB_ENV
     - name: Run Antora
       run: |
-        ./mvnw antora
+        ./mvnw -ntp antora
     - name: Publish Docs
       uses: spring-io/spring-doc-actions/rsync-antora-reference@v0.0.18
       with:
