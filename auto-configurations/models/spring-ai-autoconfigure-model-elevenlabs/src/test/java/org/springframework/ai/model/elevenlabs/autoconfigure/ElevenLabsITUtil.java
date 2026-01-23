@@ -16,10 +16,9 @@
 
 package org.springframework.ai.model.elevenlabs.autoconfigure;
 
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 /**
  * Utility class for ElevenLabs integration tests.
@@ -32,8 +31,7 @@ public final class ElevenLabsITUtil {
 	}
 
 	public static AutoConfigurations elevenLabsAutoConfig(Class<?>... additionalAutoConfigurations) {
-		Class<?>[] dependencies = new Class[] { SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class,
-				WebClientAutoConfiguration.class };
+		Class<?>[] dependencies = new Class[] { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class };
 		Class<?>[] allAutoConfigurations = new Class[dependencies.length + additionalAutoConfigurations.length];
 		System.arraycopy(dependencies, 0, allAutoConfigurations, 0, dependencies.length);
 		System.arraycopy(additionalAutoConfigurations, 0, allAutoConfigurations, dependencies.length,

@@ -111,7 +111,7 @@ Here are the advanced request parameter for the Ollama chat model:
 | spring.ai.ollama.chat.enabled (Removed and no longer valid)     | Enable Ollama chat model. | true
 | spring.ai.model.chat      | Enable Ollama chat model. | ollama
 | spring.ai.ollama.chat.options.model  | The name of the https://github.com/ollama/ollama?tab=readme-ov-file#model-library[supported model] to use. | mistral
-| spring.ai.ollama.chat.options.format  | The format to return a response in. Currently, the only accepted value is `json` | -
+| spring.ai.ollama.chat.options.format  | The format to return a response in. Accepts either `"json"` (any JSON structure) or a JSON Schema object (enforced structure). See <<Structured Outputs>> for details. | -
 | spring.ai.ollama.chat.options.keep_alive  | Controls how long the model will stay loaded into memory following the request | 5m
 |====
 
@@ -159,7 +159,9 @@ TIP: All properties prefixed with `spring.ai.ollama.chat.options` can be overrid
 
 == Runtime Options [[chat-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaChatOptions.java[OllamaChatOptions.java] class provides model configurations, such as the model to use, the temperature,  etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-ollama/src/main/java/org/springframework/ai/ollama/api/OllamaChatOptions.java[OllamaChatOptions.java] class provides model configurations, such as the model to use, the temperature, thinking mode, etc.
+
+IMPORTANT: The `OllamaOptions` class has been deprecated. Use `OllamaChatOptions` for chat models and `OllamaEmbeddingOptions` for embedding models instead. The new classes provide type-safe, model-specific configuration options.
 
 On start-up, the default options can be configured with the `OllamaChatModel(api, options)` constructor or the `spring.ai.ollama.chat.options.*` properties.
 
@@ -250,6 +252,141 @@ Read more about xref:api/tools.adoc[Tool Calling].
 
 TIP: You need Ollama 0.2.8 or newer to use the functional calling capabilities and Ollama 0.4.6 or newer to use them in streaming mode.
 
+== Thinking Mode (Reasoning)
+
+Ollama supports thinking mode for reasoning models that can emit their internal reasoning process before providing a final answer. This feature is available for models like Qwen3, DeepSeek-v3.1, DeepSeek R1, and GPT-OSS.
+
+TIP: Thinking mode helps you understand the model's reasoning process and can improve response quality for complex problems.
+
+IMPORTANT: *Default Behavior (Ollama 0.12+)*: Thinking-capable models (such as `qwen3:*-thinking`, `deepseek-r1`, `deepseek-v3.1`) *auto-enable thinking by default* when the think option is not explicitly set. Standard models (such as `qwen2.5:*`, `llama3.2`) do not enable thinking by default. To explicitly control this behavior, use `.enableThinking()` or `.disableThinking()`.
+
+=== Enabling Thinking Mode
+
+Most models (Qwen3, DeepSeek-v3.1, DeepSeek R1) support simple boolean enable/disable:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "How many letter 'r' are in the word 'strawberry'?",
+        OllamaChatOptions.builder()
+            .model("qwen3")
+            .enableThinking()
+            .build()
+    ));
+
+// Access the thinking process
+String thinking = response.getResult().getMetadata().get("thinking");
+String answer = response.getResult().getOutput().getContent();
+----
+
+You can also disable thinking explicitly:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What is 2+2?",
+        OllamaChatOptions.builder()
+            .model("deepseek-r1")
+            .disableThinking()
+            .build()
+    ));
+----
+
+=== Thinking Levels (GPT-OSS Only)
+
+The GPT-OSS model requires explicit thinking levels instead of boolean values:
+
+[source,java]
+----
+// Low thinking level
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate a short headline",
+        OllamaChatOptions.builder()
+            .model("gpt-oss")
+            .thinkLow()
+            .build()
+    ));
+
+// Medium thinking level
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Analyze this dataset",
+        OllamaChatOptions.builder()
+            .model("gpt-oss")
+            .thinkMedium()
+            .build()
+    ));
+
+// High thinking level
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Solve this complex problem",
+        OllamaChatOptions.builder()
+            .model("gpt-oss")
+            .thinkHigh()
+            .build()
+    ));
+----
+
+=== Accessing Thinking Content
+
+The thinking content is available in the response metadata:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Calculate 17 × 23",
+        OllamaChatOptions.builder()
+            .model("deepseek-r1")
+            .enableThinking()
+            .build()
+    ));
+
+// Get the reasoning process
+String thinking = response.getResult().getMetadata().get("thinking");
+System.out.println("Reasoning: " + thinking);
+// Output: "17 × 20 = 340, 17 × 3 = 51, 340 + 51 = 391"
+
+// Get the final answer
+String answer = response.getResult().getOutput().getContent();
+System.out.println("Answer: " + answer);
+// Output: "The answer is 391"
+----
+
+=== Streaming with Thinking
+
+Thinking mode works with streaming responses as well:
+
+[source,java]
+----
+Flux<ChatResponse> stream = chatModel.stream(
+    new Prompt(
+        "Explain quantum entanglement",
+        OllamaChatOptions.builder()
+            .model("qwen3")
+            .enableThinking()
+            .build()
+    ));
+
+stream.subscribe(response -> {
+    String thinking = response.getResult().getMetadata().get("thinking");
+    String content = response.getResult().getOutput().getContent();
+
+    if (thinking != null && !thinking.isEmpty()) {
+        System.out.println("[Thinking] " + thinking);
+    }
+    if (content != null && !content.isEmpty()) {
+        System.out.println("[Response] " + content);
+    }
+});
+----
+
+NOTE: When thinking is disabled or not set, the `thinking` metadata field will be null or empty.
+
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
@@ -294,13 +431,83 @@ where fruits are being displayed, possibly for convenience or aesthetic purposes
 Ollama provides custom https://ollama.com/blog/structured-outputs[Structured Outputs] APIs that ensure your model generates responses conforming strictly to your provided `JSON Schema`.
 In addition to the existing Spring AI model-agnostic xref::api/structured-output-converter.adoc[Structured Output Converter], these APIs offer enhanced control and precision.
 
+=== Two Modes for Structured Output
+
+Ollama supports two different modes for structured output through the `format` parameter:
+
+1. **Simple "json" Format**: Instructs Ollama to return any valid JSON structure (unpredictable schema)
+2. **JSON Schema Format**: Instructs Ollama to return JSON conforming to a specific schema (predictable structure)
+
+==== Simple "json" Format
+
+Use this when you want JSON output but don't need a specific structure:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "List 3 countries in Europe",
+        OllamaChatOptions.builder()
+            .model("llama3.2")
+            .format("json")  // Any valid JSON
+            .build()
+    ));
+----
+
+The model can return any JSON structure it chooses:
+
+[source,json]
+----
+["France", "Germany", "Italy"]
+// or
+{"countries": ["France", "Germany", "Italy"]}
+// or
+{"data": {"european_countries": ["France", "Germany", "Italy"]}}
+----
+
+==== JSON Schema Format (Recommended for Production)
+
+Use this when you need a guaranteed, predictable structure:
+
+[source,java]
+----
+String jsonSchema = """
+{
+    "type": "object",
+    "properties": {
+        "countries": {
+            "type": "array",
+            "items": { "type": "string" }
+        }
+    },
+    "required": ["countries"]
+}
+""";
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "List 3 countries in Europe",
+        OllamaChatOptions.builder()
+            .model("llama3.2")
+            .outputSchema(jsonSchema)  // Enforced schema
+            .build()
+    ));
+----
+
+The model **must** return this exact structure:
+
+[source,json]
+----
+{"countries": ["France", "Germany", "Italy"]}
+----
+
 === Configuration
 
 Spring AI allows you to configure your response format programmatically using the `OllamaChatOptions` builder.
 
-==== Using the Chat Options Builder
+==== Using the Chat Options Builder with JSON Schema
 
-You can set the response format programmatically with the `OllamaChatOptions` builder as shown below:
+You can set the response format programmatically with the `OllamaChatOptions` builder:
 
 [source,java]
 ----
@@ -330,7 +537,7 @@ String jsonSchema = """
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
-            .format(new ObjectMapper().readValue(jsonSchema, Map.class))
+            .outputSchema(jsonSchema)  // Pass JSON Schema as string
             .build());
 
 ChatResponse response = this.ollamaChatModel.call(this.prompt);
@@ -361,7 +568,7 @@ var outputConverter = new BeanOutputConverter<>(MathReasoning.class);
 Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
         OllamaChatOptions.builder()
             .model(OllamaModel.LLAMA3_2.getName())
-            .format(outputConverter.getJsonSchemaMap())
+            .outputSchema(outputConverter.getJsonSchema())  // Get JSON Schema as string
             .build());
 
 ChatResponse response = this.ollamaChatModel.call(this.prompt);
@@ -373,12 +580,83 @@ MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 NOTE: Ensure you use the `@JsonProperty(required = true,...)`  annotation for generating a schema that accurately marks fields as `required`.
 Although this is optional for JSON Schema, it's recommended for the structured response to function correctly.
 
+=== API Methods: `.format()` vs `.outputSchema()`
+
+Spring AI provides two methods for configuring structured output:
+
+[cols="2,3,3", options="header"]
+|====
+| Method | Use Case | Example
+
+| `.format("json")`
+| Simple JSON mode - any structure
+| `.format("json")`
+
+| `.outputSchema(jsonSchemaString)`
+| JSON Schema mode - enforced structure
+| `.outputSchema("{\"type\":\"object\",...}")`
+
+| `.format(mapObject)`
+| JSON Schema mode - alternative API
+| `.format(new ObjectMapper().readValue(schema, Map.class))`
+|====
+
+TIP: For most use cases, use `.outputSchema(jsonSchemaString)` for JSON Schema validation or `.format("json")` for simple JSON output.
+The `.format(Map)` approach is also supported but requires manual JSON parsing.
+
 == OpenAI API Compatibility
 
 Ollama is OpenAI API-compatible and you can use the xref:api/chat/openai-chat.adoc[Spring AI OpenAI] client to talk to Ollama and use tools.
 For this, you need to configure the OpenAI base URL to your Ollama instance: `spring.ai.openai.chat.base-url=http://localhost:11434` and select one of the provided Ollama models: `spring.ai.openai.chat.options.model=mistral`.
 
+TIP: When using the OpenAI client with Ollama, you can pass Ollama-specific parameters (like `top_k`, `repeat_penalty`, `num_predict`) using the xref:api/chat/openai-chat.adoc#openai-compatible-servers[`extraBody` option].
+This allows you to leverage Ollama's full capabilities while using the OpenAI client.
+
 image::spring-ai-ollama-over-openai.jpg[Ollama OpenAI API compatibility, 800, 600, align="center"]
+
+=== Reasoning Content via OpenAI Compatibility
+
+Ollama's OpenAI-compatible endpoint supports the `reasoning_content` field for thinking-capable models (such as `qwen3:*-thinking`, `deepseek-r1`, `deepseek-v3.1`).
+When using the Spring AI OpenAI client with Ollama, the model's reasoning process is automatically captured and made available through the response metadata.
+
+NOTE: This is an alternative to using Ollama's native thinking mode API (documented in <<Thinking Mode (Reasoning)>> above).
+Both approaches work with Ollama's thinking models, but the OpenAI-compatible endpoint uses the `reasoning_content` field name instead of `thinking`.
+
+Here's an example of accessing reasoning content from Ollama through the OpenAI client:
+
+[source,java]
+----
+// Configure Spring AI OpenAI client to point to Ollama
+@Configuration
+class OllamaConfig {
+    @Bean
+    OpenAiChatModel ollamaChatModel() {
+        var openAiApi = new OpenAiApi("http://localhost:11434", "ollama");
+        return new OpenAiChatModel(openAiApi,
+            OpenAiChatOptions.builder()
+                .model("deepseek-r1")  // or qwen3, deepseek-v3.1, etc.
+                .build());
+    }
+}
+
+// Use the model with thinking-capable models
+ChatResponse response = chatModel.call(
+    new Prompt("How many letter 'r' are in the word 'strawberry'?"));
+
+// Access the reasoning process from metadata
+String reasoning = response.getResult().getMetadata().get("reasoningContent");
+if (reasoning != null && !reasoning.isEmpty()) {
+    System.out.println("Model's reasoning process:");
+    System.out.println(reasoning);
+}
+
+// Get the final answer
+String answer = response.getResult().getOutput().getContent();
+System.out.println("Answer: " + answer);
+----
+
+TIP: Thinking-capable models in Ollama (0.12+) automatically enable thinking mode when accessed through the OpenAI-compatible endpoint.
+The reasoning content is captured automatically without requiring additional configuration.
 
 Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
 

@@ -97,6 +97,9 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.region     | AWS region to use. | us-east-1
 | spring.ai.bedrock.aws.access-key | AWS access key.  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+| spring.ai.bedrock.aws.profile.name | AWS profile name.  | -
+| spring.ai.bedrock.aws.profile.credentials-path | AWS credentials file path.  | -
+| spring.ai.bedrock.aws.profile.configuration-path | AWS config file path.  | -
 |====
 
 [NOTE]
@@ -126,7 +129,7 @@ Model ID values can also be found in the https://docs.aws.amazon.com/bedrock/lat
 == Runtime Options [[embedding-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-bedrock/src/main/java/org/springframework/ai/bedrock/titan/BedrockTitanEmbeddingOptions.java[BedrockTitanEmbeddingOptions.java] provides model configurations, such as `input-type`.
-On start-up, the default options can be configured with the `BedrockTitanEmbeddingModel(api).withInputType(type)` method or the `spring.ai.bedrock.titan.embedding.input-type` properties.
+On start-up, the default options can be configured with the `BedrockTitanEmbeddingOptions.builder().inputType(type).build()` method or the `spring.ai.bedrock.titan.embedding.input-type` properties.
 
 At run-time you can override the default options by adding new, request specific, options to the `EmbeddingRequest` call.
 For example to override the default temperature for a specific request:
@@ -136,7 +139,7 @@ For example to override the default temperature for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         BedrockTitanEmbeddingOptions.builder()
-        	.withInputType(InputType.TEXT)
+        .inputType(InputType.TEXT)
         .build()));
 ----
 

@@ -154,7 +154,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.api-key   | Optional override for the `spring.ai.openai.api-key` to provide a chat-specific API Key. |  -
 | spring.ai.openai.chat.organization-id | Optionally, you can specify which organization to use for an API request. |  -
 | spring.ai.openai.chat.project-id      | Optionally, you can specify which project to use for an API request. |  -
-| spring.ai.openai.chat.options.model | Name of the OpenAI chat model to use. You can select between models such as: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`, and more. See the https://platform.openai.com/docs/models[models] page for more information. | `gpt-4o-mini`
+| spring.ai.openai.chat.options.model | Name of the OpenAI chat model to use. You can select between models such as: `gpt-5-mini`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`, and more. See the https://platform.openai.com/docs/models[models] page for more information. | `gpt-5-mini`
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.openai.chat.options.logitBias | Modify the likelihood of specified tokens appearing in the completion. | -
@@ -182,11 +182,14 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.options.user | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
 | spring.ai.openai.chat.options.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
 | spring.ai.openai.chat.options.parallel-tool-calls | Whether to enable link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[parallel function calling] during tool use. | true
+| spring.ai.openai.chat.options.prompt-cache-key | A cache key used by OpenAI to optimize cache hit rates for similar requests. Improves latency and reduces costs. Replaces the deprecated `user` field for caching purposes. link:https://platform.openai.com/docs/guides/prompt-caching[Learn more]. | -
+| spring.ai.openai.chat.options.safety-identifier | A stable identifier to help OpenAI detect users violating usage policies. Should be a hashed value (e.g., hashed username or email). Replaces the deprecated `user` field for safety tracking. link:https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers[Learn more]. | -
 | spring.ai.openai.chat.options.http-headers | Optional HTTP headers to be added to the chat completion request. To override the `api-key` you need to use an `Authorization` header key, and you have to prefix the key value with the `Bearer` prefix. | -
 | spring.ai.openai.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
 | spring.ai.openai.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.openai.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 | spring.ai.openai.chat.options.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
+| spring.ai.openai.chat.options.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API ignores unknown parameters. See <<openai-compatible-servers>> for details. | -
 |====
 
 [NOTE]
@@ -758,3 +761,252 @@ This is useful when you need to:
 * Retrieve the API key from a secure key store
 * Rotate API keys dynamically
 * Implement custom API key selection logic
+
+== Using Extra Parameters with OpenAI-Compatible Servers [[openai-compatible-servers]]
+
+OpenAI-compatible inference servers like vLLM, Ollama, and others often support additional parameters beyond those defined in OpenAI's standard API.
+For example, these servers may accept parameters such as `top_k`, `repetition_penalty`, or other sampling controls that the official OpenAI API does not recognize.
+
+The `extraBody` option allows you to pass arbitrary parameters to these servers.
+Any key-value pairs provided in `extraBody` are included at the top level of the JSON request, enabling you to leverage server-specific features while using Spring AI's OpenAI client.
+
+[IMPORTANT]
+====
+The `extraBody` parameter is intended for use with OpenAI-compatible servers, not the official OpenAI API.
+While the official OpenAI API will ignore unknown parameters, they serve no purpose there.
+Always consult your specific server's documentation to determine which parameters are supported.
+====
+
+=== Configuration with Properties
+
+You can configure extra parameters using Spring Boot properties.
+Each property under `spring.ai.openai.chat.options.extra-body` becomes a top-level parameter in the request:
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000
+spring.ai.openai.chat.options.model=meta-llama/Llama-3-8B-Instruct
+spring.ai.openai.chat.options.temperature=0.7
+spring.ai.openai.chat.options.extra-body.top_k=50
+spring.ai.openai.chat.options.extra-body.repetition_penalty=1.1
+----
+
+This configuration would produce a JSON request like:
+
+[source,json]
+----
+{
+  "model": "meta-llama/Llama-3-8B-Instruct",
+  "temperature": 0.7,
+  "top_k": 50,
+  "repetition_penalty": 1.1,
+  "messages": [...]
+}
+----
+
+=== Runtime Configuration with Builder
+
+You can also specify extra parameters at runtime using the options builder:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Tell me a creative story",
+        OpenAiChatOptions.builder()
+            .model("meta-llama/Llama-3-8B-Instruct")
+            .temperature(0.7)
+            .extraBody(Map.of(
+                "top_k", 50,
+                "repetition_penalty", 1.1,
+                "frequency_penalty", 0.5
+            ))
+            .build()
+    ));
+----
+
+=== Example: vLLM Server
+
+When running vLLM with a Llama model, you might want to use sampling parameters specific to vLLM:
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000
+spring.ai.openai.chat.options.model=meta-llama/Llama-3-70B-Instruct
+spring.ai.openai.chat.options.extra-body.top_k=40
+spring.ai.openai.chat.options.extra-body.top_p=0.95
+spring.ai.openai.chat.options.extra-body.repetition_penalty=1.05
+spring.ai.openai.chat.options.extra-body.min_p=0.05
+----
+
+Refer to the link:https://docs.vllm.ai/en/latest/[vLLM documentation] for a complete list of supported sampling parameters.
+
+=== Example: Ollama Server
+
+When using Ollama through the OpenAI-compatible endpoint, you can pass Ollama-specific parameters:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .model("llama3.2")
+    .extraBody(Map.of(
+        "num_predict", 100,
+        "top_k", 40,
+        "repeat_penalty", 1.1
+    ))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Generate text", options));
+----
+
+Consult the link:https://github.com/ollama/ollama/blob/main/docs/api.md[Ollama API documentation] for available parameters.
+
+[NOTE]
+====
+The `extraBody` parameter accepts any `Map<String, Object>`, allowing you to pass whatever parameters your target server supports.
+Spring AI does not validate these parameters—they are passed directly to the server.
+This design provides maximum flexibility for working with diverse OpenAI-compatible implementations.
+====
+
+=== Reasoning Content from Reasoning Models
+
+Some OpenAI-compatible servers that support reasoning models (such as DeepSeek R1, vLLM with reasoning parsers) expose the model's internal chain of thought via a `reasoning_content` field in their API responses.
+This field contains the step-by-step reasoning process the model used to arrive at its final answer.
+
+Spring AI maps this field from the JSON response to the `reasoningContent` key in the AssistantMessage metadata.
+
+[IMPORTANT]
+====
+**Important distinction about `reasoning_content` availability:**
+
+* **OpenAI-compatible servers** (DeepSeek, vLLM): Expose `reasoning_content` in Chat Completions API responses ✅
+* **Official OpenAI models** (GPT-5, o1, o3): Do **NOT** expose reasoning text in Chat Completions API responses ❌
+
+Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
+They only expose `reasoning_tokens` count in usage statistics.
+To access actual reasoning text from official OpenAI models, you must use OpenAI's Responses API (a separate endpoint not currently supported by this client).
+
+**Fallback behavior:** When `reasoning_content` is not provided by the server (e.g., official OpenAI Chat Completions), the `reasoningContent` metadata field will be an empty string.
+====
+
+==== Accessing Reasoning Content
+
+When using a compatible server, you can access the reasoning content from the response metadata.
+
+**Using ChatModel directly:**
+
+[source,java]
+----
+// Configure to use DeepSeek R1 or vLLM with a reasoning model
+ChatResponse response = chatModel.call(
+    new Prompt("Which number is larger: 9.11 or 9.8?")
+);
+
+// Get the assistant message
+AssistantMessage message = response.getResult().getOutput();
+
+// Access the reasoning content from metadata
+String reasoning = message.getMetadata().get("reasoningContent");
+if (reasoning != null && !reasoning.isEmpty()) {
+    System.out.println("Model's reasoning process:");
+    System.out.println(reasoning);
+}
+
+// The final answer is in the regular content
+System.out.println("\nFinal answer:");
+System.out.println(message.getContent());
+----
+
+**Using ChatClient:**
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.create(chatModel);
+
+String result = chatClient.prompt()
+    .user("Which number is larger: 9.11 or 9.8?")
+    .call()
+    .chatResponse()
+    .getResult()
+    .getOutput()
+    .getContent();
+
+// To access reasoning content with ChatClient, retrieve the full response
+ChatResponse response = chatClient.prompt()
+    .user("Which number is larger: 9.11 or 9.8?")
+    .call()
+    .chatResponse();
+
+AssistantMessage message = response.getResult().getOutput();
+String reasoning = message.getMetadata().get("reasoningContent");
+----
+
+==== Streaming Reasoning Content
+
+When using streaming responses, reasoning content is accumulated across chunks just like regular message content:
+
+[source,java]
+----
+Flux<ChatResponse> responseFlux = chatModel.stream(
+    new Prompt("Solve this logic puzzle...")
+);
+
+StringBuilder reasoning = new StringBuilder();
+StringBuilder answer = new StringBuilder();
+
+responseFlux.subscribe(chunk -> {
+    AssistantMessage message = chunk.getResult().getOutput();
+
+    // Accumulate reasoning if present
+    String reasoningChunk = message.getMetadata().get("reasoningContent");
+    if (reasoningChunk != null) {
+        reasoning.append(reasoningChunk);
+    }
+
+    // Accumulate the final answer
+    if (message.getContent() != null) {
+        answer.append(message.getContent());
+    }
+});
+----
+
+==== Example: DeepSeek R1
+
+DeepSeek R1 is a reasoning model that exposes its internal reasoning process:
+
+[source,properties]
+----
+spring.ai.openai.api-key=${DEEPSEEK_API_KEY}
+spring.ai.openai.base-url=https://api.deepseek.com
+spring.ai.openai.chat.options.model=deepseek-reasoner
+----
+
+When you make requests to DeepSeek R1, responses will include both the reasoning content (the model's thought process) and the final answer.
+
+Refer to the link:https://api-docs.deepseek.com/guides/reasoning_model[DeepSeek API documentation] for more details on reasoning models.
+
+==== Example: vLLM with Reasoning Parser
+
+vLLM supports reasoning models when configured with a reasoning parser:
+
+[source,bash]
+----
+vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+    --enable-reasoning \
+    --reasoning-parser deepseek_r1
+----
+
+[source,properties]
+----
+spring.ai.openai.base-url=http://localhost:8000
+spring.ai.openai.chat.options.model=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+----
+
+Consult the link:https://docs.vllm.ai/en/latest/features/reasoning_outputs.html[vLLM reasoning outputs documentation] for supported reasoning models and parsers.
+
+[NOTE]
+====
+The availability of `reasoning_content` depends entirely on the inference server you're using.
+Not all OpenAI-compatible servers expose reasoning content, even when using reasoning-capable models.
+Always refer to your server's API documentation to understand what fields are available in responses.
+====

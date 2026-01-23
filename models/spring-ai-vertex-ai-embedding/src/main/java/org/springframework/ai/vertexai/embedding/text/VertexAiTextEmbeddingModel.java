@@ -50,7 +50,7 @@ import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDeta
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextInstanceBuilder;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingUtils.TextParametersBuilder;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -138,8 +138,8 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 					PredictRequest.Builder predictRequestBuilder = getPredictRequestBuilder(request, endpointName,
 							(VertexAiTextEmbeddingOptions) options);
 
-					PredictResponse embeddingResponse = this.retryTemplate
-						.execute(context -> getPredictResponse(client, predictRequestBuilder));
+					PredictResponse embeddingResponse = RetryUtils.execute(this.retryTemplate,
+							() -> getPredictResponse(client, predictRequestBuilder));
 
 					int index = 0;
 					int totalTokenCount = 0;

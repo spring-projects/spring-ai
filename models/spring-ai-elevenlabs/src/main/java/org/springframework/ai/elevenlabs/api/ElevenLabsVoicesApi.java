@@ -32,8 +32,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -56,13 +54,13 @@ public class ElevenLabsVoicesApi {
 	 * @param restClientBuilder A builder for the Spring RestClient.
 	 * @param responseErrorHandler A custom error handler for API responses.
 	 */
-	public ElevenLabsVoicesApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+	public ElevenLabsVoicesApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
+			ResponseErrorHandler responseErrorHandler) {
 		Consumer<HttpHeaders> jsonContentHeaders = h -> {
 			if (!(apiKey instanceof NoopApiKey)) {
 				h.set("xi-api-key", apiKey.getValue());
 			}
-			h.addAll(headers);
+			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -71,6 +69,14 @@ public class ElevenLabsVoicesApi {
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
+	}
+
+	/**
+	 * Create a new ElevenLabs Voices API client.
+	 * @param restClient Spring RestClient instance.
+	 */
+	public ElevenLabsVoicesApi(RestClient restClient) {
+		this.restClient = restClient;
 	}
 
 	public static Builder builder() {
@@ -399,7 +405,7 @@ public class ElevenLabsVoicesApi {
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -423,7 +429,7 @@ public class ElevenLabsVoicesApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;

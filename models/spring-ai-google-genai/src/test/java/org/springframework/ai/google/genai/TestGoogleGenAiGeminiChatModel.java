@@ -20,7 +20,7 @@ import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 /**
  * @author Mark Pollack

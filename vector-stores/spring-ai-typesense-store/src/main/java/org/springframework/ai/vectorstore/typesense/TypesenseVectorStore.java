@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.typesense.api.Client;
@@ -40,7 +41,7 @@ import org.typesense.model.MultiSearchSearchesParameter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -50,7 +51,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -141,7 +141,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		List<HashMap<String, Object>> documentList = documents.stream().map(document -> {
@@ -249,8 +249,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 				.stream()
 				.flatMap(searchResult -> searchResult.getHits().stream().map(hit -> {
 					Map<String, Object> rawDocument = hit.getDocument();
-					String docId = rawDocument.get(DOC_ID_FIELD_NAME).toString();
-					String content = rawDocument.get(CONTENT_FIELD_NAME).toString();
+					String docId = (String) rawDocument.get(DOC_ID_FIELD_NAME);
+					Assert.state(docId != null, "document id must not be null");
+					String content = (String) rawDocument.getOrDefault(CONTENT_FIELD_NAME, "");
 					Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map
 							? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
 					metadata.put(DocumentMetadata.DISTANCE.value(), hit.getVectorDistance());
@@ -352,8 +353,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		}
 	}
 
-	@Nullable
-	Map<String, Object> getCollectionInfo() {
+	@Nullable Map<String, Object> getCollectionInfo() {
 		try {
 			CollectionResponse retrievedCollection = this.client.collections(this.collectionName).retrieve();
 			return Map.of("name", retrievedCollection.getName(), "num_documents",

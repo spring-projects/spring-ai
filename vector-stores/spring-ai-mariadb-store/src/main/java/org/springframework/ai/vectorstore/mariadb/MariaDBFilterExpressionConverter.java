@@ -21,6 +21,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into JSON metadata filter expression format.
@@ -38,6 +39,7 @@ public class MariaDBFilterExpressionConverter extends AbstractFilterExpressionCo
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected expression.right to be non null");
 		this.convertOperand(expression.left(), context);
 		context.append(getOperationSymbol(expression));
 		this.convertOperand(expression.right(), context);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails
 import org.springframework.ai.google.genai.text.GoogleGenAiTextEmbeddingModel;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -31,7 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 /**
  * Auto-configuration for Google GenAI Text Embedding.
@@ -39,6 +40,7 @@ import org.springframework.retry.support.RetryTemplate;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Yanming Zhou
  * @since 1.1.0
  */
 @AutoConfiguration(
@@ -53,12 +55,13 @@ public class GoogleGenAiTextEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	public GoogleGenAiTextEmbeddingModel googleGenAiTextEmbedding(
 			GoogleGenAiEmbeddingConnectionDetails connectionDetails,
-			GoogleGenAiTextEmbeddingProperties textEmbeddingProperties, RetryTemplate retryTemplate,
+			GoogleGenAiTextEmbeddingProperties textEmbeddingProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var embeddingModel = new GoogleGenAiTextEmbeddingModel(connectionDetails, textEmbeddingProperties.getOptions(),
-				retryTemplate, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 

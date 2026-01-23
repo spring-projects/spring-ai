@@ -25,7 +25,6 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.util.ParsingUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -54,7 +53,6 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	}
 
 	@Override
-	@Nullable
 	public String getContextualName(AdvisorObservationContext context) {
 		Assert.notNull(context, "context cannot be null");
 		return ParsingUtils.reConcatenateCamelCase(context.getAdvisorName(), "_")

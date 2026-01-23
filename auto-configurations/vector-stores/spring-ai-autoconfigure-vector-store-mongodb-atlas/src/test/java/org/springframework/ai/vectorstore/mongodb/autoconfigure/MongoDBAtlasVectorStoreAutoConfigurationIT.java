@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.mongodb.ConnectionString;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -30,7 +31,6 @@ import org.testcontainers.mongodb.MongoDBAtlasLocalContainer;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -38,9 +38,10 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration;
+import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
+import org.springframework.boot.mongodb.autoconfigure.MongoConnectionDetails;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -53,26 +54,25 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ignacio López
+ * @author Ilayaperumal Gopinathan
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Container
-	static MongoDBAtlasLocalContainer mongo = new MongoDBAtlasLocalContainer("mongodb/mongodb-atlas-local:7.0.9");
+	static MongoDBAtlasLocalContainer mongo = new MongoDBAtlasLocalContainer("mongodb/mongodb-atlas-local:8.0.0");
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withUserConfiguration(Config.class)
-		.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, MongoDataAutoConfiguration.class,
-				MongoDBAtlasVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
-		.withPropertyValues("spring.data.mongodb.database=springaisample",
-				"spring.ai.vectorstore.mongodb.initialize-schema=true",
-				"spring.ai.vectorstore.mongodb.collection-name=test_collection",
-				// "spring.ai.vectorstore.mongodb.path-name=testembedding",
-				"spring.ai.vectorstore.mongodb.index-name=text_index",
-				"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
-				String.format("spring.data.mongodb.uri=" + mongo.getConnectionString()));
+	private ApplicationContextRunner getContextRunner() {
+		return new ApplicationContextRunner().withUserConfiguration(Config.class)
+			.withConfiguration(AutoConfigurations.of(MongoAutoConfiguration.class, DataMongoAutoConfiguration.class,
+					MongoDBAtlasVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
+					OpenAiEmbeddingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.vectorstore.mongodb.initialize-schema=true",
+					"spring.ai.vectorstore.mongodb.collection-name=test_collection",
+					"spring.ai.vectorstore.mongodb.index-name=text_index",
+					"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"));
+	}
 
 	List<Document> documents = List.of(
 			new Document("Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!! Spring AI rocks!!",
@@ -90,7 +90,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void addAndSearch() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 			TestObservationRegistry observationRegistry = context.getBean(TestObservationRegistry.class);
@@ -133,7 +133,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void addAndSearchWithFilters() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.mongodb.metadata-fields-to-filter=foo")
+		getContextRunner().withPropertyValues("spring.ai.vectorstore.mongodb.metadata-fields-to-filter=foo")
 			.run(context -> {
 
 				VectorStore vectorStore = context.getBean(VectorStore.class);
@@ -165,7 +165,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void autoConfigurationDisabledWhenTypeIsNone() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
+		getContextRunner().withPropertyValues("spring.ai.vectorstore.type=none").run(context -> {
 			assertThat(context.getBeansOfType(MongoDBAtlasVectorStoreProperties.class)).isEmpty();
 			assertThat(context.getBeansOfType(MongoDBAtlasVectorStore.class)).isEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isEmpty();
@@ -174,7 +174,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void autoConfigurationEnabledByDefault() {
-		this.contextRunner.run(context -> {
+		getContextRunner().run(context -> {
 			assertThat(context.getBeansOfType(MongoDBAtlasVectorStoreProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(MongoDBAtlasVectorStore.class);
@@ -183,7 +183,7 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 
 	@Test
 	public void autoConfigurationEnabledWhenTypeIsMongodbAtlas() {
-		this.contextRunner.withPropertyValues("spring.ai.vectorstore.type=mongodb-atlas").run(context -> {
+		getContextRunner().withPropertyValues("spring.ai.vectorstore.type=mongodb-atlas").run(context -> {
 			assertThat(context.getBeansOfType(MongoDBAtlasVectorStoreProperties.class)).isNotEmpty();
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(MongoDBAtlasVectorStore.class);
@@ -196,6 +196,19 @@ class MongoDBAtlasVectorStoreAutoConfigurationIT {
 		@Bean
 		public TestObservationRegistry observationRegistry() {
 			return TestObservationRegistry.create();
+		}
+
+		@Bean
+		public MongoConnectionDetails mongoConnectionDetails() {
+			return new MongoConnectionDetails() {
+				@Override
+				public ConnectionString getConnectionString() {
+					// Add database name to the connection string
+					String baseUri = mongo.getConnectionString();
+					String uriWithDb = baseUri.replace("/?", "/springaisample?");
+					return new ConnectionString(uriWithDb);
+				}
+			};
 		}
 
 	}

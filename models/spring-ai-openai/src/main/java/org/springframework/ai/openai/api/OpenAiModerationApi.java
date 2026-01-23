@@ -19,8 +19,6 @@ package org.springframework.ai.openai.api;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.NoopApiKey;
@@ -31,8 +29,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -49,29 +45,27 @@ public class OpenAiModerationApi {
 
 	public static final String DEFAULT_MODERATION_MODEL = "omni-moderation-latest";
 
-	private static final String DEFAULT_BASE_URL = "https://api.openai.com";
+	private final String moderationPath;
 
 	private final RestClient restClient;
-
-	private final ObjectMapper objectMapper;
 
 	/**
 	 * Create a new OpenAI Moderation API with the provided base URL.
 	 * @param baseUrl the base URL for the OpenAI API.
 	 * @param apiKey OpenAI apiKey.
+	 * @param moderationPath The path to the moderation endpoint.
 	 * @param restClientBuilder the rest client builder to use.
 	 */
-	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, MultiValueMap<String, String> headers,
+	public OpenAiModerationApi(String baseUrl, ApiKey apiKey, String moderationPath, HttpHeaders headers,
 			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
-		this.objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		this.moderationPath = moderationPath;
 
 		// @formatter:off
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
 			.defaultHeaders(h -> {
 				h.setContentType(MediaType.APPLICATION_JSON);
-				h.addAll(headers);
+				h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 			})
 			.defaultStatusHandler(responseErrorHandler)
 			.defaultRequest(requestHeadersSpec -> {
@@ -82,12 +76,22 @@ public class OpenAiModerationApi {
 			.build(); // @formatter:on
 	}
 
+	/**
+	 * Create a new OpenAI Moderation API with the provided rest client.
+	 * @param moderationPath The path to the moderation endpoint.
+	 * @param restClient the rest client instance to use.
+	 */
+	public OpenAiModerationApi(String moderationPath, RestClient restClient) {
+		this.moderationPath = moderationPath;
+		this.restClient = restClient;
+	}
+
 	public ResponseEntity<OpenAiModerationResponse> createModeration(OpenAiModerationRequest openAiModerationRequest) {
 		Assert.notNull(openAiModerationRequest, "Moderation request cannot be null.");
 		Assert.hasLength(openAiModerationRequest.prompt(), "Prompt cannot be empty.");
 
 		return this.restClient.post()
-			.uri("v1/moderations")
+			.uri(this.moderationPath)
 			.body(openAiModerationRequest)
 			.retrieve()
 			.toEntity(OpenAiModerationResponse.class);
@@ -174,11 +178,15 @@ public class OpenAiModerationApi {
 	 */
 	public static final class Builder {
 
+		private static final String DEFAULT_MODERATION_PATH = "/v1/moderations";
+
 		private String baseUrl = OpenAiApiConstants.DEFAULT_BASE_URL;
 
 		private ApiKey apiKey;
 
-		private MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		private String moderationPath = DEFAULT_MODERATION_PATH;
+
+		private HttpHeaders headers = new HttpHeaders();
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -202,7 +210,13 @@ public class OpenAiModerationApi {
 			return this;
 		}
 
-		public Builder headers(MultiValueMap<String, String> headers) {
+		public Builder moderationPath(String moderationPath) {
+			Assert.hasText(moderationPath, "moderationPath cannot be null or empty");
+			this.moderationPath = moderationPath;
+			return this;
+		}
+
+		public Builder headers(HttpHeaders headers) {
 			Assert.notNull(headers, "headers cannot be null");
 			this.headers = headers;
 			return this;
@@ -222,8 +236,8 @@ public class OpenAiModerationApi {
 
 		public OpenAiModerationApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
-			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.headers, this.restClientBuilder,
-					this.responseErrorHandler);
+			return new OpenAiModerationApi(this.baseUrl, this.apiKey, this.moderationPath, this.headers,
+					this.restClientBuilder, this.responseErrorHandler);
 		}
 
 	}

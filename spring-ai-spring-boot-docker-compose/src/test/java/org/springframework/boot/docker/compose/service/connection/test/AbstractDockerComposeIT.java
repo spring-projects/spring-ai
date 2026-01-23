@@ -30,9 +30,8 @@ import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringApplicationShutdownHandlers;
-import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
-import org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryAutoConfiguration;
 import org.springframework.boot.testsupport.DisabledIfProcessUnavailable;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -73,6 +72,7 @@ public abstract class AbstractDockerComposeIT {
 
 	protected final <T extends ConnectionDetails> T run(Class<T> type) {
 		SpringApplication application = new SpringApplication(Config.class);
+		application.setWebApplicationType(WebApplicationType.NONE);
 		Map<String, Object> properties = new LinkedHashMap<>();
 		properties.put("spring.docker.compose.skip.in-tests", "false");
 		properties.put("spring.docker.compose.file",
@@ -97,7 +97,6 @@ public abstract class AbstractDockerComposeIT {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	@ImportAutoConfiguration(ServletWebServerFactoryAutoConfiguration.class)
 	static class Config {
 
 	}

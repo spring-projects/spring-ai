@@ -43,7 +43,7 @@ public class ZhiPuAiImageApi {
 
 	/**
 	 * Create a new ZhiPuAI Image api with base URL set to
-	 * {@code https://api.ZhiPuAI.com}.
+	 * {@code https://open.bigmodel.cn/api/paas}.
 	 * @param zhiPuAiToken ZhiPuAI apiKey.
 	 */
 	public ZhiPuAiImageApi(String zhiPuAiToken) {

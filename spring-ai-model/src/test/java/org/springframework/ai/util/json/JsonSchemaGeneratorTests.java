@@ -670,6 +670,32 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeWithJSpecifyNullableField() throws JsonProcessingException {
+		String schema = JsonSchemaGenerator.generateForType(JSpecifyNullablePerson.class);
+		String expectedJsonSchema = """
+						{
+						  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+						  "type" : "object",
+						  "properties" : {
+						    "email" : {
+						      "type" : "string"
+						    },
+						    "id" : {
+						      "type" : "integer",
+						      "format" : "int32"
+						    },
+						    "name" : {
+						      "type" : "string"
+						    }
+						  },
+						  "required" : [ "id", "name" ],
+						  "additionalProperties" : false
+						}
+				""";
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
@@ -743,6 +769,10 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record NullablePerson(int id, String name, @Nullable String email) {
+
+	}
+
+	record JSpecifyNullablePerson(int id, String name, @org.jspecify.annotations.Nullable String email) {
 
 	}
 

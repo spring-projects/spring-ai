@@ -46,6 +46,9 @@ public class AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor extend
 		List<Class<?>> types = new ArrayList<>();
 		for (String beanName : beanFactory.getBeanDefinitionNames()) {
 			Class<?> beanClass = beanFactory.getType(beanName);
+			if (beanClass == null) {
+				continue;
+			}
 			Set<Class<? extends Annotation>> classes = this.scan(beanClass);
 			if (!classes.isEmpty()) {
 				types.add(beanClass);

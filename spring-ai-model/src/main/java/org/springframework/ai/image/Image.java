@@ -18,24 +18,26 @@ package org.springframework.ai.image;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 public class Image {
 
 	/**
 	 * The URL where the image can be accessed.
 	 */
-	private String url;
+	private @Nullable String url;
 
 	/**
 	 * Base64 encoded image string.
 	 */
-	private String b64Json;
+	private @Nullable String b64Json;
 
-	public Image(String url, String b64Json) {
+	public Image(@Nullable String url, @Nullable String b64Json) {
 		this.url = url;
 		this.b64Json = b64Json;
 	}
 
-	public String getUrl() {
+	public @Nullable String getUrl() {
 		return this.url;
 	}
 
@@ -43,7 +45,7 @@ public class Image {
 		this.url = url;
 	}
 
-	public String getB64Json() {
+	public @Nullable String getB64Json() {
 		return this.b64Json;
 	}
 

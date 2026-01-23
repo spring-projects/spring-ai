@@ -20,6 +20,10 @@
 		"https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="com.puppycrawl.tools.checkstyle.Checker">
 
+	<module name="JavadocPackage">
+		<message key="javadoc.packageInfo" value="Missing package-info.java file. All packages should have a package-info.java file, and annotate the whole package with JSpecify @NullMarked." />
+	</module>
+
 	<!-- For total suppression (without specifying checks) -->
 	<module name="com.puppycrawl.tools.checkstyle.filters.SuppressWithPlainTextCommentFilter">
 		<property name="offCommentFormat" value="CHECKSTYLE.OFF"/>
@@ -45,10 +49,7 @@
 		</module>
 		<module name="com.puppycrawl.tools.checkstyle.checks.annotation.MissingOverrideCheck" />
 		<module name="com.puppycrawl.tools.checkstyle.checks.annotation.PackageAnnotationCheck" />
-		<module name="com.puppycrawl.tools.checkstyle.checks.annotation.AnnotationLocationCheck">
-			<property name="allowSamelineSingleParameterlessAnnotation"
-					  value="false" />
-		</module>
+		<module name="com.puppycrawl.tools.checkstyle.checks.annotation.AnnotationLocationCheck" />
 
 		<!-- Block Checks -->
 		<module name="com.puppycrawl.tools.checkstyle.checks.blocks.EmptyBlockCheck">
@@ -109,6 +110,12 @@
 					  value="org.springframework.ai.chat.messages.MessageType.*, org.springframework.ai.model.transformer.KeywordMetadataEnricher.*, org.springframework.ai.chat.messages.AssistantMessage.ToolCall, org.springframework.ai.chat.messages.AbstractMessage.*, org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.*, org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters.Voice.*, org.springframework.ai.mistralai.api.MistralAiModerationApi.*, org.springframework.ai.util.LoggingMarkers.*, org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.*, org.springframework.ai.test.vectorstore.ObservationTestUtil.*, org.springframework.ai.autoconfigure.vectorstore.observation.ObservationTestUtil.*, org.awaitility.Awaitility.*, org.springframework.ai.aot.AiRuntimeHints.*, org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders.*, org.springframework.ai.image.observation.ImageModelObservationDocumentation.*, org.springframework.ai.observation.embedding.EmbeddingModelObservationDocumentation.*, org.springframework.aot.hint.predicate.RuntimeHintsPredicates.*, org.springframework.ai.vectorstore.filter.Filter.ExpressionType.*, org.springframework.ai.chat.observation.ChatModelObservationDocumentation.*, org.assertj.core.groups.Tuple.*, org.assertj.core.api.AssertionsForClassTypes.*, org.assertj.core.api.InstanceOfAssertFactories.*, org.junit.jupiter.api.Assertions.*, org.assertj.core.api.Assertions.*, org.junit.Assert.*, org.junit.Assume.*, org.junit.internal.matchers.ThrowableMessageMatcher.*, org.hamcrest.CoreMatchers.*, org.hamcrest.Matchers.*, org.springframework.boot.configurationprocessor.ConfigurationMetadataMatchers.*, org.springframework.boot.configurationprocessor.TestCompiler.*, org.springframework.boot.test.autoconfigure.AutoConfigurationImportedCondition.*, org.mockito.Mockito.*, org.mockito.BDDMockito.*, org.mockito.Matchers.*, org.mockito.ArgumentMatchers.*, org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.*, org.springframework.restdocs.hypermedia.HypermediaDocumentation.*, org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*, org.springframework.test.web.servlet.result.MockMvcResultMatchers.*, org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.*, org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*, org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.*, org.springframework.hateoas.mvc.ControllerLinkBuilder.linkTo, org.springframework.test.web.client.match.MockRestRequestMatchers.*, org.springframework.test.web.client.response.MockRestResponseCreators.*, org.springframework.web.reactive.function.server.RequestPredicates.*, org.springframework.web.reactive.function.server.RouterFunctions.*, org.springframework.test.web.servlet.setup.MockMvcBuilders.*"/>
 		</module>
 		<module name="com.puppycrawl.tools.checkstyle.checks.imports.IllegalImportCheck" />
+		<module name="com.puppycrawl.tools.checkstyle.checks.imports.IllegalImportCheck">
+			<property name="id" value="bannedNullabilityImports"/>
+			<property name="regexp" value="true"/>
+			<!-- Rejects all NonNull, Nonnull, and Nullable types that are NOT in the org.jspecify.annotations package. -->
+			<property name="illegalClasses" value="^(?!org\.jspecify\.annotations).*(Non[Nn]ull|Nullable)$"/>
+		</module>
 		<module name="com.puppycrawl.tools.checkstyle.checks.imports.RedundantImportCheck" />
 		<module name="com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck">
 			<property name="processJavadoc" value="true" />

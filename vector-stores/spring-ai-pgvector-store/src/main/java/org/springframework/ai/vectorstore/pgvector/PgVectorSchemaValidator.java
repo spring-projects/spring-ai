@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,13 +34,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-public class PgVectorSchemaValidator {
+class PgVectorSchemaValidator {
 
 	private static final Logger logger = LoggerFactory.getLogger(PgVectorSchemaValidator.class);
 
 	private final JdbcTemplate jdbcTemplate;
 
-	public PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
+	PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
@@ -64,7 +65,7 @@ public class PgVectorSchemaValidator {
 
 	}
 
-	public boolean isTableExists(String schemaName, String tableName) {
+	boolean isTableExists(String schemaName, String tableName) {
 		String sql = "SELECT 1 FROM information_schema.tables WHERE table_schema = ? AND table_name = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
@@ -104,7 +105,7 @@ public class PgVectorSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT column_name, data_type FROM information_schema.columns "
 					+ "WHERE table_schema = ? AND table_name = ?";
-			List<Map<String, Object>> columns = this.jdbcTemplate.queryForList(query,
+			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query,
 					new Object[] { schemaName, tableName });
 
 			if (columns.isEmpty()) {

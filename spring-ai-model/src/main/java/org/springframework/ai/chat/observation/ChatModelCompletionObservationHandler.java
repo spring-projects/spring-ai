@@ -49,10 +49,6 @@ public class ChatModelCompletionObservationHandler implements ObservationHandler
 			return List.of();
 		}
 
-		if (!StringUtils.hasText(context.getResponse().getResult().getOutput().getText())) {
-			return List.of();
-		}
-
 		return context.getResponse()
 			.getResults()
 			.stream()

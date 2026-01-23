@@ -35,7 +35,7 @@ import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -213,11 +213,11 @@ public class OpenAiChatModelWithChatResponseMetadataTests {
 	static class Config {
 
 		@Bean
-		public OpenAiApi chatCompletionApi(RestClient.Builder builder, WebClient.Builder webClientBuilder) {
+		public OpenAiApi chatCompletionApi(RestClient.Builder builder) {
 			return OpenAiApi.builder()
 				.apiKey(TEST_API_KEY)
 				.restClientBuilder(builder)
-				.webClientBuilder(webClientBuilder)
+				.webClientBuilder(WebClient.builder())
 				.build();
 		}
 

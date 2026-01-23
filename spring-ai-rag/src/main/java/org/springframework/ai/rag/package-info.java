@@ -25,9 +25,7 @@
  * @see <a href="https://export.arxiv.org/abs/2312.10997">arXiv:2312.10997</a>
  * @see <a href="https://export.arxiv.org/abs/2410.20878">arXiv:2410.20878</a>
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.rag;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

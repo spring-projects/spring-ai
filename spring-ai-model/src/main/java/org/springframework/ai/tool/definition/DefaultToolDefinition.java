@@ -19,6 +19,7 @@ package org.springframework.ai.tool.definition;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.util.Assert;
@@ -53,11 +54,11 @@ public record DefaultToolDefinition(String name, String description, String inpu
 
 	public static final class Builder {
 
-		private String name;
+		private @Nullable String name;
 
-		private String description;
+		private @Nullable String description;
 
-		private String inputSchema;
+		private @Nullable String inputSchema;
 
 		private Map<String, Object> metadata = new HashMap<>();
 
@@ -90,10 +91,12 @@ public record DefaultToolDefinition(String name, String description, String inpu
 		}
 
 		public ToolDefinition build() {
+			Assert.state(this.name != null, "toolName cannot be null or empty");
 			if (!StringUtils.hasText(this.description)) {
-				Assert.hasText(this.name, "toolName cannot be null or empty");
 				this.description = ParsingUtils.reConcatenateCamelCase(this.name, " ");
 			}
+			Assert.state(this.description != null, "toolDescription cannot be null or empty");
+			Assert.state(this.inputSchema != null, "inputSchema cannot be null or empty");
 			return new DefaultToolDefinition(this.name, this.description, this.inputSchema, this.metadata);
 		}
 

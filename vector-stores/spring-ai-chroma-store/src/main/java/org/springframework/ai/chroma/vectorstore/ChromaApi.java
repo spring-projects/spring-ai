@@ -26,7 +26,9 @@ import java.util.regex.Pattern;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
 import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
@@ -34,7 +36,6 @@ import org.springframework.ai.util.json.JsonParser;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -62,14 +63,15 @@ public class ChromaApi {
 	// Regular expression pattern that looks for a message.
 	private static final Pattern MESSAGE_ERROR_PATTERN = Pattern.compile("\"message\":\"(.*?)\"");
 
+	private static final String X_CHROMA_TOKEN_NAME = "x-chroma-token";
+
 	private final ObjectMapper objectMapper;
 
 	private RestClient restClient;
 
-	@Nullable
-	private String keyToken;
+	private @Nullable String keyToken;
 
-	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
+	ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
 
 		this.restClient = restClientBuilder.baseUrl(baseUrl)
 			.defaultHeaders(h -> h.setContentType(MediaType.APPLICATION_JSON))
@@ -124,8 +126,7 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
-	@Nullable
-	public Tenant getTenant(String tenantName) {
+	public @Nullable Tenant getTenant(String tenantName) {
 
 		try {
 			return this.restClient.get()
@@ -134,11 +135,12 @@ public class ChromaApi {
 				.retrieve()
 				.body(Tenant.class);
 		}
+		catch (HttpClientErrorException.NotFound e) {
+			// Tenant not found, return null
+			return null;
+		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			if (String.format("Tenant [%s] not found", tenantName).equals(msg)) {
-				return null;
-			}
 			throw new RuntimeException(msg, e);
 		}
 	}
@@ -153,8 +155,7 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
-	@Nullable
-	public Database getDatabase(String tenantName, String databaseName) {
+	public @Nullable Database getDatabase(String tenantName, String databaseName) {
 
 		try {
 			return this.restClient.get()
@@ -163,11 +164,12 @@ public class ChromaApi {
 				.retrieve()
 				.body(Database.class);
 		}
+		catch (HttpClientErrorException.NotFound e) {
+			// Database not found, return null
+			return null;
+		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			if (msg.startsWith(String.format("Database [%s] not found.", databaseName))) {
-				return null;
-			}
 			throw new RuntimeException(msg, e);
 		}
 	}
@@ -186,8 +188,7 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
-	@Nullable
-	public Collection createCollection(String tenantName, String databaseName,
+	public @Nullable Collection createCollection(String tenantName, String databaseName,
 			CreateCollectionRequest createCollectionRequest) {
 
 		return this.restClient.post()
@@ -213,8 +214,7 @@ public class ChromaApi {
 			.toBodilessEntity();
 	}
 
-	@Nullable
-	public Collection getCollection(String tenantName, String databaseName, String collectionName) {
+	public @Nullable Collection getCollection(String tenantName, String databaseName, String collectionName) {
 
 		try {
 			return this.restClient.get()
@@ -224,17 +224,17 @@ public class ChromaApi {
 				.retrieve()
 				.body(Collection.class);
 		}
+		catch (HttpClientErrorException.NotFound e) {
+			// Collection not found, return null
+			return null;
+		}
 		catch (HttpServerErrorException | HttpClientErrorException e) {
 			String msg = this.getErrorMessage(e);
-			if (String.format("Collection [%s] does not exists", collectionName).equals(msg)) {
-				return null;
-			}
 			throw new RuntimeException(msg, e);
 		}
 	}
 
-	@Nullable
-	public List<Collection> listCollections(String tenantName, String databaseName) {
+	public @Nullable List<Collection> listCollections(String tenantName, String databaseName) {
 
 		return this.restClient.get()
 			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections", tenantName, databaseName)
@@ -268,8 +268,7 @@ public class ChromaApi {
 			.value();
 	}
 
-	@Nullable
-	public Long countEmbeddings(String tenantName, String databaseName, String collectionId) {
+	public @Nullable Long countEmbeddings(String tenantName, String databaseName, String collectionId) {
 
 		return this.restClient.get()
 			.uri("/api/v2/tenants/{tenant_name}/databases/{database_name}/collections/{collection_id}/count",
@@ -279,8 +278,7 @@ public class ChromaApi {
 			.body(Long.class);
 	}
 
-	@Nullable
-	public QueryResponse queryCollection(String tenantName, String databaseName, String collectionId,
+	public @Nullable QueryResponse queryCollection(String tenantName, String databaseName, String collectionId,
 			QueryRequest queryRequest) {
 
 		return this.restClient.post()
@@ -295,8 +293,7 @@ public class ChromaApi {
 	//
 	// Chroma Client API (https://docs.trychroma.com/js_reference/Client)
 	//
-	@Nullable
-	public GetEmbeddingResponse getEmbeddings(String tenantName, String databaseName, String collectionId,
+	public @Nullable GetEmbeddingResponse getEmbeddings(String tenantName, String databaseName, String collectionId,
 			GetEmbeddingsRequest getEmbeddingsRequest) {
 
 		return this.restClient.post()
@@ -311,7 +308,8 @@ public class ChromaApi {
 	// Utils
 	public Map<String, Object> where(String text) {
 		try {
-			return this.objectMapper.readValue(text, Map.class);
+			return this.objectMapper.readValue(text, new TypeReference<Map<String, Object>>() {
+			});
 		}
 		catch (JsonProcessingException e) {
 			throw new RuntimeException(e);
@@ -320,7 +318,7 @@ public class ChromaApi {
 
 	private void httpHeaders(HttpHeaders headers) {
 		if (StringUtils.hasText(this.keyToken)) {
-			headers.setBearerAuth(this.keyToken);
+			headers.set(X_CHROMA_TOKEN_NAME, this.keyToken);
 		}
 	}
 

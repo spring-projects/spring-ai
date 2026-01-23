@@ -31,7 +31,6 @@ import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
@@ -74,7 +73,6 @@ class McpToolsConfigurationTests {
 					McpToolCallbackAutoConfiguration.class,
 					McpClientAutoConfiguration.class,
 					McpClientAnnotationScannerAutoConfiguration.class,
-					McpClientSpecificationFactoryAutoConfiguration.class,
 					// Tool callbacks
 					ToolCallingAutoConfiguration.class,
 					// Chat client for sampling
@@ -122,26 +120,7 @@ class McpToolsConfigurationTests {
 			assertThat(resolver.resolve("customToolCallbackProvider")).isNotNull();
 
 			// MCP toolcallback providers are never added to the resolver
-
-			// Bean graph setup
-			var injectedProviders = (List<ToolCallbackProvider>) ctx.getBean(
-					"org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.toolcallbackprovider.mcp-excluded");
-			// Beans exposed as non-MCP
-			var toolCallbackProvider = (ToolCallbackProvider) ctx.getBean("toolCallbackProvider");
-			var customToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("customToolCallbackProvider");
-			// This is injected in the resolver bean, because it's exposed as a
-			// ToolCallbackProvider, but it's not added to the resolver
-			var genericMcpToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("genericMcpToolCallbackProvider");
-
-			// beans exposed as MCP
-			var mcpToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("mcpToolCallbackProvider");
-			var customMcpToolCallbackProvider = (ToolCallbackProvider) ctx.getBean("customMcpToolCallbackProvider");
-
-			assertThat(injectedProviders)
-				.containsExactlyInAnyOrder(toolCallbackProvider, customToolCallbackProvider,
-						genericMcpToolCallbackProvider)
-				.doesNotContain(mcpToolCallbackProvider, customMcpToolCallbackProvider);
-
+			// Otherwise, they would throw.
 		});
 	}
 
@@ -194,29 +173,27 @@ class McpToolsConfigurationTests {
 			return tcp;
 		}
 
-		// This bean depends on the resolver, to ensure there are no cyclic dependencies
 		@Bean
-		SyncMcpToolCallbackProvider mcpToolCallbackProvider(ToolCallbackResolver resolver) {
+		CustomToolCallbackProvider customToolCallbackProvider() {
+			return new CustomToolCallbackProvider("customToolCallbackProvider");
+		}
+
+		// Ignored by the resolver
+		@Bean
+		SyncMcpToolCallbackProvider mcpToolCallbackProvider() {
 			var tcp = mock(SyncMcpToolCallbackProvider.class);
 			when(tcp.getToolCallbacks())
 				.thenThrow(new RuntimeException("mcpToolCallbackProvider#getToolCallbacks should not be called"));
 			return tcp;
 		}
 
+		// Ignored by the resolver
 		@Bean
-		CustomToolCallbackProvider customToolCallbackProvider() {
-			return new CustomToolCallbackProvider("customToolCallbackProvider");
-		}
-
-		// This bean depends on the resolver, to ensure there are no cyclic dependencies
-		@Bean
-		CustomMcpToolCallbackProvider customMcpToolCallbackProvider(ToolCallbackResolver resolver) {
+		CustomMcpToolCallbackProvider customMcpToolCallbackProvider() {
 			return new CustomMcpToolCallbackProvider();
 		}
 
-		// This will be added to the resolver, because the visible type of the bean
-		// is ToolCallbackProvider ; we would need to actually instantiate the bean
-		// to find out that it is MCP-related
+		// Ignored by the resolver
 		@Bean
 		ToolCallbackProvider genericMcpToolCallbackProvider() {
 			return new CustomMcpToolCallbackProvider();

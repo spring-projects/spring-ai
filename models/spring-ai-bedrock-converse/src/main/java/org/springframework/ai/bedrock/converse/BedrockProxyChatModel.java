@@ -670,6 +670,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<Generation> generations = message.content()
 			.stream()
 			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
+			.filter(content -> content.text() != null)
 			.map(content -> new Generation(
 					AssistantMessage.builder().content(content.text()).properties(Map.of()).build(),
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()))

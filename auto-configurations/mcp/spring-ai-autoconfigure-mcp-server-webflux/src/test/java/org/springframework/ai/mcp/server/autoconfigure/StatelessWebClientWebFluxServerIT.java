@@ -49,8 +49,10 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -78,12 +80,13 @@ public class StatelessWebClientWebFluxServerIT {
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS")
 		.withConfiguration(AutoConfigurations.of(McpServerStatelessAutoConfiguration.class,
-				StatelessToolCallbackConverterAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class, StatelessToolCallbackConverterAutoConfiguration.class,
 				McpServerStatelessWebFluxAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
-				McpClientAutoConfiguration.class, StreamableHttpWebFluxTransportAutoConfiguration.class));
+				McpClientAutoConfiguration.class, McpClientAnnotationScannerAutoConfiguration.class,
+				StreamableHttpWebFluxTransportAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {

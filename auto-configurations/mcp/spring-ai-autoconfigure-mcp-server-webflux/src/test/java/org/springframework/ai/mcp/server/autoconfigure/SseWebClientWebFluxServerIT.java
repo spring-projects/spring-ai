@@ -62,9 +62,11 @@ import reactor.netty.http.server.HttpServer;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.SseWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -88,13 +90,13 @@ public class SseWebClientWebFluxServerIT {
 
 	private static final JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new ObjectMapper());
 
-	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				ToolCallbackConverterAutoConfiguration.class, McpServerSseWebFluxAutoConfiguration.class));
+	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner().withConfiguration(
+			AutoConfigurations.of(McpServerAutoConfiguration.class, McpServerObjectMapperAutoConfiguration.class,
+					ToolCallbackConverterAutoConfiguration.class, McpServerSseWebFluxAutoConfiguration.class));
 
-	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
-				McpClientAutoConfiguration.class, SseWebFluxTransportAutoConfiguration.class));
+	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner().withConfiguration(
+			AutoConfigurations.of(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class,
+					McpClientAnnotationScannerAutoConfiguration.class, SseWebFluxTransportAutoConfiguration.class));
 
 	@Test
 	void clientServerCapabilities() {
@@ -517,6 +519,8 @@ public class SseWebClientWebFluxServerIT {
 					assertThat(progressNotification.total()).isEqualTo(1.0);
 					// assertThat(progressNotification.message()).isEqualTo("processing");
 				});
+
+				mcpClientSpec.capabilities(McpSchema.ClientCapabilities.builder().elicitation().sampling().build());
 			};
 		}
 

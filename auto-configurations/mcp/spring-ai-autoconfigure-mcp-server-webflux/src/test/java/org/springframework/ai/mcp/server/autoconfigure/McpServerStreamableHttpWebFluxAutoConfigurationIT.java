@@ -21,6 +21,7 @@ import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -33,7 +34,8 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
-		.withConfiguration(AutoConfigurations.of(McpServerStreamableHttpWebFluxAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpServerStreamableHttpWebFluxAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {

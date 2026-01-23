@@ -22,6 +22,8 @@ import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
@@ -30,7 +32,7 @@ import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMet
 import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -51,9 +53,11 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @RestClientTest(OpenAiSpeechModelWithSpeechResponseMetadataTests.Config.class)
 public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
-	private static final Float SPEED = 1.0f;
+	private static final Double SPEED = 1.0;
 
-	private static String TEST_API_KEY = "sk-1234567890";
+	private static final String TEST_API_KEY = "sk-1234567890";
+
+	private static final String TEST_SPEECH_PATH = "/v1/audio/speech";
 
 	@Autowired
 	private OpenAiAudioSpeechModel openAiSpeechClient;
@@ -78,14 +82,15 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 			.model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
 			.build();
 
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
-		SpeechResponse response = this.openAiSpeechClient.call(speechPrompt);
+		TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt(
+				"Today is a wonderful day to build something people love!", speechOptions);
+		TextToSpeechResponse response = this.openAiSpeechClient.call(speechPrompt);
 
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(audioBytes).hasSizeGreaterThan(0);
 
-		OpenAiAudioSpeechResponseMetadata speechResponseMetadata = response.getMetadata();
+		OpenAiAudioSpeechResponseMetadata speechResponseMetadata = (OpenAiAudioSpeechResponseMetadata) response
+			.getMetadata();
 		assertThat(speechResponseMetadata).isNotNull();
 		var requestLimit = speechResponseMetadata.getRateLimit();
 		Long requestsLimit = requestLimit.getRequestsLimit();
@@ -130,7 +135,11 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
 		@Bean
 		public OpenAiAudioApi openAiAudioApi(RestClient.Builder builder) {
-			return OpenAiAudioApi.builder().apiKey(new SimpleApiKey(TEST_API_KEY)).restClientBuilder(builder).build();
+			return OpenAiAudioApi.builder()
+				.apiKey(new SimpleApiKey(TEST_API_KEY))
+				.speechPath(TEST_SPEECH_PATH)
+				.restClientBuilder(builder)
+				.build();
 		}
 
 	}

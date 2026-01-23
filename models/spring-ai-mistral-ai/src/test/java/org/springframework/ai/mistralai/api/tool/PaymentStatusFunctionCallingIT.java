@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class PaymentStatusFunctionCallingIT {
 
 	@Test
 	@SuppressWarnings("null")
-	public void toolFunctionCall() throws JsonProcessingException {
+	public void toolFunctionCall() {
 
 		var transactionJsonSchema = """
 				{
@@ -109,8 +109,9 @@ public class PaymentStatusFunctionCallingIT {
 
 		MistralAiApi mistralApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 
-		ResponseEntity<ChatCompletion> response = mistralApi.chatCompletionEntity(new ChatCompletionRequest(messages,
-				MistralAiApi.ChatModel.LARGE.getValue(), List.of(paymentStatusTool, paymentDateTool), ToolChoice.AUTO));
+		ResponseEntity<ChatCompletion> response = mistralApi
+			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.MISTRAL_LARGE.getValue(),
+					List.of(paymentStatusTool, paymentDateTool), ToolChoice.AUTO));
 
 		ChatCompletionMessage responseMessage = response.getBody().choices().get(0).message();
 
@@ -135,7 +136,7 @@ public class PaymentStatusFunctionCallingIT {
 		}
 
 		response = mistralApi
-			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.LARGE.getValue()));
+			.chatCompletionEntity(new ChatCompletionRequest(messages, MistralAiApi.ChatModel.MISTRAL_LARGE.getValue()));
 
 		var responseContent = response.getBody().choices().get(0).message().content();
 		logger.info("Final response: " + responseContent);

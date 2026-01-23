@@ -19,6 +19,8 @@ package org.springframework.ai.embedding;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.Model;
 import org.springframework.util.Assert;
@@ -64,7 +66,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 */
 	default List<float[]> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()))
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.builder().build()))
 			.getResults()
 			.stream()
 			.map(Embedding::getOutput)
@@ -81,7 +83,8 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * {@link Document}s. The returned list is expected to be in the same order of the
 	 * {@link Document} list.
 	 */
-	default List<float[]> embed(List<Document> documents, EmbeddingOptions options, BatchingStrategy batchingStrategy) {
+	default List<float[]> embed(List<Document> documents, @Nullable EmbeddingOptions options,
+			BatchingStrategy batchingStrategy) {
 		Assert.notNull(documents, "Documents must not be null");
 		List<float[]> embeddings = new ArrayList<>(documents.size());
 		List<List<Document>> batch = batchingStrategy.batch(documents);
@@ -105,7 +108,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 */
 	default EmbeddingResponse embedForResponse(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptionsBuilder.builder().build()));
+		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.builder().build()));
 	}
 
 	/**

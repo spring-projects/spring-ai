@@ -51,7 +51,7 @@ public enum AiProvider {
 	DEEPSEEK("deepseek"),
 
 	/**
-	 * AI system provided by Vertex AI.
+	 * AI system provided by Google Gen AI.
 	 */
 	GOOGLE_GENAI_AI("google_genai"),
 
@@ -84,6 +84,11 @@ public enum AiProvider {
 	 * AI system provided by OpenAI.
 	 */
 	OPENAI("openai"),
+
+	/**
+	 * AI system provided by the official OpenAI SDK.
+	 */
+	OPENAI_SDK("openai_sdk"),
 
 	/**
 	 * AI system provided by Spring AI.

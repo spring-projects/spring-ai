@@ -83,6 +83,7 @@ public class QdrantVectorStoreAutoConfiguration {
 			BatchingStrategy batchingStrategy) {
 		return QdrantVectorStore.builder(qdrantClient, embeddingModel)
 			.collectionName(properties.getCollectionName())
+			.contentFieldName(properties.getContentFieldName())
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))

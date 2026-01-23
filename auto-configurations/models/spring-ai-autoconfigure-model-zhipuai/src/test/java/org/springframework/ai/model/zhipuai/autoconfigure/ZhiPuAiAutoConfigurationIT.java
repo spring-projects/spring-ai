@@ -32,6 +32,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
 import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Issam El-atif
  */
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".*")
 public class ZhiPuAiAutoConfigurationIT {
@@ -52,7 +54,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		this.contextRunner.withConfiguration(ZhiPuAiITUtil.zhiPuAiAutoConfig(ZhiPuAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 				ChatResponse response = chatModel.call(new Prompt("Hello", ChatOptions.builder().build()));
@@ -63,7 +65,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(ZhiPuAiITUtil.zhiPuAiAutoConfig(ZhiPuAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
 				ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel
@@ -81,7 +83,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner.withConfiguration(ZhiPuAiITUtil.zhiPuAiAutoConfig(ZhiPuAiEmbeddingAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				ZhiPuAiEmbeddingModel embeddingModel = context.getBean(ZhiPuAiEmbeddingModel.class);
 
@@ -99,7 +101,7 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		this.contextRunner.withConfiguration(ZhiPuAiITUtil.zhiPuAiAutoConfig(ZhiPuAiImageAutoConfiguration.class))
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
 			.withPropertyValues("spring.ai.zhipuai.image.options.size=1024x1024")
 			.run(context -> {
 				ZhiPuAiImageModel ImageModel = context.getBean(ZhiPuAiImageModel.class);

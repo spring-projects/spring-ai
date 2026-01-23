@@ -33,6 +33,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.GeminiRequest;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.tool.MockWeatherService;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -416,6 +417,107 @@ public class CreateGeminiRequestTests {
 		assertThat(request.config().labels()).isPresent();
 		assertThat(request.config().labels().get()).containsEntry("org", "my-org");
 		assertThat(request.config().labels().get()).containsEntry("env", "test");
+	}
+
+	@Test
+	public void createRequestWithThinkingLevel() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+				.build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.contents()).hasSize(1);
+		assertThat(request.modelName()).isEqualTo("DEFAULT_MODEL");
+
+		// Verify thinkingConfig is present and contains thinkingLevel
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel().get().toString()).isEqualTo("HIGH");
+	}
+
+	@Test
+	public void createRequestWithThinkingLevelOverride() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+				.build())
+			.build();
+
+		// Override default thinkingLevel with prompt-specific value
+		GeminiRequest request = client.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder().thinkingLevel(GoogleGenAiThinkingLevel.HIGH).build())));
+
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel().get().toString()).isEqualTo("HIGH");
+	}
+
+	@Test
+	public void createRequestWithThinkingLevelAndBudgetCombined() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.thinkingBudget(8192)
+				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+				.includeThoughts(true)
+				.build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.config().thinkingConfig()).isPresent();
+		var thinkingConfig = request.config().thinkingConfig().get();
+		assertThat(thinkingConfig.thinkingBudget()).isPresent();
+		assertThat(thinkingConfig.thinkingBudget().get()).isEqualTo(8192);
+		assertThat(thinkingConfig.thinkingLevel()).isPresent();
+		assertThat(thinkingConfig.thinkingLevel().get().toString()).isEqualTo("HIGH");
+		assertThat(thinkingConfig.includeThoughts()).isPresent();
+		assertThat(thinkingConfig.includeThoughts().get()).isTrue();
+	}
+
+	@Test
+	public void createRequestWithNullThinkingLevel() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").thinkingLevel(null).build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		// Verify thinkingConfig is not present when only thinkingLevel is null
+		assertThat(request.config().thinkingConfig()).isEmpty();
+	}
+
+	@Test
+	public void createRequestWithOnlyThinkingLevel() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model("DEFAULT_MODEL")
+				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+				.build())
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		// Verify thinkingConfig is present when only thinkingLevel is set
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel().get().toString()).isEqualTo("LOW");
+		// Budget should not be present
+		assertThat(request.config().thinkingConfig().get().thinkingBudget()).isEmpty();
 	}
 
 }

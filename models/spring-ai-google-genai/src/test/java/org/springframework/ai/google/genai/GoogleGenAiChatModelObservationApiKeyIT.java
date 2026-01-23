@@ -64,7 +64,7 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 	void observationForChatOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -86,7 +86,7 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 	void observationForStreamingOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -126,7 +126,7 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 					AiProvider.GOOGLE_GENAI_AI.value())
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH.getValue())
+					GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.hasHighCardinalityKeyValue(
@@ -174,8 +174,9 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(
-						GoogleGenAiChatOptions.builder().model(GoogleGenAiChatModel.ChatModel.GEMINI_2_0_FLASH).build())
+				.defaultOptions(GoogleGenAiChatOptions.builder()
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW)
+					.build())
 				.build();
 		}
 

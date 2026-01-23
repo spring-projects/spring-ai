@@ -19,7 +19,7 @@ package org.springframework.ai.chat.memory.repository.neo4j;
 /**
  * @author Enrico Rampazzo
  */
-public enum MessageAttributes {
+public enum MessageAttributes implements AttributeGetter {
 
 	TEXT_CONTENT("textContent"), MESSAGE_TYPE("messageType");
 

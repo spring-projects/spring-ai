@@ -101,8 +101,11 @@ public class SystemPromptTemplate extends PromptTemplate {
 			else if (this.resource != null) {
 				return new SystemPromptTemplate(this.resource, this.variables, this.renderer);
 			}
-			else {
+			else if (this.template != null) {
 				return new SystemPromptTemplate(this.template, this.variables, this.renderer);
+			}
+			else {
+				throw new IllegalStateException("Neither template nor resource is set");
 			}
 		}
 

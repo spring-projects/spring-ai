@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.mongodb.atlas;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
@@ -44,6 +45,7 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 	}
 
 	private void doCompoundExpressionType(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected expression.right to be non null");
 		context.append("{");
 		context.append(getOperationSymbol(expression));
 		context.append(":[");
@@ -54,6 +56,7 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 	}
 
 	private void doSingleExpressionType(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected expression.right to be non null");
 		context.append("{");
 		this.convertOperand(expression.left(), context);
 		context.append(":{");

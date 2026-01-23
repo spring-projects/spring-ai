@@ -36,7 +36,7 @@ import org.springframework.ai.openai.metadata.support.OpenAiApiResponseHeaders;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.test.autoconfigure.web.client.RestClientTest;
+import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -57,7 +57,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @RestClientTest(OpenAiModerationModelTests.Config.class)
 public class OpenAiModerationModelTests {
 
-	private static String TEST_API_KEY = "sk-1234567890";
+	private static final String TEST_API_KEY = "sk-1234567890";
+
+	private static final String TEST_MODERATION_PATH = "/v1/moderations";
 
 	@Autowired
 	private OpenAiModerationModel openAiModerationModel;
@@ -186,6 +188,7 @@ public class OpenAiModerationModelTests {
 		public OpenAiModerationApi moderationGenerationApi(RestClient.Builder builder) {
 			return OpenAiModerationApi.builder()
 				.apiKey(new SimpleApiKey(TEST_API_KEY))
+				.moderationPath(TEST_MODERATION_PATH)
 				.restClientBuilder(builder)
 				.responseErrorHandler(RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER)
 				.build();

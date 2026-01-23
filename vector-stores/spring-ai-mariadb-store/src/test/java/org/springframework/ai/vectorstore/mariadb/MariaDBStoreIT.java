@@ -53,13 +53,11 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
@@ -70,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 /**
  * @author Diego Dupin
  * @author Soby Chacko
+ * @author Eddú Meléndez
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -87,11 +86,6 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)
 		.withPropertyValues("test.spring.ai.vectorstore.mariadb.distanceType=COSINE",
-
-				// JdbcTemplate configuration
-				String.format("app.datasource.url=jdbc:mariadb://%s:%d/%s?maxQuerySizeToLog=50000",
-						mariadbContainer.getHost(), mariadbContainer.getMappedPort(3306), schemaName),
-				"app.datasource.username=mariadb", "app.datasource.password=mariadbpwd",
 				"app.datasource.type=com.zaxxer.hikari.HikariDataSource");
 
 	List<Document> documents = List.of(
@@ -432,10 +426,12 @@ public class MariaDBStoreIT extends BaseVectorStoreTests {
 		}
 
 		@Bean
-		@Primary
-		@ConfigurationProperties("app.datasource")
 		public DataSourceProperties dataSourceProperties() {
-			return new DataSourceProperties();
+			DataSourceProperties properties = new DataSourceProperties();
+			properties.setUrl(mariadbContainer.getJdbcUrl());
+			properties.setUsername(mariadbContainer.getUsername());
+			properties.setPassword(mariadbContainer.getPassword());
+			return properties;
 		}
 
 		@Bean

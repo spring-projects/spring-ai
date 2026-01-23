@@ -134,7 +134,6 @@ public class CreateGeminiRequestTests {
 		assertThat(textPart.getText()).isEqualTo("User Message Text");
 
 		Part mediaPart = content.getParts(1);
-		assertThat(mediaPart.getFileData()).isNotNull();
 		assertThat(mediaPart.getFileData().getFileUri()).isEqualTo("http://example.com");
 		assertThat(mediaPart.getFileData().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG.toString());
 		System.out.println(mediaPart);

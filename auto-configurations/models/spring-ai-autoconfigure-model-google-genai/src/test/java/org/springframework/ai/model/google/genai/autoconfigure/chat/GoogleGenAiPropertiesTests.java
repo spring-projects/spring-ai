@@ -131,6 +131,25 @@ public class GoogleGenAiPropertiesTests {
 		});
 	}
 
+	@Test
+	void includeThoughtsPropertiesBinding() {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.chat.options.include-thoughts=true")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				assertThat(chatProperties.getOptions().getIncludeThoughts()).isTrue();
+			});
+	}
+
+	@Test
+	void includeThoughtsDefaultBinding() {
+		// Test that defaults are applied when not specified
+		this.contextRunner.run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			// Should be null when not set
+			assertThat(chatProperties.getOptions().getIncludeThoughts()).isNull();
+		});
+	}
+
 	@Configuration
 	@EnableConfigurationProperties({ GoogleGenAiConnectionProperties.class, GoogleGenAiChatProperties.class,
 			GoogleGenAiEmbeddingConnectionProperties.class })

@@ -16,8 +16,7 @@
 
 package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
-import javax.sql.DataSource;
-
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -25,14 +24,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Jonathan Leijendekker
+ * @author Yanming Zhou
  */
 @Testcontainers
 class JdbcChatMemoryRepositorySchemaInitializerPostgresqlTests {
@@ -55,15 +55,10 @@ class JdbcChatMemoryRepositorySchemaInitializerPostgresqlTests {
 
 	@Test
 	void getSettings_shouldHaveSchemaLocations() {
-		this.contextRunner.run(context -> {
-			var dataSource = context.getBean(DataSource.class);
-			// Use new signature: requires JdbcChatMemoryRepositoryProperties
-			var settings = JdbcChatMemoryRepositorySchemaInitializer.getSettings(dataSource,
-					new JdbcChatMemoryRepositoryProperties());
-
-			assertThat(settings.getSchemaLocations())
-				.containsOnly("classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-postgresql.sql");
-		});
+		this.contextRunner.run(context -> assertThat(context.getBean(JdbcChatMemoryRepositorySchemaInitializer.class))
+			.extracting("settings.schemaLocations")
+			.asInstanceOf(InstanceOfAssertFactories.LIST)
+			.containsOnly("classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-postgresql.sql"));
 	}
 
 }

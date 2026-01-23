@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.oracle;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -48,13 +49,11 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocu
 import org.springframework.ai.vectorstore.oracle.OracleVectorStore.OracleVectorStoreDistanceType;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -63,21 +62,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Eddú Meléndez
  */
 @Testcontainers
 public class OracleVectorStoreObservationIT {
 
 	@Container
-	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE).withCopyFileToContainer(
-			MountableFile.forClasspathResource("/initialize.sql"), "/container-entrypoint-initdb.d/initialize.sql");
+	static OracleContainer oracle23aiContainer = new OracleContainer(OracleImage.DEFAULT_IMAGE)
+		.withCopyFileToContainer(MountableFile.forClasspathResource("/initialize.sql"),
+				"/container-entrypoint-initdb.d/initialize.sql")
+		.withStartupTimeout(Duration.ofMinutes(5))
+		.withStartupAttempts(3)
+		.withSharedMemorySize(2L * 1024L * 1024L * 1024L); // 2GB shared memory
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("test.spring.ai.vectorstore.oracle.dimensions=384",
-				// JdbcTemplate configuration
-				String.format("app.datasource.url=%s", oracle23aiContainer.getJdbcUrl()),
-				String.format("app.datasource.username=%s", oracle23aiContainer.getUsername()),
-				String.format("app.datasource.password=%s", oracle23aiContainer.getPassword()),
 				"app.datasource.type=oracle.jdbc.pool.OracleDataSource");
 
 	List<Document> documents = List.of(
@@ -208,10 +208,12 @@ public class OracleVectorStoreObservationIT {
 		}
 
 		@Bean
-		@Primary
-		@ConfigurationProperties("app.datasource")
 		public DataSourceProperties dataSourceProperties() {
-			return new DataSourceProperties();
+			DataSourceProperties properties = new DataSourceProperties();
+			properties.setUrl(oracle23aiContainer.getJdbcUrl());
+			properties.setUsername(oracle23aiContainer.getUsername());
+			properties.setPassword(oracle23aiContainer.getPassword());
+			return properties;
 		}
 
 		@Bean

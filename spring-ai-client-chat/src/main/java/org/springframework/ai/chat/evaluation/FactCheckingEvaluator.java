@@ -18,11 +18,12 @@ package org.springframework.ai.chat.evaluation;
 
 import java.util.Collections;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.Evaluator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -94,27 +95,13 @@ public class FactCheckingEvaluator implements Evaluator {
 	private final String evaluationPrompt;
 
 	/**
-	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder. Uses
-	 * the default evaluation prompt suitable for general purpose LLMs.
-	 * @param chatClientBuilder The builder for the ChatClient used to perform the
-	 * evaluation
-	 * @deprecated in favor of {@link #builder(ChatClient.Builder)}
-	 */
-	@Deprecated(forRemoval = true)
-	public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
-		this(chatClientBuilder, null);
-	}
-
-	/**
 	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder and
 	 * evaluation prompt.
 	 * @param chatClientBuilder The builder for the ChatClient used to perform the
 	 * evaluation
 	 * @param evaluationPrompt The prompt text to use for evaluation
-	 * @deprecated in favor of {@link #builder(ChatClient.Builder)}
 	 */
-	@Deprecated
-	public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder, @Nullable String evaluationPrompt) {
+	protected FactCheckingEvaluator(ChatClient.Builder chatClientBuilder, @Nullable String evaluationPrompt) {
 		Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
 		this.chatClientBuilder = chatClientBuilder;
 		this.evaluationPrompt = evaluationPrompt != null ? evaluationPrompt : DEFAULT_EVALUATION_PROMPT_TEXT;
@@ -162,9 +149,9 @@ public class FactCheckingEvaluator implements Evaluator {
 
 	public static final class Builder {
 
-		private ChatClient.Builder chatClientBuilder;
+		private ChatClient.@Nullable Builder chatClientBuilder;
 
-		private String evaluationPrompt;
+		private @Nullable String evaluationPrompt = DEFAULT_EVALUATION_PROMPT_TEXT;
 
 		private Builder() {
 		}
@@ -180,6 +167,8 @@ public class FactCheckingEvaluator implements Evaluator {
 		}
 
 		public FactCheckingEvaluator build() {
+			Assert.state(this.chatClientBuilder != null, "ChatClientBuilder cannot be null");
+			Assert.state(this.evaluationPrompt != null, "EvaluationPrompt cannot be null");
 			return new FactCheckingEvaluator(this.chatClientBuilder, this.evaluationPrompt);
 		}
 

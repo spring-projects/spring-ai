@@ -72,8 +72,9 @@ import static org.mockito.Mockito.when;
 
 public class McpServerAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpServerAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {

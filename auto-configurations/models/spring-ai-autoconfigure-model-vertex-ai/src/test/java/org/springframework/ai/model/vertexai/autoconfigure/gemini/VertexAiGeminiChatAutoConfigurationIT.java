@@ -27,7 +27,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.vertexai.autoconfigure.VertexAiITUtil;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -42,7 +42,7 @@ public class VertexAiGeminiChatAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.vertex.ai.gemini.project-id=" + System.getenv("VERTEX_AI_GEMINI_PROJECT_ID"),
 				"spring.ai.vertex.ai.gemini.location=" + System.getenv("VERTEX_AI_GEMINI_LOCATION"))
-		.withConfiguration(VertexAiITUtil.vertexAiToolAutoConfig(VertexAiGeminiChatAutoConfiguration.class));
+		.withConfiguration(SpringAiTestAutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class));
 
 	@Test
 	void generate() {

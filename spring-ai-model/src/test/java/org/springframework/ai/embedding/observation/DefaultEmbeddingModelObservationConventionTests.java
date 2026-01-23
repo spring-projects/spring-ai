@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -53,7 +52,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void contextualNameWhenModelIsDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("mistral").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embedding mistral");
@@ -62,7 +61,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void contextualNameWhenModelIsNotDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embedding");
@@ -71,7 +70,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void supportsOnlyEmbeddingModelObservationContext() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("supermodel").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("supermodel").build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
@@ -81,7 +80,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void shouldHaveLowCardinalityKeyValuesWhenDefined() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().model("mistral").build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
@@ -93,8 +92,8 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void shouldHaveLowCardinalityKeyValuesWhenDefinedAndResponse() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(
-					EmbeddingOptionsBuilder.builder().model("mistral").dimensions(1492).build()))
+			.embeddingRequest(
+					generateEmbeddingRequest(EmbeddingOptions.builder().model("mistral").dimensions(1492).build()))
 			.provider("superprovider")
 			.build();
 		observationContext.setResponse(new EmbeddingResponse(List.of(),
@@ -110,7 +109,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 	@Test
 	void shouldNotHaveKeyValuesWhenMissing() {
 		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptionsBuilder.builder().build()))
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().build()))
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))

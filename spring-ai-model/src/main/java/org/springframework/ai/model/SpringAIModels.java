@@ -44,6 +44,8 @@ public final class SpringAIModels {
 
 	public static final String OPENAI = "openai";
 
+	public static final String OPENAI_SDK = "openai-sdk";
+
 	public static final String POSTGRESML = "postgresml";
 
 	public static final String STABILITY_AI = "stabilityai";
@@ -57,5 +59,7 @@ public final class SpringAIModels {
 	public static final String ZHIPUAI = "zhipuai";
 
 	public static final String DEEPSEEK = "deepseek";
+
+	public static final String ELEVEN_LABS = "elevenlabs";
 
 }

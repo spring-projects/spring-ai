@@ -40,6 +40,8 @@ public final class SpringAIVectorStoreTypes {
 
 	public static final String HANADB = "hanadb";
 
+	public static final String INFINISPAN = "infinispan";
+
 	public static final String MARIADB = "mariadb";
 
 	public static final String MILVUS = "milvus";
@@ -63,5 +65,9 @@ public final class SpringAIVectorStoreTypes {
 	public static final String TYPESENSE = "typesense";
 
 	public static final String WEAVIATE = "weaviate";
+
+	public static final String BEDROCK_KNOWLEDGE_BASE = "bedrock-knowledge-base";
+
+	public static final String S3 = "S3";
 
 }

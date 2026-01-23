@@ -424,6 +424,7 @@ class AnthropicChatOptionsTests {
 	}
 
 	@Test
+	@SuppressWarnings("SelfAssertion")
 	void testEqualsWithSelf() {
 		AnthropicChatOptions options = AnthropicChatOptions.builder().model("test").build();
 

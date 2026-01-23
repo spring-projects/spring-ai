@@ -36,6 +36,7 @@ import org.springframework.util.StringUtils;
 /**
  * Helper class to support Streaming function calling.
  *
+ * <p>
  * It can merge the streamed ChatCompletionChunk in case of function calling message.
  *
  * @author Christian Tzolov
@@ -100,6 +101,8 @@ public class OpenAiStreamFunctionCallingHelper {
 	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
 		String content = (current.content() != null ? current.content()
 				: "" + ((previous.content() != null) ? previous.content() : ""));
+		String reasoningContent = (current.reasoningContent() != null ? current.reasoningContent()
+				: "" + ((previous.reasoningContent() != null) ? previous.reasoningContent() : ""));
 		Role role = (current.role() != null ? current.role() : previous.role());
 		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
 		String name = (current.name() != null ? current.name() : previous.name());
@@ -138,7 +141,8 @@ public class OpenAiStreamFunctionCallingHelper {
 				toolCalls.add(lastPreviousTooCall);
 			}
 		}
-		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput, annotations);
+		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, refusal, audioOutput, annotations,
+				reasoningContent);
 	}
 
 	private ToolCall merge(ToolCall previous, ToolCall current) {

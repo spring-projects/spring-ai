@@ -1,6 +1,140 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M2]]
+== Upgrading to 2.0.0-M2
+
+=== Development-time Services
+
+* Docker Compose and Testcontainers support for MongoDB Atlas is now provided natively by the Spring Boot MongoDB module. The migration should be transparent and not require any code change. Regarding dependencies, you don't need to import `org.springframework.ai:spring-ai-spring-boot-testcontainers` anymore. A dependency on `org.springframework.boot:spring-boot-testcontainers` is sufficient.
+
+[[upgrading-to-2-0-0-M1]]
+== Upgrading to 2.0.0-M1
+
+=== Breaking Changes
+
+==== Default Temperature Configuration Removed
+
+Spring AI no longer provides default temperature values for chat model autoconfiguration properties. Previously, Spring AI set a default temperature of `0.7` for most chat models. This default has been removed to allow each AI provider's native default temperature to be used.
+
+===== Impact
+
+If your application did not explicitly configure a temperature value and relied on Spring AI's default of `0.7`, you may notice different behavior after upgrading. The actual default will now be determined by each AI provider's API, which may vary:
+
+* Some providers default to `1.0`
+* Some providers default to `0.7`
+* Some providers have model-specific defaults
+
+===== Migration
+
+If you want to maintain the previous behavior, explicitly set the temperature in your configuration:
+
+[source,properties]
+----
+# Example for OpenAI
+spring.ai.openai.chat.options.temperature=0.7
+
+# Example for Anthropic
+spring.ai.anthropic.chat.options.temperature=0.7
+
+# Example for Azure OpenAI
+spring.ai.azure.openai.chat.options.temperature=0.7
+----
+
+Or programmatically when building requests:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("Your prompt here",
+        OpenAiChatOptions.builder()
+            .temperature(0.7)
+            .build()));
+----
+
+[[upgrading-to-1-1-0-RC1]]
+== Upgrading to 1.1.0-RC1
+
+=== Breaking Changes
+
+==== Text-to-Speech (TTS) API Migration
+
+The OpenAI Text-to-Speech implementation has been migrated from provider-specific classes to shared interfaces. This enables writing portable code that works across multiple TTS providers (OpenAI, ElevenLabs, and future providers).
+
+===== Removed Classes
+
+The following deprecated classes have been removed from the `org.springframework.ai.openai.audio.speech` package:
+
+* `SpeechModel` → Use `TextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `StreamingSpeechModel` → Use `StreamingTextToSpeechModel` (from `org.springframework.ai.audio.tts`)
+* `SpeechPrompt` → Use `TextToSpeechPrompt` (from `org.springframework.ai.audio.tts`)
+* `SpeechResponse` → Use `TextToSpeechResponse` (from `org.springframework.ai.audio.tts`)
+* `SpeechMessage` → Use `TextToSpeechMessage` (from `org.springframework.ai.audio.tts`)
+* `Speech` (in `org.springframework.ai.openai.audio.speech`) → Use `Speech` (from `org.springframework.ai.audio.tts`)
+
+Additionally, the `speed` parameter type changed from `Float` to `Double` across all OpenAI TTS components for consistency with other TTS providers.
+
+===== Migration Steps
+
+1. **Update Imports**: Replace all imports from `org.springframework.ai.openai.audio.speech.*` with `org.springframework.ai.audio.tts.*`
+
+2. **Update Type References**: Replace all occurrences of the old class names with the new ones:
++
+[source,text]
+----
+Find:    SpeechModel
+Replace: TextToSpeechModel
+
+Find:    StreamingSpeechModel
+Replace: StreamingTextToSpeechModel
+
+Find:    SpeechPrompt
+Replace: TextToSpeechPrompt
+
+Find:    SpeechResponse
+Replace: TextToSpeechResponse
+
+Find:    SpeechMessage
+Replace: TextToSpeechMessage
+----
+
+3. **Update Speed Parameter**: Change from `Float` to `Double`:
++
+[source,text]
+----
+Find:    .speed(1.0f)
+Replace: .speed(1.0)
+
+Find:    Float speed
+Replace: Double speed
+----
+
+4. **Update Dependency Injection**: If you inject `SpeechModel`, update to `TextToSpeechModel`:
++
+[source,java]
+----
+// Before
+public MyService(SpeechModel speechModel) { ... }
+
+// After
+public MyService(TextToSpeechModel textToSpeechModel) { ... }
+----
+
+===== Benefits
+
+* **Portability**: Write code once, switch between OpenAI, ElevenLabs, or other TTS providers easily
+* **Consistency**: Same patterns as ChatModel and other Spring AI abstractions
+* **Type Safety**: Improved type hierarchy with proper interface implementations
+* **Future-Proof**: New TTS providers will automatically work with your existing code
+
+===== Additional Resources
+
+For a comprehensive migration guide with detailed code examples, see:
+
+* xref:api/audio/speech/openai-speech.adoc#_migration_guide[OpenAI TTS Migration Guide]
+* xref:api/audio/speech.adoc#_writing_provider_agnostic_code[Writing Provider-Agnostic TTS Code]
+
+
 [[upgrading-to-1-0-0-snapshot]]
 == Upgrading to 1.0.0-SNAPSHOT
 

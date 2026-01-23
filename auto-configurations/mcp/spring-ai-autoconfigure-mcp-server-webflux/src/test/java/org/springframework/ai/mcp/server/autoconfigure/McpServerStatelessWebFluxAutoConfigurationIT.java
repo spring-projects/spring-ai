@@ -21,6 +21,7 @@ import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +36,8 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS")
-		.withConfiguration(AutoConfigurations.of(McpServerStatelessWebFluxAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpServerStatelessWebFluxAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {

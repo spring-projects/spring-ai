@@ -32,15 +32,16 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.Version;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
+import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.elasticsearch.client.RestClient;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -168,7 +169,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
-		this.elasticsearchClient = new ElasticsearchClient(new RestClientTransport(builder.restClient,
+		this.elasticsearchClient = new ElasticsearchClient(new Rest5ClientTransport(builder.restClient,
 				new JacksonJsonpMapper(
 						new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))))
 			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
@@ -178,7 +179,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	public void doAdd(List<Document> documents) {
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		for (int i = 0; i < embeddings.size(); i++) {
@@ -266,7 +267,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 	}
 
-	private String getElasticsearchQueryString(Filter.Expression filterExpression) {
+	private String getElasticsearchQueryString(Filter.@Nullable Expression filterExpression) {
 		return Objects.isNull(filterExpression) ? "*"
 				: this.filterExpressionConverter.convertExpression(filterExpression);
 
@@ -274,6 +275,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
+		Assert.notNull(document, "document unexpectedly null");
 		Document.Builder documentBuilder = document.mutate();
 		if (hit.score() != null) {
 			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));
@@ -369,13 +371,13 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	 * Creates a new builder instance for ElasticsearchVectorStore.
 	 * @return a new ElasticsearchBuilder instance
 	 */
-	public static Builder builder(RestClient restClient, EmbeddingModel embeddingModel) {
+	public static Builder builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
 		return new Builder(restClient, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		private final RestClient restClient;
+		private final Rest5Client restClient;
 
 		private ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
 
@@ -388,7 +390,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		 * @param restClient the Elasticsearch REST client
 		 * @param embeddingModel the Embedding Model to be used
 		 */
-		public Builder(RestClient restClient, EmbeddingModel embeddingModel) {
+		public Builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(restClient, "RestClient must not be null");
 			this.restClient = restClient;

@@ -71,6 +71,11 @@ public enum VectorStoreProvider {
 	HANA("hana"),
 
 	/**
+	 * Vector store provided by Infinispan.
+	 */
+	INFINISPAN("infinispan"),
+
+	/**
 	 * Vector store provided by MariaDB.
 	 */
 	MARIADB("mariadb"),
@@ -119,6 +124,11 @@ public enum VectorStoreProvider {
 	 * Vector store provided by Redis.
 	 */
 	REDIS("redis"),
+
+	/**
+	 * Vector store provided by simple.
+	 */
+	S3_VECTOR("s3_vector"),
 
 	/**
 	 * Vector store provided by simple.

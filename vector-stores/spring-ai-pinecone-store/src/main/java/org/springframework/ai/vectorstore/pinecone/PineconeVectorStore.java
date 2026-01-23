@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.pinecone;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -31,13 +32,14 @@ import io.pinecone.clients.Pinecone;
 import io.pinecone.proto.QueryRequest;
 import io.pinecone.unsigned_indices_model.QueryResponseWithUnsignedIndices;
 import io.pinecone.unsigned_indices_model.VectorWithUnsignedIndices;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -47,7 +49,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.PineconeFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -137,7 +138,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param namespace The namespace to add the documents to
 	 */
 	public void add(List<Document> documents, String namespace) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		List<VectorWithUnsignedIndices> upsertVectors = new ArrayList<>();
 		for (Document document : documents) {
@@ -182,7 +183,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @return The content value.
 	 */
 	private Value contentValue(Document document) {
-		return Value.newBuilder().setStringValue(document.getText()).build();
+		return Value.newBuilder().setStringValue(Objects.requireNonNullElse(document.getText(), "")).build();
 	}
 
 	/**
@@ -281,12 +282,9 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private Struct metadataFiltersToStruct(String metadataFilters) {
 		try {
-			if (StringUtils.hasText(metadataFilters)) {
-				var structBuilder = Struct.newBuilder();
-				JsonFormat.parser().ignoringUnknownFields().merge(metadataFilters, structBuilder);
-				return structBuilder.build();
-			}
-			return null;
+			var structBuilder = Struct.newBuilder();
+			JsonFormat.parser().ignoringUnknownFields().merge(metadataFilters, structBuilder);
+			return structBuilder.build();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);

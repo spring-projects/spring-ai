@@ -37,8 +37,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -254,7 +252,7 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.build();
@@ -300,11 +298,11 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.build();
-			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			var additionalHeaders = new HttpHeaders();
 			additionalHeaders.add("x-api-key", "additional-key");
 			ResponseEntity<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionEntity(request,
 					additionalHeaders);
@@ -348,7 +346,7 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)
@@ -398,12 +396,12 @@ public class AnthropicApiBuilderTests {
 			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
 					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
 			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 				.temperature(0.8)
 				.messages(List.of(chatCompletionMessage))
 				.stream(true)
 				.build();
-			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			var additionalHeaders = new HttpHeaders();
 			additionalHeaders.add("x-api-key", "additional-key");
 
 			api.chatCompletionStream(request, additionalHeaders).collectList().block();

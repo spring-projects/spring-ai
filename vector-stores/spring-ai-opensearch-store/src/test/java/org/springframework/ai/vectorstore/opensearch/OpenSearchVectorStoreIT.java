@@ -54,8 +54,6 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.SpringBootConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -810,8 +808,171 @@ class OpenSearchVectorStoreIT {
 		});
 	}
 
+	@ParameterizedTest(name = "manageDocumentIds={0}")
+	@ValueSource(booleans = { true, false })
+	void testManageDocumentIdsSetting(boolean manageDocumentIds) {
+		getContextRunner().run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
+
+			// Create a new vector store with specific manageDocumentIds setting
+			OpenSearchVectorStore testVectorStore = OpenSearchVectorStore
+				.builder((OpenSearchClient) vectorStore.getNativeClient().orElseThrow(),
+						context.getBean(EmbeddingModel.class))
+				.manageDocumentIds(manageDocumentIds)
+				.index("test_manage_document_ids_" + manageDocumentIds)
+				.initializeSchema(true)
+				.build();
+
+			// Ensure the index is fully initialized before adding documents
+			testVectorStore.afterPropertiesSet();
+
+			// Test documents
+			List<Document> testDocuments = List.of(new Document("doc1", "Test content 1", Map.of("key1", "value1")),
+					new Document("doc2", "Test content 2", Map.of("key2", "value2")));
+
+			// Add documents
+			testVectorStore.add(testDocuments);
+
+			// Wait for indexing
+			Awaitility.await()
+				.until(() -> testVectorStore
+					.similaritySearch(SearchRequest.builder().query("Test content").topK(2).build()), hasSize(2));
+
+			// Search and verify results
+			List<Document> results = testVectorStore
+				.similaritySearch(SearchRequest.builder().query("Test content").topK(2).build());
+
+			assertThat(results).hasSize(2);
+
+			// Verify document content and metadata are preserved
+			assertThat(results.stream().map(Document::getText).toList()).containsExactlyInAnyOrder("Test content 1",
+					"Test content 2");
+
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("key1")).toList()).contains("value1");
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("key2")).toList()).contains("value2");
+
+			// Clean up
+			testVectorStore.delete(testDocuments.stream().map(Document::getId).toList());
+		});
+	}
+
+	@Test
+	void testManageDocumentIdsFalseForAWSOpenSearchServerless() {
+		getContextRunner().run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
+
+			// Create vector store with manageDocumentIds=false (AWS OpenSearch Serverless
+			// mode)
+			OpenSearchVectorStore awsCompatibleVectorStore = OpenSearchVectorStore
+				.builder((OpenSearchClient) vectorStore.getNativeClient().orElseThrow(),
+						context.getBean(EmbeddingModel.class))
+				.manageDocumentIds(false)
+				.index("test_aws_serverless_compatible")
+				.initializeSchema(true)
+				.build();
+
+			// Ensure the index is fully initialized before adding documents
+			awsCompatibleVectorStore.afterPropertiesSet();
+
+			// Test documents with IDs (these should be ignored when
+			// manageDocumentIds=false)
+			List<Document> testDocuments = List.of(
+					new Document("custom-id-1", "AWS Serverless content 1", Map.of("env", "aws-serverless")),
+					new Document("custom-id-2", "AWS Serverless content 2", Map.of("env", "aws-serverless")));
+
+			// Add documents - should work without explicit document ID errors
+			awsCompatibleVectorStore.add(testDocuments);
+
+			// Wait for indexing
+			Awaitility.await()
+				.until(() -> awsCompatibleVectorStore
+					.similaritySearch(SearchRequest.builder().query("AWS Serverless").topK(2).build()), hasSize(2));
+
+			// Search and verify results
+			List<Document> results = awsCompatibleVectorStore
+				.similaritySearch(SearchRequest.builder().query("AWS Serverless").topK(2).build());
+
+			assertThat(results).hasSize(2);
+
+			// Verify content is preserved
+			assertThat(results.stream().map(Document::getText).toList())
+				.containsExactlyInAnyOrder("AWS Serverless content 1", "AWS Serverless content 2");
+
+			// Verify metadata is preserved
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("env")).toList())
+				.containsOnly("aws-serverless");
+
+			// Clean up
+			awsCompatibleVectorStore.delete(List.of("_all"));
+		});
+	}
+
+	@Test
+	void testManageDocumentIdsTrueWithExplicitIds() {
+		getContextRunner().run(context -> {
+			OpenSearchVectorStore vectorStore = context.getBean("vectorStore", OpenSearchVectorStore.class);
+
+			// Create vector store with manageDocumentIds=true (default behavior)
+			OpenSearchVectorStore explicitIdVectorStore = OpenSearchVectorStore
+				.builder((OpenSearchClient) vectorStore.getNativeClient().orElseThrow(),
+						context.getBean(EmbeddingModel.class))
+				.manageDocumentIds(true)
+				.index("test_explicit_ids")
+				.initializeSchema(true)
+				.build();
+
+			// Ensure the index is fully initialized before adding documents
+			explicitIdVectorStore.afterPropertiesSet();
+
+			// Test documents with specific IDs
+			List<Document> testDocuments = List.of(
+					new Document("explicit-id-1", "Explicit ID content 1", Map.of("type", "explicit")),
+					new Document("explicit-id-2", "Explicit ID content 2", Map.of("type", "explicit")));
+
+			// Add documents
+			explicitIdVectorStore.add(testDocuments);
+
+			// Wait for indexing
+			Awaitility.await()
+				.until(() -> explicitIdVectorStore
+					.similaritySearch(SearchRequest.builder().query("Explicit ID").topK(2).build()), hasSize(2));
+
+			// Search and verify results
+			List<Document> results = explicitIdVectorStore
+				.similaritySearch(SearchRequest.builder().query("Explicit ID").topK(2).build());
+
+			assertThat(results).hasSize(2);
+
+			// Verify document IDs are preserved
+			assertThat(results.stream().map(Document::getId).toList()).containsExactlyInAnyOrder("explicit-id-1",
+					"explicit-id-2");
+
+			// Verify content and metadata
+			assertThat(results.stream().map(Document::getText).toList())
+				.containsExactlyInAnyOrder("Explicit ID content 1", "Explicit ID content 2");
+
+			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).toList()).containsOnly("explicit");
+
+			// Test deletion by specific IDs
+			explicitIdVectorStore.delete(List.of("explicit-id-1"));
+
+			Awaitility.await()
+				.until(() -> explicitIdVectorStore
+					.similaritySearch(SearchRequest.builder().query("Explicit ID").topK(2).build()), hasSize(1));
+
+			// Verify only one document remains
+			results = explicitIdVectorStore
+				.similaritySearch(SearchRequest.builder().query("Explicit ID").topK(2).build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo("explicit-id-2");
+
+			// Clean up
+			explicitIdVectorStore.delete(List.of("explicit-id-2"));
+		});
+	}
+
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
 
 		@Bean

@@ -31,10 +31,10 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
-import org.springframework.ai.model.anthropic.autoconfigure.BaseAnthropicIT;
 import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Request;
 import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Response;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,7 +49,7 @@ class FunctionCallWithFunctionBeanIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
-		.withConfiguration(BaseAnthropicIT.anthropicAutoConfig(AnthropicChatAutoConfiguration.class))
+		.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test
@@ -118,7 +118,7 @@ class FunctionCallWithFunctionBeanIT {
 		@Bean
 		public Function<MockWeatherService.Request, MockWeatherService.Response> weatherFunction3() {
 			MockWeatherService weatherService = new MockWeatherService();
-			return (weatherService::apply);
+			return weatherService::apply;
 		}
 
 	}

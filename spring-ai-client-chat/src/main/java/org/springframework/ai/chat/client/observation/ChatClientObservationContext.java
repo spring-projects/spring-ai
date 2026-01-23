@@ -19,14 +19,15 @@ package org.springframework.ai.chat.client.observation;
 import java.util.List;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -35,11 +36,14 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  * @since 1.0.0
  */
 public class ChatClientObservationContext extends Observation.Context {
 
 	private final ChatClientRequest request;
+
+	private @Nullable ChatClientResponse response;
 
 	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(AiOperationType.FRAMEWORK.value(),
 			AiProvider.SPRING_AI.value());
@@ -78,22 +82,36 @@ public class ChatClientObservationContext extends Observation.Context {
 		return this.stream;
 	}
 
-	@Nullable
-	public String getFormat() {
+	public @Nullable String getFormat() {
 		if (this.request.context().get(ChatClientAttributes.OUTPUT_FORMAT.getKey()) instanceof String format) {
 			return format;
 		}
 		return null;
 	}
 
+	/**
+	 * @return Chat client response
+	 * @since 1.1.0
+	 */
+	public @Nullable ChatClientResponse getResponse() {
+		return this.response;
+	}
+
+	/**
+	 * @param response Chat client response to record.
+	 * @since 1.1.0
+	 */
+	public void setResponse(ChatClientResponse response) {
+		this.response = response;
+	}
+
 	public static final class Builder {
 
-		private ChatClientRequest chatClientRequest;
+		private @Nullable ChatClientRequest chatClientRequest;
 
 		private List<? extends Advisor> advisors = List.of();
 
-		@Nullable
-		private String format;
+		private @Nullable String format;
 
 		private boolean isStream = false;
 
@@ -121,6 +139,7 @@ public class ChatClientObservationContext extends Observation.Context {
 		}
 
 		public ChatClientObservationContext build() {
+			Assert.state(this.chatClientRequest != null, "chatClientRequest cannot be null");
 			if (StringUtils.hasText(this.format)) {
 				this.chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), this.format);
 			}

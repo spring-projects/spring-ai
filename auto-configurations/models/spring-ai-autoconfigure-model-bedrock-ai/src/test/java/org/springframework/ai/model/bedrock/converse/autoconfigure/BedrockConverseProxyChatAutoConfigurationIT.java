@@ -32,6 +32,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
 import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,8 +46,7 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 		.withPropertyValues(
 				"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0",
 				"spring.ai.bedrock.converse.chat.options.temperature=0.5")
-		.withConfiguration(BedrockConverseProxyITUtil
-			.bedrockConverseProxyAutoConfig(BedrockConverseProxyChatAutoConfiguration.class));
+		.withConfiguration(SpringAiTestAutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
 
 	@Test
 	void call() {

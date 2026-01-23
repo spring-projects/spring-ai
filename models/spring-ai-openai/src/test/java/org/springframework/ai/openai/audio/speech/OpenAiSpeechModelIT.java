@@ -24,6 +24,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
@@ -41,14 +43,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiSpeechModelIT extends AbstractIT {
 
-	private static final Float SPEED = 1.0f;
+	private static final Double SPEED = 1.0;
 
 	@Test
 	void shouldSuccessfullyStreamAudioBytesForEmptyMessage() {
-		Flux<byte[]> response = this.speechModel.stream("Today is a wonderful day to build something people love!");
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!");
+		Flux<TextToSpeechResponse> response = this.speechModel.stream(prompt);
 		assertThat(response).isNotNull();
-		assertThat(response.collectList().block()).isNotNull();
-		System.out.println(response.collectList().block());
+		List<TextToSpeechResponse> responses = response.collectList().block();
+		assertThat(responses).isNotNull();
+		System.out.println("Received " + responses.size() + " audio chunks");
 	}
 
 	@Test
@@ -59,16 +63,16 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	}
 
 	@Test
-	void shouldGenerateNonEmptyMp3AudioFromSpeechPrompt() {
+	void shouldGenerateNonEmptyMp3AudioFromTextToSpeechPrompt() {
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
 			.build();
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
-		SpeechResponse response = this.speechModel.call(speechPrompt);
+		TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt(
+				"Today is a wonderful day to build something people love!", speechOptions);
+		TextToSpeechResponse response = this.speechModel.call(speechPrompt);
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
@@ -77,16 +81,16 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	}
 
 	@Test
-	void shouldGenerateNonEmptyWavAudioFromSpeechPrompt() {
+	void shouldGenerateNonEmptyWavAudioFromTextToSpeechPrompt() {
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
 			.speed(SPEED)
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.WAV)
 			.model(OpenAiAudioApi.TtsModel.TTS_1.value)
 			.build();
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
-		SpeechResponse response = this.speechModel.call(speechPrompt);
+		TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt(
+				"Today is a wonderful day to build something people love!", speechOptions);
+		TextToSpeechResponse response = this.speechModel.call(speechPrompt);
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();
@@ -102,10 +106,10 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
 			.build();
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
-		SpeechResponse response = this.speechModel.call(speechPrompt);
-		OpenAiAudioSpeechResponseMetadata metadata = response.getMetadata();
+		TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt(
+				"Today is a wonderful day to build something people love!", speechOptions);
+		TextToSpeechResponse response = this.speechModel.call(speechPrompt);
+		OpenAiAudioSpeechResponseMetadata metadata = (OpenAiAudioSpeechResponseMetadata) response.getMetadata();
 		assertThat(metadata).isNotNull();
 		assertThat(metadata.getRateLimit()).isNotNull();
 		assertThat(metadata.getRateLimit().getRequestsLimit()).isPositive();
@@ -114,7 +118,7 @@ class OpenAiSpeechModelIT extends AbstractIT {
 	}
 
 	@Test
-	void shouldStreamNonEmptyResponsesForValidSpeechPrompts() {
+	void shouldStreamNonEmptyResponsesForValidTextToSpeechPrompts() {
 
 		OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
 			.voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY.getValue())
@@ -123,11 +127,11 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
 			.build();
 
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
-		Flux<SpeechResponse> responseFlux = this.speechModel.stream(speechPrompt);
+		TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt(
+				"Today is a wonderful day to build something people love!", speechOptions);
+		Flux<TextToSpeechResponse> responseFlux = this.speechModel.stream(speechPrompt);
 		assertThat(responseFlux).isNotNull();
-		List<SpeechResponse> responses = responseFlux.collectList().block();
+		List<TextToSpeechResponse> responses = responseFlux.collectList().block();
 		assertThat(responses).isNotNull();
 		responses.forEach(response ->
 		// System.out.println("Audio data chunk size: " +
@@ -144,9 +148,9 @@ class OpenAiSpeechModelIT extends AbstractIT {
 			.responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
 			.model(OpenAiAudioApi.TtsModel.GPT_4_O_MINI_TTS.value)
 			.build();
-		SpeechPrompt speechPrompt = new SpeechPrompt("Today is a wonderful day to build something people love!",
-				speechOptions);
-		SpeechResponse response = this.speechModel.call(speechPrompt);
+		TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt(
+				"Today is a wonderful day to build something people love!", speechOptions);
+		TextToSpeechResponse response = this.speechModel.call(speechPrompt);
 		byte[] audioBytes = response.getResult().getOutput();
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput()).isNotEmpty();

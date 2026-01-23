@@ -22,7 +22,6 @@ import io.micrometer.common.KeyValues;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.HighCardinalityKeyNames;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationDocumentation.LowCardinalityKeyNames;
-import org.springframework.lang.Nullable;
 import org.springframework.util.StringUtils;
 
 /**
@@ -52,7 +51,6 @@ public class DefaultVectorStoreObservationConvention implements VectorStoreObser
 	}
 
 	@Override
-	@Nullable
 	public String getContextualName(VectorStoreObservationContext context) {
 		return "%s %s".formatted(context.getDatabaseSystem(), context.getOperationName());
 	}

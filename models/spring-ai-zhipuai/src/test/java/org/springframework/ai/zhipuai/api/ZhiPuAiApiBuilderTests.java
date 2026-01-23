@@ -37,8 +37,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -66,7 +64,7 @@ class ZhiPuAiApiBuilderTests {
 
 	@Test
 	void testFullBuilder() {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		var headers = new HttpHeaders();
 		headers.add("Custom-Header", "test-value");
 		RestClient.Builder restClientBuilder = RestClient.builder();
 		WebClient.Builder webClientBuilder = WebClient.builder();
@@ -232,7 +230,7 @@ class ZhiPuAiApiBuilderTests {
 			ZhiPuAiApi.ChatCompletionRequest request = new ZhiPuAiApi.ChatCompletionRequest(
 					List.of(chatCompletionMessage), "glm-4-flash", 0.8, false);
 
-			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			var additionalHeaders = new HttpHeaders();
 			additionalHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer additional-key");
 			ResponseEntity<ZhiPuAiApi.ChatCompletion> response = api.chatCompletionEntity(request, additionalHeaders);
 			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -289,7 +287,7 @@ class ZhiPuAiApiBuilderTests {
 					ZhiPuAiApi.ChatCompletionMessage.Role.USER);
 			ZhiPuAiApi.ChatCompletionRequest request = new ZhiPuAiApi.ChatCompletionRequest(
 					List.of(chatCompletionMessage), "glm-4-flash", 0.8, true);
-			MultiValueMap<String, String> additionalHeaders = new LinkedMultiValueMap<>();
+			var additionalHeaders = new HttpHeaders();
 			additionalHeaders.add(HttpHeaders.AUTHORIZATION, "Bearer additional-key");
 			List<ZhiPuAiApi.ChatCompletionChunk> response = api.chatCompletionStream(request, additionalHeaders)
 				.collectList()

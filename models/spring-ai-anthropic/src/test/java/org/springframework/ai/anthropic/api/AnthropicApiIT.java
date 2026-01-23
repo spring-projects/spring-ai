@@ -112,7 +112,7 @@ public class AnthropicApiIT {
 				Role.USER);
 		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi
 			.chatCompletionEntity(ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
 				.messages(List.of(chatCompletionMessage))
 				.maxTokens(100)
 				.temperature(0.8)
@@ -179,7 +179,7 @@ public class AnthropicApiIT {
 				Role.USER);
 
 		Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(100)
 			.temperature(0.8)
@@ -310,7 +310,7 @@ public class AnthropicApiIT {
 		messageConversation.add(chatCompletionMessage);
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 			.messages(messageConversation)
 			.maxTokens(1500)
 			.stream(true)
@@ -347,7 +347,7 @@ public class AnthropicApiIT {
 		AnthropicApi api = AnthropicApi.builder().apiKey("FAKE_KEY_FOR_ERROR_RESPONSE").build();
 
 		Flux<ChatCompletionResponse> response = api.chatCompletionStream(ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(100)
 			.temperature(0.8)

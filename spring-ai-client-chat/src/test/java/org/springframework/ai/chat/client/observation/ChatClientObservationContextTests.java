@@ -25,8 +25,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +42,7 @@ import static org.mockito.Mockito.mock;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Jonatan Ivanov
  */
 @ExtendWith(MockitoExtension.class)
 class ChatClientObservationContextTests {
@@ -77,7 +82,7 @@ class ChatClientObservationContextTests {
 	@Test
 	void whenNullRequestThenThrowException() {
 		assertThatThrownBy(() -> ChatClientObservationContext.builder().request(null).build())
-			.isInstanceOf(IllegalArgumentException.class);
+			.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
@@ -182,6 +187,31 @@ class ChatClientObservationContextTests {
 		// Should return either empty list or null when no advisors specified
 		assertThat(observationContext.getAdvisors()).satisfiesAnyOf(advisors -> assertThat(advisors).isNull(),
 				advisors -> assertThat(advisors).isEmpty());
+	}
+
+	@Test
+	void whenSetChatClientResponseThenReturnTheSameResponse() {
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
+			.build();
+		var response = ChatClientResponse.builder()
+			.chatResponse(ChatResponse.builder()
+				.generations(List.of(new Generation(new AssistantMessage("Test message"))))
+				.build())
+			.build();
+
+		observationContext.setResponse(response);
+		assertThat(observationContext.getResponse()).isSameAs(response);
+	}
+
+	@Test
+	void whenSetChatClientResponseWithNullChatResponseThenReturnNull() {
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt("Test prompt")).build())
+			.build();
+
+		observationContext.setResponse(null);
+		assertThat(observationContext.getResponse()).isNull();
 	}
 
 }

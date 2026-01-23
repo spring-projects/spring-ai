@@ -16,23 +16,25 @@
 
 package org.springframework.ai.openai;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.audio.tts.Speech;
+import org.springframework.ai.audio.tts.TextToSpeechModel;
+import org.springframework.ai.audio.tts.TextToSpeechOptions;
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.openai.api.OpenAiAudioApi;
 import org.springframework.ai.openai.api.OpenAiAudioApi.SpeechRequest.AudioResponseFormat;
-import org.springframework.ai.openai.audio.speech.Speech;
-import org.springframework.ai.openai.audio.speech.SpeechModel;
-import org.springframework.ai.openai.audio.speech.SpeechPrompt;
-import org.springframework.ai.openai.audio.speech.SpeechResponse;
-import org.springframework.ai.openai.audio.speech.StreamingSpeechModel;
 import org.springframework.ai.openai.metadata.audio.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -46,13 +48,13 @@ import org.springframework.util.StringUtils;
  * @see OpenAiAudioApi
  * @since 1.0.0-M1
  */
-public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel {
+public class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 	/**
 	 * The speed of the default voice synthesis.
 	 * @see OpenAiAudioSpeechOptions
 	 */
-	private static final Float SPEED = 1.0f;
+	private static final Double SPEED = 1.0;
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -118,64 +120,58 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 
 	@Override
 	public byte[] call(String text) {
-		SpeechPrompt speechRequest = new SpeechPrompt(text);
-		return call(speechRequest).getResult().getOutput();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt(text);
+		return call(prompt).getResult().getOutput();
 	}
 
 	@Override
-	public SpeechResponse call(SpeechPrompt speechPrompt) {
+	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 
-		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
+		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(prompt);
 
-		ResponseEntity<byte[]> speechEntity = this.retryTemplate
-			.execute(ctx -> this.audioApi.createSpeech(speechRequest));
+		ResponseEntity<byte[]> speechEntity = RetryUtils.execute(this.retryTemplate,
+				() -> this.audioApi.createSpeech(speechRequest));
 
 		var speech = speechEntity.getBody();
 
 		if (speech == null) {
 			logger.warn("No speech response returned for speechRequest: {}", speechRequest);
-			return new SpeechResponse(new Speech(new byte[0]));
+			return new TextToSpeechResponse(List.of(new Speech(new byte[0])));
 		}
 
 		RateLimit rateLimits = OpenAiResponseHeaderExtractor.extractAiResponseHeaders(speechEntity);
 
-		return new SpeechResponse(new Speech(speech), new OpenAiAudioSpeechResponseMetadata(rateLimits));
+		return new TextToSpeechResponse(List.of(new Speech(speech)), new OpenAiAudioSpeechResponseMetadata(rateLimits));
 	}
 
 	/**
 	 * Streams the audio response for the given speech prompt.
-	 * @param speechPrompt The speech prompt containing the text and options for speech
+	 * @param prompt The speech prompt containing the text and options for speech
 	 * synthesis.
-	 * @return A Flux of SpeechResponse objects containing the streamed audio and
+	 * @return A Flux of TextToSpeechResponse objects containing the streamed audio and
 	 * metadata.
 	 */
 	@Override
-	public Flux<SpeechResponse> stream(SpeechPrompt speechPrompt) {
+	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 
-		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(speechPrompt);
+		OpenAiAudioApi.SpeechRequest speechRequest = createRequest(prompt);
 
-		Flux<ResponseEntity<byte[]>> speechEntity = this.retryTemplate
-			.execute(ctx -> this.audioApi.stream(speechRequest));
+		Flux<ResponseEntity<byte[]>> speechEntity = RetryUtils.execute(this.retryTemplate,
+				() -> this.audioApi.stream(speechRequest));
 
-		return speechEntity.map(entity -> new SpeechResponse(new Speech(entity.getBody()),
+		return speechEntity.map(entity -> new TextToSpeechResponse(List.of(new Speech(entity.getBody())),
 				new OpenAiAudioSpeechResponseMetadata(OpenAiResponseHeaderExtractor.extractAiResponseHeaders(entity))));
 	}
 
-	private OpenAiAudioApi.SpeechRequest createRequest(SpeechPrompt request) {
-		OpenAiAudioSpeechOptions options = this.defaultOptions;
-
-		if (request.getOptions() != null) {
-			if (request.getOptions() instanceof OpenAiAudioSpeechOptions runtimeOptions) {
-				options = this.merge(runtimeOptions, options);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type SpeechOptions: "
-						+ request.getOptions().getClass().getSimpleName());
-			}
-		}
+	private OpenAiAudioApi.SpeechRequest createRequest(TextToSpeechPrompt prompt) {
+		OpenAiAudioSpeechOptions runtimeOptions = (prompt
+			.getOptions() instanceof OpenAiAudioSpeechOptions openAiAudioSpeechOptions) ? openAiAudioSpeechOptions
+					: null;
+		OpenAiAudioSpeechOptions options = (runtimeOptions != null) ? this.merge(runtimeOptions, this.defaultOptions)
+				: this.defaultOptions;
 
 		String input = StringUtils.hasText(options.getInput()) ? options.getInput()
-				: request.getInstructions().getText();
+				: prompt.getInstructions().getText();
 
 		OpenAiAudioApi.SpeechRequest.Builder requestBuilder = OpenAiAudioApi.SpeechRequest.builder()
 			.model(options.getModel())
@@ -185,6 +181,11 @@ public class OpenAiAudioSpeechModel implements SpeechModel, StreamingSpeechModel
 			.speed(options.getSpeed());
 
 		return requestBuilder.build();
+	}
+
+	@Override
+	public TextToSpeechOptions getDefaultOptions() {
+		return this.defaultOptions;
 	}
 
 	private OpenAiAudioSpeechOptions merge(OpenAiAudioSpeechOptions source, OpenAiAudioSpeechOptions target) {

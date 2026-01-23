@@ -22,6 +22,7 @@ import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvide
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -33,8 +34,9 @@ import static org.mockito.Mockito.mockingDetails;
 
 class McpServerSseWebFluxAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class, McpServerAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class,
+				McpServerAutoConfiguration.class, McpServerObjectMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {

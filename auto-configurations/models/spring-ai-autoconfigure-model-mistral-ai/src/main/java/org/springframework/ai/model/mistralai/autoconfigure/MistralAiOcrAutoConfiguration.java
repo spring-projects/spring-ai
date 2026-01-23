@@ -18,14 +18,15 @@ package org.springframework.ai.model.mistralai.autoconfigure;
 
 import org.springframework.ai.mistralai.ocr.MistralOcrApi;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -47,7 +48,8 @@ public class MistralAiOcrAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MistralOcrApi mistralOcrApi(MistralAiCommonProperties commonProperties, MistralAiOcrProperties ocrProperties,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var apiKey = ocrProperties.getApiKey();
 		var baseUrl = ocrProperties.getBaseUrl();
@@ -59,7 +61,8 @@ public class MistralAiOcrAutoConfiguration {
 		Assert.hasText(resolvedBaseUrl, "Mistral base URL must be set");
 
 		return new MistralOcrApi(resolvedBaseUrl, resolvedApiKey,
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 	}
 
 }

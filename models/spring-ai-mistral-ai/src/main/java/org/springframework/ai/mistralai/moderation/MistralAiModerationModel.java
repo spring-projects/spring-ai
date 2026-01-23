@@ -23,6 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationRequest;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResponse;
+import org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResult;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
@@ -34,13 +37,9 @@ import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
-
-import static org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationRequest;
-import static org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResponse;
-import static org.springframework.ai.mistralai.api.MistralAiModerationApi.MistralAiModerationResult;
 
 /**
  * @author Ricken Bazolo
@@ -56,19 +55,6 @@ public class MistralAiModerationModel implements ModerationModel {
 
 	private final MistralAiModerationOptions defaultOptions;
 
-	@Deprecated
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE,
-				MistralAiModerationOptions.builder()
-					.model(MistralAiModerationApi.Model.MISTRAL_MODERATION.getValue())
-					.build());
-	}
-
-	@Deprecated
-	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, MistralAiModerationOptions options) {
-		this(mistralAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE, options);
-	}
-
 	public MistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi, RetryTemplate retryTemplate,
 			MistralAiModerationOptions options) {
 		Assert.notNull(mistralAiModerationApi, "mistralAiModerationApi must not be null");
@@ -81,7 +67,8 @@ public class MistralAiModerationModel implements ModerationModel {
 
 	@Override
 	public ModerationResponse call(ModerationPrompt moderationPrompt) {
-		return this.retryTemplate.execute(ctx -> {
+
+		return RetryUtils.execute(this.retryTemplate, () -> {
 
 			var instructions = moderationPrompt.getInstructions().getText();
 
@@ -92,7 +79,8 @@ public class MistralAiModerationModel implements ModerationModel {
 						MistralAiModerationRequest.class);
 			}
 			else {
-				// moderationPrompt.getOptions() never null but model can be empty, cause
+				// moderationPrompt.getOptions() never null but model can be empty,
+				// cause
 				// by ModerationPrompt constructor
 				moderationRequest = ModelOptionsUtils.merge(toMistralAiModerationOptions(moderationPrompt.getOptions()),
 						moderationRequest, MistralAiModerationRequest.class);
@@ -109,7 +97,7 @@ public class MistralAiModerationModel implements ModerationModel {
 		var moderationApiResponse = moderationResponseEntity.getBody();
 		if (moderationApiResponse == null) {
 			logger.warn("No moderation response returned for request: {}", mistralAiModerationRequest);
-			return new ModerationResponse(new Generation());
+			return new ModerationResponse(null);
 		}
 
 		List<ModerationResult> moderationResults = new ArrayList<>();

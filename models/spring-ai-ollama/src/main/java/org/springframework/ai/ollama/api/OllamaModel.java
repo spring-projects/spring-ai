@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.springframework.ai.model.ChatModelDescription;
  *
  * @author Siarhei Blashuk
  * @author Thomas Vitale
+ * @author Sun Yuhan
  * @since 1.0.0
  */
 public enum OllamaModel implements ChatModelDescription {
@@ -50,6 +51,23 @@ public enum OllamaModel implements ChatModelDescription {
 	 * Qwen3 4B
 	 */
 	QWEN3_4B("qwen3:4b"),
+
+	/**
+	 * Qwen3 4B with thinking support. This variant auto-enables thinking by default in
+	 * Ollama 0.12+, providing separate reasoning traces in the response.
+	 * @see OllamaChatOptions#thinkOption
+	 */
+	QWEN3_4B_THINKING("qwen3:4b-thinking"),
+
+	/**
+	 * Qwen3 1.7b
+	 */
+	QWEN_3_1_7_B("qwen3:1.7b"),
+
+	/**
+	 * Qwen3 0.6b
+	 */
+	QWEN_3_06B("qwen3:0.6b"),
 
 	/**
 	 * QwQ is the reasoning model of the Qwen series.
@@ -176,7 +194,14 @@ public enum OllamaModel implements ChatModelDescription {
 	/**
 	 * State-of-the-art large embedding model from mixedbread.ai
 	 */
-	MXBAI_EMBED_LARGE("mxbai-embed-large");
+	MXBAI_EMBED_LARGE("mxbai-embed-large"),
+
+	/**
+	 * A multilingual text embedding model with 8B parameters. Supports 100+ languages and
+	 * features a 32k context window. It offers a high embedding dimension of up to 4096,
+	 * which supports user-defined output dimensions ranging from 32 to 4096.
+	 */
+	QWEN3_EMBED_8B("qwen3-embedding:8b");
 
 	private final String id;
 

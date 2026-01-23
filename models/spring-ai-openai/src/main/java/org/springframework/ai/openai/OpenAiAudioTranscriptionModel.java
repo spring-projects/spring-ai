@@ -30,8 +30,8 @@ import org.springframework.ai.openai.metadata.audio.OpenAiAudioTranscriptionResp
 import org.springframework.ai.openai.metadata.support.OpenAiResponseHeaderExtractor;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.core.io.Resource;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -112,14 +112,20 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		if (request.responseFormat().isJsonType()) {
 
-			ResponseEntity<StructuredResponse> transcriptionEntity = this.retryTemplate
-				.execute(ctx -> this.audioApi.createTranscription(request, StructuredResponse.class));
+			ResponseEntity<StructuredResponse> transcriptionEntity;
+			try {
+				transcriptionEntity = this.retryTemplate
+					.execute(() -> this.audioApi.createTranscription(request, StructuredResponse.class));
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Error calling OpenAI transcription API", e);
+			}
 
 			var transcription = transcriptionEntity.getBody();
 
 			if (transcription == null) {
 				logger.warn("No transcription returned for request: {}", audioResource);
-				return new AudioTranscriptionResponse(null);
+				return new AudioTranscriptionResponse(new AudioTranscription(""));
 			}
 
 			AudioTranscription transcript = new AudioTranscription(transcription.text());
@@ -133,14 +139,20 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		}
 		else {
 
-			ResponseEntity<String> transcriptionEntity = this.retryTemplate
-				.execute(ctx -> this.audioApi.createTranscription(request, String.class));
+			ResponseEntity<String> transcriptionEntity;
+			try {
+				transcriptionEntity = this.retryTemplate
+					.execute(() -> this.audioApi.createTranscription(request, String.class));
+			}
+			catch (Exception e) {
+				throw new RuntimeException("Error calling OpenAI transcription API", e);
+			}
 
 			var transcription = transcriptionEntity.getBody();
 
 			if (transcription == null) {
 				logger.warn("No transcription returned for request: {}", audioResource);
-				return new AudioTranscriptionResponse(null);
+				return new AudioTranscriptionResponse(new AudioTranscription(""));
 			}
 
 			AudioTranscription transcript = new AudioTranscription(transcription);

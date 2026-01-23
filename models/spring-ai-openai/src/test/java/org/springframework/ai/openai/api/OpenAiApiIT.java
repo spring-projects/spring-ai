@@ -23,7 +23,6 @@ import java.util.List;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -76,13 +75,13 @@ class OpenAiApiIT {
 	}
 
 	@Test
-	@Disabled("The reasoning_effort option is only available in o1 models.")
 	void validateReasoningTokens() {
 		ChatCompletionMessage userMessage = new ChatCompletionMessage(
-				"If a train travels 100 miles in 2 hours, what is its average speed?", ChatCompletionMessage.Role.USER);
-		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "o1", null, null, null, null,
+				"Are there an infinite number of prime numbers such that n mod 4 == 3? Think through the steps and respond.",
+				ChatCompletionMessage.Role.USER);
+		ChatCompletionRequest request = new ChatCompletionRequest(List.of(userMessage), "gpt-5", null, null, null, null,
 				null, null, null, null, null, null, null, null, null, null, null, null, false, null, null, null, null,
-				null, null, null, "low", null, null);
+				null, null, null, "high", null, null, null, null, null);
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
 		assertThat(response).isNotNull();
@@ -186,7 +185,7 @@ class OpenAiApiIT {
 
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
 				modelName.getValue(), null, null, null, null, null, null, null, null, null, null, null, null, null,
-				null, null, null, false, null, 1.0, null, null, null, null, null, null, null, "low");
+				null, null, null, false, null, 1.0, null, null, null, null, null, null, null, "low", null, null, null);
 
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 
@@ -233,7 +232,7 @@ class OpenAiApiIT {
 		ChatCompletionRequest request = new ChatCompletionRequest(List.of(chatCompletionMessage), // messages
 				OpenAiApi.ChatModel.GPT_4_O.value, null, null, null, null, null, null, null, null, null, null, null,
 				null, null, null, serviceTier.getValue(), null, false, null, 1.0, null, null, null, null, null, null,
-				null, null);
+				null, null, null, null, null);
 
 		ResponseEntity<ChatCompletion> response = this.openAiApi.chatCompletionEntity(request);
 

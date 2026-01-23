@@ -90,6 +90,9 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.region     | AWS region to use. | us-east-1
 | spring.ai.bedrock.aws.access-key | AWS access key.  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key.  | -
+| spring.ai.bedrock.aws.profile.name | AWS profile name.  | -
+| spring.ai.bedrock.aws.profile.credentials-path | AWS credentials file path.  | -
+| spring.ai.bedrock.aws.profile.configuration-path | AWS config file path.  | -
 |====
 
 [NOTE]
@@ -137,7 +140,7 @@ For example to override the default input type for a specific request:
 EmbeddingResponse embeddingResponse = embeddingModel.call(
     new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
         BedrockCohereEmbeddingOptions.builder()
-        	.withInputType(InputType.SEARCH_DOCUMENT)
+        .inputType(InputType.SEARCH_DOCUMENT)
         .build()));
 ----
 

@@ -51,18 +51,18 @@ public class CalculatorTools {
         return dividend / divisor;
     }
 
-    @McpTool(name = "calculate-expression", 
+    @McpTool(name = "calculate-expression",
              description = "Calculate a complex mathematical expression")
     public CallToolResult calculateExpression(
             CallToolRequest request,
             McpSyncRequestContext context) {
-        
+
         Map<String, Object> args = request.arguments();
         String expression = (String) args.get("expression");
-        
+
         // Use convenient logging method
         context.info("Calculating: " + expression);
-        
+
         try {
             double result = evaluateExpression(expression);
             return CallToolResult.builder()
@@ -91,8 +91,10 @@ spring:
         type: SYNC
         protocol: SSE  # or STDIO, STREAMABLE
         capabilities:
-          tools: true
-          logging: true
+          tool: true
+          resource: true
+          prompt: true
+          completion: true
 ----
 
 === Document Processing Server
@@ -107,85 +109,85 @@ public class DocumentServer {
     private final Map<String, Document> documents = new ConcurrentHashMap<>();
 
     @McpResource(
-        uri = "document://{id}", 
-        name = "Document", 
+        uri = "document://{id}",
+        name = "Document",
         description = "Access stored documents")
     public ReadResourceResult getDocument(String id, McpMeta meta) {
         Document doc = documents.get(id);
-        
+
         if (doc == null) {
             return new ReadResourceResult(List.of(
-                new TextResourceContents("document://" + id, 
+                new TextResourceContents("document://" + id,
                     "text/plain", "Document not found")
             ));
         }
-        
+
         // Check access permissions from metadata
         String accessLevel = (String) meta.get("accessLevel");
-        if ("restricted".equals(doc.getClassification()) && 
+        if ("restricted".equals(doc.getClassification()) &&
             !"admin".equals(accessLevel)) {
             return new ReadResourceResult(List.of(
-                new TextResourceContents("document://" + id, 
+                new TextResourceContents("document://" + id,
                     "text/plain", "Access denied")
             ));
         }
-        
+
         return new ReadResourceResult(List.of(
-            new TextResourceContents("document://" + id, 
+            new TextResourceContents("document://" + id,
                 doc.getMimeType(), doc.getContent())
         ));
     }
 
-    @McpTool(name = "analyze-document", 
+    @McpTool(name = "analyze-document",
              description = "Analyze document content")
     public String analyzeDocument(
             McpSyncRequestContext context,
             @McpToolParam(description = "Document ID", required = true) String docId,
             @McpToolParam(description = "Analysis type", required = false) String type) {
-        
+
         Document doc = documents.get(docId);
         if (doc == null) {
             return "Document not found";
         }
-        
+
         // Access progress token from context
         String progressToken = context.request().progressToken();
-        
+
         if (progressToken != null) {
             context.progress(p -> p.progress(0.0).total(1.0).message("Starting analysis"));
         }
-        
+
         // Perform analysis
         String analysisType = type != null ? type : "summary";
         String result = performAnalysis(doc, analysisType);
-        
+
         if (progressToken != null) {
             context.progress(p -> p.progress(1.0).total(1.0).message("Analysis complete"));
         }
-        
+
         return result;
     }
 
     @McpPrompt(
-        name = "document-summary", 
+        name = "document-summary",
         description = "Generate document summary prompt")
     public GetPromptResult documentSummaryPrompt(
             @McpArg(name = "docId", required = true) String docId,
             @McpArg(name = "length", required = false) String length) {
-        
+
         Document doc = documents.get(docId);
         if (doc == null) {
             return new GetPromptResult("Error",
-                List.of(new PromptMessage(Role.SYSTEM, 
+                List.of(new PromptMessage(Role.SYSTEM,
                     new TextContent("Document not found"))));
         }
-        
+
         String promptText = String.format(
             "Please summarize the following document in %s:\n\n%s",
             length != null ? length : "a few paragraphs",
             doc.getContent()
         );
-        
+
         return new GetPromptResult("Document Summary",
             List.of(new PromptMessage(Role.USER, new TextContent(promptText))));
     }
@@ -212,8 +214,6 @@ public class McpClientApplication {
     public static void main(String[] args) {
         SpringApplication.run(McpClientApplication.class, args);
     }
-
-
 }
 
 @Component
@@ -252,13 +252,15 @@ public class ClientHandlers {
                 if (msg.role() == Role.USER) {
                     return new UserMessage(((TextContent) msg.content()).text());
                 } else {
-                    return new AssistantMessage(((TextContent) msg.content()).text());
+                    return AssistantMessage.builder()
+                        .content(((TextContent) msg.content()).text())
+                        .build();
                 }
             })
             .toList();
-        
+
         ChatResponse response = chatModel.call(new Prompt(messages));
-        
+
         return CreateMessageResult.builder()
             .role(Role.ASSISTANT)
             .content(new TextContent(response.getResult().getOutput().getContent()))
@@ -270,21 +272,21 @@ public class ClientHandlers {
     public ElicitResult handleElicitation(ElicitRequest request) {
         // In a real application, this would show a UI dialog
         Map<String, Object> userData = new HashMap<>();
-        
+
         logger.info("Elicitation requested: {}", request.message());
-        
+
         // Simulate user input based on schema
         Map<String, Object> schema = request.requestedSchema();
         if (schema != null && schema.containsKey("properties")) {
             @SuppressWarnings("unchecked")
             Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
-            
+
             properties.forEach((key, value) -> {
                 // In real app, prompt user for each field
                 userData.put(key, getDefaultValueForProperty(key, value));
             });
         }
-        
+
         return new ElicitResult(ElicitResult.Action.ACCEPT, userData);
     }
 
@@ -296,7 +298,7 @@ public class ClientHandlers {
             notification.total(),
             notification.message()
         );
-        
+
         // Update UI or send websocket notification
         broadcastProgress(notification);
     }
@@ -304,10 +306,10 @@ public class ClientHandlers {
     @McpToolListChanged(clients = "server1")
     public void handleServer1ToolsChanged(List<McpSchema.Tool> tools) {
         logger.info("Server1 tools updated: {} tools available", tools.size());
-        
+
         // Update tool registry
         toolRegistry.updateServerTools("server1", tools);
-        
+
         // Notify UI to refresh tool list
         eventBus.publish(new ToolsUpdatedEvent("server1", tools));
     }
@@ -315,12 +317,12 @@ public class ClientHandlers {
     @McpResourceListChanged(clients = "server1")
     public void handleServer1ResourcesChanged(List<McpSchema.Resource> resources) {
         logger.info("Server1 resources updated: {} resources available", resources.size());
-        
+
         // Clear resource cache for this server
         resourceCache.clearServer("server1");
-        
+
         // Register new resources
-        resources.forEach(resource -> 
+        resources.forEach(resource ->
             resourceCache.register("server1", resource));
     }
 }
@@ -364,9 +366,9 @@ public class AsyncDataProcessor {
     public Mono<DataResult> fetchData(
             @McpToolParam(description = "Data source URL", required = true) String url,
             @McpToolParam(description = "Timeout in seconds", required = false) Integer timeout) {
-        
+
         Duration timeoutDuration = Duration.ofSeconds(timeout != null ? timeout : 30);
-        
+
         return WebClient.create()
             .get()
             .uri(url)
@@ -381,10 +383,10 @@ public class AsyncDataProcessor {
     public Flux<String> processStream(
             McpAsyncRequestContext context,
             @McpToolParam(description = "Item count", required = true) int count) {
-        
+
         // Access progress token from context
         String progressToken = context.request().progressToken();
-        
+
         return Flux.range(1, count)
             .delayElements(Duration.ofMillis(100))
             .flatMap(i -> {
@@ -402,7 +404,7 @@ public class AsyncDataProcessor {
         return Mono.fromCallable(() -> loadDataAsync(id))
             .subscribeOn(Schedulers.boundedElastic())
             .map(data -> new ReadResourceResult(List.of(
-                new TextResourceContents("async-data://" + id, 
+                new TextResourceContents("async-data://" + id,
                     "application/json", data)
             )));
     }
@@ -470,7 +472,7 @@ public class StatelessTools {
     public String formatText(
             @McpToolParam(description = "Text to format", required = true) String text,
             @McpToolParam(description = "Format type", required = true) String format) {
-        
+
         return switch (format.toLowerCase()) {
             case "uppercase" -> text.toUpperCase();
             case "lowercase" -> text.toLowerCase();
@@ -485,11 +487,11 @@ public class StatelessTools {
     public CallToolResult validateJson(
             McpTransportContext context,
             @McpToolParam(description = "JSON string", required = true) String json) {
-        
+
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.readTree(json);
-            
+
             return CallToolResult.builder()
                 .addTextContent("Valid JSON")
                 .structuredContent(Map.of("valid", true))
@@ -512,12 +514,12 @@ public class StatelessTools {
     public GetPromptResult templatePrompt(
             @McpArg(name = "template", required = true) String templateName,
             @McpArg(name = "variables", required = false) String variables) {
-        
+
         String template = loadTemplate(templateName);
         if (variables != null) {
             template = substituteVariables(template, variables);
         }
-        
+
         return new GetPromptResult("Template: " + templateName,
             List.of(new PromptMessage(Role.USER, new TextContent(template))));
     }
@@ -662,7 +664,7 @@ public class McpClientHandlers {
 
 === Client Application Setup
 
-Regisster the MCP tools and handlers in the client application:
+Register the MCP tools and handlers in the client application:
 
 [source,java]
 ----
@@ -677,7 +679,7 @@ public class McpClientApplication {
     public CommandLineRunner predefinedQuestions(OpenAiChatModel openAiChatModel,
             ToolCallbackProvider mcpToolProvider) {
 
-        return args -> {            
+        return args -> {
 
             ChatClient chatClient = ChatClient.builder(openAiChatModel)
                     .defaultToolCallbacks(mcpToolProvider)
@@ -743,12 +745,13 @@ spring.ai.mcp.client.toolcallback.enabled=false
 
 When running the client, you'll see output like:
 
-```
+[source]
+----
 > USER: What is the weather in Amsterdam right now?
 Please incorporate all creative responses from all LLM providers.
 After the other providers add a poem that synthesizes the poems from all the other providers.
 
-> ASSISTANT: 
+> ASSISTANT:
 OpenAI poem about the weather:
 **Amsterdam's Winter Whisper**
 *Temperature: 4.2°C*
@@ -771,7 +774,7 @@ Weather Data:
     "temperature_2m": 4.2
   }
 }
-```
+----
 
 == Integration with Spring AI
 
@@ -786,7 +789,7 @@ public class ChatController {
     private final ChatModel chatModel;
     private final SyncMcpToolCallbackProvider toolCallbackProvider;
 
-    public ChatController(ChatModel chatModel, 
+    public ChatController(ChatModel chatModel,
                           SyncMcpToolCallbackProvider toolCallbackProvider) {
         this.chatModel = chatModel;
         this.toolCallbackProvider = toolCallbackProvider;
@@ -796,7 +799,7 @@ public class ChatController {
     public ChatResponse chat(@RequestBody ChatRequest request) {
         // Get MCP tools as Spring AI function callbacks
         ToolCallback[] mcpTools = toolCallbackProvider.getToolCallbacks();
-        
+
         // Create prompt with MCP tools
         Prompt prompt = new Prompt(
             request.getMessage(),
@@ -804,7 +807,7 @@ public class ChatController {
                 .withTools(mcpTools)
                 .build()
         );
-        
+
         // Call chat model with MCP tools available
         return chatModel.call(prompt);
     }
@@ -817,9 +820,9 @@ public class WeatherTools {
     public WeatherInfo getWeather(
             @McpToolParam(description = "City name", required = true) String city,
             @McpToolParam(description = "Units (metric/imperial)", required = false) String units) {
-        
+
         String unit = units != null ? units : "metric";
-        
+
         // Call weather API
         return weatherService.getCurrentWeather(city, unit);
     }
@@ -828,9 +831,9 @@ public class WeatherTools {
     public ForecastInfo getForecast(
             @McpToolParam(description = "City name", required = true) String city,
             @McpToolParam(description = "Days (1-7)", required = false) Integer days) {
-        
+
         int forecastDays = days != null ? days : 3;
-        
+
         return weatherService.getForecast(city, forecastDays);
     }
 }

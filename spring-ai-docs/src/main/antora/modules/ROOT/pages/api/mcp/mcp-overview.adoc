@@ -88,7 +88,7 @@ a| The MCP Server is a foundational component in the Model Context Protocol (MCP
 ^a| image::mcp/java-mcp-server-architecture.jpg[Java MCP Server Architecture, width=600]
 |===
 
-For detailed implementation guidance, using the low-level MCP Client/Server APIs, refer to the link:https://modelcontextprotocol.io/sdk/java[MCP Java SDK documentation].
+For detailed implementation guidance, using the low-level MCP Client/Server APIs, refer to the link:https://modelcontextprotocol.io/sdk/java/mcp-overview[MCP Java SDK documentation].
 For simplified setup using Spring Boot, use the MCP Boot Starters described below.
 
 == Spring AI MCP Integration

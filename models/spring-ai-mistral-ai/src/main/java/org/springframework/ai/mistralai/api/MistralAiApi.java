@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,38 +82,6 @@ public class MistralAiApi {
 	private final WebClient webClient;
 
 	private final MistralAiStreamFunctionCallingHelper chunkMerger = new MistralAiStreamFunctionCallingHelper();
-
-	/**
-	 * Create a new client api with DEFAULT_BASE_URL
-	 * @param apiKey Mistral api Key.
-	 */
-	@Deprecated
-	public MistralAiApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey Mistral api Key.
-	 */
-	@Deprecated
-	public MistralAiApi(String baseUrl, String apiKey) {
-		this(baseUrl, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
-	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
-	 * @param apiKey Mistral api Key.
-	 * @param restClientBuilder RestClient builder.
-	 * @param responseErrorHandler Response error handler.
-	 */
-	@Deprecated
-	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
-		this(baseUrl, apiKey, restClientBuilder, WebClient.builder(), responseErrorHandler);
-	}
 
 	/**
 	 * Create a new client api.
@@ -280,9 +248,7 @@ public class MistralAiApi {
 	/**
 	 * List of well-known Mistral chat models.
 	 *
-	 * @see <a href=
-	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
-	 * Overview</a>
+	 * @see <a href="https://docs.mistral.ai/getting-started/models">Mistral AI Models</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
@@ -291,17 +257,36 @@ public class MistralAiApi {
 		MAGISTRAL_MEDIUM("magistral-medium-latest"),
 		MISTRAL_MEDIUM("mistral-medium-latest"),
 		CODESTRAL("codestral-latest"),
-		LARGE("mistral-large-latest"),
+		DEVSTRAL_MEDIUM("devstral-medium-latest"),
+		MISTRAL_LARGE("mistral-large-latest"),
 		PIXTRAL_LARGE("pixtral-large-latest"),
-		MINISTRAL_3B_LATEST("ministral-3b-latest"),
-		MINISTRAL_8B_LATEST("ministral-8b-latest"),
 		// Free Models
+		MINISTRAL_3B("ministral-3b-latest"),
+		MINISTRAL_8B("ministral-8b-latest"),
+		MINISTRAL_14B("ministral-14b-latest"),
 		MAGISTRAL_SMALL("magistral-small-latest"),
 		DEVSTRAL_SMALL("devstral-small-latest"),
-		SMALL("mistral-small-latest"),
-		PIXTRAL("pixtral-12b-2409"),
+		MISTRAL_SMALL("mistral-small-latest"),
+		PIXTRAL_12B("pixtral-12b-latest"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo");
+		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
+
+		// Deprecated - use the new names above
+		/** @deprecated Use {@link #MISTRAL_LARGE} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		LARGE("mistral-large-latest"),
+		/** @deprecated Use {@link #MISTRAL_SMALL} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		SMALL("mistral-small-latest"),
+		/** @deprecated Use {@link #MINISTRAL_3B} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		MINISTRAL_3B_LATEST("ministral-3b-latest"),
+		/** @deprecated Use {@link #MINISTRAL_8B} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		MINISTRAL_8B_LATEST("ministral-8b-latest"),
+		/** @deprecated Use {@link #PIXTRAL_12B} instead */
+		@Deprecated(forRemoval = true, since = "1.1.0")
+		PIXTRAL("pixtral-12b-2409");
 		// @formatter:on
 
 		private final String value;
@@ -324,9 +309,7 @@ public class MistralAiApi {
 	/**
 	 * List of well-known Mistral embedding models.
 	 *
-	 * @see <a href=
-	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
-	 * Overview</a>
+	 * @see <a href="https://docs.mistral.ai/getting-started/models">Mistral AI Models</a>
 	 */
 	public enum EmbeddingModel {
 
@@ -777,16 +760,342 @@ public class MistralAiApi {
 		/**
 		 * An object specifying the format that the model must output.
 		 *
-		 * @param type Must be one of 'text', 'json_object' or 'json_schema'.
-		 * @param jsonSchema A specific JSON schema to match, if 'type' is 'json_schema'.
+		 * <p>
+		 * Setting the type to JSON_SCHEMA enables Structured Outputs which ensures the
+		 * model will match your supplied JSON schema.
+		 * </p>
+		 *
+		 * @author Ricken Bazolo
+		 * @author Christian Tzolov
+		 * @see <a href= "https://docs.mistral.ai/capabilities/structured-output/">Mistral
+		 * AI Structured Output</a>
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(@JsonProperty("type") String type,
-				@JsonProperty("json_schema") Map<String, Object> jsonSchema) {
+		public static class ResponseFormat {
 
-			public ResponseFormat(String type) {
-				this(type, null);
+			/**
+			 * Type Must be one of 'text', 'json_object' or 'json_schema'.
+			 */
+			@JsonProperty("type")
+			private Type type;
+
+			/**
+			 * JSON schema object that describes the format of the JSON object. Only
+			 * applicable when type is 'json_schema'.
+			 */
+			@JsonProperty("json_schema")
+			private JsonSchema jsonSchema = null;
+
+			@JsonIgnore
+			private String schema;
+
+			public ResponseFormat() {
 			}
+
+			/**
+			 * @deprecated Use {@link #builder()} or factory methods instead.
+			 */
+			@Deprecated
+			public ResponseFormat(String type) {
+				this(Type.fromValue(type), (JsonSchema) null);
+			}
+
+			/**
+			 * @deprecated Use {@link #builder()} or factory methods instead.
+			 */
+			@Deprecated
+			public ResponseFormat(String type, Map<String, Object> jsonSchema) {
+				this(Type.fromValue(type),
+						jsonSchema != null ? JsonSchema.builder().schema(jsonSchema).strict(true).build() : null);
+			}
+
+			private ResponseFormat(Type type, JsonSchema jsonSchema) {
+				this.type = type;
+				this.jsonSchema = jsonSchema;
+			}
+
+			public ResponseFormat(Type type, String schema) {
+				this(type, org.springframework.util.StringUtils.hasText(schema)
+						? JsonSchema.builder().schema(schema).strict(true).build() : null);
+			}
+
+			public Type getType() {
+				return this.type;
+			}
+
+			public void setType(Type type) {
+				this.type = type;
+			}
+
+			public JsonSchema getJsonSchema() {
+				return this.jsonSchema;
+			}
+
+			public void setJsonSchema(JsonSchema jsonSchema) {
+				this.jsonSchema = jsonSchema;
+			}
+
+			public String getSchema() {
+				return this.schema;
+			}
+
+			public void setSchema(String schema) {
+				this.schema = schema;
+				if (schema != null) {
+					this.jsonSchema = JsonSchema.builder().schema(schema).strict(true).build();
+				}
+			}
+
+			// Factory methods
+
+			/**
+			 * Creates a ResponseFormat for text output.
+			 * @return ResponseFormat configured for text output
+			 */
+			public static ResponseFormat text() {
+				return new ResponseFormat(Type.TEXT, (JsonSchema) null);
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON object output (JSON mode).
+			 * @return ResponseFormat configured for JSON object output
+			 */
+			public static ResponseFormat jsonObject() {
+				return new ResponseFormat(Type.JSON_OBJECT, (JsonSchema) null);
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON schema output with automatic schema
+			 * generation from a class.
+			 * @param clazz the class to generate the JSON schema from
+			 * @return ResponseFormat configured with the generated JSON schema
+			 */
+			public static ResponseFormat jsonSchema(Class<?> clazz) {
+				String schemaJson = org.springframework.ai.util.json.schema.JsonSchemaGenerator.generateForType(clazz);
+				return jsonSchema(schemaJson);
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON schema output with a JSON schema string.
+			 * @param schema the JSON schema as a string
+			 * @return ResponseFormat configured with the provided JSON schema
+			 */
+			public static ResponseFormat jsonSchema(String schema) {
+				return new ResponseFormat(Type.JSON_SCHEMA, JsonSchema.builder().schema(schema).strict(true).build());
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON schema output with a JSON schema map.
+			 * @param schema the JSON schema as a map
+			 * @return ResponseFormat configured with the provided JSON schema
+			 */
+			public static ResponseFormat jsonSchema(Map<String, Object> schema) {
+				return new ResponseFormat(Type.JSON_SCHEMA, JsonSchema.builder().schema(schema).strict(true).build());
+			}
+
+			public static Builder builder() {
+				return new Builder();
+			}
+
+			@Override
+			public boolean equals(Object o) {
+				if (this == o) {
+					return true;
+				}
+				if (o == null || getClass() != o.getClass()) {
+					return false;
+				}
+				ResponseFormat that = (ResponseFormat) o;
+				return this.type == that.type && Objects.equals(this.jsonSchema, that.jsonSchema);
+			}
+
+			@Override
+			public int hashCode() {
+				return Objects.hash(this.type, this.jsonSchema);
+			}
+
+			@Override
+			public String toString() {
+				return "ResponseFormat{" + "type=" + this.type + ", jsonSchema=" + this.jsonSchema + '}';
+			}
+
+			public static final class Builder {
+
+				private Type type;
+
+				private JsonSchema jsonSchema;
+
+				private Builder() {
+				}
+
+				public Builder type(Type type) {
+					this.type = type;
+					return this;
+				}
+
+				public Builder jsonSchema(JsonSchema jsonSchema) {
+					this.jsonSchema = jsonSchema;
+					return this;
+				}
+
+				public Builder jsonSchema(String jsonSchema) {
+					this.jsonSchema = JsonSchema.builder().schema(jsonSchema).build();
+					return this;
+				}
+
+				public ResponseFormat build() {
+					return new ResponseFormat(this.type, this.jsonSchema);
+				}
+
+			}
+
+			public enum Type {
+
+				/**
+				 * Generates a text response. (default)
+				 */
+				@JsonProperty("text")
+				TEXT("text"),
+
+				/**
+				 * Enables JSON mode, which guarantees the message the model generates is
+				 * valid JSON.
+				 */
+				@JsonProperty("json_object")
+				JSON_OBJECT("json_object"),
+
+				/**
+				 * Enables Structured Outputs which guarantees the model will match your
+				 * supplied JSON schema.
+				 */
+				@JsonProperty("json_schema")
+				JSON_SCHEMA("json_schema");
+
+				private final String value;
+
+				Type(String value) {
+					this.value = value;
+				}
+
+				public String getValue() {
+					return this.value;
+				}
+
+				public static Type fromValue(String value) {
+					for (Type type : Type.values()) {
+						if (type.value.equals(value)) {
+							return type;
+						}
+					}
+					throw new IllegalArgumentException("Unknown ResponseFormat type: " + value);
+				}
+
+			}
+
+			/**
+			 * JSON schema object that describes the format of the JSON object. Applicable
+			 * for the 'json_schema' type only.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public static class JsonSchema {
+
+				@JsonProperty("name")
+				private String name;
+
+				@JsonProperty("schema")
+				private Map<String, Object> schema;
+
+				@JsonProperty("strict")
+				private Boolean strict;
+
+				public JsonSchema() {
+				}
+
+				public String getName() {
+					return this.name;
+				}
+
+				public Map<String, Object> getSchema() {
+					return this.schema;
+				}
+
+				public Boolean getStrict() {
+					return this.strict;
+				}
+
+				private JsonSchema(String name, Map<String, Object> schema, Boolean strict) {
+					this.name = name;
+					this.schema = schema;
+					this.strict = strict;
+				}
+
+				public static Builder builder() {
+					return new Builder();
+				}
+
+				@Override
+				public int hashCode() {
+					return Objects.hash(this.name, this.schema, this.strict);
+				}
+
+				@Override
+				public boolean equals(Object o) {
+					if (this == o) {
+						return true;
+					}
+					if (o == null || getClass() != o.getClass()) {
+						return false;
+					}
+					JsonSchema that = (JsonSchema) o;
+					return Objects.equals(this.name, that.name) && Objects.equals(this.schema, that.schema)
+							&& Objects.equals(this.strict, that.strict);
+				}
+
+				@Override
+				public String toString() {
+					return "JsonSchema{" + "name='" + this.name + '\'' + ", schema=" + this.schema + ", strict="
+							+ this.strict + '}';
+				}
+
+				public static final class Builder {
+
+					private String name = "custom_schema";
+
+					private Map<String, Object> schema;
+
+					private Boolean strict = true;
+
+					private Builder() {
+					}
+
+					public Builder name(String name) {
+						this.name = name;
+						return this;
+					}
+
+					public Builder schema(Map<String, Object> schema) {
+						this.schema = schema;
+						return this;
+					}
+
+					public Builder schema(String schema) {
+						this.schema = ModelOptionsUtils.jsonToMap(schema);
+						return this;
+					}
+
+					public Builder strict(Boolean strict) {
+						this.strict = strict;
+						return this;
+					}
+
+					public JsonSchema build() {
+						return new JsonSchema(this.name, this.schema, this.strict);
+					}
+
+				}
+
+			}
+
 		}
 
 	}

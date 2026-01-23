@@ -26,7 +26,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResultMetadata;
@@ -70,8 +70,8 @@ class OllamaEmbeddingModelTests {
 			.defaultOptions(defaultOptions)
 			.build();
 
-		EmbeddingResponse response = embeddingModel.call(
-				new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptionsBuilder.builder().build()));
+		EmbeddingResponse response = embeddingModel
+			.call(new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptions.builder().build()));
 
 		assertThat(response.getResults()).hasSize(2);
 		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
@@ -118,7 +118,7 @@ class OllamaEmbeddingModelTests {
 			.build();
 
 		EmbeddingResponse response = embeddingModel
-			.call(new EmbeddingRequest(List.of("Single input text"), EmbeddingOptionsBuilder.builder().build()));
+			.call(new EmbeddingRequest(List.of("Single input text"), EmbeddingOptions.builder().build()));
 
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
@@ -167,7 +167,7 @@ class OllamaEmbeddingModelTests {
 			.build();
 
 		EmbeddingResponse response = embeddingModel
-			.call(new EmbeddingRequest(largeInputs, EmbeddingOptionsBuilder.builder().build()));
+			.call(new EmbeddingRequest(largeInputs, EmbeddingOptions.builder().build()));
 
 		assertThat(response.getResults()).hasSize(3);
 		assertThat(response.getResults().get(0).getOutput()).hasSize(4);
@@ -211,7 +211,7 @@ class OllamaEmbeddingModelTests {
 			.build();
 
 		EmbeddingResponse response = embeddingModel
-			.call(new EmbeddingRequest(List.of("Metadata test"), EmbeddingOptionsBuilder.builder().build()));
+			.call(new EmbeddingRequest(List.of("Metadata test"), EmbeddingOptions.builder().build()));
 
 		assertThat(response.getMetadata().getModel()).isEqualTo("METADATA_MODEL");
 		assertThat(response.getResults()).hasSize(1);
@@ -229,7 +229,7 @@ class OllamaEmbeddingModelTests {
 			.build();
 
 		EmbeddingResponse response = embeddingModel
-			.call(new EmbeddingRequest(List.of("Zero length test"), EmbeddingOptionsBuilder.builder().build()));
+			.call(new EmbeddingRequest(List.of("Zero length test"), EmbeddingOptions.builder().build()));
 
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput()).isEmpty();

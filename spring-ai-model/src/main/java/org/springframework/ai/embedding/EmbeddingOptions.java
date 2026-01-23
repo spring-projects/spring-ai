@@ -16,8 +16,9 @@
 
 package org.springframework.ai.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
-import org.springframework.lang.Nullable;
 
 /**
  * Options for embedding models.
@@ -27,11 +28,9 @@ import org.springframework.lang.Nullable;
  */
 public interface EmbeddingOptions extends ModelOptions {
 
-	@Nullable
-	String getModel();
+	@Nullable String getModel();
 
-	@Nullable
-	Integer getDimensions();
+	@Nullable Integer getDimensions();
 
 	static Builder builder() {
 		return new DefaultEmbeddingOptionsBuilder();

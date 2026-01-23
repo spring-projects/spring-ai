@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,17 +18,20 @@ package org.springframework.ai.model.elevenlabs.autoconfigure;
 
 import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechModel;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -37,12 +40,13 @@ import org.springframework.web.reactive.function.client.WebClient;
  * {@link AutoConfiguration Auto-configuration} for ElevenLabs.
  *
  * @author Alexandros Pappas
+ * @author Yanming Zhou
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
 @ConditionalOnClass(ElevenLabsApi.class)
 @EnableConfigurationProperties({ ElevenLabsSpeechProperties.class, ElevenLabsConnectionProperties.class })
-@ConditionalOnProperty(prefix = ElevenLabsSpeechProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
+@ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_SPEECH_MODEL, havingValue = SpringAIModels.ELEVEN_LABS,
 		matchIfMissing = true)
 public class ElevenLabsAutoConfiguration {
 
@@ -50,26 +54,27 @@ public class ElevenLabsAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ElevenLabsApi elevenLabsApi(ElevenLabsConnectionProperties connectionProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		return ElevenLabsApi.builder()
 			.baseUrl(connectionProperties.getBaseUrl())
 			.apiKey(connectionProperties.getApiKey())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	public ElevenLabsTextToSpeechModel elevenLabsSpeechModel(ElevenLabsApi elevenLabsApi,
-			ElevenLabsSpeechProperties speechProperties, RetryTemplate retryTemplate) {
+			ElevenLabsSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate) {
 
 		return ElevenLabsTextToSpeechModel.builder()
 			.elevenLabsApi(elevenLabsApi)
 			.defaultOptions(speechProperties.getOptions())
-			.retryTemplate(retryTemplate)
+			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.build();
 	}
 

@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -48,9 +49,12 @@ import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
 import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
@@ -58,13 +62,12 @@ import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.core.env.Environment;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.context.support.StandardServletEnvironment;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for the Model Context Protocol (MCP)
@@ -91,30 +94,10 @@ public class McpServerAutoConfiguration {
 
 	private static final LogAccessor logger = new LogAccessor(McpServerAutoConfiguration.class);
 
-	/**
-	 * Creates a configured ObjectMapper for MCP server JSON serialization.
-	 * <p>
-	 * This ObjectMapper is specifically configured for MCP protocol compliance with:
-	 * <ul>
-	 * <li>Lenient deserialization that doesn't fail on unknown properties</li>
-	 * <li>Proper handling of empty beans during serialization</li>
-	 * <li>Exclusion of null values from JSON output</li>
-	 * <li>Standard Jackson modules for Java 8, JSR-310, and Kotlin support</li>
-	 * </ul>
-	 * <p>
-	 * This bean can be overridden by providing a custom ObjectMapper bean with the name
-	 * "mcpServerObjectMapper".
-	 * @return configured ObjectMapper instance for MCP server operations
-	 */
-	@Bean(name = "mcpServerObjectMapper")
-	@ConditionalOnMissingBean(name = "mcpServerObjectMapper")
-	public ObjectMapper mcpServerObjectMapper() {
-		return McpServerObjectMapperFactory.createObjectMapper();
-	}
-
 	@Bean
 	@ConditionalOnMissingBean
-	public McpServerTransportProviderBase stdioServerTransport(ObjectMapper mcpServerObjectMapper) {
+	public McpServerTransportProviderBase stdioServerTransport(
+			@Qualifier("mcpServerObjectMapper") ObjectMapper mcpServerObjectMapper) {
 		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerObjectMapper));
 	}
 
@@ -136,7 +119,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
-			Environment environment) {
+			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -233,11 +216,17 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
-		if (environment instanceof StandardServletEnvironment) {
-			serverBuilder.immediateExecution(true);
-		}
+		mcpSyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
+	}
+
+	@Bean
+	@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	McpSyncServerCustomizer servletMcpSyncServerCustomizer() {
+		return serverBuilder -> serverBuilder.immediateExecution(true);
 	}
 
 	@Bean
@@ -250,7 +239,8 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
-			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer) {
+			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
+			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
 
 		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
 				serverProperties.getVersion());
@@ -349,6 +339,7 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
+		asyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}

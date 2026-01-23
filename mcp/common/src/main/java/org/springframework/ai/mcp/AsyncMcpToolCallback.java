@@ -22,7 +22,7 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-import io.modelcontextprotocol.util.Assert;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,10 +30,9 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
-import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -45,6 +44,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Ilayaperumal Gopinathan
  */
 public class AsyncMcpToolCallback implements ToolCallback {
 
@@ -92,11 +92,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return DefaultToolDefinition.builder()
-			.name(this.prefixedToolName)
-			.description(this.tool.description())
-			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
-			.build();
+		return McpToolUtils.createToolDefinition(this.prefixedToolName, this.tool);
 	}
 
 	public String getOriginalToolName() {
@@ -140,6 +136,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 			logger.error("Exception while tool calling: ", ex);
 			throw new ToolExecutionException(this.getToolDefinition(), ex);
 		}
+		Assert.notNull(response, "response was null");
 
 		if (response.isError() != null && response.isError()) {
 			logger.error("Error calling tool: {}", response.content());
@@ -162,11 +159,11 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 */
 	public static final class Builder {
 
-		private McpAsyncClient mcpClient;
+		private @Nullable McpAsyncClient mcpClient;
 
-		private Tool tool;
+		private @Nullable Tool tool;
 
-		private String prefixedToolName;
+		private @Nullable String prefixedToolName;
 
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();

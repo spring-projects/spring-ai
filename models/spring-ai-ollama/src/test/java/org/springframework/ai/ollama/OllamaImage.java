@@ -23,7 +23,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 public final class OllamaImage {
 
-	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("ollama/ollama:0.10.1");
+	public static final DockerImageName DEFAULT_IMAGE = DockerImageName.parse("ollama/ollama:0.12.10");
 
 	private OllamaImage() {
 

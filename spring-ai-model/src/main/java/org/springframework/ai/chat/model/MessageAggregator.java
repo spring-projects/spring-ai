@@ -38,8 +38,6 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import static org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
-
 /**
  * Helper that for streaming chat responses, aggregate the chat response messages into a
  * single AssistantMessage. Job is performed in parallel to the chat response processing.

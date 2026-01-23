@@ -18,12 +18,15 @@ package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.support.ToolUtils;
+import org.springframework.context.ApplicationListener;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -37,15 +40,21 @@ import org.springframework.util.CollectionUtils;
  * @author YunKui Lu
  * @since 1.0.0
  */
-public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
+public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, ApplicationListener<McpToolsChangedEvent> {
 
 	private final List<McpSyncClient> mcpClients;
 
 	private final McpToolFilter toolFilter;
 
-	private McpToolNamePrefixGenerator toolNamePrefixGenerator;
+	private final McpToolNamePrefixGenerator toolNamePrefixGenerator;
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
+
+	private volatile boolean invalidateCache = true;
+
+	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
+
+	private final Lock lock = new ReentrantLock();
 
 	/**
 	 * Creates a provider with MCP clients and tool filter.
@@ -115,20 +124,46 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		var array = this.mcpClients.stream()
-			.flatMap(mcpClient -> mcpClient.listTools()
-				.tools()
-				.stream()
-				.filter(tool -> this.toolFilter.test(connectionInfo(mcpClient), tool))
-				.map(tool -> SyncMcpToolCallback.builder()
-					.mcpClient(mcpClient)
-					.tool(tool)
-					.prefixedToolName(this.toolNamePrefixGenerator.prefixedToolName(connectionInfo(mcpClient), tool))
-					.toolContextToMcpMetaConverter(this.toolContextToMcpMetaConverter)
-					.build()))
-			.toArray(ToolCallback[]::new);
-		validateToolCallbacks(array);
-		return array;
+		if (this.invalidateCache) {
+			this.lock.lock();
+			try {
+				if (this.invalidateCache) {
+					this.cachedToolCallbacks = this.mcpClients.stream()
+						.flatMap(mcpClient -> mcpClient.listTools()
+							.tools()
+							.stream()
+							.filter(tool -> this.toolFilter.test(connectionInfo(mcpClient), tool))
+							.<ToolCallback>map(tool -> SyncMcpToolCallback.builder()
+								.mcpClient(mcpClient)
+								.tool(tool)
+								.prefixedToolName(
+										this.toolNamePrefixGenerator.prefixedToolName(connectionInfo(mcpClient), tool))
+								.toolContextToMcpMetaConverter(this.toolContextToMcpMetaConverter)
+								.build()))
+						.toList();
+
+					this.validateToolCallbacks(this.cachedToolCallbacks);
+					this.invalidateCache = false;
+				}
+			}
+			finally {
+				this.lock.unlock();
+			}
+		}
+
+		return this.cachedToolCallbacks.toArray(new ToolCallback[0]);
+	}
+
+	/**
+	 * Invalidates the cached tool callbacks, forcing re-discovery on next request.
+	 */
+	public void invalidateCache() {
+		this.invalidateCache = true;
+	}
+
+	@Override
+	public void onApplicationEvent(McpToolsChangedEvent event) {
+		this.invalidateCache();
 	}
 
 	private static McpConnectionInfo connectionInfo(McpSyncClient mcpClient) {
@@ -144,7 +179,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider {
 	 * @param toolCallbacks callbacks to validate
 	 * @throws IllegalStateException if duplicate names exist
 	 */
-	private void validateToolCallbacks(ToolCallback[] toolCallbacks) {
+	private void validateToolCallbacks(List<ToolCallback> toolCallbacks) {
 		List<String> duplicateToolNames = ToolUtils.getDuplicateToolNames(toolCallbacks);
 		if (!duplicateToolNames.isEmpty()) {
 			throw new IllegalStateException(

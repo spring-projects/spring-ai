@@ -77,7 +77,8 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 			message = "Exception occurred in tool: " + exception.getToolDefinition().name() + " ("
 					+ cause.getClass().getSimpleName() + ")";
 		}
-		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message);
+		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message,
+				exception);
 		return message;
 	}
 

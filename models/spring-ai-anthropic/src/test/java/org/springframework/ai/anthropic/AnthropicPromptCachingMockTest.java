@@ -540,8 +540,9 @@ class AnthropicPromptCachingMockTest {
 		int cacheControlCount = countCacheControlOccurrences(requestBody);
 
 		// Verify we don't exceed Anthropic's 4-breakpoint limit
-		assertThat(cacheControlCount).isLessThanOrEqualTo(4)
-			.withFailMessage("Cache breakpoints should not exceed 4, but found %d", cacheControlCount);
+		assertThat(cacheControlCount)
+			.withFailMessage("Cache breakpoints should not exceed 4, but found %d", cacheControlCount)
+			.isLessThanOrEqualTo(4);
 	}
 
 	@Test
@@ -608,8 +609,9 @@ class AnthropicPromptCachingMockTest {
 			// Simple text system message should still have cache_control applied at the
 			// message level
 			// Check if there's a cache_control field at the system level or in a wrapper
-			assertThat(requestBody.toString()).contains("cache_control")
-				.withFailMessage("SYSTEM_ONLY strategy should include cache_control in wire format");
+			assertThat(requestBody.toString())
+				.withFailMessage("SYSTEM_ONLY strategy should include cache_control in wire format")
+				.contains("cache_control");
 		}
 	}
 
@@ -690,8 +692,9 @@ class AnthropicPromptCachingMockTest {
 
 		// Verify proper ordering and cache control placement
 		int cacheControlCount = countCacheControlOccurrences(requestBody);
-		assertThat(cacheControlCount).isLessThanOrEqualTo(4)
-			.withFailMessage("Complex scenario should not exceed 4 cache breakpoints, found %d", cacheControlCount);
+		assertThat(cacheControlCount)
+			.withFailMessage("Complex scenario should not exceed 4 cache breakpoints, found %d", cacheControlCount)
+			.isLessThanOrEqualTo(4);
 
 		// Verify cache_control is only on the LAST blocks of each section (system, tools)
 		// This ensures proper breakpoint placement according to Anthropic's requirements
@@ -732,9 +735,9 @@ class AnthropicPromptCachingMockTest {
 			if (systemNode.isArray()) {
 				for (int i = 0; i < systemNode.size() - 1; i++) {
 					JsonNode systemBlock = systemNode.get(i);
-					assertThat(systemBlock.has("cache_control")).isFalse()
-						.withFailMessage("Only the last system block should have cache_control, but block %d has it",
-								i);
+					assertThat(systemBlock.has("cache_control"))
+						.withFailMessage("Only the last system block should have cache_control, but block %d has it", i)
+						.isFalse();
 				}
 			}
 		}
@@ -745,8 +748,9 @@ class AnthropicPromptCachingMockTest {
 			if (toolsArray.isArray()) {
 				for (int i = 0; i < toolsArray.size() - 1; i++) {
 					JsonNode tool = toolsArray.get(i);
-					assertThat(tool.has("cache_control")).isFalse()
-						.withFailMessage("Only the last tool should have cache_control, but tool %d has it", i);
+					assertThat(tool.has("cache_control"))
+						.withFailMessage("Only the last tool should have cache_control, but tool %d has it", i)
+						.isFalse();
 				}
 			}
 		}
@@ -767,9 +771,10 @@ class AnthropicPromptCachingMockTest {
 							if (i != messagesArray.size() - 2 || j != contentArray.size() - 1) {
 								// Only the last content block of the second-to-last
 								// message should have cache_control
-								assertThat(contentBlock.has("cache_control")).isFalse()
+								assertThat(contentBlock.has("cache_control"))
 									.withFailMessage(
-											"Unexpected cache_control placement in message %d, content block %d", i, j);
+											"Unexpected cache_control placement in message %d, content block %d", i, j)
+									.isFalse();
 							}
 						}
 					}

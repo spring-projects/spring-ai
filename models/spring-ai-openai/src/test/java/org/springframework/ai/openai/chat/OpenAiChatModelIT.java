@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import io.modelcontextprotocol.spec.McpSchema;
 import org.assertj.core.data.Percentage;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,6 +83,11 @@ import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -464,6 +471,128 @@ public class OpenAiChatModelIT extends AbstractIT {
 		assertThat(usage.getTotalTokens()).isGreaterThan(680).isLessThan(960);
 	}
 
+	@Test
+	void functionCallWithMcpParameterlessToolTest() {
+		UserMessage userMessage = new UserMessage("What is the current server time?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		// Mock a parameter-less JsonSchema (no properties field)
+		// This simulates what an external MCP server might provide
+		McpSchema.JsonSchema mockJsonSchema = mock(McpSchema.JsonSchema.class);
+		when(mockJsonSchema.type()).thenReturn("object");
+		when(mockJsonSchema.additionalProperties()).thenReturn(false);
+		when(mockJsonSchema.properties()).thenReturn(null); // No properties field
+
+		// Create a mock MCP tool
+		McpSchema.Tool mockMcpTool = mock(McpSchema.Tool.class);
+		when(mockMcpTool.name()).thenReturn("getCurrentTime");
+		when(mockMcpTool.description()).thenReturn("Get the current server time");
+		when(mockMcpTool.inputSchema()).thenReturn(mockJsonSchema);
+
+		// Create a mock MCP client
+		io.modelcontextprotocol.client.McpSyncClient mockMcpClient = mock(
+				io.modelcontextprotocol.client.McpSyncClient.class);
+
+		McpSchema.Implementation clientInfo = new McpSchema.Implementation("test-mcp-client", "1.0.0");
+		when(mockMcpClient.getClientInfo()).thenReturn(clientInfo);
+
+		// Mock the tool call response
+		McpSchema.TextContent mockTextContent = mock(McpSchema.TextContent.class);
+		when(mockTextContent.type()).thenReturn("text");
+		when(mockTextContent.text()).thenReturn("2025-11-11T12:00:00Z");
+
+		McpSchema.CallToolResult toolResult = mock(McpSchema.CallToolResult.class);
+		when(toolResult.content()).thenReturn(List.of(mockTextContent));
+		when(toolResult.isError()).thenReturn(false);
+
+		when(mockMcpClient.callTool(any())).thenReturn(toolResult);
+
+		// Create the SyncMcpToolCallback
+		org.springframework.ai.mcp.SyncMcpToolCallback mcpToolCallback = org.springframework.ai.mcp.SyncMcpToolCallback
+			.builder()
+			.mcpClient(mockMcpClient)
+			.tool(mockMcpTool)
+			.prefixedToolName("test-mcp-client_getCurrentTime")
+			.build();
+
+		var promptOptions = OpenAiChatOptions.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.toolCallbacks(List.of(mcpToolCallback))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		// Verify the response contains time-related content
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+
+		// Verify the mock MCP client was called
+		verify(mockMcpClient, atLeastOnce()).callTool(any());
+	}
+
+	@Test
+	void functionCallWithMcpParameterlessAsyncToolTest() {
+		UserMessage userMessage = new UserMessage("What is the current server time?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		// Mock a parameter-less JsonSchema (no properties field)
+		// This simulates what an external MCP server might provide
+		McpSchema.JsonSchema mockJsonSchema = mock(McpSchema.JsonSchema.class);
+		when(mockJsonSchema.type()).thenReturn("object");
+		when(mockJsonSchema.additionalProperties()).thenReturn(false);
+		when(mockJsonSchema.properties()).thenReturn(null); // No properties field
+
+		// Create a mock MCP tool
+		McpSchema.Tool mockMcpTool = mock(McpSchema.Tool.class);
+		when(mockMcpTool.name()).thenReturn("getCurrentTime");
+		when(mockMcpTool.description()).thenReturn("Get the current server time");
+		when(mockMcpTool.inputSchema()).thenReturn(mockJsonSchema);
+
+		// Create a mock async MCP client
+		io.modelcontextprotocol.client.McpAsyncClient mockMcpClient = mock(
+				io.modelcontextprotocol.client.McpAsyncClient.class);
+
+		McpSchema.Implementation clientInfo = new McpSchema.Implementation("test-mcp-async-client", "1.0.0");
+		when(mockMcpClient.getClientInfo()).thenReturn(clientInfo);
+
+		// Mock the tool call response
+		McpSchema.TextContent mockTextContent = mock(McpSchema.TextContent.class);
+		when(mockTextContent.type()).thenReturn("text");
+		when(mockTextContent.text()).thenReturn("2025-11-11T12:00:00Z");
+
+		McpSchema.CallToolResult toolResult = mock(McpSchema.CallToolResult.class);
+		when(toolResult.content()).thenReturn(List.of(mockTextContent));
+		when(toolResult.isError()).thenReturn(false);
+
+		when(mockMcpClient.callTool(any())).thenReturn(reactor.core.publisher.Mono.just(toolResult));
+
+		// Create the AsyncMcpToolCallback
+		org.springframework.ai.mcp.AsyncMcpToolCallback mcpToolCallback = org.springframework.ai.mcp.AsyncMcpToolCallback
+			.builder()
+			.mcpClient(mockMcpClient)
+			.tool(mockMcpTool)
+			.prefixedToolName("test-mcp-async-client_getCurrentTime")
+			.build();
+
+		var promptOptions = OpenAiChatOptions.builder()
+			.model(OpenAiApi.ChatModel.GPT_4_O.getValue())
+			.toolCallbacks(List.of(mcpToolCallback))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		// Verify the response contains time-related content
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+
+		// Verify the mock MCP client was called
+		verify(mockMcpClient, atLeastOnce()).callTool(any());
+	}
+
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "gpt-4o" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
@@ -751,6 +880,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 	}
 
 	@Test
+	@Disabled("OpenAI gpt-4o-search-preview model doesn't seem to return web search annotations in streaming mode.")
 	void streamWebSearchAnnotationsTest() {
 		UserMessage userMessage = new UserMessage("What is the weather in San Francisco?");
 
@@ -785,6 +915,46 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.map(AssistantMessage::getText)
 			.collect(Collectors.joining());
 		logger.info("Full Content: {}", fullContent);
+	}
+
+	@Test
+	void testReasoningEffortParameter() {
+		OpenAiChatOptions chatOptions = OpenAiChatOptions.builder().model("gpt-5").reasoningEffort("high").build();
+
+		Prompt prompt = new Prompt(
+				"Are there an infinite number of prime numbers such that n mod 4 == 3? Think through the steps and respond.",
+				chatOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+
+		// Verify that reasoning tokens were used
+		Usage usage = response.getMetadata().getUsage();
+		if (usage instanceof DefaultUsage defaultUsage) {
+			Object nativeUsage = defaultUsage.getNativeUsage();
+			if (nativeUsage instanceof OpenAiApi.Usage openAiUsage) {
+				OpenAiApi.Usage.CompletionTokenDetails completionTokenDetails = openAiUsage.completionTokenDetails();
+				assertThat(completionTokenDetails).isNotNull();
+				assertThat(completionTokenDetails.reasoningTokens()).isNotNull();
+				assertThat(completionTokenDetails.reasoningTokens()).isPositive();
+			}
+		}
+	}
+
+	@Test
+	void shouldSendPromptCacheKeyAndSafetyIdentifier() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.promptCacheKey("test-cache-" + System.currentTimeMillis())
+			.safetyIdentifier("hashed-user-123")
+			.build();
+
+		ChatResponse response = this.openAiChatModel.call(new Prompt("Tell me a joke about Spring", options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

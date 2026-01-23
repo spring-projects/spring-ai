@@ -20,6 +20,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
@@ -242,14 +243,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		for (Document document : documents) {
 			docIdArray.add(document.getId());
 			// Use a (future) DocumentTextLayoutFormatter instance to extract
 			// the content used to compute the embeddings
-			contentArray.add(document.getText());
+			contentArray.add(Objects.requireNonNullElse(document.getText(), ""));
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
@@ -650,7 +651,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 * COSINE
 		 */
 		public Builder metricType(MetricType metricType) {
-			Assert.notNull(metricType, "Collection Name must not be empty");
+			Assert.notNull(metricType, "metricType must not be null");
 			Assert.isTrue(metricType == MetricType.IP || metricType == MetricType.L2 || metricType == MetricType.COSINE,
 					"Only the text metric types IP and L2 are supported");
 			this.metricType = metricType;

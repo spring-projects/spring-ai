@@ -18,22 +18,22 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 
       - name: Generate Java docs
-        run: ./mvnw --batch-mode clean install -DskipTests -Pjavadoc
+        run: ./mvnw --batch-mode -ntp clean install -DskipTests -Pjavadoc
 
       - name: Aggregate Java docs
-        run: ./mvnw --batch-mode javadoc:aggregate
+        run: ./mvnw --batch-mode -ntp javadoc:aggregate
 
       - name: Generate assembly
         working-directory: spring-ai-docs
-        run: mvn --batch-mode assembly:single
+        run: ../mvnw --batch-mode -ntp assembly:single
 
       - name: Setup SSH key
         env:

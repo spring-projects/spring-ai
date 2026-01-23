@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,11 @@ import org.springframework.ai.mistralai.api.MistralAiApi.EmbeddingList;
 import org.springframework.ai.mistralai.api.MistralAiApi.EmbeddingRequest;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
+import org.springframework.core.retry.RetryListener;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
-import org.springframework.retry.support.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -75,7 +75,7 @@ public class MistralAiRetryTests {
 	public void beforeEach() {
 		this.retryTemplate = RetryUtils.SHORT_RETRY_TEMPLATE;
 		this.retryListener = new TestRetryListener();
-		this.retryTemplate.registerListener(this.retryListener);
+		this.retryTemplate.setRetryListener(this.retryListener);
 
 		this.chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(this.mistralAiApi)
@@ -83,7 +83,7 @@ public class MistralAiRetryTests {
 				.temperature(0.7)
 				.topP(1.0)
 				.safePrompt(false)
-				.model(MistralAiApi.ChatModel.SMALL.getValue())
+				.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 				.build())
 			.retryTemplate(this.retryTemplate)
 			.build();
@@ -110,7 +110,7 @@ public class MistralAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -139,7 +139,7 @@ public class MistralAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -167,7 +167,7 @@ public class MistralAiRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput()).isEqualTo(new float[] { 9.9f, 8.8f });
-		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
 
@@ -189,7 +189,7 @@ public class MistralAiRetryTests {
 		assertThrows(RuntimeException.class, () -> this.chatModel.call(new Prompt("text")));
 
 		// Should have 1 retry attempt before hitting non-transient error
-		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
+		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(1);
 	}
 
 	private static class TestRetryListener implements RetryListener {
@@ -199,14 +199,15 @@ public class MistralAiRetryTests {
 		int onSuccessRetryCount = 0;
 
 		@Override
-		public <T, E extends Throwable> void onSuccess(RetryContext context, RetryCallback<T, E> callback, T result) {
-			this.onSuccessRetryCount = context.getRetryCount();
+		public void beforeRetry(final RetryPolicy retryPolicy, final Retryable<?> retryable) {
+			// Count each retry attempt
+			this.onErrorRetryCount++;
 		}
 
 		@Override
-		public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback,
-				Throwable throwable) {
-			this.onErrorRetryCount = context.getRetryCount();
+		public void onRetrySuccess(final RetryPolicy retryPolicy, final Retryable<?> retryable, final Object result) {
+			// Count successful retries - we increment when we succeed after a failure
+			this.onSuccessRetryCount++;
 		}
 
 	}

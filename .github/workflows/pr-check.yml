@@ -2,8 +2,6 @@ name: PR Check
 
 on:
   pull_request:
-    branches:
-      - main
 
 jobs:
   build:
@@ -14,13 +12,25 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/build-cache
+          # See https://github.com/actions/cache/blob/main/tips-and-workarounds.md#update-a-cache
+          # We need to incrementally save the contents of the build-cache directory, even if there was a hit prior to the build
+          # Cached restored from restore-keys are restored using the latest one first, so this is a good compromise
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
+            build-cache-${{ runner.os }}-
+
       - name: Run tests
         run: |
-          ./mvnw --batch-mode test
+          ./mvnw -ntp -B -U test

@@ -42,11 +42,6 @@ public class MistralAiModerationApi {
 
 	private final RestClient restClient;
 
-	@Deprecated
-	public MistralAiModerationApi(String apiKey) {
-		this(DEFAULT_BASE_URL, apiKey, RestClient.builder(), RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER);
-	}
-
 	public MistralAiModerationApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 

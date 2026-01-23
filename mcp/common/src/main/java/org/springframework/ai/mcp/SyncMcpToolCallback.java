@@ -22,17 +22,16 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
-import io.modelcontextprotocol.util.Assert;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
-import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -41,6 +40,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class SyncMcpToolCallback implements ToolCallback {
@@ -89,11 +89,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return DefaultToolDefinition.builder()
-			.name(this.prefixedToolName)
-			.description(this.tool.description())
-			.inputSchema(ModelOptionsUtils.toJsonString(this.tool.inputSchema()))
-			.build();
+		return McpToolUtils.createToolDefinition(this.prefixedToolName, this.tool);
 	}
 
 	/**
@@ -162,11 +158,11 @@ public class SyncMcpToolCallback implements ToolCallback {
 	 */
 	public static final class Builder {
 
-		private McpSyncClient mcpClient;
+		private @Nullable McpSyncClient mcpClient;
 
-		private Tool tool;
+		private @Nullable Tool tool;
 
-		private String prefixedToolName;
+		private @Nullable String prefixedToolName;
 
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();

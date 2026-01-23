@@ -17,7 +17,6 @@
 package org.springframework.ai.model.tool.autoconfigure;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -36,14 +35,7 @@ import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
 import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.config.BeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionBuilder;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -65,28 +57,36 @@ import org.springframework.util.ClassUtils;
 @AutoConfiguration
 @ConditionalOnClass(ChatModel.class)
 @EnableConfigurationProperties(ToolCallingProperties.class)
-public class ToolCallingAutoConfiguration implements BeanDefinitionRegistryPostProcessor {
+public class ToolCallingAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(ToolCallingAutoConfiguration.class);
-
-	// Marker qualifier to exclude MCP-related ToolCallbackProviders
-	private static final String EXCLUDE_MCP_TOOL_CALLBACK_PROVIDER = "org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.toolcallbackprovider.mcp-excluded";
 
 	/**
 	 * The default {@link ToolCallbackResolver} resolves tools by name for methods,
 	 * functions, and {@link ToolCallbackProvider} beans.
 	 * <p>
-	 * MCP providers should not be injected to avoid cyclic dependencies. If some MCP
-	 * providers are injected, we filter them out to avoid eagerly calling
-	 * #getToolCallbacks.
+	 * MCP providers are excluded, to avoid initializing them early with #listTools().
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	ToolCallbackResolver toolCallbackResolver(GenericApplicationContext applicationContext,
+	ToolCallbackResolver toolCallbackResolver(
+			GenericApplicationContext applicationContext, // @formatter:off
 			List<ToolCallback> toolCallbacks,
-			@Qualifier(EXCLUDE_MCP_TOOL_CALLBACK_PROVIDER) List<ToolCallbackProvider> tcbProviders) {
+			// Deprecated in favor of the tcbProviders. Kept for backward compatibility.
+			ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders) { // @formatter:on
+
 		List<ToolCallback> allFunctionAndToolCallbacks = new ArrayList<>(toolCallbacks);
-		tcbProviders.stream()
+
+		// Merge ToolCallbackProviders from both ObjectProviders.
+		List<ToolCallbackProvider> totalToolCallbackProviders = new ArrayList<>(
+				tcbProviderList.stream().flatMap(List::stream).toList());
+		totalToolCallbackProviders.addAll(tcbProviders.stream().toList());
+
+		// De-duplicate ToolCallbackProviders
+		totalToolCallbackProviders = totalToolCallbackProviders.stream().distinct().toList();
+
+		totalToolCallbackProviders.stream()
 			.filter(pr -> !isMcpToolCallbackProvider(ResolvableType.forInstance(pr)))
 			.map(pr -> List.of(pr.getToolCallbacks()))
 			.forEach(allFunctionAndToolCallbacks::addAll);
@@ -98,41 +98,6 @@ public class ToolCallingAutoConfiguration implements BeanDefinitionRegistryPostP
 			.build();
 
 		return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
-	}
-
-	/**
-	 * Wrap {@link ToolCallbackProvider} beans that are not MCP-related into a named bean,
-	 * which will be picked up by the
-	 * {@link ToolCallingAutoConfiguration#toolCallbackResolver}.
-	 * <p>
-	 * MCP providers must be excluded, because they may depend on a {@code ChatClient} to
-	 * do sampling. The chat client, in turn, depends on a {@link ToolCallbackResolver}.
-	 * To do the detection, we depend on the exposed bean type. If a bean uses a factory
-	 * method which returns a {@link ToolCallbackProvider}, which is an MCP provider under
-	 * the hood, it will be included in the list.
-	 */
-	@Override
-	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
-		if (!(registry instanceof DefaultListableBeanFactory beanFactory)) {
-			return;
-		}
-
-		var excludeMcpToolCallbackProviderBeanDefinition = BeanDefinitionBuilder
-			.genericBeanDefinition(List.class, () -> {
-				var providerNames = beanFactory.getBeanNamesForType(ToolCallbackProvider.class);
-				return Arrays.stream(providerNames)
-					.filter(name -> !isMcpToolCallbackProvider(beanFactory.getBeanDefinition(name).getResolvableType()))
-					.map(beanFactory::getBean)
-					.filter(ToolCallbackProvider.class::isInstance)
-					.map(ToolCallbackProvider.class::cast)
-					.toList();
-			})
-			.setScope(BeanDefinition.SCOPE_SINGLETON)
-			.setLazyInit(true)
-			.getBeanDefinition();
-
-		registry.registerBeanDefinition(EXCLUDE_MCP_TOOL_CALLBACK_PROVIDER,
-				excludeMcpToolCallbackProviderBeanDefinition);
 	}
 
 	private static boolean isMcpToolCallbackProvider(ResolvableType type) {

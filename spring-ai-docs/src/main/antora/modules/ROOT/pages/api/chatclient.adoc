@@ -283,6 +283,23 @@ List<ActorFilms> actorFilms = chatClient.prompt()
     .entity(new ParameterizedTypeReference<List<ActorFilms>>() {});
 ----
 
+==== Native Structured Output
+
+As more AI models support structured output natively, you can take advantage of this feature by using the `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT` advisor parameter when calling the `ChatClient`.
+You can use the `defaultAdvisors()` method on the `ChatClient.Builder` to set this parameter globally for all calls or set it per call as shown below:
+
+[source,java]
+----
+ActorFilms actorFilms = chatClient.prompt()
+    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorFilms.class);
+----
+
+NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
+In such cases, you can use the Spring AI default structured output conversion.
+
 === Streaming Responses
 
 The `stream()` method lets you get an asynchronous response as shown below:
@@ -752,7 +769,7 @@ If a new system message is added, all previous system messages are removed from 
 This ensures that the most recent context is always available for the conversation while keeping memory usage bounded.
 
 The `MessageWindowChatMemory` is backed by the `ChatMemoryRepository` abstraction which provides storage implementations for the chat conversation memory.
-There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository` and `Neo4jChatMemoryRepository`.
+There are several implementations available, including the `InMemoryChatMemoryRepository`, `JdbcChatMemoryRepository`, `CassandraChatMemoryRepository`, `Neo4jChatMemoryRepository`, `CosmosDBChatMemoryRepository`, `MongoChatMemoryRepository`, and `RedisChatMemoryRepository`.
 
 For more details and usage examples, see the xref:api/chat-memory.adoc[Chat Memory] documentation.
 

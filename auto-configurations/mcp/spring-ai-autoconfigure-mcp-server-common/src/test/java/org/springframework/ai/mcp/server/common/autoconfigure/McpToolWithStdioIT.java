@@ -44,9 +44,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class McpToolWithStdioIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpServerAutoConfiguration.class, McpServerAnnotationScannerAutoConfiguration.class,
-					McpServerSpecificationFactoryAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class, McpServerAnnotationScannerAutoConfiguration.class,
+				McpServerSpecificationFactoryAutoConfiguration.class));
 
 	/**
 	 * Verifies that a configured ObjectMapper bean is created for MCP server operations.

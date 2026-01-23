@@ -33,6 +33,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.annotation.UserConfigurations;
@@ -56,8 +57,8 @@ public class SseHttpClientTransportAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
 				"spring.ai.mcp.client.sse.connections.server1.url=" + host)
-		.withConfiguration(
-				AutoConfigurations.of(McpClientAutoConfiguration.class, SseHttpClientTransportAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
+				McpClientAnnotationScannerAutoConfiguration.class, SseHttpClientTransportAutoConfiguration.class));
 
 	static String host = "http://localhost:3001";
 

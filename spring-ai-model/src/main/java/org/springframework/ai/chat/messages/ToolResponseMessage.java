@@ -32,19 +32,7 @@ public class ToolResponseMessage extends AbstractMessage {
 
 	protected final List<ToolResponse> responses;
 
-	/**
-	 * @deprecated in favor of using {@link ToolResponseMessage.Builder}
-	 */
-	@Deprecated
-	public ToolResponseMessage(List<ToolResponse> responses) {
-		this(responses, Map.of());
-	}
-
-	/**
-	 * @deprecated in favor of using {@link ToolResponseMessage.Builder}
-	 */
-	@Deprecated
-	public ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
+	protected ToolResponseMessage(List<ToolResponse> responses, Map<String, Object> metadata) {
 		super(MessageType.TOOL, "", metadata);
 		this.responses = responses;
 	}
@@ -88,7 +76,7 @@ public class ToolResponseMessage extends AbstractMessage {
 
 	public static final class Builder {
 
-		private List<ToolResponse> responses;
+		private List<ToolResponse> responses = List.of();
 
 		private Map<String, Object> metadata = Map.of();
 

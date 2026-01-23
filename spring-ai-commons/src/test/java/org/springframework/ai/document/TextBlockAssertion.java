@@ -20,14 +20,15 @@ import java.util.Arrays;
 
 import org.assertj.core.api.AbstractCharSequenceAssert;
 import org.assertj.core.api.Assertions;
+import org.jspecify.annotations.Nullable;
 
 public class TextBlockAssertion extends AbstractCharSequenceAssert<TextBlockAssertion, String> {
 
-	protected TextBlockAssertion(String string) {
+	protected TextBlockAssertion(@Nullable String string) {
 		super(string, TextBlockAssertion.class);
 	}
 
-	public static TextBlockAssertion assertThat(String actual) {
+	public static TextBlockAssertion assertThat(@Nullable String actual) {
 		return new TextBlockAssertion(actual);
 	}
 
@@ -47,7 +48,10 @@ public class TextBlockAssertion extends AbstractCharSequenceAssert<TextBlockAsse
 		return Arrays.stream(values).map(CharSequence::toString).map(this::normalizedEOL).reduce("", (a, b) -> a + b);
 	}
 
-	private String normalizedEOL(String line) {
+	private String normalizedEOL(@Nullable String line) {
+		if (line == null) {
+			return null;
+		}
 		return line.replaceAll("\r\n|\r|\n", System.lineSeparator());
 	}
 

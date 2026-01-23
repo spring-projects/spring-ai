@@ -34,19 +34,7 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 	 */
 	private String reasoningContent;
 
-	/**
-	 * @deprecated in favor of using {@link ZhiPuAiAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public ZhiPuAiAssistantMessage(String content) {
-		super(content);
-	}
-
-	/**
-	 * @deprecated in favor of using {@link ZhiPuAiAssistantMessage.Builder}
-	 */
-	@Deprecated
-	public ZhiPuAiAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
+	protected ZhiPuAiAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
 			List<ToolCall> toolCalls, List<Media> media) {
 		super(content, properties, toolCalls, media);
 		this.reasoningContent = reasoningContent;

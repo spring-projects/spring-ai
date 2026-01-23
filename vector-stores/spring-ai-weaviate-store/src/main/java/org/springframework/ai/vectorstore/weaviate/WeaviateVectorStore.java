@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -49,7 +50,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -201,7 +202,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			return;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptionsBuilder.builder().build(),
+		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
 		List<WeaviateObject> weaviateObjects = documents.stream()
@@ -348,6 +349,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		String graphQLQuery = queryBuilder.build().buildQuery();
 
 		if (request.hasFilterExpression()) {
+			Assert.state(request.getFilterExpression() != null, "filter expression must not be null");
 			// replace the empty 'where:{}' placeholder with real filter.
 			String filter = this.filterExpressionConverter.convertExpression(request.getFilterExpression());
 			graphQLQuery = graphQLQuery.replace("where:{}", String.format("where:{%s}", filter));
@@ -399,8 +401,11 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		// Additional (System)
 		Map<String, ?> additional = (Map<String, ?>) item.get(ADDITIONAL_FIELD_NAME);
-		double certainty = (Double) additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME);
-		String id = (String) additional.get(ADDITIONAL_ID_FIELD_NAME);
+		Assert.state(additional != null, "additional field should not be null");
+		double certainty = (Double) Objects.requireNonNull(additional.get(ADDITIONAL_CERTAINTY_FIELD_NAME),
+				"missing additional certainty field");
+		String id = (String) Objects.requireNonNull(additional.get(ADDITIONAL_ID_FIELD_NAME),
+				"missing additional id field");
 
 		// Metadata
 		Map<String, Object> metadata = new HashMap<>();
@@ -544,22 +549,6 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			super(embeddingModel);
 			Assert.notNull(weaviateClient, "WeaviateClient must not be null");
 			this.weaviateClient = weaviateClient;
-		}
-
-		/**
-		 * Configures the Weaviate object class.
-		 * @param objectClass the object class to use
-		 * @return this builder instance
-		 * @throws IllegalArgumentException if objectClass is null or empty
-		 * @deprecated Use
-		 * {@link org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.Builder#options(WeaviateVectorStoreOptions)}
-		 * instead.
-		 */
-		@Deprecated
-		public Builder objectClass(String objectClass) {
-			Assert.hasText(objectClass, "objectClass must not be empty");
-			this.options.setObjectClass(objectClass);
-			return this;
 		}
 
 		/**

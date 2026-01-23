@@ -27,10 +27,11 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
-import org.springframework.ai.model.google.genai.autoconfigure.BaseGoogleGenAiIT;
+import org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiChatAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,7 +52,8 @@ public class FunctionCallWithFunctionBeanIT {
 	void functionCallWithApiKey() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"))
-			.withConfiguration(BaseGoogleGenAiIT.googleGenAiChatAutoConfig(RestClientAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class))
 			.withUserConfiguration(FunctionConfiguration.class);
 
 		contextRunner.run(context -> {
@@ -81,7 +83,8 @@ public class FunctionCallWithFunctionBeanIT {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.google.genai.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
 					"spring.ai.google.genai.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"))
-			.withConfiguration(BaseGoogleGenAiIT.googleGenAiChatAutoConfig(RestClientAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class))
 			.withUserConfiguration(FunctionConfiguration.class);
 
 		contextRunner.run(context -> {

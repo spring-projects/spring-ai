@@ -31,8 +31,8 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiChatAutoConfiguration;
-import org.springframework.ai.model.zhipuai.autoconfigure.ZhiPuAiITUtil;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiChatOptions;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -41,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Geng Rong
+ * @author Issam El-atif
  */
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".*")
 public class FunctionCallbackInPromptIT {
@@ -49,7 +50,7 @@ public class FunctionCallbackInPromptIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.zhipuai.apiKey=" + System.getenv("ZHIPU_AI_API_KEY"))
-		.withConfiguration(ZhiPuAiITUtil.zhiPuAiToolAutoConfig(ZhiPuAiChatAutoConfiguration.class));
+		.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {

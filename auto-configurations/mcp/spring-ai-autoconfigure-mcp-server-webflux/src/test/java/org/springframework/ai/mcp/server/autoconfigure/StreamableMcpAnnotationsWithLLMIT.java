@@ -36,14 +36,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springaicommunity.mcp.annotation.McpElicitation;
 import org.springaicommunity.mcp.annotation.McpLogging;
 import org.springaicommunity.mcp.annotation.McpProgress;
-import org.springaicommunity.mcp.annotation.McpSampling;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springaicommunity.mcp.context.McpSyncRequestContext;
-import org.springaicommunity.mcp.context.StructuredElicitResult;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
@@ -51,9 +48,11 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
-import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
+import org.springframework.ai.mcp.server.autoconfigure.capabilities.McpHandlerConfiguration;
+import org.springframework.ai.mcp.server.autoconfigure.capabilities.McpHandlerService;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
@@ -62,14 +61,14 @@ import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServ
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.http.server.reactive.ReactorHttpHandlerAdapter;
 import org.springframework.test.util.TestSocketUtils;
@@ -88,7 +87,8 @@ public class StreamableMcpAnnotationsWithLLMIT {
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STREAMABLE")
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				ToolCallbackConverterAutoConfiguration.class, McpServerStreamableHttpWebFluxAutoConfiguration.class,
+				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class,
+				McpServerStreamableHttpWebFluxAutoConfiguration.class,
 				McpServerAnnotationScannerAutoConfiguration.class,
 				McpServerSpecificationFactoryAutoConfiguration.class));
 
@@ -96,17 +96,17 @@ public class StreamableMcpAnnotationsWithLLMIT {
 		.withPropertyValues("spring.ai.anthropic.apiKey=" + System.getenv("ANTHROPIC_API_KEY"))
 		.withConfiguration(anthropicAutoConfig(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class,
 				StreamableHttpWebFluxTransportAutoConfiguration.class,
-				McpClientAnnotationScannerAutoConfiguration.class, McpClientSpecificationFactoryAutoConfiguration.class,
-				AnthropicChatAutoConfiguration.class, ChatClientAutoConfiguration.class));
+				McpClientAnnotationScannerAutoConfiguration.class, AnthropicChatAutoConfiguration.class,
+				ChatClientAutoConfiguration.class));
 
 	private static AutoConfigurations anthropicAutoConfig(Class<?>... additional) {
-		Class<?>[] dependencies = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
-				RestClientAutoConfiguration.class, WebClientAutoConfiguration.class };
+		Class<?>[] dependencies = { ToolCallingAutoConfiguration.class, RestClientAutoConfiguration.class,
+				WebClientAutoConfiguration.class };
 		Class<?>[] all = Stream.concat(Arrays.stream(dependencies), Arrays.stream(additional)).toArray(Class<?>[]::new);
 		return AutoConfigurations.of(all);
 	}
 
-	private static AtomicInteger toolCouter = new AtomicInteger(0);
+	private static AtomicInteger toolCounter = new AtomicInteger(0);
 
 	@Test
 	void clientServerCapabilities() {
@@ -162,7 +162,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 						assertThat(cResponse).isNotEmpty();
 						assertThat(cResponse).contains("22");
 
-						assertThat(toolCouter.get()).isEqualTo(1);
+						assertThat(toolCounter.get()).isEqualTo(1);
 
 						// PROGRESS
 						TestMcpClientConfiguration.TestContext testContext = clientContext
@@ -219,9 +219,6 @@ public class StreamableMcpAnnotationsWithLLMIT {
 		}
 	}
 
-	record ElicitInput(String message) {
-	}
-
 	public static class TestMcpServerConfiguration {
 
 		@Bean
@@ -234,7 +231,7 @@ public class StreamableMcpAnnotationsWithLLMIT {
 			@McpTool(description = "Provides weather information by city name")
 			public String weather(McpSyncRequestContext ctx, @McpToolParam String cityName) {
 
-				toolCouter.incrementAndGet();
+				toolCounter.incrementAndGet();
 
 				ctx.info("Weather called!");
 
@@ -243,7 +240,8 @@ public class StreamableMcpAnnotationsWithLLMIT {
 				ctx.ping(); // call client ping
 
 				// call elicitation
-				var elicitationResult = ctx.elicit(e -> e.message("Test message"), ElicitInput.class);
+				var elicitationResult = ctx.elicit(e -> e.message("Test message"),
+						McpHandlerConfiguration.ElicitInput.class);
 
 				ctx.progress(p -> p.progress(0.50).total(1.0).message("elicitation completed"));
 
@@ -284,18 +282,16 @@ public class StreamableMcpAnnotationsWithLLMIT {
 
 	}
 
+	// We also include scanned beans, because those are registered differently.
+	@ComponentScan(basePackageClasses = McpHandlerService.class)
 	public static class TestMcpClientHandlers {
 
 		private static final Logger logger = LoggerFactory.getLogger(TestMcpClientHandlers.class);
 
-		private final ChatClient client;
-
 		private TestMcpClientConfiguration.TestContext testContext;
 
-		public TestMcpClientHandlers(TestMcpClientConfiguration.TestContext testContext,
-				ChatClient.Builder clientBuilder) {
+		public TestMcpClientHandlers(TestMcpClientConfiguration.TestContext testContext) {
 			this.testContext = testContext;
-			this.client = clientBuilder.build();
 		}
 
 		@McpProgress(clients = "server1")
@@ -310,28 +306,6 @@ public class StreamableMcpAnnotationsWithLLMIT {
 		public void loggingHandler(McpSchema.LoggingMessageNotification loggingMessage) {
 			this.testContext.loggingNotificationRef.set(loggingMessage);
 			logger.info("MCP LOGGING: [{}] {}", loggingMessage.level(), loggingMessage.data());
-		}
-
-		@McpSampling(clients = "server1")
-		public McpSchema.CreateMessageResult samplingHandler(McpSchema.CreateMessageRequest llmRequest) {
-			logger.info("MCP SAMPLING: {}", llmRequest);
-
-			String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
-			String modelHint = llmRequest.modelPreferences().hints().get(0).name();
-			// In a real use-case, we would use the chat client to call the LLM again
-			logger.info("MCP SAMPLING: simulating using chat client {}", this.client);
-
-			return McpSchema.CreateMessageResult.builder()
-				.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
-				.build();
-		}
-
-		@McpElicitation(clients = "server1")
-		public StructuredElicitResult<ElicitInput> elicitationHandler(McpSchema.ElicitRequest request) {
-			logger.info("MCP ELICITATION: {}", request);
-			StreamableMcpAnnotationsWithLLMIT.ElicitInput elicitData = new StreamableMcpAnnotationsWithLLMIT.ElicitInput(
-					request.message());
-			return StructuredElicitResult.builder().structuredContent(elicitData).build();
 		}
 
 	}

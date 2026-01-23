@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
-import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
@@ -171,12 +170,12 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 			requestOptions = (OllamaEmbeddingOptions) embeddingRequest.getOptions();
 		}
 		else {
-			requestOptions = OllamaEmbeddingOptions.fromOptions((OllamaOptions) embeddingRequest.getOptions());
+			requestOptions = OllamaEmbeddingOptions.fromOptions((OllamaEmbeddingOptions) embeddingRequest.getOptions());
 		}
 
 		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
 				requestOptions.getKeepAlive(), OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()),
-				requestOptions.getTruncate());
+				requestOptions.getTruncate(), requestOptions.getDimensions());
 	}
 
 	/**
@@ -214,12 +213,6 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
-			return this;
-		}
-
-		@Deprecated
-		public Builder defaultOptions(OllamaOptions defaultOptions) {
-			this.defaultOptions = OllamaEmbeddingOptions.fromOptions(defaultOptions);
 			return this;
 		}
 

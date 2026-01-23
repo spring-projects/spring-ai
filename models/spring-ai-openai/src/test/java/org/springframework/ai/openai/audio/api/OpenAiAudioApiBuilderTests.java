@@ -37,8 +37,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -56,6 +54,10 @@ class OpenAiAudioApiBuilderTests {
 
 	private static final String TEST_BASE_URL = "https://test.openai.com";
 
+	private static final String TEST_SPEECH_PATH = "/v1/audio/speech";
+
+	private static final String TEST_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
+
 	@Test
 	void testMinimalBuilder() {
 		OpenAiAudioApi api = OpenAiAudioApi.builder().apiKey(TEST_API_KEY).build();
@@ -65,7 +67,7 @@ class OpenAiAudioApiBuilderTests {
 
 	@Test
 	void testFullBuilder() {
-		MultiValueMap<String, String> headers = new LinkedMultiValueMap<>();
+		HttpHeaders headers = new HttpHeaders();
 		headers.add("Custom-Header", "test-value");
 		RestClient.Builder restClientBuilder = RestClient.builder();
 		WebClient.Builder webClientBuilder = WebClient.builder();
@@ -74,6 +76,8 @@ class OpenAiAudioApiBuilderTests {
 		OpenAiAudioApi api = OpenAiAudioApi.builder()
 			.baseUrl(TEST_BASE_URL)
 			.apiKey(TEST_API_KEY)
+			.speechPath(TEST_SPEECH_PATH)
+			.transcriptionPath(TEST_TRANSCRIPTION_PATH)
 			.headers(headers)
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)

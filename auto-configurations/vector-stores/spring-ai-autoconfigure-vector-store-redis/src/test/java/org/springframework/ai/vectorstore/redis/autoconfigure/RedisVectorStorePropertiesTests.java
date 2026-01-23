@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Julien Ruaux
  * @author Eddú Meléndez
+ * @author Brian Sam-Bodden
  */
 class RedisVectorStorePropertiesTests {
 
@@ -31,6 +32,11 @@ class RedisVectorStorePropertiesTests {
 		var props = new RedisVectorStoreProperties();
 		assertThat(props.getIndexName()).isEqualTo("default-index");
 		assertThat(props.getPrefix()).isEqualTo("default:");
+
+		// Verify default HNSW parameters
+		assertThat(props.getHnsw().getM()).isEqualTo(16);
+		assertThat(props.getHnsw().getEfConstruction()).isEqualTo(200);
+		assertThat(props.getHnsw().getEfRuntime()).isEqualTo(10);
 	}
 
 	@Test
@@ -41,6 +47,20 @@ class RedisVectorStorePropertiesTests {
 
 		assertThat(props.getIndexName()).isEqualTo("myIdx");
 		assertThat(props.getPrefix()).isEqualTo("doc:");
+	}
+
+	@Test
+	void customHnswValues() {
+		var props = new RedisVectorStoreProperties();
+		RedisVectorStoreProperties.HnswProperties hnsw = props.getHnsw();
+
+		hnsw.setM(32);
+		hnsw.setEfConstruction(100);
+		hnsw.setEfRuntime(50);
+
+		assertThat(props.getHnsw().getM()).isEqualTo(32);
+		assertThat(props.getHnsw().getEfConstruction()).isEqualTo(100);
+		assertThat(props.getHnsw().getEfRuntime()).isEqualTo(50);
 	}
 
 }

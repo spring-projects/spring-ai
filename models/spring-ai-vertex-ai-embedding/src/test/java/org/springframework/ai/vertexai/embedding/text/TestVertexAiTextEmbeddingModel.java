@@ -23,7 +23,7 @@ import com.google.cloud.aiplatform.v1.PredictionServiceClient;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 
 public class TestVertexAiTextEmbeddingModel extends VertexAiTextEmbeddingModel {
 

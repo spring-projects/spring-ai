@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,17 +21,18 @@ import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.retry.support.RetryTemplate;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -41,6 +42,7 @@ import org.springframework.web.client.RestClient;
  * Moderation {@link AutoConfiguration Auto-configuration} for Mistral AI.
  *
  * @author Ricken Bazolo
+ * @author Yanming Zhou
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		WebClientAutoConfiguration.class })
@@ -53,8 +55,9 @@ public class MistralAiModerationAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MistralAiModerationModel mistralAiModerationModel(MistralAiCommonProperties commonProperties,
-			MistralAiModerationProperties moderationProperties, RetryTemplate retryTemplate,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			MistralAiModerationProperties moderationProperties, ObjectProvider<RetryTemplate> retryTemplate,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var apiKey = moderationProperties.getApiKey();
 		var baseUrl = moderationProperties.getBaseUrl();
@@ -69,12 +72,12 @@ public class MistralAiModerationAutoConfiguration {
 			.baseUrl(resoledBaseUrl)
 			.apiKey(resolvedApiKey)
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 
 		return MistralAiModerationModel.builder()
 			.mistralAiModerationApi(mistralAiModerationApi)
-			.retryTemplate(retryTemplate)
+			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.options(moderationProperties.getOptions())
 			.build();
 	}

@@ -21,7 +21,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +62,7 @@ public class PostgresMlEmbeddingOptionsTests {
 		var jdbcTemplate = Mockito.mock(JdbcTemplate.class);
 		PostgresMlEmbeddingModel embeddingModel = new PostgresMlEmbeddingModel(jdbcTemplate);
 
-		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptionsBuilder.builder().build());
+		PostgresMlEmbeddingOptions options = embeddingModel.mergeOptions(EmbeddingOptions.builder().build());
 
 		// Default options
 		assertThat(options.getTransformer()).isEqualTo(PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL);

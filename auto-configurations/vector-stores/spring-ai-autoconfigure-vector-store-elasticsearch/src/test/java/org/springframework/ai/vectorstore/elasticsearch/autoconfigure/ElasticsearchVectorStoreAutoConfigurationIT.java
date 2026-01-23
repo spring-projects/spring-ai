@@ -33,7 +33,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -42,8 +41,7 @@ import org.springframework.ai.vectorstore.elasticsearch.ElasticsearchVectorStore
 import org.springframework.ai.vectorstore.elasticsearch.SimilarityFunction;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
+import org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,13 +56,12 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 
 	@Container
 	private static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
-			"docker.elastic.co/elasticsearch/elasticsearch:8.16.1")
+			"elasticsearch:9.2.0")
 		.withEnv("xpack.security.enabled", "false");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
-				ElasticsearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
+				ElasticsearchVectorStoreAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 				"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
@@ -131,10 +128,10 @@ class ElasticsearchVectorStoreAutoConfigurationIT {
 
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(ElasticsearchRestClientAutoConfiguration.class,
-					ElasticsearchVectorStoreAutoConfiguration.class, RestClientAutoConfiguration.class,
-					SpringAiRetryAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
+					ElasticsearchVectorStoreAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.elasticsearch.uris=" + elasticsearchContainer.getHttpHostAddress(),
 					"spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
+					"spring.ai.vectorstore.elasticsearch.initializeSchema=true",
 					"spring.ai.vectorstore.elasticsearch.index-name=example",
 					"spring.ai.vectorstore.elasticsearch.dimensions=1024",
 					"spring.ai.vectorstore.elasticsearch.dense-vector-indexing=true",

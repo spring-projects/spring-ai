@@ -15,10 +15,10 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 
@@ -27,14 +27,14 @@ jobs:
 
       - name: Update release version
         run: |
-          mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION
-          mvn versions:set -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION -pl spring-ai-bom
+          ./mvnw versions:set -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION
+          ./mvnw versions:set -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION -pl spring-ai-bom
 
       - name: Enforce release rules
-        run: mvn org.apache.maven.plugins:maven-enforcer-plugin:enforce -Drules=requireReleaseDeps
+        run: ./wmvn org.apache.maven.plugins:maven-enforcer-plugin:enforce -Drules=requireReleaseDeps
 
       - name: Build with Maven and deploy to Artifactory's milestone repository
         env:
           ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
           ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        run: mvn -P artifactory-milestone -s settings.xml --batch-mode -Dmaven.test.skip=true deploy
+        run: ./mvnw -P artifactory-milestone -s settings.xml --batch-mode -Dmaven.test.skip=true deploy

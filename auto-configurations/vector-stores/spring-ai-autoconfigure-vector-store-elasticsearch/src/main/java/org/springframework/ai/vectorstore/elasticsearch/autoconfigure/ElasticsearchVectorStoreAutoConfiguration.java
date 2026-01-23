@@ -16,8 +16,8 @@
 
 package org.springframework.ai.vectorstore.elasticsearch.autoconfigure;
 
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.micrometer.observation.ObservationRegistry;
-import org.elasticsearch.client.RestClient;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -31,9 +31,9 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
+import org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -49,7 +49,7 @@ import org.springframework.context.annotation.Bean;
  * @since 1.0.0
  */
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
-@ConditionalOnClass({ ElasticsearchVectorStore.class, EmbeddingModel.class, RestClient.class })
+@ConditionalOnClass({ ElasticsearchVectorStore.class, EmbeddingModel.class, Rest5Client.class })
 @EnableConfigurationProperties(ElasticsearchVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.ELASTICSEARCH,
 		matchIfMissing = true)
@@ -63,7 +63,7 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ElasticsearchVectorStore vectorStore(ElasticsearchVectorStoreProperties properties, RestClient restClient,
+	ElasticsearchVectorStore vectorStore(ElasticsearchVectorStoreProperties properties, Rest5Client restClient,
 			EmbeddingModel embeddingModel, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
@@ -71,8 +71,8 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 
 		PropertyMapper mapper = PropertyMapper.get();
 		mapper.from(properties::getIndexName).whenHasText().to(elasticsearchVectorStoreOptions::setIndexName);
-		mapper.from(properties::getDimensions).whenNonNull().to(elasticsearchVectorStoreOptions::setDimensions);
-		mapper.from(properties::getSimilarity).whenNonNull().to(elasticsearchVectorStoreOptions::setSimilarity);
+		mapper.from(properties::getDimensions).to(elasticsearchVectorStoreOptions::setDimensions);
+		mapper.from(properties::getSimilarity).to(elasticsearchVectorStoreOptions::setSimilarity);
 		mapper.from(properties::getEmbeddingFieldName)
 			.whenHasText()
 			.to(elasticsearchVectorStoreOptions::setEmbeddingFieldName);

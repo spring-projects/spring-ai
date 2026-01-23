@@ -77,6 +77,14 @@ class DefaultAroundAdvisorChainTests {
 	}
 
 	@Test
+	void getObservationConventionIsNullThenUseDefault() {
+		AdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.create())
+			.observationConvention(null)
+			.build();
+		assertThat(chain).isNotNull();
+	}
+
+	@Test
 	void getObservationRegistry() {
 		ObservationRegistry observationRegistry = ObservationRegistry.create();
 		AdvisorChain chain = DefaultAroundAdvisorChain.builder(observationRegistry).build();

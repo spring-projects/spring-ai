@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
@@ -84,8 +85,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class McpClientAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(McpToolCallbackAutoConfiguration.class, McpClientAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(McpToolCallbackAutoConfiguration.class,
+				McpClientAutoConfiguration.class, McpClientAnnotationScannerAutoConfiguration.class));
 
 	/**
 	 * Tests the default MCP client auto-configuration.
@@ -203,6 +205,24 @@ public class McpClientAutoConfigurationIT {
 			.run(context -> {
 				assertThat(context).hasBean("mcpSyncClients");
 				List<?> clients = context.getBean("mcpSyncClients", List.class);
+				assertThat(clients).isNotNull();
+			});
+	}
+
+	@Test
+	void missingAnnotationScanner() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.client.annotation-scanner.enabled=false").run(context -> {
+			assertThat(context).hasBean("mcpSyncClients");
+			List<?> clients = context.getBean("mcpSyncClients", List.class);
+			assertThat(clients).isNotNull();
+		});
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.client.annotation-scanner.enabled=false",
+					"spring.ai.mcp.client.type=ASYNC")
+			.run(context -> {
+				assertThat(context).hasBean("mcpAsyncClients");
+				List<?> clients = context.getBean("mcpAsyncClients", List.class);
 				assertThat(clients).isNotNull();
 			});
 	}

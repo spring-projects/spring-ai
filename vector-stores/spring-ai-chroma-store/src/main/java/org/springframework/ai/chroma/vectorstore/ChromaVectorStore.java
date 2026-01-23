@@ -24,6 +24,7 @@ import java.util.Map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.embedding.EmbeddingOptionsBuilder;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
@@ -45,7 +46,6 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -73,10 +73,9 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private final String collectionName;
 
-	private FilterExpressionConverter filterExpressionConverter;
+	private final FilterExpressionConverter filterExpressionConverter;
 
-	@Nullable
-	private String collectionId;
+	private @Nullable String collectionId;
 
 	private final boolean initializeSchema;
 
@@ -139,9 +138,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 							+ " doesn't exist and won't be created as the initializeSchema is set to false.");
 				}
 			}
-			if (collection != null) {
-				this.collectionId = collection.id();
-			}
+			Assert.state(collection != null, "collection should pre-exist or have been initialized.");
+			this.collectionId = collection.id();
 			this.initialized = true;
 		}
 	}
@@ -158,8 +156,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		List<String> contents = new ArrayList<>();
 		List<float[]> embeddings = new ArrayList<>();
 
-		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents,
-				EmbeddingOptionsBuilder.builder().build(), this.batchingStrategy);
+		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
+				this.batchingStrategy);
 
 		for (Document document : documents) {
 			ids.add(document.getId());
@@ -168,14 +166,14 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			embeddings.add(documentEmbeddings.get(documents.indexOf(document)));
 		}
 
-		this.chromaApi.upsertEmbeddings(this.tenantName, this.databaseName, this.collectionId,
+		this.chromaApi.upsertEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),
 				new AddEmbeddingsRequest(ids, embeddings, metadatas, contents));
 	}
 
 	@Override
 	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
-		this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.collectionId,
+		this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),
 				new DeleteEmbeddingsRequest(idList));
 	}
 
@@ -192,7 +190,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			logger.debug("Deleting with where clause: {}", whereClause);
 
 			DeleteEmbeddingsRequest deleteRequest = new DeleteEmbeddingsRequest(null, whereClause);
-			this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.collectionId, deleteRequest);
+			this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),
+					deleteRequest);
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
@@ -212,8 +211,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 				? jsonToMap(this.filterExpressionConverter.convertExpression(request.getFilterExpression())) : null;
 
 		var queryRequest = new ChromaApi.QueryRequest(embedding, request.getTopK(), where);
-		var queryResponse = this.chromaApi.queryCollection(this.tenantName, this.databaseName, this.collectionId,
-				queryRequest);
+		var queryResponse = this.chromaApi.queryCollection(this.tenantName, this.databaseName,
+				this.requireCollectionId(), queryRequest);
 		var embeddings = this.chromaApi.toEmbeddingResponseList(queryResponse);
 
 		List<Document> responseDocuments = new ArrayList<>();
@@ -256,7 +255,12 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
 			.dimensions(this.embeddingModel.dimensions())
-			.collectionName(this.collectionName + ":" + this.collectionId);
+			.collectionName(this.collectionName + ":" + this.requireCollectionId());
+	}
+
+	private String requireCollectionId() {
+		Assert.notNull(this.collectionId, "collectionId should not be null");
+		return this.collectionId;
 	}
 
 	// used by the test

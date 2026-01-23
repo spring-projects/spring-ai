@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechModel;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link ElevenLabsConnectionProperties}.
  *
  * @author Alexandros Pappas
+ * @author Issam El-atif
  */
 public class ElevenLabsPropertiesTests {
 
@@ -46,7 +48,7 @@ public class ElevenLabsPropertiesTests {
 				"spring.ai.elevenlabs.tts.options.voice-settings.use-speaker-boost=false",
 				"spring.ai.elevenlabs.tts.options.voice-settings.speed=1.5"
 				// @formatter:on
-		).withConfiguration(ElevenLabsITUtil.elevenLabsAutoConfig(ElevenLabsAutoConfiguration.class)).run(context -> {
+		).withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class)).run(context -> {
 			var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
 			var connectionProperties = context.getBean(ElevenLabsConnectionProperties.class);
 
@@ -60,9 +62,6 @@ public class ElevenLabsPropertiesTests {
 			assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
 			assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
 			assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.5f);
-
-			// enabled is true by default
-			assertThat(speechProperties.isEnabled()).isTrue();
 		});
 	}
 
@@ -86,7 +85,7 @@ public class ElevenLabsPropertiesTests {
 				"spring.ai.elevenlabs.tts.options.apply-text-normalization=ON",
 				"spring.ai.elevenlabs.tts.options.apply-language-text-normalization=true"
 				// @formatter:on
-		).withConfiguration(ElevenLabsITUtil.elevenLabsAutoConfig(ElevenLabsAutoConfiguration.class)).run(context -> {
+		).withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class)).run(context -> {
 			var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
 
 			assertThat(speechProperties.getOptions().getModelId()).isEqualTo("custom-model");
@@ -113,7 +112,7 @@ public class ElevenLabsPropertiesTests {
 
 		// It is enabled by default
 		new ApplicationContextRunner().withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY")
-			.withConfiguration(ElevenLabsITUtil.elevenLabsAutoConfig(ElevenLabsAutoConfiguration.class))
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ElevenLabsTextToSpeechModel.class)).isNotEmpty();
@@ -121,8 +120,8 @@ public class ElevenLabsPropertiesTests {
 
 		// Explicitly enable the text-to-speech autoconfiguration.
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.elevenlabs.tts.enabled=true")
-			.withConfiguration(ElevenLabsITUtil.elevenLabsAutoConfig(ElevenLabsAutoConfiguration.class))
+			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.model.audio.speech=elevenlabs")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ElevenLabsTextToSpeechModel.class)).isNotEmpty();
@@ -130,8 +129,8 @@ public class ElevenLabsPropertiesTests {
 
 		// Explicitly disable the text-to-speech autoconfiguration.
 		new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.elevenlabs.tts.enabled=false")
-			.withConfiguration(ElevenLabsITUtil.elevenLabsAutoConfig(ElevenLabsAutoConfiguration.class))
+			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.model.audio.speech=none")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(ElevenLabsTextToSpeechModel.class)).isEmpty();
