@@ -51,7 +51,6 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
 import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -165,8 +164,9 @@ public class McpServerAutoConfiguration {
 		// Resources Templates
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources templates capabilities, notification: "
-					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+					+ serverProperties.getToolChangeNotification().isResourceChangeNotification());
+			capabilitiesBuilder.resources(false,
+					serverProperties.getToolChangeNotification().isResourceChangeNotification());
 
 			List<SyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
 				.flatMap(List::stream)
@@ -286,8 +286,9 @@ public class McpServerAutoConfiguration {
 		// Resources Templates
 		if (serverProperties.getCapabilities().isResource()) {
 			logger.info("Enable resources templates capabilities, notification: "
-					+ changeNotificationProperties.isResourceChangeNotification());
-			capabilitiesBuilder.resources(false, changeNotificationProperties.isResourceChangeNotification());
+					+ serverProperties.getToolChangeNotification().isResourceChangeNotification());
+			capabilitiesBuilder.resources(false,
+					serverProperties.getToolChangeNotification().isResourceChangeNotification());
 
 			List<AsyncResourceTemplateSpecification> resourceTemplateSpecifications = resourceTemplates.stream()
 				.flatMap(List::stream)

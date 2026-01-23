@@ -57,8 +57,8 @@ class McpServerSseWebFluxAutoConfigurationIT {
 	void endpointConfiguration() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.base-url=http://localhost:8080",
-					"spring.ai.mcp.server.sse-endpoint=/events",
-					"spring.ai.mcp.server.sse-message-endpoint=/api/mcp/message")
+					"spring.ai.mcp.server.sse.sse-endpoint=/events",
+					"spring.ai.mcp.server.sse.sse-message-endpoint=/api/mcp/message")
 			.run(context -> {
 				McpServerProperties sseProperties = context.getBean(McpServerProperties.class);
 				assertThat(sseProperties.getSse().getBaseUrl()).isEqualTo("http://localhost:8080");

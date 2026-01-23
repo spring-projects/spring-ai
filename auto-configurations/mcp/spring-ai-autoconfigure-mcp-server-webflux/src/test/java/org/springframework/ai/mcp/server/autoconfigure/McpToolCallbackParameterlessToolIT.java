@@ -94,8 +94,8 @@ class McpToolCallbackParameterlessToolIT {
 			.withPropertyValues(// @formatter:off
 				"spring.ai.mcp.server.name=test-incomplete-schema-server",
 				"spring.ai.mcp.server.version=1.0.0",
-				"spring.ai.mcp.server.streamable-http.keep-alive-interval=1s",
-				"spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp") // @formatter:on
+				"spring.ai.mcp.server.streamable.keep-alive-interval=1s",
+				"spring.ai.mcp.server.streamable.mcp-endpoint=/mcp") // @formatter:on
 			.run(serverContext -> {
 
 				McpSyncServer mcpSyncServer = serverContext.getBean(McpSyncServer.class);

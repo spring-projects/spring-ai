@@ -51,7 +51,7 @@ public class McpServerStatelessWebFluxAutoConfiguration {
 
 		return WebFluxStatelessServerTransport.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-			.messageEndpoint(serverProperties.getMcpEndpoint())
+			.messageEndpoint(serverProperties.getStateless().getMcpEndpoint())
 			.build();
 	}
 

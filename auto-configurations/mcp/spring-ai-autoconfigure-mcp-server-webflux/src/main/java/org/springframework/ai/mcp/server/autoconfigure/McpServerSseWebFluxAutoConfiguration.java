@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
+import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -86,12 +86,12 @@ public class McpServerSseWebFluxAutoConfiguration {
 			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerProperties serverProperties) {
 
 		return WebFluxSseServerTransportProvider.builder()
-				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-				.basePath(serverProperties.getBaseUrl())
-				.messageEndpoint(serverProperties.getSseMessageEndpoint())
-				.sseEndpoint(serverProperties.getSseEndpoint())
-				.keepAliveInterval(serverProperties.getKeepAliveInterval())
-				.build();
+			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+			.basePath(serverProperties.getSse().getBaseUrl())
+			.messageEndpoint(serverProperties.getSse().getSseMessageEndpoint())
+			.sseEndpoint(serverProperties.getSse().getSseEndpoint())
+			.keepAliveInterval(serverProperties.getSse().getKeepAliveInterval())
+			.build();
 	}
 
 	// Router function for SSE transport used by Spring WebFlux to start an HTTP

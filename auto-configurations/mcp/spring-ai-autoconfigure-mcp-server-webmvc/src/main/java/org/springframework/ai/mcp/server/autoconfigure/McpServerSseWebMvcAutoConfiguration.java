@@ -80,10 +80,10 @@ public class McpServerSseWebMvcAutoConfiguration {
 
 		return WebMvcSseServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-			.baseUrl(serverProperties.getBaseUrl())
-			.sseEndpoint(serverProperties.getSseEndpoint())
-			.messageEndpoint(serverProperties.getSseMessageEndpoint())
-			.keepAliveInterval(serverProperties.getKeepAliveInterval())
+			.baseUrl(serverProperties.getSse().getBaseUrl())
+			.sseEndpoint(serverProperties.getSse().getSseEndpoint())
+			.messageEndpoint(serverProperties.getSse().getSseMessageEndpoint())
+			.keepAliveInterval(serverProperties.getSse().getKeepAliveInterval())
 			.build();
 	}
 

@@ -48,8 +48,7 @@ public class McpServerStatelessWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcStatelessServerTransport webMvcStatelessServerTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper,
-			McpServerProperties serverProperties) {
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerProperties serverProperties) {
 
 		return WebMvcStatelessServerTransport.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
