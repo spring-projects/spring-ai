@@ -12,6 +12,13 @@
 	<packaging>jar</packaging>
 	<name>Spring AI Redis Semantic Cache Auto Configuration</name>
 	<description>Spring AI Redis Semantic Cache Auto Configuration</description>
+	<url>https://github.com/spring-projects/spring-ai</url>
+
+	<scm>
+		<url>https://github.com/spring-projects/spring-ai</url>
+		<connection>git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
+	</scm>
 
 	<dependencies>
 		<dependency>
