@@ -77,7 +77,7 @@ public class QdrantVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public QdrantVectorStore vectorStore(EmbeddingModel embeddingModel, QdrantVectorStoreProperties properties,
+	public QdrantVectorStore qdrantVectorStore(EmbeddingModel embeddingModel, QdrantVectorStoreProperties properties,
 			QdrantClient qdrantClient, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {

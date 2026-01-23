@@ -53,8 +53,8 @@ public class PineconeVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PineconeVectorStore vectorStore(EmbeddingModel embeddingModel, PineconeVectorStoreProperties properties,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+	public PineconeVectorStore pineconeVectorStore(EmbeddingModel embeddingModel,
+			PineconeVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 

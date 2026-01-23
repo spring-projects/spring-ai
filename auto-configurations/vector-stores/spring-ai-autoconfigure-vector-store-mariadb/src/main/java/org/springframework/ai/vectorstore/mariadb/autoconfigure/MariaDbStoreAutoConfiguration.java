@@ -55,7 +55,7 @@ public class MariaDbStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MariaDBVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+	public MariaDBVectorStore mariaDbVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 			org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreProperties properties,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,

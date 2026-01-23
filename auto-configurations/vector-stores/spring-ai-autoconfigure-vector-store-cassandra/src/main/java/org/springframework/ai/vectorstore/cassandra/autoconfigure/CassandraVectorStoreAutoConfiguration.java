@@ -61,8 +61,9 @@ public class CassandraVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CassandraVectorStore vectorStore(EmbeddingModel embeddingModel, CassandraVectorStoreProperties properties,
-			CqlSession cqlSession, ObjectProvider<ObservationRegistry> observationRegistry,
+	public CassandraVectorStore cassandraVectorStore(EmbeddingModel embeddingModel,
+			CassandraVectorStoreProperties properties, CqlSession cqlSession,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 

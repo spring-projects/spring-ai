@@ -80,8 +80,9 @@ public class OpenSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	OpenSearchVectorStore vectorStore(OpenSearchVectorStoreProperties properties, OpenSearchClient openSearchClient,
-			EmbeddingModel embeddingModel, ObjectProvider<ObservationRegistry> observationRegistry,
+	OpenSearchVectorStore openSearchVectorStore(OpenSearchVectorStoreProperties properties,
+			OpenSearchClient openSearchClient, EmbeddingModel embeddingModel,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 		var indexName = Optional.ofNullable(properties.getIndexName()).orElse(OpenSearchVectorStore.DEFAULT_INDEX_NAME);
