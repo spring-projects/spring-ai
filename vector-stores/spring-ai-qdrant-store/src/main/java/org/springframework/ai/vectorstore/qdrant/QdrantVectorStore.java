@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.grpc.Collections.Distance;
@@ -122,6 +123,7 @@ import org.springframework.util.Assert;
  * @author Josh Long
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -183,12 +185,15 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					this.batchingStrategy);
 
-			List<PointStruct> points = documents.stream()
-				.map(document -> PointStruct.newBuilder()
-					.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
-					.setVectors(io.qdrant.client.VectorsFactory.vectors(embeddings.get(documents.indexOf(document))))
-					.putAllPayload(toPayload(document))
-					.build())
+			List<PointStruct> points = IntStream.range(0, documents.size())
+				.mapToObj(i -> {
+					Document document = documents.get(i);
+					return PointStruct.newBuilder()
+						.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
+						.setVectors(io.qdrant.client.VectorsFactory.vectors(embeddings.get(i)))
+						.putAllPayload(toPayload(document))
+						.build();
+				})
 				.toList();
 
 			this.qdrantClient.upsertAsync(this.collectionName, points).get();
