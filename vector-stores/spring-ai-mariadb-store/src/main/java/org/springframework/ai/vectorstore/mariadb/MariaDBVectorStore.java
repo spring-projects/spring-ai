@@ -135,6 +135,7 @@ import org.springframework.util.StringUtils;
  * @author Diego Dupin
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class MariaDBVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -262,9 +263,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		List<List<MariaDBDocument>> batches = new ArrayList<>();
 		List<MariaDBDocument> mariaDBDocuments = new ArrayList<>(documents.size());
 		if (embeddings.size() == documents.size()) {
-			for (Document document : documents) {
+			for (int i = 0; i < documents.size(); i++) {
+				Document document = documents.get(i);
 				mariaDBDocuments.add(new MariaDBDocument(document.getId(), document.getText(), document.getMetadata(),
-						embeddings.get(documents.indexOf(document))));
+						embeddings.get(i)));
 			}
 		}
 		else {

@@ -148,6 +148,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author inpink
  * @author Sanghun Lee
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -227,9 +228,10 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		List<float[]> embedding = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(), document.getText(),
-					document.getMetadata(), embedding.get(documents.indexOf(document)));
+					document.getMetadata(), embedding.get(i));
 
 			// Conditionally set document ID based on manageDocumentIds flag
 			if (this.manageDocumentIds) {
