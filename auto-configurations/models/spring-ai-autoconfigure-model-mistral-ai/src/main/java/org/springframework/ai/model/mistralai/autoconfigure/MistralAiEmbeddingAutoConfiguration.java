@@ -34,8 +34,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -47,6 +45,7 @@ import org.springframework.web.client.RestClient;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Nicolas Krier
  * @since 0.8.1
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
@@ -58,15 +57,13 @@ public class MistralAiEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MistralAiEmbeddingModel mistralAiEmbeddingModel(MistralAiCommonProperties commonProperties,
+	MistralAiEmbeddingModel mistralAiEmbeddingModel(MistralAiCommonProperties commonProperties,
 			MistralAiEmbeddingProperties embeddingProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
-
-		var mistralAiApi = mistralAiApi(embeddingProperties.getApiKey(), commonProperties.getApiKey(),
-				embeddingProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+		var mistralAiApi = mistralAiApi(commonProperties, embeddingProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
 
 		var embeddingModel = MistralAiEmbeddingModel.builder()
@@ -82,17 +79,14 @@ public class MistralAiEmbeddingAutoConfiguration {
 		return embeddingModel;
 	}
 
-	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
-
-		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
-		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
-
-		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
-		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
+	private static MistralAiApi mistralAiApi(MistralAiCommonProperties commonProperties,
+			MistralAiEmbeddingProperties embeddingProperties, RestClient.Builder restClientBuilder,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+		var resolvedApiKey = MistralAiPropertiesUtils.resolveApiKey(commonProperties, embeddingProperties);
+		var resolvedBaseUrl = MistralAiPropertiesUtils.resolveBaseUrl(commonProperties, embeddingProperties);
 
 		return MistralAiApi.builder()
-			.baseUrl(resoledBaseUrl)
+			.baseUrl(resolvedBaseUrl)
 			.apiKey(resolvedApiKey)
 			.restClientBuilder(restClientBuilder)
 			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
