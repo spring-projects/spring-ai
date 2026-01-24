@@ -125,6 +125,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -261,10 +262,11 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	public void doAdd(List<Document> documents) {
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
 					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
-					embeddings.get(documents.indexOf(document)));
+					embeddings.get(i));
 			this.mongoTemplate.save(mdbDocument, this.collectionName);
 		}
 	}

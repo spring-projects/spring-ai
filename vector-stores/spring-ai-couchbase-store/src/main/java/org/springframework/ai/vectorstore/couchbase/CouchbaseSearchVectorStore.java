@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Laurent Doguin
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
@@ -139,10 +140,11 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		logger.info(this.scopeName);
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(),
 					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
-					embeddings.get(documents.indexOf(document)));
+					embeddings.get(i));
 			this.collection.upsert(document.getId(), cbDoc);
 		}
 	}

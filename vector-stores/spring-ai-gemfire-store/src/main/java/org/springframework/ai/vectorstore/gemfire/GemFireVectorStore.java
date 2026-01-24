@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -63,6 +64,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author chabinhwang
  */
 public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -228,9 +230,12 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	public void doAdd(List<Document> documents) {
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
-		UploadRequest upload = new UploadRequest(documents.stream()
-			.map(document -> new UploadRequest.Embedding(document.getId(), embeddings.get(documents.indexOf(document)),
-					DOCUMENT_FIELD, Objects.requireNonNullElse(document.getText(), ""), document.getMetadata()))
+		UploadRequest upload = new UploadRequest(IntStream.range(0, documents.size())
+			.mapToObj(i -> {
+				Document document = documents.get(i);
+				return new UploadRequest.Embedding(document.getId(), embeddings.get(i),
+						DOCUMENT_FIELD, Objects.requireNonNullElse(document.getText(), ""), document.getMetadata());
+			})
 			.toList());
 
 		String embeddingsJson = null;

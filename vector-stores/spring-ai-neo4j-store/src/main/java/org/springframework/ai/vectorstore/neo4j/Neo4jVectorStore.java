@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 import org.neo4j.driver.Driver;
@@ -131,6 +132,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Jihoon Kim
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -206,8 +208,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		var rows = documents.stream()
-			.map(document -> documentToRecord(document, embeddings.get(documents.indexOf(document))))
+		var rows = IntStream.range(0, documents.size())
+			.mapToObj(i -> documentToRecord(documents.get(i), embeddings.get(i)))
 			.toList();
 
 		try (var session = this.driver.session(this.sessionConfig)) {
