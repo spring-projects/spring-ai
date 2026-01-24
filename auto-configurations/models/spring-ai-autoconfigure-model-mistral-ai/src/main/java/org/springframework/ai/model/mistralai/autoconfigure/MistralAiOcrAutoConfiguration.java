@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import org.springframework.ai.mistralai.ocr.MistralOcrApi;
+import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
@@ -41,7 +42,8 @@ import org.springframework.web.client.RestClient;
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
 @ConditionalOnClass(MistralOcrApi.class)
-@ConditionalOnProperty(name = "spring.ai.model.ocr", havingValue = SpringAIModels.MISTRAL, matchIfMissing = true)
+@ConditionalOnProperty(name = SpringAIModelProperties.OCR_MODEL, havingValue = SpringAIModels.MISTRAL,
+		matchIfMissing = true)
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiOcrProperties.class })
 public class MistralAiOcrAutoConfiguration {
 
