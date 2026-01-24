@@ -28,23 +28,23 @@ import org.springframework.ai.chat.model.ChatResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit tests for {@link SkillsResponseHelper}.
+ * Unit tests for {@link AnthropicSkillsResponseHelper}.
  *
  * @author Soby Chacko
  * @since 2.0.0
  */
-class SkillsResponseHelperTests {
+class AnthropicSkillsResponseHelperTests {
 
 	@Test
 	void shouldReturnEmptyListForNullResponse() {
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(null);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(null);
 		assertThat(fileIds).isEmpty();
 	}
 
 	@Test
 	void shouldReturnEmptyListForResponseWithoutMetadata() {
 		ChatResponse response = new ChatResponse(List.of());
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 		assertThat(fileIds).isEmpty();
 	}
 
@@ -61,7 +61,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 		assertThat(fileIds).isEmpty();
 	}
 
@@ -80,7 +80,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
 		assertThat(fileIds).hasSize(1);
 		assertThat(fileIds).containsExactly("file_abc123");
@@ -107,7 +107,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
 		assertThat(fileIds).hasSize(3);
 		assertThat(fileIds).containsExactly("file_123", "file_456", "file_789");
@@ -133,7 +133,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
 		assertThat(fileIds).hasSize(2);
 		assertThat(fileIds).containsExactly("file_excel", "file_pdf");
@@ -141,14 +141,14 @@ class SkillsResponseHelperTests {
 
 	@Test
 	void shouldReturnNullContainerIdForNullResponse() {
-		String containerId = SkillsResponseHelper.extractContainerId(null);
+		String containerId = AnthropicSkillsResponseHelper.extractContainerId(null);
 		assertThat(containerId).isNull();
 	}
 
 	@Test
 	void shouldReturnNullContainerIdForResponseWithoutMetadata() {
 		ChatResponse response = new ChatResponse(List.of());
-		String containerId = SkillsResponseHelper.extractContainerId(response);
+		String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
 		assertThat(containerId).isNull();
 	}
 
@@ -164,7 +164,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		String containerId = SkillsResponseHelper.extractContainerId(response);
+		String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
 		assertThat(containerId).isNull();
 	}
 
@@ -181,7 +181,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		String containerId = SkillsResponseHelper.extractContainerId(response);
+		String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
 		assertThat(containerId).isEqualTo("container_xyz789");
 	}
 
@@ -201,7 +201,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 		assertThat(fileIds).hasSize(2);
 		assertThat(fileIds).containsExactly("file_1", "file_2");
 	}
@@ -224,7 +224,7 @@ class SkillsResponseHelperTests {
 
 		ChatResponse response = new ChatResponse(List.of(), metadata);
 
-		List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
 		// Should only extract the valid file ID
 		assertThat(fileIds).hasSize(1);

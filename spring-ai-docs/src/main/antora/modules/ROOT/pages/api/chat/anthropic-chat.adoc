@@ -1570,7 +1570,7 @@ ChatResponse response = chatModel.call(
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-5")
             .maxTokens(4096)
-            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .skill(AnthropicApi.AnthropicSkill.XLSX)
             .build()
     )
 );
@@ -1594,8 +1594,8 @@ ChatResponse response = chatModel.call(
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-5")
             .maxTokens(8192)
-            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
-            .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+            .skill(AnthropicApi.AnthropicSkill.XLSX)
+            .skill(AnthropicApi.AnthropicSkill.PPTX)
             .build()
     )
 );
@@ -1608,8 +1608,8 @@ For more control, use `SkillContainer` directly:
 [source,java]
 ----
 AnthropicApi.SkillContainer container = AnthropicApi.SkillContainer.builder()
-    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
-    .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX, "20251013") // Specific version
+    .skill(AnthropicApi.AnthropicSkill.XLSX)
+    .skill(AnthropicApi.AnthropicSkill.PPTX, "20251013") // Specific version
     .build();
 
 ChatResponse response = chatModel.call(
@@ -1637,7 +1637,7 @@ String response = ChatClient.create(chatModel)
     .options(AnthropicChatOptions.builder()
         .model("claude-sonnet-4-5")
         .maxTokens(4096)
-        .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+        .skill(AnthropicApi.AnthropicSkill.PPTX)
         .build())
     .call()
     .content();
@@ -1655,7 +1655,7 @@ Flux<ChatResponse> responseFlux = chatModel.stream(
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-5")
             .maxTokens(4096)
-            .anthropicSkill(AnthropicApi.AnthropicSkill.DOCX)
+            .skill(AnthropicApi.AnthropicSkill.DOCX)
             .build()
     )
 );
@@ -1669,18 +1669,18 @@ responseFlux.subscribe(response -> {
 === Downloading Generated Files
 
 When Claude generates files using Skills, the response contains file IDs that can be used to download the actual files via the Files API.
-Spring AI provides the `SkillsResponseHelper` utility class for extracting file IDs and downloading files.
+Spring AI provides the `AnthropicSkillsResponseHelper` utility class for extracting file IDs and downloading files.
 
 ==== Extracting File IDs
 
 [source,java]
 ----
-import org.springframework.ai.anthropic.SkillsResponseHelper;
+import org.springframework.ai.anthropic.AnthropicSkillsResponseHelper;
 
 ChatResponse response = chatModel.call(prompt);
 
 // Extract all file IDs from the response
-List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
 for (String fileId : fileIds) {
     System.out.println("Generated file ID: " + fileId);
@@ -1721,7 +1721,7 @@ System.out.println("Saved file to: " + outputPath);
 
 ==== Convenience Method: Download All Files
 
-The `SkillsResponseHelper` provides a convenience method to download all generated files at once:
+The `AnthropicSkillsResponseHelper` provides a convenience method to download all generated files at once:
 
 [source,java]
 ----
@@ -1729,7 +1729,7 @@ The `SkillsResponseHelper` provides a convenience method to download all generat
 Path targetDir = Path.of("generated-files");
 Files.createDirectories(targetDir);
 
-List<Path> savedFiles = SkillsResponseHelper.downloadAllFiles(response, anthropicApi, targetDir);
+List<Path> savedFiles = AnthropicSkillsResponseHelper.downloadAllFiles(response, anthropicApi, targetDir);
 
 for (Path file : savedFiles) {
     System.out.println("Downloaded: " + file.getFileName() +
@@ -1763,13 +1763,13 @@ public class DocumentGenerationService {
                 AnthropicChatOptions.builder()
                     .model("claude-sonnet-4-5")
                     .maxTokens(4096)
-                    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                    .skill(AnthropicApi.AnthropicSkill.XLSX)
                     .build()
             )
         );
 
         // Extract file IDs from the response
-        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
         if (fileIds.isEmpty()) {
             throw new RuntimeException("No file was generated");
@@ -1834,7 +1834,7 @@ For multi-turn conversations with Skills, you may need to extract the container 
 
 [source,java]
 ----
-String containerId = SkillsResponseHelper.extractContainerId(response);
+String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
 
 if (containerId != null) {
     System.out.println("Container ID for reuse: " + containerId);
@@ -1857,7 +1857,7 @@ if (containerId != null) {
 
 [source,java]
 ----
-List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
 if (fileIds.isEmpty()) {
     // Claude may have responded with text instead of generating a file
@@ -1903,12 +1903,12 @@ public class ReportService {
                 AnthropicChatOptions.builder()
                     .model("claude-sonnet-4-5")
                     .maxTokens(8192)
-                    .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
+                    .skill(AnthropicApi.AnthropicSkill.PPTX)
                     .build()
             )
         );
 
-        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
         return anthropicApi.downloadFile(fileIds.get(0));
     }
 }
@@ -1943,12 +1943,12 @@ public class ExportController {
                 AnthropicChatOptions.builder()
                     .model("claude-sonnet-4-5")
                     .maxTokens(4096)
-                    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+                    .skill(AnthropicApi.AnthropicSkill.XLSX)
                     .build()
             )
         );
 
-        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
         byte[] content = anthropicApi.downloadFile(fileIds.get(0));
         AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileIds.get(0));
 
@@ -1979,15 +1979,15 @@ public Map<String, byte[]> generateProjectDocumentation(ProjectInfo project) thr
             AnthropicChatOptions.builder()
                 .model("claude-sonnet-4-5")
                 .maxTokens(16384)
-                .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
-                .anthropicSkill(AnthropicApi.AnthropicSkill.PPTX)
-                .anthropicSkill(AnthropicApi.AnthropicSkill.DOCX)
+                .skill(AnthropicApi.AnthropicSkill.XLSX)
+                .skill(AnthropicApi.AnthropicSkill.PPTX)
+                .skill(AnthropicApi.AnthropicSkill.DOCX)
                 .build()
         )
     );
 
     Map<String, byte[]> documents = new HashMap<>();
-    List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+    List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
     for (String fileId : fileIds) {
         AnthropicApi.FileMetadata metadata = anthropicApi.getFileMetadata(fileId);
@@ -2014,7 +2014,7 @@ ChatResponse response = chatModel.call(
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-5")
             .maxTokens(4096)
-            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
+            .skill(AnthropicApi.AnthropicSkill.XLSX)
             .cacheOptions(AnthropicCacheOptions.builder()
                 .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
                 .build())
@@ -2074,7 +2074,7 @@ The response contains your skill ID:
 
 ==== Using Custom Skills in Spring AI
 
-Reference your custom skill by its ID using the `.customSkill()` method:
+Reference your custom skill by its ID using the `.skill()` method:
 
 [source,java]
 ----
@@ -2084,7 +2084,7 @@ ChatResponse response = chatModel.call(
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-5")
             .maxTokens(4096)
-            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")
+            .skill("skill_01AbCdEfGhIjKlMnOpQrStUv")
             .build()
     )
 );
@@ -2103,8 +2103,8 @@ ChatResponse response = chatModel.call(
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-5")
             .maxTokens(4096)
-            .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)  // Pre-built
-            .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")     // Your custom skill
+            .skill(AnthropicApi.AnthropicSkill.XLSX)       // Pre-built
+            .skill("skill_01AbCdEfGhIjKlMnOpQrStUv")       // Your custom skill
             .build()
     )
 );
@@ -2117,9 +2117,9 @@ For more control over skill versions, use `SkillContainer` directly:
 [source,java]
 ----
 AnthropicApi.SkillContainer container = AnthropicApi.SkillContainer.builder()
-    .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX)
-    .customSkill("skill_01AbCdEfGhIjKlMnOpQrStUv")                    // Uses latest version
-    .customSkill("skill_02XyZaBcDeFgHiJkLmNoPq", "1765845644409101")  // Specific version
+    .skill(AnthropicApi.AnthropicSkill.XLSX)
+    .skill("skill_01AbCdEfGhIjKlMnOpQrStUv")                    // Uses latest version
+    .skill("skill_02XyZaBcDeFgHiJkLmNoPq", "1765845644409101")  // Specific version
     .build();
 
 ChatResponse response = chatModel.call(
@@ -2173,11 +2173,11 @@ public class BrandedDocumentService {
         AnthropicChatOptions.Builder optionsBuilder = AnthropicChatOptions.builder()
                 .model("claude-sonnet-4-5")
                 .maxTokens(8192)
-                .anthropicSkill(AnthropicApi.AnthropicSkill.XLSX);
+                .skill(AnthropicApi.AnthropicSkill.XLSX);
 
         // Add custom branding skill if requested
         if (includeBranding) {
-            optionsBuilder.customSkill(BRANDING_SKILL_ID);
+            optionsBuilder.skill(BRANDING_SKILL_ID);
         }
 
         ChatResponse response = chatModel.call(
@@ -2185,7 +2185,7 @@ public class BrandedDocumentService {
         );
 
         // Extract and download the generated file
-        List<String> fileIds = SkillsResponseHelper.extractFileIds(response);
+        List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
 
         if (fileIds.isEmpty()) {
             throw new RuntimeException("No file was generated");

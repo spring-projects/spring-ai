@@ -29,6 +29,7 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -206,6 +207,66 @@ public class MessageChatMemoryAdvisorTests {
 		assertThat(messages).hasSize(2);
 		assertThat(messages.get(0)).isInstanceOf(UserMessage.class);
 		assertThat(messages.get(1)).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void beforeMethodMovesSystemMessageToFirstPosition() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		// Pre-populate memory with some messages (no system message in memory)
+		chatMemory.add("test-conversation",
+				List.of(new UserMessage("Previous question"), new AssistantMessage("Previous answer")));
+
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
+			.conversationId("test-conversation")
+			.build();
+
+		// Create a prompt with system message NOT at the first position
+		// The system message is in the instructions, after user message
+		Prompt prompt = Prompt.builder()
+			.messages(new UserMessage("Hello"), new SystemMessage("You are a helpful assistant"))
+			.build();
+
+		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		ChatClientRequest processedRequest = advisor.before(request, chain);
+
+		// Verify that the system message is now first in the processed messages
+		List<Message> processedMessages = processedRequest.prompt().getInstructions();
+		assertThat(processedMessages).isNotEmpty();
+		assertThat(processedMessages.get(0)).isInstanceOf(SystemMessage.class);
+		assertThat(processedMessages.get(0).getText()).isEqualTo("You are a helpful assistant");
+	}
+
+	@Test
+	void beforeMethodKeepsSystemMessageFirstWhenAlreadyFirst() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory)
+			.conversationId("test-conversation")
+			.build();
+
+		// Create a prompt with system message already at first position
+		Prompt prompt = Prompt.builder()
+			.messages(new SystemMessage("You are a helpful assistant"), new UserMessage("Hello"))
+			.build();
+
+		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		ChatClientRequest processedRequest = advisor.before(request, chain);
+
+		// Verify that the system message remains first
+		List<Message> processedMessages = processedRequest.prompt().getInstructions();
+		assertThat(processedMessages).isNotEmpty();
+		assertThat(processedMessages.get(0)).isInstanceOf(SystemMessage.class);
+		assertThat(processedMessages.get(0).getText()).isEqualTo("You are a helpful assistant");
+		assertThat(processedMessages.get(1)).isInstanceOf(UserMessage.class);
 	}
 
 }

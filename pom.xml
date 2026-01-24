@@ -85,7 +85,7 @@
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
 		<module>vector-stores/spring-ai-bedrock-knowledgebase-store</module>
-
+		<module>vector-stores/spring-ai-s3-vector-store</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
@@ -158,6 +158,7 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
@@ -180,6 +181,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-s3</module>
 
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-azure-openai</module>
@@ -354,7 +356,7 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.17.0</mcp.sdk.version>
+		<mcp.sdk.version>0.17.1</mcp.sdk.version>
 		<mcp-annotations.version>0.8.0</mcp-annotations.version>
 
 		<!-- plugin versions -->
@@ -387,8 +389,8 @@
 		<spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
-		<error-prone.version>2.44.0</error-prone.version>
-		<nullaway.version>0.12.13</nullaway.version>
+		<error-prone.version>2.46.0</error-prone.version>
+		<nullaway.version>0.13.0</nullaway.version>
 
 		<disable.checks>false</disable.checks>
 

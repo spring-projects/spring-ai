@@ -1,20 +1,13 @@
 name: Documentation Upload
-
 on:
   workflow_dispatch:
-    inputs:
-      releaseVersion:
-        description: "Release version"
-        required: true
 
 jobs:
-  build:
+  handle-documentation:
+    name: Generate and upload javadocs
+    if: ${{ github.repository_owner == 'spring-projects' }}
     runs-on: ubuntu-latest
     steps:
-
-      - name: Capture release version
-        run: echo RELEASE_VERSION=${{ github.event.inputs.releaseVersion }} >> $GITHUB_ENV
-
       - name: Checkout source code
         uses: actions/checkout@v4
 
@@ -25,34 +18,23 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      # NOT setting up maven build-cache b/c javadoc:aggregate-jar is forking lifecyle and can't benefit from it anyway
+
       - name: Generate Java docs
-        run: ./mvnw --batch-mode -ntp clean install -DskipTests -Pjavadoc
+        run: ./mvnw --batch-mode -ntp javadoc:aggregate-jar
 
-      - name: Aggregate Java docs
-        run: ./mvnw --batch-mode -ntp javadoc:aggregate
-
-      - name: Generate assembly
-        working-directory: spring-ai-docs
-        run: ../mvnw --batch-mode -ntp assembly:single
+      - name: Capture project version
+        run: echo PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
 
       - name: Setup SSH key
-        env:
-          DOCS_SSH_KEY: ${{ secrets.DOCS_SSH_KEY }}
-          DOCS_SSH_HOST_KEY: ${{ secrets.DOCS_SSH_HOST_KEY }}
         run: |
           mkdir "$HOME/.ssh"
-          echo "$DOCS_SSH_KEY" > "$HOME/.ssh/key"
+          echo "${{ secrets.DOCS_SSH_KEY }}" > "$HOME/.ssh/key"
           chmod 600 "$HOME/.ssh/key"
-          echo "$DOCS_SSH_HOST_KEY" > "$HOME/.ssh/known_hosts"
+          echo "${{ secrets.DOCS_SSH_HOST_KEY }}" > "$HOME/.ssh/known_hosts"
 
       - name: Deploy docs
-        env:
-          DOCS_HOST: ${{ secrets.DOCS_HOST }}
-          DOCS_PATH: ${{ secrets.DOCS_PATH }}
-          DOCS_USERNAME: ${{ secrets.DOCS_USERNAME }}
-        working-directory: spring-ai-docs/target
         run: |
-          unzip spring-ai-$RELEASE_VERSION-docs.zip
-          ssh -i $HOME/.ssh/key $DOCS_USERNAME@$DOCS_HOST "cd $DOCS_PATH && mkdir -p $RELEASE_VERSION"
-          scp -i $HOME/.ssh/key -r api $DOCS_USERNAME@$DOCS_HOST:$DOCS_PATH/$RELEASE_VERSION
-
+          ssh -i $HOME/.ssh/key ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }} "cd ${{ secrets.DOCS_PATH }} && rm -fr $PROJECT_VERSION && mkdir -p $PROJECT_VERSION"
+          scp -i $HOME/.ssh/key target/spring-ai-parent-${PROJECT_VERSION}-javadoc.jar ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }}:${{ secrets.DOCS_PATH }}/$PROJECT_VERSION
+          ssh -i $HOME/.ssh/key ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }} "cd ${{ secrets.DOCS_PATH }}/${PROJECT_VERSION} && unzip spring-ai-parent-${PROJECT_VERSION}-javadoc.jar -d api && rm spring-ai-parent-${PROJECT_VERSION}-javadoc.jar"
