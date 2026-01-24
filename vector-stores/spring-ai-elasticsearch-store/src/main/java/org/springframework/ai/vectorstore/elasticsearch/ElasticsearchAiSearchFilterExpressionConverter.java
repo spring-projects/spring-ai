@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,8 +53,8 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
 			Assert.state(expression.right() != null, "expression.right() must not be null");
 			context.append(getOperationSymbol(expression));
-			context.append("(");
 			this.convertOperand(expression.left(), context);
+			context.append("(");
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
@@ -119,7 +119,7 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				context.append(v);
+				this.doSingleValue(v, context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
@@ -146,7 +146,7 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 				}
 			}
 			else {
-				context.append(text);
+				context.append("\"").append(text).append("\"");
 			}
 		}
 		else {
