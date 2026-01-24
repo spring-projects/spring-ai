@@ -232,8 +232,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
 			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(),
-					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
-					embedding.get(i));
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding.get(i));
 
 			// Conditionally set document ID based on manageDocumentIds flag
 			if (this.manageDocumentIds) {

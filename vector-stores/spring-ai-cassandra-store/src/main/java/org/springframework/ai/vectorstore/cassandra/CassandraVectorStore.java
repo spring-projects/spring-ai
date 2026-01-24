@@ -286,8 +286,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 				builder = builder.setString(this.schema.content(), d.getText())
 					.setVector(this.schema.embedding(),
-							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(index))),
-							Float.class);
+							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(index))), Float.class);
 
 				for (var metadataColumn : this.schema.metadataColumns()
 					.stream()

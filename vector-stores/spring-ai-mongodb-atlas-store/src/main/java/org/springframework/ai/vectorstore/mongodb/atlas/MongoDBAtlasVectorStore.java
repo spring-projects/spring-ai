@@ -265,8 +265,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
 			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
-					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
-					embeddings.get(i));
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embeddings.get(i));
 			this.mongoTemplate.save(mdbDocument, this.collectionName);
 		}
 	}

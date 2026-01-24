@@ -175,25 +175,24 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		final var searchDocuments = IntStream.range(0, documents.size())
-			.mapToObj(i -> {
-				Document document = documents.get(i);
-				SearchDocument searchDocument = new SearchDocument();
-				searchDocument.put(ID_FIELD_NAME, document.getId());
-				searchDocument.put(this.embeddingFieldName, embeddings.get(i));
-				searchDocument.put(this.contentFieldName, document.getText());
-				searchDocument.put(this.metadataFieldName, new JSONObject(document.getMetadata()).toJSONString());
+		final var searchDocuments = IntStream.range(0, documents.size()).mapToObj(i -> {
+			Document document = documents.get(i);
+			SearchDocument searchDocument = new SearchDocument();
+			searchDocument.put(ID_FIELD_NAME, document.getId());
+			searchDocument.put(this.embeddingFieldName, embeddings.get(i));
+			searchDocument.put(this.contentFieldName, document.getText());
+			searchDocument.put(this.metadataFieldName, new JSONObject(document.getMetadata()).toJSONString());
 
-				// Add the filterable metadata fields as top level fields, allowing filler
-				// expressions on them.
-				for (MetadataField mf : this.filterMetadataFields) {
-					if (document.getMetadata().containsKey(mf.name())) {
-						searchDocument.put(METADATA_FIELD_PREFIX + mf.name(), document.getMetadata().get(mf.name()));
-					}
+			// Add the filterable metadata fields as top level fields, allowing filler
+			// expressions on them.
+			for (MetadataField mf : this.filterMetadataFields) {
+				if (document.getMetadata().containsKey(mf.name())) {
+					searchDocument.put(METADATA_FIELD_PREFIX + mf.name(), document.getMetadata().get(mf.name()));
 				}
+			}
 
-				return searchDocument;
-			}).toList();
+			return searchDocument;
+		}).toList();
 
 		IndexDocumentsResult result = this.searchClient.uploadDocuments(searchDocuments);
 

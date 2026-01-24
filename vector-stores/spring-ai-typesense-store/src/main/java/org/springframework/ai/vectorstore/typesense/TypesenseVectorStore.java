@@ -145,17 +145,16 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		List<HashMap<String, Object>> documentList = IntStream.range(0, documents.size())
-			.mapToObj(i -> {
-				Document document = documents.get(i);
-				HashMap<String, Object> typesenseDoc = new HashMap<>();
-				typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
-				typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
-				typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-				typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(i));
+		List<HashMap<String, Object>> documentList = IntStream.range(0, documents.size()).mapToObj(i -> {
+			Document document = documents.get(i);
+			HashMap<String, Object> typesenseDoc = new HashMap<>();
+			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
+			typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
+			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
+			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(i));
 
-				return typesenseDoc;
-			}).toList();
+			return typesenseDoc;
+		}).toList();
 
 		ImportDocumentsParameters importDocumentsParameters = new ImportDocumentsParameters();
 		importDocumentsParameters.action(IndexAction.UPSERT);

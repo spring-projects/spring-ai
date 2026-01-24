@@ -247,11 +247,14 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 				}
 
 				CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
-						mapCosmosDocument(doc, embeddings.get(i)),
-						new PartitionKey(partitionKeyValue)); // Pair the document ID
+						mapCosmosDocument(doc, embeddings.get(i)), new PartitionKey(partitionKeyValue)); // Pair
+																											// the
+																											// document
+																											// ID
 				// with the operation
 				return new ImmutablePair<>(doc.getId(), operation);
-			}).toList();
+			})
+			.toList();
 
 		try {
 			// Extract just the CosmosItemOperations from the pairs

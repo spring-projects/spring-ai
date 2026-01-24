@@ -185,16 +185,14 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					this.batchingStrategy);
 
-			List<PointStruct> points = IntStream.range(0, documents.size())
-				.mapToObj(i -> {
-					Document document = documents.get(i);
-					return PointStruct.newBuilder()
-						.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
-						.setVectors(io.qdrant.client.VectorsFactory.vectors(embeddings.get(i)))
-						.putAllPayload(toPayload(document))
-						.build();
-				})
-				.toList();
+			List<PointStruct> points = IntStream.range(0, documents.size()).mapToObj(i -> {
+				Document document = documents.get(i);
+				return PointStruct.newBuilder()
+					.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
+					.setVectors(io.qdrant.client.VectorsFactory.vectors(embeddings.get(i)))
+					.putAllPayload(toPayload(document))
+					.build();
+			}).toList();
 
 			this.qdrantClient.upsertAsync(this.collectionName, points).get();
 		}
