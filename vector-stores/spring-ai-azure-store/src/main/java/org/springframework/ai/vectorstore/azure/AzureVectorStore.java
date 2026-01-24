@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.alibaba.fastjson2.TypeReference;
@@ -174,7 +175,7 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		final var searchDocuments = java.util.stream.IntStream.range(0, documents.size())
+		final var searchDocuments = IntStream.range(0, documents.size())
 			.mapToObj(i -> {
 				Document document = documents.get(i);
 				SearchDocument searchDocument = new SearchDocument();
