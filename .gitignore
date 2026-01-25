@@ -42,8 +42,7 @@ package.json
 shell.log
 
 .profiler
-/spring-ai-spring-boot-autoconfigure/nbproject/
-/vector-stores/spring-ai-cassandra-store/nbproject/
+nbproject/
 
 CLAUDE.md
 **/.claude/settings.local.json
