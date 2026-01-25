@@ -28,7 +28,7 @@ import org.springframework.ai.chat.metadata.RateLimit;
  */
 public class AnthropicRateLimit implements RateLimit {
 
-	private static final String RATE_LIMIT_STRING = "{ @type: %1$s, requestsLimit: %2$s, requestsRemaining: %3$s, requestsReset: %4$s, tokensLimit: %5$s; tokensRemaining: %6$s; tokensReset: %7$s }";
+	private static final String RATE_LIMIT_STRING = "{ @type: %1$s, requestsLimit: %2$s, requestsRemaining: %3$s, requestsReset: %4$s, tokensLimit: %5$s, tokensRemaining: %6$s, tokensReset: %7$s }";
 
 	private final Long requestsLimit;
 
