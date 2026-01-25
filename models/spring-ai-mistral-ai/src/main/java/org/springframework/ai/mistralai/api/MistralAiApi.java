@@ -269,24 +269,7 @@ public class MistralAiApi {
 		MISTRAL_SMALL("mistral-small-latest"),
 		PIXTRAL_12B("pixtral-12b-latest"),
 		// Free Models - Research
-		OPEN_MISTRAL_NEMO("open-mistral-nemo"),
-
-		// Deprecated - use the new names above
-		/** @deprecated Use {@link #MISTRAL_LARGE} instead */
-		@Deprecated(forRemoval = true, since = "1.1.0")
-		LARGE("mistral-large-latest"),
-		/** @deprecated Use {@link #MISTRAL_SMALL} instead */
-		@Deprecated(forRemoval = true, since = "1.1.0")
-		SMALL("mistral-small-latest"),
-		/** @deprecated Use {@link #MINISTRAL_3B} instead */
-		@Deprecated(forRemoval = true, since = "1.1.0")
-		MINISTRAL_3B_LATEST("ministral-3b-latest"),
-		/** @deprecated Use {@link #MINISTRAL_8B} instead */
-		@Deprecated(forRemoval = true, since = "1.1.0")
-		MINISTRAL_8B_LATEST("ministral-8b-latest"),
-		/** @deprecated Use {@link #PIXTRAL_12B} instead */
-		@Deprecated(forRemoval = true, since = "1.1.0")
-		PIXTRAL("pixtral-12b-2409");
+		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
 		private final String value;
