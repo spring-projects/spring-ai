@@ -21,7 +21,7 @@ import java.time.Duration;
 import org.springframework.ai.chat.metadata.RateLimit;
 
 /**
- * {@link RateLimit} implementation for {@literal OpenAI}.
+ * {@link RateLimit} implementation for {@literal Anthropic}.
  *
  * @author Christian Tzolov
  * @since 1.0.0
