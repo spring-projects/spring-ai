@@ -1,7 +1,7 @@
 {
   "issue_number": 5334,
   "tracked_branch": "main",
-  "alert_after_days": 3,
+  "alert_after_days": 2,
   "heartbeat_days": 1,
   "dependencies": [
     { "owner": "modelcontextprotocol", "repo": "java-sdk" },
