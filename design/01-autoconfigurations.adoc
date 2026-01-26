@@ -1,0 +1,73 @@
+= Design Document 01 - AutoConfigurations
+
+This document aims to define how AutoConfigurations should be implemented (and also how they should NOT be implemented) to ensure correct, testable and easy to reason about behavior.
+
+== Problems
+=== Detection
+AutoConfigurations are Configuration classes that are automatically detected by Spring Boot because they are listed in the `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` file. That file may contain one or several entries. Once a given module is in the runtime classpath of an application, ALL of those configurations are visible and picked up by boot. There is no middle ground.
+
+As such, any test in a given autoconfiguration module ought to reflect this behavior. Listing configuration classes "manually" in a test is error-prone as it is easy to forget a configuration class. And when new classes are added to the `.imports` file, ALL tests should be amended to reflect that addition.
+
+=== Dependencies
+The `@AutoConfiguration` annotation supports `after` and `before` attributes. One could think that those attributes force a hard dependency relationship between configuration classes and that if AutoConfiguration B defines a bean that requires a collaborator that could be defined in AutoConfiguration A, then B needs to be defined like so:
+```java
+@AutoConfiguration(after = ConfigA.class)
+class ConfigB {
+
+	@Bean
+    SomeThing something(SomeThingElse dep /* comes from ConfigA */) {
+		return new SomeThing(dep);
+    }
+}
+```
+
+This is absolutely NOT the case. The only purpose of `after`/`before` is to order configurations so that `@Conditional` definitions trigger in the correct order (more on that later). Those attributes have zero relation to collaborator bean dependencies, strictly speaking. The resolution of dependencies ordering is done by Spring core, independently of `after`/`before`. One can create an app by listing `ConfigA, ConfigB` or `ConfigB, ConfigA` as (auto)configurations and the result will be the same.
+
+The correct way to express dependencies towards specific configuration classes is to use _e.g._ `@Import`. But chances are that our AutoConfiguration classes DO NOT want to do that.
+
+Also, `after` states that at runtime, IF the given class is present, then _this_ class will be read for definitions after _that_ one. But if _that_ class is not present/visible at runtime, then this is without consequences.
+
+=== `@Conditional` ordering
+The only time `after`/`before` makes sense is when an AutoConfiguration defines a bean that is somehow `@ConditionalOnXXX` (or if the configuration itself is `@ConditionalOnXXX`). In this case, order matters because the context needs to know if a definition has already been seen for such a bean:
+```java
+@AutoConfiguration(after = ConfigA.class)
+class ConfigB {
+
+	@ConditionalOnMissingBean // if ConfigA is susceptible to define a SomeThing bean, and we only want to define our own if ConfigA somehow did not end up defining that bean, then we need to come AFTER ConfigA
+    SomeThing something() {
+		return new SomeThing(dep);
+    }
+}
+```
+
+== Solution
+To address the _detection_ and maintenance problem, the `spring-ai-test` module provides the `SpringAiTestAutoConfigurations.forThisModuleAnd(...)` method. This returns an `AutoConfigurations` instance configured with *all* of the classes listed in *the current module*'s `AutoConfiguration.imports` file. Again, this is an all or nothing behavior. There is no point in testing something different, because at a minimum if an app uses this module, boot will see ALL of those classes, never a subset of those. They could be made to not contribute via `@ConditionalOnXXX` but that's another mechanism.
+
+To address the _dependencies_ aspect, the `forThisModuleAnd()` method accepts a vararg of _additional_ configuration classes. This should be used to list, on a test by test basis, (auto)configuration classes that maybe define beans that are dependencies of the ones defined by AutoConfiguration of this module. Again, the `after` attribute is NOT an alternative way to declare that.
+
+Lastly, to address the value of the `after` attribute, manual review should be exercised. The minimal checklist is the following:
+If `ConfigB` lists `ConfigA` in its `after` attribute, this only makes sense if _e.g._ `ConfigA` is susceptible to define a bean that `ConfigB` ALSO tries to define, and that is `@ConditionalOnXXX` in `ConfigB`. If this scenario or a variation of it is not at play, then there is no reason to use `after`.
+
+Example Usage:
+```java
+
+@AutoConfiguration(after=GoodConfig.class)
+class AwesomeConfig {
+
+    @ConditionalOnMissingBean
+    Foo myBean(Bar bar, Wizz wizz) {
+        return new FooImpl(bar, wizz);
+    }
+
+}
+```
+In a test:
+```java
+class AwesomeConfigTests {
+
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+        .withConfiguration(SpringAiTestAutoConfigurations.forThisModuleAnd(BarWizzConfig.class));
+}
+```
+
+In this test, `BarWizzConfig.class` is the config that provides the `Bar` and `Wizz` instances. It has nothing to do with the `GoodConfig` class, which is a config that hypothetically also defines a `Foo` bean.
