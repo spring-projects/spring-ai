@@ -34,6 +34,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,6 +206,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 		SchemaGeneratorConfig config = configBuilder.build();
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.type);
+		postProcessSchema(jsonNode);
 		ObjectWriter objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter()
 			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
@@ -214,6 +216,14 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
 			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
 		}
+	}
+
+	/**
+	 * Empty template method that allows for customization of the JSON schema in
+	 * subclasses.
+	 * @param jsonNode the JSON schema, in the form of a JSON node
+	 */
+	protected void postProcessSchema(@NonNull JsonNode jsonNode) {
 	}
 
 	/**

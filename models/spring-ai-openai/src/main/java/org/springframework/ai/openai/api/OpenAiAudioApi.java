@@ -857,9 +857,9 @@ public class OpenAiAudioApi {
 
 		private ApiKey apiKey;
 
-		private String speechPath;
+		private String speechPath = "/v1/audio/speech";
 
-		private String transcriptionPath;
+		private String transcriptionPath = "/v1/audio/transcriptions";
 
 		private HttpHeaders headers = new HttpHeaders();
 

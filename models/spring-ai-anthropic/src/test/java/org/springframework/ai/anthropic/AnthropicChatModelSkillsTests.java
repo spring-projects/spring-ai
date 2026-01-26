@@ -61,9 +61,7 @@ class AnthropicChatModelSkillsTests {
 
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
 
-		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.build();
+		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX).build();
 
 		Prompt prompt = new Prompt("Create a spreadsheet", requestOptions);
 
@@ -79,7 +77,7 @@ class AnthropicChatModelSkillsTests {
 		AnthropicChatOptions defaultOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 			.maxTokens(1024)
-			.anthropicSkill(AnthropicSkill.PPTX)
+			.skill(AnthropicSkill.PPTX)
 			.build();
 
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
@@ -99,14 +97,12 @@ class AnthropicChatModelSkillsTests {
 		AnthropicChatOptions defaultOptions = AnthropicChatOptions.builder()
 			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 			.maxTokens(1024)
-			.anthropicSkill(AnthropicSkill.PPTX)
+			.skill(AnthropicSkill.PPTX)
 			.build();
 
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
 
-		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.build();
+		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX).build();
 
 		Prompt prompt = new Prompt("Create a spreadsheet", requestOptions);
 
@@ -127,9 +123,9 @@ class AnthropicChatModelSkillsTests {
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
 
 		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.anthropicSkill(AnthropicSkill.PPTX)
-			.customSkill("my-custom-skill")
+			.skill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.PPTX)
+			.skill("my-custom-skill")
 			.build();
 
 		Prompt prompt = new Prompt("Create documents", requestOptions);
@@ -170,7 +166,7 @@ class AnthropicChatModelSkillsTests {
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
 
 		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX, "20251013")
+			.skill(AnthropicSkill.XLSX, "20251013")
 			.build();
 
 		Prompt prompt = new Prompt("Create a spreadsheet", requestOptions);
@@ -192,9 +188,7 @@ class AnthropicChatModelSkillsTests {
 
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
 
-		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.build();
+		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX).build();
 
 		Prompt prompt = new Prompt("Create a spreadsheet", requestOptions);
 
@@ -239,7 +233,7 @@ class AnthropicChatModelSkillsTests {
 		existingHeaders.put("anthropic-beta", "some-other-beta");
 
 		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.XLSX)
 			.httpHeaders(existingHeaders)
 			.build();
 
@@ -263,9 +257,7 @@ class AnthropicChatModelSkillsTests {
 
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
 
-		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.build();
+		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX).build();
 
 		Prompt prompt = new Prompt("Create a spreadsheet", requestOptions);
 
@@ -286,9 +278,7 @@ class AnthropicChatModelSkillsTests {
 
 		AnthropicChatModel chatModel = createChatModel(defaultOptions);
 
-		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.build();
+		AnthropicChatOptions requestOptions = AnthropicChatOptions.builder().skill(AnthropicSkill.XLSX).build();
 
 		Prompt prompt = new Prompt("Create a spreadsheet", requestOptions);
 

@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Bean;
 @AutoConfiguration
 @ConditionalOnClass({ InfinispanVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties(InfinispanVectorStoreProperties.class)
-@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.GEMFIRE,
+@ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.INFINISPAN,
 		matchIfMissing = true)
 public class InfinispanVectorStoreAutoConfiguration {
 
