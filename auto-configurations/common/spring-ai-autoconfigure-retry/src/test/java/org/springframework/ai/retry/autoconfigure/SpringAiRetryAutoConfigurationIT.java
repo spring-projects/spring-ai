@@ -18,9 +18,10 @@ package org.springframework.ai.retry.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
 
@@ -31,15 +32,39 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class SpringAiRetryAutoConfigurationIT {
 
-	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withConfiguration(
-			AutoConfigurations.of(SpringAiRetryAutoConfiguration.class, RestClientAutoConfiguration.class));
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(SpringAiTestAutoConfigurations.forThisModuleAnd());
 
 	@Test
 	void testRetryAutoConfiguration() {
 		this.contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(RetryTemplate.class);
 			assertThat(context).hasSingleBean(ResponseErrorHandler.class);
+			assertThat(context).getBean(RetryTemplate.class)
+				.extracting("retryPolicy.backOff.maxAttempts")
+				.isEqualTo(10L /* our default */);
 		});
+	}
+
+	@Test
+	void testRetryAutoConfigurationBeanAlreadyDefined() {
+		this.contextRunner.withUserConfiguration(MyConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(RetryTemplate.class);
+			assertThat(context).hasSingleBean(ResponseErrorHandler.class);
+			assertThat(context).getBean(RetryTemplate.class)
+				.extracting("retryPolicy.backOff.maxAttempts")
+				.isEqualTo(3L /* RetryTemplate default */);
+		});
+	}
+
+	@Configuration
+	static class MyConfiguration {
+
+		@Bean
+		public RetryTemplate retryTemplate() {
+			return new RetryTemplate();
+		}
+
 	}
 
 }
