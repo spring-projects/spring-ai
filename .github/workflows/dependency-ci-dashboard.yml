@@ -199,8 +199,8 @@ jobs:
             }
 
             // Build dashboard table
-            let dashboardTable = `| Repository | Status | Branch | Latest Commit |\n`;
-            dashboardTable += `|------------|--------|--------|---------------|\n`;
+            let dashboardTable = `| Repository | Status | Branch | Latest Commit | Last Run |\n`;
+            dashboardTable += `|------------|--------|--------|---------------|----------|\n`;
 
             for (const result of results) {
               const key = `${result.owner}/${result.repo}`;
@@ -218,7 +218,12 @@ jobs:
                 : 'N/A';
               const actionsLink = `[${trackedBranch}](https://github.com/${result.owner}/${result.repo}/actions?query=branch%3A${trackedBranch})`;
 
-              dashboardTable += `| ${repoLink} | ${statusText} | ${actionsLink} | ${commitLink} |\n`;
+              // Format date as YYYY-MM-DD
+              const lastRun = result.commit_date
+                ? new Date(result.commit_date).toISOString().split('T')[0]
+                : 'N/A';
+
+              dashboardTable += `| ${repoLink} | ${statusText} | ${actionsLink} | ${commitLink} | ${lastRun} |\n`;
             }
 
             // Build dashboard comment body
@@ -317,14 +322,15 @@ jobs:
           echo "" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
 
           # Build table
-          echo "| Repository | Status | Branch | Latest Commit |" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
-          echo "|------------|--------|--------|---------------|" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+          echo "| Repository | Status | Branch | Latest Commit | Last Run |" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+          echo "|------------|--------|--------|---------------|----------|" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
 
           echo "$RESULTS" | jq -r '.[] | @base64' | while read row; do
             OWNER=$(echo "$row" | base64 --decode | jq -r '.owner')
             REPO=$(echo "$row" | base64 --decode | jq -r '.repo')
             STATE=$(echo "$row" | base64 --decode | jq -r '.state')
             SHA=$(echo "$row" | base64 --decode | jq -r '.sha')
+            COMMIT_DATE=$(echo "$row" | base64 --decode | jq -r '.commit_date')
 
             case "$STATE" in
               "success") EMOJI=":white_check_mark:" ;;
@@ -337,7 +343,14 @@ jobs:
             COMMIT_LINK="[\`$SHA\`](https://github.com/$OWNER/$REPO/commit/$SHA)"
             ACTIONS_LINK="[$TRACKED_BRANCH](https://github.com/$OWNER/$REPO/actions?query=branch%3A$TRACKED_BRANCH)"
 
-            echo "| $REPO_LINK | $EMOJI | $ACTIONS_LINK | $COMMIT_LINK |" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+            # Format date as YYYY-MM-DD
+            if [ -n "$COMMIT_DATE" ] && [ "$COMMIT_DATE" != "null" ]; then
+              LAST_RUN=$(echo "$COMMIT_DATE" | cut -d'T' -f1)
+            else
+              LAST_RUN="N/A"
+            fi
+
+            echo "| $REPO_LINK | $EMOJI | $ACTIONS_LINK | $COMMIT_LINK | $LAST_RUN |" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
           done
 
           cat >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md" << WIKI_FOOTER
