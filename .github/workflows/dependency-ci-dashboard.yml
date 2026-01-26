@@ -1,0 +1,384 @@
+name: Ecosystem CI Dashboard
+
+on:
+  schedule:
+    - cron: '15 6 * * *'  # 06:15 UTC daily
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: write
+
+jobs:
+  update-dashboard:
+    name: Update Ecosystem CI Dashboard
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'spring-projects/spring-ai' }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Load configuration
+        id: config
+        run: |
+          CONFIG=$(cat src/ecosystem-ci/ci-alert-config.json)
+          echo "issue_number=$(echo "$CONFIG" | jq -r '.issue_number')" >> $GITHUB_OUTPUT
+          echo "tracked_branch=$(echo "$CONFIG" | jq -r '.tracked_branch')" >> $GITHUB_OUTPUT
+          echo "alert_after_days=$(echo "$CONFIG" | jq -r '.alert_after_days')" >> $GITHUB_OUTPUT
+          echo "heartbeat_days=$(echo "$CONFIG" | jq -r '.heartbeat_days')" >> $GITHUB_OUTPUT
+          echo "dependencies<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONFIG" | jq -c '.dependencies' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Query CI status for all dependencies
+        id: query-status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPENDENCIES: ${{ steps.config.outputs.dependencies }}
+          TRACKED_BRANCH: ${{ steps.config.outputs.tracked_branch }}
+        run: |
+          RESULTS="[]"
+
+          for row in $(echo "$DEPENDENCIES" | jq -r '.[] | @base64'); do
+            _jq() {
+              echo ${row} | base64 --decode | jq -r ${1}
+            }
+
+            OWNER=$(_jq '.owner')
+            REPO=$(_jq '.repo')
+
+            echo "Querying status for $OWNER/$REPO..."
+
+            # Get combined status for the branch
+            STATUS_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$OWNER/$REPO/commits/$TRACKED_BRANCH/status")
+
+            STATE=$(echo "$STATUS_RESPONSE" | jq -r '.state // "unknown"')
+
+            # Also check for check runs (GitHub Actions use check runs, not statuses)
+            CHECK_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$OWNER/$REPO/commits/$TRACKED_BRANCH/check-runs")
+
+            # Determine overall state from check runs if status is pending/unknown
+            if [ "$STATE" = "pending" ] || [ "$STATE" = "unknown" ]; then
+              CHECK_COUNT=$(echo "$CHECK_RESPONSE" | jq -r '.total_count // 0')
+              if [ "$CHECK_COUNT" -gt 0 ]; then
+                # Check if any check run failed
+                FAILED=$(echo "$CHECK_RESPONSE" | jq '[.check_runs[] | select(.conclusion == "failure")] | length')
+                SUCCESS=$(echo "$CHECK_RESPONSE" | jq '[.check_runs[] | select(.conclusion == "success")] | length')
+                IN_PROGRESS=$(echo "$CHECK_RESPONSE" | jq '[.check_runs[] | select(.status == "in_progress" or .status == "queued")] | length')
+
+                if [ "$FAILED" -gt 0 ]; then
+                  STATE="failure"
+                elif [ "$IN_PROGRESS" -gt 0 ]; then
+                  STATE="pending"
+                elif [ "$SUCCESS" -gt 0 ]; then
+                  STATE="success"
+                fi
+              fi
+            fi
+
+            # Get latest commit info
+            COMMIT_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$OWNER/$REPO/commits/$TRACKED_BRANCH")
+
+            COMMIT_SHA=$(echo "$COMMIT_RESPONSE" | jq -r '.sha // "unknown"' | head -c 7)
+            COMMIT_DATE=$(echo "$COMMIT_RESPONSE" | jq -r '.commit.committer.date // ""')
+
+            RESULT=$(jq -n \
+              --arg owner "$OWNER" \
+              --arg repo "$REPO" \
+              --arg state "$STATE" \
+              --arg sha "$COMMIT_SHA" \
+              --arg date "$COMMIT_DATE" \
+              '{owner: $owner, repo: $repo, state: $state, sha: $sha, commit_date: $date}')
+
+            RESULTS=$(echo "$RESULTS" | jq --argjson result "$RESULT" '. + [$result]')
+          done
+
+          echo "results<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESULTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Update dashboard and check alerts
+        uses: actions/github-script@v7
+        env:
+          RESULTS: ${{ steps.query-status.outputs.results }}
+          ISSUE_NUMBER: ${{ steps.config.outputs.issue_number }}
+          ALERT_AFTER_DAYS: ${{ steps.config.outputs.alert_after_days }}
+          HEARTBEAT_DAYS: ${{ steps.config.outputs.heartbeat_days }}
+          TRACKED_BRANCH: ${{ steps.config.outputs.tracked_branch }}
+        with:
+          script: |
+            const results = JSON.parse(process.env.RESULTS);
+            const issueNumber = parseInt(process.env.ISSUE_NUMBER);
+            const alertAfterDays = parseInt(process.env.ALERT_AFTER_DAYS);
+            const heartbeatDays = parseInt(process.env.HEARTBEAT_DAYS);
+            const trackedBranch = process.env.TRACKED_BRANCH;
+            const now = new Date();
+            const timestamp = now.toISOString();
+
+            // Status emoji mapping
+            const statusEmoji = {
+              'success': ':white_check_mark:',
+              'failure': ':x:',
+              'pending': ':yellow_circle:',
+              'unknown': ':grey_question:'
+            };
+
+            // Find dashboard comment (contains hidden state marker)
+            const STATE_MARKER = '<!-- ECOSYSTEM-CI-DASHBOARD-STATE:';
+            const DASHBOARD_MARKER = '<!-- ECOSYSTEM-CI-DASHBOARD -->';
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+
+            let dashboardComment = comments.find(c => c.body.includes(DASHBOARD_MARKER));
+
+            // Parse previous state from comment
+            let previousState = {};
+            if (dashboardComment) {
+              const stateMatch = dashboardComment.body.match(/<!-- ECOSYSTEM-CI-DASHBOARD-STATE:(.*?)-->/s);
+              if (stateMatch) {
+                try {
+                  previousState = JSON.parse(stateMatch[1]);
+                } catch (e) {
+                  console.log('Failed to parse previous state:', e);
+                }
+              }
+            }
+
+            // Update state with current results
+            const newState = {};
+            const alertsNeeded = [];
+
+            for (const result of results) {
+              const key = `${result.owner}/${result.repo}`;
+              const prevEntry = previousState[key] || {};
+
+              if (result.state === 'failure') {
+                // Track when it first failed
+                const failedSince = prevEntry.failedSince || timestamp;
+                const failedDays = Math.floor((now - new Date(failedSince)) / (1000 * 60 * 60 * 24));
+                const lastAlerted = prevEntry.lastAlerted;
+
+                newState[key] = {
+                  state: result.state,
+                  failedSince: failedSince,
+                  failedDays: failedDays,
+                  lastAlerted: lastAlerted
+                };
+
+                // Check if we need to alert
+                if (failedDays >= alertAfterDays) {
+                  // Only alert if we haven't alerted in the last heartbeat period
+                  const shouldAlert = !lastAlerted ||
+                    (now - new Date(lastAlerted)) >= (heartbeatDays * 24 * 60 * 60 * 1000);
+
+                  if (shouldAlert) {
+                    alertsNeeded.push({
+                      owner: result.owner,
+                      repo: result.repo,
+                      failedDays: failedDays,
+                      sha: result.sha
+                    });
+                    newState[key].lastAlerted = timestamp;
+                  }
+                }
+              } else {
+                // Not failing - clear failure tracking
+                newState[key] = {
+                  state: result.state
+                };
+              }
+            }
+
+            // Build dashboard table
+            let dashboardTable = `| Repository | Status | Branch | Latest Commit |\n`;
+            dashboardTable += `|------------|--------|--------|---------------|\n`;
+
+            for (const result of results) {
+              const key = `${result.owner}/${result.repo}`;
+              const emoji = statusEmoji[result.state] || statusEmoji['unknown'];
+              const stateEntry = newState[key];
+
+              let statusText = emoji;
+              if (result.state === 'failure' && stateEntry.failedDays > 0) {
+                statusText += ` (${stateEntry.failedDays}d)`;
+              }
+
+              const repoLink = `[${result.owner}/${result.repo}](https://github.com/${result.owner}/${result.repo})`;
+              const commitLink = result.sha !== 'unknown'
+                ? `[\`${result.sha}\`](https://github.com/${result.owner}/${result.repo}/commit/${result.sha})`
+                : 'N/A';
+              const actionsLink = `[${trackedBranch}](https://github.com/${result.owner}/${result.repo}/actions?query=branch%3A${trackedBranch})`;
+
+              dashboardTable += `| ${repoLink} | ${statusText} | ${actionsLink} | ${commitLink} |\n`;
+            }
+
+            // Build dashboard comment body
+            const stateJson = JSON.stringify(newState);
+            const dashboardBody = `${DASHBOARD_MARKER}
+
+            ## Ecosystem CI Dashboard
+
+            **Last updated:** ${timestamp}
+
+            ${dashboardTable}
+
+            ### Legend
+            - :white_check_mark: All checks passing
+            - :x: CI failing (days in parentheses)
+            - :yellow_circle: Checks in progress
+            - :grey_question: Status unknown
+
+            ### Alert Policy
+            - Alerts are posted when a dependency has been failing for **${alertAfterDays}+ days**
+            - Subscribe to this issue to receive CI failure notifications
+
+            ${STATE_MARKER}${stateJson}-->
+            `.split('\n').map(line => line.trim()).join('\n');
+
+            // Update or create dashboard comment
+            if (dashboardComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: dashboardComment.id,
+                body: dashboardBody
+              });
+              console.log('Updated dashboard comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: dashboardBody
+              });
+              console.log('Created dashboard comment');
+            }
+
+            // Post alert comments if needed
+            for (const alert of alertsNeeded) {
+              const alertBody = `:rotating_light: **CI Alert**: [${alert.owner}/${alert.repo}](https://github.com/${alert.owner}/${alert.repo}) has been failing for **${alert.failedDays} days**
+
+            - **Branch:** ${trackedBranch}
+            - **Latest commit:** [\`${alert.sha}\`](https://github.com/${alert.owner}/${alert.repo}/commit/${alert.sha})
+            - **CI Status:** [View Actions](https://github.com/${alert.owner}/${alert.repo}/actions?query=branch%3A${trackedBranch})
+
+            Please investigate and fix the CI failure.`;
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: alertBody
+              });
+              console.log(`Posted alert for ${alert.owner}/${alert.repo}`);
+            }
+
+            // Set outputs for wiki update
+            core.setOutput('dashboard_table', dashboardTable);
+            core.setOutput('timestamp', timestamp);
+            core.setOutput('alert_after_days', alertAfterDays);
+
+      - name: Update Wiki Dashboard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS: ${{ steps.query-status.outputs.results }}
+          TRACKED_BRANCH: ${{ steps.config.outputs.tracked_branch }}
+          ALERT_AFTER_DAYS: ${{ steps.config.outputs.alert_after_days }}
+        run: |
+          # Configure git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Clone wiki repo
+          WIKI_DIR=$(mktemp -d)
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.wiki.git" "$WIKI_DIR"
+
+          # Generate wiki page content
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          # Status emoji mapping for wiki (GitHub wiki renders these)
+          cat > "$WIKI_DIR/Ecosystem-CI-Dashboard.md" << 'WIKI_HEADER'
+          # Ecosystem CI Dashboard
+
+          This dashboard monitors the CI health of Spring AI ecosystem dependencies.
+
+          WIKI_HEADER
+
+          echo "**Last updated:** $TIMESTAMP" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+          echo "" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+
+          # Build table
+          echo "| Repository | Status | Branch | Latest Commit |" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+          echo "|------------|--------|--------|---------------|" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+
+          echo "$RESULTS" | jq -r '.[] | @base64' | while read row; do
+            OWNER=$(echo "$row" | base64 --decode | jq -r '.owner')
+            REPO=$(echo "$row" | base64 --decode | jq -r '.repo')
+            STATE=$(echo "$row" | base64 --decode | jq -r '.state')
+            SHA=$(echo "$row" | base64 --decode | jq -r '.sha')
+
+            case "$STATE" in
+              "success") EMOJI=":white_check_mark:" ;;
+              "failure") EMOJI=":x:" ;;
+              "pending") EMOJI=":yellow_circle:" ;;
+              *) EMOJI=":grey_question:" ;;
+            esac
+
+            REPO_LINK="[$OWNER/$REPO](https://github.com/$OWNER/$REPO)"
+            COMMIT_LINK="[\`$SHA\`](https://github.com/$OWNER/$REPO/commit/$SHA)"
+            ACTIONS_LINK="[$TRACKED_BRANCH](https://github.com/$OWNER/$REPO/actions?query=branch%3A$TRACKED_BRANCH)"
+
+            echo "| $REPO_LINK | $EMOJI | $ACTIONS_LINK | $COMMIT_LINK |" >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+          done
+
+          cat >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md" << WIKI_FOOTER
+
+          ## Legend
+
+          - :white_check_mark: All checks passing
+          - :x: CI failing
+          - :yellow_circle: Checks in progress
+          - :grey_question: Status unknown
+
+          ## Alert Policy
+
+          Alerts are posted to [Issue #${{ steps.config.outputs.issue_number }}](https://github.com/${{ github.repository }}/issues/${{ steps.config.outputs.issue_number }}) when a dependency has been failing for **${ALERT_AFTER_DAYS}+ days**.
+
+          Subscribe to that issue to receive CI failure notifications.
+
+          ## Monitored Repositories
+
+          The following repositories are monitored as part of the Spring AI ecosystem:
+
+          WIKI_FOOTER
+
+          echo "$RESULTS" | jq -r '.[] | "- [`\(.owner)/\(.repo)`](https://github.com/\(.owner)/\(.repo))"' >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md"
+
+          cat >> "$WIKI_DIR/Ecosystem-CI-Dashboard.md" << 'WIKI_END'
+
+          ---
+
+          *This page is automatically updated by the [Ecosystem CI Dashboard workflow](https://github.com/spring-projects/spring-ai/actions/workflows/dependency-ci-dashboard.yml).*
+          WIKI_END
+
+          # Commit and push wiki changes
+          cd "$WIKI_DIR"
+          git add Ecosystem-CI-Dashboard.md
+
+          if git diff --staged --quiet; then
+            echo "No changes to wiki"
+          else
+            git commit -m "Update Ecosystem CI Dashboard - $TIMESTAMP"
+            git push
+            echo "Wiki updated successfully"
+          fi
