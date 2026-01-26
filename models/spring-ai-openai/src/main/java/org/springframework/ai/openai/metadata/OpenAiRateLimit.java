@@ -26,7 +26,7 @@ import org.springframework.ai.chat.metadata.RateLimit;
  * @author John Blum
  * @since 0.7.0
  * @see <a href=
- * "https://platform.openai.com/docs/guides/rate-limits/rate-limits-in-headers">Rate
+ * "https://platform.openai.com/docs/guides/rate-limits#rate-limits-in-headers">Rate
  * limits in headers</a>
  */
 public class OpenAiRateLimit implements RateLimit {
