@@ -49,44 +49,43 @@ jobs:
 
             echo "Querying status for $OWNER/$REPO..."
 
-            # Get combined status for the branch
-            STATUS_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            # Query workflow runs for the branch (most reliable for GitHub Actions)
+            RUNS_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/$OWNER/$REPO/commits/$TRACKED_BRANCH/status")
+              "https://api.github.com/repos/$OWNER/$REPO/actions/runs?branch=$TRACKED_BRANCH&per_page=10")
 
-            STATE=$(echo "$STATUS_RESPONSE" | jq -r '.state // "unknown"')
+            # Find the most recent completed workflow run
+            LATEST_RUN=$(echo "$RUNS_RESPONSE" | jq '[.workflow_runs[] | select(.status == "completed")] | .[0]')
 
-            # Also check for check runs (GitHub Actions use check runs, not statuses)
-            CHECK_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/$OWNER/$REPO/commits/$TRACKED_BRANCH/check-runs")
+            if [ "$LATEST_RUN" != "null" ] && [ -n "$LATEST_RUN" ]; then
+              CONCLUSION=$(echo "$LATEST_RUN" | jq -r '.conclusion // "unknown"')
+              COMMIT_SHA=$(echo "$LATEST_RUN" | jq -r '.head_sha // "unknown"' | head -c 7)
+              COMMIT_DATE=$(echo "$LATEST_RUN" | jq -r '.created_at // ""')
 
-            # Determine overall state from check runs if status is pending/unknown
-            if [ "$STATE" = "pending" ] || [ "$STATE" = "unknown" ]; then
-              CHECK_COUNT=$(echo "$CHECK_RESPONSE" | jq -r '.total_count // 0')
-              if [ "$CHECK_COUNT" -gt 0 ]; then
-                # Check if any check run failed
-                FAILED=$(echo "$CHECK_RESPONSE" | jq '[.check_runs[] | select(.conclusion == "failure")] | length')
-                SUCCESS=$(echo "$CHECK_RESPONSE" | jq '[.check_runs[] | select(.conclusion == "success")] | length')
-                IN_PROGRESS=$(echo "$CHECK_RESPONSE" | jq '[.check_runs[] | select(.status == "in_progress" or .status == "queued")] | length')
-
-                if [ "$FAILED" -gt 0 ]; then
-                  STATE="failure"
-                elif [ "$IN_PROGRESS" -gt 0 ]; then
-                  STATE="pending"
-                elif [ "$SUCCESS" -gt 0 ]; then
-                  STATE="success"
-                fi
+              # Map conclusion to state
+              case "$CONCLUSION" in
+                "success") STATE="success" ;;
+                "failure"|"timed_out"|"cancelled") STATE="failure" ;;
+                *) STATE="unknown" ;;
+              esac
+            else
+              # Check if there are any in-progress runs
+              IN_PROGRESS=$(echo "$RUNS_RESPONSE" | jq '[.workflow_runs[] | select(.status == "in_progress" or .status == "queued")] | length')
+              if [ "$IN_PROGRESS" -gt 0 ]; then
+                STATE="pending"
+                # Get commit from in-progress run
+                COMMIT_SHA=$(echo "$RUNS_RESPONSE" | jq -r '.workflow_runs[0].head_sha // "unknown"' | head -c 7)
+                COMMIT_DATE=$(echo "$RUNS_RESPONSE" | jq -r '.workflow_runs[0].created_at // ""')
+              else
+                STATE="unknown"
+                # Fall back to HEAD commit info
+                COMMIT_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
+                  -H "Accept: application/vnd.github+json" \
+                  "https://api.github.com/repos/$OWNER/$REPO/commits/$TRACKED_BRANCH")
+                COMMIT_SHA=$(echo "$COMMIT_RESPONSE" | jq -r '.sha // "unknown"' | head -c 7)
+                COMMIT_DATE=$(echo "$COMMIT_RESPONSE" | jq -r '.commit.committer.date // ""')
               fi
             fi
-
-            # Get latest commit info
-            COMMIT_RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/$OWNER/$REPO/commits/$TRACKED_BRANCH")
-
-            COMMIT_SHA=$(echo "$COMMIT_RESPONSE" | jq -r '.sha // "unknown"' | head -c 7)
-            COMMIT_DATE=$(echo "$COMMIT_RESPONSE" | jq -r '.commit.committer.date // ""')
 
             RESULT=$(jq -n \
               --arg owner "$OWNER" \
