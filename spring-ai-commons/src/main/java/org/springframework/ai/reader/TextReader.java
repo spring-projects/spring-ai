@@ -52,7 +52,7 @@ public class TextReader implements DocumentReader {
 	private final Map<String, Object> customMetadata = new HashMap<>();
 
 	/**
-	 * Character set to be used when loading data from the
+	 * Character set to be used when loading data from the input resource.
 	 */
 	private Charset charset = StandardCharsets.UTF_8;
 
