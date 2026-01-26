@@ -46,6 +46,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.SimpleVectorStoreFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -54,6 +55,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.lang.Nullable;
 
 /**
  * SimpleVectorStore is a simple implementation of the VectorStore interface.
@@ -73,6 +75,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
  * @author Jemin Huh
+ * @author David Yu
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
@@ -125,12 +128,21 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		List<String> idList = this.store.values()
+			.stream()
+			.filter(document -> doFilterPredicate(filterExpression).test(document))
+			.map(SimpleVectorStoreContent::getId)
+			.toList();
+		this.doDelete(idList);
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
-		Predicate<SimpleVectorStoreContent> documentFilterPredicate = doFilterPredicate(request);
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
-			.filter(documentFilterPredicate)
+			.filter(document -> doFilterPredicate(request.getFilterExpression()).test(document))
 			.map(content -> content
 				.toDocument(EmbeddingMath.cosineSimilarity(userQueryEmbedding, content.getEmbedding())))
 			.filter(document -> document.getScore() >= request.getSimilarityThreshold())
@@ -139,14 +151,18 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 			.toList();
 	}
 
-	private Predicate<SimpleVectorStoreContent> doFilterPredicate(SearchRequest request) {
-		return request.hasFilterExpression() ? document -> {
+	private Predicate<SimpleVectorStoreContent> doFilterPredicate(@Nullable Filter.Expression filterExpression) {
+		if (filterExpression == null) {
+			return document -> true;
+		}
+
+		return document -> {
 			StandardEvaluationContext context = new StandardEvaluationContext();
 			context.setVariable("metadata", document.getMetadata());
-			return this.expressionParser
-				.parseExpression(this.filterExpressionConverter.convertExpression(request.getFilterExpression()))
-				.getValue(context, Boolean.class);
-		} : document -> true;
+			return Boolean.TRUE.equals(this.expressionParser
+				.parseExpression(this.filterExpressionConverter.convertExpression(filterExpression))
+				.getValue(context, Boolean.class));
+		};
 	}
 
 	/**
