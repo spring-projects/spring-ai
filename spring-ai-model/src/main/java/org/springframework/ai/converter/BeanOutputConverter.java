@@ -34,6 +34,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -191,10 +192,12 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	private void generateSchema() {
 		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
 				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
+		Swagger2Module swagger2Module = new Swagger2Module();
 		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
 				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
 				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
+			.with(swagger2Module)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
 		configBuilder.forFields().withRequiredCheck(f -> true);

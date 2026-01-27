@@ -30,6 +30,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -512,6 +513,35 @@ class BeanOutputConverterTest {
 
 			// validate that output contains \n line endings
 			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
+		}
+
+	}
+
+	@Nested
+	class SchemaAnnotationTest {
+
+		@Test
+		void schemaDescriptionSupport() {
+			record PersonWithSchema(@Schema(description = "Person ID") int id,
+					@Schema(description = "Person name") String name) {
+			}
+
+			var converter = new BeanOutputConverter<>(PersonWithSchema.class);
+			String schema = converter.getJsonSchema();
+
+			assertThat(schema).contains("\"description\" : \"Person ID\"");
+			assertThat(schema).contains("\"description\" : \"Person name\"");
+		}
+
+		@Test
+		void backwardCompatibilityWithJsonPropertyDescription() {
+			record LegacyPerson(@JsonPropertyDescription("Name description") String name) {
+			}
+
+			var converter = new BeanOutputConverter<>(LegacyPerson.class);
+			String schema = converter.getJsonSchema();
+
+			assertThat(schema).contains("\"description\" : \"Name description\"");
 		}
 
 	}
