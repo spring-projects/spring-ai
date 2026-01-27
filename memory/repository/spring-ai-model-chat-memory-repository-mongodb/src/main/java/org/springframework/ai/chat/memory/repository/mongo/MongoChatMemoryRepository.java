@@ -58,7 +58,7 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 	public List<Message> findByConversationId(String conversationId) {
 		var messages = this.mongoTemplate.query(Conversation.class)
 			.matching(Query.query(Criteria.where("conversationId").is(conversationId))
-				.with(Sort.by("timestamp").descending()));
+				.with(Sort.by("timestamp").ascending()));
 		return messages.stream().map(MongoChatMemoryRepository::mapMessage).collect(Collectors.toList());
 	}
 
