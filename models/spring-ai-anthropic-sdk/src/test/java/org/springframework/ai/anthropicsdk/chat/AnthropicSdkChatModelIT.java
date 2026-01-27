@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropicsdk.chat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,7 @@ import org.springframework.ai.chat.prompt.SystemPromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -255,6 +257,39 @@ class AnthropicSdkChatModelIT {
 	}
 
 	// ==================================================================================
+	// Phase 3: Tool calling tests
+	// ==================================================================================
+
+	@Test
+	void functionCallTest() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+
+		Generation generation = response.getResult();
+		assertThat(generation).isNotNull();
+		assertThat(generation.getOutput()).isNotNull();
+		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(100);
+	}
+
+	// ==================================================================================
 	// Tests below are placeholders for features to be implemented in subsequent phases.
 	// They will be uncommented/added as each phase is completed.
 	// ==================================================================================
@@ -263,8 +298,7 @@ class AnthropicSdkChatModelIT {
 	// - beanStreamOutputConverterRecords
 	// - validateStreamCallResponseMetadata
 
-	// Phase 3: Tool calling tests
-	// - functionCallTest
+	// Phase 3 (more): Tool calling tests
 	// - streamFunctionCallTest
 	// - streamFunctionCallUsageTest
 	// - testToolUseContentBlock
