@@ -105,7 +105,7 @@ The prefix `spring.ai.stabilityai.image` is the property prefix that lets you co
 | spring.ai.stabilityai.image.base-url              | Optional overrides the spring.ai.openai.base-url to provide a specific url |  `+https://api.stability.ai/v1+`
 | spring.ai.stabilityai.image.api-key              | Optional overrides the spring.ai.openai.api-key to provide a specific api-key |  -
 | spring.ai.stabilityai.image.option.n               | The number of images to be generated. Must be between 1 and 10.                                                            | 1
-| spring.ai.stabilityai.image.option.model                 | The engine/model to use in Stability AI. The model is passed in the URL as a path parameter.          | `stable-diffusion-v1-6`
+| spring.ai.stabilityai.image.option.model                 | The engine/model to use in Stability AI. The model is passed in the URL as a path parameter.          | `stable-diffusion-xl-1024-v1-0`
 | spring.ai.stabilityai.image.option.width                 | Width of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies. | 512
 | spring.ai.stabilityai.image.option.height               | Height of the image to generate, in pixels, in an increment divisible by 64. Engine-specific dimension validation applies.| 512
 | spring.ai.stabilityai.image.option.responseFormat        | The format in which the generated images are returned. Must be "application/json" or "image/png".                         | -

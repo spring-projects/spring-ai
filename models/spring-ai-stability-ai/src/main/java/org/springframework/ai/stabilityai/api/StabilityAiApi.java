@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,9 +34,35 @@ import org.springframework.web.client.RestClient;
  */
 public class StabilityAiApi {
 
-	public static final String DEFAULT_IMAGE_MODEL = "stable-diffusion-v1-6";
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.STABLE_DIFFUSION_XL_1024_V1_0.getValue();
 
 	public static final String DEFAULT_BASE_URL = "https://api.stability.ai/v1";
+
+	/**
+	 * Stability AI Image Models.
+	 */
+	public enum ImageModel {
+
+		/**
+		 * Stable Diffusion XL 1024 v1.0.
+		 */
+		STABLE_DIFFUSION_XL_1024_V1_0("stable-diffusion-xl-1024-v1-0");
+
+		private final String value;
+
+		ImageModel(String value) {
+			this.value = value;
+		}
+
+		/**
+		 * Return the value of the model.
+		 * @return the value of the model
+		 */
+		public String getValue() {
+			return this.value;
+		}
+
+	}
 
 	private final RestClient restClient;
 

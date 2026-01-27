@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 * The engine/model to use in Stability AI The model is passed in the URL as a path
 	 * parameter
 	 *
-	 * The default value is stable-diffusion-v1-6
+	 * The default value is stable-diffusion-xl-1024-v1-0
 	 */
 	private String model = StabilityAiApi.DEFAULT_IMAGE_MODEL;
 
