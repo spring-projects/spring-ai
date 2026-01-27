@@ -41,6 +41,7 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -91,7 +92,7 @@ class DefaultChatClientObservationConventionTests {
 			}
 
 			@Override
-			public String call(String functionInput) {
+			public ToolCallResult call(String functionInput) {
 				// TODO Auto-generated method stub
 				throw new UnsupportedOperationException("Unimplemented method 'call'");
 			}

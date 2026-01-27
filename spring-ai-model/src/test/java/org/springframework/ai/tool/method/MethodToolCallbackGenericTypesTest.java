@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -61,10 +62,10 @@ class MethodToolCallbackGenericTypesTest {
 				""";
 
 		// Call the tool
-		String result = callback.call(toolInput);
+		ToolCallResult result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("3 strings processed: [one, two, three]");
+		assertThat(result.content()).isEqualTo("3 strings processed: [one, two, three]");
 	}
 
 	@Test
@@ -95,10 +96,10 @@ class MethodToolCallbackGenericTypesTest {
 				""";
 
 		// Call the tool
-		String result = callback.call(toolInput);
+		ToolCallResult result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("3 entries processed: {one=1, two=2, three=3}");
+		assertThat(result.content()).isEqualTo("3 entries processed: {one=1, two=2, three=3}");
 	}
 
 	@Test
@@ -132,10 +133,10 @@ class MethodToolCallbackGenericTypesTest {
 				""";
 
 		// Call the tool
-		String result = callback.call(toolInput);
+		ToolCallResult result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("2 maps processed: [{a=1, b=2}, {c=3, d=4}]");
+		assertThat(result.content()).isEqualTo("2 maps processed: [{a=1, b=2}, {c=3, d=4}]");
 	}
 
 	@Test
@@ -167,10 +168,10 @@ class MethodToolCallbackGenericTypesTest {
 		ToolContext toolContext = new ToolContext(Map.of("foo", "bar"));
 
 		// Call the tool
-		String result = callback.call(toolInput, toolContext);
+		ToolCallResult result = callback.call(toolInput, toolContext);
 
 		// Verify the result
-		assertThat(result).isEqualTo("1 entries processed {foo=bar}");
+		assertThat(result.content()).isEqualTo("1 entries processed {foo=bar}");
 	}
 
 	/**

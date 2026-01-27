@@ -18,8 +18,8 @@ package org.springframework.ai.tool.execution;
 
 /**
  * A functional interface to process a {@link ToolExecutionException} by either converting
- * the error message to a String that can be sent back to the AI model or throwing an
- * exception to be handled by the caller.
+ * the error to a {@link ToolCallResult} that can be sent back to the AI model or throwing
+ * an exception to be handled by the caller.
  *
  * @author Thomas Vitale
  * @since 1.0.0
@@ -28,9 +28,9 @@ package org.springframework.ai.tool.execution;
 public interface ToolExecutionExceptionProcessor {
 
 	/**
-	 * Convert an exception thrown by a tool to a String that can be sent back to the AI
+	 * Convert an exception thrown by a tool to a result that can be sent back to the AI
 	 * model or throw an exception to be handled by the caller.
 	 */
-	String process(ToolExecutionException exception);
+	ToolCallResult process(ToolExecutionException exception);
 
 }

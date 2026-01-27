@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.execution.ToolCallResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -449,8 +450,8 @@ public class OpenAiSdkChatOptionsTests {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return "result1";
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content("result1").build();
 			}
 		};
 
@@ -465,8 +466,8 @@ public class OpenAiSdkChatOptionsTests {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return "result2";
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content("result2").build();
 			}
 		};
 
@@ -492,8 +493,8 @@ public class OpenAiSdkChatOptionsTests {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return "result";
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content("result").build();
 			}
 		};
 		List<ToolCallback> callbacks = List.of(callback);
@@ -638,8 +639,8 @@ public class OpenAiSdkChatOptionsTests {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return "result";
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content("result").build();
 			}
 		};
 

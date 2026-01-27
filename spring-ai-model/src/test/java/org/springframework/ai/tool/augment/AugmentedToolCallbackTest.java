@@ -32,6 +32,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -268,7 +269,7 @@ class AugmentedToolCallbackTest {
 			when(mockToolDefinition.name()).thenReturn("testTool");
 			when(mockToolDefinition.description()).thenReturn("Test tool description");
 			when(mockToolDefinition.inputSchema()).thenReturn(originalSchema);
-			when(mockDelegate.call(anyString())).thenReturn("success");
+			when(mockDelegate.call(anyString())).thenReturn(ToolCallResult.builder().content("success").build());
 
 			AtomicReference<AugmentedArgumentEvent<TestArguments>> capturedArgs = new AtomicReference<>();
 			Consumer<AugmentedArgumentEvent<TestArguments>> consumer = capturedArgs::set;
@@ -285,10 +286,10 @@ class AugmentedToolCallbackTest {
 					""";
 
 			// When
-			String result = callback.call(toolInput);
+			ToolCallResult result = callback.call(toolInput);
 
 			// Then
-			assertEquals("success", result);
+			assertEquals("success", result.content());
 			verify(mockDelegate).call(toolInput);
 
 			TestArguments args = capturedArgs.get().arguments();
@@ -316,7 +317,8 @@ class AugmentedToolCallbackTest {
 			when(mockToolDefinition.name()).thenReturn("testTool");
 			when(mockToolDefinition.description()).thenReturn("Test tool description");
 			when(mockToolDefinition.inputSchema()).thenReturn(originalSchema);
-			when(mockDelegate.call(anyString(), any(ToolContext.class))).thenReturn("success");
+			when(mockDelegate.call(anyString(), any(ToolContext.class)))
+				.thenReturn(ToolCallResult.builder().content("success").build());
 
 			Consumer<AugmentedArgumentEvent<TestArguments>> consumer = args -> {
 			};
@@ -333,10 +335,10 @@ class AugmentedToolCallbackTest {
 					""";
 
 			// When
-			String result = callback.call(toolInput, mockToolContext);
+			ToolCallResult result = callback.call(toolInput, mockToolContext);
 
 			// Then
-			assertEquals("success", result);
+			assertEquals("success", result.content());
 			verify(mockDelegate).call(toolInput, mockToolContext);
 		}
 
@@ -360,7 +362,7 @@ class AugmentedToolCallbackTest {
 			when(mockToolDefinition.name()).thenReturn("testTool");
 			when(mockToolDefinition.description()).thenReturn("Test tool description");
 			when(mockToolDefinition.inputSchema()).thenReturn(originalSchema);
-			when(mockDelegate.call(anyString())).thenReturn("success");
+			when(mockDelegate.call(anyString())).thenReturn(ToolCallResult.builder().content("success").build());
 
 			Consumer<AugmentedArgumentEvent<TestArguments>> consumer = args -> {
 			};
@@ -411,7 +413,7 @@ class AugmentedToolCallbackTest {
 			when(mockToolDefinition.name()).thenReturn("testTool");
 			when(mockToolDefinition.description()).thenReturn("Test tool description");
 			when(mockToolDefinition.inputSchema()).thenReturn(originalSchema);
-			when(mockDelegate.call(anyString())).thenReturn("success");
+			when(mockDelegate.call(anyString())).thenReturn(ToolCallResult.builder().content("success").build());
 
 			Consumer<AugmentedArgumentEvent<TestArguments>> consumer = args -> {
 			};
@@ -462,7 +464,7 @@ class AugmentedToolCallbackTest {
 			when(mockToolDefinition.name()).thenReturn("testTool");
 			when(mockToolDefinition.description()).thenReturn("Test tool description");
 			when(mockToolDefinition.inputSchema()).thenReturn(originalSchema);
-			when(mockDelegate.call(anyString())).thenReturn("success");
+			when(mockDelegate.call(anyString())).thenReturn(ToolCallResult.builder().content("success").build());
 
 			AugmentedToolCallback<TestArguments> callback = new AugmentedToolCallback<>(mockDelegate,
 					TestArguments.class, null, false);
@@ -477,8 +479,8 @@ class AugmentedToolCallbackTest {
 
 			// When & Then - should not throw exception
 			assertDoesNotThrow(() -> {
-				String result = callback.call(toolInput);
-				assertEquals("success", result);
+				ToolCallResult result = callback.call(toolInput);
+				assertEquals("success", result.content());
 			});
 		}
 
@@ -510,7 +512,8 @@ class AugmentedToolCallbackTest {
 			when(mockToolDefinition.name()).thenReturn("productTool");
 			when(mockToolDefinition.description()).thenReturn("Product management tool");
 			when(mockToolDefinition.inputSchema()).thenReturn(originalSchema);
-			when(mockDelegate.call(anyString())).thenReturn("Product processed successfully");
+			when(mockDelegate.call(anyString()))
+				.thenReturn(ToolCallResult.builder().content("Product processed successfully").build());
 
 			AtomicReference<AugmentedArgumentEvent<SimpleArguments>> processedArgs = new AtomicReference<>();
 			Consumer<AugmentedArgumentEvent<SimpleArguments>> consumer = processedArgs::set;
@@ -526,10 +529,10 @@ class AugmentedToolCallbackTest {
 					""";
 
 			// When
-			String result = callback.call(toolInput);
+			ToolCallResult result = callback.call(toolInput);
 
 			// Then
-			assertEquals("Product processed successfully", result);
+			assertEquals("Product processed successfully", result.content());
 
 			// Verify consumer was called with correct arguments
 			SimpleArguments args = processedArgs.get().arguments();

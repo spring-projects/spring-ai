@@ -30,6 +30,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,11 +61,11 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
+			public ToolCallResult call(String toolInput) {
 				// Verify the input is not null or empty
 				assertThat(toolInput).isNotNull();
 				assertThat(toolInput).isNotEmpty();
-				return "{\"result\": \"success\"}";
+				return ToolCallResult.builder().content("{\"result\": \"success\"}").build();
 			}
 		};
 
@@ -117,11 +118,11 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
+			public ToolCallResult call(String toolInput) {
 				// Verify the input is not null or empty
 				assertThat(toolInput).isNotNull();
 				assertThat(toolInput).isNotEmpty();
-				return "{\"result\": \"success\"}";
+				return ToolCallResult.builder().content("{\"result\": \"success\"}").build();
 			}
 		};
 
@@ -174,8 +175,8 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return "{\"result\": \"tool1_success\"}";
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content("{\"result\": \"tool1_success\"}").build();
 			}
 		};
 
@@ -195,8 +196,8 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return "{\"result\": \"tool2_success\"}";
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content("{\"result\": \"tool2_success\"}").build();
 			}
 		};
 
@@ -251,10 +252,10 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
+			public ToolCallResult call(String toolInput) {
 				assertThat(toolInput).contains("nested");
 				assertThat(toolInput).contains("array");
-				return "{\"result\": \"processed\"}";
+				return ToolCallResult.builder().content("{\"result\": \"processed\"}").build();
 			}
 		};
 
@@ -297,10 +298,10 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
+			public ToolCallResult call(String toolInput) {
 				// Should still receive some input even if malformed
 				assertThat(toolInput).isNotNull();
-				return "{\"result\": \"handled\"}";
+				return ToolCallResult.builder().content("{\"result\": \"handled\"}").build();
 			}
 		};
 
@@ -344,8 +345,8 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return null; // Return null
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content(null).build(); // Return null
 			}
 		};
 
@@ -387,8 +388,8 @@ class DefaultToolCallingManagerTest {
 			}
 
 			@Override
-			public String call(String toolInput) {
-				return "{\"result\": \"success\"}";
+			public ToolCallResult call(String toolInput) {
+				return ToolCallResult.builder().content("{\"result\": \"success\"}").build();
 			}
 		};
 

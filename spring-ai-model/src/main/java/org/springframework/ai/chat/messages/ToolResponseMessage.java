@@ -70,7 +70,15 @@ public class ToolResponseMessage extends AbstractMessage {
 				+ ", metadata=" + this.metadata + '}';
 	}
 
-	public record ToolResponse(String id, String name, String responseData) {
+	public record ToolResponse(String id, String name, String responseData, Map<String, Object> metadata) {
+
+		public ToolResponse {
+			metadata = Map.copyOf(metadata);
+		}
+
+		public ToolResponse(String id, String name, String responseData) {
+			this(id, name, responseData, Map.of());
+		}
 
 	}
 

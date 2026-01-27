@@ -31,6 +31,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -91,12 +92,12 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 	}
 
 	@Override
-	public String call(String toolInput) {
+	public ToolCallResult call(String toolInput) {
 		return call(toolInput, null);
 	}
 
 	@Override
-	public String call(String toolInput, @Nullable ToolContext toolContext) {
+	public ToolCallResult call(String toolInput, @Nullable ToolContext toolContext) {
 		Assert.hasText(toolInput, "toolInput cannot be null or empty");
 
 		logger.debug("Starting execution of tool: {}", this.toolDefinition.name());

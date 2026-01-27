@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -93,7 +94,7 @@ class SyncMcpToolCallbackTests {
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
-		String response = callback.call("{\"param\":\"value\"}");
+		ToolCallResult response = callback.call("{\"param\":\"value\"}");
 
 		assertThat(response).isNotNull();
 	}
@@ -111,7 +112,7 @@ class SyncMcpToolCallbackTests {
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
-		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
+		ToolCallResult response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
 		assertThat(response).isNotNull();
 	}
@@ -130,16 +131,16 @@ class SyncMcpToolCallbackTests {
 			.build();
 
 		// Test with null input
-		String responseNull = callback.call(null);
-		assertThat(responseNull).isEqualTo("[]");
+		ToolCallResult responseNull = callback.call(null);
+		assertThat(responseNull.content()).isEqualTo("[]");
 
 		// Test with empty string input
-		String responseEmpty = callback.call("");
-		assertThat(responseEmpty).isEqualTo("[]");
+		ToolCallResult responseEmpty = callback.call("");
+		assertThat(responseEmpty.content()).isEqualTo("[]");
 
 		// Test with whitespace-only input
-		String responseWhitespace = callback.call("   ");
-		assertThat(responseWhitespace).isEqualTo("[]");
+		ToolCallResult responseWhitespace = callback.call("   ");
+		assertThat(responseWhitespace.content()).isEqualTo("[]");
 	}
 
 	@Test
@@ -197,9 +198,9 @@ class SyncMcpToolCallbackTests {
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
-		String response = callback.call("{\"param\":\"value\"}");
+		ToolCallResult response = callback.call("{\"param\":\"value\"}");
 
-		assertThat(response).isEqualTo("[]");
+		assertThat(response.content()).isEqualTo("[]");
 	}
 
 	@Test
@@ -218,10 +219,10 @@ class SyncMcpToolCallbackTests {
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
-		String response = callback.call("{\"param\":\"value\"}");
+		ToolCallResult response = callback.call("{\"param\":\"value\"}");
 
 		assertThat(response).isNotNull();
-		assertThat(response).isEqualTo("[{\"text\":\"First content\"},{\"text\":\"Second content\"}]");
+		assertThat(response.content()).isEqualTo("[{\"text\":\"First content\"},{\"text\":\"Second content\"}]");
 	}
 
 	@Test
@@ -239,10 +240,10 @@ class SyncMcpToolCallbackTests {
 			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
 			.build();
 
-		String response = callback.call("{\"param\":\"value\"}");
+		ToolCallResult response = callback.call("{\"param\":\"value\"}");
 
 		assertThat(response).isNotNull();
-		assertThat(response).isEqualTo("[{\"data\":\"base64data\",\"mimeType\":\"image/png\"}]");
+		assertThat(response.content()).isEqualTo("[{\"data\":\"base64data\",\"mimeType\":\"image/png\"}]");
 	}
 
 	@Test

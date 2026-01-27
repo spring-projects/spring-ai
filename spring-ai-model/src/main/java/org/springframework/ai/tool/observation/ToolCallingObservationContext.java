@@ -23,6 +23,7 @@ import org.springframework.ai.observation.AiOperationMetadata;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.util.Assert;
 
@@ -43,10 +44,10 @@ public final class ToolCallingObservationContext extends Observation.Context {
 
 	private final String toolCallArguments;
 
-	private @Nullable String toolCallResult;
+	private @Nullable ToolCallResult toolCallResult;
 
 	private ToolCallingObservationContext(ToolDefinition toolDefinition, ToolMetadata toolMetadata,
-			@Nullable String toolCallArguments, @Nullable String toolCallResult) {
+			@Nullable String toolCallArguments, @Nullable ToolCallResult toolCallResult) {
 		Assert.notNull(toolDefinition, "toolDefinition cannot be null");
 		Assert.notNull(toolMetadata, "toolMetadata cannot be null");
 
@@ -72,11 +73,11 @@ public final class ToolCallingObservationContext extends Observation.Context {
 		return this.toolCallArguments;
 	}
 
-	public @Nullable String getToolCallResult() {
+	public @Nullable ToolCallResult getToolCallResult() {
 		return this.toolCallResult;
 	}
 
-	public void setToolCallResult(@Nullable String toolCallResult) {
+	public void setToolCallResult(@Nullable ToolCallResult toolCallResult) {
 		this.toolCallResult = toolCallResult;
 	}
 
@@ -92,7 +93,7 @@ public final class ToolCallingObservationContext extends Observation.Context {
 
 		private @Nullable String toolCallArguments;
 
-		private @Nullable String toolCallResult;
+		private @Nullable ToolCallResult toolCallResult;
 
 		private Builder() {
 		}
@@ -112,7 +113,7 @@ public final class ToolCallingObservationContext extends Observation.Context {
 			return this;
 		}
 
-		public Builder toolCallResult(@Nullable String toolCallResult) {
+		public Builder toolCallResult(@Nullable ToolCallResult toolCallResult) {
 			this.toolCallResult = toolCallResult;
 			return this;
 		}

@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
 /**
@@ -50,13 +51,13 @@ public interface ToolCallback {
 	 * Execute tool with the given input and return the result to send back to the AI
 	 * model.
 	 */
-	String call(String toolInput);
+	ToolCallResult call(String toolInput);
 
 	/**
 	 * Execute tool with the given input and context, and return the result to send back
 	 * to the AI model.
 	 */
-	default String call(String toolInput, @Nullable ToolContext toolContext) {
+	default ToolCallResult call(String toolInput, @Nullable ToolContext toolContext) {
 		if (toolContext != null && !toolContext.getContext().isEmpty()) {
 			logger.info("By default the tool context is not used,  "
 					+ "override the method 'call(String toolInput, ToolContext toolcontext)' to support the use of tool context."

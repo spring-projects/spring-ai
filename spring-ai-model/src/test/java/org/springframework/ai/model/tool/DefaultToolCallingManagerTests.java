@@ -34,6 +34,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -423,8 +424,8 @@ class DefaultToolCallingManagerTests {
 		}
 
 		@Override
-		public String call(String toolInput) {
-			return "Mission accomplished!";
+		public ToolCallResult call(String toolInput) {
+			return ToolCallResult.builder().content("Mission accomplished!").build();
 		}
 
 	}
@@ -443,7 +444,7 @@ class DefaultToolCallingManagerTests {
 		}
 
 		@Override
-		public String call(String toolInput) {
+		public ToolCallResult call(String toolInput) {
 			throw new ToolExecutionException(this.toolDefinition, new IllegalStateException("You failed this city!"));
 		}
 

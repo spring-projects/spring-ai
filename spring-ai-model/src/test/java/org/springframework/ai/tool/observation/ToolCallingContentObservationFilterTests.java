@@ -21,6 +21,7 @@ import io.micrometer.observation.Observation;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,7 +47,7 @@ class ToolCallingContentObservationFilterTests {
 		var originalContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("input")
-			.toolCallResult("result")
+			.toolCallResult(ToolCallResult.builder().content("result").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 
@@ -61,7 +62,7 @@ class ToolCallingContentObservationFilterTests {
 		var originalContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("input")
-			.toolCallResult("result")
+			.toolCallResult(ToolCallResult.builder().content("result").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 
@@ -79,7 +80,7 @@ class ToolCallingContentObservationFilterTests {
 		var originalContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("")
-			.toolCallResult("result")
+			.toolCallResult(ToolCallResult.builder().content("result").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 
@@ -94,7 +95,7 @@ class ToolCallingContentObservationFilterTests {
 		var originalContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("input")
-			.toolCallResult("")
+			.toolCallResult(ToolCallResult.builder().content("").build())
 			.build();
 		var augmentedContext = this.observationFilter.map(originalContext);
 
@@ -109,7 +110,7 @@ class ToolCallingContentObservationFilterTests {
 		var originalContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
 			.toolCallArguments("input")
-			.toolCallResult("result")
+			.toolCallResult(ToolCallResult.builder().content("result").build())
 			.build();
 
 		var augmentedOnce = this.observationFilter.map(originalContext);

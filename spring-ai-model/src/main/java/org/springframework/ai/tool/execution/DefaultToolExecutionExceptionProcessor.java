@@ -55,7 +55,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 	}
 
 	@Override
-	public String process(ToolExecutionException exception) {
+	public ToolCallResult process(ToolExecutionException exception) {
 		Assert.notNull(exception, "exception cannot be null");
 		Throwable cause = exception.getCause();
 		if (cause instanceof RuntimeException runtimeException) {
@@ -79,7 +79,7 @@ public class DefaultToolExecutionExceptionProcessor implements ToolExecutionExce
 		}
 		logger.debug("Exception thrown by tool: {}. Message: {}", exception.getToolDefinition().name(), message,
 				exception);
-		return message;
+		return ToolCallResult.builder().content(message).build();
 	}
 
 	public static Builder builder() {

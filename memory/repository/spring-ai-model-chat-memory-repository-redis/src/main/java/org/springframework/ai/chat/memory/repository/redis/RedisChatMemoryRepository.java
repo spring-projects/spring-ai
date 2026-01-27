@@ -1,5 +1,16 @@
 package org.springframework.ai.chat.memory.repository.redis;
 
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -7,22 +18,15 @@ import com.google.gson.JsonObject;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.MessageType;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.content.Media;
-import org.springframework.ai.content.MediaContent;
-import org.springframework.util.Assert;
-import org.springframework.util.MimeType;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.json.Path2;
-import redis.clients.jedis.search.*;
+import redis.clients.jedis.search.Document;
+import redis.clients.jedis.search.FTCreateParams;
+import redis.clients.jedis.search.IndexDataType;
+import redis.clients.jedis.search.Query;
 import redis.clients.jedis.search.RediSearchUtil;
+import redis.clients.jedis.search.SearchResult;
 import redis.clients.jedis.search.aggr.AggregationBuilder;
 import redis.clients.jedis.search.aggr.AggregationResult;
 import redis.clients.jedis.search.aggr.Reducers;
@@ -34,16 +38,17 @@ import redis.clients.jedis.search.schemafields.SchemaField;
 import redis.clients.jedis.search.schemafields.TagField;
 import redis.clients.jedis.search.schemafields.TextField;
 
-import java.net.URI;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.content.Media;
+import org.springframework.ai.content.MediaContent;
+import org.springframework.util.Assert;
+import org.springframework.util.MimeType;
 
 /**
  * Redis implementation of {@link ChatMemoryRepository} using Redis (JSON + Query Engine).
@@ -457,7 +462,15 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 							String responseData = responseJson.has("responseData")
 									? responseJson.get("responseData").getAsString() : "";
 
-							toolResponses.add(new ToolResponseMessage.ToolResponse(id, name, responseData));
+							Map<String, Object> responseMetadata = new HashMap<>();
+							if (responseJson.has("metadata") && responseJson.get("metadata").isJsonObject()) {
+								JsonObject responseMetadataJson = responseJson.getAsJsonObject("metadata");
+								responseMetadataJson.entrySet().forEach(entry -> {
+									responseMetadata.put(entry.getKey(), gson.fromJson(entry.getValue(), Object.class));
+								});
+							}
+							toolResponses
+								.add(new ToolResponseMessage.ToolResponse(id, name, responseData, responseMetadata));
 						}
 					}
 
@@ -1160,7 +1173,14 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 					String responseData = responseJson.has("responseData")
 							? responseJson.get("responseData").getAsString() : "";
 
-					toolResponses.add(new ToolResponseMessage.ToolResponse(id, name, responseData));
+					Map<String, Object> responseMetadata = new HashMap<>();
+					if (responseJson.has("metadata") && responseJson.get("metadata").isJsonObject()) {
+						JsonObject responseMetadataJson = responseJson.getAsJsonObject("metadata");
+						responseMetadataJson.entrySet().forEach(entry -> {
+							responseMetadata.put(entry.getKey(), gson.fromJson(entry.getValue(), Object.class));
+						});
+					}
+					toolResponses.add(new ToolResponseMessage.ToolResponse(id, name, responseData, responseMetadata));
 				}
 			}
 

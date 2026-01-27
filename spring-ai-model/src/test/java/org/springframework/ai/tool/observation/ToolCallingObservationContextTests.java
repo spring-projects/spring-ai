@@ -19,6 +19,7 @@ package org.springframework.ai.tool.observation;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -98,10 +99,10 @@ class ToolCallingObservationContextTests {
 	void whenToolCallResultIsEmptyStringThenReturnEmptyString() {
 		var observationContext = ToolCallingObservationContext.builder()
 			.toolDefinition(ToolDefinition.builder().name("toolA").description("description").inputSchema("{}").build())
-			.toolCallResult("")
+			.toolCallResult(ToolCallResult.builder().content("").build())
 			.build();
 		assertThat(observationContext).isNotNull();
-		assertThat(observationContext.getToolCallResult()).isEqualTo("");
+		assertThat(observationContext.getToolCallResult().content()).isEqualTo("");
 	}
 
 	@Test

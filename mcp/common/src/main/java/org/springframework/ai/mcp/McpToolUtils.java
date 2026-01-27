@@ -42,6 +42,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -257,14 +258,15 @@ public final class McpToolUtils {
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
+				ToolCallResult callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
 					return new McpSchema.CallToolResult(
-							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
+							List.of(new McpSchema.ImageContent(annotations, callResult.content(), mimeType.toString())),
+							false);
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult.content())), false);
 			}
 			catch (Exception e) {
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);

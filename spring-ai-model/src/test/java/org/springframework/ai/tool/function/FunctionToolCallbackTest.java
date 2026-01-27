@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
@@ -64,10 +65,10 @@ class FunctionToolCallbackTest {
 
 		ToolContext toolContext = new ToolContext(Map.of("foo", "bar"));
 
-		String callResult = callback.call("\"test string param\"", toolContext);
+		ToolCallResult callResult = callback.call("\"test string param\"", toolContext);
 
 		assertEquals("test string param", tool.calledValue.get());
-		assertEquals("\"return value = test string param\"", callResult);
+		assertEquals("\"return value = test string param\"", callResult.content());
 		assertEquals(toolContext, tool.calledToolContext.get());
 	}
 
@@ -82,10 +83,10 @@ class FunctionToolCallbackTest {
 
 		ToolContext toolContext = new ToolContext(Map.of());
 
-		String callResult = callback.call("\"test string param\"", toolContext);
+		ToolCallResult callResult = callback.call("\"test string param\"", toolContext);
 
 		assertEquals("test string param", tool.calledValue.get());
-		assertEquals("\"return value = test string param\"", callResult);
+		assertEquals("\"return value = test string param\"", callResult.content());
 	}
 
 	@Test
@@ -100,10 +101,10 @@ class FunctionToolCallbackTest {
 
 		ToolContext toolContext = new ToolContext(Map.of());
 
-		String callResult = callback.call("\"test string param\"", toolContext);
+		ToolCallResult callResult = callback.call("\"test string param\"", toolContext);
 
 		assertEquals("not params", tool.calledValue.get());
-		assertEquals("\"return value = \"", callResult);
+		assertEquals("\"return value = \"", callResult.content());
 	}
 
 	@Test

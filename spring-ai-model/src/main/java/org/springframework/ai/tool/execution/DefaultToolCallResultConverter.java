@@ -42,10 +42,10 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallResultConverter.class);
 
 	@Override
-	public String convert(@Nullable Object result, @Nullable Type returnType) {
+	public ToolCallResult convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
-			return JsonParser.toJson("Done");
+			return ToolCallResult.builder().content(JsonParser.toJson("Done")).build();
 		}
 		if (result instanceof RenderedImage) {
 			final var buf = new ByteArrayOutputStream(1024 * 4);
@@ -53,14 +53,18 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 				ImageIO.write((RenderedImage) result, "PNG", buf);
 			}
 			catch (IOException e) {
-				return "Failed to convert tool result to a base64 image: " + e.getMessage();
+				return ToolCallResult.builder()
+					.content("Failed to convert tool result to a base64 image: " + e.getMessage())
+					.build();
 			}
 			final var imgB64 = Base64.getEncoder().encodeToString(buf.toByteArray());
-			return JsonParser.toJson(Map.of("mimeType", "image/png", "data", imgB64));
+			return ToolCallResult.builder()
+				.content(JsonParser.toJson(Map.of("mimeType", "image/png", "data", imgB64)))
+				.build();
 		}
 		else {
 			logger.debug("Converting tool result to JSON.");
-			return JsonParser.toJson(result);
+			return ToolCallResult.builder().content(JsonParser.toJson(result)).build();
 		}
 	}
 
