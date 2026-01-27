@@ -125,6 +125,19 @@ public class MongoChatMemoryRepositoryIT {
 	}
 
 	@Test
+	void messagesAreReturnedInChronologicalOrder() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new UserMessage("First message"),
+				new AssistantMessage("Second message"),
+				new UserMessage("Third message"));
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+
+		var results = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(results).isEqualTo(messages);
+	}
+
+	@Test
 	void deleteMessagesByConversationId() {
 		var conversationId = UUID.randomUUID().toString();
 		var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
