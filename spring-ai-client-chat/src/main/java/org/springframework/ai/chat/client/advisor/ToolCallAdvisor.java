@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.List;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -25,6 +27,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -57,13 +60,21 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 	 */
 	private final int advisorOrder;
 
+	private final boolean conversationHistoryEnabled;
+
 	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
+		this(toolCallingManager, advisorOrder, true);
+	}
+
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
+			boolean conversationHistoryEnabled) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 
 		this.toolCallingManager = toolCallingManager;
 		this.advisorOrder = advisorOrder;
+		this.conversationHistoryEnabled = conversationHistoryEnabled;
 	}
 
 	@Override
@@ -118,7 +129,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 			// After Call
 
-			// TODO: check that this is tool call is sufficiant for all chat models
+			// TODO: check that this tool call detection is sufficient for all chat models
 			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
 			// finish status as well)
 			isToolCall = chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().hasToolCalls();
@@ -138,19 +149,31 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 							.build())
 						.build();
 
-					// Interupt the tool calling loop and return the tool execution result
-					// directly to the client application instead of returning it to the
-					// LLM.
+					// Interrupt the tool calling loop and return the tool execution
+					// result directly to the client application instead of returning
+					// it to the LLM.
 					break;
 				}
 
-				instructions = toolExecutionResult.conversationHistory();
+				instructions = this.doGetNextInstructionsForToolCall(processedChatClientRequest, chatClientResponse,
+						toolExecutionResult);
 			}
 
 		}
 		while (isToolCall); // loop until no tool calls are present
 
 		return this.doFinalizeLoop(chatClientResponse, callAdvisorChain);
+	}
+
+	protected List<Message> doGetNextInstructionsForToolCall(ChatClientRequest chatClientRequest,
+			ChatClientResponse chatClientResponse, ToolExecutionResult toolExecutionResult) {
+
+		if (!this.conversationHistoryEnabled) {
+			return List.of(chatClientRequest.prompt().getSystemMessage(), toolExecutionResult.conversationHistory()
+				.get(toolExecutionResult.conversationHistory().size() - 1));
+		}
+
+		return toolExecutionResult.conversationHistory();
 	}
 
 	protected ChatClientResponse doFinalizeLoop(ChatClientResponse chatClientResponse,
@@ -199,6 +222,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private int advisorOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 300;
 
+		private boolean conversationHistoryEnabled = true;
+
 		protected Builder() {
 		}
 
@@ -234,6 +259,27 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		/**
+		 * Sets whether internal conversation history is enabled. If false, you need a
+		 * ChatMemory Advisor registered next in the chain.
+		 * @param conversationHistoryEnabled true to enable, false to disable
+		 * @return this Builder instance for method chaining
+		 */
+		public T conversationHistoryEnabled(boolean conversationHistoryEnabled) {
+			this.conversationHistoryEnabled = conversationHistoryEnabled;
+			return self();
+		}
+
+		/**
+		 * Disables internal conversation history. You need a ChatMemory Advisor
+		 * registered next in the chain.
+		 * @return this Builder instance for method chaining
+		 */
+		public T disableMemory() {
+			this.conversationHistoryEnabled = false;
+			return self();
+		}
+
+		/**
 		 * Returns the configured ToolCallingManager.
 		 * @return the ToolCallingManager instance
 		 */
@@ -257,7 +303,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * is out of valid range
 		 */
 		public ToolCallAdvisor build() {
-			return new ToolCallAdvisor(this.toolCallingManager, this.advisorOrder);
+			return new ToolCallAdvisor(this.toolCallingManager, this.advisorOrder, this.conversationHistoryEnabled);
 		}
 
 	}

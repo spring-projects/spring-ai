@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.util.ResourceUtils;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
  * @author Mark Pollack
+ * @author Nicolas Krier
  */
-public class OllamaModelOptionsTests {
+class OllamaChatOptionsTests {
 
 	@Test
-	public void testBasicOptions() {
+	void testBasicOptions() {
 		var options = OllamaChatOptions.builder().temperature(3.14).topK(30).stop(List.of("a", "b", "c")).build();
 
 		var optionsMap = options.toMap();
@@ -42,7 +47,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testAllNumericOptions() {
+	void testAllNumericOptions() {
 		var options = OllamaChatOptions.builder()
 			.numCtx(2048)
 			.numBatch(512)
@@ -90,7 +95,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testBooleanOptions() {
+	void testBooleanOptions() {
 		var options = OllamaChatOptions.builder()
 			.truncate(true)
 			.useNUMA(true)
@@ -116,7 +121,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testModelAndFormat() {
+	void testModelAndFormat() {
 		var options = OllamaChatOptions.builder().model("llama2").format("json").build();
 
 		var optionsMap = options.toMap();
@@ -125,7 +130,22 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFunctionAndToolOptions() {
+	void testOutputSchemaOptionWithJsonSchemaObjectAsString() {
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var options = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+
+		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+	}
+
+	@Test
+	void testOutputSchemaOptionWithJsonAsString() {
+		assertThatThrownBy(() -> OllamaChatOptions.builder().outputSchema("json"))
+			.hasCauseInstanceOf(JsonParseException.class)
+			.hasMessageContaining("Unrecognized token 'json'");
+	}
+
+	@Test
+	void testFunctionAndToolOptions() {
 		var options = OllamaChatOptions.builder()
 			.toolNames("function1")
 			.toolNames("function2")
@@ -145,7 +165,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFunctionOptionsWithMutableSet() {
+	void testFunctionOptionsWithMutableSet() {
 		Set<String> functionSet = new HashSet<>();
 		functionSet.add("function1");
 		functionSet.add("function2");
@@ -156,7 +176,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFromOptions() {
+	void testFromOptions() {
 		var originalOptions = OllamaChatOptions.builder()
 			.model("llama2")
 			.temperature(0.7)
@@ -174,7 +194,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testFunctionOptionsNotInMap() {
+	void testFunctionOptionsNotInMap() {
 		var options = OllamaChatOptions.builder().model("llama2").toolNames(Set.of("function1")).build();
 
 		var optionsMap = options.toMap();
@@ -191,7 +211,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testDeprecatedMethods() {
+	void testDeprecatedMethods() {
 		var options = OllamaChatOptions.builder()
 			.model("llama2")
 			.temperature(0.7)
@@ -209,7 +229,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testEmptyOptions() {
+	void testEmptyOptions() {
 		var options = OllamaChatOptions.builder().build();
 
 		var optionsMap = options.toMap();
@@ -224,7 +244,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testNullValuesNotIncludedInMap() {
+	void testNullValuesNotIncludedInMap() {
 		var options = OllamaChatOptions.builder().model("llama2").temperature(null).topK(null).stop(null).build();
 
 		var optionsMap = options.toMap();
@@ -235,7 +255,7 @@ public class OllamaModelOptionsTests {
 	}
 
 	@Test
-	public void testZeroValuesIncludedInMap() {
+	void testZeroValuesIncludedInMap() {
 		var options = OllamaChatOptions.builder().temperature(0.0).topK(0).mainGPU(0).numGPU(0).seed(0).build();
 
 		var optionsMap = options.toMap();
@@ -244,6 +264,103 @@ public class OllamaModelOptionsTests {
 		assertThat(optionsMap).containsEntry("main_gpu", 0);
 		assertThat(optionsMap).containsEntry("num_gpu", 0);
 		assertThat(optionsMap).containsEntry("seed", 0);
+	}
+
+	/**
+	 * Demonstrates the difference between simple "json" format and JSON Schema format.
+	 *
+	 * Simple "json" format: Tells Ollama to return any valid JSON structure. JSON Schema
+	 * format: Tells Ollama to return JSON matching a specific schema.
+	 */
+	@Test
+	void testSimpleJsonFormatVsJsonSchema() {
+		var simpleJsonOptions = OllamaChatOptions.builder().format("json").build();
+
+		var simpleJsonMap = simpleJsonOptions.toMap();
+		assertThat(simpleJsonMap).containsEntry("format", "json");
+		assertThat(simpleJsonOptions.getFormat()).isEqualTo("json");
+
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var schemaOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+
+		var schemaMap = schemaOptions.toMap();
+		assertThat(schemaMap).containsKey("format");
+		assertThat(schemaMap.get("format")).isInstanceOf(Map.class);
+
+		// Verify the schema contains expected structure
+		@SuppressWarnings("unchecked")
+		Map<String, Object> formatSchema = (Map<String, Object>) schemaMap.get("format");
+		assertThat(formatSchema).containsEntry("type", "object");
+		assertThat(formatSchema).containsKey("properties");
+		assertThat(formatSchema).containsKey("required");
+
+		var formatOnlyOptions = OllamaChatOptions.builder().format("json").build();
+		assertThat(formatOnlyOptions.getOutputSchema()).isEqualTo("json");
+
+		var schemaRoundTrip = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		assertThat(schemaRoundTrip.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+	}
+
+	/**
+	 * Tests that setFormat("json") and getFormat() work correctly for simple JSON format.
+	 */
+	@Test
+	void testSimpleJsonFormatDirectAccess() {
+		var options = OllamaChatOptions.builder().format("json").build();
+
+		assertThat(options.getFormat()).isEqualTo("json");
+
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsEntry("format", "json");
+
+		// Verify it serializes correctly
+		assertThat(options.getFormat()).isInstanceOf(String.class);
+	}
+
+	/**
+	 * Tests getOutputSchema() properly handles all format types: null, String, and Map.
+	 */
+	@Test
+	void testGetOutputSchemaHandlesAllFormatTypes() {
+		var nullFormatOptions = OllamaChatOptions.builder().build();
+		assertThat(nullFormatOptions.getOutputSchema()).isNull();
+
+		var stringFormatOptions = OllamaChatOptions.builder().format("json").build();
+		assertThat(stringFormatOptions.getOutputSchema()).isEqualTo("json");
+		assertThat(stringFormatOptions.getOutputSchema()).doesNotContain("\"");
+
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var schemaFormatOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		String retrievedSchema = schemaFormatOptions.getOutputSchema();
+
+		// Should be valid JSON
+		assertThat(retrievedSchema).isNotNull();
+		assertThat(retrievedSchema).contains("\"type\"");
+		assertThat(retrievedSchema).contains("\"properties\"");
+		assertThat(retrievedSchema).contains("\"required\"");
+
+		assertThat(retrievedSchema).isEqualToIgnoringWhitespace(jsonSchemaAsText);
+	}
+
+	/**
+	 * Tests that setOutputSchema() properly handles JSON Schema strings.
+	 */
+	@Test
+	void testSetOutputSchemaWithValidJsonSchema() {
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+
+		var options = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+
+		// Format should be a Map, not a String
+		assertThat(options.getFormat()).isInstanceOf(Map.class);
+
+		// toMap() should contain the parsed schema
+		var optionsMap = options.toMap();
+		assertThat(optionsMap).containsKey("format");
+		assertThat(optionsMap.get("format")).isInstanceOf(Map.class);
+
+		// getOutputSchema() should return the original JSON string (ignoring whitespace)
+		assertThat(options.getOutputSchema()).isEqualToIgnoringWhitespace(jsonSchemaAsText);
 	}
 
 }

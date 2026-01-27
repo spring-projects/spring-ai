@@ -45,6 +45,19 @@ public class FilterExpressionTextParserTests {
 	FilterExpressionTextParser parser = new FilterExpressionTextParser();
 
 	@Test
+	public void testStringEscaping() {
+		Expression exp = this.parser.parse("stuff == \"he'd say \\\"hello\\\", I'd say 'hi'\"");
+		assertThat(((Value) exp.right()).value()).isEqualTo("he'd say \"hello\", I'd say 'hi'");
+
+		exp = this.parser.parse("stuff == 'he\\'d say \"hello\", I\\'d say \\'hi\\''");
+		assertThat(((Value) exp.right()).value()).isEqualTo("he'd say \"hello\", I'd say 'hi'");
+
+		exp = this.parser.parse("stuff == 'This is a single backslash: \\\\'");
+		assertThat(((Value) exp.right()).value()).isEqualTo("This is a single backslash: \\");
+
+	}
+
+	@Test
 	public void testEQ() {
 		// country == "BG"
 		Expression exp = this.parser.parse("country == 'BG'");

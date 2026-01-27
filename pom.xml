@@ -279,7 +279,7 @@
 		<spring-boot.version>3.5.8</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
-		<openai-sdk.version>4.8.0</openai-sdk.version>
+		<openai-sdk.version>4.13.0</openai-sdk.version>
 		<azure-identity.version>1.18.1</azure-identity.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>1.9.25</kotlin.version>
@@ -538,7 +538,7 @@
 				<version>${maven-javadoc-plugin.version}</version>
 				<configuration>
 					<overview>
-						${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+						${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 					<detectJavaApiLink>false</detectJavaApiLink>
 					<detectOfflineLinks>false</detectOfflineLinks>
 					<failOnError>false</failOnError>
@@ -650,18 +650,12 @@
 								<inherited>true</inherited>
 								<configuration>
 									<skip>${disable.checks}</skip>
-									<configLocation>src/checkstyle/checkstyle.xml
+									<configLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle.xml
 									</configLocation>
-									<headerLocation>src/checkstyle/checkstyle-header.txt
+									<headerLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle-header.txt
 									</headerLocation>
 									<includeTestSourceDirectory>true
 									</includeTestSourceDirectory>
-									<propertyExpansion>
-										checkstyle.build.directory=${project.build.directory}
-										checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-										checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-										checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
-									</propertyExpansion>
 									<consoleOutput>true</consoleOutput>
 									<failsOnError>${maven-checkstyle-plugin.failsOnError}
 									</failsOnError>
@@ -1085,40 +1079,4 @@
 			</roles>
 		</developer>
 	</developers>
-
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-project-info-reports-plugin</artifactId>
-				<version>${maven-project-info-reports-plugin.version}</version>
-				<configuration>
-					<skip>true</skip>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>${maven-checkstyle-plugin.version}</version>
-				<reportSets>
-					<reportSet>
-						<reports>
-							<report>checkstyle</report>
-						</reports>
-					</reportSet>
-				</reportSets>
-				<configuration>
-					<configLocation>src/checkstyle/checkstyle.xml</configLocation>
-					<headerLocation>src/checkstyle/checkstyle-header.txt</headerLocation>
-					<propertyExpansion>
-						checkstyle.build.directory=${project.build.directory}
-						checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-						checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-						checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
-					</propertyExpansion>
-				</configuration>
-			</plugin>
-		</plugins>
-	</reporting>
-
 </project>

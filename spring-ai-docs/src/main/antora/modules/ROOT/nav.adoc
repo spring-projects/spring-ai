@@ -135,6 +135,8 @@
 * Guides
 ** https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI]
 ** xref:guides/getting-started-mcp.adoc[Getting Started with MCP]
+** xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery]
+** xref:guides/llm-as-judge.adoc[LLM-as-a-Judge Evaluation]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 ** xref:api/effective-agents.adoc[Building Effective Agents]
 ** xref:api/cloud-bindings.adoc[Deploying to the Cloud]

@@ -102,7 +102,7 @@ public class AnthropicApiToolIT {
 	private ResponseEntity<ChatCompletionResponse> doCall(List<AnthropicMessage> messageConversation) {
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS)
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
 			.messages(messageConversation)
 			.maxTokens(1500)
 			.temperature(0.8)

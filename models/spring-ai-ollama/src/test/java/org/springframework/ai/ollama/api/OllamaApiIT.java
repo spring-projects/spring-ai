@@ -16,14 +16,15 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.ollama.BaseOllamaIT;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ChatResponse;
@@ -31,6 +32,7 @@ import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
+import org.springframework.ai.util.ResourceUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -39,8 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Sun Yuhan
+ * @author Nicolas Krier
  */
-public class OllamaApiIT extends BaseOllamaIT {
+class OllamaApiIT extends BaseOllamaIT {
 
 	private static final String CHAT_MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -49,12 +52,12 @@ public class OllamaApiIT extends BaseOllamaIT {
 	private static final String THINKING_MODEL = OllamaModel.QWEN3_4B_THINKING.getName();
 
 	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
+	static void beforeAll() {
 		initializeOllama(CHAT_MODEL, EMBEDDING_MODEL, THINKING_MODEL);
 	}
 
 	@Test
-	public void chat() {
+	void chat() {
 		var request = ChatRequest.builder(CHAT_MODEL)
 			.stream(false)
 			.messages(List.of(
@@ -79,8 +82,32 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.message().content()).contains("Sofia");
 	}
 
+	// Example from https://ollama.com/blog/structured-outputs
 	@Test
-	public void streamingChat() {
+	void jsonStructuredOutput() {
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var jsonSchema = ModelOptionsUtils.jsonToMap(jsonSchemaAsText);
+		var messages = List.of(Message.builder(Role.USER).content("Tell me about Canada.").build());
+		var request = ChatRequest.builder(CHAT_MODEL).format(jsonSchema).messages(messages).build();
+
+		var response = getOllamaApi().chat(request);
+
+		assertThat(response).isNotNull();
+		var message = response.message();
+		assertThat(message).isNotNull();
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		var messageContent = message.content();
+		assertThat(messageContent).isNotNull();
+		JsonAssertions.assertThatJson(messageContent)
+			.isObject()
+			.containsOnlyKeys("name", "capital", "languages")
+			.containsEntry("name", "Canada")
+			.containsEntry("capital", "Ottawa")
+			.containsEntry("languages", List.of("English", "French"));
+	}
+
+	@Test
+	void streamingChat() {
 		var request = ChatRequest.builder(CHAT_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER)
@@ -106,7 +133,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void embedText() {
+	void embedText() {
 		EmbeddingsRequest request = new EmbeddingsRequest(EMBEDDING_MODEL, "I like to eat apples");
 
 		EmbeddingsResponse response = getOllamaApi().embed(request);
@@ -115,13 +142,14 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.embeddings()).hasSize(1);
 		assertThat(response.embeddings().get(0)).hasSize(768);
 		assertThat(response.model()).isEqualTo(EMBEDDING_MODEL);
-		assertThat(response.promptEvalCount()).isEqualTo(5);
+		// Token count varies by Ollama version and tokenizer implementation
+		assertThat(response.promptEvalCount()).isGreaterThan(0).isLessThanOrEqualTo(10);
 		assertThat(response.loadDuration()).isGreaterThan(1);
 		assertThat(response.totalDuration()).isGreaterThan(1);
 	}
 
 	@Test
-	public void think() {
+	void think() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(false)
 			.messages(List.of(
@@ -149,7 +177,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void chatWithThinking() {
+	void chatWithThinking() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER)
@@ -177,7 +205,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void streamChatWithThinking() {
+	void streamChatWithThinking() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
@@ -203,7 +231,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void streamChatWithoutThinking() {
+	void streamChatWithoutThinking() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))

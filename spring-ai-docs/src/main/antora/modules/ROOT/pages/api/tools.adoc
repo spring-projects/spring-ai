@@ -1107,6 +1107,70 @@ public class DefaultToolExecutionEligibilityPredicate implements ToolExecutionEl
 
 You can provide your custom implementation of `ToolExecutionEligibilityPredicate` when creating the `ChatModel` bean.
 
+=== Advisor-Controlled Tool Execution with ToolCallAdvisor
+
+As an alternative to the framework-controlled tool execution, you can use the `ToolCallAdvisor` to implement tool calling as part of the xref:api/chatclient.adoc#_advisors[advisor chain]. This approach provides several advantages:
+
+* **Observability**: Other advisors in the chain can intercept and observe each tool call iteration
+* **Integration with Chat Memory**: Works seamlessly with Chat Memory advisors for conversation history management
+* **Extensibility**: The advisor can be extended to customize the tool calling behavior
+
+The `ToolCallAdvisor` implements the tool calling loop and disables the model's internal tool execution. When the model requests a tool call, the advisor executes the tool and sends the result back to the model, continuing until no more tool calls are needed.
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(toolCallAdvisor)
+    .build();
+
+String response = chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .call()
+    .content();
+----
+
+==== Configuration Options
+
+The `ToolCallAdvisor.Builder` supports the following configuration options:
+
+- `toolCallingManager`: The `ToolCallingManager` instance to use for executing tool calls. If not provided, a default instance is used.
+- `advisorOrder`: The order in which the advisor is applied in the chain. Must be between `BaseAdvisor.HIGHEST_PRECEDENCE` and `BaseAdvisor.LOWEST_PRECEDENCE`.
+- `conversationHistoryEnabled`: Controls whether the advisor maintains conversation history internally during tool call iterations. Default is `true`.
+
+==== Conversation History Management
+
+By default (`conversationHistoryEnabled=true`), the `ToolCallAdvisor` maintains the full conversation history internally during tool call iterations. Each subsequent LLM call includes all previous messages.
+
+Use the `.disableMemory()` method to disable internal conversation history management. When disabled, only the last tool response message is passed to the next iteration. This is useful when integrating with a Chat Memory advisor that already manages conversation history:
+
+[source,java]
+----
+var toolCallAdvisor = ToolCallAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .disableMemory()  // Let ChatMemory handle history
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 200)  // Before ToolCallAdvisor
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor, toolCallAdvisor)
+    .build();
+----
+
+==== Return Direct
+
+The `ToolCallAdvisor` supports the "return direct" feature, allowing tools to bypass the LLM and return results directly to the client. When a tool execution has `returnDirect=true`, the advisor breaks out of the tool calling loop and returns the tool result directly.
+
+For more details about `ToolCallAdvisor`, see xref:api/advisors-recursive.adoc#_toolcalladvisor[Recursive Advisors - ToolCallAdvisor].
+
 === User-Controlled Tool Execution
 
 There are cases where you'd rather control the tool execution lifecycle yourself. You can do so by setting the `internalToolExecutionEnabled` attribute of `ToolCallingChatOptions` to `false`.
@@ -1263,6 +1327,74 @@ ToolCallbackResolver toolCallbackResolver(List<FunctionCallback> toolCallbacks) 
 ----
 
 The `ToolCallbackResolver` is used internally by the `ToolCallingManager` to resolve tools dynamically at runtime, supporting both xref:_framework_controlled_tool_execution[] and xref:_user_controlled_tool_execution[].
+
+[[tool-argument-augmentation]]
+== Tool Argument Augmentation
+
+Spring AI provides a utility for **dynamic augmentation of tool input schemas** with additional arguments. This allows capturing extra information from the model—such as reasoning or metadata—without modifying the underlying tool implementation.
+
+Common use cases include:
+
+* **Inner Thinking/Reasoning**: Capture the model's step-by-step reasoning before executing a tool
+* **Memory Enhancement**: Extract insights to store in long-term memory
+* **Analytics & Tracking**: Collect metadata, user intent, or usage patterns
+* **Multi-Agent Coordination**: Pass agent identifiers or coordination signals
+
+=== Quick Start
+
+**Define augmented arguments** as a Java Record:
+
+[source,java]
+----
+public record AgentThinking(
+    @ToolParam(description = "Your reasoning for calling this tool", required = true)
+    String innerThought,
+
+    @ToolParam(description = "Confidence level (low, medium, high)", required = false)
+    String confidence
+) {}
+----
+
+**Wrap your tool** with `AugmentedToolCallbackProvider`:
+
+[source,java]
+----
+AugmentedToolCallbackProvider<AgentThinking> provider = AugmentedToolCallbackProvider
+    .<AgentThinking>builder()
+    .toolObject(new MyTools())  // Your @Tool annotated class
+    .argumentType(AgentThinking.class)
+    .argumentConsumer(event -> {
+        AgentThinking thinking = event.arguments();
+        log.info("Tool: {} | Reasoning: {}", event.toolDefinition().name(), thinking.innerThought());
+    })
+    .removeExtraArgumentsAfterProcessing(true)
+    .build();
+----
+
+**Use with ChatClient**:
+
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultToolCallbacks(provider)
+    .build();
+----
+
+The LLM sees the augmented schema with your additional fields. Your consumer receives the `AgentThinking` record, while the original tool receives only its expected arguments.
+
+=== Core Components
+
+* `AugmentedToolCallbackProvider<T>` - Wraps tool objects or providers, augmenting all tools with the specified Record type
+* `AugmentedToolCallback<T>` - Wraps individual `ToolCallback` instances
+* `AugmentedArgumentEvent<T>` - Contains `toolDefinition()`, `rawInput()`, and `arguments()` for consumers
+* `ToolInputSchemaAugmenter` - Low-level utility for schema manipulation
+
+=== Configuration
+
+The `removeExtraArgumentsAfterProcessing` option controls whether augmented arguments are passed to the original tool:
+
+* `true` (default) - Remove augmented arguments before calling the tool
+* `false` - Preserve augmented arguments in the input (if the tool can ignore extra fields)
 
 == Observability
 

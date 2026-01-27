@@ -209,7 +209,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			.map(document -> documentToRecord(document, embeddings.get(documents.indexOf(document))))
 			.toList();
 
-		try (var session = this.driver.session()) {
+		try (var session = this.driver.session(this.sessionConfig)) {
 			var statement = """
 						UNWIND $rows AS row
 						MERGE (u:%s {%2$s: row.id})

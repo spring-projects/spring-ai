@@ -378,6 +378,18 @@ public abstract class ModelOptionsUtils {
 	 */
 	public static String getJsonSchema(Type inputType, boolean toUpperCaseTypeValues) {
 
+		ObjectNode node = getJsonSchema(inputType);
+
+		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
+			// version of it).
+			toUpperCaseTypeValues(node);
+		}
+
+		return node.toPrettyString();
+	}
+
+	public static ObjectNode getJsonSchema(Type inputType) {
+
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
 
 			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
@@ -405,12 +417,7 @@ public abstract class ModelOptionsUtils {
 			node.putObject("properties");
 		}
 
-		if (toUpperCaseTypeValues) { // Required for OpenAPI 3.0 (at least Vertex AI
-			// version of it).
-			toUpperCaseTypeValues(node);
-		}
-
-		return node.toPrettyString();
+		return node;
 	}
 
 	public static void toUpperCaseTypeValues(ObjectNode node) {

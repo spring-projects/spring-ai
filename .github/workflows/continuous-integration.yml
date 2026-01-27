@@ -34,8 +34,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          # See pr-check.yml for an explanation of the key format
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Build all modules with unit tests
@@ -83,8 +85,9 @@ jobs:
         if: ${{ github.event_name != 'schedule' }}
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml') }}
+          key: build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
@@ -128,8 +131,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}
+          key: build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
@@ -173,8 +177,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml') }}
+          key: build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-other-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Download Spring-AI Built Artifacts
@@ -263,8 +268,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
-          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
           restore-keys: |
+            build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
             build-cache-${{ runner.os }}-
 
       - name: Deploy to Artifactory

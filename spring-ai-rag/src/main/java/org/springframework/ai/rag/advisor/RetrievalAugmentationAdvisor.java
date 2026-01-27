@@ -142,10 +142,10 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		}
 		context.put(DOCUMENT_CONTEXT, documents);
 
-		// 5. Augment user query with the document contextual data.
+		// 6. Augment user query with the document contextual data.
 		Query augmentedQuery = this.queryAugmenter.augment(originalQuery, documents);
 
-		// 6. Update ChatClientRequest with augmented prompt.
+		// 7. Update ChatClientRequest with augmented prompt.
 		return chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedQuery.text()))
 			.context(context)

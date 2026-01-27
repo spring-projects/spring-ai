@@ -33,7 +33,7 @@ import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.util.Assert;
 
 /**
@@ -86,13 +86,22 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		List<Message> processedMessages = new ArrayList<>(memoryMessages);
 		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
 
+		// 2.1. Ensure system message, if present, appears first in the list.
+		for (int i = 0; i < processedMessages.size(); i++) {
+			if (processedMessages.get(i) instanceof SystemMessage) {
+				Message systemMessage = processedMessages.remove(i);
+				processedMessages.add(0, systemMessage);
+				break;
+			}
+		}
+
 		// 3. Create a new request with the advised messages.
 		ChatClientRequest processedChatClientRequest = chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().mutate().messages(processedMessages).build())
 			.build();
 
 		// 4. Add the new user message to the conversation memory.
-		UserMessage userMessage = processedChatClientRequest.prompt().getUserMessage();
+		Message userMessage = processedChatClientRequest.prompt().getLastUserOrToolResponseMessage();
 		this.chatMemory.add(conversationId, userMessage);
 
 		return processedChatClientRequest;
