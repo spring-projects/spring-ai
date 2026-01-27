@@ -34,3 +34,10 @@ jobs:
       - name: Run tests
         run: |
           ./mvnw -ntp -B -U test
+
+      - name: Upload Maven Build Cache
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-cache
+          path: ~/.m2/build-cache
+          retention-days: 1 # Intent is to share only with downstream jobs in this workflow
