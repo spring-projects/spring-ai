@@ -21,6 +21,7 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -258,29 +259,33 @@ public final class JsonSchemaGenerator {
 
 	// Based on the method in ModelOptionsUtils.
 	public static void convertTypeValuesToUpperCase(ObjectNode node) {
+		convertTypeValuesToUpperCase(node, Locale.ROOT);
+	}
+	
+	public static void convertTypeValuesToUpperCase(ObjectNode node, Locale locale) {
 		if (node.isObject()) {
 			node.fields().forEachRemaining(entry -> {
 				JsonNode value = entry.getValue();
 				if (value.isObject()) {
-					convertTypeValuesToUpperCase((ObjectNode) value);
+					convertTypeValuesToUpperCase((ObjectNode) value, locale);
 				}
 				else if (value.isArray()) {
 					value.elements().forEachRemaining(element -> {
 						if (element.isObject() || element.isArray()) {
-							convertTypeValuesToUpperCase((ObjectNode) element);
+							convertTypeValuesToUpperCase((ObjectNode) element, locale);
 						}
 					});
 				}
 				else if (value.isTextual() && entry.getKey().equals("type")) {
 					String oldValue = node.get("type").asText();
-					node.put("type", oldValue.toUpperCase());
+					node.put("type", oldValue.toUpperCase(locale));
 				}
 			});
 		}
 		else if (node.isArray()) {
 			node.elements().forEachRemaining(element -> {
 				if (element.isObject() || element.isArray()) {
-					convertTypeValuesToUpperCase((ObjectNode) element);
+					convertTypeValuesToUpperCase((ObjectNode) element, locale);
 				}
 			});
 		}
