@@ -201,12 +201,65 @@ class AnthropicSdkChatModelIT {
 	}
 
 	// ==================================================================================
+	// Phase 2: Streaming tests
+	// ==================================================================================
+
+	@Test
+	void streamingBasicTest() {
+		Prompt prompt = new Prompt("Tell me a short joke about programming.");
+
+		List<ChatResponse> responses = this.chatModel.stream(prompt).collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		// Concatenate all text from streaming responses
+		String fullResponse = responses.stream()
+			.filter(response -> response.getResult() != null)
+			.map(response -> response.getResult().getOutput().getText())
+			.filter(text -> text != null)
+			.reduce("", String::concat);
+
+		assertThat(fullResponse).isNotEmpty();
+		logger.info("Streaming response: {}", fullResponse);
+	}
+
+	@Test
+	void streamingWithTokenUsage() {
+		Prompt prompt = new Prompt("Tell me a very short joke.");
+
+		List<ChatResponse> responses = this.chatModel.stream(prompt).collectList().block();
+
+		assertThat(responses).isNotEmpty();
+
+		// Find the response with usage metadata (comes from message_delta event)
+		ChatResponse lastResponseWithUsage = responses.stream()
+			.filter(response -> response.getMetadata() != null && response.getMetadata().getUsage() != null
+					&& response.getMetadata().getUsage().getTotalTokens() > 0)
+			.reduce((first, second) -> second)
+			.orElse(null);
+
+		assertThat(lastResponseWithUsage).isNotNull();
+
+		var usage = lastResponseWithUsage.getMetadata().getUsage();
+		logger.info("Streaming usage - Input: {}, Output: {}, Total: {}", usage.getPromptTokens(),
+				usage.getCompletionTokens(), usage.getTotalTokens());
+
+		// Verify both input and output tokens are captured
+		assertThat(usage.getPromptTokens()).as("Input tokens should be captured from message_start").isPositive();
+		assertThat(usage.getCompletionTokens()).as("Output tokens should be captured from message_delta").isPositive();
+		assertThat(usage.getTotalTokens()).isEqualTo(usage.getPromptTokens() + usage.getCompletionTokens());
+
+		// Also verify message metadata is captured
+		assertThat(lastResponseWithUsage.getMetadata().getId()).as("Message ID should be captured").isNotEmpty();
+		assertThat(lastResponseWithUsage.getMetadata().getModel()).as("Model should be captured").isNotEmpty();
+	}
+
+	// ==================================================================================
 	// Tests below are placeholders for features to be implemented in subsequent phases.
 	// They will be uncommented/added as each phase is completed.
 	// ==================================================================================
 
-	// Phase 2: Streaming tests
-	// - streamingWithTokenUsage
+	// Future streaming tests:
 	// - beanStreamOutputConverterRecords
 	// - validateStreamCallResponseMetadata
 

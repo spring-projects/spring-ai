@@ -19,17 +19,23 @@ package org.springframework.ai.anthropicsdk;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.TextBlock;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropicsdk.setup.AnthropicSdkSetup;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -42,6 +48,8 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
@@ -64,7 +72,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  * @since 1.0.0
  */
-public class AnthropicSdkChatModel implements ChatModel {
+public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicSdkChatModel.class);
 
@@ -213,6 +221,130 @@ public class AnthropicSdkChatModel implements ChatModel {
 		}
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		return this.internalCall(requestPrompt, null);
+	}
+
+	@Override
+	public Flux<ChatResponse> stream(Prompt prompt) {
+		Prompt requestPrompt = buildRequestPrompt(prompt);
+		return internalStream(requestPrompt, null);
+	}
+
+	/**
+	 * Internal method to handle streaming chat completion calls.
+	 * @param prompt the prompt for the chat completion
+	 * @param previousChatResponse the previous chat response for accumulating usage
+	 * @return a Flux of chat responses
+	 */
+	public Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
+
+		return Flux.deferContextual(contextView -> {
+			MessageCreateParams request = createRequest(prompt, true);
+
+			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+				.prompt(prompt)
+				.provider(AiProvider.ANTHROPIC.value())
+				.build();
+
+			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
+					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry);
+
+			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+
+			// Track streaming state for usage accumulation
+			StreamingState streamingState = new StreamingState();
+
+			Flux<ChatResponse> chatResponseFlux = Flux.create(sink -> {
+				this.anthropicClientAsync.messages().createStreaming(request).subscribe(event -> {
+					try {
+						ChatResponse chatResponse = convertStreamEventToChatResponse(event, previousChatResponse,
+								streamingState);
+						if (chatResponse != null) {
+							sink.next(chatResponse);
+						}
+					}
+					catch (Exception e) {
+						logger.error("Error processing streaming event", e);
+						sink.error(e);
+					}
+				}).onCompleteFuture().whenComplete((result, throwable) -> {
+					if (throwable != null) {
+						sink.error(throwable);
+					}
+					else {
+						sink.complete();
+					}
+				});
+			});
+
+			// @formatter:off
+			Flux<ChatResponse> flux = chatResponseFlux
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+			// @formatter:on
+
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+		});
+	}
+
+	/**
+	 * Converts a streaming event to a ChatResponse.
+	 * @param event the raw message stream event
+	 * @param previousChatResponse the previous chat response for usage accumulation
+	 * @param streamingState the state accumulated during streaming
+	 * @return the chat response, or null if the event doesn't produce a response
+	 */
+	@Nullable private ChatResponse convertStreamEventToChatResponse(RawMessageStreamEvent event,
+			@Nullable ChatResponse previousChatResponse, StreamingState streamingState) {
+
+		// Handle message start events (contains message ID, model, input tokens)
+		if (event.messageStart().isPresent()) {
+			var startEvent = event.messageStart().get();
+			var message = startEvent.message();
+			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage().inputTokens());
+			// Don't emit a ChatResponse for message_start, just capture state
+			return null;
+		}
+
+		// Handle text delta events
+		Optional<String> textDelta = event.contentBlockDelta()
+			.flatMap(delta -> delta.delta().text())
+			.map(textD -> textD.text());
+
+		if (textDelta.isPresent()) {
+			AssistantMessage assistantMessage = AssistantMessage.builder().content(textDelta.get()).build();
+			Generation generation = new Generation(assistantMessage);
+			return new ChatResponse(List.of(generation));
+		}
+
+		// Handle message delta events (contains stop reason and output token usage)
+		Optional<ChatResponse> messageDeltaResponse = event.messageDelta().map(deltaEvent -> {
+			String stopReason = deltaEvent.delta().stopReason().map(r -> r.toString()).orElse("");
+			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(stopReason).build();
+			AssistantMessage assistantMessage = AssistantMessage.builder().content("").build();
+			Generation generation = new Generation(assistantMessage, metadata);
+
+			// Combine input tokens from message_start with output tokens from
+			// message_delta
+			long inputTokens = streamingState.getInputTokens();
+			long outputTokens = deltaEvent.usage().outputTokens();
+			Usage usage = new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
+					Math.toIntExact(inputTokens + outputTokens), deltaEvent.usage());
+
+			Usage accumulatedUsage = previousChatResponse != null
+					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
+
+			ChatResponseMetadata responseMetadata = ChatResponseMetadata.builder()
+				.id(streamingState.getMessageId())
+				.model(streamingState.getModel())
+				.usage(accumulatedUsage)
+				.build();
+
+			return new ChatResponse(List.of(generation), responseMetadata);
+		});
+
+		return messageDeltaResponse.orElse(null);
 	}
 
 	/**
@@ -460,6 +592,37 @@ public class AnthropicSdkChatModel implements ChatModel {
 	public void setObservationConvention(ChatModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	/**
+	 * Holds state accumulated during streaming for building complete responses.
+	 */
+	private static class StreamingState {
+
+		private final AtomicReference<String> messageId = new AtomicReference<>();
+
+		private final AtomicReference<String> model = new AtomicReference<>();
+
+		private final AtomicReference<Long> inputTokens = new AtomicReference<>(0L);
+
+		void setMessageInfo(String id, String modelName, long tokens) {
+			this.messageId.set(id);
+			this.model.set(modelName);
+			this.inputTokens.set(tokens);
+		}
+
+		String getMessageId() {
+			return this.messageId.get();
+		}
+
+		String getModel() {
+			return this.model.get();
+		}
+
+		long getInputTokens() {
+			return this.inputTokens.get();
+		}
+
 	}
 
 }
