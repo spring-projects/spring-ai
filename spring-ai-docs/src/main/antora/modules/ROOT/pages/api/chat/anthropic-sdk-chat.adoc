@@ -1,0 +1,335 @@
+= Anthropic SDK Chat (Official)
+
+Spring AI supports Anthropic's Claude models through the official Anthropic Java SDK, providing access to Claude through Anthropic's API.
+
+NOTE: This implementation uses the official link:https://github.com/anthropics/anthropic-sdk-java[Anthropic Java SDK] from Anthropic. For the alternative Spring AI implementation, see xref:api/chat/anthropic-chat.adoc[Anthropic Chat].
+
+== Prerequisites
+
+Create an account at the https://console.anthropic.com/[Anthropic Console] and generate an API key on the https://console.anthropic.com/settings/keys[API Keys page].
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Manual Configuration
+
+NOTE: Auto-configuration support with a Spring Boot starter is planned for a future release. Currently, manual configuration is required.
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic-sdk/src/main/java/org/springframework/ai/anthropicsdk/AnthropicSdkChatModel.java[AnthropicSdkChatModel] implements the `ChatModel` interface and uses the official Anthropic Java SDK to connect to Claude.
+
+Add the `spring-ai-anthropic-sdk` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-anthropic-sdk</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-anthropic-sdk'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Authentication
+
+Configure your API key either programmatically or via environment variable:
+
+[source,java]
+----
+var chatOptions = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .maxTokens(1024)
+    .apiKey(System.getenv("ANTHROPIC_API_KEY"))
+    .build();
+
+var chatModel = new AnthropicSdkChatModel(chatOptions);
+----
+
+Or set the environment variable and let the SDK auto-detect it:
+
+[source,bash]
+----
+export ANTHROPIC_API_KEY=<your-api-key>
+----
+
+[source,java]
+----
+// API key will be detected from ANTHROPIC_API_KEY environment variable
+var chatModel = new AnthropicSdkChatModel(
+    AnthropicSdkChatOptions.builder()
+        .model("claude-sonnet-4-20250514")
+        .maxTokens(1024)
+        .build());
+----
+
+=== Basic Usage
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+
+// Or with streaming responses
+Flux<ChatResponse> stream = chatModel.stream(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+== Runtime Options [[chat-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic-sdk/src/main/java/org/springframework/ai/anthropicsdk/AnthropicSdkChatOptions.java[AnthropicSdkChatOptions.java] class provides model configurations such as the model to use, temperature, max tokens, etc.
+
+On start-up, configure default options with the `AnthropicSdkChatModel(options)` constructor.
+
+At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
+For example, to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        AnthropicSdkChatOptions.builder()
+            .model("claude-sonnet-4-20250514")
+            .temperature(0.4)
+        .build()
+    ));
+----
+
+=== Chat Options
+
+[cols="3,5,1", stripes=even]
+|====
+| Option | Description | Default
+
+| model | Name of the Claude model to use. Models include: `claude-sonnet-4-20250514`, `claude-opus-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc. See https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]. | `claude-sonnet-4-20250514`
+| maxTokens | The maximum number of tokens to generate in the response. | 4096
+| temperature | Controls randomness in the response. Higher values make output more random, lower values make it more deterministic. Range: 0.0-1.0 | 1.0
+| topP | Nucleus sampling parameter. The model considers tokens with top_p probability mass. | -
+| topK | Only sample from the top K options for each token. | -
+| stopSequences | Custom sequences that will cause the model to stop generating. | -
+| apiKey | The API key for authentication. Auto-detects from `ANTHROPIC_API_KEY` environment variable if not set. | -
+| baseUrl | The base URL for the Anthropic API. | https://api.anthropic.com
+| timeout | Request timeout duration. | 60 seconds
+| maxRetries | Maximum number of retry attempts for failed requests. | 2
+| proxy | Proxy settings for the HTTP client. | -
+| customHeaders | Custom HTTP headers to include in requests. | -
+|====
+
+=== Tool Calling Options
+
+[cols="3,5,1", stripes=even]
+|====
+| Option | Description | Default
+
+| toolChoice | Controls which tool (if any) is called by the model. Use `ToolChoiceAuto`, `ToolChoiceAny`, `ToolChoiceTool`, or `ToolChoiceNone`. | AUTO
+| toolCallbacks | List of tool callbacks to register with the model. | -
+| toolNames | Set of tool names to be resolved at runtime. | -
+| internalToolExecutionEnabled | If false, tool calls are proxied to the client for manual handling. If true, Spring AI handles tool calls internally. | true
+| disableParallelToolUse | When true, the model will use at most one tool per response. | false
+|====
+
+TIP: In addition to the model-specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic-sdk/src/main/java/org/springframework/ai/anthropicsdk/AnthropicSdkChatOptions.java[AnthropicSdkChatOptions], you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Tool Calling
+
+You can register custom Java functions or methods with the `AnthropicSdkChatModel` and have Claude intelligently choose to output a JSON object containing arguments to call one or many of the registered functions/tools.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/tools.adoc[Tool Calling].
+
+=== Basic Tool Calling
+
+[source,java]
+----
+var chatOptions = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .toolCallbacks(List.of(
+        FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
+            .description("Get the weather in location")
+            .inputType(WeatherService.Request.class)
+            .build()))
+    .build();
+
+var chatModel = new AnthropicSdkChatModel(chatOptions);
+
+ChatResponse response = chatModel.call(
+    new Prompt("What's the weather like in San Francisco?", chatOptions));
+----
+
+=== Tool Choice Options
+
+Control how Claude uses tools with the `toolChoice` option:
+
+[source,java]
+----
+import com.anthropic.models.messages.ToolChoiceAny;
+import com.anthropic.models.messages.ToolChoiceTool;
+import com.anthropic.models.messages.ToolChoiceNone;
+
+// Force Claude to use any available tool
+var options = AnthropicSdkChatOptions.builder()
+    .toolChoice(ToolChoiceAny.builder().build())
+    .toolCallbacks(...)
+    .build();
+
+// Force Claude to use a specific tool
+var options = AnthropicSdkChatOptions.builder()
+    .toolChoice(ToolChoiceTool.builder().name("getCurrentWeather").build())
+    .toolCallbacks(...)
+    .build();
+
+// Prevent tool use entirely
+var options = AnthropicSdkChatOptions.builder()
+    .toolChoice(ToolChoiceNone.builder().build())
+    .toolCallbacks(...)
+    .build();
+----
+
+=== Streaming Tool Calling
+
+The Anthropic SDK module fully supports tool calling in streaming mode. When Claude decides to call a tool during streaming:
+
+1. Tool call arguments are accumulated from partial JSON deltas
+2. Tools are executed when the content block completes
+3. Results are sent back to Claude
+4. The conversation continues recursively until Claude provides a final response
+
+[source,java]
+----
+Flux<ChatResponse> stream = chatModel.stream(
+    new Prompt("What's the weather in Paris, Tokyo, and New York?", chatOptions));
+
+String response = stream
+    .collectList()
+    .block()
+    .stream()
+    .map(r -> r.getResult().getOutput().getContent())
+    .filter(Objects::nonNull)
+    .collect(Collectors.joining());
+----
+
+== Streaming
+
+The Anthropic SDK module supports both synchronous and streaming responses. Streaming allows Claude to return responses incrementally as they're generated.
+
+[source,java]
+----
+Flux<ChatResponse> stream = chatModel.stream(new Prompt("Tell me a story"));
+
+stream.subscribe(response -> {
+    String content = response.getResult().getOutput().getContent();
+    if (content != null) {
+        System.out.print(content);
+    }
+});
+----
+
+== Sample Controller
+
+Here is an example of a simple `@RestController` class that uses the chat model for text generations:
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final AnthropicSdkChatModel chatModel;
+
+    public ChatController() {
+        var options = AnthropicSdkChatOptions.builder()
+            .model("claude-sonnet-4-20250514")
+            .maxTokens(1024)
+            .apiKey(System.getenv("ANTHROPIC_API_KEY"))
+            .build();
+        this.chatModel = new AnthropicSdkChatModel(options);
+    }
+
+    @GetMapping("/ai/generate")
+    public Map<String, String> generate(
+            @RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+    public Flux<ChatResponse> generateStream(
+            @RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        Prompt prompt = new Prompt(new UserMessage(message));
+        return chatModel.stream(prompt);
+    }
+}
+----
+
+== Key Differences from Spring AI Anthropic
+
+This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI Anthropic] implementation in several ways:
+
+[cols="2,3,3", stripes=even]
+|====
+| Aspect | Official Anthropic SDK | Existing Anthropic
+
+| **HTTP Client** | OkHttp (via official SDK) | Spring RestClient/WebClient
+| **API Updates** | Automatic via SDK updates | Manual maintenance
+| **Multi-Modal** | Not yet supported | Fully supported
+| **Extended Thinking** | Not yet supported | Fully supported
+| **Prompt Caching** | Not yet supported | Fully supported
+| **Auto-Configuration** | Not yet available | Full Spring Boot starter
+| **Dependencies** | Official Anthropic SDK | Spring WebFlux
+|====
+
+**When to use Anthropic SDK:**
+
+* You're starting a new project and want official SDK support
+* You want automatic API updates from Anthropic
+* You prefer using the official SDK directly
+
+**When to use Spring AI Anthropic:**
+
+* You need multi-modal support (images, PDFs)
+* You need extended thinking features
+* You need prompt caching
+* You want full Spring Boot auto-configuration
+* You have an existing project using it
+
+== Observability
+
+The Anthropic SDK implementation supports Spring AI's observability features through Micrometer.
+All chat model operations are instrumented for monitoring and tracing.
+
+== Logging
+
+Enable SDK logging by setting the environment variable:
+
+[source,bash]
+----
+export ANTHROPIC_LOG=debug
+----
+
+== Limitations
+
+The following features are not yet supported in the Anthropic SDK implementation:
+
+* Multi-modal inputs (images, PDFs)
+* Extended thinking (Claude's reasoning feature)
+* Prompt caching
+* Amazon Bedrock backend
+* Google Vertex AI backend
+* Spring Boot auto-configuration
+
+These features are either available in the xref:api/chat/anthropic-chat.adoc[Spring AI Anthropic] implementation or planned for future releases.
+
+== Additional Resources
+
+* link:https://github.com/anthropics/anthropic-sdk-java[Official Anthropic Java SDK]
+* link:https://docs.anthropic.com/[Anthropic API Documentation]
+* link:https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]

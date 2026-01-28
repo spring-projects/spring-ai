@@ -78,10 +78,51 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Chat Model implementation using the official Anthropic Java SDK.
+ * {@link ChatModel} and {@link StreamingChatModel} implementation for Anthropic's Claude
+ * models using the official
+ * <a href="https://github.com/anthropics/anthropic-sdk-java">Anthropic Java SDK</a>.
+ *
+ * <p>
+ * This implementation provides access to Claude's conversational AI capabilities through
+ * Anthropic's Messages API. It supports both synchronous and streaming interactions,
+ * tool/function calling, and integrates with Spring AI's observation and metrics
+ * infrastructure.
+ *
+ * <p>
+ * <b>Key Features:</b>
+ * <ul>
+ * <li>Synchronous and streaming chat completions</li>
+ * <li>Tool/function calling with automatic execution support</li>
+ * <li>Multi-turn conversations with message history</li>
+ * <li>Micrometer-based observability and tracing</li>
+ * <li>Configurable retry and timeout policies via the SDK</li>
+ * </ul>
+ *
+ * <p>
+ * <b>Usage Example:</b> <pre>{@code
+ * AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+ *     .model("claude-sonnet-4-20250514")
+ *     .maxTokens(1024)
+ *     .temperature(0.7)
+ *     .build();
+ *
+ * AnthropicSdkChatModel chatModel = new AnthropicSdkChatModel(options);
+ *
+ * // Synchronous call
+ * ChatResponse response = chatModel.call(new Prompt("Hello, Claude!"));
+ *
+ * // Streaming call
+ * Flux<ChatResponse> stream = chatModel.stream(new Prompt("Tell me a story"));
+ * }</pre>
+ *
+ * <p>
+ * The model automatically detects API credentials from the {@code ANTHROPIC_API_KEY}
+ * environment variable if not explicitly configured.
  *
  * @author Soby Chacko
- * @since 1.0.0
+ * @since 2.0.0
+ * @see AnthropicSdkChatOptions
+ * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
 public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 
@@ -241,7 +282,8 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Internal method to handle streaming chat completion calls.
+	 * Internal method to handle streaming chat completion calls with tool execution
+	 * support.
 	 * @param prompt the prompt for the chat completion
 	 * @param previousChatResponse the previous chat response for accumulating usage
 	 * @return a Flux of chat responses
@@ -262,7 +304,7 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			// Track streaming state for usage accumulation
+			// Track streaming state for usage accumulation and tool calls
 			StreamingState streamingState = new StreamingState();
 
 			Flux<ChatResponse> chatResponseFlux = Flux.create(sink -> {
@@ -295,12 +337,74 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			// Aggregate streaming responses and handle tool execution on final response
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse)
+				.flatMap(chatResponse -> handleStreamingToolExecution(prompt, chatResponse));
 		});
 	}
 
 	/**
+	 * Handles tool execution for streaming responses. If the response has tool_use finish
+	 * reason and tool execution is enabled, executes the tools and continues the
+	 * conversation.
+	 * @param prompt the original prompt
+	 * @param chatResponse the streaming response (may be intermediate or final)
+	 * @return a Flux continuing with tool execution results or the original response
+	 */
+	private Flux<ChatResponse> handleStreamingToolExecution(Prompt prompt, ChatResponse chatResponse) {
+		ChatOptions promptOptions = prompt.getOptions();
+		if (promptOptions != null
+				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, chatResponse)) {
+			// Only execute tools when we have the tool_use finish reason
+			if (chatResponse.hasFinishReasons(java.util.Set.of("tool_use"))) {
+				return Flux.deferContextual(ctx -> {
+					ToolExecutionResult toolExecutionResult;
+					try {
+						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.setContext(ctx);
+						toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
+					}
+					finally {
+						org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder.clearContext();
+					}
+					if (toolExecutionResult.returnDirect()) {
+						// Return tool execution result directly to the client
+						return Flux.just(ChatResponse.builder()
+							.from(chatResponse)
+							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+							.build());
+					}
+					else {
+						// Continue the conversation with tool results - recursive
+						// streaming call
+						return this.internalStream(
+								new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+								chatResponse);
+					}
+				}).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
+			}
+			else {
+				// Tool execution required but not at tool_use finish - skip this response
+				return Flux.empty();
+			}
+		}
+		// No tool execution needed - pass through the response
+		return Flux.just(chatResponse);
+	}
+
+	/**
 	 * Converts a streaming event to a ChatResponse.
+	 * <p>
+	 * This method handles all streaming event types from the Anthropic API:
+	 * <ul>
+	 * <li><b>message_start</b> - Captures message ID, model, and input tokens</li>
+	 * <li><b>content_block_start</b> - For tool_use blocks, starts accumulating tool call
+	 * data</li>
+	 * <li><b>content_block_delta</b> - Handles text_delta (emits response) and
+	 * input_json_delta (accumulates tool arguments)</li>
+	 * <li><b>content_block_stop</b> - Finalizes any in-progress tool call</li>
+	 * <li><b>message_delta</b> - Emits final response with usage, stop reason, and
+	 * accumulated tool calls</li>
+	 * </ul>
 	 * @param event the raw message stream event
 	 * @param previousChatResponse the previous chat response for usage accumulation
 	 * @param streamingState the state accumulated during streaming
@@ -318,23 +422,62 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 			return null;
 		}
 
-		// Handle text delta events
-		Optional<String> textDelta = event.contentBlockDelta()
-			.flatMap(delta -> delta.delta().text())
-			.map(textD -> textD.text());
+		// Handle content block start events - for tool_use blocks, start tracking
+		if (event.contentBlockStart().isPresent()) {
+			var startEvent = event.contentBlockStart().get();
+			var contentBlock = startEvent.contentBlock();
+			if (contentBlock.toolUse().isPresent()) {
+				var toolUseBlock = contentBlock.asToolUse();
+				streamingState.startToolUse(toolUseBlock.id(), toolUseBlock.name());
+			}
+			// Don't emit a ChatResponse for content_block_start
+			return null;
+		}
 
-		if (textDelta.isPresent()) {
-			AssistantMessage assistantMessage = AssistantMessage.builder().content(textDelta.get()).build();
-			Generation generation = new Generation(assistantMessage);
-			return new ChatResponse(List.of(generation));
+		// Handle content block delta events
+		if (event.contentBlockDelta().isPresent()) {
+			var deltaEvent = event.contentBlockDelta().get();
+			var delta = deltaEvent.delta();
+
+			// Handle text delta - emit as ChatResponse
+			if (delta.text().isPresent()) {
+				String text = delta.asText().text();
+				AssistantMessage assistantMessage = AssistantMessage.builder().content(text).build();
+				Generation generation = new Generation(assistantMessage);
+				return new ChatResponse(List.of(generation));
+			}
+
+			// Handle input_json_delta - accumulate partial JSON for tool calls
+			if (delta.inputJson().isPresent()) {
+				String partialJson = delta.asInputJson().partialJson();
+				streamingState.appendToolJson(partialJson);
+				// Don't emit a ChatResponse for partial tool JSON
+				return null;
+			}
+		}
+
+		// Handle content block stop events - finalize tool call if tracking one
+		if (event.contentBlockStop().isPresent()) {
+			if (streamingState.isTrackingToolUse()) {
+				streamingState.finishToolUse();
+			}
+			// Don't emit a ChatResponse for content_block_stop
+			return null;
 		}
 
 		// Handle message delta events (contains stop reason and output token usage)
 		Optional<ChatResponse> messageDeltaResponse = event.messageDelta().map(deltaEvent -> {
 			String stopReason = deltaEvent.delta().stopReason().map(r -> r.toString()).orElse("");
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(stopReason).build();
-			AssistantMessage assistantMessage = AssistantMessage.builder().content("").build();
-			Generation generation = new Generation(assistantMessage, metadata);
+
+			// Build assistant message with any accumulated tool calls
+			AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder().content("");
+			List<ToolCall> toolCalls = streamingState.getCompletedToolCalls();
+			if (!toolCalls.isEmpty()) {
+				assistantMessageBuilder.toolCalls(toolCalls);
+			}
+
+			Generation generation = new Generation(assistantMessageBuilder.build(), metadata);
 
 			// Combine input tokens from message_start with output tokens from
 			// message_delta
@@ -515,16 +658,15 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 					// the assistant's tool use requests. The Anthropic API requires the
 					// conversation to show: assistant requested tool → user provided
 					// result.
-					// Each tool call becomes a ToolUseBlockParam with the original ID and
-					// name.
-					// Note: The input is empty here because we only need to reference
-					// the tool call, not replay its arguments.
+					// Each tool call becomes a ToolUseBlockParam with the original ID,
+					// name, AND input arguments. The input MUST be included - without it,
+					// the model may generate malformed tool calls in the follow-up.
 					List<ContentBlockParam> toolUseBlocks = assistantMessage.getToolCalls()
 						.stream()
 						.map(toolCall -> ContentBlockParam.ofToolUse(ToolUseBlockParam.builder()
 							.id(toolCall.id())
 							.name(toolCall.name())
-							.input(ToolUseBlockParam.Input.builder().build())
+							.input(buildToolInput(toolCall.arguments()))
 							.build()))
 						.toList();
 					builder.addAssistantMessageOfBlockParams(toolUseBlocks);
@@ -589,8 +731,6 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
-		// Thinking config will be added in Phase 5
-
 		return builder.build();
 	}
 
@@ -638,7 +778,6 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 				String arguments = convertJsonValueToString(toolUseBlock._input());
 				toolCalls.add(new ToolCall(toolUseBlock.id(), "function", toolUseBlock.name(), arguments));
 			}
-			// TODO: Handle ThinkingBlock in Phase 5
 		}
 
 		ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
@@ -748,6 +887,11 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 			}
 
 			@Override
+			@Nullable public Object visitMissing() {
+				return null;
+			}
+
+			@Override
 			public Object visitBoolean(boolean value) {
 				return value;
 			}
@@ -776,6 +920,34 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 				return result;
 			}
 		});
+	}
+
+	/**
+	 * Builds a {@link ToolUseBlockParam.Input} from a JSON arguments string.
+	 * <p>
+	 * When rebuilding conversation history, we need to include the tool call arguments
+	 * that were originally sent by the model. This method parses the JSON arguments
+	 * string and creates the proper SDK input format.
+	 * @param argumentsJson the JSON string containing tool call arguments
+	 * @return a ToolUseBlockParam.Input with the parsed arguments
+	 */
+	private ToolUseBlockParam.Input buildToolInput(String argumentsJson) {
+		ToolUseBlockParam.Input.Builder inputBuilder = ToolUseBlockParam.Input.builder();
+		if (argumentsJson != null && !argumentsJson.isEmpty()) {
+			try {
+				var objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+				java.util.Map<String, Object> arguments = objectMapper.readValue(argumentsJson,
+						new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
+						});
+				for (java.util.Map.Entry<String, Object> entry : arguments.entrySet()) {
+					inputBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
+				}
+			}
+			catch (Exception e) {
+				logger.warn("Failed to parse tool arguments JSON: {}", argumentsJson, e);
+			}
+		}
+		return inputBuilder.build();
 	}
 
 	/**
@@ -890,7 +1062,9 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Holds state accumulated during streaming for building complete responses.
+	 * Holds state accumulated during streaming for building complete responses. This
+	 * includes message metadata (ID, model, input tokens) and tool call accumulation
+	 * state for streaming tool calling support.
 	 */
 	private static class StreamingState {
 
@@ -899,6 +1073,15 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 		private final AtomicReference<String> model = new AtomicReference<>();
 
 		private final AtomicReference<Long> inputTokens = new AtomicReference<>(0L);
+
+		// Tool calling state - tracks the current tool being streamed
+		private final AtomicReference<String> currentToolId = new AtomicReference<>("");
+
+		private final AtomicReference<String> currentToolName = new AtomicReference<>("");
+
+		private final StringBuilder currentToolJsonAccumulator = new StringBuilder();
+
+		private final List<ToolCall> completedToolCalls = new ArrayList<>();
 
 		void setMessageInfo(String id, String modelName, long tokens) {
 			this.messageId.set(id);
@@ -916,6 +1099,55 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 
 		long getInputTokens() {
 			return this.inputTokens.get();
+		}
+
+		/**
+		 * Starts tracking a new tool use block.
+		 * @param toolId the tool call ID
+		 * @param toolName the tool name
+		 */
+		void startToolUse(String toolId, String toolName) {
+			this.currentToolId.set(toolId);
+			this.currentToolName.set(toolName);
+			this.currentToolJsonAccumulator.setLength(0);
+		}
+
+		/**
+		 * Appends partial JSON to the current tool's input accumulator.
+		 * @param partialJson the partial JSON string
+		 */
+		void appendToolJson(String partialJson) {
+			this.currentToolJsonAccumulator.append(partialJson);
+		}
+
+		/**
+		 * Finalizes the current tool use block and adds it to completed tool calls.
+		 */
+		void finishToolUse() {
+			String id = this.currentToolId.get();
+			String name = this.currentToolName.get();
+			if (!id.isEmpty() && !name.isEmpty()) {
+				String arguments = this.currentToolJsonAccumulator.toString();
+				this.completedToolCalls.add(new ToolCall(id, "function", name, arguments));
+			}
+			// Reset current tool state (use empty string as "not tracking" sentinel)
+			this.currentToolId.set("");
+			this.currentToolName.set("");
+			this.currentToolJsonAccumulator.setLength(0);
+		}
+
+		/**
+		 * Returns true if currently tracking a tool use block.
+		 */
+		boolean isTrackingToolUse() {
+			return !this.currentToolId.get().isEmpty();
+		}
+
+		/**
+		 * Returns the list of completed tool calls accumulated during streaming.
+		 */
+		List<ToolCall> getCompletedToolCalls() {
+			return new ArrayList<>(this.completedToolCalls);
 		}
 
 	}

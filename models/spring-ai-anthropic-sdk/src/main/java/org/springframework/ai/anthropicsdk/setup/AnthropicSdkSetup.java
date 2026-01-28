@@ -31,10 +31,46 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Helps configure the Anthropic Java SDK client. Provides factory methods for creating
- * sync and async clients with various configuration options.
+ * Factory class for creating and configuring Anthropic SDK client instances.
+ *
+ * <p>
+ * This utility class provides static factory methods for creating both synchronous
+ * ({@link AnthropicClient}) and asynchronous ({@link AnthropicClientAsync}) clients with
+ * comprehensive configuration support. It handles API key detection from environment
+ * variables and provides sensible defaults for timeouts and retry behavior.
+ *
+ * <p>
+ * <b>Client Types:</b>
+ * <ul>
+ * <li><b>Synchronous Client:</b> Used for blocking API calls via
+ * {@link #setupSyncClient}</li>
+ * <li><b>Asynchronous Client:</b> Used for streaming responses via
+ * {@link #setupAsyncClient}</li>
+ * </ul>
+ *
+ * <p>
+ * <b>Environment Variable Support:</b>
+ * <ul>
+ * <li>{@code ANTHROPIC_API_KEY} - Primary API key for authentication</li>
+ * <li>{@code ANTHROPIC_AUTH_TOKEN} - Alternative authentication token</li>
+ * <li>{@code ANTHROPIC_BASE_URL} - Override the default API endpoint</li>
+ * </ul>
+ *
+ * <p>
+ * <b>Default Configuration:</b>
+ * <ul>
+ * <li>Timeout: 60 seconds</li>
+ * <li>Max Retries: 2</li>
+ * <li>User-Agent: {@code spring-ai-anthropic-sdk}</li>
+ * </ul>
+ *
+ * <p>
+ * This class is not intended to be instantiated directly. Use the static factory methods
+ * to create client instances.
  *
  * @author Soby Chacko
+ * @since 2.0.0
+ * @see AnthropicSdkChatModel
  */
 public final class AnthropicSdkSetup {
 

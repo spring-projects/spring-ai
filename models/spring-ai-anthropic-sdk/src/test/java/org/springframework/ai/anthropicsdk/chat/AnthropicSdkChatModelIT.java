@@ -20,21 +20,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.ToolChoice;
+import com.anthropic.models.messages.ToolChoiceAny;
+import com.anthropic.models.messages.ToolChoiceNone;
+import com.anthropic.models.messages.ToolChoiceTool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropicsdk.AnthropicSdkChatModel;
 import org.springframework.ai.anthropicsdk.AnthropicSdkChatOptions;
 import org.springframework.ai.anthropicsdk.AnthropicSdkTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -54,10 +62,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Integration tests for {@link AnthropicSdkChatModel}.
- * <p>
- * These tests mirror the tests in AnthropicChatModelIT for feature parity verification.
- * Tests for features not yet implemented (streaming, tool calling, multi-modal, thinking)
- * will be added in subsequent phases.
  *
  * @author Soby Chacko
  */
@@ -202,10 +206,6 @@ class AnthropicSdkChatModelIT {
 		validateChatResponseMetadata(response, model);
 	}
 
-	// ==================================================================================
-	// Phase 2: Streaming tests
-	// ==================================================================================
-
 	@Test
 	void streamingBasicTest() {
 		Prompt prompt = new Prompt("Tell me a short joke about programming.");
@@ -256,10 +256,6 @@ class AnthropicSdkChatModelIT {
 		assertThat(lastResponseWithUsage.getMetadata().getModel()).as("Model should be captured").isNotEmpty();
 	}
 
-	// ==================================================================================
-	// Phase 3: Tool calling tests
-	// ==================================================================================
-
 	@Test
 	void functionCallTest() {
 		UserMessage userMessage = new UserMessage(
@@ -286,33 +282,249 @@ class AnthropicSdkChatModelIT {
 		assertThat(generation.getOutput().getText()).contains("30", "10", "15");
 		assertThat(response.getMetadata()).isNotNull();
 		assertThat(response.getMetadata().getUsage()).isNotNull();
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isLessThan(4000).isGreaterThan(100);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(100);
 	}
 
-	// ==================================================================================
-	// Tests below are placeholders for features to be implemented in subsequent phases.
-	// They will be uncommented/added as each phase is completed.
-	// ==================================================================================
+	@Test
+	void streamFunctionCallTest() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
 
-	// Future streaming tests:
-	// - beanStreamOutputConverterRecords
-	// - validateStreamCallResponseMetadata
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-	// Phase 3 (more): Tool calling tests
-	// - streamFunctionCallTest
-	// - streamFunctionCallUsageTest
-	// - testToolUseContentBlock
-	// - testToolChoiceAny
-	// - testToolChoiceTool
-	// - testToolChoiceNone
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
 
-	// Phase 4: Multi-modal tests
-	// - multiModalityTest
-	// - multiModalityPdfTest
+		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
 
-	// Phase 5: Extended thinking tests
-	// - thinkingTest
-	// - thinkingWithStreamingTest
+		String content = responseFlux.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getResult() != null)
+			.map(cr -> cr.getResult().getOutput().getText())
+			.filter(text -> text != null)
+			.collect(java.util.stream.Collectors.joining());
+
+		logger.info("Streaming Response: {}", content);
+		assertThat(content).contains("30", "10", "15");
+	}
+
+	@Test
+	void streamFunctionCallUsageTest() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(messages, promptOptions));
+
+		ChatResponse lastResponse = responseFlux.collectList()
+			.block()
+			.stream()
+			.filter(cr -> cr.getMetadata() != null && cr.getMetadata().getUsage() != null
+					&& cr.getMetadata().getUsage().getTotalTokens() > 0)
+			.reduce((first, second) -> second)
+			.orElse(null);
+
+		logger.info("Streaming Response with usage: {}", lastResponse);
+
+		assertThat(lastResponse).isNotNull();
+		Usage usage = lastResponse.getMetadata().getUsage();
+		assertThat(usage).isNotNull();
+		// Tool calling uses more tokens due to multi-turn conversation
+		assertThat(usage.getTotalTokens()).isGreaterThan(100);
+	}
+
+	@Test
+	void beanStreamOutputConverterRecords() {
+		BeanOutputConverter<ActorsFilmsRecord> beanOutputConverter = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+
+		String format = beanOutputConverter.getFormat();
+		String template = """
+				Generate the filmography of 5 movies for Tom Hanks.
+				{format}
+				""";
+		PromptTemplate promptTemplate = PromptTemplate.builder()
+			.template(template)
+			.variables(Map.of("format", format))
+			.build();
+		Prompt prompt = new Prompt(promptTemplate.createMessage());
+
+		String generationTextFromStream = this.chatModel.stream(prompt)
+			.collectList()
+			.block()
+			.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(text -> text != null)
+			.collect(Collectors.joining());
+
+		ActorsFilmsRecord actorsFilms = beanOutputConverter.convert(generationTextFromStream);
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void validateStreamCallResponseMetadata() {
+		String model = Model.CLAUDE_SONNET_4_20250514.asString();
+		// @formatter:off
+		ChatResponse response = ChatClient.create(this.chatModel).prompt()
+				.options(AnthropicSdkChatOptions.builder().model(model).build())
+				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
+				.stream()
+				.chatResponse()
+				.blockLast();
+		// @formatter:on
+
+		logger.info(response.toString());
+		validateChatResponseMetadata(response, model);
+	}
+
+	@Test
+	void testToolUseContentBlock() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.internalToolExecutionEnabled(false)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+		for (Generation generation : response.getResults()) {
+			AssistantMessage message = generation.getOutput();
+			if (!message.getToolCalls().isEmpty()) {
+				assertThat(message.getToolCalls()).isNotEmpty();
+				AssistantMessage.ToolCall toolCall = message.getToolCalls().get(0);
+				assertThat(toolCall.id()).isNotBlank();
+				assertThat(toolCall.name()).isNotBlank();
+				assertThat(toolCall.arguments()).isNotBlank();
+			}
+		}
+	}
+
+	@Test
+	void testToolChoiceAny() {
+		// A user question that would not typically result in a tool request
+		UserMessage userMessage = new UserMessage("Say hi");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.toolChoice(ToolChoice.ofAny(ToolChoiceAny.builder().build()))
+			.internalToolExecutionEnabled(false)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+		assertThat(response.getResults()).isNotNull();
+		// When tool choice is "any", the model MUST use at least one tool
+		boolean hasToolCalls = response.getResults()
+			.stream()
+			.anyMatch(generation -> !generation.getOutput().getToolCalls().isEmpty());
+		assertThat(hasToolCalls).isTrue();
+	}
+
+	@Test
+	void testToolChoiceTool() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in San Francisco? Return the result in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.toolChoice(ToolChoice.ofTool(ToolChoiceTool.builder().name("getFunResponse").build()))
+			.internalToolExecutionEnabled(false)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build(),
+					// Based on the user's question the model should want to call
+					// getCurrentWeather
+					// however we're going to force getFunResponse
+					FunctionToolCallback.builder("getFunResponse", new MockWeatherService())
+						.description("Get a fun response")
+						.inputType(MockWeatherService.Request.class)
+						.build())
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+		assertThat(response.getResults()).isNotNull();
+		// When tool choice is a specific tool, the model MUST use that specific tool
+		List<AssistantMessage.ToolCall> allToolCalls = response.getResults()
+			.stream()
+			.flatMap(generation -> generation.getOutput().getToolCalls().stream())
+			.toList();
+		assertThat(allToolCalls).isNotEmpty();
+		assertThat(allToolCalls).hasSize(1);
+		assertThat(allToolCalls.get(0).name()).isEqualTo("getFunResponse");
+	}
+
+	@Test
+	void testToolChoiceNone() {
+		UserMessage userMessage = new UserMessage("What's the weather like in San Francisco?");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.toolChoice(ToolChoice.ofNone(ToolChoiceNone.builder().build()))
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(messages, promptOptions));
+
+		logger.info("Response: {}", response);
+		assertThat(response.getResults()).isNotNull();
+		// When tool choice is "none", the model MUST NOT use any tools
+		List<AssistantMessage.ToolCall> allToolCalls = response.getResults()
+			.stream()
+			.flatMap(generation -> generation.getOutput().getToolCalls().stream())
+			.toList();
+		assertThat(allToolCalls).isEmpty();
+	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 

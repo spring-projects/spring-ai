@@ -15,7 +15,23 @@
  */
 
 /**
- * Setup and configuration utilities for the Anthropic SDK client.
+ * Setup and configuration utilities for creating Anthropic SDK client instances.
+ *
+ * <p>
+ * This package contains factory classes for configuring and instantiating the Anthropic
+ * Java SDK clients used by Spring AI's Anthropic integration. It handles
+ * environment-based configuration, credential detection, and provides sensible defaults
+ * for connection settings.
+ *
+ * <p>
+ * <b>Key Class:</b>
+ * <ul>
+ * <li>{@link org.springframework.ai.anthropicsdk.setup.AnthropicSdkSetup} - Factory for
+ * creating SDK clients</li>
+ * </ul>
+ *
+ * @since 2.0.0
+ * @see org.springframework.ai.anthropicsdk.setup.AnthropicSdkSetup
  */
 @NullMarked
 package org.springframework.ai.anthropicsdk.setup;
