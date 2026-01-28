@@ -63,7 +63,7 @@ public final class OllamaApiHelper {
 
 	public static ChatResponse merge(ChatResponse previous, ChatResponse current) {
 
-		String model = merge(previous.model(), current.model());
+		String model = (current.model() != null ? current.model() : previous.model());
 		Instant createdAt = merge(previous.createdAt(), current.createdAt());
 		OllamaApi.Message message = merge(previous.message(), current.message());
 		String doneReason = (current.doneReason() != null ? current.doneReason() : previous.doneReason());
@@ -113,16 +113,6 @@ public final class OllamaApiHelper {
 	}
 
 	private static Long merge(Long previous, Long current) {
-		if (previous == null) {
-			return current;
-		}
-		if (current == null) {
-			return previous;
-		}
-		return previous + current;
-	}
-
-	private static String merge(String previous, String current) {
 		if (previous == null) {
 			return current;
 		}
