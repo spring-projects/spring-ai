@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.huggingface;
 
+import org.springframework.ai.huggingface.api.HuggingfaceApi;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -24,16 +25,32 @@ import org.springframework.util.StringUtils;
 public class HuggingfaceTestConfiguration {
 
 	@Bean
-	public HuggingfaceChatModel huggingfaceChatModel() {
+	public HuggingfaceApi huggingfaceApi() {
 		String apiKey = System.getenv("HUGGINGFACE_API_KEY");
 		if (!StringUtils.hasText(apiKey)) {
 			throw new IllegalArgumentException(
 					"You must provide an API key.  Put it in an environment variable under the name HUGGINGFACE_API_KEY");
 		}
+
+		// Create builder with API key
+		HuggingfaceApi.Builder builder = HuggingfaceApi.builder().apiKey(apiKey);
+
+		// Optional: use custom base URL if provided
 		// Created aws-mistral-7b-instruct and update the HUGGINGFACE_CHAT_URL
-		HuggingfaceChatModel huggingfaceChatModel = new HuggingfaceChatModel(apiKey,
-				System.getenv("HUGGINGFACE_CHAT_URL"));
-		return huggingfaceChatModel;
+		String chatUrl = System.getenv("HUGGINGFACE_CHAT_URL");
+		if (StringUtils.hasText(chatUrl)) {
+			builder.baseUrl(chatUrl);
+		}
+
+		return builder.build();
+	}
+
+	@Bean
+	public HuggingfaceChatModel huggingfaceChatModel(HuggingfaceApi huggingfaceApi) {
+		return HuggingfaceChatModel.builder()
+			.huggingfaceApi(huggingfaceApi)
+			.defaultOptions(HuggingfaceChatOptions.builder().model(HuggingfaceApi.DEFAULT_CHAT_MODEL).build())
+			.build();
 	}
 
 }

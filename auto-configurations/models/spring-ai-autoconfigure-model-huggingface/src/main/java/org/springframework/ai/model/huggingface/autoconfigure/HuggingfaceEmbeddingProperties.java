@@ -16,44 +16,40 @@
 
 package org.springframework.ai.model.huggingface.autoconfigure;
 
-import org.springframework.ai.huggingface.HuggingfaceChatOptions;
+import org.springframework.ai.huggingface.HuggingfaceEmbeddingOptions;
 import org.springframework.ai.huggingface.api.HuggingfaceApi;
 import org.springframework.ai.huggingface.api.common.HuggingfaceApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
- * Configuration properties for Hugging Face chat model.
+ * HuggingFace Embedding autoconfiguration properties.
  *
- * @author Christian Tzolov
- * @author Josh Long
- * @author Mark Pollack
- * @author Thomas Vitale
  * @author Myeongdeok Kang
  */
-@ConfigurationProperties(HuggingfaceChatProperties.CONFIG_PREFIX)
-public class HuggingfaceChatProperties {
+@ConfigurationProperties(HuggingfaceEmbeddingProperties.CONFIG_PREFIX)
+public class HuggingfaceEmbeddingProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.huggingface.chat";
+	public static final String CONFIG_PREFIX = "spring.ai.huggingface.embedding";
 
 	/**
-	 * Enable HuggingFace chat model autoconfiguration.
+	 * Enable HuggingFace embedding model autoconfiguration.
 	 */
 	private boolean enabled = true;
 
 	/**
-	 * Base URL for the HuggingFace Chat API (OpenAI-compatible endpoint).
+	 * Base URL for the HuggingFace Embedding API (Feature Extraction endpoint).
 	 */
-	private String url = HuggingfaceApiConstants.DEFAULT_CHAT_BASE_URL;
+	private String url = HuggingfaceApiConstants.DEFAULT_EMBEDDING_BASE_URL;
 
 	/**
-	 * Client-level HuggingFace chat options. Use this property to configure the model,
-	 * temperature, max_tokens, and other parameters. Null values are ignored, defaulting
-	 * to the API defaults.
+	 * Client-level HuggingFace embedding options. Use this property to configure the
+	 * model, dimensions, and other parameters. Null values are ignored, defaulting to the
+	 * API defaults.
 	 */
 	@NestedConfigurationProperty
-	private final HuggingfaceChatOptions options = HuggingfaceChatOptions.builder()
-		.model(HuggingfaceApi.DEFAULT_CHAT_MODEL)
+	private final HuggingfaceEmbeddingOptions options = HuggingfaceEmbeddingOptions.builder()
+		.model(HuggingfaceApi.DEFAULT_EMBEDDING_MODEL)
 		.build();
 
 	public boolean isEnabled() {
@@ -80,7 +76,7 @@ public class HuggingfaceChatProperties {
 		this.options.setModel(model);
 	}
 
-	public HuggingfaceChatOptions getOptions() {
+	public HuggingfaceEmbeddingOptions getOptions() {
 		return this.options;
 	}
 

@@ -19,7 +19,9 @@ package org.springframework.ai.model.huggingface.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.huggingface.HuggingfaceChatModel;
+import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HuggingfaceModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(HuggingfaceChatAutoConfiguration.class));
+		.withPropertyValues("spring.ai.huggingface.api-key=TEST_API_KEY")
+		.withConfiguration(AutoConfigurations.of(RestClientAutoConfiguration.class))
+		.withConfiguration(SpringAiTestAutoConfigurations.of(HuggingfaceApiAutoConfiguration.class,
+				HuggingfaceChatAutoConfiguration.class));
 
 	@Test
 	void chatModelActivation() {

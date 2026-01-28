@@ -1,0 +1,293 @@
+= HuggingFace Embeddings
+
+Spring AI supports HuggingFace's text embedding models through the HuggingFace Inference API.
+HuggingFace's text embeddings measure the relatedness of text strings using various transformer-based models.
+An embedding is a vector (list) of floating point numbers. The distance between two vectors measures their relatedness. Small distances suggest high relatedness and large distances suggest low relatedness.
+
+IMPORTANT: The HuggingFace Embedding implementation uses the Feature Extraction pipeline endpoint. Make sure the model you select supports feature extraction for text embeddings.
+
+== Prerequisites
+
+You will need to create an API token with HuggingFace to access HuggingFace Inference API embedding models.
+
+Create an account at https://huggingface.co/join[HuggingFace signup page] and generate a token on the https://huggingface.co/settings/tokens[Access Tokens page].
+
+The Spring AI project defines a configuration property named `spring.ai.huggingface.api-key` that you should set to the value of the API token obtained from huggingface.co.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
+----
+spring.ai.huggingface.api-key=<your-huggingface-api-token>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference an environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    huggingface:
+      api-key: ${HUGGINGFACE_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export HUGGINGFACE_API_KEY=<your-huggingface-api-token>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("HUGGINGFACE_API_KEY");
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the HuggingFace Embedding Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-huggingface</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-huggingface'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Embedding Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the HuggingFace Embedding model.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.huggingface` is used as the property prefix that lets you connect to HuggingFace Inference API.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.huggingface.api-key    | The API Key (token)           |  -
+|====
+
+NOTE: The API key is shared between the Chat and Embedding models. You only need to configure it once.
+
+==== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=huggingface (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match huggingface)
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.huggingface.embedding` is property prefix that configures the `EmbeddingModel` implementation for HuggingFace.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.model.embedding | Enable HuggingFace embedding model.  | huggingface
+| spring.ai.huggingface.embedding.enabled | Enable HuggingFace embedding model (deprecated, use spring.ai.model.embedding instead) | true
+| spring.ai.huggingface.embedding.url   | Base URL for the HuggingFace Inference API Feature Extraction endpoint | +https://router.huggingface.co/hf-inference/models+
+| spring.ai.huggingface.embedding.options.model      | The model to use for embeddings      | sentence-transformers/all-MiniLM-L6-v2
+| spring.ai.huggingface.embedding.options.normalize   | Whether to normalize embeddings to unit length  | -
+| spring.ai.huggingface.embedding.options.prompt-name   | Name of a predefined prompt from model config to apply  | -
+| spring.ai.huggingface.embedding.options.truncate   | Whether to truncate text exceeding model's max length  | -
+| spring.ai.huggingface.embedding.options.truncation-direction   | Which side to truncate: "left" or "right"  | -
+|====
+
+NOTE: HuggingFace Embedding uses the Feature Extraction API. The options `normalize`, `prompt_name`, `truncate`, and `truncation_direction` are part of the standard Feature Extraction API specification.
+
+TIP: All properties prefixed with `spring.ai.huggingface.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+
+== Runtime Options [[embedding-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-huggingface/src/main/java/org/springframework/ai/huggingface/HuggingfaceEmbeddingOptions.java[HuggingfaceEmbeddingOptions.java] provides the HuggingFace configurations, such as the model to use and etc.
+
+The default options can be configured using the `spring.ai.huggingface.embedding.options` properties as well.
+
+At start-time use the `HuggingfaceEmbeddingModel` constructor to set the  default options used for all embedding requests.
+At run-time you can override the default options, using a `HuggingfaceEmbeddingOptions` instance as part of your `EmbeddingRequest`.
+
+For example to override the default model name for a specific request:
+
+[source,java]
+----
+EmbeddingResponse embeddingResponse = embeddingModel.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        HuggingfaceEmbeddingOptions.builder()
+            .model("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+        .build()));
+----
+
+=== Using Advanced Options
+
+You can use advanced options to customize the embedding behavior:
+
+[source,java]
+----
+EmbeddingResponse queryEmbedding = embeddingModel.call(
+    new EmbeddingRequest(List.of("What is machine learning?"),
+        HuggingfaceEmbeddingOptions.builder()
+            .promptName("query")  // Apply "query" prompt from model config
+            .truncate(true)       // Truncate long text
+            .truncationDirection("right")  // Truncate from the right
+            .normalize(true)      // Normalize embeddings to unit length
+        .build()));
+
+EmbeddingResponse documentEmbedding = embeddingModel.call(
+    new EmbeddingRequest(List.of("Machine learning is a subset of AI..."),
+        HuggingfaceEmbeddingOptions.builder()
+            .promptName("passage")  // Apply "passage" prompt for documents
+            .normalize(true)
+        .build()));
+----
+
+TIP: You can use portable `EmbeddingOptions` implementation for runtime configuration, enabling you to switch between different embedding model providers with minimal code changes.
+
+== Sample Controller
+
+This will create a `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingModel` implementation.
+
+[source,application.properties]
+----
+spring.ai.huggingface.api-key=YOUR_API_KEY
+spring.ai.huggingface.embedding.options.model=sentence-transformers/all-MiniLM-L6-v2
+----
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingModel embeddingModel;
+
+    @Autowired
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+== Manual Configuration
+
+If you are not using Spring Boot, you can manually configure the HuggingFace Embedding Model.
+For this add the `spring-ai-huggingface` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-huggingface</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-huggingface'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+NOTE: The `spring-ai-huggingface` dependency provides access also to the `HuggingfaceChatModel`.
+For more information about the `HuggingfaceChatModel` refer to the link:../chat/huggingface-chat.html[HuggingFace Chat Client] section.
+
+Next, create a `HuggingfaceEmbeddingModel` instance and use it to compute the similarity between two input texts:
+
+[source,java]
+----
+var huggingfaceApi = HuggingfaceApi.builder()
+    .baseUrl("https://router.huggingface.co/hf-inference/models")
+    .apiKey(System.getenv("HUGGINGFACE_API_KEY"))
+    .build();
+
+var embeddingModel = HuggingfaceEmbeddingModel.builder()
+    .huggingfaceApi(huggingfaceApi)
+    .defaultOptions(HuggingfaceEmbeddingOptions.builder()
+        .model("sentence-transformers/all-MiniLM-L6-v2")
+        .build())
+    .build();
+
+EmbeddingResponse embeddingResponse = embeddingModel
+    .embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+
+The `HuggingfaceEmbeddingOptions` provides the configuration information for the embedding requests.
+Both the API and options classes offer a `builder()` for easy instance creation.
+
+NOTE: The HuggingFace Embedding implementation returns `EmptyUsage` for usage metadata since the HuggingFace Inference API does not provide token usage information for embedding requests.
+
+== Supported Models
+
+HuggingFace Inference API supports a wide range of embedding models through the Feature Extraction pipeline.
+Popular choices include:
+
+- `sentence-transformers/all-MiniLM-L6-v2` - Fast, efficient, general-purpose embeddings (default)
+- `sentence-transformers/all-mpnet-base-v2` - High-quality general-purpose embeddings
+- `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` - Multilingual support (50+ languages)
+- `BAAI/bge-small-en-v1.5` - High-quality English embeddings
+- `intfloat/e5-large-v2` - State-of-the-art embeddings for various tasks
+
+You can find more embedding models on the https://huggingface.co/models?pipeline_tag=feature-extraction&sort=trending[HuggingFace Model Hub].
+
+IMPORTANT: Ensure the model you choose supports the Feature Extraction pipeline and is compatible with the HuggingFace Inference API.
