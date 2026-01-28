@@ -29,6 +29,21 @@ Refer to https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.ht
 
 * Enable the Models to use: Go to link:https://us-east-1.console.aws.amazon.com/bedrock/home[Amazon Bedrock] and from the link:https://us-east-1.console.aws.amazon.com/bedrock/home?region=us-east-1#/modelaccess[Model Access] menu on the left, configure access to the models you are going to use.
 
+=== AWS SDK Version Requirements
+
+[IMPORTANT]
+====
+If your project manages its own AWS SDK dependencies (e.g., via AWS BOM or explicit version overrides), ensure you are using **AWS SDK for Java version 2.32.x or later** for full feature support.
+
+Some features like `requestMetadata` (used for filtering invocation logs) require AWS SDK 2.32.x+.
+If you are using an older SDK version, these features will be gracefully disabled with a debug log message, but your application will continue to work.
+
+If you encounter a `NoSuchMethodError` related to `requestMetadata`, check your dependency tree for conflicting AWS SDK versions:
+[source,bash]
+----
+mvn dependency:tree -Dincludes=software.amazon.awssdk
+----
+====
 
 == Auto-configuration
 

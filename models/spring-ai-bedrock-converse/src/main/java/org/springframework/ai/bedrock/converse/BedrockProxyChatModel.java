@@ -321,6 +321,8 @@ public class BedrockProxyChatModel implements ChatModel {
 						: this.defaultOptions.getInternalToolExecutionEnabled())
 				.cacheOptions(runtimeOptions.getCacheOptions() != null ? runtimeOptions.getCacheOptions()
 						: this.defaultOptions.getCacheOptions())
+				.toolChoice(runtimeOptions.getToolChoice() != null ? runtimeOptions.getToolChoice()
+						: this.defaultOptions.getToolChoice())
 				.build();
 		}
 
@@ -509,7 +511,14 @@ public class BedrockProxyChatModel implements ChatModel {
 				}
 			}
 
-			toolConfiguration = ToolConfiguration.builder().tools(bedrockTools).build();
+			ToolConfiguration.Builder toolConfigBuilder = ToolConfiguration.builder().tools(bedrockTools);
+
+			// Add toolChoice if specified in options
+			if (updatedRuntimeOptions.getToolChoice() != null) {
+				toolConfigBuilder.toolChoice(updatedRuntimeOptions.getToolChoice());
+			}
+
+			toolConfiguration = toolConfigBuilder.build();
 		}
 
 		InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder()
@@ -526,15 +535,59 @@ public class BedrockProxyChatModel implements ChatModel {
 		Map<String, String> requestMetadata = ConverseApiUtils
 			.getRequestMetadata(prompt.getUserMessage().getMetadata());
 
-		return ConverseRequest.builder()
+		ConverseRequest.Builder requestBuilder = ConverseRequest.builder()
 			.modelId(updatedRuntimeOptions.getModel())
 			.inferenceConfig(inferenceConfiguration)
 			.messages(instructionMessages)
 			.system(systemMessages)
 			.additionalModelRequestFields(additionalModelRequestFields)
-			.toolConfig(toolConfiguration)
-			.requestMetadata(requestMetadata)
-			.build();
+			.toolConfig(toolConfiguration);
+
+		// Apply requestMetadata if the SDK supports it (AWS SDK >= 2.32.x)
+		applyRequestMetadataIfSupported(requestBuilder, requestMetadata);
+
+		return requestBuilder.build();
+	}
+
+	/**
+	 * Applies requestMetadata to the ConverseRequest.Builder if the AWS SDK version
+	 * supports it. The requestMetadata method was added in AWS SDK 2.32.x. For older SDK
+	 * versions, this method will log a debug message and skip setting the metadata.
+	 * @param builder the ConverseRequest.Builder to apply metadata to
+	 * @param requestMetadata the metadata map to apply
+	 */
+	private void applyRequestMetadataIfSupported(ConverseRequest.Builder builder, Map<String, String> requestMetadata) {
+		if (requestMetadata == null || requestMetadata.isEmpty()) {
+			return;
+		}
+		try {
+			builder.requestMetadata(requestMetadata);
+		}
+		catch (NoSuchMethodError e) {
+			logger.debug("requestMetadata is not supported by the current AWS SDK version. "
+					+ "Upgrade to AWS SDK 2.32.x or later to use this feature. Metadata will be ignored.");
+		}
+	}
+
+	/**
+	 * Applies requestMetadata to the ConverseStreamRequest.Builder if the AWS SDK version
+	 * supports it. The requestMetadata method was added in AWS SDK 2.32.x. For older SDK
+	 * versions, this method will log a debug message and skip setting the metadata.
+	 * @param builder the ConverseStreamRequest.Builder to apply metadata to
+	 * @param requestMetadata the metadata map to apply
+	 */
+	private void applyRequestMetadataIfSupported(ConverseStreamRequest.Builder builder,
+			Map<String, String> requestMetadata) {
+		if (requestMetadata == null || requestMetadata.isEmpty()) {
+			return;
+		}
+		try {
+			builder.requestMetadata(requestMetadata);
+		}
+		catch (NoSuchMethodError e) {
+			logger.debug("requestMetadata is not supported by the current AWS SDK version. "
+					+ "Upgrade to AWS SDK 2.32.x or later to use this feature. Metadata will be ignored.");
+		}
 	}
 
 	private ContentBlock mapMediaToContentBlock(Media media) {
@@ -782,15 +835,18 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
 
-			ConverseStreamRequest converseStreamRequest = ConverseStreamRequest.builder()
+			ConverseStreamRequest.Builder streamRequestBuilder = ConverseStreamRequest.builder()
 				.modelId(converseRequest.modelId())
 				.inferenceConfig(converseRequest.inferenceConfig())
 				.messages(converseRequest.messages())
 				.system(converseRequest.system())
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
-				.toolConfig(converseRequest.toolConfig())
-				.requestMetadata(converseRequest.requestMetadata())
-				.build();
+				.toolConfig(converseRequest.toolConfig());
+
+			// Apply requestMetadata if the SDK supports it (AWS SDK >= 2.32.x)
+			applyRequestMetadataIfSupported(streamRequestBuilder, converseRequest.requestMetadata());
+
+			ConverseStreamRequest converseStreamRequest = streamRequestBuilder.build();
 
 			Usage accumulatedUsage = null;
 			if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null) {
