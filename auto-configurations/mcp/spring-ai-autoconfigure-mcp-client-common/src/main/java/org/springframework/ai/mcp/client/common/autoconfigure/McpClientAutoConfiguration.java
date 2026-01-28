@@ -258,7 +258,7 @@ public class McpClientAutoConfiguration {
 
 				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
 						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
+						namedTransport.name(), commonProperties.getVersion());
 				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());
