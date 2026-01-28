@@ -121,9 +121,9 @@ class MistralAiChatOptionsTests {
 		MistralAiChatOptions options = new MistralAiChatOptions();
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getTemperature()).isNull();
-		assertThat(options.getTopP()).isNull();
+		assertThat(options.getTopP()).isEqualTo(1.0);
 		assertThat(options.getMaxTokens()).isNull();
-		assertThat(options.getSafePrompt()).isNull();
+		assertThat(options.getSafePrompt()).isFalse();
 		assertThat(options.getRandomSeed()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getResponseFormat()).isNull();

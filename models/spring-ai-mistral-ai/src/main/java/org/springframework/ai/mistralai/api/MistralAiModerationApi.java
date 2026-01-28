@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -76,7 +77,7 @@ public class MistralAiModerationApi {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
-		private String apiKey;
+		private @Nullable String apiKey;
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -107,6 +108,7 @@ public class MistralAiModerationApi {
 		}
 
 		public MistralAiModerationApi build() {
+			Assert.state(this.apiKey != null, "The API key must not be null");
 			return new MistralAiModerationApi(this.baseUrl, this.apiKey, this.restClientBuilder,
 					this.responseErrorHandler);
 		}
@@ -145,6 +147,7 @@ public class MistralAiModerationApi {
 		@JsonProperty("model") String model
 	) {
 
+		@SuppressWarnings("NullAway") // Not null per API documentation, likely a merge related issue
 		public MistralAiModerationRequest(String prompt) {
 			this(prompt, null);
 		}

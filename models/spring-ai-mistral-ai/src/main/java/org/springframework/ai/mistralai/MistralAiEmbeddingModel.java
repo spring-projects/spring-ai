@@ -18,8 +18,10 @@ package org.springframework.ai.mistralai;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,7 +163,8 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private MistralAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request) {
-		MistralAiEmbeddingOptions requestOptions = (MistralAiEmbeddingOptions) request.getOptions();
+		MistralAiEmbeddingOptions requestOptions = (MistralAiEmbeddingOptions) Objects
+			.requireNonNull(request.getOptions());
 		return new MistralAiApi.EmbeddingRequest<>(request.getInstructions(), requestOptions.getModel(),
 				requestOptions.getEncodingFormat());
 	}
@@ -192,7 +195,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	public static final class Builder {
 
-		private MistralAiApi mistralAiApi;
+		private @Nullable MistralAiApi mistralAiApi;
 
 		private MetadataMode metadataMode = MetadataMode.EMBED;
 
@@ -230,6 +233,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		public MistralAiEmbeddingModel build() {
+			Assert.state(this.mistralAiApi != null, "MistralAiApi must not be null");
 			return new MistralAiEmbeddingModel(this.mistralAiApi, this.metadataMode, this.options, this.retryTemplate,
 					this.observationRegistry);
 		}

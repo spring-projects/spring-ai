@@ -18,7 +18,9 @@ package org.springframework.ai.mistralai.moderation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,8 +135,8 @@ public class MistralAiModerationModel implements ModerationModel {
 						.build();
 				}
 				var moderationResult = ModerationResult.builder()
-					.categories(categories)
-					.categoryScores(categoryScores)
+					.categories(Objects.requireNonNull(categories))
+					.categoryScores(Objects.requireNonNull(categoryScores))
 					.flagged(result.flagged())
 					.build();
 				moderationResults.add(moderationResult);
@@ -165,7 +167,7 @@ public class MistralAiModerationModel implements ModerationModel {
 
 	public static final class Builder {
 
-		private MistralAiModerationApi mistralAiModerationApi;
+		private @Nullable MistralAiModerationApi mistralAiModerationApi;
 
 		private RetryTemplate retryTemplate = RetryUtils.DEFAULT_RETRY_TEMPLATE;
 
@@ -189,6 +191,7 @@ public class MistralAiModerationModel implements ModerationModel {
 		}
 
 		public MistralAiModerationModel build() {
+			Assert.state(this.mistralAiModerationApi != null, "MistralAiModerationApi must not be null");
 			return new MistralAiModerationModel(this.mistralAiModerationApi, this.retryTemplate, this.options);
 		}
 
