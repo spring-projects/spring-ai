@@ -24,7 +24,6 @@ import java.net.URLConnection;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,6 +61,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolInputSchema;
@@ -714,6 +714,8 @@ public class BedrockProxyChatModel implements ChatModel {
 		Integer promptTokens = response.usage().inputTokens();
 		Integer generationTokens = response.usage().outputTokens();
 		int totalTokens = response.usage().totalTokens();
+		Integer cacheReadInputTokens = response.usage().cacheReadInputTokens();
+		Integer cacheWriteInputTokens = response.usage().cacheWriteInputTokens();
 
 		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
 				&& perviousChatResponse.getMetadata().getUsage() != null) {
@@ -721,9 +723,37 @@ public class BedrockProxyChatModel implements ChatModel {
 			promptTokens += perviousChatResponse.getMetadata().getUsage().getPromptTokens();
 			generationTokens += perviousChatResponse.getMetadata().getUsage().getCompletionTokens();
 			totalTokens += perviousChatResponse.getMetadata().getUsage().getTotalTokens();
+
+			// Merge cache metrics from previous response if available
+			if (perviousChatResponse.getMetadata().getUsage().getNativeUsage() instanceof TokenUsage) {
+				TokenUsage previousTokenUsage = (TokenUsage) perviousChatResponse.getMetadata()
+					.getUsage()
+					.getNativeUsage();
+				if (cacheReadInputTokens == null) {
+					cacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
+				}
+				else if (previousTokenUsage.cacheReadInputTokens() != null) {
+					cacheReadInputTokens += previousTokenUsage.cacheReadInputTokens();
+				}
+				if (cacheWriteInputTokens == null) {
+					cacheWriteInputTokens = previousTokenUsage.cacheWriteInputTokens();
+				}
+				else if (previousTokenUsage.cacheWriteInputTokens() != null) {
+					cacheWriteInputTokens += previousTokenUsage.cacheWriteInputTokens();
+				}
+			}
 		}
 
-		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens);
+		// Create native TokenUsage with cache metrics
+		TokenUsage nativeTokenUsage = TokenUsage.builder()
+			.inputTokens(promptTokens)
+			.outputTokens(generationTokens)
+			.totalTokens(totalTokens)
+			.cacheReadInputTokens(cacheReadInputTokens)
+			.cacheWriteInputTokens(cacheWriteInputTokens)
+			.build();
+
+		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage);
 
 		Document modelResponseFields = response.additionalModelResponseFields();
 
@@ -732,18 +762,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		var metadataBuilder = ChatResponseMetadata.builder()
 			.id(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
 			.usage(usage);
-
-		// Add cache metrics if available
-		Map<String, Object> additionalMetadata = new HashMap<>();
-		if (response.usage().cacheReadInputTokens() != null) {
-			additionalMetadata.put("cacheReadInputTokens", response.usage().cacheReadInputTokens());
-		}
-		if (response.usage().cacheWriteInputTokens() != null) {
-			additionalMetadata.put("cacheWriteInputTokens", response.usage().cacheWriteInputTokens());
-		}
-		if (!additionalMetadata.isEmpty()) {
-			metadataBuilder.metadata(additionalMetadata);
-		}
 
 		return new ChatResponse(allGenerations, metadataBuilder.build());
 	}
