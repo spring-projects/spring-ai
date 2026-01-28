@@ -15,7 +15,13 @@
  */
 
 /**
- * Metadata classes for Anthropic SDK chat responses.
+ * Metadata classes for Anthropic SDK chat responses and model information.
+ *
+ * <p>
+ * This package contains classes that represent metadata extracted from Anthropic API
+ * responses, including usage statistics, model information, and response attributes.
+ *
+ * @since 2.0.0
  */
 @NullMarked
 package org.springframework.ai.anthropicsdk.metadata;

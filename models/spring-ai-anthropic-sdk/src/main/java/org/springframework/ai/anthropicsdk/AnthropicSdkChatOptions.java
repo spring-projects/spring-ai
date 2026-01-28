@@ -39,11 +39,55 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
 
 /**
- * Chat options for the Anthropic SDK-based chat model. This class provides configuration
- * options for chat completion requests using the official Anthropic Java SDK.
+ * Configuration options for the {@link AnthropicSdkChatModel} that control chat
+ * completion behavior when using the official Anthropic Java SDK.
+ *
+ * <p>
+ * This class provides a comprehensive set of options for customizing Claude model
+ * interactions, including model selection, sampling parameters, tool calling
+ * configuration, and request-level settings. Options can be set at model construction
+ * time as defaults, or overridden per-request via the
+ * {@link org.springframework.ai.chat.prompt.Prompt}.
+ *
+ * <p>
+ * <b>Configuration Hierarchy:</b>
+ * <ol>
+ * <li>Default options set during {@link AnthropicSdkChatModel} construction</li>
+ * <li>Per-request options passed with the
+ * {@link org.springframework.ai.chat.prompt.Prompt}</li>
+ * </ol>
+ * Per-request options take precedence over defaults when both are specified.
+ *
+ * <p>
+ * <b>Key Configuration Categories:</b>
+ * <ul>
+ * <li><b>Model Selection:</b> {@code model} - Choose from Claude model variants</li>
+ * <li><b>Output Control:</b> {@code maxTokens}, {@code stopSequences} - Control response
+ * length and termination</li>
+ * <li><b>Sampling:</b> {@code temperature}, {@code topP}, {@code topK} - Adjust response
+ * randomness and creativity</li>
+ * <li><b>Tool Calling:</b> {@code toolCallbacks}, {@code toolChoice} - Configure
+ * function/tool execution</li>
+ * <li><b>Connection:</b> {@code apiKey}, {@code baseUrl}, {@code timeout} - API
+ * connectivity settings</li>
+ * </ul>
+ *
+ * <p>
+ * <b>Usage Example:</b> <pre>{@code
+ * AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+ *     .model("claude-sonnet-4-20250514")
+ *     .maxTokens(2048)
+ *     .temperature(0.7)
+ *     .topP(0.9)
+ *     .toolCallbacks(List.of(myToolCallback))
+ *     .build();
+ * }</pre>
  *
  * @author Soby Chacko
- * @since 1.0.0
+ * @since 2.0.0
+ * @see AnthropicSdkChatModel
+ * @see org.springframework.ai.model.tool.ToolCallingChatOptions
+ * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
 @JsonInclude(Include.NON_NULL)
 public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions implements ToolCallingChatOptions {
@@ -127,12 +171,6 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 	 */
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
-
-	/**
-	 * Cache strategy for prompt caching.
-	 */
-	@JsonIgnore
-	@Nullable private AnthropicSdkCacheStrategy cacheStrategy;
 
 	/**
 	 * Creates a new builder for AnthropicSdkChatOptions.
@@ -264,14 +302,6 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 		this.toolContext = toolContext;
 	}
 
-	@Nullable public AnthropicSdkCacheStrategy getCacheStrategy() {
-		return this.cacheStrategy;
-	}
-
-	public void setCacheStrategy(@Nullable AnthropicSdkCacheStrategy cacheStrategy) {
-		this.cacheStrategy = cacheStrategy;
-	}
-
 	@Override
 	@Nullable public Double getFrequencyPenalty() {
 		// Not supported by Anthropic API
@@ -307,15 +337,14 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.cacheStrategy, that.cacheStrategy);
+				&& Objects.equals(this.toolContext, that.toolContext);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
-				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.cacheStrategy);
+				this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
 	}
 
 	@Override
@@ -326,7 +355,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				+ ", thinking=" + this.thinking + ", disableParallelToolUse=" + this.disableParallelToolUse
 				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
 				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
-				+ this.toolContext + ", cacheStrategy=" + this.cacheStrategy + '}';
+				+ this.toolContext + '}';
 	}
 
 	/**
@@ -369,7 +398,6 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			this.options.setToolNames(new HashSet<>(fromOptions.getToolNames()));
 			this.options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 			this.options.setToolContext(new HashMap<>(fromOptions.getToolContext()));
-			this.options.setCacheStrategy(fromOptions.getCacheStrategy());
 			return this;
 		}
 
@@ -440,9 +468,6 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			}
 			if (!from.getToolContext().isEmpty()) {
 				this.options.setToolContext(new HashMap<>(from.getToolContext()));
-			}
-			if (from.getCacheStrategy() != null) {
-				this.options.setCacheStrategy(from.getCacheStrategy());
 			}
 			return this;
 		}
@@ -542,11 +567,6 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			else {
 				this.options.toolContext.putAll(toolContext);
 			}
-			return this;
-		}
-
-		public Builder cacheStrategy(AnthropicSdkCacheStrategy cacheStrategy) {
-			this.options.setCacheStrategy(cacheStrategy);
 			return this;
 		}
 

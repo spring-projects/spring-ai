@@ -24,11 +24,38 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Base class providing common configuration options for Anthropic SDK clients. This class
- * contains settings that are shared across different Anthropic model types (chat,
- * embedding, etc.).
+ * Abstract base class providing common configuration options for Anthropic SDK-based
+ * model implementations in Spring AI.
+ *
+ * <p>
+ * This class encapsulates connection and authentication settings that are shared across
+ * different Anthropic model types. It serves as the foundation for model-specific option
+ * classes like {@link AnthropicSdkChatOptions}.
+ *
+ * <p>
+ * <b>Configuration Options:</b>
+ * <ul>
+ * <li><b>apiKey:</b> Authentication key for the Anthropic API. Can be set
+ * programmatically or detected automatically from the {@code ANTHROPIC_API_KEY}
+ * environment variable.</li>
+ * <li><b>baseUrl:</b> The API endpoint URL. Defaults to {@code https://api.anthropic.com}
+ * if not specified.</li>
+ * <li><b>timeout:</b> Request timeout duration. Defaults to 60 seconds.</li>
+ * <li><b>maxRetries:</b> Maximum retry attempts for failed requests. Defaults to 2.</li>
+ * <li><b>proxy:</b> Optional HTTP proxy configuration for network requests.</li>
+ * <li><b>customHeaders:</b> Additional HTTP headers to include with API requests.</li>
+ * </ul>
+ *
+ * <p>
+ * <b>Environment Variable Support:</b>
+ * <ul>
+ * <li>{@code ANTHROPIC_API_KEY} - API key for authentication</li>
+ * <li>{@code ANTHROPIC_BASE_URL} - Override the default API endpoint</li>
+ * </ul>
  *
  * @author Soby Chacko
+ * @since 2.0.0
+ * @see AnthropicSdkChatOptions
  */
 public class AbstractAnthropicSdkOptions {
 
