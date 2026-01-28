@@ -1,0 +1,249 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Image Generation Inference",
+    "description": "Image Generation Webserver",
+    "contact": {
+      "name": "Denis Lobo"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
+    "version": "1.0.2"
+  },
+  "paths": {
+    "/": {
+      "post": {
+        "tags": [
+          "Image Generation Inference"
+        ],
+        "summary": "Generate tokens if `stream == false` or a stream of token if `stream == true`",
+        "description": "Generate tokens if `stream == false` or a stream of token if `stream == true`",
+        "operationId": "generate",
+        "parameters": [
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "application/json",
+                "image/png",
+                "image/jpeg",
+                "image/webp",
+                "image/gif",
+                "image/tiff",
+                "image/bmp"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Generated image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/bmp": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/gif": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/tiff": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Input validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Input validation error"
+                }
+              }
+            }
+          },
+          "424": {
+            "description": "Generation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Request failed during generation"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Model is overloaded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Model is overloaded"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Incomplete generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": "Incomplete generation"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error",
+          "error_type"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "error_type": {
+            "type": "string"
+          }
+        }
+      },
+      "GenerateParameters": {
+        "type": "object",
+        "properties": {
+          "height": {
+            "type": "integer",
+            "default": "null",
+            "example": 1,
+            "nullable": true,
+            "minimum": 0.0,
+            "exclusiveMinimum": 0.0
+          },
+          "width": {
+            "type": "integer",
+            "default": "null",
+            "example": 1,
+            "nullable": true,
+            "minimum": 0.0,
+            "exclusiveMinimum": 0.0
+          },
+          "num_inference_steps": {
+            "type": "integer",
+            "default": 50,
+            "example": 1,
+            "nullable": true,
+            "minimum": 0.0,
+            "exclusiveMinimum": 0.0
+          },
+          "guidance_scale": {
+            "type": "number",
+            "format": "float",
+            "default": 7.5
+          },
+          "negative_prompt": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "num_images_per_prompt": {
+            "type": "integer",
+            "default": 1,
+            "example": 1
+          },
+          "clip_skip": {
+            "type": "integer",
+            "default": "null",
+            "example": 1
+          }
+        }
+      },
+      "GenerateRequest": {
+        "type": "object",
+        "required": [
+          "inputs"
+        ],
+        "properties": {
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/GenerateParameters"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Text to Image Generation Inference",
+      "description": "Hugging Face Text To Image Inference API"
+    }
+  ]
+}

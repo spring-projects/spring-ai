@@ -16,10 +16,6 @@
 
 package org.springframework.ai.huggingface;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -30,10 +26,16 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.huggingface.api.TextGenerationInferenceApi;
 import org.springframework.ai.huggingface.invoker.ApiClient;
-import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
-import org.springframework.ai.huggingface.model.CompatGenerateRequest;
-import org.springframework.ai.huggingface.model.GenerateParameters;
-import org.springframework.ai.huggingface.model.GenerateResponse;
+
+import org.springframework.ai.huggingface.model.chat.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.springframework.ai.huggingface.model.chat.AllOfGenerateResponseDetails;
+import org.springframework.ai.huggingface.model.chat.GenerateParameters;
+import org.springframework.ai.huggingface.model.chat.GenerateRequest;
+import org.springframework.ai.huggingface.model.chat.GenerateResponse;
 
 /**
  * An implementation of {@link ChatModel} that interfaces with HuggingFace Inference
@@ -109,6 +111,10 @@ public class HuggingfaceChatModel implements ChatModel {
 			generations.add(generation);
 		}
 		return new ChatResponse(generations);
+	}
+
+	public Info info() {
+		return this.textGenApi.getModelInfo();
 	}
 
 	/**
