@@ -16,6 +16,7 @@
 **** xref:api/chat/comparison.adoc[Chat Models Comparison]
 **** xref:api/chat/bedrock-converse.adoc[Amazon Bedrock Converse]
 **** xref:api/chat/anthropic-chat.adoc[Anthropic]
+**** xref:api/chat/anthropic-sdk-chat.adoc[Anthropic SDK (Official)]
 **** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/deepseek-chat.adoc[DeepSeek]
 **** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
