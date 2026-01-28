@@ -433,7 +433,7 @@ class MistralAiChatModelIT {
 		// Test using ResponseFormat.jsonSchema(Class<?>) for structured output
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.responseFormat(ResponseFormat.jsonSchema(MovieRecommendation.class))
 			.build();
 
@@ -474,7 +474,7 @@ class MistralAiChatModelIT {
 				"required", List.of("city", "country", "population", "famousFor"), "additionalProperties", false);
 
 		var promptOptions = MistralAiChatOptions.builder()
-			.model(MistralAiApi.ChatModel.SMALL.getValue())
+			.model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
 			.responseFormat(ResponseFormat.jsonSchema(schema))
 			.build();
 

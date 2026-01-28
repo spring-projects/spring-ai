@@ -34,6 +34,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration;
 import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -125,6 +126,18 @@ public class MongoChatMemoryRepositoryIT {
 	}
 
 	@Test
+	void messagesAreReturnedInChronologicalOrder() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new UserMessage("First message"), new AssistantMessage("Second message"),
+				new UserMessage("Third message"));
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+
+		var results = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(results).isEqualTo(messages);
+	}
+
+	@Test
 	void deleteMessagesByConversationId() {
 		var conversationId = UUID.randomUUID().toString();
 		var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + conversationId),
@@ -143,7 +156,7 @@ public class MongoChatMemoryRepositoryIT {
 	}
 
 	@SpringBootConfiguration
-	@ImportAutoConfiguration({ MongoAutoConfiguration.class })
+	@ImportAutoConfiguration({ MongoAutoConfiguration.class, DataMongoAutoConfiguration.class })
 	static class TestConfiguration {
 
 		@Bean

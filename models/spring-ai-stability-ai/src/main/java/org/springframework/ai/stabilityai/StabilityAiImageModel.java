@@ -19,6 +19,8 @@ package org.springframework.ai.stabilityai;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
@@ -118,7 +120,8 @@ public class StabilityAiImageModel implements ImageModel {
 	 * in the request. Protected access for testing purposes, though maybe useful for
 	 * future subclassing as options change.
 	 */
-	StabilityAiImageOptions mergeOptions(ImageOptions runtimeOptions, StabilityAiImageOptions defaultOptions) {
+	StabilityAiImageOptions mergeOptions(@Nullable ImageOptions runtimeOptions,
+			StabilityAiImageOptions defaultOptions) {
 		if (runtimeOptions == null) {
 			return defaultOptions;
 		}

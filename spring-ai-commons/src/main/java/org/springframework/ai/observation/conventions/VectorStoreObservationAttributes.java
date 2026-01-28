@@ -72,7 +72,7 @@ public enum VectorStoreObservationAttributes {
 	DB_VECTOR_DIMENSION_COUNT("db.vector.dimension_count"),
 
 	/**
-	 * The name field as of the vector (e.g. a field name).
+	 * The name field of the vector (e.g. a field name).
 	 */
 	DB_VECTOR_FIELD_NAME("db.vector.field_name"),
 
