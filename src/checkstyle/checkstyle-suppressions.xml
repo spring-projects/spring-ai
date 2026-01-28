@@ -68,7 +68,9 @@
 
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
 	<!-- This list will gradually shrink as we migrate to JSpecify -->
-	<suppress files="auto-configurations" id="bannedNullabilityImports" />
+	<suppress files="auto-configurations[\\/]mcp" id="bannedNullabilityImports" />
+	<suppress files="auto-configurations[\\/]models" id="bannedNullabilityImports" />
+	<suppress files="auto-configurations[\\/]vector-stores" id="bannedNullabilityImports" />
 
 	<suppress files="models[\\/]spring-ai-anthropic" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-azure-openai" id="bannedNullabilityImports" />
