@@ -21,12 +21,14 @@ import java.util.List;
 import io.modelcontextprotocol.client.McpClient;
 
 import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
+import org.springframework.util.Assert;
 
 public class McpAsyncClientConfigurer {
 
 	private List<McpAsyncClientCustomizer> customizers;
 
 	public McpAsyncClientConfigurer(List<McpAsyncClientCustomizer> customizers) {
+		Assert.notNull(customizers, "customizers must not be null");
 		this.customizers = customizers;
 	}
 
