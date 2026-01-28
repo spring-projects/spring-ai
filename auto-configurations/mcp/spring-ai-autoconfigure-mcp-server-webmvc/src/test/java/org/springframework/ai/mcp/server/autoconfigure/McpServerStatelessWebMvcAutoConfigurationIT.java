@@ -63,36 +63,9 @@ class McpServerStatelessWebMvcAutoConfigurationIT {
 
 	@Test
 	void serverBaseUrlConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/test")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.stateless.mcpEndpoint=/test")
 			.run(context -> assertThat(context.getBean(WebMvcStatelessServerTransport.class)).extracting("mcpEndpoint")
 				.isEqualTo("/test"));
-	}
-
-	@Test
-	void keepAliveIntervalConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.keep-alive-interval=PT30S")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebMvcStatelessServerTransport.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
-	}
-
-	@Test
-	void disallowDeleteConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebMvcStatelessServerTransport.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
-	}
-
-	@Test
-	void disallowDeleteFalseConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=false")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebMvcStatelessServerTransport.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
 	}
 
 	@Test
@@ -159,9 +132,7 @@ class McpServerStatelessWebMvcAutoConfigurationIT {
 
 	@Test
 	void allPropertiesConfiguration() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/custom-endpoint",
-					"spring.ai.mcp.server.streamable-http.disallow-delete=true")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.stateless.mcpEndpoint=/custom-endpoint")
 			.run(context -> {
 				WebMvcStatelessServerTransport provider = context.getBean(WebMvcStatelessServerTransport.class);
 				assertThat(provider).extracting("mcpEndpoint").isEqualTo("/custom-endpoint");
@@ -183,7 +154,7 @@ class McpServerStatelessWebMvcAutoConfigurationIT {
 
 	@Test
 	void enabledPropertyExplicitlyTrue() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.enabled=true").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=true").run(context -> {
 			assertThat(context).hasSingleBean(WebMvcStatelessServerTransport.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});

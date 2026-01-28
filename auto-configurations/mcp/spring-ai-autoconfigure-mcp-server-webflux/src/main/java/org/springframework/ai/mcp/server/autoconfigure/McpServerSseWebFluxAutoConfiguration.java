@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
+import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -70,12 +70,12 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * @author Christian Tzolov
  * @author Yanming Zhou
  * @since 1.0.0
- * @see McpServerSseProperties
+ * @see McpServerProperties
  * @see WebFluxSseServerTransportProvider
  */
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
-@EnableConfigurationProperties(McpServerSseProperties.class)
-@ConditionalOnClass(WebFluxSseServerTransportProvider.class)
+@EnableConfigurationProperties({ McpServerProperties.class })
+@ConditionalOnClass({ WebFluxSseServerTransportProvider.class })
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
 public class McpServerSseWebFluxAutoConfiguration {
@@ -83,14 +83,14 @@ public class McpServerSseWebFluxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebFluxSseServerTransportProvider webFluxTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerSseProperties serverProperties) {
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerProperties serverProperties) {
 
 		return WebFluxSseServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-			.basePath(serverProperties.getBaseUrl())
-			.messageEndpoint(serverProperties.getSseMessageEndpoint())
-			.sseEndpoint(serverProperties.getSseEndpoint())
-			.keepAliveInterval(serverProperties.getKeepAliveInterval())
+			.basePath(serverProperties.getSse().getBaseUrl())
+			.messageEndpoint(serverProperties.getSse().getSseMessageEndpoint())
+			.sseEndpoint(serverProperties.getSse().getSseEndpoint())
+			.keepAliveInterval(serverProperties.getSse().getKeepAliveInterval())
 			.build();
 	}
 

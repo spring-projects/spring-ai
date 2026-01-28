@@ -70,7 +70,6 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfi
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -112,8 +111,8 @@ public class StreamableWebClientWebFluxServerIT {
 			.withPropertyValues(// @formatter:off
 				"spring.ai.mcp.server.name=test-mcp-server",
 				"spring.ai.mcp.server.version=1.0.0",
-				"spring.ai.mcp.server.streamable-http.keep-alive-interval=1s",
-				"spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp") // @formatter:on
+				"spring.ai.mcp.server.streamable.keep-alive-interval=1s",
+				"spring.ai.mcp.server.streamable.mcp-endpoint=/mcp") // @formatter:on
 			.run(serverContext -> {
 				// Verify all required beans are present
 				assertThat(serverContext).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
@@ -125,10 +124,8 @@ public class StreamableWebClientWebFluxServerIT {
 				assertThat(properties.getName()).isEqualTo("test-mcp-server");
 				assertThat(properties.getVersion()).isEqualTo("1.0.0");
 
-				McpServerStreamableHttpProperties streamableHttpProperties = serverContext
-					.getBean(McpServerStreamableHttpProperties.class);
-				assertThat(streamableHttpProperties.getMcpEndpoint()).isEqualTo("/mcp");
-				assertThat(streamableHttpProperties.getKeepAliveInterval()).isEqualTo(Duration.ofSeconds(1));
+				assertThat(properties.getStreamable().getMcpEndpoint()).isEqualTo("/mcp");
+				assertThat(properties.getStreamable().getKeepAliveInterval()).isEqualTo(Duration.ofSeconds(1));
 
 				var httpServer = startHttpServer(serverContext, serverPort);
 

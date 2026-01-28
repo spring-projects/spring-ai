@@ -65,36 +65,9 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 
 	@Test
 	void serverBaseUrlConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/test")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.stateless.mcpEndpoint=/test")
 			.run(context -> assertThat(context.getBean(WebFluxStatelessServerTransport.class)).extracting("mcpEndpoint")
 				.isEqualTo("/test"));
-	}
-
-	@Test
-	void keepAliveIntervalConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.keep-alive-interval=PT30S")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStatelessServerTransport.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
-	}
-
-	@Test
-	void disallowDeleteConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=true")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStatelessServerTransport.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
-	}
-
-	@Test
-	void disallowDeleteFalseConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.disallow-delete=false")
-			.run(context -> {
-				assertThat(context).hasSingleBean(WebFluxStatelessServerTransport.class);
-				assertThat(context).hasSingleBean(RouterFunction.class);
-			});
 	}
 
 	@Test
@@ -161,9 +134,7 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 
 	@Test
 	void allPropertiesConfiguration() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/custom-endpoint",
-					"spring.ai.mcp.server.streamable-http.disallow-delete=true")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable.mcpEndpoint=/custom-endpoint")
 			.run(context -> {
 				WebFluxStatelessServerTransport provider = context.getBean(WebFluxStatelessServerTransport.class);
 				assertThat(provider).extracting("mcpEndpoint").isEqualTo("/custom-endpoint");

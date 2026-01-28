@@ -16,7 +16,6 @@
 
 package org.springframework.ai.mcp.server.autoconfigure;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +55,6 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMap
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -95,9 +93,8 @@ public class StatelessWebClientWebFluxServerIT {
 
 		this.serverContextRunner.withUserConfiguration(TestMcpServerConfiguration.class)
 			.withPropertyValues(// @formatter:off
-			"spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp",
+			"spring.ai.mcp.server.stateless.mcp-endpoint=/mcp",
 					"spring.ai.mcp.server.name=test-mcp-server",
-					"spring.ai.mcp.server.streamable-http.keep-alive-interval=1s",
 					"spring.ai.mcp.server.version=1.0.0") // @formatter:on
 			.run(serverContext -> {
 				// Verify all required beans are present
@@ -110,10 +107,7 @@ public class StatelessWebClientWebFluxServerIT {
 				assertThat(properties.getName()).isEqualTo("test-mcp-server");
 				assertThat(properties.getVersion()).isEqualTo("1.0.0");
 
-				McpServerStreamableHttpProperties streamableHttpProperties = serverContext
-					.getBean(McpServerStreamableHttpProperties.class);
-				assertThat(streamableHttpProperties.getMcpEndpoint()).isEqualTo("/mcp");
-				assertThat(streamableHttpProperties.getKeepAliveInterval()).isEqualTo(Duration.ofSeconds(1));
+				assertThat(properties.getStateless().getMcpEndpoint()).isEqualTo("/mcp");
 
 				var httpServer = startHttpServer(serverContext, serverPort);
 

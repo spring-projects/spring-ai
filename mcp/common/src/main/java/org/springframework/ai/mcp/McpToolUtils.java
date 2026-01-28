@@ -372,13 +372,10 @@ public final class McpToolUtils {
 
 		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
 
-		return McpServerFeatures.AsyncToolSpecification.builder()
-			.tool(syncToolSpecification.tool())
-			.callHandler((exchange, request) -> Mono
-				.fromCallable(
+		return new McpServerFeatures.AsyncToolSpecification(syncToolSpecification.tool(), null,
+				(exchange, request) -> Mono.fromCallable(
 						() -> syncToolSpecification.callHandler().apply(new McpSyncServerExchange(exchange), request))
-				.subscribeOn(Schedulers.boundedElastic()))
-			.build();
+					.subscribeOn(Schedulers.boundedElastic()));
 	}
 
 	public static McpStatelessServerFeatures.AsyncToolSpecification toStatelessAsyncToolSpecification(

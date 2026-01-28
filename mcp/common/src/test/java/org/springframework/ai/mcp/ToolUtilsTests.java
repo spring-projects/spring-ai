@@ -228,7 +228,10 @@ class ToolUtilsTests {
 		assertThat(toolSpecification).isNotNull();
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		McpSchema.CallToolRequest mockRequest = mock(McpSchema.CallToolRequest.class);
+		when(mockRequest.arguments()).thenReturn(Map.of());
+
+		CallToolResult result = toolSpecification.callHandler().apply(mock(McpSyncServerExchange.class), mockRequest);
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
@@ -241,7 +244,11 @@ class ToolUtilsTests {
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
 		assertThat(toolSpecification).isNotNull();
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+
+		McpSchema.CallToolRequest mockRequest = mock(McpSchema.CallToolRequest.class);
+		when(mockRequest.arguments()).thenReturn(Map.of());
+
+		CallToolResult result = toolSpecification.callHandler().apply(mock(McpSyncServerExchange.class), mockRequest);
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();
@@ -269,9 +276,10 @@ class ToolUtilsTests {
 		assertThat(toolSpecification).isNotNull();
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
-		StepVerifier
-			.create(toolSpecification.callHandler()
-				.apply(mock(McpAsyncServerExchange.class), mock(McpSchema.CallToolRequest.class)))
+		McpSchema.CallToolRequest mockRequest = mock(McpSchema.CallToolRequest.class);
+		when(mockRequest.arguments()).thenReturn(Map.of());
+
+		StepVerifier.create(toolSpecification.callHandler().apply(mock(McpAsyncServerExchange.class), mockRequest))
 			.assertNext(result -> {
 				TextContent content = (TextContent) result.content().get(0);
 				assertThat(content.text()).isEqualTo("success");
@@ -287,9 +295,11 @@ class ToolUtilsTests {
 		AsyncToolSpecification toolSpecification = McpToolUtils.toAsyncToolSpecification(callback);
 
 		assertThat(toolSpecification).isNotNull();
-		StepVerifier
-			.create(toolSpecification.callHandler()
-				.apply(mock(McpAsyncServerExchange.class), mock(McpSchema.CallToolRequest.class)))
+
+		McpSchema.CallToolRequest mockRequest = mock(McpSchema.CallToolRequest.class);
+		when(mockRequest.arguments()).thenReturn(Map.of());
+
+		StepVerifier.create(toolSpecification.callHandler().apply(mock(McpAsyncServerExchange.class), mockRequest))
 			.assertNext(result -> {
 				TextContent content = (TextContent) result.content().get(0);
 				assertThat(content.text()).isEqualTo("error");

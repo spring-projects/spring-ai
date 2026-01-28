@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for {@link StatelessToolCallbackConverterAutoConfiguration} and
- * {@link ToolCallbackConverterCondition}.
+ * {@link StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition}.
  *
  * @author Christian Tzolov
  */

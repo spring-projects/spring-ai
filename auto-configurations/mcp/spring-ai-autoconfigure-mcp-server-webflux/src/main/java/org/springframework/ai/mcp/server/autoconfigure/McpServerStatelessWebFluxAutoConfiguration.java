@@ -23,7 +23,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
-import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
+import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -38,8 +38,8 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * @author Yanming Zhou
  */
 @AutoConfiguration(before = McpServerStatelessAutoConfiguration.class)
-@ConditionalOnClass(McpSchema.class)
-@EnableConfigurationProperties(McpServerStreamableHttpProperties.class)
+@ConditionalOnClass({ McpSchema.class })
+@EnableConfigurationProperties(McpServerProperties.class)
 @Conditional({ McpServerStdioDisabledCondition.class,
 		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class })
 public class McpServerStatelessWebFluxAutoConfiguration {
@@ -47,12 +47,11 @@ public class McpServerStatelessWebFluxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebFluxStatelessServerTransport webFluxStatelessServerTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper,
-			McpServerStreamableHttpProperties serverProperties) {
+			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerProperties serverProperties) {
 
 		return WebFluxStatelessServerTransport.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
-			.messageEndpoint(serverProperties.getMcpEndpoint())
+			.messageEndpoint(serverProperties.getStateless().getMcpEndpoint())
 			.build();
 	}
 
