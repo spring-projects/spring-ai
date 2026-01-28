@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -465,7 +466,6 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
-					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
@@ -486,7 +486,6 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
-					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
@@ -542,6 +541,73 @@ class BeanOutputConverterTest {
 			String schema = converter.getJsonSchema();
 
 			assertThat(schema).contains("\"description\" : \"Name description\"");
+		}
+
+		@Test
+		void schemaRequiredModeNotRequired() {
+			record PersonWithOptionalEmail(@Schema(description = "Person ID") int id,
+					@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED,
+							description = "Optional email") String email) {
+			}
+
+			var converter = new BeanOutputConverter<>(PersonWithOptionalEmail.class);
+			String schema = converter.getJsonSchema();
+
+			assertThat(schema).contains("\"required\" : [ \"id\" ]");
+			assertThat(schema).doesNotContain("\"required\" : [ \"id\", \"email\" ]");
+		}
+
+		@Test
+		void jsonPropertyRequiredFalse() {
+			record PersonWithOptionalField(int id, @JsonProperty(required = false) String optionalField) {
+			}
+
+			var converter = new BeanOutputConverter<>(PersonWithOptionalField.class);
+			String schema = converter.getJsonSchema();
+
+			assertThat(schema).contains("\"required\" : [ \"id\" ]");
+			assertThat(schema).doesNotContain("\"required\" : [ \"id\", \"optionalField\" ]");
+		}
+
+		@Test
+		void nullableAnnotation() {
+			record PersonWithNullable(int id, @Nullable String optionalField) {
+			}
+
+			var converter = new BeanOutputConverter<>(PersonWithNullable.class);
+			String schema = converter.getJsonSchema();
+
+			assertThat(schema).contains("\"required\" : [ \"id\" ]");
+			assertThat(schema).doesNotContain("\"required\" : [ \"id\", \"optionalField\" ]");
+		}
+
+		@Test
+		void mixedRequiredAnnotations() {
+			record PersonWithMixed(int id,
+					@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String optionalViaSchema,
+					@JsonProperty(required = false) String optionalViaJsonProperty, String requiredByDefault) {
+			}
+
+			var converter = new BeanOutputConverter<>(PersonWithMixed.class);
+			String schema = converter.getJsonSchema();
+
+			assertThat(schema).contains("\"required\" : [ \"id\", \"requiredByDefault\" ]");
+			// Properties should be defined but not in required array
+			assertThat(schema).contains("\"optionalViaSchema\" : {");
+			assertThat(schema).contains("\"optionalViaJsonProperty\" : {");
+		}
+
+		@Test
+		void backwardCompatibilityAllRequiredByDefault() {
+			record SimpleRecord(int id, String name, String email) {
+			}
+
+			var converter = new BeanOutputConverter<>(SimpleRecord.class);
+			String schema = converter.getJsonSchema();
+
+			// Fields without annotations remain required by default (order may be
+			// alphabetical)
+			assertThat(schema).contains("\"required\" : [ \"email\", \"id\", \"name\" ]");
 		}
 
 	}
