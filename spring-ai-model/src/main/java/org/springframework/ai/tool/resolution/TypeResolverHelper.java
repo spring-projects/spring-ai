@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import kotlin.jvm.functions.Function0;
 import kotlin.jvm.functions.Function1;
 import kotlin.jvm.functions.Function2;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -175,7 +176,7 @@ public final class TypeResolverHelper {
 		return rootBeanDefinition.getResolvableType();
 	}
 
-	private static Method findUniqueFactoryMethod(Class<?> factoryClass, boolean isStatic,
+	private static @Nullable Method findUniqueFactoryMethod(Class<?> factoryClass, boolean isStatic,
 			RootBeanDefinition rootBeanDefinition) {
 		Method[] candidates = getCandidateMethods(factoryClass, rootBeanDefinition);
 		Method uniqueCandidate = null;

@@ -19,11 +19,13 @@ package org.springframework.ai.model.bedrock.autoconfigure;
 import java.time.Duration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Configuration properties for Bedrock AWS connection.
  *
  * @author Christian Tzolov
+ * @author Baojun Jiang
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockAwsConnectionProperties.CONFIG_PREFIX)
@@ -48,9 +50,16 @@ public class BedrockAwsConnectionProperties {
 
 	/**
 	 * AWS session token. (optional) When provided the AwsSessionCredentials are used.
-	 * Otherwise the AwsBasicCredentials are used.
+	 * Otherwise, the AwsBasicCredentials are used.
 	 */
 	private String sessionToken;
+
+	/**
+	 * Aws profile. (optional) When the {@link #accessKey} and {@link #secretKey} are not
+	 * declared. Otherwise, the AwsBasicCredentials are used.
+	 */
+	@NestedConfigurationProperty
+	private ProfileProperties profile;
 
 	/**
 	 * Maximum duration of the entire API call operation.
@@ -147,6 +156,14 @@ public class BedrockAwsConnectionProperties {
 
 	public void setSessionToken(String sessionToken) {
 		this.sessionToken = sessionToken;
+	}
+
+	public ProfileProperties getProfile() {
+		return this.profile;
+	}
+
+	public void setProfile(ProfileProperties profile) {
+		this.profile = profile;
 	}
 
 }

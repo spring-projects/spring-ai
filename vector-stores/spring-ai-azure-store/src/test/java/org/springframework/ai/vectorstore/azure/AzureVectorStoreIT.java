@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.hasSize;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Alexandros Pappas
  */
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_API_KEY", matches = ".+")
 @EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_ENDPOINT", matches = ".+")
@@ -327,6 +328,49 @@ public class AzureVectorStoreIT {
 			Optional<SearchClient> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
 		});
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = "AZURE_AI_SEARCH_INDEX_NAME", matches = ".+")
+	void customFieldNamesTest() throws Exception {
+		// Test with existing production index that uses custom field names
+		String existingIndexName = System.getenv("AZURE_AI_SEARCH_INDEX_NAME");
+		String endpoint = System.getenv("AZURE_AI_SEARCH_ENDPOINT");
+		String apiKey = System.getenv("AZURE_AI_SEARCH_API_KEY");
+
+		SearchIndexClient searchIndexClient = new SearchIndexClientBuilder().endpoint(endpoint)
+			.credential(new AzureKeyCredential(apiKey))
+			.buildClient();
+
+		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
+		embeddingModel.afterPropertiesSet();
+
+		// Create vector store with custom field names matching the production index
+		// Index uses: chunk_text (content), embedding, metadata
+		VectorStore vectorStore = AzureVectorStore.builder(searchIndexClient, embeddingModel)
+			.indexName(existingIndexName)
+			.initializeSchema(false) // Don't create - use existing index
+			.contentFieldName("chunk_text") // Custom field name!
+			.embeddingFieldName("embedding") // Standard name
+			.metadataFieldName("metadata") // Standard name
+			.build();
+
+		// Trigger initialization
+		((AzureVectorStore) vectorStore).afterPropertiesSet();
+
+		// Search the existing index
+		List<Document> results = vectorStore
+			.similaritySearch(SearchRequest.builder().query("Azure Databricks").topK(3).build());
+
+		// Verify we got results
+		assertThat(results).isNotEmpty();
+		assertThat(results.size()).isLessThanOrEqualTo(3);
+
+		// Verify documents have content (from chunk_text field)
+		Document firstDoc = results.get(0);
+		assertThat(firstDoc.getId()).isNotNull();
+		assertThat(firstDoc.getText()).isNotEmpty();
+		assertThat(firstDoc.getScore()).isNotNull();
 	}
 
 	@SpringBootConfiguration

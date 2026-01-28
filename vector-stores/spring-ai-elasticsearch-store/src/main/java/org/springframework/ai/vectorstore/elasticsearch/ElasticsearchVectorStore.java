@@ -36,6 +36,7 @@ import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -266,7 +267,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 	}
 
-	private String getElasticsearchQueryString(Filter.Expression filterExpression) {
+	private String getElasticsearchQueryString(Filter.@Nullable Expression filterExpression) {
 		return Objects.isNull(filterExpression) ? "*"
 				: this.filterExpressionConverter.convertExpression(filterExpression);
 
@@ -274,6 +275,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private Document toDocument(Hit<Document> hit) {
 		Document document = hit.source();
+		Assert.notNull(document, "document unexpectedly null");
 		Document.Builder documentBuilder = document.mutate();
 		if (hit.score() != null) {
 			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));

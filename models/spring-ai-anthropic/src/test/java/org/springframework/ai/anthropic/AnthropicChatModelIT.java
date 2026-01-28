@@ -283,7 +283,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getName())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -468,7 +468,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_OPUS.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getName())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")

@@ -64,7 +64,7 @@ public class SpringAiRetryAutoConfiguration {
 	@ConditionalOnMissingBean
 	public RetryTemplate retryTemplate(SpringAiRetryProperties properties) {
 		RetryPolicy retryPolicy = RetryPolicy.builder()
-			.maxAttempts(properties.getMaxAttempts())
+			.maxRetries(properties.getMaxAttempts())
 			.includes(TransientAiException.class)
 			.includes(ResourceAccessException.class)
 			.delay(properties.getBackoff().getInitialInterval())

@@ -388,6 +388,7 @@ class BeanOutputConverterTest {
 								      "type" : "string"
 								    }
 								  },
+								  "required" : [ "someString" ],
 								  "additionalProperties" : false
 								}```
 								""");
@@ -414,6 +415,7 @@ class BeanOutputConverterTest {
 								      "type" : "string"
 								    }
 								  },
+								  "required" : [ "someString" ],
 								  "additionalProperties" : false
 								}```
 								""");
@@ -442,6 +444,7 @@ class BeanOutputConverterTest {
 								        "type" : "string"
 								      }
 								    },
+								    "required" : [ "someString" ],
 								    "additionalProperties" : false
 								  }
 								}```
@@ -461,6 +464,7 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
+					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
@@ -481,6 +485,7 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
+					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");

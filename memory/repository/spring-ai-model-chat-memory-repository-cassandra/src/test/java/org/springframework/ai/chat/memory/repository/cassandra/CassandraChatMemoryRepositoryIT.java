@@ -73,7 +73,7 @@ class CassandraChatMemoryRepositoryIT {
 	void add_shouldInsertSingleMessage(String content, MessageType messageType) {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemoryRepository.class);
-			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
+			assertThat(chatMemory).isInstanceOf(CassandraChatMemoryRepository.class);
 			var sessionId = UUID.randomUUID().toString();
 			var message = switch (messageType) {
 				case ASSISTANT -> new AssistantMessage(content);
@@ -109,7 +109,7 @@ class CassandraChatMemoryRepositoryIT {
 	void add_shouldInsertMessages() {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemoryRepository.class);
-			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
+			assertThat(chatMemory).isInstanceOf(CassandraChatMemoryRepository.class);
 			var sessionId = UUID.randomUUID().toString();
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant"),
 					new UserMessage("Message from user"));
@@ -147,7 +147,7 @@ class CassandraChatMemoryRepositoryIT {
 	void get_shouldReturnMessages() {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemoryRepository.class);
-			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
+			assertThat(chatMemory).isInstanceOf(CassandraChatMemoryRepository.class);
 			var sessionId = UUID.randomUUID().toString();
 
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant 1 - " + sessionId),
@@ -174,7 +174,7 @@ class CassandraChatMemoryRepositoryIT {
 	void get_afterMultipleAdds_shouldReturnMessagesInSameOrder() {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemoryRepository.class);
-			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
+			assertThat(chatMemory).isInstanceOf(CassandraChatMemoryRepository.class);
 			var sessionId = UUID.randomUUID().toString();
 			var userMessage = new UserMessage("Message from user - " + sessionId);
 			var assistantMessage = new AssistantMessage("Message from assistant - " + sessionId);
@@ -200,7 +200,7 @@ class CassandraChatMemoryRepositoryIT {
 	void clear_shouldDeleteMessages() {
 		this.contextRunner.run(context -> {
 			var chatMemory = context.getBean(ChatMemoryRepository.class);
-			assertThat(chatMemory instanceof CassandraChatMemoryRepository);
+			assertThat(chatMemory).isInstanceOf(CassandraChatMemoryRepository.class);
 			var sessionId = UUID.randomUUID().toString();
 
 			var messages = List.<Message>of(new AssistantMessage("Message from assistant - " + sessionId),

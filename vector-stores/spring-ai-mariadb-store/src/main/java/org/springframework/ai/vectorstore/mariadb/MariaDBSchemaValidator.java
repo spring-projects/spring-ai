@@ -22,12 +22,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
 import org.mariadb.jdbc.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.Assert;
 
 /**
  * @author Diego Dupin
@@ -43,7 +45,7 @@ public class MariaDBSchemaValidator {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	private boolean isTableExists(String schemaName, String tableName) {
+	private boolean isTableExists(@Nullable String schemaName, String tableName) {
 		// schema and table are expected to be escaped
 		String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
 		try {
@@ -57,7 +59,7 @@ public class MariaDBSchemaValidator {
 		}
 	}
 
-	void validateTableSchema(String schemaName, String tableName, String idFieldName, String contentFieldName,
+	void validateTableSchema(@Nullable String schemaName, String tableName, String idFieldName, String contentFieldName,
 			String metadataFieldName, String embeddingFieldName, int embeddingDimensions) {
 
 		if (!isTableExists(schemaName, tableName)) {
@@ -76,7 +78,7 @@ public class MariaDBSchemaValidator {
 			logger.error("""
 					Failed to validate that database supports VECTOR.
 					Run the following SQL commands:
-					   SELECT @@version;\s
+					   SELECT @@version;
 					And ensure that version is >= 11.7.1""");
 			throw new IllegalStateException(e);
 		}
@@ -94,7 +96,7 @@ public class MariaDBSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
 					+ "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
-			List<Map<String, Object>> columns = this.jdbcTemplate.queryForList(query, schemaName, tableName);
+			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query, schemaName, tableName);
 
 			if (columns.isEmpty()) {
 				throw new IllegalStateException("Error while validating table schema, Table " + tableName
@@ -104,7 +106,9 @@ public class MariaDBSchemaValidator {
 			// Check each column against expected fields
 			List<String> availableColumns = new ArrayList<>();
 			for (Map<String, Object> column : columns) {
-				String columnName = validateAndEnquoteIdentifier((String) column.get("COLUMN_NAME"), false);
+				String columnName = (String) column.get("COLUMN_NAME");
+				Assert.state(columnName != null, "COLUMN_NAME result should not be null");
+				columnName = validateAndEnquoteIdentifier(columnName, false);
 				availableColumns.add(columnName);
 			}
 

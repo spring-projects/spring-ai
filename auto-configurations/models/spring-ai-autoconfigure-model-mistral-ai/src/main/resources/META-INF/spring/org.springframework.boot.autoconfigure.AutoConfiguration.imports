@@ -16,3 +16,4 @@
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatAutoConfiguration
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiEmbeddingAutoConfiguration
 org.springframework.ai.model.mistralai.autoconfigure.MistralAiModerationAutoConfiguration
+org.springframework.ai.model.mistralai.autoconfigure.MistralAiOcrAutoConfiguration

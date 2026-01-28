@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.List;
+
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -25,6 +27,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -44,9 +47,9 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  */
-public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
+public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
-	private final ToolCallingManager toolCallingManager;
+	protected final ToolCallingManager toolCallingManager;
 
 	/**
 	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
@@ -57,13 +60,21 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 	 */
 	private final int advisorOrder;
 
-	private ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
+	private final boolean conversationHistoryEnabled;
+
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder) {
+		this(toolCallingManager, advisorOrder, true);
+	}
+
+	protected ToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
+			boolean conversationHistoryEnabled) {
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 
 		this.toolCallingManager = toolCallingManager;
 		this.advisorOrder = advisorOrder;
+		this.conversationHistoryEnabled = conversationHistoryEnabled;
 	}
 
 	@Override
@@ -76,7 +87,6 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		return this.advisorOrder;
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 		Assert.notNull(callAdvisorChain, "callAdvisorChain must not be null");
@@ -87,6 +97,8 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			throw new IllegalArgumentException(
 					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
 		}
+
+		chatClientRequest = this.doInitializeLoop(chatClientRequest, callAdvisorChain);
 
 		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
 		var optionsCopy = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions().copy();
@@ -109,42 +121,77 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 				.build();
 
 			// Next Call
+			processedChatClientRequest = this.doBeforeCall(processedChatClientRequest, callAdvisorChain);
+
 			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
+
+			chatClientResponse = this.doAfterCall(chatClientResponse, callAdvisorChain);
 
 			// After Call
 
-			// TODO: check that this is tool call is sufficiant for all chat models
+			// TODO: check that this tool call detection is sufficient for all chat models
 			// that support tool calls. (e.g. Anthropic and Bedrock are checking for
 			// finish status as well)
-			isToolCall = chatClientResponse.chatResponse() != null && chatClientResponse.chatResponse().hasToolCalls();
+			ChatResponse chatResponse = chatClientResponse.chatResponse();
+			isToolCall = chatResponse != null && chatResponse.hasToolCalls();
 
 			if (isToolCall) {
-
+				Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
 				ToolExecutionResult toolExecutionResult = this.toolCallingManager
-					.executeToolCalls(processedChatClientRequest.prompt(), chatClientResponse.chatResponse());
+					.executeToolCalls(processedChatClientRequest.prompt(), chatResponse);
 
 				if (toolExecutionResult.returnDirect()) {
 
 					// Return tool execution result directly to the application client.
 					chatClientResponse = chatClientResponse.mutate()
 						.chatResponse(ChatResponse.builder()
-							.from(chatClientResponse.chatResponse())
+							.from(chatResponse)
 							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 							.build())
 						.build();
 
-					// Interupt the tool calling loop and return the tool execution result
-					// directly to the client application instead of returning it to the
-					// LLM.
+					// Interrupt the tool calling loop and return the tool execution
+					// result directly to the client application instead of returning
+					// it to the LLM.
 					break;
 				}
 
-				instructions = toolExecutionResult.conversationHistory();
+				instructions = this.doGetNextInstructionsForToolCall(processedChatClientRequest, chatClientResponse,
+						toolExecutionResult);
 			}
 
 		}
 		while (isToolCall); // loop until no tool calls are present
 
+		return this.doFinalizeLoop(chatClientResponse, callAdvisorChain);
+	}
+
+	protected List<Message> doGetNextInstructionsForToolCall(ChatClientRequest chatClientRequest,
+			ChatClientResponse chatClientResponse, ToolExecutionResult toolExecutionResult) {
+
+		if (!this.conversationHistoryEnabled) {
+			return List.of(chatClientRequest.prompt().getSystemMessage(), toolExecutionResult.conversationHistory()
+				.get(toolExecutionResult.conversationHistory().size() - 1));
+		}
+
+		return toolExecutionResult.conversationHistory();
+	}
+
+	protected ChatClientResponse doFinalizeLoop(ChatClientResponse chatClientResponse,
+			CallAdvisorChain callAdvisorChain) {
+		return chatClientResponse;
+	}
+
+	protected ChatClientRequest doInitializeLoop(ChatClientRequest chatClientRequest,
+			CallAdvisorChain callAdvisorChain) {
+		return chatClientRequest;
+	}
+
+	protected ChatClientRequest doBeforeCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+		return chatClientRequest;
+	}
+
+	protected ChatClientResponse doAfterCall(ChatClientResponse chatClientResponse, CallAdvisorChain callAdvisorChain) {
 		return chatClientResponse;
 	}
 
@@ -158,20 +205,37 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 	 * Creates a new Builder instance for constructing a ToolCallAdvisor.
 	 * @return a new Builder instance
 	 */
-	public static Builder builder() {
-		return new Builder();
+	public static Builder<?> builder() {
+		return new Builder<>();
 	}
 
 	/**
 	 * Builder for creating instances of ToolCallAdvisor.
+	 * <p>
+	 * This builder uses the self-referential generic pattern to support extensibility.
+	 *
+	 * @param <T> the builder type, used for self-referential generics to support method
+	 * chaining in subclasses
 	 */
-	public final static class Builder {
+	public static class Builder<T extends Builder<T>> {
 
 		private ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 		private int advisorOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 300;
 
-		private Builder() {
+		private boolean conversationHistoryEnabled = true;
+
+		protected Builder() {
+		}
+
+		/**
+		 * Returns this builder cast to the appropriate type for method chaining.
+		 * Subclasses should override this method to return the correct type.
+		 * @return this builder instance
+		 */
+		@SuppressWarnings("unchecked")
+		protected T self() {
+			return (T) this;
 		}
 
 		/**
@@ -179,9 +243,9 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * @param toolCallingManager the ToolCallingManager instance
 		 * @return this Builder instance for method chaining
 		 */
-		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+		public T toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
-			return this;
+			return self();
 		}
 
 		/**
@@ -190,9 +254,46 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * LOWEST_PRECEDENCE
 		 * @return this Builder instance for method chaining
 		 */
-		public Builder advisorOrder(int advisorOrder) {
+		public T advisorOrder(int advisorOrder) {
 			this.advisorOrder = advisorOrder;
-			return this;
+			return self();
+		}
+
+		/**
+		 * Sets whether internal conversation history is enabled. If false, you need a
+		 * ChatMemory Advisor registered next in the chain.
+		 * @param conversationHistoryEnabled true to enable, false to disable
+		 * @return this Builder instance for method chaining
+		 */
+		public T conversationHistoryEnabled(boolean conversationHistoryEnabled) {
+			this.conversationHistoryEnabled = conversationHistoryEnabled;
+			return self();
+		}
+
+		/**
+		 * Disables internal conversation history. You need a ChatMemory Advisor
+		 * registered next in the chain.
+		 * @return this Builder instance for method chaining
+		 */
+		public T disableMemory() {
+			this.conversationHistoryEnabled = false;
+			return self();
+		}
+
+		/**
+		 * Returns the configured ToolCallingManager.
+		 * @return the ToolCallingManager instance
+		 */
+		protected ToolCallingManager getToolCallingManager() {
+			return this.toolCallingManager;
+		}
+
+		/**
+		 * Returns the configured advisor order.
+		 * @return the advisor order value
+		 */
+		protected int getAdvisorOrder() {
+			return this.advisorOrder;
 		}
 
 		/**
@@ -203,7 +304,7 @@ public final class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * is out of valid range
 		 */
 		public ToolCallAdvisor build() {
-			return new ToolCallAdvisor(this.toolCallingManager, this.advisorOrder);
+			return new ToolCallAdvisor(this.toolCallingManager, this.advisorOrder, this.conversationHistoryEnabled);
 		}
 
 	}

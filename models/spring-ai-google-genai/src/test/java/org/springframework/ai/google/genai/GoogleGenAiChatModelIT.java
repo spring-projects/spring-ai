@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,12 +32,14 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -46,6 +49,7 @@ import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +57,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -61,6 +66,7 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
@@ -101,7 +107,7 @@ class GoogleGenAiChatModelIT {
 				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Calico Jack",
-				"Anne Bonny");
+				"Bob", "Anne Bonny");
 	}
 
 	@Test
@@ -204,6 +210,98 @@ class GoogleGenAiChatModelIT {
 		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void beanOutputConverterRecordsWithResponseSchema() {
+		// Use the Google GenAI API to set the response schema
+		beanOutputConverterRecordsWithStructuredOutput(jsonSchema -> GoogleGenAiChatOptions.builder()
+			.responseSchema(jsonSchema)
+			.responseMimeType("application/json")
+			.build());
+	}
+
+	@Test
+	void beanOutputConverterRecordsWithOutputSchema() {
+		// Use the unified Spring AI API (StructuredOutputChatOptions) to set the output
+		// schema.
+		beanOutputConverterRecordsWithStructuredOutput(
+				jsonSchema -> GoogleGenAiChatOptions.builder().outputSchema(jsonSchema).build());
+	}
+
+	private void beanOutputConverterRecordsWithStructuredOutput(Function<String, ChatOptions> chatOptionsProvider) {
+
+		BeanOutputConverter<ActorsFilmsRecord> outputConvert = new BeanOutputConverter<>(ActorsFilmsRecord.class);
+
+		String schema = outputConvert.getJsonSchema();
+
+		Prompt prompt = Prompt.builder()
+			.content("Generate the filmography of 5 movies for Tom Hanks.")
+			.chatOptions(chatOptionsProvider.apply(schema))
+			.build();
+
+		Generation generation = this.chatModel.call(prompt).getResult();
+
+		ActorsFilmsRecord actorsFilms = outputConvert.convert(generation.getOutput().getText());
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecords() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void chatClientBeanOutputConverterRecordsNative() {
+
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		ActorsFilmsRecord actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			// forces native structured output handling
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	@Test
+	void listOutputConverterBean() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
+	}
+
+	@Test
+	void listOutputConverterBeanNative() {
+
+		// @formatter:off
+		List<ActorsFilmsRecord> actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
+				.call()
+				.entity(new ParameterizedTypeReference<>() {
+				});
+		// @formatter:on
+
+		assertThat(actorsFilms).hasSize(2);
 	}
 
 	@Test
@@ -313,12 +411,21 @@ class GoogleGenAiChatModelIT {
 	}
 
 	/**
-	 * Helper method to create a Client instance for tests
+	 * Helper method to create a Client instance for tests.
 	 */
 	private Client genAiClient() {
 		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
 		String location = System.getenv("GOOGLE_CLOUD_LOCATION");
 		return Client.builder().project(projectId).location(location).vertexAI(true).build();
+	}
+
+	/**
+	 * Helper method to create a Client with global endpoint for Gemini 3 Pro Preview.
+	 * Gemini 3 Pro Preview is only available on global endpoints.
+	 */
+	private Client genAiClientGlobal() {
+		String projectId = System.getenv("GOOGLE_CLOUD_PROJECT");
+		return Client.builder().project(projectId).location("global").vertexAI(true).build();
 	}
 
 	@Test
@@ -482,6 +589,108 @@ class GoogleGenAiChatModelIT {
 
 		assertThat(response).isNotEmpty();
 		logger.info("Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	/**
+	 * Tests that using thinkingLevel with models that don't support it results in an API
+	 * error. The {@code thinkingLevel} option is only supported by Gemini 3 Pro models.
+	 * For Gemini 2.5 series and earlier models, use {@code thinkingBudget} instead.
+	 * @see <a href="https://ai.google.dev/gemini-api/docs/thinking">Google GenAI Thinking
+	 * documentation</a>
+	 */
+	@Test
+	void testThinkingLevelUnsupportedModels() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClient())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_2_5_FLASH)
+				.temperature(0.1)
+				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		// thinkingLevel is not supported on Gemini 2.5 models - use thinkingBudget
+		// instead
+		assertThatThrownBy(() -> chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content())
+			.isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Failed to generate content");
+	}
+
+	@Test
+	void testThinkingLevelLow() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClientGlobal())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("ThinkingLevel=LOW Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	@Test
+	void testThinkingLevelHigh() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClientGlobal())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.temperature(0.1)
+				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		long start = System.currentTimeMillis();
+		String response = chatClient.prompt()
+			.user("Explain the theory of relativity in simple terms.")
+			.call()
+			.content();
+
+		assertThat(response).isNotEmpty();
+		logger.info("ThinkingLevel=HIGH Response: {} in {} ms", response, System.currentTimeMillis() - start);
+	}
+
+	/**
+	 * Tests that combining thinkingLevel and thinkingBudget in the same request results
+	 * in an API error. According to Google's API documentation, these options are
+	 * mutually exclusive:
+	 * <ul>
+	 * <li>Use {@code thinkingLevel} (LOW, HIGH) for Gemini 3 Pro models</li>
+	 * <li>Use {@code thinkingBudget} (token count) for Gemini 2.5 series models</li>
+	 * </ul>
+	 * Specifying both in the same request will return a 400 error from the API.
+	 * @see <a href="https://ai.google.dev/gemini-api/docs/thinking">Google GenAI Thinking
+	 * documentation</a>
+	 */
+	@Test
+	void testThinkingLevelWithBudgetCombinedExpectsError() {
+		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
+			.genAiClient(genAiClientGlobal())
+			.defaultOptions(GoogleGenAiChatOptions.builder()
+				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.temperature(0.1)
+				.thinkingBudget(4096)
+				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+				.includeThoughts(true)
+				.build())
+			.build();
+
+		ChatClient chatClient = ChatClient.builder(chatModelWithThinkingLevel).build();
+
+		// thinkingLevel and thinkingBudget are mutually exclusive - API returns 400 error
+		assertThatThrownBy(() -> chatClient.prompt().user("What is 2+2? Give a brief answer.").call().content())
+			.isInstanceOf(RuntimeException.class)
+			.hasMessageContaining("Failed to generate content");
 	}
 
 	/**

@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -111,7 +112,7 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
 	public static final class Builder {
 
-		private List<String> sensitiveWords;
+		private @Nullable List<String> sensitiveWords;
 
 		private String failureResponse = DEFAULT_FAILURE_RESPONSE;
 
@@ -136,6 +137,7 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		public SafeGuardAdvisor build() {
+			Assert.state(this.sensitiveWords != null, "Sensitive words must not be null!");
 			return new SafeGuardAdvisor(this.sensitiveWords, this.failureResponse, this.order);
 		}
 

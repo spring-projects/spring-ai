@@ -33,6 +33,7 @@
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
 **** OCI Generative AI
 ***** xref:api/chat/oci-genai/cohere-chat.adoc[Cohere]
+**** xref:api/chat/openai-sdk-chat.adoc[OpenAI SDK (Official)]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/qianfan-chat.adoc[QianFan]
 **** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]
@@ -49,6 +50,7 @@
 **** xref:api/embeddings/oci-genai-embeddings.adoc[OCI GenAI]
 **** xref:api/embeddings/ollama-embeddings.adoc[Ollama]
 **** xref:api/embeddings/onnx.adoc[(ONNX) Transformers]
+**** xref:api/embeddings/openai-sdk-embeddings.adoc[OpenAI SDK (Official)]
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
 **** xref:api/embeddings/postgresml-embeddings.adoc[PostgresML]
 **** xref:api/embeddings/qianfan-embeddings.adoc[QianFan]
@@ -59,6 +61,7 @@
 
 *** xref:api/imageclient.adoc[Image Models]
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
+**** xref:api/image/openai-sdk-image.adoc[OpenAI SDK (Official)]
 **** xref:api/image/openai-image.adoc[OpenAI]
 **** xref:api/image/stabilityai-image.adoc[Stability]
 **** xref:api/image/zhipuai-image.adoc[ZhiPuAI]
@@ -103,6 +106,7 @@
 ** xref:api/vectordbs.adoc[]
 *** xref:api/vectordbs/azure.adoc[]
 *** xref:api/vectordbs/azure-cosmos-db.adoc[]
+*** xref:api/vectordbs/bedrock-knowledge-base.adoc[]
 *** xref:api/vectordbs/apache-cassandra.adoc[]
 *** xref:api/vectordbs/chroma.adoc[]
 *** xref:api/vectordbs/couchbase.adoc[]
@@ -121,6 +125,7 @@
 *** xref:api/vectordbs/hana.adoc[SAP Hana]
 *** xref:api/vectordbs/typesense.adoc[]
 *** xref:api/vectordbs/weaviate.adoc[]
+*** xref:api/vectordbs/s3-vector-store.adoc[]
 
 ** xref:observability/index.adoc[]
 
@@ -132,6 +137,8 @@
 * Guides
 ** https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI]
 ** xref:guides/getting-started-mcp.adoc[Getting Started with MCP]
+** xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery]
+** xref:guides/llm-as-judge.adoc[LLM-as-a-Judge Evaluation]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 ** xref:api/effective-agents.adoc[Building Effective Agents]
 ** xref:api/cloud-bindings.adoc[Deploying to the Cloud]

@@ -94,7 +94,7 @@ class OllamaChatModelMultimodalIT extends BaseOllamaIT {
 		@Bean
 		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			RetryPolicy retryPolicy = RetryPolicy.builder()
-				.maxAttempts(1)
+				.maxRetries(1)
 				.includes(TransientAiException.class)
 				.delay(Duration.ofSeconds(1))
 				.build();

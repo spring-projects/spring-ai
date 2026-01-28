@@ -34,7 +34,7 @@ class CompressionQueryTransformerTests {
 	@Test
 	void whenChatClientBuilderIsNullThenThrow() {
 		assertThatThrownBy(() -> CompressionQueryTransformer.builder().chatClientBuilder(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 

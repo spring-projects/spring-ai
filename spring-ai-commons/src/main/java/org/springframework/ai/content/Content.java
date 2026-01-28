@@ -18,6 +18,8 @@ package org.springframework.ai.content;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Data structure that contains content and metadata. Common parent for the
  * {@link org.springframework.ai.document.Document} and the
@@ -33,7 +35,7 @@ public interface Content {
 	 * Get the content of the message.
 	 * @return the content of the message
 	 */
-	String getText();
+	@Nullable String getText();
 
 	/**
 	 * Get the metadata associated with the content.

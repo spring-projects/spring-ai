@@ -34,7 +34,7 @@ class TranslationQueryTransformerTests {
 	@Test
 	void whenChatClientBuilderIsNullThenThrow() {
 		assertThatThrownBy(() -> TranslationQueryTransformer.builder().chatClientBuilder(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 

@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.AudioParameters;
@@ -42,6 +43,7 @@ import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.StreamO
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.ToolChoiceBuilder;
 import org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.WebSearchOptions;
 import org.springframework.ai.openai.api.ResponseFormat;
+import org.springframework.ai.openai.api.ResponseFormat.Type;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -57,7 +59,7 @@ import org.springframework.util.Assert;
  * @since 0.8.0
  */
 @JsonInclude(Include.NON_NULL)
-public class OpenAiChatOptions implements ToolCallingChatOptions {
+public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiChatOptions.class);
 
@@ -695,6 +697,18 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
+	@JsonIgnore
+	public String getOutputSchema() {
+		return this.getResponseFormat().getSchema();
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String outputSchema) {
+		this.setResponseFormat(ResponseFormat.builder().type(Type.JSON_SCHEMA).jsonSchema(outputSchema).build());
+	}
+
+	@Override
 	public OpenAiChatOptions copy() {
 		return OpenAiChatOptions.fromOptions(this);
 	}
@@ -887,6 +901,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions {
 
 		public Builder responseFormat(ResponseFormat responseFormat) {
 			this.options.responseFormat = responseFormat;
+			return this;
+		}
+
+		public Builder outputSchema(String outputSchema) {
+			this.options.setOutputSchema(outputSchema);
 			return this;
 		}
 

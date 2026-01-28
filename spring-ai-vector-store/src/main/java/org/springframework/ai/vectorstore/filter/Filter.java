@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.filter;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Portable runtime generative for metadata filter expressions. This generic generative is
@@ -78,7 +80,7 @@ public class Filter {
 	 */
 	public enum ExpressionType {
 
-		AND, OR, EQ, NE, GT, GTE, LT, LTE, IN, NIN, NOT
+		AND, OR, EQ, NE, GT, GTE, LT, LTE, IN, NIN, NOT, ISNULL, ISNOTNULL
 
 	}
 
@@ -122,7 +124,7 @@ public class Filter {
 	 * type {@link Value} or array of values. For the AND|OR type the right operand must
 	 * be another {@link Expression}.
 	 */
-	public record Expression(ExpressionType type, Operand left, Operand right) implements Operand {
+	public record Expression(ExpressionType type, Operand left, @Nullable Operand right) implements Operand {
 
 		public Expression(ExpressionType type, Operand operand) {
 			this(type, operand, null);

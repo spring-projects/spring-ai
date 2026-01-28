@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.ChatModelCallAdvisor;
@@ -60,7 +61,6 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -143,8 +143,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final List<Media> media = new ArrayList<>();
 
-		@Nullable
-		private String text;
+		private @Nullable String text;
 
 		@Override
 		public PromptUserSpec media(Media... media) {
@@ -236,8 +235,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		@Nullable
-		protected String text() {
+		protected @Nullable String text() {
 			return this.text;
 		}
 
@@ -261,8 +259,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final Map<String, Object> metadata = new HashMap<>();
 
-		@Nullable
-		private String text;
+		private @Nullable String text;
 
 		@Override
 		public PromptSystemSpec text(String text) {
@@ -325,8 +322,7 @@ public class DefaultChatClient implements ChatClient {
 			return this;
 		}
 
-		@Nullable
-		protected String text() {
+		protected @Nullable String text() {
 			return this.text;
 		}
 
@@ -433,8 +429,16 @@ public class DefaultChatClient implements ChatClient {
 
 		protected <T> ResponseEntity<ChatResponse, T> doResponseEntity(StructuredOutputConverter<T> outputConverter) {
 			Assert.notNull(outputConverter, "structuredOutputConverter cannot be null");
-			var chatResponse = doGetObservableChatClientResponse(this.request, outputConverter.getFormat())
-				.chatResponse();
+
+			this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
+
+			if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
+				this.request.context()
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), beanOutputConverter.getJsonSchema());
+			}
+
+			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
 			var responseContent = getContentFromChatResponse(chatResponse);
 			if (responseContent == null) {
 				return new ResponseEntity<>(chatResponse, null);
@@ -444,31 +448,43 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		@Nullable
-		public <T> T entity(ParameterizedTypeReference<T> type) {
+		public <T> @Nullable T entity(ParameterizedTypeReference<T> type) {
 			Assert.notNull(type, "type cannot be null");
 			return doSingleWithBeanOutputConverter(new BeanOutputConverter<>(type));
 		}
 
 		@Override
-		@Nullable
-		public <T> T entity(StructuredOutputConverter<T> structuredOutputConverter) {
+		public <T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter) {
 			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
 			return doSingleWithBeanOutputConverter(structuredOutputConverter);
 		}
 
 		@Override
-		@Nullable
-		public <T> T entity(Class<T> type) {
+		public <T> @Nullable T entity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
 			var outputConverter = new BeanOutputConverter<>(type);
 			return doSingleWithBeanOutputConverter(outputConverter);
 		}
 
-		@Nullable
-		private <T> T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
-			var chatResponse = doGetObservableChatClientResponse(this.request, outputConverter.getFormat())
-				.chatResponse();
+		private <T> @Nullable T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
+
+			if (StringUtils.hasText(outputConverter.getFormat())) {
+				// Used for default structured output format support, based on prompt
+				// instructions.
+				this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
+			}
+
+			if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
+				// Used for native structured output support, e.g. AI model API should
+				// provide structured output support.
+				this.request.context()
+					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), beanOutputConverter.getJsonSchema());
+
+			}
+
+			var chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
+
 			var stringResponse = getContentFromChatResponse(chatResponse);
 			if (stringResponse == null) {
 				return null;
@@ -482,28 +498,20 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
-		@Nullable
-		public ChatResponse chatResponse() {
+		public @Nullable ChatResponse chatResponse() {
 			return doGetObservableChatClientResponse(this.request).chatResponse();
 		}
 
 		@Override
-		@Nullable
-		public String content() {
+		public @Nullable String content() {
 			ChatResponse chatResponse = doGetObservableChatClientResponse(this.request).chatResponse();
 			return getContentFromChatResponse(chatResponse);
 		}
 
 		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest) {
-			return doGetObservableChatClientResponse(chatClientRequest, null);
-		}
 
-		private ChatClientResponse doGetObservableChatClientResponse(ChatClientRequest chatClientRequest,
-				@Nullable String outputFormat) {
-
-			if (outputFormat != null) {
-				chatClientRequest.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputFormat);
-			}
+			String outputFormat = (String) chatClientRequest.context()
+				.getOrDefault(ChatClientAttributes.OUTPUT_FORMAT.getKey(), null);
 
 			ChatClientObservationContext observationContext = ChatClientObservationContext.builder()
 				.request(chatClientRequest)
@@ -526,8 +534,7 @@ public class DefaultChatClient implements ChatClient {
 			return chatClientResponse != null ? chatClientResponse : ChatClientResponse.builder().build();
 		}
 
-		@Nullable
-		private static String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
+		private static @Nullable String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {
 			return Optional.ofNullable(chatResponse)
 				.map(ChatResponse::getResult)
 				.map(Generation::getOutput)
@@ -594,6 +601,7 @@ public class DefaultChatClient implements ChatClient {
 		}
 
 		@Override
+		@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1290
 		public Flux<ChatResponse> chatResponse() {
 			return doGetObservableFluxChatResponse(this.request).mapNotNull(ChatClientResponse::chatResponse);
 		}
@@ -601,8 +609,7 @@ public class DefaultChatClient implements ChatClient {
 		@Override
 		public Flux<String> content() {
 			// @formatter:off
-			return doGetObservableFluxChatResponse(this.request)
-					.mapNotNull(ChatClientResponse::chatResponse)
+			return chatResponse()
 					.map(r -> Optional.ofNullable(r.getResult())
 							.map(Generation::getOutput)
 							.map(AbstractMessage::getText)
@@ -619,8 +626,7 @@ public class DefaultChatClient implements ChatClient {
 
 		private final ChatClientObservationConvention chatClientObservationConvention;
 
-		@Nullable
-		private final AdvisorObservationConvention advisorObservationConvention;
+		private final @Nullable AdvisorObservationConvention advisorObservationConvention;
 
 		private final ChatModel chatModel;
 
@@ -650,14 +656,11 @@ public class DefaultChatClient implements ChatClient {
 
 		private TemplateRenderer templateRenderer;
 
-		@Nullable
-		private String userText;
+		private @Nullable String userText;
 
-		@Nullable
-		private String systemText;
+		private @Nullable String systemText;
 
-		@Nullable
-		private ChatOptions chatOptions;
+		private @Nullable ChatOptions chatOptions;
 
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
@@ -719,8 +722,7 @@ public class DefaultChatClient implements ChatClient {
 			this.advisorObservationConvention = advisorObservationConvention;
 		}
 
-		@Nullable
-		public String getUserText() {
+		public @Nullable String getUserText() {
 			return this.userText;
 		}
 
@@ -732,8 +734,7 @@ public class DefaultChatClient implements ChatClient {
 			return this.userMetadata;
 		}
 
-		@Nullable
-		public String getSystemText() {
+		public @Nullable String getSystemText() {
 			return this.systemText;
 		}
 
@@ -745,8 +746,7 @@ public class DefaultChatClient implements ChatClient {
 			return this.systemMetadata;
 		}
 
-		@Nullable
-		public ChatOptions getChatOptions() {
+		public @Nullable ChatOptions getChatOptions() {
 			return this.chatOptions;
 		}
 
@@ -806,15 +806,16 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			if (StringUtils.hasText(this.userText)) {
-				builder.defaultUser(u -> u.text(this.userText)
+				String text = this.userText;
+				builder.defaultUser(u -> u.text(text)
 					.params(this.userParams)
 					.media(this.media.toArray(new Media[0]))
 					.metadata(this.userMetadata));
 			}
 
 			if (StringUtils.hasText(this.systemText)) {
-				builder.defaultSystem(
-						s -> s.text(this.systemText).params(this.systemParams).metadata(this.systemMetadata));
+				String text = this.systemText;
+				builder.defaultSystem(s -> s.text(text).params(this.systemParams).metadata(this.systemMetadata));
 			}
 
 			if (this.chatOptions != null) {

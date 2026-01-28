@@ -16,6 +16,8 @@
 
 package org.springframework.ai.converter;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A {@link ResponseTextCleaner} that trims leading and trailing whitespace from text.
  *
@@ -25,7 +27,7 @@ package org.springframework.ai.converter;
 public class WhitespaceCleaner implements ResponseTextCleaner {
 
 	@Override
-	public String clean(String text) {
+	public @Nullable String clean(@Nullable String text) {
 		return text != null ? text.trim() : text;
 	}
 

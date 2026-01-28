@@ -61,7 +61,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
-import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -87,6 +86,7 @@ import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.vertexai.gemini.api.VertexAiGeminiApi;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiConstants;
+import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetyRating;
 import org.springframework.ai.vertexai.gemini.common.VertexAiGeminiSafetySetting;
 import org.springframework.ai.vertexai.gemini.schema.VertexAiSchemaConverter;
 import org.springframework.ai.vertexai.gemini.schema.VertexToolCallingManager;
@@ -404,9 +404,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					GenerateContentResponse.UsageMetadata usage = generateContentResponse.getUsageMetadata();
-					Usage currentUsage = (usage != null)
-							? new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount())
-							: new EmptyUsage();
+					Usage currentUsage = new DefaultUsage(usage.getPromptTokenCount(), usage.getCandidatesTokenCount());
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 
@@ -520,7 +518,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 						.toList();
 
 					GenerateContentResponse.UsageMetadata usage = response.getUsageMetadata();
-					Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+					Usage currentUsage = getDefaultUsage(usage);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage));
 					return Flux.just(chatResponse);
@@ -597,8 +595,16 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		VertexAiGeminiApi.LogProbs logprobs = new VertexAiGeminiApi.LogProbs(candidate.getAvgLogprobs(), topCandidates,
 				chosenCandidates);
 
+		// Extract safety ratings from the candidate
+		List<VertexAiGeminiSafetyRating> safetyRatings = candidate.getSafetyRatingsList()
+			.stream()
+			.map(sr -> new VertexAiGeminiSafetyRating(toSafetyRatingHarmCategory(sr.getCategory()),
+					toSafetyRatingHarmProbability(sr.getProbability()), sr.getBlocked(), sr.getProbabilityScore(),
+					toSafetyRatingHarmSeverity(sr.getSeverity()), sr.getSeverityScore()))
+			.toList();
+
 		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
-				candidateFinishReason, "logprobs", logprobs);
+				candidateFinishReason, "logprobs", logprobs, "safetyRatings", safetyRatings);
 
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
 			.finishReason(candidateFinishReason.name())
@@ -634,6 +640,42 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	private DefaultUsage getDefaultUsage(GenerateContentResponse.UsageMetadata usageMetadata) {
 		return new DefaultUsage(usageMetadata.getPromptTokenCount(), usageMetadata.getCandidatesTokenCount(),
 				usageMetadata.getTotalTokenCount(), usageMetadata);
+	}
+
+	private VertexAiGeminiSafetyRating.HarmCategory toSafetyRatingHarmCategory(
+			com.google.cloud.vertexai.api.HarmCategory category) {
+		return switch (category) {
+			case HARM_CATEGORY_HATE_SPEECH -> VertexAiGeminiSafetyRating.HarmCategory.HARM_CATEGORY_HATE_SPEECH;
+			case HARM_CATEGORY_DANGEROUS_CONTENT ->
+				VertexAiGeminiSafetyRating.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT;
+			case HARM_CATEGORY_HARASSMENT -> VertexAiGeminiSafetyRating.HarmCategory.HARM_CATEGORY_HARASSMENT;
+			case HARM_CATEGORY_SEXUALLY_EXPLICIT ->
+				VertexAiGeminiSafetyRating.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT;
+			case HARM_CATEGORY_CIVIC_INTEGRITY -> VertexAiGeminiSafetyRating.HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY;
+			default -> VertexAiGeminiSafetyRating.HarmCategory.HARM_CATEGORY_UNSPECIFIED;
+		};
+	}
+
+	private VertexAiGeminiSafetyRating.HarmProbability toSafetyRatingHarmProbability(
+			com.google.cloud.vertexai.api.SafetyRating.HarmProbability probability) {
+		return switch (probability) {
+			case NEGLIGIBLE -> VertexAiGeminiSafetyRating.HarmProbability.NEGLIGIBLE;
+			case LOW -> VertexAiGeminiSafetyRating.HarmProbability.LOW;
+			case MEDIUM -> VertexAiGeminiSafetyRating.HarmProbability.MEDIUM;
+			case HIGH -> VertexAiGeminiSafetyRating.HarmProbability.HIGH;
+			default -> VertexAiGeminiSafetyRating.HarmProbability.HARM_PROBABILITY_UNSPECIFIED;
+		};
+	}
+
+	private VertexAiGeminiSafetyRating.HarmSeverity toSafetyRatingHarmSeverity(
+			com.google.cloud.vertexai.api.SafetyRating.HarmSeverity severity) {
+		return switch (severity) {
+			case HARM_SEVERITY_NEGLIGIBLE -> VertexAiGeminiSafetyRating.HarmSeverity.HARM_SEVERITY_NEGLIGIBLE;
+			case HARM_SEVERITY_LOW -> VertexAiGeminiSafetyRating.HarmSeverity.HARM_SEVERITY_LOW;
+			case HARM_SEVERITY_MEDIUM -> VertexAiGeminiSafetyRating.HarmSeverity.HARM_SEVERITY_MEDIUM;
+			case HARM_SEVERITY_HIGH -> VertexAiGeminiSafetyRating.HarmSeverity.HARM_SEVERITY_HIGH;
+			default -> VertexAiGeminiSafetyRating.HarmSeverity.HARM_SEVERITY_UNSPECIFIED;
+		};
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {
@@ -727,6 +769,9 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		}
 		if (options.getTopK() != null) {
 			generationConfigBuilder.setTopK(options.getTopK());
+		}
+		if (options.getSeed() != null) {
+			generationConfigBuilder.setSeed(options.getSeed());
 		}
 		if (options.getTopP() != null) {
 			generationConfigBuilder.setTopP(options.getTopP().floatValue());

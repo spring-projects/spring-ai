@@ -33,7 +33,6 @@ import org.springframework.core.retry.RetryTemplate;
 import org.springframework.core.retry.Retryable;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.lang.NonNull;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -66,18 +65,18 @@ public abstract class RetryUtils {
 	public static final ResponseErrorHandler DEFAULT_RESPONSE_ERROR_HANDLER = new ResponseErrorHandler() {
 
 		@Override
-		public boolean hasError(final @NonNull ClientHttpResponse response) throws IOException {
+		public boolean hasError(final ClientHttpResponse response) throws IOException {
 			return response.getStatusCode().isError();
 		}
 
 		@Override
-		public void handleError(final URI url, final HttpMethod method, final @NonNull ClientHttpResponse response)
+		public void handleError(final URI url, final HttpMethod method, final ClientHttpResponse response)
 				throws IOException {
 			handleError(response);
 		}
 
 		@SuppressWarnings("removal")
-		public void handleError(final @NonNull ClientHttpResponse response) throws IOException {
+		public void handleError(final ClientHttpResponse response) throws IOException {
 			if (response.getStatusCode().isError()) {
 				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
 				String message = String.format("%s - %s", response.getStatusCode().value(), error);
@@ -108,7 +107,7 @@ public abstract class RetryUtils {
 
 	private static RetryTemplate createDefaultRetryTemplate() {
 		RetryPolicy retryPolicy = RetryPolicy.builder()
-			.maxAttempts(DEFAULT_MAX_ATTEMPTS)
+			.maxRetries(DEFAULT_MAX_ATTEMPTS)
 			.includes(TransientAiException.class)
 			.includes(ResourceAccessException.class)
 			.delay(Duration.ofMillis(DEFAULT_INITIAL_INTERVAL))
@@ -137,7 +136,7 @@ public abstract class RetryUtils {
 	 */
 	private static RetryTemplate createShortRetryTemplate() {
 		RetryPolicy retryPolicy = RetryPolicy.builder()
-			.maxAttempts(DEFAULT_MAX_ATTEMPTS)
+			.maxRetries(DEFAULT_MAX_ATTEMPTS)
 			.includes(TransientAiException.class)
 			.includes(ResourceAccessException.class)
 			.delay(Duration.ofMillis(SHORT_INITIAL_INTERVAL))

@@ -58,7 +58,7 @@ class RetrievalAugmentationAdvisorTests {
 	@Test
 	void whenDocumentRetrieverIsNullThenThrow() {
 		assertThatThrownBy(() -> RetrievalAugmentationAdvisor.builder().documentRetriever(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("documentRetriever cannot be null");
 	}
 

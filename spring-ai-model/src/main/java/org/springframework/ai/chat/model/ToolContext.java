@@ -74,7 +74,7 @@ public final class ToolContext {
 	 * @return The tool call history. TODO: review whether we still need this or
 	 * ToolCallingManager solves the original issue
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked", "NullAway" })
 	public List<Message> getToolCallHistory() {
 		return (List<Message>) this.context.get(TOOL_CALL_HISTORY);
 	}

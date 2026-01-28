@@ -18,8 +18,10 @@ package org.springframework.ai.chat.memory.repository.mongo;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +34,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.util.Assert;
 
 /**
  * An implementation of {@link ChatMemoryRepository} for MongoDB.
@@ -80,19 +83,12 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	public static Message mapMessage(Conversation conversation) {
+		final String content = Objects.requireNonNullElse(conversation.message().content(), "");
 		return switch (conversation.message().type()) {
-			case "USER" -> UserMessage.builder()
-				.text(conversation.message().content())
-				.metadata(conversation.message().metadata())
-				.build();
-			case "ASSISTANT" -> AssistantMessage.builder()
-				.content(conversation.message().content())
-				.properties(conversation.message().metadata())
-				.build();
-			case "SYSTEM" -> SystemMessage.builder()
-				.text(conversation.message().content())
-				.metadata(conversation.message().metadata())
-				.build();
+			case "USER" -> UserMessage.builder().text(content).metadata(conversation.message().metadata()).build();
+			case "ASSISTANT" ->
+				AssistantMessage.builder().content(content).properties(conversation.message().metadata()).build();
+			case "SYSTEM" -> SystemMessage.builder().text(content).metadata(conversation.message().metadata()).build();
 			default -> {
 				logger.warn("Unsupported message type: {}", conversation.message().type());
 				throw new IllegalStateException("Unsupported message type: " + conversation.message().type());
@@ -106,7 +102,7 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 
 	public final static class Builder {
 
-		private MongoTemplate mongoTemplate;
+		private @Nullable MongoTemplate mongoTemplate;
 
 		private Builder() {
 		}
@@ -117,6 +113,7 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 		}
 
 		public MongoChatMemoryRepository build() {
+			Assert.state(this.mongoTemplate != null, "mongoTemplate must be provided");
 			return new MongoChatMemoryRepository(this.mongoTemplate);
 		}
 

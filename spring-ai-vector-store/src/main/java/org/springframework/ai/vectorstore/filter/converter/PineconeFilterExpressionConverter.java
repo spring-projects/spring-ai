@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.filter.converter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
+import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into Pinecone metadata filter expression format.
@@ -30,7 +31,7 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
-
+		Assert.state(exp.right() != null, "Codepath expects exp.right to be non-null");
 		context.append("{");
 		if (exp.type() == ExpressionType.AND || exp.type() == ExpressionType.OR) {
 			context.append(getOperationSymbol(exp));

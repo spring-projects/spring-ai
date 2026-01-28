@@ -154,7 +154,7 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.api-key   | Optional override for the `spring.ai.openai.api-key` to provide a chat-specific API Key. |  -
 | spring.ai.openai.chat.organization-id | Optionally, you can specify which organization to use for an API request. |  -
 | spring.ai.openai.chat.project-id      | Optionally, you can specify which project to use for an API request. |  -
-| spring.ai.openai.chat.options.model | Name of the OpenAI chat model to use. You can select between models such as: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`, and more. See the https://platform.openai.com/docs/models[models] page for more information. | `gpt-4o-mini`
+| spring.ai.openai.chat.options.model | Name of the OpenAI chat model to use. You can select between models such as: `gpt-5-mini`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`, and more. See the https://platform.openai.com/docs/models[models] page for more information. | `gpt-5-mini`
 | spring.ai.openai.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `top_p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.8
 | spring.ai.openai.chat.options.frequencyPenalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim. | 0.0f
 | spring.ai.openai.chat.options.logitBias | Modify the likelihood of specified tokens appearing in the completion. | -
@@ -784,7 +784,7 @@ Each property under `spring.ai.openai.chat.options.extra-body` becomes a top-lev
 
 [source,properties]
 ----
-spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.base-url=http://localhost:8000
 spring.ai.openai.chat.options.model=meta-llama/Llama-3-8B-Instruct
 spring.ai.openai.chat.options.temperature=0.7
 spring.ai.openai.chat.options.extra-body.top_k=50
@@ -831,7 +831,7 @@ When running vLLM with a Llama model, you might want to use sampling parameters 
 
 [source,properties]
 ----
-spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.base-url=http://localhost:8000
 spring.ai.openai.chat.options.model=meta-llama/Llama-3-70B-Instruct
 spring.ai.openai.chat.options.extra-body.top_k=40
 spring.ai.openai.chat.options.extra-body.top_p=0.95
@@ -998,7 +998,7 @@ vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
 
 [source,properties]
 ----
-spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.base-url=http://localhost:8000
 spring.ai.openai.chat.options.model=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
 ----
 

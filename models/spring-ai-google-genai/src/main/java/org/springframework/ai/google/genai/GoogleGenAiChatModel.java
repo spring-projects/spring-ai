@@ -40,6 +40,7 @@ import com.google.genai.types.Part;
 import com.google.genai.types.SafetySetting;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
+import com.google.genai.types.ThinkingLevel;
 import com.google.genai.types.Tool;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -73,6 +74,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
+import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
@@ -281,20 +283,48 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		else if (message instanceof AssistantMessage assistantMessage) {
 			List<Part> parts = new ArrayList<>();
-			if (StringUtils.hasText(assistantMessage.getText())) {
-				parts.add(Part.fromText(assistantMessage.getText()));
+
+			// Check if there are thought signatures to restore.
+			// Per Google's documentation, thought signatures must be attached to the
+			// first functionCall part in each step of the current turn.
+			// See: https://ai.google.dev/gemini-api/docs/thought-signatures
+			List<byte[]> thoughtSignatures = null;
+			if (assistantMessage.getMetadata() != null
+					&& assistantMessage.getMetadata().containsKey("thoughtSignatures")) {
+				Object signaturesObj = assistantMessage.getMetadata().get("thoughtSignatures");
+				if (signaturesObj instanceof List) {
+					thoughtSignatures = new ArrayList<>((List<byte[]>) signaturesObj);
+				}
 			}
+
+			// Add text part (without thought signature - signatures go on functionCall
+			// parts)
+			if (StringUtils.hasText(assistantMessage.getText())) {
+				parts.add(Part.builder().text(assistantMessage.getText()).build());
+			}
+
+			// Add function call parts with thought signatures attached.
+			// Per Google's docs: "The first functionCall part in each step of the
+			// current turn must include its thought_signature."
 			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-				parts.addAll(assistantMessage.getToolCalls()
-					.stream()
-					.map(toolCall -> Part.builder()
+				List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+				for (int i = 0; i < toolCalls.size(); i++) {
+					AssistantMessage.ToolCall toolCall = toolCalls.get(i);
+					Part.Builder partBuilder = Part.builder()
 						.functionCall(FunctionCall.builder()
 							.name(toolCall.name())
 							.args(parseJsonToMap(toolCall.arguments()))
-							.build())
-						.build())
-					.toList());
+							.build());
+
+					// Attach thought signature to function call part if available
+					if (thoughtSignatures != null && !thoughtSignatures.isEmpty()) {
+						partBuilder.thoughtSignature(thoughtSignatures.remove(0));
+					}
+
+					parts.add(partBuilder.build());
+				}
 			}
+
 			return parts;
 		}
 		else if (message instanceof ToolResponseMessage toolResponseMessage) {
@@ -601,8 +631,22 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		int candidateIndex = candidate.index().orElse(0);
 		FinishReason candidateFinishReason = candidate.finishReason().orElse(new FinishReason(FinishReason.Known.STOP));
 
-		Map<String, Object> messageMetadata = Map.of("candidateIndex", candidateIndex, "finishReason",
-				candidateFinishReason);
+		Map<String, Object> messageMetadata = new HashMap<>();
+		messageMetadata.put("candidateIndex", candidateIndex);
+		messageMetadata.put("finishReason", candidateFinishReason);
+
+		// Extract thought signatures from response parts if present
+		if (candidate.content().isPresent() && candidate.content().get().parts().isPresent()) {
+			List<Part> parts = candidate.content().get().parts().get();
+			List<byte[]> thoughtSignatures = parts.stream()
+				.filter(part -> part.thoughtSignature().isPresent())
+				.map(part -> part.thoughtSignature().get())
+				.toList();
+
+			if (!thoughtSignatures.isEmpty()) {
+				messageMetadata.put("thoughtSignatures", thoughtSignatures);
+			}
+		}
 
 		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
 			.finishReason(candidateFinishReason.toString())
@@ -707,16 +751,32 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (requestOptions.getResponseMimeType() != null) {
 			configBuilder.responseMimeType(requestOptions.getResponseMimeType());
 		}
+		if (requestOptions.getResponseSchema() != null) {
+			configBuilder.responseJsonSchema(jsonToSchema(requestOptions.getResponseSchema()));
+		}
 		if (requestOptions.getFrequencyPenalty() != null) {
 			configBuilder.frequencyPenalty(requestOptions.getFrequencyPenalty().floatValue());
 		}
 		if (requestOptions.getPresencePenalty() != null) {
 			configBuilder.presencePenalty(requestOptions.getPresencePenalty().floatValue());
 		}
-		if (requestOptions.getThinkingBudget() != null) {
-			configBuilder
-				.thinkingConfig(ThinkingConfig.builder().thinkingBudget(requestOptions.getThinkingBudget()).build());
+
+		// Build thinking config if any thinking option is set
+		if (requestOptions.getThinkingBudget() != null || requestOptions.getIncludeThoughts() != null
+				|| requestOptions.getThinkingLevel() != null) {
+			ThinkingConfig.Builder thinkingBuilder = ThinkingConfig.builder();
+			if (requestOptions.getThinkingBudget() != null) {
+				thinkingBuilder.thinkingBudget(requestOptions.getThinkingBudget());
+			}
+			if (requestOptions.getIncludeThoughts() != null) {
+				thinkingBuilder.includeThoughts(requestOptions.getIncludeThoughts());
+			}
+			if (requestOptions.getThinkingLevel() != null) {
+				thinkingBuilder.thinkingLevel(mapToGenAiThinkingLevel(requestOptions.getThinkingLevel()));
+			}
+			configBuilder.thinkingConfig(thinkingBuilder.build());
 		}
+
 		if (requestOptions.getLabels() != null && !requestOptions.getLabels().isEmpty()) {
 			configBuilder.labels(requestOptions.getLabels());
 		}
@@ -809,6 +869,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			case OFF ->
 				new com.google.genai.types.HarmBlockThreshold(com.google.genai.types.HarmBlockThreshold.Known.OFF);
 			default -> throw new IllegalArgumentException("Unknown HarmBlockThreshold: " + threshold);
+		};
+	}
+
+	private static ThinkingLevel mapToGenAiThinkingLevel(GoogleGenAiThinkingLevel level) {
+		return switch (level) {
+			case THINKING_LEVEL_UNSPECIFIED -> new ThinkingLevel(ThinkingLevel.Known.THINKING_LEVEL_UNSPECIFIED);
+			case LOW -> new ThinkingLevel(ThinkingLevel.Known.LOW);
+			case HIGH -> new ThinkingLevel(ThinkingLevel.Known.HIGH);
 		};
 	}
 
@@ -1065,7 +1133,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 * See: <a href=
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite">gemini-2.5-flash-lite</a>
 		 */
-		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite");
+		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite"),
+
+		GEMINI_3_PRO_PREVIEW("gemini-3-pro-preview");
 
 		public final String value;
 

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class StaticToolCallbackResolver implements ToolCallbackResolver {
 	}
 
 	@Override
-	public ToolCallback resolve(String toolName) {
+	public @Nullable ToolCallback resolve(String toolName) {
 		Assert.hasText(toolName, "toolName cannot be null or empty");
 		logger.debug("ToolCallback resolution attempt from static registry");
 		return this.toolCallbacks.get(toolName);

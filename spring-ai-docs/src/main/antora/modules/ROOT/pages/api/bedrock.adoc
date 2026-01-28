@@ -64,6 +64,10 @@ spring.ai.bedrock.aws.region=us-east-1
 spring.ai.bedrock.aws.access-key=YOUR_ACCESS_KEY
 spring.ai.bedrock.aws.secret-key=YOUR_SECRET_KEY
 
+spring.ai.bedrock.aws.profile.name=YOUR_PROFILE_NAME
+spring.ai.bedrock.aws.profile.credentials-path=YOUR_CREDENTIALS_PATH
+spring.ai.bedrock.aws.profile.configuration-path=YOUR_CONFIGURATION_PATH
+
 spring.ai.bedrock.aws.timeout=10m
 ----
 
@@ -72,12 +76,13 @@ The `region` property is compulsory.
 AWS credentials are resolved in the following order:
 
 1. Spring-AI Bedrock `spring.ai.bedrock.aws.access-key` and `spring.ai.bedrock.aws.secret-key` properties.
-2. Java System Properties - `aws.accessKeyId` and `aws.secretAccessKey`.
-3. Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
-4. Web Identity Token credentials from system properties or environment variables.
-5. Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI.
-6. Credentials delivered through the Amazon EC2 container service if the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and the security manager has permission to access the variable.
-7. Instance profile credentials delivered through the Amazon EC2 metadata service or set the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables.
+2. Spring-AI Bedrock `spring.ai.bedrock.aws.profile.name`, If `spring.ai.bedrock.aws.profile.credentials-path` and `spring.ai.bedrock.aws.profile.configuration-path` are not specified, Spring AI use the standard AWS shared files: `~/.aws/credentials` for credentials and `~/.aws/config` for configuration.
+3. Java System Properties - `aws.accessKeyId` and `aws.secretAccessKey`.
+4. Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+5. Web Identity Token credentials from system properties or environment variables.
+6. Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI.
+7. Credentials delivered through the Amazon EC2 container service if the `AWS_CONTAINER_CREDENTIALS_RELATIVE_URI` environment variable is set and the security manager has permission to access the variable.
+8. Instance profile credentials delivered through the Amazon EC2 metadata service or set the `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables.
 
 AWS region is resolved in the following order:
 

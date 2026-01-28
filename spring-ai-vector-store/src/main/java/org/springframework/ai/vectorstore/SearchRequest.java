@@ -18,11 +18,12 @@ package org.springframework.ai.vectorstore;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -56,8 +57,7 @@ public class SearchRequest {
 
 	private double similarityThreshold = SIMILARITY_THRESHOLD_ACCEPT_ALL;
 
-	@Nullable
-	private Filter.Expression filterExpression;
+	private Filter.@Nullable Expression filterExpression;
 
 	/**
 	 * Copy an existing {@link SearchRequest.Builder} instance.
@@ -93,8 +93,7 @@ public class SearchRequest {
 		return this.similarityThreshold;
 	}
 
-	@Nullable
-	public Filter.Expression getFilterExpression() {
+	public Filter.@Nullable Expression getFilterExpression() {
 		return this.filterExpression;
 	}
 
@@ -242,7 +241,7 @@ public class SearchRequest {
 		 * metadata filter criteria. The 'null' value stands for no expression filters.
 		 * @return this builder.
 		 */
-		public Builder filterExpression(@Nullable Filter.Expression expression) {
+		public Builder filterExpression(Filter.@Nullable Expression expression) {
 			this.searchRequest.filterExpression = expression;
 			return this;
 		}

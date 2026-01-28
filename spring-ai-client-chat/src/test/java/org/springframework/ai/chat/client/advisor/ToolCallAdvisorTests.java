@@ -37,6 +37,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
@@ -377,18 +378,267 @@ public class ToolCallAdvisorTests {
 		assertThat(advisor.getOrder()).isEqualTo(customOrder);
 	}
 
+	@Test
+	void testBuilderGetters() {
+		ToolCallingManager customManager = mock(ToolCallingManager.class);
+		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 500;
+
+		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder()
+			.toolCallingManager(customManager)
+			.advisorOrder(customOrder);
+
+		assertThat(builder.getToolCallingManager()).isEqualTo(customManager);
+		assertThat(builder.getAdvisorOrder()).isEqualTo(customOrder);
+	}
+
+	@Test
+	void testConversationHistoryEnabledDefaultValue() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		// By default, conversationHistoryEnabled should be true
+		// Verify via the tool call iteration behavior - with history enabled, the full
+		// conversation history is used
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result with multiple messages in history
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertThat(result).isEqualTo(finalResponse);
+	}
+
+	@Test
+	void testConversationHistoryEnabledSetToFalse() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.conversationHistoryEnabled(false)
+			.build();
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result with multiple messages in history
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertThat(result).isEqualTo(finalResponse);
+		// With conversationHistoryEnabled=false, only the last message from history is
+		// used
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void testDisableMemoryBuilderMethod() {
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.disableMemory()
+			.build();
+
+		ChatClientRequest request = createMockRequestWithSystemMessage();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		// Capture the request passed to the terminal advisor on second call
+		ChatClientRequest[] capturedRequest = new ChatClientRequest[1];
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 2) {
+				capturedRequest[0] = req;
+			}
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("assistant response").build(),
+				ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		advisor.adviseCall(request, realChain);
+
+		// Verify second call includes system message and last message from history
+		assertThat(capturedRequest[0]).isNotNull();
+		List<Message> instructions = capturedRequest[0].prompt().getInstructions();
+		assertThat(instructions).hasSize(2);
+		assertThat(instructions.get(0)).isInstanceOf(SystemMessage.class);
+		assertThat(instructions.get(1)).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void testExtendedAdvisorWithCustomHooks() {
+		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
+
+		// Create extended advisor to verify hooks are called
+		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
+				BaseAdvisor.HIGHEST_PRECEDENCE + 300, hookCallCounts);
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse response = createMockResponse(false);
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> response);
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		advisor.adviseCall(request, realChain);
+
+		// Verify hooks were called
+		assertThat(hookCallCounts[0]).isEqualTo(1); // doInitializeLoop called once
+		assertThat(hookCallCounts[1]).isEqualTo(1); // doBeforeCall called once
+		assertThat(hookCallCounts[2]).isEqualTo(1); // doAfterCall called once
+	}
+
+	@Test
+	void testExtendedAdvisorHooksCalledMultipleTimesWithToolCalls() {
+		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
+
+		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
+				BaseAdvisor.HIGHEST_PRECEDENCE + 300, hookCallCounts);
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		advisor.adviseCall(request, realChain);
+
+		// Verify hooks were called correct number of times
+		assertThat(hookCallCounts[0]).isEqualTo(1); // doInitializeLoop called once
+													// (before loop)
+		assertThat(hookCallCounts[1]).isEqualTo(2); // doBeforeCall called twice (each
+													// iteration)
+		assertThat(hookCallCounts[2]).isEqualTo(2); // doAfterCall called twice (each
+													// iteration)
+	}
+
+	@Test
+	void testExtendedBuilderWithCustomBuilder() {
+		ToolCallingManager customManager = mock(ToolCallingManager.class);
+		int customOrder = BaseAdvisor.HIGHEST_PRECEDENCE + 450;
+
+		TestableToolCallAdvisor advisor = TestableToolCallAdvisor.testBuilder()
+			.toolCallingManager(customManager)
+			.advisorOrder(customOrder)
+			.build();
+
+		assertThat(advisor).isNotNull();
+		assertThat(advisor.getOrder()).isEqualTo(customOrder);
+	}
+
 	// Helper methods
+
+	private ChatClientRequest createMockRequestWithSystemMessage() {
+		SystemMessage systemMessage = new SystemMessage("You are a helpful assistant");
+		UserMessage userMessage = new UserMessage("test message");
+		List<Message> instructions = List.of(systemMessage, userMessage);
+
+		ToolCallingChatOptions toolOptions = mock(ToolCallingChatOptions.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+		ToolCallingChatOptions copiedOptions = mock(ToolCallingChatOptions.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+
+		boolean[] internalToolExecutionEnabled = { true };
+
+		when(toolOptions.copy()).thenReturn(copiedOptions);
+		when(toolOptions.getInternalToolExecutionEnabled()).thenReturn(true);
+		when(copiedOptions.getInternalToolExecutionEnabled()).thenAnswer(invocation -> internalToolExecutionEnabled[0]);
+		Mockito.doAnswer(invocation -> {
+			internalToolExecutionEnabled[0] = invocation.getArgument(0);
+			return null;
+		}).when(copiedOptions).setInternalToolExecutionEnabled(org.mockito.ArgumentMatchers.anyBoolean());
+		when(copiedOptions.copy()).thenReturn(copiedOptions);
+
+		Prompt prompt = new Prompt(instructions, toolOptions);
+
+		ChatClientRequest mockRequest = mock(ChatClientRequest.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(mockRequest.prompt()).thenReturn(prompt);
+		when(mockRequest.context()).thenReturn(Map.of());
+
+		when(mockRequest.copy()).thenAnswer(invocation -> {
+			Prompt copiedPrompt = new Prompt(instructions, copiedOptions);
+			return ChatClientRequest.builder().prompt(copiedPrompt).build();
+		});
+
+		return mockRequest;
+	}
 
 	private ChatClientRequest createMockRequest(boolean withToolCallingOptions) {
 		List<Message> instructions = List.of(new UserMessage("test message"));
 
 		ChatOptions options = null;
+		ToolCallingChatOptions copiedOptions = null;
+
 		if (withToolCallingOptions) {
 			ToolCallingChatOptions toolOptions = mock(ToolCallingChatOptions.class,
 					Mockito.withSettings().strictness(Strictness.LENIENT));
 			// Create a separate mock for the copy that tracks the internal state
-			ToolCallingChatOptions copiedOptions = mock(ToolCallingChatOptions.class,
-					Mockito.withSettings().strictness(Strictness.LENIENT));
+			copiedOptions = mock(ToolCallingChatOptions.class, Mockito.withSettings().strictness(Strictness.LENIENT));
 
 			// Use a holder to track the state
 			boolean[] internalToolExecutionEnabled = { true };
@@ -408,12 +658,30 @@ public class ToolCallAdvisorTests {
 				return null;
 			}).when(copiedOptions).setInternalToolExecutionEnabled(org.mockito.ArgumentMatchers.anyBoolean());
 
+			// copiedOptions.copy() should also return itself for subsequent copies
+			when(copiedOptions.copy()).thenReturn(copiedOptions);
+
 			options = toolOptions;
 		}
 
 		Prompt prompt = new Prompt(instructions, options);
+		ChatClientRequest originalRequest = ChatClientRequest.builder().prompt(prompt).build();
 
-		return ChatClientRequest.builder().prompt(prompt).build();
+		// Create a mock request that returns a proper copy with the mocked options chain
+		ChatClientRequest mockRequest = mock(ChatClientRequest.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(mockRequest.prompt()).thenReturn(prompt);
+		when(mockRequest.context()).thenReturn(Map.of());
+
+		// When copy() is called, return a new request with the copied options properly
+		// set up
+		final ToolCallingChatOptions finalCopiedOptions = copiedOptions;
+		when(mockRequest.copy()).thenAnswer(invocation -> {
+			Prompt copiedPrompt = new Prompt(instructions, finalCopiedOptions);
+			return ChatClientRequest.builder().prompt(copiedPrompt).build();
+		});
+
+		return mockRequest;
 	}
 
 	private ChatClientResponse createMockResponse(boolean hasToolCalls) {
@@ -472,6 +740,65 @@ public class ToolCallAdvisorTests {
 			return this.responseFunction.apply(req, chain);
 		}
 
-	};
+	}
+
+	/**
+	 * Test subclass of ToolCallAdvisor to verify extensibility and hook methods.
+	 */
+	private static class TestableToolCallAdvisor extends ToolCallAdvisor {
+
+		private final int[] hookCallCounts;
+
+		TestableToolCallAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
+			super(toolCallingManager, advisorOrder, true);
+			this.hookCallCounts = hookCallCounts;
+		}
+
+		@Override
+		protected ChatClientRequest doInitializeLoop(ChatClientRequest chatClientRequest,
+				CallAdvisorChain callAdvisorChain) {
+			if (this.hookCallCounts != null) {
+				this.hookCallCounts[0]++;
+			}
+			return super.doInitializeLoop(chatClientRequest, callAdvisorChain);
+		}
+
+		@Override
+		protected ChatClientRequest doBeforeCall(ChatClientRequest chatClientRequest,
+				CallAdvisorChain callAdvisorChain) {
+			if (this.hookCallCounts != null) {
+				this.hookCallCounts[1]++;
+			}
+			return super.doBeforeCall(chatClientRequest, callAdvisorChain);
+		}
+
+		@Override
+		protected ChatClientResponse doAfterCall(ChatClientResponse chatClientResponse,
+				CallAdvisorChain callAdvisorChain) {
+			if (this.hookCallCounts != null) {
+				this.hookCallCounts[2]++;
+			}
+			return super.doAfterCall(chatClientResponse, callAdvisorChain);
+		}
+
+		static TestableBuilder testBuilder() {
+			return new TestableBuilder();
+		}
+
+		static class TestableBuilder extends ToolCallAdvisor.Builder<TestableBuilder> {
+
+			@Override
+			protected TestableBuilder self() {
+				return this;
+			}
+
+			@Override
+			public TestableToolCallAdvisor build() {
+				return new TestableToolCallAdvisor(getToolCallingManager(), getAdvisorOrder(), null);
+			}
+
+		}
+
+	}
 
 }

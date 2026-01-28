@@ -17,9 +17,7 @@
 /**
  * Provides the API for chat observations.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.chat.observation;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

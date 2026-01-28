@@ -111,8 +111,9 @@ public final class DefaultContentFormatter implements ContentFormatter {
 				.replace(TEMPLATE_VALUE_PLACEHOLDER, metadataEntry.getValue().toString()))
 			.collect(Collectors.joining(this.metadataSeparator));
 
+		var text = document.getText() != null ? document.getText() : "";
 		return this.textTemplate.replace(TEMPLATE_METADATA_STRING_PLACEHOLDER, metadataText)
-			.replace(TEMPLATE_CONTENT_PLACEHOLDER, document.getText());
+			.replace(TEMPLATE_CONTENT_PLACEHOLDER, text);
 	}
 
 	/**

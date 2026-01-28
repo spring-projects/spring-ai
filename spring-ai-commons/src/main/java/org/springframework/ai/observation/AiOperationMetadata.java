@@ -16,6 +16,8 @@
 
 package org.springframework.ai.observation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.util.Assert;
@@ -56,9 +58,9 @@ public record AiOperationMetadata(String operationType, String provider) {
 	 */
 	public static final class Builder {
 
-		private String operationType;
+		private @Nullable String operationType;
 
-		private String provider;
+		private @Nullable String provider;
 
 		private Builder() {
 		}
@@ -88,6 +90,8 @@ public record AiOperationMetadata(String operationType, String provider) {
 		 * @return a new {@link AiOperationMetadata} instance
 		 */
 		public AiOperationMetadata build() {
+			Assert.hasText(this.operationType, "operationType cannot be null or empty");
+			Assert.hasText(this.provider, "provider cannot be null or empty");
 			return new AiOperationMetadata(this.operationType, this.provider);
 		}
 

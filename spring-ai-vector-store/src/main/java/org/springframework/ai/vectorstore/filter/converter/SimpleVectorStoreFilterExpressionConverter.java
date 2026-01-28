@@ -47,7 +47,12 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 	protected void doExpression(Filter.Expression expression, StringBuilder context) {
 		this.convertOperand(expression.left(), context);
 		context.append(getOperationSymbol(expression));
-		this.convertOperand(expression.right(), context);
+		if (expression.right() != null) {
+			this.convertOperand(expression.right(), context);
+		}
+		else {
+			context.append("null");
+		}
 	}
 
 	private String getOperationSymbol(Filter.Expression exp) {

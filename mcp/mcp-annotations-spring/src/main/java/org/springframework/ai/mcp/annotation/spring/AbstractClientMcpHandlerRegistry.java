@@ -53,6 +53,7 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 
 	protected Map<String, McpSchema.ClientCapabilities> capabilitiesPerClient = new HashMap<>();
 
+	@SuppressWarnings("NullAway") // Late-init field
 	protected ConfigurableListableBeanFactory beanFactory;
 
 	protected final Set<String> allAnnotatedBeans = new HashSet<>();

@@ -19,7 +19,9 @@ package org.springframework.ai.transformers;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,7 +46,9 @@ public class ResourceCacheServiceTests {
 		var cachedResource = cache.getCachedResource(originalResourceUri);
 
 		assertThat(cachedResource).isEqualTo(new DefaultResourceLoader().getResource(originalResourceUri));
-		assertThat(Files.list(this.tempDir.toPath()).count()).isEqualTo(0);
+		try (Stream<Path> paths = Files.list(this.tempDir.toPath())) {
+			assertThat(paths.count()).isEqualTo(0);
+		}
 	}
 
 	@Test
@@ -58,8 +62,8 @@ public class ResourceCacheServiceTests {
 		var cachedResource1 = cache.getCachedResource(originalResourceUri);
 
 		assertThat(cachedResource1).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri));
-		assertThat(Files.list(this.tempDir.toPath()).count()).isEqualTo(1);
-		assertThat(Files.list(Files.list(this.tempDir.toPath()).iterator().next()).count()).isEqualTo(1);
+		assertThat(this.tempDir.listFiles()).hasSize(1);
+		assertThat(this.tempDir.listFiles()[0].listFiles()).hasSize(1);
 
 		// Attempt to cache the same resource again should return the already cached
 		// resource.
@@ -68,8 +72,8 @@ public class ResourceCacheServiceTests {
 		assertThat(cachedResource2).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri));
 		assertThat(cachedResource2).isEqualTo(cachedResource1);
 
-		assertThat(Files.list(this.tempDir.toPath()).count()).isEqualTo(1);
-		assertThat(Files.list(Files.list(this.tempDir.toPath()).iterator().next()).count()).isEqualTo(1);
+		assertThat(this.tempDir.listFiles()).hasSize(1);
+		assertThat(this.tempDir.listFiles()[0].listFiles()).hasSize(1);
 
 	}
 
@@ -91,11 +95,10 @@ public class ResourceCacheServiceTests {
 		assertThat(cachedResource2).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri1));
 		assertThat(cachedResource2).isNotEqualTo(cachedResource1);
 
-		assertThat(Files.list(this.tempDir.toPath()).count()).isEqualTo(1)
+		assertThat(this.tempDir.listFiles()).hasSize(1)
 			.describedAs(
 					"As both resources come from the same parent segments they should be cached in a single common parent.");
-		assertThat(Files.list(Files.list(this.tempDir.toPath()).iterator().next()).count()).isEqualTo(2);
-
+		assertThat(this.tempDir.listFiles()[0].listFiles()).hasSize(2);
 	}
 
 	@Test
@@ -106,8 +109,8 @@ public class ResourceCacheServiceTests {
 		var cachedResource1 = cache.getCachedResource(originalResourceUri1);
 
 		assertThat(cachedResource1).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri1));
-		assertThat(Files.list(this.tempDir.toPath()).count()).isEqualTo(1);
-		assertThat(Files.list(Files.list(this.tempDir.toPath()).iterator().next()).count()).isEqualTo(1);
+		assertThat(this.tempDir.listFiles()).hasSize(1);
+		assertThat(this.tempDir.listFiles()[0].listFiles()).hasSize(1);
 	}
 
 	@Test
