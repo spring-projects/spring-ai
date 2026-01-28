@@ -723,12 +723,10 @@ public final class OllamaApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ShowModelRequest(
 			@JsonProperty("model") String model,
-			@JsonProperty("system") String system,
-			@JsonProperty("verbose") Boolean verbose,
-			@JsonProperty("options") Map<String, Object> options
+			@JsonProperty("verbose") Boolean verbose
 	) {
 		public ShowModelRequest(String model) {
-			this(model, null, null, null);
+			this(model, null);
 		}
 	}
 
@@ -763,8 +761,7 @@ public final class OllamaApi {
 	public record PullModelRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("insecure") boolean insecure,
-			@JsonProperty("username") String username,
-			@JsonProperty("password") String password,
+
 			@JsonProperty("stream") boolean stream
 	) {
 		public PullModelRequest {
@@ -775,7 +772,7 @@ public final class OllamaApi {
 		}
 
 		public PullModelRequest(String model) {
-			this(model, false, null, null, true);
+			this(model, false, true);
 		}
 	}
 
