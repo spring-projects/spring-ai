@@ -1,6 +1,36 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-1-1-3]]
+== Upgrading to 1.1.3
+
+=== Breaking Changes
+
+==== MongoDB Chat Memory Message Ordering Fixed
+
+The `MongoChatMemoryRepository` has been fixed to return messages in the order they were sent (oldest-to-newest), matching all other chat memory repository implementations. Previously, it incorrectly returned messages in reverse order (newest-to-oldest), which broke conversation flow for LLMs.
+
+===== Impact
+
+If your application was using `MongoChatMemoryRepository` and working around the incorrect ordering (e.g., by reversing messages after retrieval), you will need to remove that workaround.
+
+===== Migration
+
+Remove any code that reverses the message order after retrieving from MongoDB chat memory:
+
+[source,java]
+----
+// BEFORE (with workaround for bug):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+Collections.reverse(messages); // Remove this workaround
+
+// AFTER (correct ordering):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+// Messages are now correctly ordered in the order they were sent
+----
+
+All chat memory repositories now consistently return messages in the order they were sent (oldest-to-newest), which is the expected format for LLM conversation history.
+
 [[upgrading-to-1-1-0-RC1]]
 == Upgrading to 1.1.0-RC1
 
