@@ -134,6 +134,7 @@ public class ResourceCacheService {
 
 	private String getCacheName(Resource originalResource) throws IOException {
 		String fileName = originalResource.getFilename();
+		Assert.hasText(fileName, "The file name must should not be null or empty");
 		String fragment = originalResource.getURI().getFragment();
 		return !StringUtils.hasText(fragment) ? fileName : fileName + "_" + fragment;
 	}

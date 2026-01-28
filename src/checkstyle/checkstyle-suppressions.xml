@@ -86,6 +86,7 @@
 	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-postgresml" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-stability-ai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-vertex-ai-gemini" id="bannedNullabilityImports" />

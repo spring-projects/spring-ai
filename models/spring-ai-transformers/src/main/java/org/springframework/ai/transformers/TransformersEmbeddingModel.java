@@ -39,6 +39,7 @@ import ai.onnxruntime.OrtSession;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
@@ -120,23 +121,25 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 * DJL, Huggingface tokenizer implementation of the {@link Tokenizer} interface that
 	 * converts sentences into token.
 	 */
+	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private HuggingFaceTokenizer tokenizer;
 
 	/**
 	 * ONNX runtime configurations: https://onnxruntime.ai/docs/get-started/with-java.html
 	 */
-	private OrtEnvironment environment;
+	private final OrtEnvironment environment = OrtEnvironment.getEnvironment();
 
 	/**
 	 * Runtime session that wraps the ONNX generative and enables inference calls.
 	 */
+	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private OrtSession session;
 
 	/**
 	 * Resource cache directory. Used to cache remote resources, such as the ONNX models,
 	 * to the local file system.
 	 */
-	private String resourceCacheDirectory;
+	private @Nullable String resourceCacheDirectory;
 
 	/**
 	 * Allow disabling the resource caching.
@@ -149,10 +152,12 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 * enabled/disabled with the {@link #disableCaching} property and uses the
 	 * {@link #resourceCacheDirectory} for local storage.
 	 */
+	@SuppressWarnings("NullAway.Init")
 	private ResourceCacheService cacheService;
 
 	private String modelOutputName = DEFAULT_MODEL_OUTPUT_NAME;
 
+	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private Set<String> onnxModelInputs;
 
 	/**
@@ -225,9 +230,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		// InputStream.
 		this.tokenizer = HuggingFaceTokenizer.newInstance(getCachedResource(this.tokenizerResource).getInputStream(),
 				this.tokenizerOptions);
-
-		// onnxruntime
-		this.environment = OrtEnvironment.getEnvironment();
 
 		try (var sessionOptions = new OrtSession.SessionOptions()) {
 			if (this.gpuDeviceId >= 0) {
