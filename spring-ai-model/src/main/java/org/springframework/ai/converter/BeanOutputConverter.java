@@ -207,8 +207,8 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 		SchemaGenerator generator = new SchemaGenerator(config);
 		JsonNode jsonNode = generator.generateSchema(this.type);
 		postProcessSchema(jsonNode);
-		ObjectWriter objectWriter = this.objectMapper
-			.writer(new DefaultPrettyPrinter().withObjectIndenter(new DefaultIndenter().withLinefeed("\n")));
+		ObjectWriter objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter()
+			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
 		try {
 			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
 		}
