@@ -36,8 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Yokior
  */
-@SpringBootTest(classes = OllamaEmbeddingOptionsTests.TestConfiguration.class)
-public class OllamaEmbeddingOptionsTests extends BaseOllamaIT {
+@SpringBootTest(classes = OllamaEmbeddingOptionsTestsIT.TestConfiguration.class)
+public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.QWEN3_EMBED_8B.getName();
 
