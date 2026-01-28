@@ -116,7 +116,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		private Builder() {
 		}
 
-		public Builder content(String content) {
+		public Builder content(@Nullable String content) {
 			this.content = content;
 			return this;
 		}

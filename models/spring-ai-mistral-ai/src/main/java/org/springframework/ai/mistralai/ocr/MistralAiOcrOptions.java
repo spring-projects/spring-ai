@@ -22,6 +22,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.ModelOptions;
 
@@ -45,32 +46,32 @@ public class MistralAiOcrOptions implements ModelOptions {
 	 * An optional string identifier for the request.
 	 */
 	@JsonProperty("id")
-	private String id;
+	private @Nullable String id;
 
 	/**
 	 * Specific pages to process in various formats: single number, range, or list of
 	 * both. Starts from 0.
 	 */
 	@JsonProperty("pages")
-	private List<Integer> pages;
+	private @Nullable List<Integer> pages;
 
 	/**
 	 * Whether to include base64 encoded image data in the response.
 	 */
 	@JsonProperty("include_image_base64")
-	private Boolean includeImageBase64;
+	private @Nullable Boolean includeImageBase64;
 
 	/**
 	 * Maximum number of images to extract per page.
 	 */
 	@JsonProperty("image_limit")
-	private Integer imageLimit;
+	private @Nullable Integer imageLimit;
 
 	/**
 	 * Minimum height and width (in pixels) of images to extract.
 	 */
 	@JsonProperty("image_min_size")
-	private Integer imageMinSize;
+	private @Nullable Integer imageMinSize;
 
 	public static Builder builder() {
 		return new Builder();
@@ -80,23 +81,23 @@ public class MistralAiOcrOptions implements ModelOptions {
 		return this.model;
 	}
 
-	public String getId() {
+	public @Nullable String getId() {
 		return this.id;
 	}
 
-	public List<Integer> getPages() {
+	public @Nullable List<Integer> getPages() {
 		return this.pages;
 	}
 
-	public Boolean getIncludeImageBase64() {
+	public @Nullable Boolean getIncludeImageBase64() {
 		return this.includeImageBase64;
 	}
 
-	public Integer getImageLimit() {
+	public @Nullable Integer getImageLimit() {
 		return this.imageLimit;
 	}
 
-	public Integer getImageMinSize() {
+	public @Nullable Integer getImageMinSize() {
 		return this.imageMinSize;
 	}
 

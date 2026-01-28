@@ -22,6 +22,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk.ChunkChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionFinishReason;
@@ -30,6 +32,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.C
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.Role;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.LogProbs;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -48,7 +51,7 @@ public class MistralAiStreamFunctionCallingHelper {
 	 * @param current the current ChatCompletionChunk
 	 * @return the merged ChatCompletionChunk
 	 */
-	public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
+	public ChatCompletionChunk merge(@Nullable ChatCompletionChunk previous, ChatCompletionChunk current) {
 
 		if (previous == null) {
 			return current;
@@ -62,6 +65,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		ChunkChoice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
+		Assert.state(currentChoice0 != null, "Current choices must not be null or empty");
 		ChunkChoice choice = merge(previousChoice0, currentChoice0);
 
 		MistralAiApi.Usage usage = (current.usage() != null ? current.usage() : previous.usage());
@@ -69,7 +73,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		return new ChatCompletionChunk(id, object, created, model, List.of(choice), usage);
 	}
 
-	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
+	private ChunkChoice merge(@Nullable ChunkChoice previous, ChunkChoice current) {
 		if (previous == null) {
 			if (current.delta() != null && current.delta().toolCalls() != null) {
 				Optional<String> id = current.delta()
@@ -145,7 +149,7 @@ public class MistralAiStreamFunctionCallingHelper {
 		return new ChatCompletionMessage(content, role, name, toolCalls);
 	}
 
-	private ToolCall merge(ToolCall previous, ToolCall current) {
+	private ToolCall merge(@Nullable ToolCall previous, ToolCall current) {
 		if (previous == null) {
 			return current;
 		}
