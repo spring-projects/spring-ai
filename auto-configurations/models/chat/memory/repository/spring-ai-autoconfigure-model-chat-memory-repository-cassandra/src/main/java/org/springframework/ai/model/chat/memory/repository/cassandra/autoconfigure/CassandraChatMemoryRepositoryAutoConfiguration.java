@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.springframework.context.annotation.Bean;
  * {@link AutoConfiguration Auto-configuration} for {@link CassandraChatMemoryRepository}.
  *
  * @author Mick Semb Wever
- * @author Jihoon Kim
  * @since 1.0.0
  */
 @AutoConfiguration(after = CassandraAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
@@ -45,20 +44,22 @@ public class CassandraChatMemoryRepositoryAutoConfiguration {
 	public CassandraChatMemoryRepository cassandraChatMemoryRepository(
 			CassandraChatMemoryRepositoryProperties properties, CqlSession cqlSession) {
 
-		var builder = CassandraChatMemoryRepositoryConfig.builder().withCqlSession(cqlSession);
-
-		builder = builder.withKeyspaceName(properties.getKeyspace())
+		var configBuilder = CassandraChatMemoryRepositoryConfig.builder()
+			.withCqlSession(cqlSession)
+			.withKeyspaceName(properties.getKeyspace())
 			.withTableName(properties.getTable())
 			.withMessagesColumnName(properties.getMessagesColumn());
 
-		if (!properties.isInitializeSchema()) {
-			builder = builder.disallowSchemaChanges();
-		}
-		if (null != properties.getTimeToLive()) {
-			builder = builder.withTimeToLive(properties.getTimeToLive());
+		if (properties.getTimeToLive() != null) {
+			configBuilder.withTimeToLive(properties.getTimeToLive());
 		}
 
-		return CassandraChatMemoryRepository.create(builder.build());
+		if (!properties.isInitializeSchema()) {
+			configBuilder.disallowSchemaChanges();
+		}
+
+		return CassandraChatMemoryRepository.create(configBuilder.build());
 	}
 
 }
+
