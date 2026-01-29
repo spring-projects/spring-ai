@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.couchbase.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.couchbase.CouchbaseIndexOptimization;
 import org.springframework.ai.vectorstore.couchbase.CouchbaseSimilarityFunction;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
@@ -33,95 +35,95 @@ public class CouchbaseSearchVectorStoreProperties extends CommonVectorStorePrope
 	/**
 	 * The name of the index to store the vectors.
 	 */
-	private String indexName;
+	private @Nullable String indexName;
 
 	/**
 	 * The name of the Couchbase collection to store the Documents.
 	 */
-	private String collectionName;
+	private @Nullable String collectionName;
 
 	/**
 	 * The name of the Couchbase scope, parent of the collection. Search queries will be
 	 * executed in the scope context.
 	 */
-	private String scopeName;
+	private @Nullable String scopeName;
 
 	/**
 	 * The name of the Couchbase Bucket, parent of the scope.
 	 */
-	private String bucketName;
+	private @Nullable String bucketName;
 
 	/**
 	 * The total number of elements in the vector embedding array, up to 2048 elements.
 	 * Arrays can be an array of arrays.
 	 */
-	private Integer dimensions;
+	private @Nullable Integer dimensions;
 
 	/**
 	 * The method to calculate the similarity between the vector embedding in a Vector
 	 * Search index and the vector embedding in a Vector Search query.
 	 */
-	private CouchbaseSimilarityFunction similarity;
+	private @Nullable CouchbaseSimilarityFunction similarity;
 
 	/**
 	 * Choose whether the Search Service should prioritize recall or latency when
 	 * returning similar vectors in search results.
 	 */
-	private CouchbaseIndexOptimization optimization;
+	private @Nullable CouchbaseIndexOptimization optimization;
 
-	public String getIndexName() {
+	public @Nullable String getIndexName() {
 		return this.indexName;
 	}
 
-	public void setIndexName(String indexName) {
+	public void setIndexName(@Nullable String indexName) {
 		this.indexName = indexName;
 	}
 
-	public String getCollectionName() {
+	public @Nullable String getCollectionName() {
 		return this.collectionName;
 	}
 
-	public void setCollectionName(String collectionName) {
+	public void setCollectionName(@Nullable String collectionName) {
 		this.collectionName = collectionName;
 	}
 
-	public String getScopeName() {
+	public @Nullable String getScopeName() {
 		return this.scopeName;
 	}
 
-	public void setScopeName(String scopeName) {
+	public void setScopeName(@Nullable String scopeName) {
 		this.scopeName = scopeName;
 	}
 
-	public String getBucketName() {
+	public @Nullable String getBucketName() {
 		return this.bucketName;
 	}
 
-	public void setBucketName(String bucketName) {
+	public void setBucketName(@Nullable String bucketName) {
 		this.bucketName = bucketName;
 	}
 
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
+	public void setDimensions(@Nullable Integer dimensions) {
 		this.dimensions = dimensions;
 	}
 
-	public CouchbaseSimilarityFunction getSimilarity() {
+	public @Nullable CouchbaseSimilarityFunction getSimilarity() {
 		return this.similarity;
 	}
 
-	public void setSimilarity(CouchbaseSimilarityFunction similarity) {
+	public void setSimilarity(@Nullable CouchbaseSimilarityFunction similarity) {
 		this.similarity = similarity;
 	}
 
-	public CouchbaseIndexOptimization getOptimization() {
+	public @Nullable CouchbaseIndexOptimization getOptimization() {
 		return this.optimization;
 	}
 
-	public void setOptimization(CouchbaseIndexOptimization optimization) {
+	public void setOptimization(@Nullable CouchbaseIndexOptimization optimization) {
 		this.optimization = optimization;
 	}
 
