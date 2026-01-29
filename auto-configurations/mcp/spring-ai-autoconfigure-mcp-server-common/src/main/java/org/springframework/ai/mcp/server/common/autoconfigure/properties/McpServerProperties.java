@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -80,7 +82,7 @@ public class McpServerProperties {
 	 * These instructions are used to provide guidance to the client on how to interact
 	 * with this server.
 	 */
-	private String instructions = null;
+	private @Nullable String instructions = null;
 
 	/**
 	 * The type of server to use for MCP server communication.
@@ -93,7 +95,7 @@ public class McpServerProperties {
 	 */
 	private ApiType type = ApiType.SYNC;
 
-	private Capabilities capabilities = new Capabilities();
+	private final Capabilities capabilities = new Capabilities();
 
 	private ServerProtocol protocol = ServerProtocol.SSE;
 
@@ -143,7 +145,7 @@ public class McpServerProperties {
 	/**
 	 * (Optional) response MIME type per tool name.
 	 */
-	private Map<String, String> toolResponseMimeType = new HashMap<>();
+	private final Map<String, String> toolResponseMimeType = new HashMap<>();
 
 	public boolean isStdio() {
 		return this.stdio;
@@ -179,11 +181,11 @@ public class McpServerProperties {
 		this.version = version;
 	}
 
-	public String getInstructions() {
+	public @Nullable String getInstructions() {
 		return this.instructions;
 	}
 
-	public void setInstructions(String instructions) {
+	public void setInstructions(@Nullable String instructions) {
 		this.instructions = instructions;
 	}
 
