@@ -19,6 +19,8 @@ package org.springframework.ai.vectorstore.cosmosdb.autoconfigure;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -33,23 +35,23 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.cosmosdb";
 
-	private String containerName;
+	private @Nullable String containerName;
 
-	private String databaseName;
+	private @Nullable String databaseName;
 
-	private String metadataFields;
+	private @Nullable String metadataFields;
 
 	private int vectorStoreThroughput = 400;
 
 	private long vectorDimensions = 1536;
 
-	private String partitionKeyPath;
+	private @Nullable String partitionKeyPath;
 
-	private String endpoint;
+	private @Nullable String endpoint;
 
-	private String key;
+	private @Nullable String key;
 
-	private String connectionMode;
+	private @Nullable String connectionMode;
 
 	public int getVectorStoreThroughput() {
 		return this.vectorStoreThroughput;
@@ -59,11 +61,11 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 		this.vectorStoreThroughput = vectorStoreThroughput;
 	}
 
-	public String getMetadataFields() {
+	public @Nullable String getMetadataFields() {
 		return this.metadataFields;
 	}
 
-	public void setMetadataFields(String metadataFields) {
+	public void setMetadataFields(@Nullable String metadataFields) {
 		this.metadataFields = metadataFields;
 	}
 
@@ -73,51 +75,51 @@ public class CosmosDBVectorStoreProperties extends CommonVectorStoreProperties {
 				: List.of();
 	}
 
-	public String getEndpoint() {
+	public @Nullable String getEndpoint() {
 		return this.endpoint;
 	}
 
-	public void setEndpoint(String endpoint) {
+	public void setEndpoint(@Nullable String endpoint) {
 		this.endpoint = endpoint;
 	}
 
-	public String getKey() {
+	public @Nullable String getKey() {
 		return this.key;
 	}
 
-	public void setKey(String key) {
+	public void setKey(@Nullable String key) {
 		this.key = key;
 	}
 
-	public void setConnectionMode(String connectionMode) {
+	public void setConnectionMode(@Nullable String connectionMode) {
 		this.connectionMode = connectionMode;
 	}
 
-	public String getConnectionMode() {
+	public @Nullable String getConnectionMode() {
 		return this.connectionMode;
 	}
 
-	public String getDatabaseName() {
+	public @Nullable String getDatabaseName() {
 		return this.databaseName;
 	}
 
-	public void setDatabaseName(String databaseName) {
+	public void setDatabaseName(@Nullable String databaseName) {
 		this.databaseName = databaseName;
 	}
 
-	public String getContainerName() {
+	public @Nullable String getContainerName() {
 		return this.containerName;
 	}
 
-	public void setContainerName(String containerName) {
+	public void setContainerName(@Nullable String containerName) {
 		this.containerName = containerName;
 	}
 
-	public String getPartitionKeyPath() {
+	public @Nullable String getPartitionKeyPath() {
 		return this.partitionKeyPath;
 	}
 
-	public void setPartitionKeyPath(String partitionKeyPath) {
+	public void setPartitionKeyPath(@Nullable String partitionKeyPath) {
 		this.partitionKeyPath = partitionKeyPath;
 	}
 
