@@ -148,11 +148,13 @@ public class MistralAiChatModel implements ChatModel {
 
 	public static ChatResponseMetadata from(MistralAiApi.ChatCompletion result) {
 		Assert.notNull(result, "Mistral AI ChatCompletion must not be null");
-		DefaultUsage usage = getDefaultUsage(result.usage());
+		var usage = result.usage();
+		Assert.notNull(usage, "Mistral AI ChatCompletion usage must not be null");
+		var defaultUsage = getDefaultUsage(usage);
 		return ChatResponseMetadata.builder()
 			.id(result.id())
 			.model(result.model())
-			.usage(usage)
+			.usage(defaultUsage)
 			.keyValue("created", result.created())
 			.build();
 	}
@@ -215,8 +217,9 @@ public class MistralAiChatModel implements ChatModel {
 				}).toList();
 
 				ChatCompletion completion = Objects.requireNonNull(completionEntity.getBody());
-				DefaultUsage usage = getDefaultUsage(completion.usage());
-				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
+				var usage = Objects.requireNonNull(completion.usage());
+				DefaultUsage defaultUsage = getDefaultUsage(usage);
+				Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(defaultUsage, previousChatResponse);
 				ChatResponse chatResponse = new ChatResponse(generations,
 						from(completionEntity.getBody(), cumulativeUsage));
 
@@ -363,8 +366,9 @@ public class MistralAiChatModel implements ChatModel {
 							toolCall.function().name(), toolCall.function().arguments()))
 					.toList();
 
+		var content = choice.message().content();
 		var assistantMessage = AssistantMessage.builder()
-			.content(choice.message().content())
+			.content(content)
 			.properties(metadata)
 			.toolCalls(toolCalls)
 			.build();
@@ -380,7 +384,7 @@ public class MistralAiChatModel implements ChatModel {
 			.toList();
 
 		return new ChatCompletion(chunk.id(), "chat.completion", Objects.requireNonNull(chunk.created()), chunk.model(),
-				choices, Objects.requireNonNull(chunk.usage()));
+				choices, chunk.usage());
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
@@ -489,7 +493,6 @@ public class MistralAiChatModel implements ChatModel {
 				toolCalls = assistantMessage.getToolCalls().stream().map(this::mapToolCall).toList();
 			}
 			String content = assistantMessage.getText();
-			Assert.state(content != null, "content must not be null");
 			return new ChatCompletionMessage(content, ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null);
 		}
 		else {
