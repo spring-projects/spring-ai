@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.s3.autoconfigure;
 
+import java.util.Objects;
+
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
 
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -53,7 +55,9 @@ public class S3VectorStoreAutoConfiguration {
 	@ConditionalOnMissingBean
 	S3VectorStore s3VectorStore(S3VectorsClient s3VectorsClient, EmbeddingModel embeddingModel) {
 		S3VectorStore.Builder builder = new S3VectorStore.Builder(s3VectorsClient, embeddingModel);
-		builder.indexName(this.properties.getIndexName()).vectorBucketName(this.properties.getVectorBucketName());
+		builder.indexName(Objects.requireNonNull(this.properties.getIndexName(), "index name cannot be null"))
+			.vectorBucketName(
+					Objects.requireNonNull(this.properties.getVectorBucketName(), "vector bucket name cannot be null"));
 		return builder.build();
 	}
 
