@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.pinecone.autoconfigure;
 
+import java.util.Objects;
+
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -59,13 +61,13 @@ public class PineconeVectorStoreAutoConfiguration {
 			BatchingStrategy batchingStrategy) {
 
 		return PineconeVectorStore.builder(embeddingModel)
-			.apiKey(properties.getApiKey())
-			.indexName(properties.getIndexName())
+			.apiKey(Objects.requireNonNull(properties.getApiKey(), "api key is required"))
+			.indexName(Objects.requireNonNull(properties.getIndexName(), "index name is required"))
 			.namespace(properties.getNamespace())
 			.contentFieldName(properties.getContentFieldName())
 			.distanceMetadataFieldName(properties.getDistanceMetadataFieldName())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.build();
 	}
