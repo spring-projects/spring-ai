@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.infinispan.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -30,103 +32,103 @@ public class InfinispanVectorStoreProperties extends CommonVectorStoreProperties
 	 */
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.infinispan";
 
-	private Boolean registerSchema;
+	private @Nullable Boolean registerSchema;
 
-	private Boolean createStore;
+	private @Nullable Boolean createStore;
 
-	private String storeName;
+	private @Nullable String storeName;
 
-	private String storeConfig;
+	private @Nullable String storeConfig;
 
-	private Integer distance;
+	private @Nullable Integer distance;
 
-	private String similarity;
+	private @Nullable String similarity;
 
-	private String schemaFileName;
+	private @Nullable String schemaFileName;
 
-	private String packageName;
+	private @Nullable String packageName;
 
-	private String itemName;
+	private @Nullable String itemName;
 
-	private String metadataItemName;
+	private @Nullable String metadataItemName;
 
-	public String getStoreName() {
+	public @Nullable String getStoreName() {
 		return this.storeName;
 	}
 
-	public void setStoreName(String storeName) {
+	public void setStoreName(@Nullable String storeName) {
 		this.storeName = storeName;
 	}
 
-	public String getStoreConfig() {
+	public @Nullable String getStoreConfig() {
 		return this.storeConfig;
 	}
 
-	public void setStoreConfig(String storeConfig) {
+	public void setStoreConfig(@Nullable String storeConfig) {
 		this.storeConfig = storeConfig;
 	}
 
-	public Integer getDistance() {
+	public @Nullable Integer getDistance() {
 		return this.distance;
 	}
 
-	public void setDistance(Integer distance) {
+	public void setDistance(@Nullable Integer distance) {
 		this.distance = distance;
 	}
 
-	public String getSimilarity() {
+	public @Nullable String getSimilarity() {
 		return this.similarity;
 	}
 
-	public void setSimilarity(String similarity) {
+	public void setSimilarity(@Nullable String similarity) {
 		this.similarity = similarity;
 	}
 
-	public String getSchemaFileName() {
+	public @Nullable String getSchemaFileName() {
 		return this.schemaFileName;
 	}
 
-	public void setSchemaFileName(String schemaFileName) {
+	public void setSchemaFileName(@Nullable String schemaFileName) {
 		this.schemaFileName = schemaFileName;
 	}
 
-	public String getPackageName() {
+	public @Nullable String getPackageName() {
 		return this.packageName;
 	}
 
-	public void setPackageName(String packageName) {
+	public void setPackageName(@Nullable String packageName) {
 		this.packageName = packageName;
 	}
 
-	public String getItemName() {
+	public @Nullable String getItemName() {
 		return this.itemName;
 	}
 
-	public void setItemName(String itemName) {
+	public void setItemName(@Nullable String itemName) {
 		this.itemName = itemName;
 	}
 
-	public String getMetadataItemName() {
+	public @Nullable String getMetadataItemName() {
 		return this.metadataItemName;
 	}
 
-	public void setMetadataItemName(String metadataItemName) {
+	public void setMetadataItemName(@Nullable String metadataItemName) {
 		this.metadataItemName = metadataItemName;
 	}
 
-	public Boolean isRegisterSchema() {
+	public @Nullable Boolean isRegisterSchema() {
 		return this.registerSchema;
 	}
 
-	public void setRegisterSchema(Boolean registerSchema) {
+	public void setRegisterSchema(@Nullable Boolean registerSchema) {
 		this.registerSchema = registerSchema;
 	}
 
-	public Boolean isCreateStore() {
+	public @Nullable Boolean isCreateStore() {
 		return this.createStore;
 	}
 
-	public void setCreateStore(boolean createStore) {
+	public void setCreateStore(@Nullable Boolean createStore) {
 		this.createStore = createStore;
 	}
 
