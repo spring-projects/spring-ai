@@ -382,7 +382,7 @@ public final class McpToolUtils {
 	}
 
 	public static McpStatelessServerFeatures.AsyncToolSpecification toStatelessAsyncToolSpecification(
-			ToolCallback toolCallback, MimeType mimeType) {
+			ToolCallback toolCallback, @Nullable MimeType mimeType) {
 
 		McpStatelessServerFeatures.SyncToolSpecification statelessSyncToolSpecification = toStatelessSyncToolSpecification(
 				toolCallback, mimeType);
