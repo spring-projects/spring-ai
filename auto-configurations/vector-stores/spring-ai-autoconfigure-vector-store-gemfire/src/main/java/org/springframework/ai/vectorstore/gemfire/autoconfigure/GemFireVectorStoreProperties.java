@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.gemfire.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.gemfire.GemFireVectorStore;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -100,21 +102,21 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 	 *
 	 * To specify username, use "spring.ai.vectorstore.gemfire.username";
 	 */
-	private String username;
+	private @Nullable String username;
 
 	/**
 	 * Configures the password for the GemFire VectorStore connection
 	 *
 	 * To specify password, use "spring.ai.vectorstore.gemfire.password";
 	 */
-	private String password;
+	private @Nullable String password;
 
 	/**
 	 * Configures the token for the GemFire VectorStore connection
 	 *
 	 * To specify token, use "spring.ai.vectorstore.gemfire.token";
 	 */
-	private String token;
+	private @Nullable String token;
 
 	public int getBeamWidth() {
 		return this.beamWidth;
@@ -188,27 +190,27 @@ public class GemFireVectorStoreProperties extends CommonVectorStoreProperties {
 		this.sslEnabled = sslEnabled;
 	}
 
-	public String getToken() {
+	public @Nullable String getToken() {
 		return this.token;
 	}
 
-	public void setToken(String token) {
+	public void setToken(@Nullable String token) {
 		this.token = token;
 	}
 
-	public String getPassword() {
+	public @Nullable String getPassword() {
 		return this.password;
 	}
 
-	public void setPassword(String password) {
+	public void setPassword(@Nullable String password) {
 		this.password = password;
 	}
 
-	public String getUsername() {
+	public @Nullable String getUsername() {
 		return this.username;
 	}
 
-	public void setUsername(String username) {
+	public void setUsername(@Nullable String username) {
 		this.username = username;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2026-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,7 @@
  * limitations under the License.
  */
 
+@NullMarked
 package org.springframework.ai.vectorstore.gemfire.autoconfigure;
 
-import org.jspecify.annotations.Nullable;
-
-import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
-
-/**
- * Connection details for a GemFire service.
- *
- * @author Geet Rawat
- */
-public interface GemFireConnectionDetails extends ConnectionDetails {
-
-	String getHost();
-
-	int getPort();
-
-	default @Nullable String getUsername() {
-		return null;
-	}
-
-	default @Nullable String getPassword() {
-		return null;
-	}
-
-	default @Nullable String getToken() {
-		return null;
-	}
-
-}
+import org.jspecify.annotations.NullMarked;
