@@ -69,7 +69,6 @@
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
 	<!-- This list will gradually shrink as we migrate to JSpecify -->
 	<suppress files="auto-configurations[\\/]models" id="bannedNullabilityImports" />
-	<suppress files="auto-configurations[\\/]vector-stores" id="bannedNullabilityImports" />
 
 	<suppress files="models[\\/]spring-ai-anthropic" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-azure-openai" id="bannedNullabilityImports" />
@@ -97,5 +96,5 @@
 	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
 
-	<suppress files="models|auto-configurations|spring-ai-integration-tests|spring-ai-spring-boot-docker-compose|spring-ai-spring-boot-starters|spring-ai-spring-boot-testcontainers" checks="JavadocPackage" />
+	<suppress files="models|auto-configurations[\\/]models|spring-ai-integration-tests|spring-ai-spring-boot-docker-compose|spring-ai-spring-boot-starters|spring-ai-spring-boot-testcontainers" checks="JavadocPackage" />
 </suppressions>
