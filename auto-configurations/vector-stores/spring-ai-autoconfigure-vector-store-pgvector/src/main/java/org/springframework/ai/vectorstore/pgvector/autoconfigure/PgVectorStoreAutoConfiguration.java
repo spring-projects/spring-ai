@@ -77,7 +77,7 @@ public class PgVectorStoreAutoConfiguration {
 			.indexType(properties.getIndexType())
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize())
 			.build();
