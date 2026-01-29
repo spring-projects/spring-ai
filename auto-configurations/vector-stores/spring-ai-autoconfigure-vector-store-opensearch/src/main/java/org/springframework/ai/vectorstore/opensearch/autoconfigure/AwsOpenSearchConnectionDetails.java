@@ -16,16 +16,18 @@
 
 package org.springframework.ai.vectorstore.opensearch.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 public interface AwsOpenSearchConnectionDetails extends ConnectionDetails {
 
-	String getRegion();
+	@Nullable String getRegion();
 
-	String getAccessKey();
+	@Nullable String getAccessKey();
 
-	String getSecretKey();
+	@Nullable String getSecretKey();
 
-	String getHost(String domainName);
+	@Nullable String getHost(@Nullable String domainName);
 
 }

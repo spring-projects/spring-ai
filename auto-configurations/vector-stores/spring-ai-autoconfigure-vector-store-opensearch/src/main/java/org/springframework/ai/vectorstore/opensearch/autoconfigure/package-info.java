@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2026-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,7 @@
  * limitations under the License.
  */
 
+@NullMarked
 package org.springframework.ai.vectorstore.opensearch.autoconfigure;
 
-import java.util.List;
-
-import org.jspecify.annotations.Nullable;
-
-import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
-
-public interface OpenSearchConnectionDetails extends ConnectionDetails {
-
-	List<String> getUris();
-
-	@Nullable String getUsername();
-
-	@Nullable String getPassword();
-
-}
+import org.jspecify.annotations.NullMarked;
