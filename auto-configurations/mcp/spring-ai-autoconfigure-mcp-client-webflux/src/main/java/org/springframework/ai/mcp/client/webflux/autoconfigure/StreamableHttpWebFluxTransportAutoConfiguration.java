@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
@@ -95,9 +96,10 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
-			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
-			String streamableHttpEndpoint = serverParameters.getValue().endpoint() != null
-					? serverParameters.getValue().endpoint() : "/mcp";
+			String url = Objects.requireNonNull(serverParameters.getValue().url(),
+					"Missing url for server named " + serverParameters.getKey());
+			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
+			String streamableHttpEndpoint = Objects.requireNonNullElse(serverParameters.getValue().endpoint(), "/mcp");
 
 			var transport = WebClientStreamableHttpTransport.builder(webClientBuilder)
 				.endpoint(streamableHttpEndpoint)

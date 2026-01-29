@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
@@ -98,9 +99,10 @@ public class SseWebFluxTransportAutoConfiguration {
 		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
-			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
-			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
-					? serverParameters.getValue().sseEndpoint() : "/sse";
+			String url = Objects.requireNonNull(serverParameters.getValue().url(),
+					"Missing url for server named " + serverParameters.getKey());
+			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
+			String sseEndpoint = Objects.requireNonNullElse(serverParameters.getValue().sseEndpoint(), "/sse");
 			var transport = WebFluxSseClientTransport.builder(webClientBuilder)
 				.sseEndpoint(sseEndpoint)
 				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
