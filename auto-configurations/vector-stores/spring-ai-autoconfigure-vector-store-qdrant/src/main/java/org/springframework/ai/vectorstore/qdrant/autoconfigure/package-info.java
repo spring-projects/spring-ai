@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2026-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,7 @@
  * limitations under the License.
  */
 
+@NullMarked
 package org.springframework.ai.vectorstore.qdrant.autoconfigure;
 
-import org.jspecify.annotations.Nullable;
-
-import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
-
-/**
- * Connection details for a Qdrant service client.
- *
- * @author Eddú Meléndez
- */
-public interface QdrantConnectionDetails extends ConnectionDetails {
-
-	String getHost();
-
-	int getPort();
-
-	@Nullable String getApiKey();
-
-}
+import org.jspecify.annotations.NullMarked;
