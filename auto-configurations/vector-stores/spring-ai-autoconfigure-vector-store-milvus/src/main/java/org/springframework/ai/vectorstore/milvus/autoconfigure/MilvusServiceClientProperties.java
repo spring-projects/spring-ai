@@ -18,6 +18,8 @@ package org.springframework.ai.vectorstore.milvus.autoconfigure;
 
 import java.util.concurrent.TimeUnit;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -48,12 +50,12 @@ public class MilvusServiceClientProperties {
 	/**
 	 * The uri of Milvus instance
 	 */
-	private String uri;
+	private @Nullable String uri;
 
 	/**
 	 * Token serving as the key for identification and authentication purposes.
 	 */
-	private String token;
+	private @Nullable String token;
 
 	/**
 	 * Connection timeout value of client channel. The timeout value must be greater than
@@ -90,31 +92,31 @@ public class MilvusServiceClientProperties {
 	 * The client.key path for tls two-way authentication, only takes effect when "secure"
 	 * is True.
 	 */
-	private String clientKeyPath;
+	private @Nullable String clientKeyPath;
 
 	/**
 	 * The client.pem path for tls two-way authentication, only takes effect when "secure"
 	 * is True.
 	 */
-	private String clientPemPath;
+	private @Nullable String clientPemPath;
 
 	/**
 	 * The ca.pem path for tls two-way authentication, only takes effect when "secure" is
 	 * True.
 	 */
-	private String caPemPath;
+	private @Nullable String caPemPath;
 
 	/**
 	 * server.pem path for tls one-way authentication, only takes effect when "secure" is
 	 * True.
 	 */
-	private String serverPemPath;
+	private @Nullable String serverPemPath;
 
 	/**
 	 * Sets the target name override for SSL host name checking, only takes effect when
 	 * "secure" is True. Note: this value is passed to grpc.ssl_target_name_override
 	 */
-	private String serverName;
+	private @Nullable String serverName;
 
 	/**
 	 * Idle timeout value of client channel. The timeout value must be larger than zero.
@@ -147,19 +149,19 @@ public class MilvusServiceClientProperties {
 		this.port = port;
 	}
 
-	public String getUri() {
+	public @Nullable String getUri() {
 		return this.uri;
 	}
 
-	public void setUri(String uri) {
+	public void setUri(@Nullable String uri) {
 		this.uri = uri;
 	}
 
-	public String getToken() {
+	public @Nullable String getToken() {
 		return this.token;
 	}
 
-	public void setToken(String token) {
+	public void setToken(@Nullable String token) {
 		this.token = token;
 	}
 
@@ -203,43 +205,43 @@ public class MilvusServiceClientProperties {
 		this.rpcDeadlineMs = rpcDeadlineMs;
 	}
 
-	public String getClientKeyPath() {
+	public @Nullable String getClientKeyPath() {
 		return this.clientKeyPath;
 	}
 
-	public void setClientKeyPath(String clientKeyPath) {
+	public void setClientKeyPath(@Nullable String clientKeyPath) {
 		this.clientKeyPath = clientKeyPath;
 	}
 
-	public String getClientPemPath() {
+	public @Nullable String getClientPemPath() {
 		return this.clientPemPath;
 	}
 
-	public void setClientPemPath(String clientPemPath) {
+	public void setClientPemPath(@Nullable String clientPemPath) {
 		this.clientPemPath = clientPemPath;
 	}
 
-	public String getCaPemPath() {
+	public @Nullable String getCaPemPath() {
 		return this.caPemPath;
 	}
 
-	public void setCaPemPath(String caPemPath) {
+	public void setCaPemPath(@Nullable String caPemPath) {
 		this.caPemPath = caPemPath;
 	}
 
-	public String getServerPemPath() {
+	public @Nullable String getServerPemPath() {
 		return this.serverPemPath;
 	}
 
-	public void setServerPemPath(String serverPemPath) {
+	public void setServerPemPath(@Nullable String serverPemPath) {
 		this.serverPemPath = serverPemPath;
 	}
 
-	public String getServerName() {
+	public @Nullable String getServerName() {
 		return this.serverName;
 	}
 
-	public void setServerName(String serverName) {
+	public void setServerName(@Nullable String serverName) {
 		this.serverName = serverName;
 	}
 
