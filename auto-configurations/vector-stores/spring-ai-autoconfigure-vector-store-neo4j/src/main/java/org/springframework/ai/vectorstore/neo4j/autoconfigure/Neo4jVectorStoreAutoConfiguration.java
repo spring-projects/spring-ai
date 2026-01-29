@@ -24,6 +24,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
+import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore.Builder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -62,12 +63,11 @@ public class Neo4jVectorStoreAutoConfiguration {
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 
-		return Neo4jVectorStore.builder(driver, embeddingModel)
+		Builder builder = Neo4jVectorStore.builder(driver, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
-			.databaseName(properties.getDatabaseName())
 			.embeddingDimension(properties.getEmbeddingDimension() != null ? properties.getEmbeddingDimension()
 					: embeddingModel.dimensions())
 			.distanceType(properties.getDistanceType())
@@ -76,8 +76,11 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.indexName(properties.getIndexName())
 			.idProperty(properties.getIdProperty())
 			.constraintName(properties.getConstraintName())
-			.textProperty(properties.getTextProperty())
-			.build();
+			.textProperty(properties.getTextProperty());
+		if (properties.getDatabaseName() != null) {
+			builder.databaseName(properties.getDatabaseName());
+		}
+		return builder.build();
 	}
 
 }
