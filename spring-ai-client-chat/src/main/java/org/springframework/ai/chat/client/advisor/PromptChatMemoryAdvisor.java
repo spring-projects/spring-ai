@@ -129,11 +129,11 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			.prompt(chatClientRequest.prompt().augmentSystemMessage(augmentedSystemText))
 			.build();
 
-		// 5. Add all user messages from the current prompt to memory (after system
+		// 5. Add the last user or tool response message from the current prompt to memory
+		// (after system
 		// message is generated)
-		// 4. Add the new user message to the conversation memory.
-		Message userMessage = processedChatClientRequest.prompt().getLastUserOrToolResponseMessage();
-		this.chatMemory.add(conversationId, userMessage);
+		Message lastUserOrToolResponseMessage = processedChatClientRequest.prompt().getLastUserOrToolResponseMessage();
+		this.chatMemory.add(conversationId, lastUserOrToolResponseMessage);
 
 		return processedChatClientRequest;
 	}
