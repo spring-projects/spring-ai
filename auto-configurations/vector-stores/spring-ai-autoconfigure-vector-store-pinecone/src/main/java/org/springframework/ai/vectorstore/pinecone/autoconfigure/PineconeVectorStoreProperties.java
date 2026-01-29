@@ -18,6 +18,8 @@ package org.springframework.ai.vectorstore.pinecone.autoconfigure;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.vectorstore.pinecone.PineconeVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -33,13 +35,13 @@ public class PineconeVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.pinecone";
 
-	private String apiKey;
+	private @Nullable String apiKey;
 
 	private String environment = "gcp-starter";
 
-	private String projectId;
+	private @Nullable String projectId;
 
-	private String indexName;
+	private @Nullable String indexName;
 
 	private String namespace = "";
 
@@ -49,11 +51,11 @@ public class PineconeVectorStoreProperties {
 
 	private Duration serverSideTimeout = Duration.ofSeconds(20);
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 
@@ -65,11 +67,11 @@ public class PineconeVectorStoreProperties {
 		this.environment = environment;
 	}
 
-	public String getProjectId() {
+	public @Nullable String getProjectId() {
 		return this.projectId;
 	}
 
-	public void setProjectId(String projectId) {
+	public void setProjectId(@Nullable String projectId) {
 		this.projectId = projectId;
 	}
 
@@ -81,11 +83,11 @@ public class PineconeVectorStoreProperties {
 		this.namespace = namespace;
 	}
 
-	public String getIndexName() {
+	public @Nullable String getIndexName() {
 		return this.indexName;
 	}
 
-	public void setIndexName(String indexName) {
+	public void setIndexName(@Nullable String indexName) {
 		this.indexName = indexName;
 	}
 
