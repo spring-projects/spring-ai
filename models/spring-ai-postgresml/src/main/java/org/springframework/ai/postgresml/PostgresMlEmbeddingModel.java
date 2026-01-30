@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
@@ -87,7 +89,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		this.createExtension = createExtension;
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public float[] embed(String text) {
 		return this.jdbcTemplate.queryForObject(
@@ -101,7 +102,6 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 		return this.embed(document.getFormattedContent(this.defaultOptions.getMetadataMode()));
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public EmbeddingResponse call(EmbeddingRequest request) {
 
@@ -146,10 +146,9 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 	 * @param requestOptions request options to merge.
 	 * @return the merged options.
 	 */
-	PostgresMlEmbeddingOptions mergeOptions(EmbeddingOptions requestOptions) {
+	PostgresMlEmbeddingOptions mergeOptions(@Nullable EmbeddingOptions requestOptions) {
 
-		PostgresMlEmbeddingOptions options = (this.defaultOptions != null) ? this.defaultOptions
-				: PostgresMlEmbeddingOptions.builder().build();
+		PostgresMlEmbeddingOptions options = this.defaultOptions;
 
 		if (requestOptions != null) {
 			options = ModelOptionsUtils.merge(requestOptions, options, PostgresMlEmbeddingOptions.class);
@@ -186,11 +185,11 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 
 		private final String cast;
 
-		private final String extensionName;
+		private final @Nullable String extensionName;
 
 		private final RowMapper<float[]> rowMapper;
 
-		VectorType(String cast, String extensionName, RowMapper<float[]> rowMapper) {
+		VectorType(String cast, @Nullable String extensionName, RowMapper<float[]> rowMapper) {
 			this.cast = cast;
 			this.extensionName = extensionName;
 			this.rowMapper = rowMapper;
