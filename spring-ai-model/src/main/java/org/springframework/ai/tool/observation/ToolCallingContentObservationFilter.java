@@ -39,11 +39,11 @@ public class ToolCallingContentObservationFilter implements ObservationFilter {
 			.addHighCardinalityKeyValue(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_ARGUMENTS
 				.withValue(toolCallArguments));
 
-		String toolCallResult = toolCallingObservationContext.getToolCallResult();
-		if (toolCallResult != null) {
+		var toolCallResult = toolCallingObservationContext.getToolCallResult();
+		if (toolCallResult != null && toolCallResult.content() != null) {
 			toolCallingObservationContext
 				.addHighCardinalityKeyValue(ToolCallingObservationDocumentation.HighCardinalityKeyNames.TOOL_CALL_RESULT
-					.withValue(toolCallResult));
+					.withValue(toolCallResult.content()));
 		}
 
 		return toolCallingObservationContext;

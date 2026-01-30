@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.ChatModel;
+import org.springframework.ai.google.genai.common.GoogleGenAiComputerUseEnvironment;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
@@ -202,6 +203,24 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	@JsonIgnore
 	private Boolean googleSearchRetrieval = false;
 
+	/**
+	 * Enable Gemini Computer Use tool.
+	 */
+	@JsonIgnore
+	private Boolean computerUse = false;
+
+	/**
+	 * Gemini Computer Use environment.
+	 */
+	@JsonIgnore
+	private GoogleGenAiComputerUseEnvironment computerUseEnvironment;
+
+	/**
+	 * Predefined functions to exclude from Computer Use tool.
+	 */
+	@JsonIgnore
+	private List<String> computerUseExcludedPredefinedFunctions;
+
 	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
 
@@ -229,6 +248,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		options.setResponseSchema(fromOptions.getResponseSchema());
 		options.setToolNames(fromOptions.getToolNames());
 		options.setGoogleSearchRetrieval(fromOptions.getGoogleSearchRetrieval());
+		options.setComputerUse(fromOptions.getComputerUse());
+		options.setComputerUseEnvironment(fromOptions.getComputerUseEnvironment());
+		options.setComputerUseExcludedPredefinedFunctions(fromOptions.getComputerUseExcludedPredefinedFunctions());
 		options.setSafetySettings(fromOptions.getSafetySettings());
 		options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 		options.setToolContext(fromOptions.getToolContext());
@@ -458,6 +480,30 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.googleSearchRetrieval = googleSearchRetrieval;
 	}
 
+	public Boolean getComputerUse() {
+		return this.computerUse;
+	}
+
+	public void setComputerUse(Boolean computerUse) {
+		this.computerUse = computerUse;
+	}
+
+	public GoogleGenAiComputerUseEnvironment getComputerUseEnvironment() {
+		return this.computerUseEnvironment;
+	}
+
+	public void setComputerUseEnvironment(GoogleGenAiComputerUseEnvironment computerUseEnvironment) {
+		this.computerUseEnvironment = computerUseEnvironment;
+	}
+
+	public List<String> getComputerUseExcludedPredefinedFunctions() {
+		return this.computerUseExcludedPredefinedFunctions;
+	}
+
+	public void setComputerUseExcludedPredefinedFunctions(List<String> computerUseExcludedPredefinedFunctions) {
+		this.computerUseExcludedPredefinedFunctions = computerUseExcludedPredefinedFunctions;
+	}
+
 	public List<GoogleGenAiSafetySetting> getSafetySettings() {
 		return this.safetySettings;
 	}
@@ -507,6 +553,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return false;
 		}
 		return Objects.equals(this.googleSearchRetrieval, that.googleSearchRetrieval)
+				&& Objects.equals(this.computerUse, that.computerUse)
+				&& this.computerUseEnvironment == that.computerUseEnvironment
+				&& Objects.equals(this.computerUseExcludedPredefinedFunctions,
+						that.computerUseExcludedPredefinedFunctions)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
 				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.candidateCount, that.candidateCount)
@@ -530,7 +580,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
 				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
-				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
+				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.computerUse,
+				this.computerUseEnvironment, this.computerUseExcludedPredefinedFunctions, this.safetySettings,
 				this.internalToolExecutionEnabled, this.toolContext, this.labels);
 	}
 
@@ -543,8 +594,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				+ ", candidateCount=" + this.candidateCount + ", maxOutputTokens=" + this.maxOutputTokens + ", model='"
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
-				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
-				+ '}';
+				+ this.googleSearchRetrieval + ", computerUse=" + this.computerUse + ", computerUseEnvironment="
+				+ this.computerUseEnvironment + ", computerUseExcludedPredefinedFunctions="
+				+ this.computerUseExcludedPredefinedFunctions + ", safetySettings=" + this.safetySettings + ", labels="
+				+ this.labels + '}';
 	}
 
 	@Override
@@ -653,6 +706,27 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public Builder googleSearchRetrieval(boolean googleSearch) {
 			this.options.googleSearchRetrieval = googleSearch;
+			return this;
+		}
+
+		public Builder computerUse(boolean computerUse) {
+			this.options.computerUse = computerUse;
+			return this;
+		}
+
+		public Builder computerUseEnvironment(GoogleGenAiComputerUseEnvironment environment) {
+			this.options.computerUseEnvironment = environment;
+			return this;
+		}
+
+		public Builder computerUseExcludedPredefinedFunctions(List<String> excludedPredefinedFunctions) {
+			this.options.computerUseExcludedPredefinedFunctions = excludedPredefinedFunctions;
+			return this;
+		}
+
+		public Builder computerUseExcludedPredefinedFunctions(String... excludedPredefinedFunctions) {
+			Assert.notNull(excludedPredefinedFunctions, "excludedPredefinedFunctions must not be null");
+			this.options.computerUseExcludedPredefinedFunctions = Arrays.asList(excludedPredefinedFunctions);
 			return this;
 		}
 

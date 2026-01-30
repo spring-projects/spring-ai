@@ -46,6 +46,7 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -184,8 +185,8 @@ class McpToolCallbackParameterlessToolIT {
 						assertThat(schemaMap.get("additionalProperties")).isEqualTo(false);
 
 						// Test that the callback can be called successfully
-						String result = toolCallback.call("{}");
-						assertThat(result).isNotNull().contains("Current time:");
+						ToolCallResult result = toolCallback.call("{}");
+						assertThat(result.content()).isNotNull().contains("Current time:");
 					});
 
 				stopHttpServer(httpServer);

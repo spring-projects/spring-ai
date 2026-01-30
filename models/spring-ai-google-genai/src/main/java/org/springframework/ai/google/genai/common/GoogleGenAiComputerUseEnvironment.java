@@ -14,26 +14,30 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.tool.execution;
+package org.springframework.ai.google.genai.common;
 
-import java.lang.reflect.Type;
-
-import org.jspecify.annotations.Nullable;
+import com.google.genai.types.Environment;
 
 /**
- * A functional interface to convert tool call results to a {@link ToolCallResult} that
- * can be sent back to the AI model.
+ * Supported environments for Gemini Computer Use.
  *
- * @author Thomas Vitale
- * @since 1.0.0
+ * @author Wada Yasuhiro
+ * @since 1.1.0
  */
-@FunctionalInterface
-public interface ToolCallResultConverter {
+public enum GoogleGenAiComputerUseEnvironment {
 
-	/**
-	 * Given an Object returned by a tool, convert it to a {@link ToolCallResult}
-	 * compatible with the given class type.
-	 */
-	ToolCallResult convert(@Nullable Object result, @Nullable Type returnType);
+	ENVIRONMENT_UNSPECIFIED(Environment.Known.ENVIRONMENT_UNSPECIFIED),
+
+	ENVIRONMENT_BROWSER(Environment.Known.ENVIRONMENT_BROWSER);
+
+	private final Environment.Known environmentEnum;
+
+	GoogleGenAiComputerUseEnvironment(Environment.Known environmentEnum) {
+		this.environmentEnum = environmentEnum;
+	}
+
+	public Environment getEnvironment() {
+		return new Environment(this.environmentEnum);
+	}
 
 }

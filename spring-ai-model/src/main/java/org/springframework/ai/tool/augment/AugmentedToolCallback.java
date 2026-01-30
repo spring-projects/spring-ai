@@ -27,6 +27,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.augment.ToolInputSchemaAugmenter.AugmentedArgumentType;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.Assert;
 
@@ -103,12 +104,12 @@ public class AugmentedToolCallback<T extends Record> implements ToolCallback {
 	}
 
 	@Override
-	public String call(String toolInput) {
+	public ToolCallResult call(String toolInput) {
 		return this.delegate.call(this.handleAugmentedArguments(toolInput));
 	}
 
 	@Override
-	public String call(String toolInput, @Nullable ToolContext tooContext) {
+	public ToolCallResult call(String toolInput, @Nullable ToolContext tooContext) {
 		return this.delegate.call(this.handleAugmentedArguments(toolInput), tooContext);
 	}
 

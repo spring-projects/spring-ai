@@ -36,6 +36,7 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -210,8 +211,8 @@ class McpToolsConfigurationTests {
 				}
 
 				@Override
-				public String call(String toolInput) {
-					return "~~ not implemented ~~";
+				public ToolCallResult call(String toolInput) {
+					return ToolCallResult.builder().content("~~ not implemented ~~").build();
 				}
 			} };
 		}

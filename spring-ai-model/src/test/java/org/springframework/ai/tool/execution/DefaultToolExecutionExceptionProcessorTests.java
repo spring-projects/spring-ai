@@ -55,9 +55,9 @@ class DefaultToolExecutionExceptionProcessorTests {
 	void processReturnsMessage() {
 		DefaultToolExecutionExceptionProcessor processor = DefaultToolExecutionExceptionProcessor.builder().build();
 
-		String result = processor.process(this.toolExecutionException);
+		ToolCallResult result = processor.process(this.toolExecutionException);
 
-		assertThat(result).isEqualTo(this.toolException.getMessage());
+		assertThat(result.content()).isEqualTo(this.toolException.getMessage());
 	}
 
 	@Test
@@ -66,9 +66,9 @@ class DefaultToolExecutionExceptionProcessorTests {
 
 		ToolExecutionException exception = new ToolExecutionException(this.toolDefinition, new IllegalStateException());
 
-		String result = processor.process(exception);
+		ToolCallResult result = processor.process(exception);
 
-		assertThat(result).isEqualTo("Exception occurred in tool: toolName (IllegalStateException)");
+		assertThat(result.content()).isEqualTo("Exception occurred in tool: toolName (IllegalStateException)");
 	}
 
 	@Test
@@ -77,9 +77,9 @@ class DefaultToolExecutionExceptionProcessorTests {
 
 		ToolExecutionException exception = new ToolExecutionException(this.toolDefinition, new RuntimeException(" "));
 
-		String result = processor.process(exception);
+		ToolCallResult result = processor.process(exception);
 
-		assertThat(result).isEqualTo("Exception occurred in tool: toolName (RuntimeException)");
+		assertThat(result.content()).isEqualTo("Exception occurred in tool: toolName (RuntimeException)");
 	}
 
 	@Test
@@ -125,9 +125,9 @@ class DefaultToolExecutionExceptionProcessorTests {
 
 		ToolExecutionException exception = new ToolExecutionException(this.toolDefinition,
 				new RuntimeException("This exception was not rethrown"));
-		String result = processor.process(exception);
+		ToolCallResult result = processor.process(exception);
 
-		assertThat(result).isEqualTo("This exception was not rethrown");
+		assertThat(result.content()).isEqualTo("This exception was not rethrown");
 	}
 
 	@Test

@@ -21,6 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,10 +47,10 @@ public class MethodToolCallbackExceptionHandlingTest {
 				""";
 
 		// Call the tool
-		String result = callback.call(toolInput);
+		ToolCallResult result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("3 strings processed: [one, two, three]");
+		assertThat(result.content()).isEqualTo("3 strings processed: [one, two, three]");
 
 		// Verify
 		String ivalidToolInput = """

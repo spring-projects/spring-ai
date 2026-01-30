@@ -29,6 +29,7 @@ import org.springframework.ai.openai.api.tool.MockWeatherService;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -240,8 +241,8 @@ class ChatCompletionRequestTests {
 		}
 
 		@Override
-		public String call(String toolInput) {
-			return "Mission accomplished!";
+		public ToolCallResult call(String toolInput) {
+			return ToolCallResult.builder().content("Mission accomplished!").build();
 		}
 
 	}

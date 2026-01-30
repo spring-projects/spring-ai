@@ -39,6 +39,7 @@ import reactor.test.StepVerifier;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -321,7 +322,7 @@ class ToolUtilsTests {
 			.inputSchema("{}")
 			.build();
 		when(callback.getToolDefinition()).thenReturn(definition);
-		when(callback.call(anyString(), any())).thenReturn(result);
+		when(callback.call(anyString(), any())).thenReturn(ToolCallResult.builder().content(result).build());
 		return callback;
 	}
 

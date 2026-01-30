@@ -37,6 +37,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.observation.DefaultToolCallingObservationConvention;
@@ -233,11 +234,11 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.toolCallArguments(finalToolInputArguments)
 				.build();
 
-			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
+			ToolCallResult toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
 				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 						this.observationRegistry)
 				.observe(() -> {
-					String toolResult;
+					ToolCallResult toolResult;
 					try {
 						toolResult = toolCallback.call(finalToolInputArguments, toolContext);
 					}
@@ -249,7 +250,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				});
 
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
-					toolCallResult != null ? toolCallResult : ""));
+					toolCallResult.content() == null ? "" : toolCallResult.content(), toolCallResult.metadata()));
 		}
 
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),

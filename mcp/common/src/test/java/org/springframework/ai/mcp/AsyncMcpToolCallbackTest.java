@@ -30,6 +30,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,10 +99,10 @@ class AsyncMcpToolCallbackTest {
 			.prefixedToolName("prefixed_testTool")
 			.build();
 
-		String result = callback.call("{\"param\":\"value\"}");
+		ToolCallResult result = callback.call("{\"param\":\"value\"}");
 
 		// Assert
-		assertThat(result).contains("Success response");
+		assertThat(result.content()).contains("Success response");
 
 		// Verify the correct tool name was used in the request
 		ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor
@@ -128,10 +129,10 @@ class AsyncMcpToolCallbackTest {
 			.prefixedToolName("testTool")
 			.build();
 
-		String result = callback.call(null);
+		ToolCallResult result = callback.call(null);
 
 		// Assert
-		assertThat(result).contains("Success with empty input");
+		assertThat(result.content()).contains("Success with empty input");
 
 		// Verify empty JSON object was used
 		ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor
@@ -156,10 +157,10 @@ class AsyncMcpToolCallbackTest {
 			.prefixedToolName("testTool")
 			.build();
 
-		String result = callback.call("");
+		ToolCallResult result = callback.call("");
 
 		// Assert
-		assertThat(result).contains("Success with empty input");
+		assertThat(result.content()).contains("Success with empty input");
 
 		// Verify empty JSON object was used
 		ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor
@@ -187,10 +188,10 @@ class AsyncMcpToolCallbackTest {
 			.prefixedToolName("testTool")
 			.build();
 
-		String result = callback.call("{\"param\":\"value\"}", toolContext);
+		ToolCallResult result = callback.call("{\"param\":\"value\"}", toolContext);
 
 		// Assert
-		assertThat(result).contains("Success with context");
+		assertThat(result.content()).contains("Success with context");
 
 		// Verify the context was included in the request
 		ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor
@@ -323,11 +324,11 @@ class AsyncMcpToolCallbackTest {
 			.prefixedToolName("testTool")
 			.build();
 
-		String result = callback.call("{\"input\":\"test\"}");
+		ToolCallResult result = callback.call("{\"input\":\"test\"}");
 
 		// Assert
-		assertThat(result).contains("Part 1");
-		assertThat(result).contains("Part 2");
+		assertThat(result.content()).contains("Part 1");
+		assertThat(result.content()).contains("Part 2");
 	}
 
 }

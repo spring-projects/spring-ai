@@ -36,6 +36,7 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -162,8 +163,8 @@ class ToolCallingAutoConfigurationTests {
 				var exception = new ToolExecutionException(toolDefinition, cause);
 
 				// Default behavior should not throw exception
-				String result = toolExecutionExceptionProcessor.process(exception);
-				assertThat(result).isEqualTo("Test error");
+				ToolCallResult result = toolExecutionExceptionProcessor.process(exception);
+				assertThat(result.content()).isEqualTo("Test error");
 			});
 	}
 
@@ -364,8 +365,8 @@ class ToolCallingAutoConfigurationTests {
 	static class CustomToolExecutionExceptionProcessor implements ToolExecutionExceptionProcessor {
 
 		@Override
-		public String process(ToolExecutionException exception) {
-			return "Custom error handling";
+		public ToolCallResult process(ToolExecutionException exception) {
+			return ToolCallResult.builder().content("Custom error handling").build();
 		}
 
 	}

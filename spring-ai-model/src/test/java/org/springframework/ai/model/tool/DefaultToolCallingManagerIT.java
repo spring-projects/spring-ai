@@ -35,6 +35,7 @@ import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.observation.DefaultToolCallingObservationConvention;
 import org.springframework.ai.tool.observation.ToolCallingObservationDocumentation;
@@ -154,8 +155,8 @@ class DefaultToolCallingManagerIT {
 		}
 
 		@Override
-		public String call(String toolInput) {
-			return "Mission accomplished!";
+		public ToolCallResult call(String toolInput) {
+			return ToolCallResult.builder().content("Mission accomplished!").build();
 		}
 
 	}

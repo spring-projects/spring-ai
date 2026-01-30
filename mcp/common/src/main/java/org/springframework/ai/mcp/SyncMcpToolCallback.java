@@ -30,6 +30,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.execution.ToolCallResult;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -101,12 +102,12 @@ public class SyncMcpToolCallback implements ToolCallback {
 	}
 
 	@Override
-	public String call(String toolCallInput) {
+	public ToolCallResult call(String toolCallInput) {
 		return this.call(toolCallInput, null);
 	}
 
 	@Override
-	public String call(String toolCallInput, @Nullable ToolContext toolContext) {
+	public ToolCallResult call(String toolCallInput, @Nullable ToolContext toolContext) {
 
 		// Handle the possible null parameter situation in streaming mode.
 		if (!StringUtils.hasText(toolCallInput)) {
@@ -142,7 +143,7 @@ public class SyncMcpToolCallback implements ToolCallback {
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
-		return ModelOptionsUtils.toJsonString(response.content());
+		return ToolCallResult.builder().content(ModelOptionsUtils.toJsonString(response.content())).build();
 	}
 
 	/**

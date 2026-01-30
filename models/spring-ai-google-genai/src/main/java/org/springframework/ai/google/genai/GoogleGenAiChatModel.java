@@ -28,11 +28,13 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.google.genai.Client;
 import com.google.genai.ResponseStream;
 import com.google.genai.types.Candidate;
+import com.google.genai.types.ComputerUse;
 import com.google.genai.types.Content;
 import com.google.genai.types.FinishReason;
 import com.google.genai.types.FunctionCall;
 import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.FunctionResponse;
+import com.google.genai.types.FunctionResponsePart;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GoogleSearch;
@@ -328,16 +330,29 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return parts;
 		}
 		else if (message instanceof ToolResponseMessage toolResponseMessage) {
-
-			return toolResponseMessage.getResponses()
-				.stream()
-				.map(response -> Part.builder()
+			return toolResponseMessage.getResponses().stream().map(response -> {
+				var partsJson = response.metadata().get("gemini.functionResponse.partsJson");
+				List<FunctionResponsePart> functionResponseParts = new ArrayList<>();
+				if (partsJson instanceof String[] partsJsonArray) {
+					for (String partJson : partsJsonArray) {
+						functionResponseParts.add(FunctionResponsePart.fromJson(partJson));
+					}
+				}
+				else if (partsJson instanceof Iterable<?> partsJsonIterable) {
+					for (Object part : partsJsonIterable) {
+						if (part instanceof String partJson) {
+							functionResponseParts.add(FunctionResponsePart.fromJson(partJson));
+						}
+					}
+				}
+				return Part.builder()
 					.functionResponse(FunctionResponse.builder()
 						.name(response.name())
 						.response(parseJsonToMap(response.responseData()))
+						.parts(functionResponseParts)
 						.build())
-					.build())
-				.toList();
+					.build();
+			}).toList();
 		}
 		else {
 			throw new IllegalArgumentException("Gemini doesn't support message type: " + message.getClass());
@@ -515,6 +530,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 			requestOptions.setGoogleSearchRetrieval(ModelOptionsUtils.mergeOption(
 					runtimeOptions.getGoogleSearchRetrieval(), this.defaultOptions.getGoogleSearchRetrieval()));
+			requestOptions.setComputerUse(ModelOptionsUtils.mergeOption(runtimeOptions.getComputerUse(),
+					this.defaultOptions.getComputerUse()));
+			requestOptions.setComputerUseEnvironment(ModelOptionsUtils.mergeOption(
+					runtimeOptions.getComputerUseEnvironment(), this.defaultOptions.getComputerUseEnvironment()));
+			requestOptions.setComputerUseExcludedPredefinedFunctions(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getComputerUseExcludedPredefinedFunctions(),
+							this.defaultOptions.getComputerUseExcludedPredefinedFunctions()));
 			requestOptions.setSafetySettings(ModelOptionsUtils.mergeOption(runtimeOptions.getSafetySettings(),
 					this.defaultOptions.getSafetySettings()));
 			requestOptions
@@ -527,6 +549,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
 
 			requestOptions.setGoogleSearchRetrieval(this.defaultOptions.getGoogleSearchRetrieval());
+			requestOptions.setComputerUse(this.defaultOptions.getComputerUse());
+			requestOptions.setComputerUseEnvironment(this.defaultOptions.getComputerUseEnvironment());
+			requestOptions.setComputerUseExcludedPredefinedFunctions(
+					this.defaultOptions.getComputerUseExcludedPredefinedFunctions());
 			requestOptions.setSafetySettings(this.defaultOptions.getSafetySettings());
 			requestOptions.setLabels(this.defaultOptions.getLabels());
 		}
@@ -804,6 +830,19 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			var googleSearch = GoogleSearch.builder().build();
 			final var googleSearchRetrievalTool = Tool.builder().googleSearch(googleSearch).build();
 			tools.add(googleSearchRetrievalTool);
+		}
+
+		if (requestOptions.getComputerUse()) {
+			var computerUseBuilder = ComputerUse.builder();
+			if (requestOptions.getComputerUseEnvironment() != null) {
+				computerUseBuilder.environment(requestOptions.getComputerUseEnvironment().getEnvironment());
+			}
+			if (!CollectionUtils.isEmpty(requestOptions.getComputerUseExcludedPredefinedFunctions())) {
+				computerUseBuilder
+					.excludedPredefinedFunctions(requestOptions.getComputerUseExcludedPredefinedFunctions());
+			}
+			final var computerUseTool = Tool.builder().computerUse(computerUseBuilder.build()).build();
+			tools.add(computerUseTool);
 		}
 
 		if (!CollectionUtils.isEmpty(tools)) {
@@ -1134,6 +1173,23 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite">gemini-2.5-flash-lite</a>
 		 */
 		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite"),
+
+		/**
+		 * <b>gemini-2.5-computer-use-preview</b> is a specialized model for browser and
+		 * GUI automation. It allows agents to understand screen content and generate UI
+		 * actions such as mouse clicks, keyboard input, and navigation to control
+		 * applications.
+		 * <p>
+		 * Inputs: Text, Images - 128,000 tokens | Outputs: Text - 64,000 tokens
+		 * <p>
+		 * Knowledge cutoff: October 2025
+		 * <p>
+		 * Model ID: gemini-2.5-computer-use-preview-10-2025
+		 * <p>
+		 * See: <a href=
+		 * "https://ai.google.dev/gemini-api/docs/computer-use">gemini-2.5-computer-use-preview-10-2025</a>
+		 */
+		GEMINI_2_5_COMPUTER_USE_PREVIEW("gemini-2.5-computer-use-preview-10-2025"),
 
 		GEMINI_3_PRO_PREVIEW("gemini-3-pro-preview");
 
