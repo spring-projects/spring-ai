@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.util.Assert;
 
 @AutoConfiguration
 @ConditionalOnClass(HuggingfaceChatModel.class)
@@ -36,6 +37,8 @@ public class HuggingfaceChatAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public HuggingfaceChatModel huggingfaceChatModel(HuggingfaceChatProperties huggingfaceChatProperties) {
+		Assert.notNull(huggingfaceChatProperties.getApiKey(), "apiKey must not be null");
+		Assert.notNull(huggingfaceChatProperties.getUrl(), "url must not be null");
 		return new HuggingfaceChatModel(huggingfaceChatProperties.getApiKey(), huggingfaceChatProperties.getUrl());
 	}
 
