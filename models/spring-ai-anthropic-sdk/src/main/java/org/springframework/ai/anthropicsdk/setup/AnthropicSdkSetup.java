@@ -70,7 +70,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Soby Chacko
  * @since 2.0.0
- * @see AnthropicSdkChatModel
+ * @see org.springframework.ai.anthropicsdk.AnthropicSdkChatModel
  */
 public final class AnthropicSdkSetup {
 
