@@ -196,6 +196,15 @@ var options = AnthropicSdkChatOptions.builder()
     .build();
 ----
 
+[TIP]
+====
+The Anthropic Java SDK provides convenient static factory methods for common tool choices, which can make your code more concise:
+
+* `ToolChoice.auto()` can be used instead of `ToolChoice.ofAuto(...)`.
+* `ToolChoice.any()` can be used instead of `ToolChoice.ofAny(...)`.
+* `ToolChoice.none()` can be used instead of `ToolChoice.ofNone(...)`.
+====
+
 === Streaming Tool Calling
 
 The Anthropic SDK module fully supports tool calling in streaming mode. When Claude decides to call a tool during streaming:

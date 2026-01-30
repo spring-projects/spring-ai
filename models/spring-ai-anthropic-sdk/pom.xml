@@ -35,9 +35,6 @@
 		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
 	</scm>
 
-	<properties>
-	</properties>
-
 	<dependencies>
 
 		<!-- production dependencies -->
@@ -51,28 +48,6 @@
 			<groupId>com.anthropic</groupId>
 			<artifactId>anthropic-java</artifactId>
 			<version>${anthropic-sdk.version}</version>
-		</dependency>
-
-		<!-- Optional: Bedrock support -->
-		<dependency>
-			<groupId>com.anthropic</groupId>
-			<artifactId>anthropic-java-bedrock</artifactId>
-			<version>${anthropic-sdk.version}</version>
-			<optional>true</optional>
-		</dependency>
-
-		<!-- Optional: Vertex AI support -->
-		<dependency>
-			<groupId>com.anthropic</groupId>
-			<artifactId>anthropic-java-vertex</artifactId>
-			<version>${anthropic-sdk.version}</version>
-			<optional>true</optional>
-		</dependency>
-
-		<!-- Spring Framework -->
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context-support</artifactId>
 		</dependency>
 
 		<dependency>
