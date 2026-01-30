@@ -283,10 +283,16 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Internal method to handle streaming chat completion calls with tool execution
-	 * support.
-	 * @param prompt the prompt for the chat completion
-	 * @param previousChatResponse the previous chat response for accumulating usage
-	 * @return a Flux of chat responses
+	 * support. This method is called recursively to support multi-turn tool calling.
+	 * @param prompt The prompt for the chat completion. In a recursive tool-call
+	 * scenario, this prompt will contain the full conversation history including the tool
+	 * results.
+	 * @param previousChatResponse The chat response from the preceding API call. This is
+	 * used to accumulate token usage correctly across multiple API calls in a single user
+	 * turn.
+	 * @return A {@link Flux} of {@link ChatResponse} events, which can include text
+	 * chunks and the final response with tool call information or the model's final
+	 * answer.
 	 */
 	public Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
@@ -344,18 +350,23 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Handles tool execution for streaming responses. If the response has tool_use finish
-	 * reason and tool execution is enabled, executes the tools and continues the
-	 * conversation.
-	 * @param prompt the original prompt
-	 * @param chatResponse the streaming response (may be intermediate or final)
-	 * @return a Flux continuing with tool execution results or the original response
+	 * Handles the pivot from receiving a tool-call request to executing the tools and
+	 * starting the recursive streaming call with the results. This method is triggered
+	 * via {@code .flatMap()} after the initial stream from the model is fully consumed by
+	 * the {@link MessageAggregator}.
+	 * @param prompt The original prompt containing tool definitions.
+	 * @param chatResponse The aggregated response from the first API call, which contains
+	 * the tool call requests.
+	 * @return A new {@link Flux} of {@link ChatResponse} events. If tools were executed,
+	 * this Flux is the stream of the model's final answer. Otherwise, it's the original
+	 * response.
 	 */
 	private Flux<ChatResponse> handleStreamingToolExecution(Prompt prompt, ChatResponse chatResponse) {
 		ChatOptions promptOptions = prompt.getOptions();
 		if (promptOptions != null
 				&& this.toolExecutionEligibilityPredicate.isToolExecutionRequired(promptOptions, chatResponse)) {
-			// Only execute tools when we have the tool_use finish reason
+			// Only execute tools when the model's turn is complete and its stated reason
+			// for stopping is that it wants to use a tool.
 			if (chatResponse.hasFinishReasons(java.util.Set.of("tool_use"))) {
 				return Flux.deferContextual(ctx -> {
 					ToolExecutionResult toolExecutionResult;
@@ -374,13 +385,23 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 							.build());
 					}
 					else {
-						// Continue the conversation with tool results - recursive
-						// streaming call
+						// RECURSIVE CALL: Return a *new stream* by calling internalStream
+						// again.
+						// The new prompt contains the full history, including the tool
+						// results.
 						return this.internalStream(
 								new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-								chatResponse);
+								chatResponse); // Pass previous response for usage
+												// accumulation
 					}
-				}).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
+				}).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic()); // Run
+																					// blocking
+																					// tool
+																					// execution
+																					// on
+																					// a
+																					// different
+																					// thread
 			}
 			else {
 				// Tool execution required but not at tool_use finish - skip this response
@@ -413,16 +434,18 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	@Nullable private ChatResponse convertStreamEventToChatResponse(RawMessageStreamEvent event,
 			@Nullable ChatResponse previousChatResponse, StreamingState streamingState) {
 
-		// Handle message start events (contains message ID, model, input tokens)
+		// -- Event: message_start --
+		// Captures message ID, model, and input tokens from the first event.
 		if (event.messageStart().isPresent()) {
 			var startEvent = event.messageStart().get();
 			var message = startEvent.message();
 			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage().inputTokens());
-			// Don't emit a ChatResponse for message_start, just capture state
 			return null;
 		}
 
-		// Handle content block start events - for tool_use blocks, start tracking
+		// -- Event: content_block_start --
+		// Detects the start of a tool_use block and prepares the state for JSON
+		// accumulation.
 		if (event.contentBlockStart().isPresent()) {
 			var startEvent = event.contentBlockStart().get();
 			var contentBlock = startEvent.contentBlock();
@@ -430,16 +453,17 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 				var toolUseBlock = contentBlock.asToolUse();
 				streamingState.startToolUse(toolUseBlock.id(), toolUseBlock.name());
 			}
-			// Don't emit a ChatResponse for content_block_start
 			return null;
 		}
 
-		// Handle content block delta events
+		// -- Event: content_block_delta --
+		// Handles incremental updates, distinguishing text chunks from tool argument JSON
+		// chunks.
 		if (event.contentBlockDelta().isPresent()) {
 			var deltaEvent = event.contentBlockDelta().get();
 			var delta = deltaEvent.delta();
 
-			// Handle text delta - emit as ChatResponse
+			// A text chunk for the final answer. Emit it immediately.
 			if (delta.text().isPresent()) {
 				String text = delta.asText().text();
 				AssistantMessage assistantMessage = AssistantMessage.builder().content(text).build();
@@ -447,25 +471,26 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 				return new ChatResponse(List.of(generation));
 			}
 
-			// Handle input_json_delta - accumulate partial JSON for tool calls
+			// A JSON chunk for a tool call's arguments. Accumulate it.
 			if (delta.inputJson().isPresent()) {
 				String partialJson = delta.asInputJson().partialJson();
 				streamingState.appendToolJson(partialJson);
-				// Don't emit a ChatResponse for partial tool JSON
 				return null;
 			}
 		}
 
-		// Handle content block stop events - finalize tool call if tracking one
+		// -- Event: content_block_stop --
+		// Finalizes a single tool call's data once all its JSON has been streamed.
 		if (event.contentBlockStop().isPresent()) {
 			if (streamingState.isTrackingToolUse()) {
 				streamingState.finishToolUse();
 			}
-			// Don't emit a ChatResponse for content_block_stop
 			return null;
 		}
 
-		// Handle message delta events (contains stop reason and output token usage)
+		// -- Event: message_delta --
+		// The final event of the model's turn. Contains the stop_reason and final usage.
+		// This is the primary trigger for the tool-calling logic to proceed.
 		Optional<ChatResponse> messageDeltaResponse = event.messageDelta().map(deltaEvent -> {
 			String stopReason = deltaEvent.delta().stopReason().map(r -> r.toString()).orElse("");
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(stopReason).build();
@@ -502,10 +527,15 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Internal method to handle chat completion calls with tool execution support.
-	 * @param prompt the prompt for the chat completion
-	 * @param previousChatResponse the previous chat response for accumulating usage
-	 * @return the chat response
+	 * Internal method to handle synchronous chat completion calls with tool execution
+	 * support. This method is called recursively to support multi-turn tool calling.
+	 * @param prompt The prompt for the chat completion. In a recursive tool-call
+	 * scenario, this prompt will contain the full conversation history including the tool
+	 * results.
+	 * @param previousChatResponse The chat response from the preceding API call. This is
+	 * used to accumulate token usage correctly across multiple API calls in a single user
+	 * turn.
+	 * @return The final {@link ChatResponse} after all tool calls (if any) are resolved.
 	 */
 	public ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
@@ -604,12 +634,6 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.options.getToolContext()));
 		}
-		else {
-			requestOptions.setInternalToolExecutionEnabled(this.options.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(this.options.getToolNames());
-			requestOptions.setToolCallbacks(this.options.getToolCallbacks());
-			requestOptions.setToolContext(this.options.getToolContext());
-		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
@@ -617,10 +641,28 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Creates a message request from the given prompt.
-	 * @param prompt the prompt containing messages and options
-	 * @param stream whether this is a streaming request
-	 * @return the message create parameters
+	 * Creates a {@link MessageCreateParams} request object from a Spring AI
+	 * {@link Prompt}. This method is the primary "translator" between the generic Spring
+	 * AI model and the specific Anthropic SDK format.
+	 *
+	 * It handles the crucial logic of mapping message types and constructing the
+	 * conversation history correctly for multi-turn and tool-use scenarios.
+	 *
+	 * <p>
+	 * <b>Key Mappings:</b>
+	 * <ul>
+	 * <li>{@code MessageType.TOOL}: A Spring AI {@link ToolResponseMessage} is converted
+	 * into a "user" role message containing a {@link ToolResultBlockParam}, which is the
+	 * format Anthropic's API expects for tool results.</li>
+	 * <li>{@code MessageType.ASSISTANT}: An {@link AssistantMessage} containing tool
+	 * calls is converted into an assistant message with {@link ToolUseBlockParam} blocks
+	 * to accurately represent the model's previous actions in the history.</li>
+	 * </ul>
+	 * @param prompt The prompt containing the message history and options.
+	 * @param stream This parameter is noted but not currently used to alter the request
+	 * structure, as the sync/async call is determined by which client method is invoked.
+	 * @return The fully constructed {@link MessageCreateParams} for the Anthropic API
+	 * call.
 	 */
 	MessageCreateParams createRequest(Prompt prompt, boolean stream) {
 
