@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.huggingface.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -34,26 +36,26 @@ public class HuggingfaceChatProperties {
 	/**
 	 * API Key to authenticate with the Inference Endpoint.
 	 */
-	private String apiKey;
+	private @Nullable String apiKey;
 
 	/**
 	 * URL of the Inference Endpoint.
 	 */
-	private String url;
+	private @Nullable String url;
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 
-	public String getUrl() {
+	public @Nullable String getUrl() {
 		return this.url;
 	}
 
-	public void setUrl(String url) {
+	public void setUrl(@Nullable String url) {
 		this.url = url;
 	}
 

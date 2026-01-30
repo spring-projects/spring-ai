@@ -34,6 +34,7 @@ import org.springframework.ai.huggingface.model.AllOfGenerateResponseDetails;
 import org.springframework.ai.huggingface.model.CompatGenerateRequest;
 import org.springframework.ai.huggingface.model.GenerateParameters;
 import org.springframework.ai.huggingface.model.GenerateResponse;
+import org.springframework.util.Assert;
 
 /**
  * An implementation of {@link ChatModel} that interfaces with HuggingFace Inference
@@ -42,27 +43,20 @@ import org.springframework.ai.huggingface.model.GenerateResponse;
  * @author Mark Pollack
  * @author Jihoon Kim
  */
+// Note: this class relies on generated code that lives in different packages (.api,
+// .invoker and .model).
+// These packages are NOT annotated with JSpecify nullability annotations
 public class HuggingfaceChatModel implements ChatModel {
-
-	/**
-	 * Token required for authenticating with the HuggingFace Inference API.
-	 */
-	private final String apiToken;
-
-	/**
-	 * Client for making API calls.
-	 */
-	private ApiClient apiClient = new ApiClient();
 
 	/**
 	 * Mapper for converting between Java objects and JSON.
 	 */
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	/**
 	 * API for text generation inferences.
 	 */
-	private TextGenerationInferenceApi textGenApi = new TextGenerationInferenceApi();
+	private final TextGenerationInferenceApi textGenApi;
 
 	/**
 	 * The maximum number of new tokens to be generated. Note: The total token size for
@@ -76,10 +70,13 @@ public class HuggingfaceChatModel implements ChatModel {
 	 * @param basePath The base path for API requests.
 	 */
 	public HuggingfaceChatModel(final String apiToken, String basePath) {
-		this.apiToken = apiToken;
-		this.apiClient.setBasePath(basePath);
-		this.apiClient.addDefaultHeader("Authorization", "Bearer " + this.apiToken);
-		this.textGenApi.setApiClient(this.apiClient);
+		Assert.notNull(apiToken, "apiToken must not be null");
+		Assert.notNull(basePath, "basePath must not be null");
+		ApiClient apiClient = new ApiClient();
+		apiClient.setBasePath(basePath);
+		apiClient.addDefaultHeader("Authorization", "Bearer " + apiToken);
+		this.textGenApi = new TextGenerationInferenceApi();
+		this.textGenApi.setApiClient(apiClient);
 	}
 
 	/**
