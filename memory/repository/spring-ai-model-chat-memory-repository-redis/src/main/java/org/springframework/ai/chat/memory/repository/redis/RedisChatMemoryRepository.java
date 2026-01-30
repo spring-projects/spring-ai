@@ -527,13 +527,6 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 								break;
 						}
 					}
-					// When specific metadata fields are defined, we don't add a wildcard
-					// metadata field to avoid indexing errors with non-string values
-				}
-
-				else {
-					// No schema provided - fallback to indexing all metadata as text
-					schemaFields.add(new TextField("$.metadata.*").as("metadata"));
 				}
 
 				// Create the index with the defined schema
