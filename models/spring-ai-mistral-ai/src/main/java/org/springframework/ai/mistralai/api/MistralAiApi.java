@@ -63,6 +63,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author Jason Smith
  * @author Nicolas Krier
+ * @author Kyle Kreuter
  * @since 1.0.0
  */
 public class MistralAiApi {
@@ -207,6 +208,51 @@ public class MistralAiApi {
 				return List.of(mono1);
 			})
 			.flatMap(mono -> mono);
+	}
+
+	/**
+	 * Sealed interface for content chunks returned by Magistral reasoning models.
+	 * Magistral models can return content as an array of typed blocks instead of a simple
+	 * string.
+	 *
+	 * @since 1.0.0
+	 */
+	public sealed interface ContentChunk permits TextChunk, ThinkChunk, ReferenceChunk {
+
+	}
+
+	/**
+	 * A text content chunk containing the main response text.
+	 *
+	 * @param text the text content
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record TextChunk(@JsonProperty("text") String text) implements ContentChunk {
+
+	}
+
+	/**
+	 * A thinking/reasoning content chunk from Magistral models. Contains the model's
+	 * intermediate reasoning process.
+	 *
+	 * @param thinking the thinking/reasoning content
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record ThinkChunk(@JsonProperty("thinking") String thinking) implements ContentChunk {
+
+	}
+
+	/**
+	 * A reference content chunk containing citation reference IDs.
+	 *
+	 * @param referenceIds list of reference IDs for citations
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record ReferenceChunk(@JsonProperty("reference_ids") List<Integer> referenceIds) implements ContentChunk {
+
 	}
 
 	/**
@@ -1130,7 +1176,9 @@ public class MistralAiApi {
 		}
 
 		/**
-		 * Get message content as String.
+		 * Returns the text content of the message. For reasoning models (Magistral),
+		 * extracts the text block from the content array.
+		 * @return the text content or null if not available
 		 */
 		public String content() {
 			if (this.rawContent == null) {
@@ -1139,7 +1187,132 @@ public class MistralAiApi {
 			if (this.rawContent instanceof String text) {
 				return text;
 			}
-			throw new IllegalStateException("The content is not a string!");
+			if (this.rawContent instanceof List<?> blocks) {
+				StringBuilder textBuilder = new StringBuilder();
+				for (Object block : blocks) {
+					if (block instanceof Map<?, ?> map && "text".equals(map.get("type"))) {
+						Object text = map.get("text");
+						if (text instanceof String s) {
+							if (!textBuilder.isEmpty()) {
+								textBuilder.append("\n");
+							}
+							textBuilder.append(s);
+						}
+					}
+				}
+				return textBuilder.isEmpty() ? null : textBuilder.toString();
+			}
+			throw new IllegalStateException("Unexpected content type: " + rawContent.getClass());
+		}
+
+		/**
+		 * Returns the thinking/reasoning content from Magistral models. For non-Magistral
+		 * models or when no thinking content is present, returns null.
+		 * @return the thinking content or null if not available
+		 */
+		public String thinkingContent() {
+			if (this.rawContent == null) {
+				return null;
+			}
+			if (this.rawContent instanceof String) {
+				return null;
+			}
+			if (this.rawContent instanceof List<?> blocks) {
+				StringBuilder thinkingBuilder = new StringBuilder();
+				for (Object block : blocks) {
+					if (block instanceof Map<?, ?> map && "thinking".equals(map.get("type"))) {
+						Object thinking = map.get("thinking");
+						if (thinking instanceof List<?> thinkingBlocks) {
+							for (Object thinkingBlock : thinkingBlocks) {
+								if (thinkingBlock instanceof Map<?, ?> thinkingMap
+										&& "text".equals(thinkingMap.get("type"))) {
+									Object text = thinkingMap.get("text");
+									if (text instanceof String s) {
+										if (!thinkingBuilder.isEmpty()) {
+											thinkingBuilder.append("\n");
+										}
+										thinkingBuilder.append(s);
+									}
+								}
+							}
+						}
+						else if (thinking instanceof String s) {
+							if (!thinkingBuilder.isEmpty()) {
+								thinkingBuilder.append("\n");
+							}
+							thinkingBuilder.append(s);
+						}
+					}
+				}
+				return thinkingBuilder.isEmpty() ? null : thinkingBuilder.toString();
+			}
+			return null;
+		}
+
+		/**
+		 * Parses the raw content into a list of typed ContentChunk objects. For string
+		 * content, returns a single TextChunk. For array content from Magistral models,
+		 * parses each block into its appropriate type.
+		 * @return list of ContentChunk objects, or empty list if content is null
+		 */
+		@SuppressWarnings("unchecked")
+		public List<ContentChunk> contentChunks() {
+			if (this.rawContent == null) {
+				return List.of();
+			}
+			if (this.rawContent instanceof String text) {
+				return List.of(new TextChunk(text));
+			}
+			if (this.rawContent instanceof List<?> blocks) {
+				List<ContentChunk> chunks = new java.util.ArrayList<>();
+				for (Object block : blocks) {
+					if (block instanceof Map<?, ?> map) {
+						String type = (String) map.get("type");
+						if ("text".equals(type)) {
+							String text = (String) map.get("text");
+							if (text != null) {
+								chunks.add(new TextChunk(text));
+							}
+						}
+						else if ("thinking".equals(type)) {
+							Object thinking = map.get("thinking");
+							if (thinking instanceof List<?> thinkingBlocks) {
+								StringBuilder thinkingBuilder = new StringBuilder();
+								for (Object thinkingBlock : thinkingBlocks) {
+									if (thinkingBlock instanceof Map<?, ?> thinkingMap
+											&& "text".equals(thinkingMap.get("type"))) {
+										Object text = thinkingMap.get("text");
+										if (text instanceof String s) {
+											if (!thinkingBuilder.isEmpty()) {
+												thinkingBuilder.append("\n");
+											}
+											thinkingBuilder.append(s);
+										}
+									}
+								}
+								if (!thinkingBuilder.isEmpty()) {
+									chunks.add(new ThinkChunk(thinkingBuilder.toString()));
+								}
+							}
+							else if (thinking instanceof String s) {
+								chunks.add(new ThinkChunk(s));
+							}
+						}
+						else if ("reference".equals(type)) {
+							Object refIds = map.get("reference_ids");
+							if (refIds instanceof List<?> ids) {
+								List<Integer> referenceIds = ((List<Object>) ids).stream()
+									.filter(id -> id instanceof Number)
+									.map(id -> ((Number) id).intValue())
+									.toList();
+								chunks.add(new ReferenceChunk(referenceIds));
+							}
+						}
+					}
+				}
+				return chunks;
+			}
+			return List.of();
 		}
 
 		/**
