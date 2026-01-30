@@ -1399,9 +1399,9 @@ public class MistralAiApi {
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(
 		// @formatter:off
-			@SuppressWarnings("NullAway.Init") @JsonProperty("index") Integer index,
-			@SuppressWarnings("NullAway.Init") @JsonProperty("delta") ChatCompletionMessage delta,
-			@SuppressWarnings("NullAway.Init") @JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+			@JsonProperty("index") Integer index,
+			@JsonProperty("delta") ChatCompletionMessage delta,
+			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
 			@JsonProperty("logprobs") @Nullable LogProbs logprobs) {
 			 // @formatter:on
 		}
