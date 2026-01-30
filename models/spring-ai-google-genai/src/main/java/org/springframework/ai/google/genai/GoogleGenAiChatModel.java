@@ -1128,7 +1128,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 * <p>
 		 * Knowledge cutoff: Jan 2025
 		 * <p>
-		 * Model ID: gemini-2.0-flash-lite
+		 * Model ID: gemini-2.5-flash-lite
 		 * <p>
 		 * See: <a href=
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite">gemini-2.5-flash-lite</a>
