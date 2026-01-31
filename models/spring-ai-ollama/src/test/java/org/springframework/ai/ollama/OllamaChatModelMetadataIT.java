@@ -16,9 +16,12 @@
 
 package org.springframework.ai.ollama;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -68,6 +71,60 @@ class OllamaChatModelMetadataIT extends BaseOllamaIT {
 			assertThat(chatGenerationMetadata).isNotNull();
 			assertThat(chatGenerationMetadata.containsKey("thinking")).isTrue();
 		});
+	}
+
+	@Test
+	void ollamaThinkingMedataCapturedWhenStreaming() {
+		var options = OllamaChatOptions.builder().model(MODEL).enableThinking().build();
+		var response = new StringBuilder();
+		var thinking = new StringBuilder();
+		var foundThinking = new AtomicBoolean(false);
+
+		Prompt prompt = new Prompt("Why is the sky blue?", options);
+
+		Flux<ChatResponse> chatResponse = this.chatModel.stream(prompt);
+		var captured = chatResponse.collectList().block();
+
+		assertThat(captured).isNotEmpty();
+
+		captured.forEach(chunk -> {
+			ChatGenerationMetadata chatGenerationMetadata = chunk.getResult().getMetadata();
+			assertThat(chatGenerationMetadata).isNotNull();
+
+			if (chatGenerationMetadata.containsKey("thinking") && chatGenerationMetadata.get("thinking") != null) {
+				foundThinking.set(true);
+				thinking.append(chatGenerationMetadata.get("thinking").toString());
+			}
+
+			response.append(chunk.getResult().getOutput().getText());
+		});
+
+		assertThat(response.toString()).isNotEmpty();
+		assertThat(thinking.toString()).isNotEmpty();
+	}
+
+	@Test
+	void ollamaThinkingMedataNotCapturedWhenStreamingWhenSetThinkingToFalse() {
+		var options = OllamaChatOptions.builder().model(MODEL).disableThinking().build();
+		var response = new StringBuilder();
+
+		Prompt prompt = new Prompt("Why is the sky blue?", options);
+
+		Flux<ChatResponse> chatResponse = this.chatModel.stream(prompt);
+		var captured = chatResponse.collectList().block();
+
+		assertThat(captured).isNotEmpty();
+
+		captured.forEach(chunk -> {
+			ChatGenerationMetadata chatGenerationMetadata = chunk.getResult().getMetadata();
+			assertThat(chatGenerationMetadata).isNotNull();
+			var thinking = chatGenerationMetadata.get("thinking");
+			assertThat(thinking).isNull();
+
+			response.append(chunk.getResult().getOutput().getText());
+		});
+
+		assertThat(response.toString()).isNotEmpty();
 	}
 
 	@Test
