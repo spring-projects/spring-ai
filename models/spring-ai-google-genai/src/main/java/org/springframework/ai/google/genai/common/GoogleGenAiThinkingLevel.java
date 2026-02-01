@@ -44,10 +44,24 @@ public enum GoogleGenAiThinkingLevel {
 	THINKING_LEVEL_UNSPECIFIED,
 
 	/**
+	 * Matches the "no thinking" setting for most queries. The model may think very
+	 * minimally for complex coding tasks. Minimizes latency for chat or high throughput
+	 * applications.
+	 *
+	 * Note: minimal does not guarantee that thinking is off.
+	 */
+	MINIMAL,
+
+	/**
 	 * Low thinking level. Minimal reasoning tokens are generated. Use for simple queries
 	 * where speed is preferred over deep analysis.
 	 */
 	LOW,
+
+	/**
+	 * Balanced thinking for most tasks.
+	 */
+	MEDIUM,
 
 	/**
 	 * High thinking level. Extensive reasoning tokens are generated. Use for complex
