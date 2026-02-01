@@ -34,6 +34,7 @@ import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
@@ -152,20 +153,30 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 	@Override
 	public CallAdvisorChain copy(CallAdvisor after) {
+		return this.copyAdvisorsAfter(this.getCallAdvisors(), after);
+	}
 
-		Assert.notNull(after, "The after call advisor must not be null");
+	@Override
+	public StreamAdvisorChain copy(StreamAdvisor after) {
+		return this.copyAdvisorsAfter(this.getStreamAdvisors(), after);
+	}
 
-		List<CallAdvisor> callAdvisors = this.getCallAdvisors();
+	private DefaultAroundAdvisorChain copyAdvisorsAfter(List<? extends Advisor> advisors, Advisor after) {
 
-		int afterAdvisorIndex = callAdvisors.indexOf(after);
+		Assert.notNull(after, "The after advisor must not be null");
+		Assert.notNull(advisors, "The advisors must not be null");
+
+		int afterAdvisorIndex = advisors.indexOf(after);
 
 		if (afterAdvisorIndex < 0) {
 			throw new IllegalArgumentException("The specified advisor is not part of the chain: " + after.getName());
 		}
 
-		var remainingCallAdvisors = callAdvisors.subList(afterAdvisorIndex + 1, callAdvisors.size());
+		var remainingStreamAdvisors = advisors.subList(afterAdvisorIndex + 1, advisors.size());
 
-		return DefaultAroundAdvisorChain.builder(this.getObservationRegistry()).pushAll(remainingCallAdvisors).build();
+		return DefaultAroundAdvisorChain.builder(this.getObservationRegistry())
+			.pushAll(remainingStreamAdvisors)
+			.build();
 	}
 
 	@Override

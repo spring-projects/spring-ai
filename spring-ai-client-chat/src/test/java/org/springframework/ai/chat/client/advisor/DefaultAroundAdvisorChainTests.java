@@ -138,7 +138,7 @@ class DefaultAroundAdvisorChainTests {
 		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP).build();
 
 		assertThatThrownBy(() -> chain.copy(null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("The after call advisor must not be null");
+			.hasMessageContaining("The after advisor must not be null");
 	}
 
 	@Test
