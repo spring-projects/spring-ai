@@ -26,6 +26,7 @@ import org.springframework.ai.test.chat.client.advisor.AbstractToolCallAdvisorIT
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.StringUtils;
+
 /**
  * Integration tests for {@link ToolCallAdvisor} functionality with Anthropic SDK.
  *
@@ -34,7 +35,6 @@ import org.springframework.util.StringUtils;
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 class AnthropicToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
-
 
 	@Override
 	protected ChatModel getChatModel() {

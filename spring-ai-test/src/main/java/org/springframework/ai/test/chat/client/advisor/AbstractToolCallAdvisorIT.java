@@ -99,11 +99,11 @@ public abstract class AbstractToolCallAdvisorIT {
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
 				.toolCallbacks(createWeatherToolCallback())
 				.call()
-				.chatClientResponse();
+				.content();
 
 			logger.info("Response: {}", response);
 
-			assertThat(response.chatResponse().getResult().getOutput().getText()).contains("30", "10", "15");
+			assertThat(response).contains("30", "10", "15");
 		}
 
 		@Test

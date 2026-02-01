@@ -43,5 +43,7 @@ class OpenAiSdkToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 
 	@SpringBootConfiguration
 	public static class TestConfiguration {
+
 	}
+
 }

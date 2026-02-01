@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
-@SpringBootTest()
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
 class GoogleGenAiToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 
