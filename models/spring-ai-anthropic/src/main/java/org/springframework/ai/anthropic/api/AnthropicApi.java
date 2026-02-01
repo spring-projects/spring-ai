@@ -71,7 +71,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Austin Dase
  * @since 1.0.0
  */
-public final class AnthropicApi {
+public class AnthropicApi {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicApi.class);
 
@@ -130,13 +130,17 @@ public final class AnthropicApi {
 	 * @param responseErrorHandler Response error handler.
 	 * @param anthropicBetaFeatures Anthropic beta features.
 	 */
-	private AnthropicApi(String baseUrl, String completionsPath, ApiKey anthropicApiKey, String anthropicVersion,
+	protected AnthropicApi(String baseUrl, String completionsPath, ApiKey anthropicApiKey, String anthropicVersion,
 			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler, String anthropicBetaFeatures) {
 
 		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
-			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
-			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
+			if (anthropicVersion != null) {
+				headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
+			}
+			if (anthropicBetaFeatures != null) {
+				headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
+			}
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
@@ -1023,6 +1027,8 @@ public final class AnthropicApi {
 	 * model can perform more in-depth reasoning before responding to a query.
 	 * @param outputFormat Output format configuration for structured outputs.
 	 * @param container Container for Claude Skills configuration.
+	 * @param anthropicVersion The Anthropic API version for this request. Required when
+	 * using platforms like Vertex AI or Bedrock.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
@@ -1041,19 +1047,20 @@ public final class AnthropicApi {
 		@JsonProperty("tool_choice") ToolChoice toolChoice,
 		@JsonProperty("thinking") ThinkingConfig thinking,
 		@JsonProperty("output_format") OutputFormat outputFormat,
-		@JsonProperty("container") SkillContainer container) {
+		@JsonProperty("container") SkillContainer container,
+		@JsonProperty("anthropic_version") String anthropicVersion) {
 		// @formatter:on
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null, null,
-					null, null);
+					null, null, null);
 		}
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, Object system, Integer maxTokens,
 				List<String> stopSequences, Double temperature, Boolean stream) {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null,
-					null, null, null);
+					null, null, null, null);
 		}
 
 		public static ChatCompletionRequestBuilder builder() {
@@ -1144,6 +1151,8 @@ public final class AnthropicApi {
 
 		private SkillContainer container;
 
+		private String anthropicVersion;
+
 		private ChatCompletionRequestBuilder() {
 		}
 
@@ -1163,6 +1172,7 @@ public final class AnthropicApi {
 			this.thinking = request.thinking;
 			this.outputFormat = request.outputFormat;
 			this.container = request.container;
+			this.anthropicVersion = request.anthropicVersion;
 		}
 
 		public ChatCompletionRequestBuilder model(ChatModel model) {
@@ -1250,6 +1260,11 @@ public final class AnthropicApi {
 			return this;
 		}
 
+		public ChatCompletionRequestBuilder anthropicVersion(String anthropicVersion) {
+			this.anthropicVersion = anthropicVersion;
+			return this;
+		}
+
 		public ChatCompletionRequestBuilder skills(List<Skill> skills) {
 			if (skills != null && !skills.isEmpty()) {
 				this.container = new SkillContainer(skills);
@@ -1260,7 +1275,7 @@ public final class AnthropicApi {
 		public ChatCompletionRequest build() {
 			return new ChatCompletionRequest(this.model, this.messages, this.system, this.maxTokens, this.metadata,
 					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools,
-					this.toolChoice, this.thinking, this.outputFormat, this.container);
+					this.toolChoice, this.thinking, this.outputFormat, this.container, this.anthropicVersion);
 		}
 
 	}

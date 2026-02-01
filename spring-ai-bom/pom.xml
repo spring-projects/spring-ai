@@ -347,6 +347,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-vertex-ai-anthropic</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-zhipuai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1139,6 +1145,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-vertex-ai-gemini</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-vertex-ai-anthropic</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
