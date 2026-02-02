@@ -23,17 +23,32 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class GoogleGenAiChatAutoConfigurationTests {
+public class GoogleGenAiChatAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class));
 
 	@Test
-	void shouldFailOnAmbiguousConfiguration() {
+	void shouldNotFailOnAmbiguousConfigurationButPrioritizeApiKey() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.google.genai.api-key=test-key",
 					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1")
-			.run(context -> assertThat(context).failed().hasRootCauseInstanceOf(IllegalStateException.class));
+			.run(context -> {
+				assertThat(context).hasSingleBean(Client.class);
+				// We no longer expect a failure here, just a warning in the logs
+			});
+	}
+
+	@Test
+	void shouldFailWhenVertexAiEnabledButConfigMissing() {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.vertex-ai=true") // Explicitly
+																						// enabled
+																						// but
+																						// no
+																						// project/location
+			.run(context -> assertThat(context).failed()
+				.hasRootCauseInstanceOf(IllegalStateException.class)
+				.rootCauseHasMessage("Vertex AI mode requires both 'project-id' and 'location' to be configured."));
 	}
 
 	@Test
