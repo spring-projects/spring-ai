@@ -287,7 +287,9 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 			// Emit all streaming chunks first, then append any recursive results
 			return streamingBranch.concatWith(recursionBranch);
-		}).filter(ccr -> this.streamToolCallResponses || !ccr.chatResponse().hasToolCalls());
+		})
+			.filter(ccr -> this.streamToolCallResponses
+					|| !(ccr.chatResponse() != null && ccr.chatResponse().hasToolCalls()));
 	}
 
 	/**
