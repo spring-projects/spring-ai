@@ -21,6 +21,7 @@ import java.util.List;
 import io.modelcontextprotocol.client.McpClient;
 
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
+import org.springframework.util.Assert;
 
 /**
  * Configurer class for customizing MCP synchronous clients.
@@ -42,6 +43,7 @@ public class McpSyncClientConfigurer {
 	private List<McpSyncClientCustomizer> customizers;
 
 	public McpSyncClientConfigurer(List<McpSyncClientCustomizer> customizers) {
+		Assert.notNull(customizers, "customizers must not be null");
 		this.customizers = customizers;
 	}
 

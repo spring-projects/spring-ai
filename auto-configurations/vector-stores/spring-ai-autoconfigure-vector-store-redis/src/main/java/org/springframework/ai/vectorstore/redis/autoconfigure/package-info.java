@@ -17,4 +17,7 @@
 /**
  * Auto-configuration for Redis Vector Store.
  */
+@NullMarked
 package org.springframework.ai.vectorstore.redis.autoconfigure;
+
+import org.jspecify.annotations.NullMarked;

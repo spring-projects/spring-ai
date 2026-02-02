@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.azure.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -31,9 +33,9 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.azure";
 
-	private String url;
+	private @Nullable String url;
 
-	private String apiKey;
+	private @Nullable String apiKey;
 
 	private String indexName = AzureVectorStore.DEFAULT_INDEX_NAME;
 
@@ -43,25 +45,25 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private boolean useKeylessAuth;
 
-	private String contentFieldName;
+	private @Nullable String contentFieldName;
 
-	private String embeddingFieldName;
+	private @Nullable String embeddingFieldName;
 
-	private String metadataFieldName;
+	private @Nullable String metadataFieldName;
 
-	public String getUrl() {
+	public @Nullable String getUrl() {
 		return this.url;
 	}
 
-	public void setUrl(String endpointUrl) {
+	public void setUrl(@Nullable String endpointUrl) {
 		this.url = endpointUrl;
 	}
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 
@@ -97,27 +99,27 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 		this.useKeylessAuth = useKeylessAuth;
 	}
 
-	public String getContentFieldName() {
+	public @Nullable String getContentFieldName() {
 		return this.contentFieldName;
 	}
 
-	public void setContentFieldName(String contentFieldName) {
+	public void setContentFieldName(@Nullable String contentFieldName) {
 		this.contentFieldName = contentFieldName;
 	}
 
-	public String getEmbeddingFieldName() {
+	public @Nullable String getEmbeddingFieldName() {
 		return this.embeddingFieldName;
 	}
 
-	public void setEmbeddingFieldName(String embeddingFieldName) {
+	public void setEmbeddingFieldName(@Nullable String embeddingFieldName) {
 		this.embeddingFieldName = embeddingFieldName;
 	}
 
-	public String getMetadataFieldName() {
+	public @Nullable String getMetadataFieldName() {
 		return this.metadataFieldName;
 	}
 
-	public void setMetadataFieldName(String metadataFieldName) {
+	public void setMetadataFieldName(@Nullable String metadataFieldName) {
 		this.metadataFieldName = metadataFieldName;
 	}
 

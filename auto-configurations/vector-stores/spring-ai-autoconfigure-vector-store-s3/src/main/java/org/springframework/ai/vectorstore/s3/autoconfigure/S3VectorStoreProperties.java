@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.s3.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -26,11 +28,11 @@ public class S3VectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.s3";
 
-	private String indexName;
+	private @Nullable String indexName;
 
-	private String vectorBucketName;
+	private @Nullable String vectorBucketName;
 
-	public String getIndexName() {
+	public @Nullable String getIndexName() {
 		return this.indexName;
 	}
 
@@ -38,7 +40,7 @@ public class S3VectorStoreProperties {
 		this.indexName = indexName;
 	}
 
-	public String getVectorBucketName() {
+	public @Nullable String getVectorBucketName() {
 		return this.vectorBucketName;
 	}
 

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.qdrant.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -60,7 +62,7 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 	/**
 	 * The API key to use for authentication with the Qdrant server.
 	 */
-	private String apiKey = null;
+	private @Nullable String apiKey = null;
 
 	public String getCollectionName() {
 		return this.collectionName;
@@ -102,11 +104,11 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 		this.useTls = useTls;
 	}
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 

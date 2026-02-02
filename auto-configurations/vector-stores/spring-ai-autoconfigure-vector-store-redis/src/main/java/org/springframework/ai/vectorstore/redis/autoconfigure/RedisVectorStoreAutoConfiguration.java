@@ -88,7 +88,7 @@ public class RedisVectorStoreAutoConfiguration {
 		RedisVectorStore.Builder builder = RedisVectorStore.builder(jedisPooled, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(convention.getIfAvailable(() -> null))
+			.customObservationConvention(convention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.indexName(properties.getIndexName())
 			.prefix(properties.getPrefix());

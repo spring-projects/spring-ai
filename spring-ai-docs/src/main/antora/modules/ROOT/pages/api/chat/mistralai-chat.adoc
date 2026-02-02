@@ -172,7 +172,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Generate the names of 5 famous pirates.",
         MistralAiChatOptions.builder()
-            .model(MistralAiApi.ChatModel.LARGE.getValue())
+            .model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
             .temperature(0.5)
         .build()
     ));
@@ -220,7 +220,7 @@ For more control, you can use the `ResponseFormat` class with `MistralAiChatOpti
 record MovieRecommendation(String title, String director, int year, String plotSummary) {}
 
 var options = MistralAiChatOptions.builder()
-    .model(MistralAiApi.ChatModel.SMALL.getValue())
+    .model(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue())
     .responseFormat(ResponseFormat.jsonSchema(MovieRecommendation.class))
     .build();
 
@@ -396,7 +396,7 @@ Next, create a `MistralAiChatModel` and use it for text generations:
 var mistralAiApi = new MistralAiApi(System.getenv("MISTRAL_AI_API_KEY"));
 
 var chatModel = new MistralAiChatModel(this.mistralAiApi, MistralAiChatOptions.builder()
-                .model(MistralAiApi.ChatModel.LARGE.getValue())
+                .model(MistralAiApi.ChatModel.MISTRAL_LARGE.getValue())
                 .temperature(0.4)
                 .maxTokens(200)
                 .build());
@@ -427,11 +427,11 @@ ChatCompletionMessage chatCompletionMessage =
 
 // Sync request
 ResponseEntity<ChatCompletion> response = this.mistralAiApi.chatCompletionEntity(
-    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, false));
+    new ChatCompletionRequest(List.of(this.chatCompletionMessage), MistralAiApi.ChatModel.MISTRAL_LARGE.getValue(), 0.8, false));
 
 // Streaming request
 Flux<ChatCompletionChunk> streamResponse = this.mistralAiApi.chatCompletionStream(
-        new ChatCompletionRequest(List.of(this.chatCompletionMessage), MistralAiApi.ChatModel.LARGE.getValue(), 0.8, true));
+        new ChatCompletionRequest(List.of(this.chatCompletionMessage), MistralAiApi.ChatModel.MISTRAL_LARGE.getValue(), 0.8, true));
 ----
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/api/MistralAiApi.java[MistralAiApi.java]'s JavaDoc for further information.

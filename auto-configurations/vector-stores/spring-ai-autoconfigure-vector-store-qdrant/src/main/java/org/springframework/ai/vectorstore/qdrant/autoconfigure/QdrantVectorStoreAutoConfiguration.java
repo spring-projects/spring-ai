@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.qdrant.autoconfigure;
 import io.micrometer.observation.ObservationRegistry;
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -86,7 +87,7 @@ public class QdrantVectorStoreAutoConfiguration {
 			.contentFieldName(properties.getContentFieldName())
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.build();
 	}
@@ -110,7 +111,7 @@ public class QdrantVectorStoreAutoConfiguration {
 		}
 
 		@Override
-		public String getApiKey() {
+		public @Nullable String getApiKey() {
 			return this.properties.getApiKey();
 		}
 

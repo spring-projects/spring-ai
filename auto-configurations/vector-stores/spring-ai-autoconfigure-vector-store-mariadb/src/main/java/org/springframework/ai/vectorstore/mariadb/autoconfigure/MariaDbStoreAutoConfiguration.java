@@ -25,6 +25,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore;
+import org.springframework.ai.vectorstore.mariadb.MariaDBVectorStore.MariaDBBuilder;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -63,8 +64,7 @@ public class MariaDbStoreAutoConfiguration {
 
 		var initializeSchema = properties.isInitializeSchema();
 
-		return MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
-			.schemaName(properties.getSchemaName())
+		MariaDBBuilder builder = MariaDBVectorStore.builder(jdbcTemplate, embeddingModel)
 			.vectorTableName(properties.getTableName())
 			.schemaValidation(properties.isSchemaValidation())
 			.dimensions(properties.getDimensions())
@@ -76,10 +76,13 @@ public class MariaDbStoreAutoConfiguration {
 			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
-			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize())
-			.build();
+			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize());
+		if (properties.getSchemaName() != null) {
+			builder.schemaName(properties.getSchemaName());
+		}
+		return builder.build();
 	}
 
 }

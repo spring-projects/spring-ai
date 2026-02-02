@@ -68,6 +68,8 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 
 `JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory.
 
+Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
+
 First, add the following dependency to your project:
 
 [tabs]
@@ -181,6 +183,8 @@ ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
 
 `CassandraChatMemoryRepository` has a time-series schema, keeping record of all past chat windows, valuable for governance and auditing.  Setting time-to-live to some value, for example three years, is recommended.
 
+Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
+
 To use `CassandraChatMemoryRepository` first, add the dependency to your project:
 
 [tabs]
@@ -256,6 +260,8 @@ You can disable the schema initialization by setting the property `spring.ai.cha
 
 `Neo4jChatMemoryRepository` is a built-in implementation that uses Neo4j to store chat messages as nodes and relationships in a property graph database. It is suitable for applications that want to leverage Neo4j's graph capabilities for chat memory persistence.
 
+Messages are retrieved in ascending message index order (oldest-to-newest), which is the expected format for LLM conversation history.
+
 First, add the following dependency to your project:
 
 [tabs]
@@ -327,6 +333,8 @@ The Neo4j repository will automatically ensure that indexes are created for conv
 === CosmosDBChatMemoryRepository
 
 `CosmosDBChatMemoryRepository` is a built-in implementation that uses Azure Cosmos DB NoSQL API to store messages. It is suitable for applications that require a globally distributed, highly scalable document database for chat memory persistence. The repository uses the conversation ID as the partition key to ensure efficient data distribution and fast retrieval.
+
+Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
 
 First, add the following dependency to your project:
 
@@ -411,6 +419,8 @@ You can customize the database and container names using the configuration prope
 === MongoChatMemoryRepository
 
 `MongoChatMemoryRepository` is a built-in implementation that uses MongoDB to store messages. It is suitable for applications that require a flexible, document-oriented database for chat memory persistence.
+
+Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history. This ordering is consistent across all chat memory repository implementations.
 
 First, add the following dependency to your project:
 
@@ -592,6 +602,8 @@ It is suitable for applications that require high-performance, low-latency chat 
 
 The repository stores messages as JSON documents and creates a search index for efficient querying.
 It also provides extended query capabilities through the `AdvancedRedisChatMemoryRepository` interface for searching messages by content, type, time range, and metadata.
+
+Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
 
 First, add the following dependency to your project:
 

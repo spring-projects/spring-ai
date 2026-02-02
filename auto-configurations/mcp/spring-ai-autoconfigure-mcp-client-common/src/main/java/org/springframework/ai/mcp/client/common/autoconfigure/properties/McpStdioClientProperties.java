@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.ServerParameters;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
@@ -51,7 +53,7 @@ public class McpStdioClientProperties {
 	 * This resource should contain a JSON configuration defining the MCP servers and
 	 * their parameters.
 	 */
-	private Resource serversConfiguration;
+	private @Nullable Resource serversConfiguration;
 
 	/**
 	 * Map of MCP stdio connections configurations.
@@ -61,11 +63,11 @@ public class McpStdioClientProperties {
 	 */
 	private final Map<String, Parameters> connections = new HashMap<>();
 
-	public Resource getServersConfiguration() {
+	public @Nullable Resource getServersConfiguration() {
 		return this.serversConfiguration;
 	}
 
-	public void setServersConfiguration(Resource stdioConnectionResources) {
+	public void setServersConfiguration(@Nullable Resource stdioConnectionResources) {
 		this.serversConfiguration = stdioConnectionResources;
 	}
 
@@ -74,6 +76,9 @@ public class McpStdioClientProperties {
 	}
 
 	private Map<String, ServerParameters> resourceToServerParameters() {
+		if (this.serversConfiguration == null) {
+			return Collections.emptyMap();
+		}
 		try {
 			Map<String, Map<String, Parameters>> stdioConnection = new ObjectMapper()
 				.readValue(this.serversConfiguration.getInputStream(), new TypeReference<>() {
@@ -96,9 +101,7 @@ public class McpStdioClientProperties {
 
 	public Map<String, ServerParameters> toServerParameters() {
 		Map<String, ServerParameters> serverParameters = new HashMap<>();
-		if (this.serversConfiguration != null) {
-			serverParameters.putAll(resourceToServerParameters());
-		}
+		serverParameters.putAll(resourceToServerParameters());
 
 		for (Map.Entry<String, Parameters> entry : this.connections.entrySet()) {
 			serverParameters.put(entry.getKey(), entry.getValue().toServerParameters());
@@ -116,15 +119,15 @@ public class McpStdioClientProperties {
 			/**
 			 * The command to execute for the MCP server.
 			 */
-			@JsonProperty("command") String command,
+			@JsonProperty("command") @Nullable String command,
 			/**
 			 * List of command arguments.
 			 */
-			@JsonProperty("args") List<String> args,
+			@JsonProperty("args") @Nullable List<String> args,
 			/**
 			 * Map of environment variables for the server process.
 			 */
-			@JsonProperty("env") Map<String, String> env) {
+			@JsonProperty("env") @Nullable Map<String, String> env) {
 
 		public ServerParameters toServerParameters() {
 			return ServerParameters.builder(this.command()).args(this.args()).env(this.env()).build();

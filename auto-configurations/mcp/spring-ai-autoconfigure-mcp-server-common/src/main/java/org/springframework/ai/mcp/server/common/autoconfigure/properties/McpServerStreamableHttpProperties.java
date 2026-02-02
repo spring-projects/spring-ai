@@ -18,6 +18,8 @@ package org.springframework.ai.mcp.server.common.autoconfigure.properties;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -36,7 +38,7 @@ public class McpServerStreamableHttpProperties {
 	/**
 	 * The duration to keep the connection alive.
 	 */
-	private Duration keepAliveInterval;
+	private @Nullable Duration keepAliveInterval;
 
 	private boolean disallowDelete;
 
@@ -49,12 +51,12 @@ public class McpServerStreamableHttpProperties {
 		this.mcpEndpoint = mcpEndpoint;
 	}
 
-	public void setKeepAliveInterval(Duration keepAliveInterval) {
+	public void setKeepAliveInterval(@Nullable Duration keepAliveInterval) {
 		Assert.notNull(keepAliveInterval, "Keep-alive interval must not be null");
 		this.keepAliveInterval = keepAliveInterval;
 	}
 
-	public Duration getKeepAliveInterval() {
+	public @Nullable Duration getKeepAliveInterval() {
 		return this.keepAliveInterval;
 	}
 

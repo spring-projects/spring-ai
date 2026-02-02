@@ -50,20 +50,46 @@ public class InfinispanVectorStoreAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {
 
-		return InfinispanVectorStore.builder(infinispanClient, embeddingModel)
-			.createStore(properties.isCreateStore())
-			.registerSchema(properties.isRegisterSchema())
-			.schemaFileName(properties.getSchemaFileName())
-			.storeName(properties.getStoreName())
-			.storeConfig(properties.getStoreConfig())
-			.observationRegistry(observationRegistry.getIfAvailable())
-			.customObservationConvention(customObservationConvention.getIfAvailable())
-			.distance(properties.getDistance())
-			.similarity(properties.getSimilarity())
-			.packageName(properties.getPackageName())
-			.springAiItemName(properties.getItemName())
-			.metadataItemName(properties.getMetadataItemName())
-			.build();
+		InfinispanVectorStore.Builder builder = InfinispanVectorStore.builder(infinispanClient, embeddingModel);
+
+		if (properties.isCreateStore() != null) {
+			builder.createStore(properties.isCreateStore());
+		}
+		if (properties.isRegisterSchema() != null) {
+			builder.registerSchema(properties.isRegisterSchema());
+		}
+		if (properties.getSchemaFileName() != null) {
+			builder.schemaFileName(properties.getSchemaFileName());
+		}
+		if (properties.getStoreName() != null) {
+			builder.storeName(properties.getStoreName());
+		}
+		if (properties.getStoreConfig() != null) {
+			builder.storeConfig(properties.getStoreConfig());
+		}
+		if (observationRegistry.getIfAvailable() != null) {
+			builder.observationRegistry(observationRegistry.getIfAvailable());
+		}
+		if (customObservationConvention.getIfAvailable() != null) {
+			builder.customObservationConvention(customObservationConvention.getIfAvailable());
+		}
+		if (properties.getDistance() != null) {
+			builder.distance(properties.getDistance());
+		}
+		if (properties.getSimilarity() != null) {
+			builder.similarity(properties.getSimilarity());
+		}
+		if (properties.getPackageName() != null) {
+			builder.packageName(properties.getPackageName());
+		}
+		if (properties.getItemName() != null) {
+			builder.springAiItemName(properties.getItemName());
+		}
+		if (properties.getMetadataItemName() != null) {
+			builder.metadataItemName(properties.getMetadataItemName());
+		}
+
+		return builder.build();
 	}
 
 }
