@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-/**
- * Management support for Ollama.
- */
 @NullMarked
-package org.springframework.ai.ollama.management;
+package org.springframework.ai.ollama.aot;
 
 import org.jspecify.annotations.NullMarked;

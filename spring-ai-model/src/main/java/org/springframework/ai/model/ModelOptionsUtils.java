@@ -295,8 +295,8 @@ public abstract class ModelOptionsUtils {
 	 * @return a new instance of the targetBeanClazz with the values from the sourceBean
 	 * instance.
 	 */
-	public static <I, S extends I, T extends S> @Nullable T copyToTarget(S sourceBean, Class<I> sourceInterfaceClazz,
-			Class<T> targetBeanClazz) {
+	public static <I, S extends I, T extends S> @Nullable T copyToTarget(@Nullable S sourceBean,
+			Class<I> sourceInterfaceClazz, Class<T> targetBeanClazz) {
 
 		Assert.notNull(sourceInterfaceClazz, "SourceOptionsClazz must not be null");
 		Assert.notNull(targetBeanClazz, "TargetOptionsClazz must not be null");

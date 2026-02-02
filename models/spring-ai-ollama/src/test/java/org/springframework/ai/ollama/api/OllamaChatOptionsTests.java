@@ -323,7 +323,7 @@ class OllamaChatOptionsTests {
 	@Test
 	void testGetOutputSchemaHandlesAllFormatTypes() {
 		var nullFormatOptions = OllamaChatOptions.builder().build();
-		assertThat(nullFormatOptions.getOutputSchema()).isNull();
+		assertThatThrownBy(nullFormatOptions::getOutputSchema).isInstanceOf(IllegalStateException.class);
 
 		var stringFormatOptions = OllamaChatOptions.builder().format("json").build();
 		assertThat(stringFormatOptions.getOutputSchema()).isEqualTo("json");

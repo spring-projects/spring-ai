@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -108,11 +109,13 @@ public final class OllamaApi {
 		Assert.notNull(chatRequest, REQUEST_BODY_NULL_ERROR);
 		Assert.isTrue(!chatRequest.stream(), "Stream mode must be disabled.");
 
-		return this.restClient.post()
-			.uri("/api/chat")
-			.body(chatRequest)
-			.retrieve()
-			.body(ChatResponse.class);
+		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
+		ChatResponse chatResponse = this.restClient.post()
+				.uri("/api/chat")
+				.body(chatRequest)
+				.retrieve()
+				.body(ChatResponse.class);
+		return Objects.requireNonNull(chatResponse);
 	}
 
 	/**
@@ -151,9 +154,7 @@ public final class OllamaApi {
 			// Mono<ChatChatResponse>,
 			// Flux<Flux<ChatChatResponse>> -> Flux<Mono<ChatChatResponse>>
 			.concatMapIterable(window -> {
-				Mono<ChatResponse> monoChunk = window.reduce(
-						new ChatResponse(),
-						(previous, current) -> OllamaApiHelper.merge(previous, current));
+				Mono<ChatResponse> monoChunk = window.reduce(OllamaApiHelper::merge);
 				return List.of(monoChunk);
 			})
 			// Flux<Mono<ChatChatResponse>> -> Flux<ChatChatResponse>
@@ -174,21 +175,25 @@ public final class OllamaApi {
 	public EmbeddingsResponse embed(EmbeddingsRequest embeddingsRequest) {
 		Assert.notNull(embeddingsRequest, REQUEST_BODY_NULL_ERROR);
 
-		return this.restClient.post()
-			.uri("/api/embed")
-			.body(embeddingsRequest)
-			.retrieve()
-			.body(EmbeddingsResponse.class);
+		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
+		EmbeddingsResponse embeddingsResponse = this.restClient.post()
+				.uri("/api/embed")
+				.body(embeddingsRequest)
+				.retrieve()
+				.body(EmbeddingsResponse.class);
+		return Objects.requireNonNull(embeddingsResponse);
 	}
 
 	/**
 	 * List models that are available locally on the machine where Ollama is running.
 	 */
 	public ListModelResponse listModels() {
-		return this.restClient.get()
+		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
+		ListModelResponse listModelResponse = this.restClient.get()
 				.uri("/api/tags")
 				.retrieve()
 				.body(ListModelResponse.class);
+		return Objects.requireNonNull(listModelResponse);
 	}
 
 	/**
@@ -196,11 +201,13 @@ public final class OllamaApi {
 	 */
 	public ShowModelResponse showModel(ShowModelRequest showModelRequest) {
 		Assert.notNull(showModelRequest, "showModelRequest must not be null");
-		return this.restClient.post()
+		// TODO Leverage https://github.com/spring-projects/spring-framework/issues/36173 once available
+		ShowModelResponse showModelResponse = this.restClient.post()
 				.uri("/api/show")
 				.body(showModelRequest)
 				.retrieve()
 				.body(ShowModelResponse.class);
+		return Objects.requireNonNull(showModelResponse);
 	}
 
 	/**
@@ -261,11 +268,11 @@ public final class OllamaApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record Message(
 			@JsonProperty("role") Role role,
-			@JsonProperty("content") String content,
-			@JsonProperty("images") List<String> images,
-			@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-			@JsonProperty("tool_name") String toolName,
-			@JsonProperty("thinking") String thinking
+			@JsonProperty("content") @Nullable String content,
+			@JsonProperty("images") @Nullable List<String> images,
+			@JsonProperty("tool_calls") @Nullable List<ToolCall> toolCalls,
+			@JsonProperty("tool_name") @Nullable String toolName,
+			@JsonProperty("thinking") @Nullable String thinking
 	) {
 
 		public static Builder builder(Role role) {
@@ -321,7 +328,7 @@ public final class OllamaApi {
 		public record ToolCallFunction(
 			@JsonProperty("name") String name,
 			@JsonProperty("arguments") Map<String, Object> arguments,
-			@JsonProperty("index") Integer index
+			@JsonProperty("index") @Nullable Integer index
 		) {
 
 			public ToolCallFunction(String name, Map<String, Object> arguments) {
@@ -333,37 +340,37 @@ public final class OllamaApi {
 		public static final class Builder {
 
 			private final Role role;
-			private String content;
-			private List<String> images;
-			private List<ToolCall> toolCalls;
-			private String toolName;
-			private String thinking;
+			private @Nullable String content;
+			private @Nullable List<String> images;
+			private @Nullable List<ToolCall> toolCalls;
+			private @Nullable String toolName;
+			private @Nullable String thinking;
 
 			public Builder(Role role) {
 				this.role = role;
 			}
 
-			public Builder content(String content) {
+			public Builder content(@Nullable String content) {
 				this.content = content;
 				return this;
 			}
 
-			public Builder images(List<String> images) {
+			public Builder images(@Nullable List<String> images) {
 				this.images = images;
 				return this;
 			}
 
-			public Builder toolCalls(List<ToolCall> toolCalls) {
+			public Builder toolCalls(@Nullable List<ToolCall> toolCalls) {
 				this.toolCalls = toolCalls;
 				return this;
 			}
 
-			public Builder toolName(String toolName) {
+			public Builder toolName(@Nullable String toolName) {
 				this.toolName = toolName;
 				return this;
 			}
 
-			public Builder thinking(String thinking) {
+			public Builder thinking(@Nullable String thinking) {
 				this.thinking = thinking;
 				return this;
 			}
@@ -398,11 +405,11 @@ public final class OllamaApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("messages") List<Message> messages,
 			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("format") Object format,
-			@JsonProperty("keep_alive") String keepAlive,
+			@JsonProperty("format") @Nullable Object format,
+			@JsonProperty("keep_alive") @Nullable String keepAlive,
 			@JsonProperty("tools") List<Tool> tools,
 			@JsonProperty("options") Map<String, Object> options,
-			@JsonProperty("think") ThinkOption think
+			@JsonProperty("think") @Nullable ThinkOption think
 	) {
 
 		public static Builder builder(String model) {
@@ -471,11 +478,11 @@ public final class OllamaApi {
 			private final String model;
 			private List<Message> messages = List.of();
 			private boolean stream = false;
-			private Object format;
-			private String keepAlive;
+			private @Nullable Object format;
+			private @Nullable  String keepAlive;
 			private List<Tool> tools = List.of();
 			private Map<String, Object> options = Map.of();
-			private ThinkOption think;
+			private @Nullable ThinkOption think;
 
 			public Builder(String model) {
 				Assert.notNull(model, "The model can not be null.");
@@ -492,12 +499,12 @@ public final class OllamaApi {
 				return this;
 			}
 
-			public Builder format(Object format) {
+			public Builder format(@Nullable Object format) {
 				this.format = format;
 				return this;
 			}
 
-			public Builder keepAlive(String keepAlive) {
+			public Builder keepAlive(@Nullable String keepAlive) {
 				this.keepAlive = keepAlive;
 				return this;
 			}
@@ -513,7 +520,7 @@ public final class OllamaApi {
 				return this;
 			}
 
-			public Builder think(ThinkOption think) {
+			public Builder think(@Nullable ThinkOption think) {
 				this.think = think;
 				return this;
 			}
@@ -609,32 +616,29 @@ public final class OllamaApi {
 			@JsonProperty("model") String model,
 			@JsonProperty("created_at") Instant createdAt,
 			@JsonProperty("message") Message message,
-			@JsonProperty("done_reason") String doneReason,
-			@JsonProperty("done") Boolean done,
-			@JsonProperty("total_duration") Long totalDuration,
-			@JsonProperty("load_duration") Long loadDuration,
-			@JsonProperty("prompt_eval_count") Integer promptEvalCount,
-			@JsonProperty("prompt_eval_duration") Long promptEvalDuration,
-			@JsonProperty("eval_count") Integer evalCount,
-			@JsonProperty("eval_duration") Long evalDuration
+			@JsonProperty("done_reason") @Nullable String doneReason,
+			@JsonProperty("done") @Nullable Boolean done,
+			@JsonProperty("total_duration") @Nullable Long totalDuration,
+			@JsonProperty("load_duration") @Nullable Long loadDuration,
+			@JsonProperty("prompt_eval_count") @Nullable Integer promptEvalCount,
+			@JsonProperty("prompt_eval_duration") @Nullable Long promptEvalDuration,
+			@JsonProperty("eval_count") @Nullable Integer evalCount,
+			@JsonProperty("eval_duration") @Nullable Long evalDuration
 	) {
-		ChatResponse() {
-			this(null, null, null, null, null, null, null, null, null, null, null);
-		}
 
-		public Duration getTotalDuration() {
+		public @Nullable Duration getTotalDuration() {
 			return (this.totalDuration() != null) ? Duration.ofNanos(this.totalDuration()) : null;
 		}
 
-		public Duration getLoadDuration() {
+		public @Nullable Duration getLoadDuration() {
 			return (this.loadDuration() != null) ? Duration.ofNanos(this.loadDuration()) : null;
 		}
 
-		public Duration getPromptEvalDuration() {
+		public @Nullable Duration getPromptEvalDuration() {
 			return (this.promptEvalDuration() != null) ? Duration.ofNanos(this.promptEvalDuration()) : null;
 		}
 
-		public Duration getEvalDuration() {
+		public @Nullable Duration getEvalDuration() {
 			if (this.evalDuration() == null) {
 				return null;
 			}
@@ -657,10 +661,10 @@ public final class OllamaApi {
 	public record EmbeddingsRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("input") List<String> input,
-			@JsonProperty("keep_alive") String keepAlive,
-			@JsonProperty("options") Map<String, Object> options,
-			@JsonProperty("truncate") Boolean truncate,
-			@JsonProperty("dimensions") Integer dimensions) {
+			@JsonProperty("keep_alive") @Nullable String keepAlive,
+			@JsonProperty("options") @Nullable Map<String, Object> options,
+			@JsonProperty("truncate") @Nullable Boolean truncate,
+			@JsonProperty("dimensions") @Nullable Integer dimensions) {
 
 		/**
 		 * Shortcut constructor to create a EmbeddingRequest without options.
@@ -723,9 +727,9 @@ public final class OllamaApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ShowModelRequest(
 			@JsonProperty("model") String model,
-			@JsonProperty("system") String system,
-			@JsonProperty("verbose") Boolean verbose,
-			@JsonProperty("options") Map<String, Object> options
+			@JsonProperty("system") @Nullable String system,
+			@JsonProperty("verbose") @Nullable Boolean verbose,
+			@JsonProperty("options") @Nullable Map<String, Object> options
 	) {
 		public ShowModelRequest(String model) {
 			this(model, null, null, null);
@@ -763,8 +767,8 @@ public final class OllamaApi {
 	public record PullModelRequest(
 			@JsonProperty("model") String model,
 			@JsonProperty("insecure") boolean insecure,
-			@JsonProperty("username") String username,
-			@JsonProperty("password") String password,
+			@JsonProperty("username") @Nullable String username,
+			@JsonProperty("password") @Nullable String password,
 			@JsonProperty("stream") boolean stream
 	) {
 		public PullModelRequest {

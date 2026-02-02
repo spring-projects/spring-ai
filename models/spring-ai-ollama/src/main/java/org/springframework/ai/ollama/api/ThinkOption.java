@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents the thinking option for Ollama models. The think option controls whether
@@ -74,7 +75,7 @@ public sealed interface ThinkOption {
 	class ThinkOptionDeserializer extends JsonDeserializer<ThinkOption> {
 
 		@Override
-		public ThinkOption deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+		public @Nullable ThinkOption deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 			JsonToken token = p.currentToken();
 			if (token == JsonToken.VALUE_TRUE) {
 				return ThinkBoolean.ENABLED;
