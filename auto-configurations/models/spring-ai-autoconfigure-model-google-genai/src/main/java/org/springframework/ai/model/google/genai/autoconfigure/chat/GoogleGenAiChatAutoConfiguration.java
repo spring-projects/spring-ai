@@ -22,6 +22,8 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
@@ -64,29 +66,48 @@ import org.springframework.util.StringUtils;
 @EnableConfigurationProperties({ GoogleGenAiChatProperties.class, GoogleGenAiConnectionProperties.class })
 public class GoogleGenAiChatAutoConfiguration {
 
+	private static final Log logger = LogFactory.getLog(GoogleGenAiChatAutoConfiguration.class);
+
 	@Bean
 	@ConditionalOnMissingBean
 	public Client googleGenAiClient(GoogleGenAiConnectionProperties properties) throws IOException {
 		Client.Builder builder = Client.builder();
 
-		boolean hasVertexConfig = isVertexAiConfiguration(properties);
 		boolean hasApiKey = StringUtils.hasText(properties.getApiKey());
+		boolean hasProject = StringUtils.hasText(properties.getProjectId());
+		boolean hasLocation = StringUtils.hasText(properties.getLocation());
+		boolean hasVertexConfig = hasProject && hasLocation;
 
-		// Strategic Check: Prevent ambiguous authentication states
-		if (hasVertexConfig && hasApiKey) {
-			throw new IllegalStateException(
-					"Ambiguous configuration: Both Vertex AI and Gemini API settings are present. Please provide only one.");
+		// Ambiguity Guard: Professional logging
+		if (hasApiKey && hasVertexConfig) {
+			if (properties.isVertexAi()) {
+				logger.info(
+						"Both API Key and Vertex AI config detected. Vertex AI mode is explicitly enabled; the API key will be ignored.");
+			}
+			else {
+				logger.warn("Both API Key and Vertex AI config detected. Defaulting to Gemini Developer API (API Key). "
+						+ "To use Vertex AI instead, set 'spring.ai.google.genai.vertex-ai=true'.");
+			}
 		}
 
-		if (hasVertexConfig) {
+		// Mode Selection with Fail-Fast Validation
+		if (properties.isVertexAi()) {
+			if (!hasVertexConfig) {
+				throw new IllegalStateException(
+						"Vertex AI mode requires both 'project-id' and 'location' to be configured.");
+			}
 			configureVertexAi(builder, properties);
 		}
 		else if (hasApiKey) {
 			builder.apiKey(properties.getApiKey());
 		}
+		else if (hasVertexConfig) {
+			logger.debug("Project ID and Location detected. Defaulting to Vertex AI mode.");
+			configureVertexAi(builder, properties);
+		}
 		else {
-			throw new IllegalStateException(
-					"Incomplete Google GenAI configuration: Provide 'api-key' for Gemini API or 'project-id' and 'location' for Vertex AI.");
+			throw new IllegalStateException("Incomplete Google GenAI configuration: Provide 'api-key' for Gemini API "
+					+ "or 'project-id' and 'location' for Vertex AI.");
 		}
 
 		return builder.build();
