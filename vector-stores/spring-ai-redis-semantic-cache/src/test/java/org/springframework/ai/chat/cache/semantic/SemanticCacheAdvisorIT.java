@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.ObservationRegistry;
@@ -35,6 +38,7 @@ import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -68,6 +72,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * behavior (KNN vs VECTOR_RANGE) - Automatic caching through advisor pattern
  *
  * @author Brian Sam-Bodden
+ * @author Soby Chacko
  */
 @Testcontainers
 @SpringBootTest(classes = SemanticCacheAdvisorIT.TestApplication.class)
@@ -139,6 +144,86 @@ class SemanticCacheAdvisorIT {
 			.chatResponse();
 
 		assertThat(secondLondonResponse.getResult().getOutput().getText()).isEqualTo(londonResponseText);
+	}
+
+	@Test
+	void testStreamingWithAdvisor() throws InterruptedException {
+		String streamQuestion = "Count from 1 to 5 slowly, one number per line.";
+
+		// Track chunk count as they arrive
+		AtomicInteger chunkCount = new AtomicInteger(0);
+		CountDownLatch streamComplete = new CountDownLatch(1);
+
+		// First streaming query - should not be cached yet
+		ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(streamQuestion)
+			.advisors(this.cacheAdvisor)
+			.stream()
+			.chatResponse()
+			.doOnNext(response -> chunkCount.incrementAndGet())
+			.doOnComplete(streamComplete::countDown)
+			.subscribe();
+
+		// Wait for stream to complete
+		boolean completed = streamComplete.await(30, TimeUnit.SECONDS);
+		assertThat(completed).withFailMessage("Streaming did not complete in time").isTrue();
+
+		// Verify we received multiple chunks (true streaming behavior)
+		// If collectList() was used, we would get all content in a single chunk
+		assertThat(chunkCount.get())
+			.withFailMessage("Expected multiple chunks for true streaming, but got %d", chunkCount.get())
+			.isGreaterThan(1);
+
+		// Verify the response was cached after streaming completed
+		// Note: No sleep needed - the aggregator's doOnComplete (which caches) fires
+		// before the test's doOnComplete, and cache.set() is synchronous
+		Optional<ChatResponse> cachedResponse = this.semanticCache.get(streamQuestion);
+		assertThat(cachedResponse).withFailMessage("Response should be cached after streaming completes").isPresent();
+
+		ChatResponse cached = cachedResponse.get();
+		Generation result = cached.getResult();
+		assertThat(result).isNotNull();
+		assertThat(result.getOutput()).isNotNull();
+		String cachedText = result.getOutput().getText();
+		assertThat(cachedText).isNotEmpty();
+
+		// Second streaming query - should return cached response (not from LLM)
+		AtomicInteger cacheHitChunkCount = new AtomicInteger(0);
+		StringBuilder cacheHitResponse = new StringBuilder();
+		CountDownLatch cacheStreamComplete = new CountDownLatch(1);
+
+		ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(streamQuestion)
+			.advisors(this.cacheAdvisor)
+			.stream()
+			.chatResponse()
+			.doOnNext(response -> {
+				cacheHitChunkCount.incrementAndGet();
+				if (response.getResult() != null) {
+					String text = response.getResult().getOutput().getText();
+					if (text != null) {
+						cacheHitResponse.append(text);
+					}
+				}
+			})
+			.doOnComplete(cacheStreamComplete::countDown)
+			.subscribe();
+
+		boolean cacheCompleted = cacheStreamComplete.await(5, TimeUnit.SECONDS);
+		assertThat(cacheCompleted).isTrue();
+
+		// VERIFY CACHE HIT: Cache returns Flux.just(cachedResponse) = single emission
+		// LLM streaming returns many chunks, so if we get only 1, it's from cache
+		assertThat(cacheHitChunkCount.get())
+			.withFailMessage("Cache hit should return single chunk (Flux.just), but got %d chunks",
+					cacheHitChunkCount.get())
+			.isEqualTo(1);
+
+		// VERIFY RESPONSE IDENTITY: Cached response should match what we stored
+		assertThat(cacheHitResponse.toString()).withFailMessage("Cache hit response should match the cached content")
+			.isEqualTo(cachedText);
 	}
 
 	@Test
