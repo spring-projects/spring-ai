@@ -24,6 +24,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
@@ -53,6 +54,7 @@ import org.springframework.util.Assert;
  * </ul>
  *
  * @author Brian Sam-Bodden
+ * @author Soby Chacko
  */
 public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
@@ -139,8 +141,9 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	/**
 	 * Handles streaming chat requests by checking the cache before proceeding. If a
 	 * semantically similar response is found in the cache, it is returned as a single
-	 * item flux. Otherwise, the request proceeds through the chain and the final response
-	 * is cached.
+	 * item flux. Otherwise, the request proceeds through the chain with true streaming -
+	 * tokens are returned to the user as they arrive, while the response is aggregated
+	 * and cached asynchronously when the stream completes.
 	 * @param request The chat client request to process
 	 * @param chain The advisor chain to continue processing if needed
 	 * @return A Flux of responses, either from cache or from the model
@@ -159,17 +162,17 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 				.just(ChatClientResponse.builder().chatResponse(cached.get()).context(request.context()).build());
 		}
 
-		// Cache miss - stream from model
-		return chain.nextStream(request).collectList().flatMapMany(responses -> {
-			// Cache the final aggregated response
-			if (!responses.isEmpty()) {
-				ChatClientResponse last = responses.get(responses.size() - 1);
-				if (last.chatResponse() != null) {
-					this.cache.set(userText, last.chatResponse());
-				}
-			}
-			return Flux.fromIterable(responses);
-		});
+		// Cache miss - stream from model with true streaming behavior.
+		// Tokens are returned to the user immediately as they arrive.
+		// The response is aggregated and cached asynchronously when the stream completes.
+		return chain.nextStream(request)
+			.transform(
+					flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux, aggregatedResponse -> {
+						// Cache the aggregated response when the stream completes
+						if (aggregatedResponse.chatResponse() != null) {
+							this.cache.set(userText, aggregatedResponse.chatResponse());
+						}
+					}));
 	}
 
 	/**
