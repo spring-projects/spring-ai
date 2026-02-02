@@ -7,6 +7,9 @@ on:
 
 jobs:
   backport-issue:
-    uses: spring-io/spring-github-workflows/.github/workflows/spring-backport-issue.yml@main
-    secrets:
-      GH_ACTIONS_REPO_TOKEN: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
+    if: contains(github.event.head_commit.message, 'Fixes:') || contains(github.event.head_commit.message, 'Closes:')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: spring-io/backport-bot@v0.0.1
+        with:
+          token: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
