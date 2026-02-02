@@ -19,6 +19,7 @@ package org.springframework.ai.chat.metadata;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,7 +133,7 @@ public class ChatResponseMetadata extends AbstractResponseMetadata implements Re
 			return this;
 		}
 
-		public Builder keyValue(String key, Object value) {
+		public Builder keyValue(String key, @Nullable Object value) {
 			if (key == null) {
 				throw new IllegalArgumentException("Key must not be null");
 			}

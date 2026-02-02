@@ -82,7 +82,6 @@
 	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-oci-genai" id="bannedNullabilityImports" />
-	<suppress files="models[\\/]spring-ai-ollama" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
 	<suppress files="models[\\/]spring-ai-postgresml" id="bannedNullabilityImports" />

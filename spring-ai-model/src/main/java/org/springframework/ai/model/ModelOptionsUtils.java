@@ -220,7 +220,7 @@ public abstract class ModelOptionsUtils {
 	 * @param clazz the class to return.
 	 * @return the merged object represented by the given class.
 	 */
-	public static <T> T merge(Object source, Object target, Class<T> clazz) {
+	public static <T> T merge(@Nullable Object source, Object target, Class<T> clazz) {
 		return ModelOptionsUtils.merge(source, target, clazz, null);
 	}
 
@@ -229,7 +229,7 @@ public abstract class ModelOptionsUtils {
 	 * @param source the object to convert to a Map.
 	 * @return the converted Map.
 	 */
-	public static Map<String, Object> objectToMap(Object source) {
+	public static Map<String, Object> objectToMap(@Nullable Object source) {
 		if (source == null) {
 			return new HashMap<>();
 		}
@@ -295,8 +295,8 @@ public abstract class ModelOptionsUtils {
 	 * @return a new instance of the targetBeanClazz with the values from the sourceBean
 	 * instance.
 	 */
-	public static <I, S extends I, T extends S> @Nullable T copyToTarget(S sourceBean, Class<I> sourceInterfaceClazz,
-			Class<T> targetBeanClazz) {
+	public static <I, S extends I, T extends S> @Nullable T copyToTarget(@Nullable S sourceBean,
+			Class<I> sourceInterfaceClazz, Class<T> targetBeanClazz) {
 
 		Assert.notNull(sourceInterfaceClazz, "SourceOptionsClazz must not be null");
 		Assert.notNull(targetBeanClazz, "TargetOptionsClazz must not be null");

@@ -21,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
@@ -86,7 +87,9 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		this.observationRegistry = observationRegistry;
 		this.modelManager = new OllamaModelManager(ollamaApi, modelManagementOptions);
 
-		initializeModel(defaultOptions.getModel(), modelManagementOptions.pullModelStrategy());
+		String model = defaultOptions.getModel();
+		Assert.state(model != null, "model must not be null");
+		initializeModel(model, modelManagementOptions.pullModelStrategy());
 	}
 
 	public static Builder builder() {
@@ -95,7 +98,9 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getText());
+		String text = document.getText();
+		Assert.state(text != null, "text must not be null");
+		return embed(text);
 	}
 
 	@Override
@@ -165,23 +170,20 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	 * Package access for testing.
 	 */
 	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		OllamaEmbeddingOptions requestOptions = null;
-		if (embeddingRequest.getOptions() instanceof OllamaEmbeddingOptions) {
-			requestOptions = (OllamaEmbeddingOptions) embeddingRequest.getOptions();
-		}
-		else {
-			requestOptions = OllamaEmbeddingOptions.fromOptions((OllamaEmbeddingOptions) embeddingRequest.getOptions());
-		}
+		OllamaEmbeddingOptions requestOptions = (OllamaEmbeddingOptions) embeddingRequest.getOptions();
+		Assert.state(requestOptions != null, "requestOptions must not be null");
+		String model = requestOptions.getModel();
+		Assert.state(model != null, "model must not be null");
 
-		return new OllamaApi.EmbeddingsRequest(requestOptions.getModel(), embeddingRequest.getInstructions(),
-				requestOptions.getKeepAlive(), OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()),
-				requestOptions.getTruncate(), requestOptions.getDimensions());
+		return new OllamaApi.EmbeddingsRequest(model, embeddingRequest.getInstructions(), requestOptions.getKeepAlive(),
+				OllamaEmbeddingOptions.filterNonSupportedFields(requestOptions.toMap()), requestOptions.getTruncate(),
+				requestOptions.getDimensions());
 	}
 
 	/**
 	 * Pull the given model into Ollama based on the specified strategy.
 	 */
-	private void initializeModel(String model, PullModelStrategy pullModelStrategy) {
+	private void initializeModel(String model, @Nullable PullModelStrategy pullModelStrategy) {
 		if (pullModelStrategy != null && !PullModelStrategy.NEVER.equals(pullModelStrategy)) {
 			this.modelManager.pullModel(model, pullModelStrategy);
 		}
@@ -198,7 +200,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	public static final class Builder {
 
-		private OllamaApi ollamaApi;
+		private @Nullable OllamaApi ollamaApi;
 
 		private OllamaEmbeddingOptions defaultOptions = OllamaEmbeddingOptions.builder()
 			.model(OllamaModel.MXBAI_EMBED_LARGE.id())
@@ -232,6 +234,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		public OllamaEmbeddingModel build() {
+			Assert.state(this.ollamaApi != null, "OllamaApi must not be null");
 			return new OllamaEmbeddingModel(this.ollamaApi, this.defaultOptions, this.observationRegistry,
 					this.modelManagementOptions);
 		}
