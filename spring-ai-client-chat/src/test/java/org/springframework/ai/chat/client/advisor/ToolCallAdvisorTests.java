@@ -408,6 +408,8 @@ public class ToolCallAdvisorTests {
 
 		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
 
+		// With default streamToolCallResponses=false, we only get the final response
+		// (intermediate tool call responses are filtered out)
 		assertThat(results).isNotNull().hasSize(1);
 		assertThat(callCount[0]).isEqualTo(2);
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
@@ -449,8 +451,10 @@ public class ToolCallAdvisorTests {
 		// Verify that the tool execution was called only once (no loop continuation)
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 
-		// Verify that the result contains the tool execution result as generations
+		// With default streamToolCallResponses=false, we only get the returnDirect result
+		// (intermediate tool call response is filtered out)
 		assertThat(results).isNotNull().hasSize(1);
+		// The result contains the tool execution result
 		assertThat(results.get(0).chatResponse()).isNotNull();
 		assertThat(results.get(0).chatResponse().getResults()).hasSize(1);
 		assertThat(results.get(0).chatResponse().getResults().get(0).getOutput().getText())
@@ -591,6 +595,70 @@ public class ToolCallAdvisorTests {
 		assertThat(result).isEqualTo(finalResponse);
 		// With conversationHistoryEnabled=false, only the last message from history is
 		// used
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void testStreamToolCallResponsesDefaultValue() {
+		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder();
+
+		// By default, streamToolCallResponses should be false
+		assertThat(builder.isStreamToolCallResponses()).isFalse();
+	}
+
+	@Test
+	void testStreamToolCallResponsesBuilderMethod() {
+		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder().streamToolCallResponses(false);
+
+		assertThat(builder.isStreamToolCallResponses()).isFalse();
+	}
+
+	@Test
+	void testSuppressToolCallStreamingBuilderMethod() {
+		ToolCallAdvisor.Builder<?> builder = ToolCallAdvisor.builder().suppressToolCallStreaming();
+
+		assertThat(builder.isStreamToolCallResponses()).isFalse();
+	}
+
+	@Test
+	void testAdviseStreamWithToolCallResponsesEnabled() {
+		// Create advisor with tool call streaming explicitly enabled
+		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.streamToolCallResponses(true)
+			.build();
+
+		ChatClientRequest request = createMockRequest(true);
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		// Create a terminal stream advisor that returns responses in sequence
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(callCount[0] == 1 ? responseWithToolCall : finalResponse);
+		});
+
+		// Create a real chain with both advisors
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		// Mock tool execution result
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		// With streamToolCallResponses(true), we get both the intermediate tool call
+		// response (streamed in real-time) and the final response from recursive call
+		assertThat(results).isNotNull().hasSize(2);
+		assertThat(callCount[0]).isEqualTo(2); // Both iterations still happen
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 	}
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.google.genai;
+package org.springframework.ai.google.genai.client;
 
 import java.util.List;
 import java.util.Objects;
@@ -29,6 +29,8 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatModel;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.ai.test.chat.client.advisor.AbstractToolCallAdvisorIT;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;

@@ -28,12 +28,12 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.ToolCallAdvisor;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -69,11 +69,22 @@ public abstract class AbstractToolCallAdvisorIT {
 			.build();
 	}
 
+	/**
+	 * Creates a weather tool callback with returnDirect=true.
+	 */
+	protected ToolCallback createReturnDirectWeatherToolCallback() {
+		return FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+			.description("Get the weather in location")
+			.inputType(MockWeatherService.Request.class)
+			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+			.build();
+	}
+
 	@Nested
 	class CallTests {
 
 		@Test
-		void callWithMultipleToolInvocations() {
+		void callMultipleToolInvocations() {
 
 			String response = ChatClient.create(getChatModel())
 				.prompt()
@@ -89,7 +100,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		}
 
 		@Test
-		void callWithMultipleToolInvocationsWithExteMemory() {
+		void callMultipleToolInvocationsWithExternalMemory() {
 
 			var response = ChatClient.create(getChatModel())
 				.prompt()
@@ -107,7 +118,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		}
 
 		@Test
-		void callWithDefaultAdvisorConfiguration() {
+		void callDefaultAdvisorConfiguration() {
 
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(ToolCallAdvisor.builder().build())
@@ -125,35 +136,39 @@ public abstract class AbstractToolCallAdvisorIT {
 		}
 
 		@Test
-		void callWithAdvisorChaining() {
+		void callDefaultAdvisorConfigurationWithExternalMemory() {
 
-			String response = ChatClient.create(getChatModel())
-				.prompt()
-				.advisors(new SimpleLoggerAdvisor(), ToolCallAdvisor.builder().build())
-				.user("What's the weather like in San Francisco in Celsius?")
+			var chatClient = ChatClient.builder(getChatModel())
+				.defaultAdvisors(ToolCallAdvisor.builder().disableMemory().build(),
+						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
+				.build();
+
+			String response = chatClient.prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.toolCallbacks(createWeatherToolCallback())
 				.call()
 				.content();
 
 			logger.info("Response: {}", response);
 
-			assertThat(response).contains("30");
+			assertThat(response).contains("30", "10", "15");
 		}
 
 		@Test
-		void callWithSingleToolInvocation() {
-
+		void callWithReturnDirect() {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(ToolCallAdvisor.builder().build())
-				.user("What's the weather like in Tokyo in Celsius?")
-				.toolCallbacks(createWeatherToolCallback())
+				.user("What's the weather like in Tokyo?")
+				.toolCallbacks(createReturnDirectWeatherToolCallback())
 				.call()
 				.content();
 
 			logger.info("Response: {}", response);
 
-			assertThat(response).contains("10");
+			// With returnDirect=true, the raw tool result is returned without LLM
+			// processing
+			assertThat(response).contains("temp");
 		}
 
 	}
@@ -162,7 +177,7 @@ public abstract class AbstractToolCallAdvisorIT {
 	class StreamTests {
 
 		@Test
-		void streamWithMultipleToolInvocations() {
+		void streamMultipleToolInvocations() {
 
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
@@ -180,7 +195,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		}
 
 		@Test
-		void streamWithMultipleToolInvocationsWithExternalMemory() {
+		void streamMultipleToolInvocationsWithExternalMemory() {
 
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
@@ -200,7 +215,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		}
 
 		@Test
-		void streamWithDefaultAdvisorConfiguration() {
+		void streamDefaultAdvisorConfiguration() {
 
 			var chatClient = ChatClient.builder(getChatModel())
 				.defaultAdvisors(ToolCallAdvisor.builder().build())
@@ -220,12 +235,15 @@ public abstract class AbstractToolCallAdvisorIT {
 		}
 
 		@Test
-		void streamWithSingleToolInvocation() {
+		void streamDefaultAdvisorConfigurationWithExternalMemory() {
 
-			Flux<String> response = ChatClient.create(getChatModel())
-				.prompt()
-				.advisors(ToolCallAdvisor.builder().build())
-				.user("What's the weather like in Tokyo in Celsius?")
+			var chatClient = ChatClient.builder(getChatModel())
+				.defaultAdvisors(ToolCallAdvisor.builder().disableMemory().build(),
+						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
+				.build();
+
+			Flux<String> response = chatClient.prompt()
+				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.toolCallbacks(createWeatherToolCallback())
 				.stream()
 				.content();
@@ -234,7 +252,26 @@ public abstract class AbstractToolCallAdvisorIT {
 			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
 			logger.info("Response: {}", content);
 
-			assertThat(content).contains("10");
+			assertThat(content).contains("30", "10", "15");
+		}
+
+		@Test
+		void streamWithReturnDirect() {
+			Flux<String> response = ChatClient.create(getChatModel())
+				.prompt()
+				.advisors(ToolCallAdvisor.builder().build())
+				.user("What's the weather like in Tokyo?")
+				.toolCallbacks(createReturnDirectWeatherToolCallback())
+				.stream()
+				.content();
+
+			List<String> chunks = response.collectList().block();
+			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
+			logger.info("Response: {}", content);
+
+			// With returnDirect=true, the raw tool result is returned without LLM
+			// processing
+			assertThat(content).contains("temp");
 		}
 
 	}
