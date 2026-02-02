@@ -268,14 +268,13 @@ public class OllamaChatModel implements ChatModel {
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
 				if (ollamaResponse.promptEvalCount() != null && ollamaResponse.evalCount() != null) {
+					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder()
+						.finishReason(ollamaResponse.doneReason());
 					String thinking = ollamaResponse.message().thinking();
-					Assert.state(thinking != null, "thinking must not be null");
-					String doneReason = ollamaResponse.doneReason();
-					Assert.state(doneReason != null, "doneReason must not be null");
-					generationMetadata = ChatGenerationMetadata.builder()
-						.finishReason(doneReason)
-						.metadata("thinking", thinking)
-						.build();
+					if (thinking != null) {
+						builder.metadata("thinking", thinking);
+					}
+					generationMetadata = builder.build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);
