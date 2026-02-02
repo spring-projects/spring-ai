@@ -17,9 +17,7 @@
 /**
  * Auto-configuration for embedding observation.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.model.embedding.observation.autoconfigure;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;
