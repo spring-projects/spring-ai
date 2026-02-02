@@ -40,7 +40,7 @@ import org.springframework.context.annotation.Bean;
 @EnableConfigurationProperties(CosmosDBChatMemoryRepositoryProperties.class)
 public class CosmosDBChatMemoryRepositoryAutoConfiguration {
 
-	private final String agentSuffix = "SpringAI-CDBNoSQL-ChatMemoryRepository";
+	private static final String agentSuffix = "SpringAI-CDBNoSQL-ChatMemoryRepository";
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -60,7 +60,7 @@ public class CosmosDBChatMemoryRepositoryAutoConfiguration {
 		}
 
 		CosmosClientBuilder builder = new CosmosClientBuilder().endpoint(properties.getEndpoint())
-			.userAgentSuffix(this.agentSuffix);
+			.userAgentSuffix(agentSuffix);
 
 		if (properties.getKey() == null || properties.getKey().isEmpty()) {
 			builder.credential(new DefaultAzureCredentialBuilder().build());

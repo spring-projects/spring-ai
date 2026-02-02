@@ -18,12 +18,12 @@ package org.springframework.ai.model.chat.memory.repository.cassandra.autoconfig
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.memory.repository.cassandra.CassandraChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.lang.Nullable;
 
 /**
  * Configuration properties for Cassandra chat memory.
@@ -55,7 +55,7 @@ public class CassandraChatMemoryRepositoryProperties {
 		this.initializeSchema = initializeSchema;
 	}
 
-	private Duration timeToLive = null;
+	private @Nullable Duration timeToLive = null;
 
 	public String getKeyspace() {
 		return this.keyspace;
@@ -81,12 +81,11 @@ public class CassandraChatMemoryRepositoryProperties {
 		this.messagesColumn = messagesColumn;
 	}
 
-	@Nullable
-	public Duration getTimeToLive() {
+	public @Nullable Duration getTimeToLive() {
 		return this.timeToLive;
 	}
 
-	public void setTimeToLive(Duration timeToLive) {
+	public void setTimeToLive(@Nullable Duration timeToLive) {
 		this.timeToLive = timeToLive;
 	}
 

@@ -45,17 +45,17 @@ public class CassandraChatMemoryRepositoryAutoConfiguration {
 	public CassandraChatMemoryRepository cassandraChatMemoryRepository(
 			CassandraChatMemoryRepositoryProperties properties, CqlSession cqlSession) {
 
-		var builder = CassandraChatMemoryRepositoryConfig.builder().withCqlSession(cqlSession);
-
-		builder = builder.withKeyspaceName(properties.getKeyspace())
+		var builder = CassandraChatMemoryRepositoryConfig.builder()
+			.withCqlSession(cqlSession)
+			.withKeyspaceName(properties.getKeyspace())
 			.withTableName(properties.getTable())
 			.withMessagesColumnName(properties.getMessagesColumn());
 
 		if (!properties.isInitializeSchema()) {
-			builder = builder.disallowSchemaChanges();
+			builder.disallowSchemaChanges();
 		}
 		if (null != properties.getTimeToLive()) {
-			builder = builder.withTimeToLive(properties.getTimeToLive());
+			builder.withTimeToLive(properties.getTimeToLive());
 		}
 
 		return CassandraChatMemoryRepository.create(builder.build());
