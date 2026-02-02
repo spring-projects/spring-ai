@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -26,6 +27,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "spring.ai.vectorstore.redis.semantic-cache")
 public class RedisSemanticCacheProperties {
 
+	private static final double DEFAULT_SIMILARITY_THRESHOLD = 0.95;
+
 	/**
 	 * Enable the Redis semantic cache.
 	 */
@@ -35,7 +38,7 @@ public class RedisSemanticCacheProperties {
 	 * Similarity threshold for matching cached responses (0.0 to 1.0). Higher values mean
 	 * stricter matching.
 	 */
-	private double similarityThreshold = 0.95;
+	private double similarityThreshold = DEFAULT_SIMILARITY_THRESHOLD;
 
 	/**
 	 * Name of the Redis search index.
@@ -48,7 +51,7 @@ public class RedisSemanticCacheProperties {
 	private String prefix = "semantic-cache:";
 
 	public boolean isEnabled() {
-		return enabled;
+		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
@@ -56,7 +59,7 @@ public class RedisSemanticCacheProperties {
 	}
 
 	public double getSimilarityThreshold() {
-		return similarityThreshold;
+		return this.similarityThreshold;
 	}
 
 	public void setSimilarityThreshold(double similarityThreshold) {
@@ -64,7 +67,7 @@ public class RedisSemanticCacheProperties {
 	}
 
 	public String getIndexName() {
-		return indexName;
+		return this.indexName;
 	}
 
 	public void setIndexName(String indexName) {
@@ -72,7 +75,7 @@ public class RedisSemanticCacheProperties {
 	}
 
 	public String getPrefix() {
-		return prefix;
+		return this.prefix;
 	}
 
 	public void setPrefix(String prefix) {

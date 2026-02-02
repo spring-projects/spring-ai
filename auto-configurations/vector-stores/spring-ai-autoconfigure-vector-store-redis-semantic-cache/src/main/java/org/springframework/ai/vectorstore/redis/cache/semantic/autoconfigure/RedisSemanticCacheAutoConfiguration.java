@@ -13,27 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
+import redis.clients.jedis.JedisPooled;
+
+import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.ai.chat.cache.semantic.SemanticCacheAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.redis.cache.semantic.DefaultSemanticCache;
-import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.util.StringUtils;
-
-import redis.clients.jedis.JedisPooled;
 
 /**
  * Auto-configuration for Redis semantic cache.
@@ -50,7 +51,6 @@ import redis.clients.jedis.JedisPooled;
 		matchIfMissing = true)
 public class RedisSemanticCacheAutoConfiguration {
 
-	// URLs for the redis/langcache-embed-v1 model on HuggingFace
 	private static final String LANGCACHE_TOKENIZER_URI = "https://huggingface.co/redis/langcache-embed-v1/resolve/main/tokenizer.json";
 
 	private static final String LANGCACHE_MODEL_URI = "https://huggingface.co/redis/langcache-embed-v1/resolve/main/onnx/model.onnx";
@@ -59,6 +59,8 @@ public class RedisSemanticCacheAutoConfiguration {
 	 * Provides a default EmbeddingModel using the redis/langcache-embed-v1 model. This
 	 * model is specifically designed for semantic caching and provides 768-dimensional
 	 * embeddings. It matches the default model used by RedisVL Python library.
+	 * @return the embedding model for semantic caching
+	 * @throws Exception if model initialization fails
 	 */
 	@Bean
 	@ConditionalOnMissingBean(EmbeddingModel.class)
@@ -71,25 +73,36 @@ public class RedisSemanticCacheAutoConfiguration {
 		return model;
 	}
 
+	/**
+	 * Creates a JedisPooled client for Redis connections.
+	 * @param jedisConnectionFactory the Jedis connection factory
+	 * @return the JedisPooled client
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public JedisPooled jedisClient(JedisConnectionFactory jedisConnectionFactory) {
+	public JedisPooled jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
 		return new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort());
 	}
 
+	/**
+	 * Creates the semantic cache instance.
+	 * @param jedisClient the Jedis client
+	 * @param embeddingModel the embedding model
+	 * @param properties the semantic cache properties
+	 * @return the configured semantic cache
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public SemanticCache semanticCache(JedisPooled jedisClient, EmbeddingModel embeddingModel,
-			RedisSemanticCacheProperties properties) {
+	public SemanticCache semanticCache(final JedisPooled jedisClient, final EmbeddingModel embeddingModel,
+			final RedisSemanticCacheProperties properties) {
 		DefaultSemanticCache.Builder builder = DefaultSemanticCache.builder()
 			.jedisClient(jedisClient)
 			.embeddingModel(embeddingModel);
 
 		builder.similarityThreshold(properties.getSimilarityThreshold());
 
-		// Apply other configuration if provided
 		if (StringUtils.hasText(properties.getIndexName())) {
 			builder.indexName(properties.getIndexName());
 		}
@@ -101,10 +114,15 @@ public class RedisSemanticCacheAutoConfiguration {
 		return builder.build();
 	}
 
+	/**
+	 * Creates the semantic cache advisor for ChatClient integration.
+	 * @param semanticCache the semantic cache
+	 * @return the semantic cache advisor
+	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(SemanticCache.class)
-	public SemanticCacheAdvisor semanticCacheAdvisor(SemanticCache semanticCache) {
+	public SemanticCacheAdvisor semanticCacheAdvisor(final SemanticCache semanticCache) {
 		return new SemanticCacheAdvisor(semanticCache);
 	}
 
