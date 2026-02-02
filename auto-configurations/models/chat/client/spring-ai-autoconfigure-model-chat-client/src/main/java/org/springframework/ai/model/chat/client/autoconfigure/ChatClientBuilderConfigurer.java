@@ -18,6 +18,8 @@ package org.springframework.ai.model.chat.client.autoconfigure;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientCustomizer;
 
@@ -32,7 +34,7 @@ import org.springframework.ai.chat.client.ChatClientCustomizer;
  */
 public class ChatClientBuilderConfigurer {
 
-	private List<ChatClientCustomizer> customizers;
+	private @Nullable List<ChatClientCustomizer> customizers;
 
 	void setChatClientCustomizers(List<ChatClientCustomizer> customizers) {
 		this.customizers = customizers;
