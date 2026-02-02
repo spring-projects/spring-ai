@@ -905,10 +905,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		/**
 		 * Sets the index name.
-		 * @param indexName the index name
+		 * @param indexName the index name (will be auto-generated if null)
 		 * @return the builder instance
 		 */
-		public Builder indexName(String indexName) {
+		public Builder indexName(@Nullable String indexName) {
 			this.indexName = indexName;
 			return this;
 		}

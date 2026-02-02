@@ -17,7 +17,6 @@
 package org.springframework.ai.vectorstore.cassandra.autoconfigure;
 
 import java.time.Duration;
-import java.util.Objects;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
@@ -73,7 +72,7 @@ public class CassandraVectorStoreAutoConfiguration {
 			.table(properties.getTable())
 			.contentColumnName(properties.getContentColumnName())
 			.embeddingColumnName(properties.getEmbeddingColumnName())
-			.indexName(Objects.requireNonNull(properties.getIndexName(), "indexName must be set"))
+			.indexName(properties.getIndexName())
 			.fixedThreadPoolExecutorSize(properties.getFixedThreadPoolExecutorSize())
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
