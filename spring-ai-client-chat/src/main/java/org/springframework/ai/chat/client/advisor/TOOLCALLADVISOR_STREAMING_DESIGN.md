@@ -573,7 +573,7 @@ With the parallel streaming approach, tests were updated to reflect the new beha
 
 ---
 
-## Follow-up: Configurable Tool Call Streaming (Implemented)
+## Follow-up: Configurable Tool Call Streaming (Implemented - Simplified)
 
 While the parallel streaming approach provides the best user experience by streaming all chunks in real-time, some use cases may want to **filter out intermediate tool call responses** from the downstream stream. This is useful when:
 
@@ -583,7 +583,7 @@ While the parallel streaming approach provides the best user experience by strea
 
 ### Configuration Option
 
-A new `streamToolCallResponses` configuration option was added to control this behavior:
+A `streamToolCallResponses` configuration option controls this behavior:
 
 ```java
 // Default: Only stream final answer chunks (intermediate tool calls filtered out)
@@ -612,9 +612,15 @@ ToolCallAdvisor advisor = ToolCallAdvisor.builder()
 | `streamToolCallResponses(false)` (default) | Filtered out (not emitted) | Streamed in real-time |
 | `streamToolCallResponses(true)` | Streamed in real-time | Streamed in real-time |
 
-### Implementation Details
+### Implementation Details (Simplified Filter Approach)
 
-The `internalStream` method now branches based on the configuration:
+The implementation was significantly simplified by always using the parallel streaming approach and applying a filter at the end to control which responses are emitted downstream.
+
+The key insight is that rather than maintaining two separate streaming implementations (one that buffers and one that streams), we can:
+1. **Always stream** using the parallel streaming approach (best for real-time UX)
+2. **Filter at the end** to remove tool call responses when not wanted
+
+The `internalStream` method now uses a single unified approach:
 
 ```java
 private Flux<ChatClientResponse> internalStream(StreamAdvisorChain streamAdvisorChain,
@@ -622,73 +628,99 @@ private Flux<ChatClientResponse> internalStream(StreamAdvisorChain streamAdvisor
 
     return Flux.deferContextual(contextView -> {
         // ... setup code ...
+        
+        // Holder for aggregated response (set when aggregation completes)
+        AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 
-        if (this.streamToolCallResponses) {
-            // Stream all chunks immediately (including tool call responses)
-            return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest,
-                    streamAdvisorChain, originalRequest, optionsCopy);
-        }
-        else {
-            // Buffer chunks and only emit for final (non-tool-call) responses
-            return streamWithoutToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest,
-                    streamAdvisorChain, originalRequest, optionsCopy);
-        }
+        return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest,
+                streamAdvisorChain, originalRequest, optionsCopy);
     });
 }
 ```
 
-**When `streamToolCallResponses = true` (default):**
-- Uses `publish()` to multicast the stream
-- Streaming branch emits chunks immediately
-- Recursion branch handles tool calls after stream completes
-- All iterations' chunks are visible to downstream consumers
+The `streamWithToolCallResponses` method uses `publish()` to multicast the stream, with the filtering applied at the very end:
 
-**When `streamToolCallResponses = false`:**
-- Collects all chunks into a buffer
-- Waits for aggregation to complete
-- If tool call detected: recurses without emitting buffered chunks
-- If final answer: emits all buffered chunks
-- Only the final answer's chunks are visible to downstream consumers
+```java
+private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
+        AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
+        StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
+        ToolCallingChatOptions optionsCopy) {
 
-### Flow Diagram (With `suppressToolCallStreaming`)
+    return responseFlux.publish(shared -> {
+        // Branch 1: Stream chunks immediately with aggregation callback
+        Flux<ChatClientResponse> streamingBranch = new ChatClientMessageAggregator()
+            .aggregateChatClientResponse(shared, aggregatedResponseRef::set);
 
+        // Branch 2: After streaming completes, handle tool call recursion
+        Flux<ChatClientResponse> recursionBranch = Flux
+            .defer(() -> handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
+                streamAdvisorChain, originalRequest, optionsCopy));
+
+        // Emit all streaming chunks first, then append any recursive results
+        return streamingBranch.concatWith(recursionBranch);
+    }).filter(ccr -> this.streamToolCallResponses || !ccr.chatResponse().hasToolCalls());
+}
+```
+
+The key simplification is the **terminal filter**:
+
+```java
+.filter(ccr -> this.streamToolCallResponses || !ccr.chatResponse().hasToolCalls())
+```
+
+This filter:
+- When `streamToolCallResponses = true`: Passes ALL responses through (filter always returns true)
+- When `streamToolCallResponses = false`: Only passes responses that are NOT tool calls
+
+### Benefits of the Simplified Approach
+
+1. **Single code path**: No branching between different streaming implementations
+2. **Reduced complexity**: Removed ~80 lines of buffering code
+3. **Easier maintenance**: One implementation to understand and maintain
+4. **Same behavior**: Achieves the same filtering effect with less code
+5. **True real-time streaming**: Even when filtering, chunks are still processed in real-time (they're just filtered at the end)
+
+### Flow Diagram (Simplified Filter Approach)
+
+**When `streamToolCallResponses = true`:**
 ```
 Iteration 1 (Tool Call):
 Model emits:  [chunk1] [chunk2] [chunk3:tool_call] [complete]
                  │        │           │                │
-                 ▼        ▼           ▼                │
-Buffer:       add      add         add               │
-                                                       │
-                                                       ▼
-Aggregation:  ─────────────────────────────────► aggregate complete
-                                                       │
-                                                       ▼
-                                                 detect tool call
-                                                       │
-                                                       ▼
-                                                 execute tool
-                                                       │
-                                                       ▼
-                                                 recurse (buffer discarded)
-                                                       │
-Downstream:                                      (nothing emitted)
+Streaming:    emit     emit        emit               │
+Filter:       pass     pass        pass               │  ◄── All chunks pass through
+Downstream:   ◄────────────────────────────────────────────
 
 Iteration 2 (Final Answer):
 Model emits:  [chunk1] [chunk2] [chunk3] ... [chunkN] [complete]
-                 │        │        │           │          │
-                 ▼        ▼        ▼           ▼          │
-Buffer:       add      add      add         add         │
-                                                          │
-                                                          ▼
-Aggregation:  ────────────────────────────────────► aggregate complete
-                                                          │
-                                                          ▼
-                                                    no tool call
-                                                          │
-                                                          ▼
-                                                    emit all buffered chunks
-                                                          │
-Downstream:   ◄────────────────────────────────────────[chunk1][chunk2]...[chunkN]
+                 │        │        │           │
+Streaming:    emit     emit     emit        emit
+Filter:       pass     pass     pass        pass       ◄── All chunks pass through
+Downstream:   ◄────────────────────────────────────────────
+```
+
+**When `streamToolCallResponses = false` (default):**
+```
+Iteration 1 (Tool Call):
+Model emits:  [chunk1] [chunk2] [chunk3:tool_call] [complete]
+                 │        │           │                │
+Streaming:    emit     emit        emit               │
+Filter:       BLOCK*   BLOCK*      BLOCK              │  ◄── Tool call chunks filtered out
+Downstream:   (nothing emitted for this iteration)
+                                                       │
+                                                       ▼
+                                                 Recursion to next iteration
+
+Iteration 2 (Final Answer):
+Model emits:  [chunk1] [chunk2] [chunk3] ... [chunkN] [complete]
+                 │        │        │           │
+Streaming:    emit     emit     emit        emit
+Filter:       pass     pass     pass        pass       ◄── Non-tool-call chunks pass through
+Downstream:   ◄────────────────────────────────────────────
+
+*Note: Early chunks in a tool call iteration may not have hasToolCalls()=true until 
+the aggregated response is complete, but the filtering applies to each chunk's 
+aggregated state.
 ```
 
 ### Use Cases

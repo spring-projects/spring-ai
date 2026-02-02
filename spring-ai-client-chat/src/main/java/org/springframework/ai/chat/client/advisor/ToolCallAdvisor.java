@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -261,16 +260,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 			// Holder for aggregated response (set when aggregation completes)
 			AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 
-			if (this.streamToolCallResponses) {
-				// Stream all chunks immediately (including tool call responses)
-				return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest,
-						streamAdvisorChain, originalRequest, optionsCopy);
-			}
-			else {
-				// Buffer chunks and only emit for final (non-tool-call) responses
-				return streamWithoutToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest,
-						streamAdvisorChain, originalRequest, optionsCopy);
-			}
+			return streamWithToolCallResponses(responseFlux, aggregatedResponseRef, finalRequest, streamAdvisorChain,
+					originalRequest, optionsCopy);
 		});
 	}
 
@@ -296,87 +287,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 
 			// Emit all streaming chunks first, then append any recursive results
 			return streamingBranch.concatWith(recursionBranch);
-		});
-	}
-
-	/**
-	 * Buffers chunks and only emits them for the final (non-tool-call) response.
-	 * Intermediate tool call responses are filtered out.
-	 */
-	private Flux<ChatClientResponse> streamWithoutToolCallResponses(Flux<ChatClientResponse> responseFlux,
-			AtomicReference<ChatClientResponse> aggregatedResponseRef, ChatClientRequest finalRequest,
-			StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy) {
-
-		// Holder for collected chunks
-		AtomicReference<List<ChatClientResponse>> chunksRef = new AtomicReference<>(new ArrayList<>());
-
-		// Collect all chunks and aggregate, then decide whether to recurse or emit
-		return new ChatClientMessageAggregator().aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set)
-			.doOnNext(chunk -> chunksRef.get().add(chunk))
-			.ignoreElements()
-			.cast(ChatClientResponse.class)
-			.concatWith(Flux.defer(() -> this.handleBufferedResponse(aggregatedResponseRef.get(), chunksRef.get(),
-					finalRequest, streamAdvisorChain, originalRequest, optionsCopy)));
-	}
-
-	/**
-	 * Handles the buffered response after all chunks have been collected. If tool call
-	 * detected, recurses without emitting chunks. If no tool call, emits all collected
-	 * chunks.
-	 */
-	private Flux<ChatClientResponse> handleBufferedResponse(ChatClientResponse aggregatedResponse,
-			List<ChatClientResponse> chunks, ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain,
-			ChatClientRequest originalRequest, ToolCallingChatOptions optionsCopy) {
-
-		if (aggregatedResponse == null) {
-			// No response received, return collected chunks (if any)
-			return Flux.fromIterable(chunks);
-		}
-
-		aggregatedResponse = this.doAfterStream(aggregatedResponse, streamAdvisorChain);
-
-		ChatResponse chatResponse = aggregatedResponse.chatResponse();
-		boolean isToolCall = chatResponse != null && chatResponse.hasToolCalls();
-
-		if (isToolCall) {
-			Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
-			final ChatClientResponse finalAggregatedResponse = aggregatedResponse;
-
-			// Execute tool calls on bounded elastic scheduler (tool execution is
-			// blocking) Don't emit intermediate chunks for tool call iterations
-			Flux<ChatClientResponse> toolCallFlux = Flux.deferContextual(ctx -> {
-				ToolExecutionResult toolExecutionResult;
-				try {
-					ToolCallReactiveContextHolder.setContext(ctx);
-					toolExecutionResult = this.toolCallingManager.executeToolCalls(finalRequest.prompt(), chatResponse);
-				}
-				finally {
-					ToolCallReactiveContextHolder.clearContext();
-				}
-
-				if (toolExecutionResult.returnDirect()) {
-					// Return tool execution result directly to the application client
-					return Flux.just(finalAggregatedResponse.mutate()
-						.chatResponse(ChatResponse.builder()
-							.from(chatResponse)
-							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-							.build())
-						.build());
-				}
-				else {
-					// Recursive call with updated conversation history
-					List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
-							finalAggregatedResponse, toolExecutionResult);
-					return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions);
-				}
-			});
-			return toolCallFlux.subscribeOn(Schedulers.boundedElastic());
-		}
-		else {
-			// Final answer - emit all collected chunks for streaming output
-			return this.doFinalizeLoopStream(Flux.fromIterable(chunks), streamAdvisorChain);
-		}
+		}).filter(ccr -> this.streamToolCallResponses || !ccr.chatResponse().hasToolCalls());
 	}
 
 	/**
