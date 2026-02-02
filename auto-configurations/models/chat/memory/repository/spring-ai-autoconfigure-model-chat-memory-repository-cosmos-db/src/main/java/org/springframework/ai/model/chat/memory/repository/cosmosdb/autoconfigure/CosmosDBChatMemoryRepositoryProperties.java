@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.chat.memory.repository.cosmosdb.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -30,9 +32,9 @@ public class CosmosDBChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.cosmosdb";
 
-	private String endpoint;
+	private @Nullable String endpoint;
 
-	private String key;
+	private @Nullable String key;
 
 	private String connectionMode = "gateway";
 
@@ -42,19 +44,19 @@ public class CosmosDBChatMemoryRepositoryProperties {
 
 	private String partitionKeyPath = CosmosDBChatMemoryRepositoryConfig.DEFAULT_PARTITION_KEY_PATH;
 
-	public String getEndpoint() {
+	public @Nullable String getEndpoint() {
 		return this.endpoint;
 	}
 
-	public void setEndpoint(String endpoint) {
+	public void setEndpoint(@Nullable String endpoint) {
 		this.endpoint = endpoint;
 	}
 
-	public String getKey() {
+	public @Nullable String getKey() {
 		return this.key;
 	}
 
-	public void setKey(String key) {
+	public void setKey(@Nullable String key) {
 		this.key = key;
 	}
 
