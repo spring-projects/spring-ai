@@ -95,8 +95,7 @@ public class ChatClientAutoConfiguration {
 			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				chatClientObservationConvention.getIfUnique(() -> null),
-				advisorObservationConvention.getIfUnique(() -> null));
+				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique());
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 
