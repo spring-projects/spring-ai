@@ -17,6 +17,7 @@
 package org.springframework.ai.model.anthropic.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
@@ -74,8 +75,7 @@ public class AnthropicChatAutoConfiguration {
 	public AnthropicApi anthropicApi(AnthropicConnectionProperties connectionProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
-			ObjectProvider<SslBundles> sslBundles,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler, ObjectProvider<SslBundles> sslBundles,
 			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder,
 			ObjectProvider<ClientHttpConnectorBuilder<?>> webConnectorBuilderProvider) {

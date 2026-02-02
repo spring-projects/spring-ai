@@ -74,9 +74,8 @@ public class OpenAiEmbeddingAutoConfiguration {
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<EmbeddingModelObservationConvention> observationConventionn,
-			ObjectProvider<SslBundles> sslBundles,
-			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention,
+			ObjectProvider<SslBundles> sslBundles, ObjectProvider<HttpClientSettings> globalHttpClientSettings,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder,
 			ObjectProvider<ClientHttpConnectorBuilder<?>> webConnectorBuilderProvider) {
 

@@ -70,8 +70,7 @@ public class MistralAiEmbeddingAutoConfiguration {
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention,
-			ObjectProvider<SslBundles> sslBundles,
-			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<SslBundles> sslBundles, ObjectProvider<HttpClientSettings> globalHttpClientSettings,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder) {
 
 		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),

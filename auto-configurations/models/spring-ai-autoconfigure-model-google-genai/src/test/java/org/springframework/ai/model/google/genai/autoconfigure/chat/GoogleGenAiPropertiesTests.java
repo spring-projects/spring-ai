@@ -157,11 +157,11 @@ public class GoogleGenAiPropertiesTests {
 	@Test
 	void extendedUsageCustomTimeoutPropertiesBinding() {
 		this.contextRunner
-				.withPropertyValues("spring.ai.google.genai.chat.options.include-extended-usage-metadata=true")
-				.run(context -> {
-					GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
-					assertThat(chatProperties.getOptions().getIncludeExtendedUsageMetadata()).isTrue();
-				});
+			.withPropertyValues("spring.ai.google.genai.chat.options.include-extended-usage-metadata=true")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				assertThat(chatProperties.getOptions().getIncludeExtendedUsageMetadata()).isTrue();
+			});
 	}
 
 	@Configuration

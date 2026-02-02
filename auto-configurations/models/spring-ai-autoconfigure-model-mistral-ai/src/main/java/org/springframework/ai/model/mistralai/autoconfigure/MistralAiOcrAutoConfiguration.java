@@ -54,8 +54,7 @@ public class MistralAiOcrAutoConfiguration {
 	@ConditionalOnMissingBean
 	public MistralOcrApi mistralOcrApi(MistralAiCommonProperties commonProperties, MistralAiOcrProperties ocrProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
-			ObjectProvider<SslBundles> sslBundles,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler, ObjectProvider<SslBundles> sslBundles,
 			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder) {
 
@@ -81,7 +80,7 @@ public class MistralAiOcrAutoConfiguration {
 	}
 
 	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
-										 ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
+			ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
 		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
 		builder.requestFactory(requestFactory);
 	}

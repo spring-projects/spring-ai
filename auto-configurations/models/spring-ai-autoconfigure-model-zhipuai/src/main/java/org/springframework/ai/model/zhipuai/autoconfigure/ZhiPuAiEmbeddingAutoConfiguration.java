@@ -71,8 +71,7 @@ public class ZhiPuAiEmbeddingAutoConfiguration {
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention,
-			ObjectProvider<SslBundles> sslBundles,
-			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<SslBundles> sslBundles, ObjectProvider<HttpClientSettings> globalHttpClientSettings,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder,
 			ObjectProvider<ClientHttpConnectorBuilder<?>> webConnectorBuilderProvider) {
 

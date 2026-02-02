@@ -62,8 +62,7 @@ public class MistralAiModerationAutoConfiguration {
 	public MistralAiModerationModel mistralAiModerationModel(MistralAiCommonProperties commonProperties,
 			MistralAiModerationProperties moderationProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
-			ObjectProvider<SslBundles> sslBundles,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler, ObjectProvider<SslBundles> sslBundles,
 			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder) {
 

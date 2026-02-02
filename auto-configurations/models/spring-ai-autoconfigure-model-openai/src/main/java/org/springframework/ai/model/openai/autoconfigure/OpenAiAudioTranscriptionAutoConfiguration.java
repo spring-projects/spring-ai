@@ -71,8 +71,7 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 			OpenAiAudioTranscriptionProperties transcriptionProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
-			ObjectProvider<SslBundles> sslBundles,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler, ObjectProvider<SslBundles> sslBundles,
 			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder,
 			ObjectProvider<ClientHttpConnectorBuilder<?>> webConnectorBuilderProvider) {
