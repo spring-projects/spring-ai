@@ -26,6 +26,30 @@ Add the S3 Chat Memory Repository dependency to your project:
 </dependency>
 ```
 
+### AWS SDK Requirements
+
+This module requires **AWS SDK for Java 2.x** (`software.amazon.awssdk`). AWS SDK v1 (`com.amazonaws`) is **not supported**.
+
+| Requirement | Minimum Version |
+|-------------|-----------------|
+| AWS SDK for Java 2.x | 2.20.0+ recommended |
+
+Ensure your project uses the v2 SDK artifacts:
+
+```xml
+<!-- Correct: AWS SDK v2 (software.amazon.awssdk) -->
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>s3</artifactId>
+</dependency>
+
+<!-- NOT supported: AWS SDK v1 (com.amazonaws) -->
+<!-- <dependency>
+    <groupId>com.amazonaws</groupId>
+    <artifactId>aws-java-sdk-s3</artifactId>
+</dependency> -->
+```
+
 ### Basic Configuration
 
 Configure your S3 chat memory repository in `application.properties`:
@@ -209,6 +233,8 @@ Amazon S3 provides **strong read-after-write consistency** for new objects and *
 1. **Key Design**: The repository uses a flat key structure (`{prefix}/{conversationId}.json`) for optimal performance
 2. **Batch Operations**: Each conversation is stored as a single JSON document for atomic updates
 3. **Pagination**: Large conversation lists are automatically paginated using S3's native pagination
+
+**Note on `findConversationIds()` at scale**: This method is not called during normal chat operations (message storage and retrieval use single-object S3 operations). However, if your application uses `findConversationIds()` for administrative purposes (e.g., listing conversations in a UI), be aware that S3's `listObjectsV2` returns a maximum of 1,000 objects per request. For repositories with many conversations, this requires sequential pagination calls (N/1,000 API calls), which may introduce latency. Consider implementing application-level caching or maintaining a separate conversation index if you frequently need to list all conversations.
 
 ### Cost Optimization
 

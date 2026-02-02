@@ -43,6 +43,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -144,7 +145,8 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	 * @return the normalized conversation ID
 	 */
 	private String normalizeConversationId(final @Nullable String conversationId) {
-		return (conversationId == null || conversationId.trim().isEmpty()) ? "default" : conversationId.trim();
+		return (conversationId == null || conversationId.trim().isEmpty()) ? ChatMemory.DEFAULT_CONVERSATION_ID
+				: conversationId.trim();
 	}
 
 	/**
