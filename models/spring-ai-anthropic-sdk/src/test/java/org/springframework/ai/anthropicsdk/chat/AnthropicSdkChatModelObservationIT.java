@@ -162,7 +162,10 @@ public class AnthropicSdkChatModelObservationIT {
 
 		@Bean
 		public AnthropicSdkChatModel anthropicSdkChatModel(TestObservationRegistry observationRegistry) {
-			return new AnthropicSdkChatModel(AnthropicSdkChatOptions.builder().build(), observationRegistry);
+			return AnthropicSdkChatModel.builder()
+				.options(AnthropicSdkChatOptions.builder().build())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

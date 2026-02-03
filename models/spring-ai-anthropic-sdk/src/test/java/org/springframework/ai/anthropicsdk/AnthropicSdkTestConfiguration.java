@@ -29,7 +29,7 @@ public class AnthropicSdkTestConfiguration {
 
 	@Bean
 	public AnthropicSdkChatModel anthropicChatModel() {
-		return new AnthropicSdkChatModel();
+		return AnthropicSdkChatModel.builder().build();
 	}
 
 }

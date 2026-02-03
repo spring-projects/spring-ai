@@ -24,34 +24,12 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Abstract base class providing common configuration options for Anthropic SDK-based
- * model implementations in Spring AI.
+ * Base class for common Anthropic SDK configuration options, extended by
+ * {@link AnthropicSdkChatOptions}.
  *
  * <p>
- * This class encapsulates connection and authentication settings that are shared across
- * different Anthropic model types. It serves as the foundation for model-specific option
- * classes like {@link AnthropicSdkChatOptions}.
- *
- * <p>
- * <b>Configuration Options:</b>
- * <ul>
- * <li><b>apiKey:</b> Authentication key for the Anthropic API. Can be set
- * programmatically or detected automatically from the {@code ANTHROPIC_API_KEY}
- * environment variable.</li>
- * <li><b>baseUrl:</b> The API endpoint URL. Defaults to {@code https://api.anthropic.com}
- * if not specified.</li>
- * <li><b>timeout:</b> Request timeout duration. Defaults to 60 seconds.</li>
- * <li><b>maxRetries:</b> Maximum retry attempts for failed requests. Defaults to 2.</li>
- * <li><b>proxy:</b> Optional HTTP proxy configuration for network requests.</li>
- * <li><b>customHeaders:</b> Additional HTTP headers to include with API requests.</li>
- * </ul>
- *
- * <p>
- * <b>Environment Variable Support:</b>
- * <ul>
- * <li>{@code ANTHROPIC_API_KEY} - API key for authentication</li>
- * <li>{@code ANTHROPIC_BASE_URL} - Override the default API endpoint</li>
- * </ul>
+ * Supports environment variables {@code ANTHROPIC_API_KEY} and {@code ANTHROPIC_BASE_URL}
+ * for configuration.
  *
  * @author Soby Chacko
  * @since 2.0.0
@@ -63,40 +41,40 @@ public class AbstractAnthropicSdkOptions {
 	 * The base URL to connect to the Anthropic API. Defaults to
 	 * "https://api.anthropic.com" if not specified.
 	 */
-	@Nullable private String baseUrl;
+	private @Nullable String baseUrl;
 
 	/**
 	 * The API key to authenticate with the Anthropic API. Can also be set via the
 	 * ANTHROPIC_API_KEY environment variable.
 	 */
-	@Nullable private String apiKey;
+	private @Nullable String apiKey;
 
 	/**
 	 * The model name to use for requests.
 	 */
-	@Nullable private String model;
+	private @Nullable String model;
 
 	/**
 	 * Request timeout for the Anthropic client. Defaults to 60 seconds if not specified.
 	 */
-	@Nullable private Duration timeout;
+	private @Nullable Duration timeout;
 
 	/**
 	 * Maximum number of retries for failed requests. Defaults to 2 if not specified.
 	 */
-	@Nullable private Integer maxRetries;
+	private @Nullable Integer maxRetries;
 
 	/**
 	 * Proxy settings for the Anthropic client.
 	 */
-	@Nullable private Proxy proxy;
+	private @Nullable Proxy proxy;
 
 	/**
 	 * Custom HTTP headers to add to Anthropic client requests.
 	 */
 	private Map<String, String> customHeaders = new HashMap<>();
 
-	@Nullable public String getBaseUrl() {
+	public @Nullable String getBaseUrl() {
 		return this.baseUrl;
 	}
 
@@ -104,7 +82,7 @@ public class AbstractAnthropicSdkOptions {
 		this.baseUrl = baseUrl;
 	}
 
-	@Nullable public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
@@ -112,7 +90,7 @@ public class AbstractAnthropicSdkOptions {
 		this.apiKey = apiKey;
 	}
 
-	@Nullable public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
@@ -120,7 +98,7 @@ public class AbstractAnthropicSdkOptions {
 		this.model = model;
 	}
 
-	@Nullable public Duration getTimeout() {
+	public @Nullable Duration getTimeout() {
 		return this.timeout;
 	}
 
@@ -128,7 +106,7 @@ public class AbstractAnthropicSdkOptions {
 		this.timeout = timeout;
 	}
 
-	@Nullable public Integer getMaxRetries() {
+	public @Nullable Integer getMaxRetries() {
 		return this.maxRetries;
 	}
 
@@ -136,7 +114,7 @@ public class AbstractAnthropicSdkOptions {
 		this.maxRetries = maxRetries;
 	}
 
-	@Nullable public Proxy getProxy() {
+	public @Nullable Proxy getProxy() {
 		return this.proxy;
 	}
 

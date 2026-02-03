@@ -78,53 +78,20 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * {@link ChatModel} and {@link StreamingChatModel} implementation for Anthropic's Claude
- * models using the official
+ * {@link ChatModel} and {@link StreamingChatModel} implementation using the official
  * <a href="https://github.com/anthropics/anthropic-sdk-java">Anthropic Java SDK</a>.
  *
  * <p>
- * This implementation provides access to Claude's conversational AI capabilities through
- * Anthropic's Messages API. It supports both synchronous and streaming interactions,
- * tool/function calling, and integrates with Spring AI's observation and metrics
- * infrastructure.
- *
- * <p>
- * <b>Key Features:</b>
- * <ul>
- * <li>Synchronous and streaming chat completions</li>
- * <li>Tool/function calling with automatic execution support</li>
- * <li>Multi-turn conversations with message history</li>
- * <li>Micrometer-based observability and tracing</li>
- * <li>Configurable retry and timeout policies via the SDK</li>
- * </ul>
- *
- * <p>
- * <b>Usage Example:</b> <pre>{@code
- * AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
- *     .model("claude-sonnet-4-20250514")
- *     .maxTokens(1024)
- *     .temperature(0.7)
- *     .build();
- *
- * AnthropicSdkChatModel chatModel = new AnthropicSdkChatModel(options);
- *
- * // Synchronous call
- * ChatResponse response = chatModel.call(new Prompt("Hello, Claude!"));
- *
- * // Streaming call
- * Flux<ChatResponse> stream = chatModel.stream(new Prompt("Tell me a story"));
- * }</pre>
- *
- * <p>
- * The model automatically detects API credentials from the {@code ANTHROPIC_API_KEY}
- * environment variable if not explicitly configured.
+ * Supports synchronous and streaming completions, tool calling, and Micrometer-based
+ * observability. API credentials are auto-detected from {@code ANTHROPIC_API_KEY} if not
+ * configured.
  *
  * @author Soby Chacko
  * @since 2.0.0
  * @see AnthropicSdkChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
-public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
+public final class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 
 	private static final Logger logger = LoggerFactory.getLogger(AnthropicSdkChatModel.class);
 
@@ -151,86 +118,17 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
-	 * Creates a new AnthropicSdkChatModel with default options.
+	 * Creates a new builder for {@link AnthropicSdkChatModel}.
+	 * @return a new builder instance
 	 */
-	public AnthropicSdkChatModel() {
-		this(null, null, null, null, null, null);
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	/**
-	 * Creates a new AnthropicSdkChatModel with the given options.
-	 * @param options the chat options
+	 * Private constructor - use {@link #builder()} to create instances.
 	 */
-	public AnthropicSdkChatModel(AnthropicSdkChatOptions options) {
-		this(null, null, options, null, null, null);
-	}
-
-	/**
-	 * Creates a new AnthropicSdkChatModel with the given options and observation
-	 * registry.
-	 * @param options the chat options
-	 * @param observationRegistry the observation registry
-	 */
-	public AnthropicSdkChatModel(AnthropicSdkChatOptions options, ObservationRegistry observationRegistry) {
-		this(null, null, options, null, observationRegistry, null);
-	}
-
-	/**
-	 * Creates a new AnthropicSdkChatModel with the given options, tool calling manager,
-	 * and observation registry.
-	 * @param options the chat options
-	 * @param toolCallingManager the tool calling manager
-	 * @param observationRegistry the observation registry
-	 */
-	public AnthropicSdkChatModel(AnthropicSdkChatOptions options, ToolCallingManager toolCallingManager,
-			ObservationRegistry observationRegistry) {
-		this(null, null, options, toolCallingManager, observationRegistry, null);
-	}
-
-	/**
-	 * Creates a new AnthropicSdkChatModel with the given Anthropic clients.
-	 * @param anthropicClient the synchronous Anthropic client
-	 * @param anthropicClientAsync the asynchronous Anthropic client
-	 */
-	public AnthropicSdkChatModel(AnthropicClient anthropicClient, AnthropicClientAsync anthropicClientAsync) {
-		this(anthropicClient, anthropicClientAsync, null, null, null, null);
-	}
-
-	/**
-	 * Creates a new AnthropicSdkChatModel with the given Anthropic clients and options.
-	 * @param anthropicClient the synchronous Anthropic client
-	 * @param anthropicClientAsync the asynchronous Anthropic client
-	 * @param options the chat options
-	 */
-	public AnthropicSdkChatModel(AnthropicClient anthropicClient, AnthropicClientAsync anthropicClientAsync,
-			AnthropicSdkChatOptions options) {
-		this(anthropicClient, anthropicClientAsync, options, null, null, null);
-	}
-
-	/**
-	 * Creates a new AnthropicSdkChatModel with the given Anthropic clients, options, and
-	 * observation registry.
-	 * @param anthropicClient the synchronous Anthropic client
-	 * @param anthropicClientAsync the asynchronous Anthropic client
-	 * @param options the chat options
-	 * @param observationRegistry the observation registry
-	 */
-	public AnthropicSdkChatModel(AnthropicClient anthropicClient, AnthropicClientAsync anthropicClientAsync,
-			AnthropicSdkChatOptions options, ObservationRegistry observationRegistry) {
-		this(anthropicClient, anthropicClientAsync, options, null, observationRegistry, null);
-	}
-
-	/**
-	 * Creates a new AnthropicSdkChatModel with all configuration options.
-	 * @param anthropicClient the synchronous Anthropic client
-	 * @param anthropicClientAsync the asynchronous Anthropic client
-	 * @param options the chat options
-	 * @param toolCallingManager the tool calling manager
-	 * @param observationRegistry the observation registry
-	 * @param toolExecutionEligibilityPredicate the predicate to determine tool execution
-	 * eligibility
-	 */
-	public AnthropicSdkChatModel(@Nullable AnthropicClient anthropicClient,
+	private AnthropicSdkChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicSdkChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
 			@Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
@@ -413,25 +311,14 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Converts a streaming event to a ChatResponse.
-	 * <p>
-	 * This method handles all streaming event types from the Anthropic API:
-	 * <ul>
-	 * <li><b>message_start</b> - Captures message ID, model, and input tokens</li>
-	 * <li><b>content_block_start</b> - For tool_use blocks, starts accumulating tool call
-	 * data</li>
-	 * <li><b>content_block_delta</b> - Handles text_delta (emits response) and
-	 * input_json_delta (accumulates tool arguments)</li>
-	 * <li><b>content_block_stop</b> - Finalizes any in-progress tool call</li>
-	 * <li><b>message_delta</b> - Emits final response with usage, stop reason, and
-	 * accumulated tool calls</li>
-	 * </ul>
+	 * Converts a streaming event to a ChatResponse. Handles message_start, content_block
+	 * events (text and tool_use), and message_delta for final response with usage.
 	 * @param event the raw message stream event
 	 * @param previousChatResponse the previous chat response for usage accumulation
 	 * @param streamingState the state accumulated during streaming
 	 * @return the chat response, or null if the event doesn't produce a response
 	 */
-	@Nullable private ChatResponse convertStreamEventToChatResponse(RawMessageStreamEvent event,
+	private @Nullable ChatResponse convertStreamEventToChatResponse(RawMessageStreamEvent event,
 			@Nullable ChatResponse previousChatResponse, StreamingState streamingState) {
 
 		// -- Event: message_start --
@@ -641,28 +528,13 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Creates a {@link MessageCreateParams} request object from a Spring AI
-	 * {@link Prompt}. This method is the primary "translator" between the generic Spring
-	 * AI model and the specific Anthropic SDK format.
-	 *
-	 * It handles the crucial logic of mapping message types and constructing the
-	 * conversation history correctly for multi-turn and tool-use scenarios.
-	 *
-	 * <p>
-	 * <b>Key Mappings:</b>
-	 * <ul>
-	 * <li>{@code MessageType.TOOL}: A Spring AI {@link ToolResponseMessage} is converted
-	 * into a "user" role message containing a {@link ToolResultBlockParam}, which is the
-	 * format Anthropic's API expects for tool results.</li>
-	 * <li>{@code MessageType.ASSISTANT}: An {@link AssistantMessage} containing tool
-	 * calls is converted into an assistant message with {@link ToolUseBlockParam} blocks
-	 * to accurately represent the model's previous actions in the history.</li>
-	 * </ul>
-	 * @param prompt The prompt containing the message history and options.
-	 * @param stream This parameter is noted but not currently used to alter the request
-	 * structure, as the sync/async call is determined by which client method is invoked.
-	 * @return The fully constructed {@link MessageCreateParams} for the Anthropic API
-	 * call.
+	 * Creates a {@link MessageCreateParams} request from a Spring AI {@link Prompt}. Maps
+	 * message types to Anthropic format: TOOL messages become user messages with
+	 * {@link ToolResultBlockParam}, and ASSISTANT messages with tool calls become
+	 * {@link ToolUseBlockParam} blocks.
+	 * @param prompt the prompt with message history and options
+	 * @param stream not currently used; sync/async determined by client method
+	 * @return the constructed request parameters
 	 */
 	MessageCreateParams createRequest(Prompt prompt, boolean stream) {
 
@@ -777,24 +649,12 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Builds generations from the Anthropic message response.
-	 * <p>
-	 * This method processes the content blocks returned by the Anthropic API and
-	 * extracts:
-	 * <ul>
-	 * <li><b>Text content</b> - from {@code TextBlock} instances</li>
-	 * <li><b>Tool calls</b> - from {@code ToolUseBlock} instances when the model requests
-	 * tool execution</li>
-	 * </ul>
-	 * <p>
-	 * <b>Important:</b> When extracting tool calls, the {@code ToolUseBlock._input()}
-	 * method returns a {@link JsonValue}, which is the SDK's internal JSON
-	 * representation. This must be converted to a proper JSON string using
-	 * {@link #convertJsonValueToString(JsonValue)} because Spring AI's {@code ToolCall}
-	 * expects the arguments as a JSON string that can be deserialized by Jackson.
-	 * @param message the Anthropic message response containing content blocks
-	 * @return list of generations with text content and/or tool calls
-	 * @see #convertJsonValueToString(JsonValue)
+	 * Builds generations from the Anthropic message response. Extracts text from
+	 * {@code TextBlock} and tool calls from {@code ToolUseBlock}. Tool call arguments are
+	 * converted from SDK's {@link JsonValue} to JSON string via
+	 * {@link #convertJsonValueToString(JsonValue)}.
+	 * @param message the Anthropic message response
+	 * @return list of generations with text and/or tool calls
 	 */
 	private List<Generation> buildGenerations(Message message) {
 		List<Generation> generations = new ArrayList<>();
@@ -862,31 +722,12 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Converts a {@link JsonValue} to a valid JSON string representation.
-	 * <p>
-	 * <b>Why this is needed:</b> The Anthropic SDK's {@code JsonValue} is a sealed type
-	 * that represents JSON data internally. However, calling {@code JsonValue.toString()}
-	 * produces Java's default Map/List string format (e.g., {@code {key=value}}), NOT
-	 * valid JSON (e.g., {@code {"key":"value"}}).
-	 * <p>
-	 * This method uses a two-step conversion:
-	 * <ol>
-	 * <li>Convert {@code JsonValue} to native Java objects (Map, List, String, etc.)
-	 * using the visitor pattern via {@link #convertJsonValueToNative(JsonValue)}</li>
-	 * <li>Serialize the native objects to JSON using Jackson's ObjectMapper</li>
-	 * </ol>
-	 * <p>
-	 * <b>Example:</b>
-	 *
-	 * <pre>
-	 * // SDK returns: JsonValue representing {"location": "Paris", "unit": "C"}
-	 * // JsonValue.toString() would produce: {location=Paris, unit=C}  (INVALID JSON!)
-	 * // This method produces: {"location":"Paris","unit":"C"}  (VALID JSON)
-	 * </pre>
+	 * Converts a {@link JsonValue} to a valid JSON string. Required because
+	 * {@code JsonValue.toString()} produces Java Map format ({@code {key=value}}), not
+	 * valid JSON. Converts to native Java objects first, then serializes with Jackson.
 	 * @param jsonValue the SDK's JsonValue to convert
-	 * @return a valid JSON string that can be parsed by Jackson
-	 * @throws RuntimeException if JSON serialization fails
-	 * @see #convertJsonValueToNative(JsonValue)
+	 * @return a valid JSON string
+	 * @throws RuntimeException if serialization fails
 	 */
 	private String convertJsonValueToString(JsonValue jsonValue) {
 		try {
@@ -902,34 +743,19 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Converts a {@link JsonValue} to a native Java object using the visitor pattern.
-	 * <p>
-	 * The Anthropic SDK's {@code JsonValue} is a sealed type that requires the visitor
-	 * pattern to access its contents. This method traverses the JSON structure and
-	 * converts it to standard Java types:
-	 * <ul>
-	 * <li>{@code visitNull()} → {@code null}</li>
-	 * <li>{@code visitBoolean()} → {@code Boolean}</li>
-	 * <li>{@code visitNumber()} → {@code Number}</li>
-	 * <li>{@code visitString()} → {@code String}</li>
-	 * <li>{@code visitArray()} → {@code List<Object>} (recursive)</li>
-	 * <li>{@code visitObject()} → {@code Map<String, Object>} (recursive)</li>
-	 * </ul>
-	 * <p>
-	 * <b>Note:</b> The visitor interface uses wildcard generics
-	 * ({@code List<? extends JsonValue>}) which must be matched exactly in the
-	 * implementation.
+	 * Maps to null, Boolean, Number, String, List, or Map recursively.
 	 * @param jsonValue the SDK's JsonValue to convert
 	 * @return the equivalent native Java object, or null for JSON null
 	 */
-	@Nullable private Object convertJsonValueToNative(JsonValue jsonValue) {
+	private @Nullable Object convertJsonValueToNative(JsonValue jsonValue) {
 		return jsonValue.accept(new JsonValue.Visitor<@Nullable Object>() {
 			@Override
-			@Nullable public Object visitNull() {
+			public @Nullable Object visitNull() {
 				return null;
 			}
 
 			@Override
-			@Nullable public Object visitMissing() {
+			public @Nullable Object visitMissing() {
 				return null;
 			}
 
@@ -995,53 +821,14 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 	/**
 	 * Converts a Spring AI {@link ToolDefinition} to an Anthropic SDK {@link Tool}.
 	 * <p>
-	 * <b>The Challenge:</b> Spring AI provides the tool's input schema as a JSON string
-	 * (from {@code ToolDefinition.inputSchema()}), but the Anthropic SDK expects a
-	 * structured {@code Tool.InputSchema} object built using the builder pattern.
+	 * Spring AI provides the input schema as a JSON string, but the SDK expects a
+	 * structured {@code Tool.InputSchema} built via the builder pattern.
 	 * <p>
-	 * <b>Spring AI input schema format (JSON string):</b>
-	 *
-	 * <pre>
-	 * {
-	 *   "type": "object",
-	 *   "properties": {
-	 *     "location": {
-	 *       "type": "string",
-	 *       "description": "The city and state"
-	 *     },
-	 *     "unit": {
-	 *       "type": "string",
-	 *       "enum": ["C", "F"]
-	 *     }
-	 *   },
-	 *   "required": ["location", "unit"]
-	 * }
-	 * </pre>
-	 * <p>
-	 * <b>SDK expects (builder pattern):</b>
-	 *
-	 * <pre>
-	 * Tool.InputSchema.builder()
-	 *     .properties(Properties.builder()
-	 *         .putAdditionalProperty("location", JsonValue.from(...))
-	 *         .putAdditionalProperty("unit", JsonValue.from(...))
-	 *         .build())
-	 *     .addRequired("location")
-	 *     .addRequired("unit")
-	 *     .build()
-	 * </pre>
-	 * <p>
-	 * <b>Conversion steps:</b>
-	 * <ol>
-	 * <li>Parse the JSON schema string to a {@code Map<String, Object>}</li>
-	 * <li>Extract the "properties" map and add each property using
-	 * {@code putAdditionalProperty()}</li>
-	 * <li>Extract the "required" list and add each field using {@code addRequired()}</li>
-	 * <li>Build the final {@code Tool} with name, description, and input schema</li>
-	 * </ol>
-	 * @param toolDefinition the Spring AI tool definition containing name, description,
-	 * and JSON schema
-	 * @return the Anthropic SDK Tool with properly structured InputSchema
+	 * Conversion: parses the JSON schema to a Map, extracts "properties" (added via
+	 * {@code putAdditionalProperty()}), extracts "required" fields (added via
+	 * {@code addRequired()}), then builds the Tool with name, description, and schema.
+	 * @param toolDefinition the tool definition with name, description, and JSON schema
+	 * @return the Anthropic SDK Tool
 	 * @throws RuntimeException if the JSON schema cannot be parsed
 	 */
 	@SuppressWarnings("unchecked")
@@ -1190,6 +977,98 @@ public class AnthropicSdkChatModel implements ChatModel, StreamingChatModel {
 		 */
 		List<ToolCall> getCompletedToolCalls() {
 			return new ArrayList<>(this.completedToolCalls);
+		}
+
+	}
+
+	/**
+	 * Builder for creating {@link AnthropicSdkChatModel} instances.
+	 */
+	public static final class Builder {
+
+		private @Nullable AnthropicClient anthropicClient;
+
+		private @Nullable AnthropicClientAsync anthropicClientAsync;
+
+		private @Nullable AnthropicSdkChatOptions options;
+
+		private @Nullable ToolCallingManager toolCallingManager;
+
+		private @Nullable ObservationRegistry observationRegistry;
+
+		private @Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+		private Builder() {
+		}
+
+		/**
+		 * Sets the synchronous Anthropic client.
+		 * @param anthropicClient the synchronous client
+		 * @return this builder
+		 */
+		public Builder anthropicClient(AnthropicClient anthropicClient) {
+			this.anthropicClient = anthropicClient;
+			return this;
+		}
+
+		/**
+		 * Sets the asynchronous Anthropic client.
+		 * @param anthropicClientAsync the asynchronous client
+		 * @return this builder
+		 */
+		public Builder anthropicClientAsync(AnthropicClientAsync anthropicClientAsync) {
+			this.anthropicClientAsync = anthropicClientAsync;
+			return this;
+		}
+
+		/**
+		 * Sets the chat options.
+		 * @param options the chat options
+		 * @return this builder
+		 */
+		public Builder options(AnthropicSdkChatOptions options) {
+			this.options = options;
+			return this;
+		}
+
+		/**
+		 * Sets the tool calling manager.
+		 * @param toolCallingManager the tool calling manager
+		 * @return this builder
+		 */
+		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		/**
+		 * Sets the observation registry for metrics and tracing.
+		 * @param observationRegistry the observation registry
+		 * @return this builder
+		 */
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		/**
+		 * Sets the predicate to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityPredicate the predicate
+		 * @return this builder
+		 */
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			return this;
+		}
+
+		/**
+		 * Builds a new {@link AnthropicSdkChatModel} instance.
+		 * @return the configured chat model
+		 */
+		public AnthropicSdkChatModel build() {
+			return new AnthropicSdkChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
+					this.toolCallingManager, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 
 	}
