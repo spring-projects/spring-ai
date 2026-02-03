@@ -48,6 +48,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-retry</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.openai</groupId>
 			<artifactId>openai-java</artifactId>
 			<version>${openai-sdk.version}</version>
