@@ -277,7 +277,7 @@ ChatResponse response = chatModel.call(
 
 // Access the thinking process
 String thinking = response.getResult().getMetadata().get("thinking");
-String answer = response.getResult().getOutput().getContent();
+String answer = response.getResult().getOutput().getText();
 ----
 
 You can also disable thinking explicitly:
@@ -352,7 +352,7 @@ System.out.println("Reasoning: " + thinking);
 // Output: "17 × 20 = 340, 17 × 3 = 51, 340 + 51 = 391"
 
 // Get the final answer
-String answer = response.getResult().getOutput().getContent();
+String answer = response.getResult().getOutput().getText();
 System.out.println("Answer: " + answer);
 // Output: "The answer is 391"
 ----
@@ -374,7 +374,7 @@ Flux<ChatResponse> stream = chatModel.stream(
 
 stream.subscribe(response -> {
     String thinking = response.getResult().getMetadata().get("thinking");
-    String content = response.getResult().getOutput().getContent();
+    String content = response.getResult().getOutput().getText();
 
     if (thinking != null && !thinking.isEmpty()) {
         System.out.println("[Thinking] " + thinking);
@@ -651,7 +651,7 @@ if (reasoning != null && !reasoning.isEmpty()) {
 }
 
 // Get the final answer
-String answer = response.getResult().getOutput().getContent();
+String answer = response.getResult().getOutput().getText();
 System.out.println("Answer: " + answer);
 ----
 

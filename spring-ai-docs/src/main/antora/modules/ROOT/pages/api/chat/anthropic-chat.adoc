@@ -1087,7 +1087,7 @@ var userMessage = new UserMessage("Explain what do you see on this picture?",
 
 ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage)));
 
-logger.info(response.getResult().getOutput().getContent());
+logger.info(response.getResult().getOutput().getText());
 ----
 
 It takes as an input the `multimodal.test.png` image:
