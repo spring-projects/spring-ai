@@ -112,6 +112,8 @@ public class OllamaChatModel implements ChatModel {
 
 	private static final String METADATA_EVAL_DURATION = "eval-duration";
 
+	private static final String THINKING_METADATA_KEY = "thinking";
+
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
@@ -272,7 +274,7 @@ public class OllamaChatModel implements ChatModel {
 						.finishReason(ollamaResponse.doneReason());
 					String thinking = ollamaResponse.message().thinking();
 					if (thinking != null) {
-						builder.metadata("thinking", thinking);
+						builder.metadata(THINKING_METADATA_KEY, thinking);
 					}
 					generationMetadata = builder.build();
 				}
@@ -354,10 +356,18 @@ public class OllamaChatModel implements ChatModel {
 					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
-				if (chunk.promptEvalCount() != null && chunk.evalCount() != null) {
-					String doneReason = chunk.doneReason();
-					Assert.state(doneReason != null, "doneReason must not be null");
-					generationMetadata = ChatGenerationMetadata.builder().finishReason(doneReason).build();
+				boolean hasEvalCount = chunk.promptEvalCount() != null && chunk.evalCount() != null;
+				String thinking = chunk.message().thinking();
+
+				if (hasEvalCount || thinking != null) {
+					ChatGenerationMetadata.Builder builder = ChatGenerationMetadata.builder();
+					if (hasEvalCount) {
+						builder.finishReason(chunk.doneReason());
+					}
+					if (thinking != null) {
+						builder.metadata(THINKING_METADATA_KEY, thinking);
+					}
+					generationMetadata = builder.build();
 				}
 
 				var generator = new Generation(assistantMessage, generationMetadata);
