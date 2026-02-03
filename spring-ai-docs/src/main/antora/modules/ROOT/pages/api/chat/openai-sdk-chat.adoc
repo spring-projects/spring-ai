@@ -404,7 +404,7 @@ ChatResponse response = chatModel.call(
             .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
             .build()));
 
-String text = response.getResult().getOutput().getContent(); // audio transcript
+String text = response.getResult().getOutput().getText(); // audio transcript
 byte[] waveAudio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray(); // audio data
 ----
 
@@ -489,7 +489,7 @@ Prompt prompt = new Prompt(
 
 ChatResponse response = chatModel.call(prompt);
 MathReasoning mathReasoning = outputConverter.convert(
-    response.getResult().getOutput().getContent());
+    response.getResult().getOutput().getText());
 ----
 
 == Sample Controller
