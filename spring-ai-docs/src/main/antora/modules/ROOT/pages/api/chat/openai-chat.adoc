@@ -397,7 +397,7 @@ ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
             .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
             .build()));
 
-String text = response.getResult().getOutput().getContent(); // audio transcript
+String text = response.getResult().getOutput().getText(); // audio transcript
 
 byte[] waveAudio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray(); // audio data
 ----
@@ -492,7 +492,7 @@ Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
             .build());
 
 ChatResponse response = this.openAiChatModel.call(this.prompt);
-String content = this.response.getResult().getOutput().getContent();
+String content = this.response.getResult().getOutput().getText();
 
 MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 ----
@@ -523,7 +523,7 @@ val prompt = Prompt("how can I solve 8x + 7 = -23",
 		.build())
 
 val response = openAiChatModel.call(prompt)
-val content = response.getResult().getOutput().getContent()
+val content = response.getResult().getOutput().getText()
 
 val mathReasoning = outputConverter.convert(content)
 ----
