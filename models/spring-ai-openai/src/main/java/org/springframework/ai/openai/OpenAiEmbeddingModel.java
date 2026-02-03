@@ -189,6 +189,15 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			});
 	}
 
+	@Override
+	public int dimensions() {
+		if (this.embeddingDimensions.get() < 0 && this.defaultOptions.getModel() != null) {
+			this.embeddingDimensions.set(dimensions(this, this.defaultOptions.getModel(), "Hello World"));
+		}
+
+		return super.dimensions();
+	}
+
 	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {
 		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
 	}
