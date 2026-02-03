@@ -64,6 +64,7 @@ import org.springframework.util.Assert;
  * similar queries.
  *
  * @author Brian Sam-Bodden
+ * @author Soby Chacko
  */
 public final class DefaultSemanticCache implements SemanticCache {
 
@@ -303,6 +304,146 @@ public final class DefaultSemanticCache implements SemanticCache {
 	}
 
 	@Override
+	public void set(String query, ChatResponse response, @Nullable String contextHash) {
+		// Convert response to JSON for storage
+		String responseJson = this.gson.toJson(response);
+		Assert.state(response.getResult() != null, "expected a non-empty response");
+		String responseText = response.getResult().getOutput().getText();
+
+		// Create metadata map for the document
+		Map<String, Object> metadata = new HashMap<>();
+		metadata.put("response", responseJson);
+		metadata.put("response_text", Objects.requireNonNullElse(responseText, ""));
+		if (contextHash != null) {
+			metadata.put("context_hash", contextHash);
+		}
+
+		// Create document with query as text (for embedding) and response in metadata
+		Document document = Document.builder().text(query).metadata(metadata).build();
+
+		// Check for and remove any existing similar documents with the same context
+		List<Document> existing = findSimilarDocuments(query, contextHash);
+
+		// If similar document exists with same context, delete it first
+		if (!existing.isEmpty()) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Replacing similar document with id={} and score={}", existing.get(0).getId(),
+						existing.get(0).getScore());
+			}
+			this.vectorStore.delete(List.of(existing.get(0).getId()));
+		}
+
+		// Add new document to vector store
+		this.vectorStore.add(List.of(document));
+	}
+
+	@Override
+	public Optional<ChatResponse> get(String query, @Nullable String contextHash) {
+		List<Document> similar = findSimilarDocuments(query, contextHash);
+
+		if (similar.isEmpty()) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("No documents met the similarity threshold criteria for context: {}", contextHash);
+			}
+			return Optional.empty();
+		}
+
+		// Log results for debugging
+		if (logger.isDebugEnabled()) {
+			logger.debug("Query: '{}', context: '{}', found {} matches with similarity >= {}", query, contextHash,
+					similar.size(), this.similarityThreshold);
+			for (Document doc : similar) {
+				logger.debug("  - Document: id={}, score={}, context_hash={}", doc.getId(), doc.getScore(),
+						doc.getMetadata().getOrDefault("context_hash", "N/A"));
+			}
+		}
+
+		// Get the most similar document (already filtered by threshold and context)
+		Document mostSimilar = similar.get(0);
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Using most similar document: id={}, score={}", mostSimilar.getId(), mostSimilar.getScore());
+		}
+
+		// Get stored response JSON from metadata
+		String responseJson = (String) mostSimilar.getMetadata().get("response");
+		if (responseJson == null) {
+			return Optional.empty();
+		}
+
+		// Attempt to parse stored response
+		try {
+			ChatResponse response = this.gson.fromJson(responseJson, ChatResponse.class);
+			return Optional.of(response);
+		}
+		catch (JsonParseException e) {
+			return Optional.empty();
+		}
+	}
+
+	/**
+	 * Finds documents that are semantically similar to the query and optionally filtered
+	 * by context hash.
+	 * @param query the query text to search for
+	 * @param contextHash optional context hash for filtering (null means no filtering)
+	 * @return list of similar documents, potentially empty
+	 */
+	private List<Document> findSimilarDocuments(String query, @Nullable String contextHash) {
+		// Convert distance threshold to similarity threshold if needed
+		double effectiveThreshold = this.similarityThreshold;
+		if (this.useDistanceThreshold) {
+			effectiveThreshold = 1 - (this.similarityThreshold / 2);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Converting distance threshold {} to similarity threshold {}", this.similarityThreshold,
+						effectiveThreshold);
+			}
+		}
+
+		// Build filter expression for context hash if provided
+		String filterExpression = null;
+		if (contextHash != null) {
+			filterExpression = "context_hash == '" + contextHash + "'";
+		}
+
+		if (this.vectorStore instanceof RedisVectorStore redisVectorStore) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Using RedisVectorStore's native VECTOR_RANGE query with threshold {} and filter: {}",
+						effectiveThreshold, filterExpression);
+			}
+
+			if (filterExpression != null) {
+				// Use similarity search with filter for context isolation
+				return redisVectorStore.similaritySearch(SearchRequest.builder()
+					.query(query)
+					.topK(5)
+					.similarityThreshold(effectiveThreshold)
+					.filterExpression(filterExpression)
+					.build());
+			}
+			else {
+				// Use optimized VECTOR_RANGE query when no filter is needed
+				return redisVectorStore.searchByRange(query, effectiveThreshold);
+			}
+		}
+		else {
+			// Fallback to standard similarity search
+			if (logger.isDebugEnabled()) {
+				logger.debug("Falling back to standard similarity search");
+			}
+			SearchRequest.Builder requestBuilder = SearchRequest.builder()
+				.query(query)
+				.topK(5)
+				.similarityThreshold(effectiveThreshold);
+
+			if (filterExpression != null) {
+				requestBuilder.filterExpression(filterExpression);
+			}
+
+			return this.vectorStore.similaritySearch(requestBuilder.build());
+		}
+	}
+
+	@Override
 	public void clear() {
 		Optional<JedisPooled> nativeClient = this.vectorStore.getNativeClient();
 		if (nativeClient.isPresent()) {
@@ -404,7 +545,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 					.indexName(this.indexName)
 					.prefix(this.prefix)
 					.metadataFields(MetadataField.text("response"), MetadataField.text("response_text"),
-							MetadataField.numeric("ttl"))
+							MetadataField.numeric("ttl"), MetadataField.tag("context_hash"))
 					.initializeSchema(true)
 					.build();
 				if (this.vectorStore instanceof RedisVectorStore redisStore) {

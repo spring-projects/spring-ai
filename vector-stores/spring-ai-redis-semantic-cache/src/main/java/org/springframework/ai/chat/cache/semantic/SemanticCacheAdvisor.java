@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
  * </ul>
  *
  * @author Brian Sam-Bodden
+ * @author Soby Chacko
  */
 public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
@@ -114,11 +115,13 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	 */
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-		// Extracting the user's text from the prompt to use as cache key
-		String userText = extractUserTextFromRequest(request);
+		// Extract user text for semantic similarity search
+		String userText = extractUserText(request);
+		// Extract context hash for isolation (different system prompts = different cache)
+		String contextHash = extractContextHash(request);
 
-		// Check cache first
-		Optional<ChatResponse> cached = this.cache.get(userText);
+		// Check cache first (with context filtering)
+		Optional<ChatResponse> cached = this.cache.get(userText, contextHash);
 
 		if (cached.isPresent()) {
 			// Create a new ChatClientResponse with the cached response
@@ -128,9 +131,9 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 		// Cache miss - call the model
 		ChatClientResponse response = chain.nextCall(request);
 
-		// Cache the response
+		// Cache the response (with context hash for isolation)
 		if (response.chatResponse() != null) {
-			this.cache.set(userText, response.chatResponse());
+			this.cache.set(userText, response.chatResponse(), contextHash);
 		}
 
 		return response;
@@ -147,11 +150,13 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	 */
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
-		// Extracting the user's text from the prompt to use as cache key
-		String userText = extractUserTextFromRequest(request);
+		// Extract user text for semantic similarity search
+		String userText = extractUserText(request);
+		// Extract context hash for isolation (different system prompts = different cache)
+		String contextHash = extractContextHash(request);
 
-		// Check cache first
-		Optional<ChatResponse> cached = this.cache.get(userText);
+		// Check cache first (with context filtering)
+		Optional<ChatResponse> cached = this.cache.get(userText, contextHash);
 
 		if (cached.isPresent()) {
 			// Create a new ChatClientResponse with the cached response
@@ -161,11 +166,11 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 
 		// Cache miss - stream from model
 		return chain.nextStream(request).collectList().flatMapMany(responses -> {
-			// Cache the final aggregated response
+			// Cache the final aggregated response (with context hash for isolation)
 			if (!responses.isEmpty()) {
 				ChatClientResponse last = responses.get(responses.size() - 1);
 				if (last.chatResponse() != null) {
-					this.cache.set(userText, last.chatResponse());
+					this.cache.set(userText, last.chatResponse(), contextHash);
 				}
 			}
 			return Flux.fromIterable(responses);
@@ -189,12 +194,59 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	}
 
 	/**
-	 * Utility method to extract user text from a ChatClientRequest. Extracts the content
-	 * of the last user message from the prompt.
+	 * Extracts the user message text from the ChatClientRequest to use for semantic
+	 * similarity search.
+	 * @param request the chat client request containing the prompt
+	 * @return the user message text, or empty string if not present
 	 */
-	private String extractUserTextFromRequest(ChatClientRequest request) {
-		// Extract the last user message from the prompt
+	private String extractUserText(ChatClientRequest request) {
 		return Objects.requireNonNullElse(request.prompt().getUserMessage().getText(), "");
+	}
+
+	/**
+	 * Extracts a context hash from the ChatClientRequest for cache isolation. Different
+	 * system prompts will produce different hashes, ensuring that cached responses are
+	 * only returned for queries with matching context.
+	 * @param request the chat client request containing the prompt
+	 * @return the context hash if a system prompt is present, null otherwise
+	 */
+	private @Nullable String extractContextHash(ChatClientRequest request) {
+		var systemMessage = request.prompt().getSystemMessage();
+		if (systemMessage != null && systemMessage.getText() != null && !systemMessage.getText().isEmpty()) {
+			return computeHash(systemMessage.getText());
+		}
+		return null;
+	}
+
+	/**
+	 * Computes a deterministic hash for the given string. Uses the first 8 characters of
+	 * the SHA-256 hash to create a compact but unique identifier.
+	 * @param text the text to hash
+	 * @return an 8-character hash string
+	 */
+	private String computeHash(String text) {
+		try {
+			java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+			StringBuilder hexString = new StringBuilder();
+			// Take first 4 bytes of SHA-256 hash → 8 hex characters
+			// (4 billion possible values - sufficient for context differentiation)
+			for (int i = 0; i < 4; i++) {
+				// 0xff mask converts signed byte (-128..127) to unsigned (0..255)
+				// ensuring correct hex representation (e.g., byte -1 → "ff", not
+				// "ffffffff")
+				String hex = Integer.toHexString(0xff & hash[i]);
+				if (hex.length() == 1) {
+					hexString.append('0');
+				}
+				hexString.append(hex);
+			}
+			return hexString.toString();
+		}
+		catch (java.security.NoSuchAlgorithmException e) {
+			// SHA-256 is always available in Java, but fallback to hashCode if needed
+			return Integer.toHexString(text.hashCode());
+		}
 	}
 
 	/**

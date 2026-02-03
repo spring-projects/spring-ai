@@ -68,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * behavior (KNN vs VECTOR_RANGE) - Automatic caching through advisor pattern
  *
  * @author Brian Sam-Bodden
+ * @author Soby Chacko
  */
 @Testcontainers
 @SpringBootTest(classes = SemanticCacheAdvisorIT.TestApplication.class)
@@ -572,6 +573,223 @@ class SemanticCacheAdvisorIT {
 		String similarQuery = "Explain machine learning to me";
 		this.semanticCache.get(similarQuery);
 		// We don't assert presence/absence as it depends on embedding similarity
+	}
+
+	@Test
+	void testCacheIsolationBySystemPrompt() {
+		// Test that different system prompts result in different cache entries
+		// even for the same user question (GH-5256)
+		String userQuestion = "What is the capital of France?";
+		String systemPromptFormal = "You are a formal geography teacher. Answer concisely.";
+		String systemPromptPirate = "You are a pirate. Answer like a pirate would.";
+
+		// First query with formal system prompt
+		ChatResponse formalResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt()
+			.system(systemPromptFormal)
+			.user(userQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(formalResponse).isNotNull();
+		String formalText = formalResponse.getResult().getOutput().getText();
+
+		// Second query with pirate system prompt - should be a cache MISS
+		// because system prompt is different
+		ChatResponse pirateResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt()
+			.system(systemPromptPirate)
+			.user(userQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(pirateResponse).isNotNull();
+		String pirateText = pirateResponse.getResult().getOutput().getText();
+
+		// The responses should be different - pirate should have pirate-like language
+		// and formal should be more professional
+		assertThat(pirateText).isNotEqualTo(formalText);
+
+		// Third query with formal system prompt again - should be a cache HIT
+		ChatResponse formalAgainResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt()
+			.system(systemPromptFormal)
+			.user(userQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(formalAgainResponse).isNotNull();
+		String formalAgainText = formalAgainResponse.getResult().getOutput().getText();
+
+		// Should get the same cached response as the first formal query
+		assertThat(formalAgainText).isEqualTo(formalText);
+
+		// Fourth query with pirate system prompt again - should be a cache HIT
+		ChatResponse pirateAgainResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt()
+			.system(systemPromptPirate)
+			.user(userQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(pirateAgainResponse).isNotNull();
+		String pirateAgainText = pirateAgainResponse.getResult().getOutput().getText();
+
+		// Should get the same cached response as the first pirate query
+		assertThat(pirateAgainText).isEqualTo(pirateText);
+	}
+
+	@Test
+	void testCacheWithNoSystemPrompt() {
+		// Test that queries without system prompt still work correctly
+		String userQuestion = "What is 2 + 2?";
+
+		// First query without system prompt
+		ChatResponse firstResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(userQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(firstResponse).isNotNull();
+		String firstText = firstResponse.getResult().getOutput().getText();
+
+		// Second query without system prompt - should be a cache HIT
+		ChatResponse secondResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(userQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(secondResponse).isNotNull();
+		String secondText = secondResponse.getResult().getOutput().getText();
+
+		// Should get the same cached response
+		assertThat(secondText).isEqualTo(firstText);
+	}
+
+	@Test
+	void testSemanticallySimilarQuestionsWithSameContext() {
+		// Test that semantically similar questions with the SAME system prompt
+		// correctly hit the cache (the core value proposition of semantic caching)
+		String systemPrompt = "You are a helpful geography assistant. Be concise.";
+
+		// First query
+		String originalQuestion = "What is the capital of Japan?";
+		ChatResponse originalResponse = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt()
+			.system(systemPrompt)
+			.user(originalQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		assertThat(originalResponse).isNotNull();
+		String originalText = originalResponse.getResult().getOutput().getText();
+		assertThat(originalText).containsIgnoringCase("Tokyo");
+
+		// Semantically similar questions - should hit cache with same context
+		String[] similarQuestions = { "Tell me Japan's capital city", "What city is the capital of Japan?",
+				"Japan's capital is what?" };
+
+		for (String similarQuestion : similarQuestions) {
+			ChatResponse similarResponse = ChatClient.builder(this.openAiChatModel)
+				.build()
+				.prompt()
+				.system(systemPrompt)
+				.user(similarQuestion)
+				.advisors(this.cacheAdvisor)
+				.call()
+				.chatResponse();
+
+			assertThat(similarResponse).isNotNull();
+			// With same context, semantically similar questions should return cached
+			// response
+			assertThat(similarResponse.getResult().getOutput().getText())
+				.as("Similar question '%s' should hit cache with same system prompt", similarQuestion)
+				.containsIgnoringCase("Tokyo");
+		}
+	}
+
+	@Test
+	void testContextHashStoredInMetadata() {
+		// Test that the context_hash is actually stored in document metadata
+		String systemPrompt = "You are a test assistant.";
+		String userQuestion = "What is metadata?";
+
+		// Make a cached request
+		ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt()
+			.system(systemPrompt)
+			.user(userQuestion)
+			.advisors(this.cacheAdvisor)
+			.call()
+			.chatResponse();
+
+		// Query the underlying vector store directly to verify metadata
+		List<Document> documents = this.semanticCache.getStore()
+			.similaritySearch(SearchRequest.builder().query(userQuestion).topK(1).build());
+
+		assertThat(documents).isNotEmpty();
+		Document cachedDoc = documents.get(0);
+
+		// Verify context_hash is stored in metadata
+		assertThat(cachedDoc.getMetadata()).containsKey("context_hash");
+		String storedHash = (String) cachedDoc.getMetadata().get("context_hash");
+		assertThat(storedHash).isNotNull().hasSize(8); // 8 hex chars from SHA-256
+	}
+
+	@Test
+	void testDirectCacheApiWithContext() {
+		// Test the SemanticCache API directly (not through advisor)
+		String query = "Direct API test query";
+		String contextHash1 = "context1";
+		String contextHash2 = "context2";
+
+		// Create a mock response
+		ChatResponse mockResponse1 = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt("Say 'Response One'")
+			.call()
+			.chatResponse();
+
+		ChatResponse mockResponse2 = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt("Say 'Response Two'")
+			.call()
+			.chatResponse();
+
+		// Store with different contexts
+		this.semanticCache.set(query, mockResponse1, contextHash1);
+		this.semanticCache.set(query, mockResponse2, contextHash2);
+
+		// Retrieve with context1 - should get response1
+		Optional<ChatResponse> retrieved1 = this.semanticCache.get(query, contextHash1);
+		assertThat(retrieved1).isPresent();
+		assertThat(retrieved1.get().getResult().getOutput().getText())
+			.isEqualTo(mockResponse1.getResult().getOutput().getText());
+
+		// Retrieve with context2 - should get response2
+		Optional<ChatResponse> retrieved2 = this.semanticCache.get(query, contextHash2);
+		assertThat(retrieved2).isPresent();
+		assertThat(retrieved2.get().getResult().getOutput().getText())
+			.isEqualTo(mockResponse2.getResult().getOutput().getText());
+
+		// Retrieve with unknown context - should be empty
+		Optional<ChatResponse> retrieved3 = this.semanticCache.get(query, "unknown_context");
+		assertThat(retrieved3).isEmpty();
 	}
 
 	@Test

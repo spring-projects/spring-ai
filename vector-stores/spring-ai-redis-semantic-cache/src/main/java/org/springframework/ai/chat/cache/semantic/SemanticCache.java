@@ -19,6 +19,8 @@ package org.springframework.ai.chat.cache.semantic;
 import java.time.Duration;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.vectorstore.VectorStore;
 
@@ -33,6 +35,7 @@ import org.springframework.ai.vectorstore.VectorStore;
  * <li>Store chat responses with their associated queries</li>
  * <li>Retrieve responses for semantically similar queries</li>
  * <li>Support time-based expiration of cached entries</li>
+ * <li>Support context-based isolation (e.g., different system prompts)</li>
  * <li>Clear the entire cache</li>
  * </ul>
  *
@@ -40,6 +43,7 @@ import org.springframework.ai.vectorstore.VectorStore;
  * Implementations should ensure thread-safety and proper resource management.
  *
  * @author Brian Sam-Bodden
+ * @author Soby Chacko
  */
 public interface SemanticCache {
 
@@ -51,6 +55,19 @@ public interface SemanticCache {
 	 * @param response The chat response associated with the query
 	 */
 	void set(String query, ChatResponse response);
+
+	/**
+	 * Stores a query and its corresponding chat response in the cache with an optional
+	 * context identifier for isolation. The context hash ensures that cached responses
+	 * are only returned for queries with matching context (e.g., same system prompt).
+	 * @param query The original query text to be cached
+	 * @param response The chat response associated with the query
+	 * @param contextHash Optional hash identifier for context isolation (e.g., system
+	 * prompt hash). If null, behaves the same as {@link #set(String, ChatResponse)}.
+	 */
+	default void set(String query, ChatResponse response, @Nullable String contextHash) {
+		set(query, response);
+	}
 
 	/**
 	 * Stores a query and response in the cache with a specified time-to-live duration.
@@ -75,6 +92,20 @@ public interface SemanticCache {
 	 * similarity threshold, empty Optional otherwise
 	 */
 	Optional<ChatResponse> get(String query);
+
+	/**
+	 * Retrieves a cached response for a semantically similar query, filtered by context.
+	 * Only returns responses that were stored with the same context hash, ensuring
+	 * isolation between different contexts (e.g., different system prompts).
+	 * @param query The query to find similar responses for
+	 * @param contextHash Optional hash identifier for context filtering. If null, behaves
+	 * the same as {@link #get(String)}.
+	 * @return Optional containing the most similar cached response if found, matches
+	 * context, and meets similarity threshold; empty Optional otherwise
+	 */
+	default Optional<ChatResponse> get(String query, @Nullable String contextHash) {
+		return get(query);
+	}
 
 	/**
 	 * Removes all entries from the cache. This operation should be atomic and
