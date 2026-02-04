@@ -95,7 +95,7 @@ To run a specific integration test allowing for up to two attempts to succeed.  
 ```
 
 ### Integration Tests
-There are many integration tests ,so it often isn't realistic to run them all at once.
+There are many integration tests, so it often isn't realistic to run them all at once.
 
 A quick pass through the most important pathways that runs integration tests for
 
@@ -111,7 +111,7 @@ A full integration test is done twice a day in the [Spring AI Integration Test R
 One way to run integration tests on part of the code is to first do a quick compile and install of the project
 
 ```shell
-./mvnw spring-javaformat:apply clean install -DskipTests -Dmaven.javadoc.skip=true
+./mvnw clean install -DskipTests -Dmaven.javadoc.skip=true
 ```
 Then run the integration test for a specific module using the `-pl` option
 
@@ -130,10 +130,9 @@ The docs are then in the directory `spring-ai-docs/target/antora/site/index.html
 
 ### Formatting the Source Code
 
-To reformat using the [java-format plugin](https://github.com/spring-io/spring-javaformat)
-```shell
-./mvnw spring-javaformat:apply
-```
+The code is formatted using the [java-format plugin](https://github.com/spring-io/spring-javaformat) as part of the build. Correct
+formatting is enforced by CI.
+
 ### Updating License Headers
 
 To update the year on license headers using the [license-maven-plugin](https://oss.carbou.me/license-maven-plugin/#goals)
@@ -145,13 +144,6 @@ To update the year on license headers using the [license-maven-plugin](https://o
 To check javadocs using the [javadoc:javadoc](https://maven.apache.org/plugins/maven-javadoc-plugin/)
 ```shell
 ./mvnw javadoc:javadoc -Pjavadoc
-```
-### Enabling Checkstyle
-
-Checkstyles are currently disabled, but you can enable them by doing the following:
-
-```shell
-./mvnw clean package -DskipTests -Ddisable.checks=false
 ```
 
 #### Source Code Style
