@@ -48,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for observation instrumentation in {@link OpenAiSdkChatModel}.
  *
  * @author Julien Dubois
+ * @author Soby Chacko
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -144,9 +145,10 @@ public class OpenAiSdkChatModelObservationIT {
 
 		@Bean
 		public OpenAiSdkChatModel openAiChatModel(TestObservationRegistry observationRegistry) {
-			return new OpenAiSdkChatModel(
-					OpenAiSdkChatOptions.builder().model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL).build(),
-					observationRegistry);
+			return OpenAiSdkChatModel.builder()
+				.options(OpenAiSdkChatOptions.builder().model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL).build())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}
