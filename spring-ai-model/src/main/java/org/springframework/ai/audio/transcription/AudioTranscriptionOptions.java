@@ -16,6 +16,8 @@
 
 package org.springframework.ai.audio.transcription;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
 
 /**
@@ -25,6 +27,6 @@ import org.springframework.ai.model.ModelOptions;
  */
 public interface AudioTranscriptionOptions extends ModelOptions {
 
-	String getModel();
+	@Nullable String getModel();
 
 }

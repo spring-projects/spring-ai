@@ -74,19 +74,8 @@ public class MistralAiModerationModel implements ModerationModel {
 
 			var instructions = moderationPrompt.getInstructions().getText();
 
-			var moderationRequest = new MistralAiModerationRequest(instructions);
-
-			if (this.defaultOptions != null) {
-				moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
-						MistralAiModerationRequest.class);
-			}
-			else {
-				// moderationPrompt.getOptions() never null but model can be empty,
-				// cause
-				// by ModerationPrompt constructor
-				moderationRequest = ModelOptionsUtils.merge(toMistralAiModerationOptions(moderationPrompt.getOptions()),
-						moderationRequest, MistralAiModerationRequest.class);
-			}
+			var moderationRequest = ModelOptionsUtils.merge(this.defaultOptions,
+					new MistralAiModerationRequest(instructions), MistralAiModerationRequest.class);
 
 			var moderationResponseEntity = this.mistralAiModerationApi.moderate(moderationRequest);
 

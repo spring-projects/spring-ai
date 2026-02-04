@@ -520,20 +520,18 @@ public class AzureOpenAiChatModel implements ChatModel {
 
 		AzureOpenAiChatOptions updatedRuntimeOptions;
 
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
-						ToolCallingChatOptions.class, AzureOpenAiChatOptions.class);
-			}
-			else {
-				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						AzureOpenAiChatOptions.class);
-			}
-			options = this.merge(updatedRuntimeOptions, options);
-
-			// Add the tool definitions to the request's tools parameter.
-			functionsForThisRequest.addAll(this.toolCallingManager.resolveToolDefinitions(updatedRuntimeOptions));
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+					AzureOpenAiChatOptions.class);
 		}
+		else {
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					AzureOpenAiChatOptions.class);
+		}
+		options = this.merge(updatedRuntimeOptions, options);
+
+		// Add the tool definitions to the request's tools parameter.
+		functionsForThisRequest.addAll(this.toolCallingManager.resolveToolDefinitions(updatedRuntimeOptions));
 
 		// Add the enabled functions definitions to the request's tools parameter.
 		if (!CollectionUtils.isEmpty(functionsForThisRequest)) {
@@ -655,15 +653,13 @@ public class AzureOpenAiChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		AzureOpenAiChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						AzureOpenAiChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						AzureOpenAiChatOptions.class);
-			}
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+					AzureOpenAiChatOptions.class);
+		}
+		else {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					AzureOpenAiChatOptions.class);
 		}
 
 		// Define request options by merging runtime options and default options

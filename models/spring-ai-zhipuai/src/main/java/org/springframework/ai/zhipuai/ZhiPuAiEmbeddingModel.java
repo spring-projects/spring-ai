@@ -203,11 +203,8 @@ public class ZhiPuAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
-		ZhiPuAiEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					ZhiPuAiEmbeddingOptions.class);
-		}
+		ZhiPuAiEmbeddingOptions runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(),
+				EmbeddingOptions.class, ZhiPuAiEmbeddingOptions.class);
 
 		// Define request options by merging runtime options and default options
 		ZhiPuAiEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,

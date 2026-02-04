@@ -182,11 +182,8 @@ public class OpenAiImageModel implements ImageModel {
 
 	private ImagePrompt buildRequestImagePrompt(ImagePrompt imagePrompt) {
 		// Process runtime options
-		OpenAiImageOptions runtimeOptions = null;
-		if (imagePrompt.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(imagePrompt.getOptions(), ImageOptions.class,
-					OpenAiImageOptions.class);
-		}
+		OpenAiImageOptions runtimeOptions = ModelOptionsUtils.copyToTarget(imagePrompt.getOptions(), ImageOptions.class,
+				OpenAiImageOptions.class);
 
 		OpenAiImageOptions requestOptions = runtimeOptions == null ? this.defaultOptions : OpenAiImageOptions.builder()
 			// Handle portable image options

@@ -210,7 +210,6 @@ public class AnthropicChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		Assert.state(prompt.getOptions() != null, "prompt.getOptions() must not be null");
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
@@ -269,9 +268,7 @@ public class AnthropicChatModel implements ChatModel {
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse);
 				ChatResponse chatResponse = toChatResponse(chatCompletionResponse, accumulatedUsage);
 
-				ChatOptions options = prompt.getOptions();
-				Assert.notNull(options, "prompt.getOptions() must not be null");
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, chatResponse)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 
 					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
 						// FIXME: bounded elastic needs to be used since tool calling
@@ -572,7 +569,7 @@ public class AnthropicChatModel implements ChatModel {
 	private HttpHeaders getAdditionalHttpHeaders(Prompt prompt) {
 
 		Map<String, String> headers = new HashMap<>(this.defaultOptions.getHttpHeaders());
-		if (prompt.getOptions() != null && prompt.getOptions() instanceof AnthropicChatOptions chatOptions) {
+		if (prompt.getOptions() instanceof AnthropicChatOptions chatOptions) {
 			headers.putAll(chatOptions.getHttpHeaders());
 		}
 		HttpHeaders httpHeaders = new HttpHeaders();
@@ -583,15 +580,13 @@ public class AnthropicChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		AnthropicChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						AnthropicChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						AnthropicChatOptions.class);
-			}
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+					AnthropicChatOptions.class);
+		}
+		else {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					AnthropicChatOptions.class);
 		}
 
 		// Define request options by merging runtime options and default options
@@ -664,8 +659,8 @@ public class AnthropicChatModel implements ChatModel {
 
 		// Get caching strategy and options from the request
 		AnthropicChatOptions requestOptions = null;
-		if (prompt.getOptions() instanceof AnthropicChatOptions) {
-			requestOptions = (AnthropicChatOptions) prompt.getOptions();
+		if (prompt.getOptions() instanceof AnthropicChatOptions anthropicOptions) {
+			requestOptions = anthropicOptions;
 		}
 
 		AnthropicCacheOptions cacheOptions = requestOptions != null ? requestOptions.getCacheOptions()
