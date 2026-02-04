@@ -1,0 +1,145 @@
+= Design Document 01 - Null Safety
+
+== Problems
+The "billion dollar mistake" is well known, and Spring AI 2.0 aligns with the rest of the Spring portfolio in its use of JSpecify annotations to express (non-)nullability of its APIs.
+
+This document is a quick reference for contributors to learn how to properly annotate the code base with JSpecify annotations.
+
+For further reference, please consult the following:
+
+* JSpecify https://jspecify.dev/docs/user-guide/[user-guide]
+* Spring https://spring.io/blog/2025/03/10/null-safety-in-spring-apps-with-jspecify-and-null-away[Blog Post] about null safety
+* https://github.com/uber/NullAway[NullAway] and https://errorprone.info/[ErrorProne]
+
+== Solution
+Spring AI uses JSpecify + NullAway + ErrorProne to enforce nullability checks.
+
+For consistency in the Spring AI codebase, the granularity at which null safety is enabled is the package, and only production code is annotated (test code is not).
+Any new package should be annotated with `@NullMarked`, like so:
+
+[source,java]
+----
+import org.jspecify.annotations.NullMarked;
+
+@NullMarked
+package org.springframework.ai.foo;
+----
+From there on, any element in that package assumes non nullability by default (for its own members).
+
+NOTE: As a reminder, packages in java are NOT hierarchical. This means that `org.springframework.ai.foo.bar` is NOT a "sub-package" of `org.springframework.ai.foo` and thus needs annotating on its own.
+
+Annotating the codebase only gives hints to the compiler that something can/cannot be null. But nothing prevents consuming code to pass `null` if the build infrastructure of consuming code does not enforce JSpecify semantics. To protect users from such errors, it is still advisable to assert nullability as soon as possible, for example in object constructors:
+[source, java]
+----
+import org.springframework.util.Assert;
+
+// in a @NullMarked package
+public class MyThing {
+
+	// bar and foo are assumed to be non-null
+    public MyThing(String bar, Foo foo) {
+        Assert.notNull(bar, "bar should not be null");
+        Assert.notNull(foo, "foo should not be null");
+        this.bar = bar;
+        this.foo = foo;
+        ...
+    }
+}
+----
+
+NOTE: `Assert.notNull()` throws an `IllegalArgumentException` when the provided value is `null`. As such, it is applicable for _e.g._ constructors where indeed tested values are _parameters_ to the method. For other use cases, _e.g._ builders, prefer to use `Assert.state(something != null, "message")`.
+
+When a value _could_ be `null`, annotate it with `@Nullable`. This applies to parameters, fields and even generic components (see below).
+
+[source, java]
+----
+import org.springframework.util.Assert;
+import org.jspecify.annotations.Nullable;
+
+// in a @NullMarked package
+public class MyThing {
+
+    // bar and foo are assumed to be non-null
+    public MyThing(@Nullable String bar, Foo foo) {
+        Assert.notNull(foo, "foo should not be null");
+        this.bar = bar;
+        this.foo = foo;
+        ...
+    }
+}
+----
+
+As a reminder, there is no need to annotate `Foo` as `@NonNull`, since it is the default once the enclosing scope (in our case the package) is annotated with `@NullMarked`.
+
+It is important to understand that the thing being annotated is the so-called https://jspecify.dev/docs/user-guide/#type-use-annotation-syntax[type-use], and not the field or method itself. What this means is that for fields, the syntax to use is
+[source, java]
+----
+// in a @NullMarked package
+public class MyThing {
+
+    private @Nullable Foo foo;
+}
+----
+
+and not
+[source, java]
+----
+// in a @NullMarked package
+public class MyThing {
+
+    @Nullable private Foo foo;
+}
+----
+
+Similarly, for method return types, use
+[source, java]
+----
+// in a @NullMarked package
+public class MyThing {
+
+    public @Nullable Foo something() {
+        ...
+        return null;
+    }
+}
+----
+and not
+[source, java]
+----
+// in a @NullMarked package
+public class MyThing {
+
+    @Nullable
+    public Foo something() {
+        ...
+        return null;
+    }
+}
+----
+
+As a rule of thumb, the annotation should be placed closest to the thing it expresses the nullability of:
+
+* `java.util.Map.@Nullable Entry` renders the _entry_ nullable (not the map),
+* `@Nullable String[]` is a (non-null) array of nullable Strings,
+* `String @Nullable []` is a nullable array of (non-null) Strings,
+* _etc._
+
+=== Nullability and API design considerations
+It is generally better to prefer non-nullable data and, failing to do that, to control the reach of nullable data. What this means in practice is that it is commonly ok to
+
+* initialize collections and arrays to empty structures instead of `null`. This allows iteration without having to think whether to handle `null` or not,
+* if B depends on A, it is better to prevent `null` from "escaping" out of A. The burden to check for `null` should reside on A, not on B, if possible.
+
+=== Nullability and `@ConfigurationProperties`
+Spring Boot `@ConfigurationProperties` classes should be annotated using the following rationale, given that Boot will never inject a `null` value as a property:
+
+* if the property field is initialized with a default value, then a `null` value can never creep in. Thus nothing needs to be done (non nullable by default),
+* if the property field does *not* have a default value, then obviously the getter needs to also be annotated with `@Nullable` (and the configuration class that uses the `@ConfigurationProperties` class is responsible for checking the value). Even though the setter will never be invoked with `null`, our practice is to annotate the setter as `@Nullable` nevertheless, because the symetry between getter and setter allows Kotlin to correctly mark the property as nullable.
+
+=== Nullability and the Builder pattern
+TODO
+
+=== User Impact
+Checks are only performed in scopes that are annotated as `@NullMarked`.
+
+What this means is that if consuming code does not leverage JSpecify annotations (both via annotating the consuming code and configuring the build to use tools like Error Prone + NullAway), then there is no impact whatsoever.
