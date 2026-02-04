@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Bean;
  * Context configuration for OpenAI Java SDK tests.
  *
  * @author Julien Dubois
+ * @author Soby Chacko
  */
 @SpringBootConfiguration
 public class OpenAiSdkTestConfiguration {
@@ -39,7 +40,7 @@ public class OpenAiSdkTestConfiguration {
 
 	@Bean
 	public OpenAiSdkChatModel openAiChatModel() {
-		return new OpenAiSdkChatModel();
+		return OpenAiSdkChatModel.builder().build();
 	}
 
 }

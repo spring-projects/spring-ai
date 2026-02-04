@@ -41,6 +41,7 @@ import org.springframework.context.annotation.Bean;
  * Chat {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ OpenAiSdkConnectionProperties.class, OpenAiSdkChatProperties.class })
@@ -63,9 +64,15 @@ public class OpenAiSdkChatAutoConfiguration {
 
 		OpenAIClientAsync openAIClientAsync = this.openAiClientAsync(resolvedConnectionProperties);
 
-		var chatModel = new OpenAiSdkChatModel(openAIClient, openAIClientAsync, chatProperties.getOptions(),
-				toolCallingManager, observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new));
+		var chatModel = OpenAiSdkChatModel.builder()
+			.openAiClient(openAIClient)
+			.openAiClientAsync(openAIClientAsync)
+			.options(chatProperties.getOptions())
+			.toolCallingManager(toolCallingManager)
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.toolExecutionEligibilityPredicate(
+					openAiToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
+			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 

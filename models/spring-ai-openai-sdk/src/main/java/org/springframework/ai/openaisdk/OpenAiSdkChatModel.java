@@ -106,6 +106,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Julien Dubois
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class OpenAiSdkChatModel implements ChatModel {
 
@@ -132,8 +133,18 @@ public class OpenAiSdkChatModel implements ChatModel {
 	private ChatModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
-	 * Creates a new OpenAiSdkChatModel with default options.
+	 * Creates a new builder for {@link OpenAiSdkChatModel}.
+	 * @return a new builder instance
 	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Creates a new OpenAiSdkChatModel with default options.
+	 * @deprecated Use {@link #builder()} instead
+	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel() {
 		this(null, null, null, null, null, null);
 	}
@@ -141,7 +152,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	/**
 	 * Creates a new OpenAiSdkChatModel with the given options.
 	 * @param options the chat options
+	 * @deprecated Use {@link #builder()} instead
 	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel(OpenAiSdkChatOptions options) {
 		this(null, null, options, null, null, null);
 	}
@@ -150,7 +163,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * Creates a new OpenAiSdkChatModel with the given options and observation registry.
 	 * @param options the chat options
 	 * @param observationRegistry the observation registry
+	 * @deprecated Use {@link #builder()} instead
 	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel(OpenAiSdkChatOptions options, ObservationRegistry observationRegistry) {
 		this(null, null, options, null, observationRegistry, null);
 	}
@@ -161,7 +176,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param options the chat options
 	 * @param toolCallingManager the tool calling manager
 	 * @param observationRegistry the observation registry
+	 * @deprecated Use {@link #builder()} instead
 	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel(OpenAiSdkChatOptions options, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry) {
 		this(null, null, options, toolCallingManager, observationRegistry, null);
@@ -171,7 +188,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * Creates a new OpenAiSdkChatModel with the given OpenAI clients.
 	 * @param openAIClient the synchronous OpenAI client
 	 * @param openAiClientAsync the asynchronous OpenAI client
+	 * @deprecated Use {@link #builder()} instead
 	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel(OpenAIClient openAIClient, OpenAIClientAsync openAiClientAsync) {
 		this(openAIClient, openAiClientAsync, null, null, null, null);
 	}
@@ -181,7 +200,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param openAIClient the synchronous OpenAI client
 	 * @param openAiClientAsync the asynchronous OpenAI client
 	 * @param options the chat options
+	 * @deprecated Use {@link #builder()} instead
 	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel(OpenAIClient openAIClient, OpenAIClientAsync openAiClientAsync,
 			OpenAiSdkChatOptions options) {
 		this(openAIClient, openAiClientAsync, options, null, null, null);
@@ -194,7 +215,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param openAiClientAsync the asynchronous OpenAI client
 	 * @param options the chat options
 	 * @param observationRegistry the observation registry
+	 * @deprecated Use {@link #builder()} instead
 	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel(OpenAIClient openAIClient, OpenAIClientAsync openAiClientAsync,
 			OpenAiSdkChatOptions options, ObservationRegistry observationRegistry) {
 		this(openAIClient, openAiClientAsync, options, null, observationRegistry, null);
@@ -209,7 +232,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param observationRegistry the observation registry
 	 * @param toolExecutionEligibilityPredicate the predicate to determine tool execution
 	 * eligibility
+	 * @deprecated Use {@link #builder()} instead
 	 */
+	@Deprecated(forRemoval = true, since = "2.0.0-M3")
 	public OpenAiSdkChatModel(OpenAIClient openAiClient, OpenAIClientAsync openAiClientAsync,
 			OpenAiSdkChatOptions options, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry,
@@ -1314,6 +1339,99 @@ public class OpenAiSdkChatModel implements ChatModel {
 
 		AssistantMessage.ToolCall build() {
 			return new AssistantMessage.ToolCall(this.id, this.type, this.name, this.arguments.toString());
+		}
+
+	}
+
+	/**
+	 * Builder for creating {@link OpenAiSdkChatModel} instances.
+	 */
+	public static final class Builder {
+
+		private OpenAIClient openAiClient;
+
+		private OpenAIClientAsync openAiClientAsync;
+
+		private OpenAiSdkChatOptions options;
+
+		private ToolCallingManager toolCallingManager;
+
+		private ObservationRegistry observationRegistry;
+
+		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+
+		private Builder() {
+		}
+
+		/**
+		 * Sets the synchronous OpenAI client.
+		 * @param openAiClient the synchronous client
+		 * @return this builder
+		 */
+		public Builder openAiClient(OpenAIClient openAiClient) {
+			this.openAiClient = openAiClient;
+			return this;
+		}
+
+		/**
+		 * Sets the asynchronous OpenAI client.
+		 * @param openAiClientAsync the asynchronous client
+		 * @return this builder
+		 */
+		public Builder openAiClientAsync(OpenAIClientAsync openAiClientAsync) {
+			this.openAiClientAsync = openAiClientAsync;
+			return this;
+		}
+
+		/**
+		 * Sets the chat options.
+		 * @param options the chat options
+		 * @return this builder
+		 */
+		public Builder options(OpenAiSdkChatOptions options) {
+			this.options = options;
+			return this;
+		}
+
+		/**
+		 * Sets the tool calling manager.
+		 * @param toolCallingManager the tool calling manager
+		 * @return this builder
+		 */
+		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		/**
+		 * Sets the observation registry for metrics and tracing.
+		 * @param observationRegistry the observation registry
+		 * @return this builder
+		 */
+		public Builder observationRegistry(ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
+		}
+
+		/**
+		 * Sets the predicate to determine tool execution eligibility.
+		 * @param toolExecutionEligibilityPredicate the predicate
+		 * @return this builder
+		 */
+		public Builder toolExecutionEligibilityPredicate(
+				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
+			return this;
+		}
+
+		/**
+		 * Builds a new {@link OpenAiSdkChatModel} instance.
+		 * @return the configured chat model
+		 */
+		@SuppressWarnings("deprecation")
+		public OpenAiSdkChatModel build() {
+			return new OpenAiSdkChatModel(this.openAiClient, this.openAiClientAsync, this.options,
+					this.toolCallingManager, this.observationRegistry, this.toolExecutionEligibilityPredicate);
 		}
 
 	}
