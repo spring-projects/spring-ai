@@ -572,7 +572,9 @@ var chatOptions = OpenAiSdkChatOptions.builder()
     .apiKey(System.getenv("OPENAI_API_KEY"))
     .build();
 
-var chatModel = new OpenAiSdkChatModel(chatOptions);
+var chatModel = OpenAiSdkChatModel.builder()
+    .options(chatOptions)
+    .build();
 
 ChatResponse response = chatModel.call(
     new Prompt("Generate the names of 5 famous pirates."));
@@ -596,7 +598,9 @@ var chatOptions = OpenAiSdkChatOptions.builder()
     .azure(true)  // Enables Microsoft Foundry mode
     .build();
 
-var chatModel = new OpenAiSdkChatModel(chatOptions);
+var chatModel = OpenAiSdkChatModel.builder()
+    .options(chatOptions)
+    .build();
 ----
 
 TIP: Microsoft Foundry supports passwordless authentication. Add the `com.azure:azure-identity` dependency to your project. If you don't provide an API key, the implementation will automatically attempt to use Azure credentials from your environment.
@@ -614,7 +618,9 @@ var chatOptions = OpenAiSdkChatOptions.builder()
     .githubModels(true)
     .build();
 
-var chatModel = new OpenAiSdkChatModel(chatOptions);
+var chatModel = OpenAiSdkChatModel.builder()
+    .options(chatOptions)
+    .build();
 ----
 
 == Key Differences from Spring AI OpenAI
