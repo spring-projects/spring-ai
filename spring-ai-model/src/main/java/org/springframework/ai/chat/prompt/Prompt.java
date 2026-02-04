@@ -46,7 +46,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	private @Nullable ChatOptions chatOptions;
+	private final ChatOptions chatOptions;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -57,24 +57,25 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt(List<Message> messages) {
-		this(messages, null);
+		this(messages, ChatOptions.builder().build());
 	}
 
 	public Prompt(Message... messages) {
-		this(Arrays.asList(messages), null);
+		this(Arrays.asList(messages), ChatOptions.builder().build());
 	}
 
-	public Prompt(String contents, @Nullable ChatOptions chatOptions) {
+	public Prompt(String contents, ChatOptions chatOptions) {
 		this(new UserMessage(contents), chatOptions);
 	}
 
-	public Prompt(Message message, @Nullable ChatOptions chatOptions) {
+	public Prompt(Message message, ChatOptions chatOptions) {
 		this(Collections.singletonList(message), chatOptions);
 	}
 
-	public Prompt(List<Message> messages, @Nullable ChatOptions chatOptions) {
+	public Prompt(List<Message> messages, ChatOptions chatOptions) {
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
+		Assert.notNull(chatOptions, "chatOptions cannot be null");
 		this.messages = messages;
 		this.chatOptions = chatOptions;
 	}
@@ -88,7 +89,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	@Override
-	public @Nullable ChatOptions getOptions() {
+	public ChatOptions getOptions() {
 		return this.chatOptions;
 	}
 
@@ -189,7 +190,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	public Prompt copy() {
-		return new Prompt(instructionsCopy(), null == this.chatOptions ? null : this.chatOptions.copy());
+		return new Prompt(instructionsCopy(), this.chatOptions.copy());
 	}
 
 	private List<Message> instructionsCopy() {
@@ -243,7 +244,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 			// and add it as the first item in the list.
 			messagesCopy.add(0, systemMessageAugmenter.apply(new SystemMessage("")));
 		}
-		return new Prompt(messagesCopy, null == this.chatOptions ? null : this.chatOptions.copy());
+		return new Prompt(messagesCopy, this.chatOptions.copy());
 	}
 
 	/**
@@ -273,7 +274,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 			}
 		}
 
-		return new Prompt(messagesCopy, null == this.chatOptions ? null : this.chatOptions.copy());
+		return new Prompt(messagesCopy, this.chatOptions.copy());
 	}
 
 	/**
@@ -327,7 +328,8 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 		public Prompt build() {
 			Assert.state(this.messages != null, "either messages or content needs to be set");
-			return new Prompt(this.messages, this.chatOptions);
+			return new Prompt(this.messages,
+					(this.chatOptions != null ? this.chatOptions : ChatOptions.builder().build()));
 		}
 
 	}

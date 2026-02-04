@@ -392,15 +392,13 @@ public class DeepSeekChatModel implements ChatModel {
 
 	Prompt buildRequestPrompt(Prompt prompt) {
 		DeepSeekChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						DeepSeekChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						DeepSeekChatOptions.class);
-			}
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+					DeepSeekChatOptions.class);
+		}
+		else {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					DeepSeekChatOptions.class);
 		}
 
 		DeepSeekChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,

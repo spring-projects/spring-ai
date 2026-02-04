@@ -169,14 +169,8 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		OpenAiAudioTranscriptionOptions options = this.defaultOptions;
 
-		if (transcriptionPrompt.getOptions() != null) {
-			if (transcriptionPrompt.getOptions() instanceof OpenAiAudioTranscriptionOptions runtimeOptions) {
-				options = this.merge(runtimeOptions, options);
-			}
-			else {
-				throw new IllegalArgumentException("Prompt options are not of type TranscriptionOptions: "
-						+ transcriptionPrompt.getOptions().getClass().getSimpleName());
-			}
+		if (transcriptionPrompt.getOptions() instanceof OpenAiAudioTranscriptionOptions runtimeOptions) {
+			options = this.merge(runtimeOptions, options);
 		}
 
 		Resource instructions = transcriptionPrompt.getInstructions();

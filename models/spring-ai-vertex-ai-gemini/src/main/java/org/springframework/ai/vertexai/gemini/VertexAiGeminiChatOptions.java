@@ -80,7 +80,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions, Struct
 	 * Optional. If true, returns the log probabilities of the tokens that were chosen by the model at each step.
 	 * By default, this parameter is set to false.
 	 */
-	private @JsonProperty("responseLogprobs") boolean responseLogprobs;
+	private @JsonProperty("responseLogprobs") Boolean responseLogprobs;
 
 	/**
 	 * Optional. If specified, nucleus sampling will be used.
@@ -217,7 +217,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions, Struct
 		this.temperature = temperature;
 	}
 
-	public void setResponseLogprobs(boolean responseLogprobs) {
+	public void setResponseLogprobs(Boolean responseLogprobs) {
 		this.responseLogprobs = responseLogprobs;
 	}
 
@@ -388,7 +388,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions, Struct
 		this.logprobs = logprobs;
 	}
 
-	public boolean getResponseLogprobs() {
+	public Boolean getResponseLogprobs() {
 		return this.responseLogprobs;
 	}
 

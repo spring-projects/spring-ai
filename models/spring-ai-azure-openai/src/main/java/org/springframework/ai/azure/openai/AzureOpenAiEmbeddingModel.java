@@ -108,7 +108,7 @@ public class AzureOpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		logger.debug("Retrieving embeddings");
 
 		EmbeddingResponse response = this
-			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
+			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode))));
 		logger.debug("Embeddings retrieved");
 
 		if (CollectionUtils.isEmpty(response.getResults())) {

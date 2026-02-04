@@ -168,11 +168,8 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
-		VertexAiTextEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					VertexAiTextEmbeddingOptions.class);
-		}
+		VertexAiTextEmbeddingOptions runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(),
+				EmbeddingOptions.class, VertexAiTextEmbeddingOptions.class);
 
 		// Define request options by merging runtime options and default options
 		VertexAiTextEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,

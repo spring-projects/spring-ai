@@ -145,11 +145,8 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
-		MistralAiEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					MistralAiEmbeddingOptions.class);
-		}
+		MistralAiEmbeddingOptions runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(),
+				EmbeddingOptions.class, MistralAiEmbeddingOptions.class);
 
 		// Define request options by merging runtime options and default options
 		MistralAiEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,

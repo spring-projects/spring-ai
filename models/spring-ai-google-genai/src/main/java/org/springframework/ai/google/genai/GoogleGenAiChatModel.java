@@ -485,15 +485,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		GoogleGenAiChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						GoogleGenAiChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						GoogleGenAiChatOptions.class);
-			}
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+					GoogleGenAiChatOptions.class);
+		}
+		else {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					GoogleGenAiChatOptions.class);
 		}
 
 		// Define request options by merging runtime options and default options

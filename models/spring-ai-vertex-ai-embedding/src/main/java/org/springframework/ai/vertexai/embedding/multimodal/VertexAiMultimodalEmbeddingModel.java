@@ -100,11 +100,9 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 		// merge the runtime and default vertex ai options.
 		VertexAiMultimodalEmbeddingOptions mergedOptions = this.defaultOptions;
 
-		if (request.getOptions() != null) {
-			var defaultOptionsCopy = VertexAiMultimodalEmbeddingOptions.builder().from(this.defaultOptions).build();
-			mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
-					VertexAiMultimodalEmbeddingOptions.class);
-		}
+		var defaultOptionsCopy = VertexAiMultimodalEmbeddingOptions.builder().from(this.defaultOptions).build();
+		mergedOptions = ModelOptionsUtils.merge(request.getOptions(), defaultOptionsCopy,
+				VertexAiMultimodalEmbeddingOptions.class);
 
 		// Create the Vertex AI Prediction Service client.
 		try (PredictionServiceClient client = PredictionServiceClient

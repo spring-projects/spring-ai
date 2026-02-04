@@ -20,18 +20,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.jspecify.annotations.Nullable;
-
 import org.springframework.ai.model.ModelRequest;
 
 public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 
 	private final List<ImageMessage> messages;
 
-	private @Nullable ImageOptions imageModelOptions;
+	private final ImageOptions imageModelOptions;
 
 	public ImagePrompt(List<ImageMessage> messages) {
-		this.messages = messages;
+		this(messages, ImageOptionsBuilder.builder().build());
 	}
 
 	public ImagePrompt(List<ImageMessage> messages, ImageOptions imageModelOptions) {
@@ -57,7 +55,7 @@ public class ImagePrompt implements ModelRequest<List<ImageMessage>> {
 	}
 
 	@Override
-	public @Nullable ImageOptions getOptions() {
+	public ImageOptions getOptions() {
 		return this.imageModelOptions;
 	}
 

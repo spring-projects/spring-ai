@@ -228,8 +228,7 @@ public class MistralAiChatModel implements ChatModel {
 				return chatResponse;
 			});
 
-		ChatOptions options = Objects.requireNonNull(prompt.getOptions());
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -317,8 +316,7 @@ public class MistralAiChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				ChatOptions options = Objects.requireNonNull(prompt.getOptions());
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.deferContextual(ctx -> {
@@ -390,15 +388,13 @@ public class MistralAiChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		MistralAiChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						MistralAiChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						MistralAiChatOptions.class);
-			}
+		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+					MistralAiChatOptions.class);
+		}
+		else {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					MistralAiChatOptions.class);
 		}
 
 		// Define request options by merging runtime options and default options

@@ -78,16 +78,10 @@ public class ZhiPuAiImageModel implements ImageModel {
 
 			ZhiPuAiImageApi.ZhiPuAiImageRequest imageRequest = new ZhiPuAiImageApi.ZhiPuAiImageRequest(instructions,
 					ZhiPuAiImageApi.DEFAULT_IMAGE_MODEL);
-
-			if (this.defaultOptions != null) {
-				imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-						ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
-			}
-
-			if (imagePrompt.getOptions() != null) {
-				imageRequest = ModelOptionsUtils.merge(toZhiPuAiImageOptions(imagePrompt.getOptions()), imageRequest,
-						ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
-			}
+			imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
+					ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+			imageRequest = ModelOptionsUtils.merge(toZhiPuAiImageOptions(imagePrompt.getOptions()), imageRequest,
+					ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
 
 			// Make the request
 			ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity = this.zhiPuAiImageApi

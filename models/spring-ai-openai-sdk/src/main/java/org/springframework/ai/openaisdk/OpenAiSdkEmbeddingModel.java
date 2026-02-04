@@ -173,7 +173,7 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public float[] embed(Document document) {
 		EmbeddingResponse response = this
-			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
+			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode))));
 
 		if (CollectionUtils.isEmpty(response.getResults())) {
 			return new float[0];
