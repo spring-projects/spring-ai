@@ -278,6 +278,118 @@ class JsonParserTests {
 		assertThat(input).isEqualTo(result);
 	}
 
+	@Test
+	void shouldThrowExceptionWhenJsonIsMalformed() {
+		var json = "{ value }";
+		assertThatThrownBy(() -> JsonParser.fromJson(json, TestRecord.class)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to")
+			.hasMessageContaining("failed");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenJsonIsMalformedWithType() {
+		var json = "{ value: }";
+		assertThatThrownBy(() -> JsonParser.fromJson(json, (Type) TestRecord.class))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to")
+			.hasMessageContaining("failed");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenJsonIsMalformedWithTypeReference() {
+		var json = "[ 1, 2, }";
+		assertThatThrownBy(() -> JsonParser.fromJson(json, new TypeReference<java.util.List<Integer>>() {
+		})).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to")
+			.hasMessageContaining("failed");
+	}
+
+	@Test
+	void fromJsonToListWithTypeReference() {
+		var json = "[1, 2, 3]";
+		var list = JsonParser.fromJson(json, new TypeReference<java.util.List<Integer>>() {
+		});
+		assertThat(list).containsExactly(1, 2, 3);
+	}
+
+	@Test
+	void fromJsonToMapWithTypeReference() {
+		var json = """
+					{
+						"stringValue": "string",
+						"intValue": "1"
+					}
+				""";
+		var map = JsonParser.fromJson(json, new TypeReference<java.util.Map<String, String>>() {
+		});
+		assertThat(map).containsEntry("stringValue", "string").containsEntry("intValue", "1");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenValueIsNullInToTypedObject() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject(null, String.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("value cannot be null");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenTypeIsNullInToTypedObject() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("test", null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("type cannot be null");
+	}
+
+	@Test
+	void fromObjectToPrimitiveInt() {
+		var value = JsonParser.toTypedObject("1", int.class);
+		assertThat(value).isInstanceOf(Integer.class);
+		assertThat(value).isEqualTo(1);
+	}
+
+	@Test
+	void fromObjectToPrimitiveLong() {
+		var value = JsonParser.toTypedObject("1", long.class);
+		assertThat(value).isInstanceOf(Long.class);
+		assertThat(value).isEqualTo(1L);
+	}
+
+	@Test
+	void fromObjectToPrimitiveBoolean() {
+		var value = JsonParser.toTypedObject("true", boolean.class);
+		assertThat(value).isInstanceOf(Boolean.class);
+		assertThat(value).isEqualTo(true);
+	}
+
+	@Test
+	void shouldThrowExceptionWhenConversionFails() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("not_a_number", Integer.class))
+			.isInstanceOf(NumberFormatException.class);
+	}
+
+	@Test
+	void fromEmptyJsonObject() {
+		var json = "{}";
+		var object = JsonParser.fromJson(json, TestRecord.class);
+		assertThat(object).isNotNull();
+		assertThat(object.name).isNull();
+		assertThat(object.age).isNull();
+	}
+
+	@Test
+	void fromEmptyJsonArray() {
+		var json = "[]";
+		var list = JsonParser.fromJson(json, new TypeReference<java.util.List<String>>() {
+		});
+		assertThat(list).isEmpty();
+	}
+
+	@Test
+	void toTypedObjectWithNonParsableJsonString() {
+		var invalidJsonString = "not json at all";
+		assertThatThrownBy(() -> JsonParser.toTypedObject(invalidJsonString, TestRecord.class))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to");
+	}
+
 	record TestRecord(String name, Integer age) {
 	}
 
