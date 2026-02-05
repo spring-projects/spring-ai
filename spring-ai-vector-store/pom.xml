@@ -47,6 +47,11 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.jetbrains.kotlin</groupId>
+			<artifactId>kotlin-stdlib</artifactId>
+			<optional>true</optional>
+		</dependency>
 		<!-- test dependencies -->
 
 		<dependency>
