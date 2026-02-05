@@ -1006,7 +1006,7 @@ public class AnthropicChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public AnthropicChatOptions getDefaultOptions() {
 		return AnthropicChatOptions.fromOptions(this.defaultOptions);
 	}
 

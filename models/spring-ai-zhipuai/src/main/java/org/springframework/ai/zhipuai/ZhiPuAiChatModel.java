@@ -307,7 +307,7 @@ public class ZhiPuAiChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public ZhiPuAiChatOptions getDefaultOptions() {
 		return ZhiPuAiChatOptions.fromOptions(this.defaultOptions);
 	}
 

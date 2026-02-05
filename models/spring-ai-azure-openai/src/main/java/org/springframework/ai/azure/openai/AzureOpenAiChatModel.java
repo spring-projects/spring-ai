@@ -237,6 +237,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 		return new DefaultUsage(usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens(), usage);
 	}
 
+	@Override
 	public AzureOpenAiChatOptions getDefaultOptions() {
 		return AzureOpenAiChatOptions.fromOptions(this.defaultOptions);
 	}
