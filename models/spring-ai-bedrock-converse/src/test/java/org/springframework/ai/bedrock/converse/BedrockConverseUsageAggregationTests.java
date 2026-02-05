@@ -158,6 +158,124 @@ public class BedrockConverseUsageAggregationTests {
 		// TODO: Implement the test
 	}
 
+	@Test
+	public void callWithCacheMetrics() {
+		// Test that cache metrics are properly included in the native usage object
+		ConverseResponse converseResponse = ConverseResponse.builder()
+			.output(ConverseOutput.builder()
+				.message(Message.builder()
+					.role(ConversationRole.ASSISTANT)
+					.content(ContentBlock.fromText("Response with cache metrics"))
+					.build())
+				.build())
+			.usage(TokenUsage.builder()
+				.inputTokens(100)
+				.outputTokens(50)
+				.totalTokens(150)
+				.cacheReadInputTokens(80)
+				.cacheWriteInputTokens(20)
+				.build())
+			.build();
+
+		given(this.bedrockRuntimeClient.converse(isA(ConverseRequest.class))).willReturn(converseResponse);
+
+		var result = this.chatModel.call(new Prompt("text"));
+
+		assertThat(result).isNotNull();
+		assertThat(result.getResult().getOutput().getText()).isSameAs("Response with cache metrics");
+
+		// Verify standard usage metrics
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(100);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(50);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(150);
+
+		// Verify cache metrics are available in native usage object
+		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
+		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
+
+		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
+		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(80);
+		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(20);
+
+		// Verify cache metrics are also available in metadata (backward compatibility)
+		assertThat(result.getMetadata().<Integer>get("cacheReadInputTokens")).isEqualTo(80);
+		assertThat(result.getMetadata().<Integer>get("cacheWriteInputTokens")).isEqualTo(20);
+	}
+
+	@Test
+	public void callWithToolUseAndCacheMetricsAggregation() {
+		// Test that cache metrics are properly aggregated across tool calling rounds
+		ConverseResponse converseResponseToolUse = ConverseResponse.builder()
+			.output(ConverseOutput.builder()
+				.message(Message.builder()
+					.role(ConversationRole.ASSISTANT)
+					.content(ContentBlock.fromText("Let me check the weather for you."),
+							ContentBlock.fromToolUse(ToolUseBlock.builder()
+								.toolUseId("tooluse_123")
+								.name("getCurrentWeather")
+								.input(MapDocument.mapBuilder()
+									.putString("location", "Paris, France")
+									.putString("unit", "C")
+									.build())
+								.build()))
+					.build())
+				.build())
+			.usage(TokenUsage.builder()
+				.inputTokens(200)
+				.outputTokens(50)
+				.totalTokens(250)
+				.cacheReadInputTokens(150) // First request reads from cache
+				.cacheWriteInputTokens(0)
+				.build())
+			.stopReason(StopReason.TOOL_USE)
+			.metrics(ConverseMetrics.builder().latencyMs(1000L).build())
+			.build();
+
+		ConverseResponse converseResponseFinal = ConverseResponse.builder()
+			.output(ConverseOutput.builder()
+				.message(Message.builder()
+					.role(ConversationRole.ASSISTANT)
+					.content(ContentBlock.fromText("The weather in Paris is 15°C."))
+					.build())
+				.build())
+			.usage(TokenUsage.builder()
+				.inputTokens(300)
+				.outputTokens(30)
+				.totalTokens(330)
+				.cacheReadInputTokens(150) // Second request also reads from cache
+				.cacheWriteInputTokens(0)
+				.build())
+			.stopReason(StopReason.END_TURN)
+			.metrics(ConverseMetrics.builder().latencyMs(500L).build())
+			.build();
+
+		given(this.bedrockRuntimeClient.converse(isA(ConverseRequest.class))).willReturn(converseResponseToolUse)
+			.willReturn(converseResponseFinal);
+
+		ToolCallback toolCallback = FunctionToolCallback.builder("getCurrentWeather", (Request request) -> "15°C")
+			.description("Gets the weather in location")
+			.inputType(Request.class)
+			.build();
+
+		var result = this.chatModel.call(new Prompt("What is the weather in Paris?",
+				BedrockChatOptions.builder().toolCallbacks(toolCallback).build()));
+
+		assertThat(result).isNotNull();
+
+		// Verify aggregated standard usage metrics
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(200 + 300);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(50 + 30);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(250 + 330);
+
+		// Verify aggregated cache metrics in native usage object
+		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
+		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
+
+		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
+		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(150 + 150); // Aggregated
+		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(0);
+	}
+
 	public record Request(String location, String unit) {
 	}
 
