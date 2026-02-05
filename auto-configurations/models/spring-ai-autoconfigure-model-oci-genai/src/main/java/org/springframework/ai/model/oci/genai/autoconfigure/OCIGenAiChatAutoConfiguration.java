@@ -39,7 +39,8 @@ import org.springframework.context.annotation.Bean;
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
  */
-@AutoConfiguration(after = OCIGenAiInferenceClientAutoConfiguration.class)
+@AutoConfiguration(after = OCIGenAiInferenceClientAutoConfiguration.class,
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass(OCICohereChatModel.class)
 @EnableConfigurationProperties(OCICohereChatModelProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OCI_GENAI,

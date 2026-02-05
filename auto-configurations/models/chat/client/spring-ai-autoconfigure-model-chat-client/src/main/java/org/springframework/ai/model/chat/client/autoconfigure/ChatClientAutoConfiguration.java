@@ -38,6 +38,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -89,6 +90,7 @@ public class ChatClientAutoConfiguration {
 	@Bean
 	@Scope("prototype")
 	@ConditionalOnMissingBean
+	@ConditionalOnSingleCandidate(ChatModel.class)
 	ChatClient.Builder chatClientBuilder(ChatClientBuilderConfigurer chatClientBuilderConfigurer, ChatModel chatModel,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatClientObservationConvention> chatClientObservationConvention,

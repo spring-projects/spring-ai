@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,10 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class })
+@AutoConfiguration(
+		after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class },
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass(MiniMaxApi.class)
 @EnableConfigurationProperties({ MiniMaxConnectionProperties.class, MiniMaxChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MINIMAX,
