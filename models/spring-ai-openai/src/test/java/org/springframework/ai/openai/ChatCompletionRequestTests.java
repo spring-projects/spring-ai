@@ -76,9 +76,13 @@ class ChatCompletionRequestTests {
 	@Test
 	void createRequestWithChatOptions() {
 		var client = OpenAiChatModel.builder()
-			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
-			.defaultOptions(OpenAiChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
-			.build();
+				.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+				.defaultOptions(OpenAiChatOptions.builder()
+						.model("DEFAULT_MODEL")
+						.temperature(66.6)
+						.extraBody(Map.of("key1", "value1"))
+						.build())
+				.build();
 
 		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
 
@@ -89,6 +93,8 @@ class ChatCompletionRequestTests {
 
 		assertThat(request.model()).isEqualTo("DEFAULT_MODEL");
 		assertThat(request.temperature()).isEqualTo(66.6);
+
+		assertThat(request.extraBody().get("key1")).isEqualTo("value1");
 
 		request = client.createRequest(new Prompt("Test message content",
 				OpenAiChatOptions.builder().model("PROMPT_MODEL").temperature(99.9).build()), true);
