@@ -39,6 +39,8 @@ public interface ToolDefinition {
 	 */
 	String inputSchema();
 
+	String outputSchema();
+
 	/**
 	 * Create a default {@link ToolDefinition} builder.
 	 */

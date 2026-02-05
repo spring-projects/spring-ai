@@ -172,6 +172,10 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 
 		private Type inputType;
 
+		private String outputSchema;
+
+		private Type outputType;
+
 		private ToolMetadata toolMetadata;
 
 		private BiFunction<I, ToolContext, O> toolFunction;
@@ -206,6 +210,16 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 			return this;
 		}
 
+		public Builder<I, O> outputSchema(String outputSchema) {
+			this.outputSchema = outputSchema;
+			return this;
+		}
+
+		public Builder<I, O> outputType(Type outputType) {
+			this.outputType = outputType;
+			return this;
+		}
+
 		public Builder<I, O> toolMetadata(ToolMetadata toolMetadata) {
 			this.toolMetadata = toolMetadata;
 			return this;
@@ -224,6 +238,8 @@ public class FunctionToolCallback<I, O> implements ToolCallback {
 						: ToolUtils.getToolDescriptionFromName(this.name))
 				.inputSchema(StringUtils.hasText(this.inputSchema) ? this.inputSchema
 						: JsonSchemaGenerator.generateForType(this.inputType))
+				.outputSchema(StringUtils.hasText(this.outputSchema) ? this.outputSchema
+						: JsonSchemaGenerator.generateForType(this.outputType))
 				.build();
 			return new FunctionToolCallback<>(toolDefinition, this.toolMetadata, this.inputType, this.toolFunction,
 					this.toolCallResultConverter);
