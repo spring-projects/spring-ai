@@ -111,9 +111,11 @@ public final class MultiQueryExpander implements QueryExpander {
 			return List.of(query);
 		}
 
-		var queryVariants = Arrays.asList(response.split("\n"));
+		var queryVariants = Arrays.stream(response.split("\n"))
+				.filter(StringUtils::hasText)
+				.toList();
 
-		if (CollectionUtils.isEmpty(queryVariants) || this.numberOfQueries != queryVariants.size()) {
+		if (CollectionUtils.isEmpty(queryVariants) || this.numberOfQueries > queryVariants.size()) {
 			logger.warn(
 					"Query expansion result does not contain the requested {} variants. Returning the input query unchanged.",
 					this.numberOfQueries);
