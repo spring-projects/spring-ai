@@ -291,7 +291,7 @@
 		<spring-boot.version>4.0.1</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
-		<openai-sdk.version>4.13.0</openai-sdk.version>
+		<openai-sdk.version>4.17.0</openai-sdk.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.2.21</kotlin.version>
