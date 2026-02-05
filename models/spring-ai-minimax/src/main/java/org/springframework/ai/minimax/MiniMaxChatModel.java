@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -373,32 +372,27 @@ public class MiniMaxChatModel implements ChatModel {
 						}
 					}));
 
-			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
-						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
-							// FIXME: bounded elastic needs to be used since tool calling
-							//  is currently only synchronous
-							return Flux.deferContextual(ctx -> {
-								ToolExecutionResult toolExecutionResult;
-								try {
-									ToolCallReactiveContextHolder.setContext(ctx);
-									toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-								}
-								finally {
-									ToolCallReactiveContextHolder.clearContext();
-								}
-								if (toolExecutionResult.returnDirect()) {
-									// Return tool execution result directly to the client.
-									return Flux.just(ChatResponse.builder().from(response)
-											.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-											.build());
-								}
-								else {
-									// Send the tool execution result back to the model.
-									return this.stream(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
-								}
-							}).subscribeOn(Schedulers.boundedElastic());
-						}
-						return Flux.just(response);
+		Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
+					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
+						return Flux.deferContextual(ctx -> {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							return this.toolCallingManager.executeToolCallsAsync(requestPrompt, response)
+								.doFinally(s -> ToolCallReactiveContextHolder.clearContext())
+								.flatMapMany(toolExecutionResult -> {
+									if (toolExecutionResult.returnDirect()) {
+										// Return tool execution result directly to the client.
+										return Flux.just(ChatResponse.builder().from(response)
+												.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+												.build());
+									}
+									else {
+										// Send the tool execution result back to the model.
+										return this.stream(new Prompt(toolExecutionResult.conversationHistory(), requestPrompt.getOptions()));
+									}
+								});
+						});
+					}
+					return Flux.just(response);
 					})
 					.doOnError(observation::error)
 					.doFinally(signalType -> observation.stop())

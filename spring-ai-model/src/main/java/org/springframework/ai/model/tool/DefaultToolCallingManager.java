@@ -26,6 +26,9 @@ import java.util.Optional;
 import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -34,6 +37,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.tool.AsyncToolCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -153,6 +157,35 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			.build();
 	}
 
+	@Override
+	public Mono<ToolExecutionResult> executeToolCallsAsync(Prompt prompt, ChatResponse chatResponse) {
+		Assert.notNull(prompt, "prompt cannot be null");
+		Assert.notNull(chatResponse, "chatResponse cannot be null");
+
+		Optional<Generation> toolCallGeneration = chatResponse.getResults()
+			.stream()
+			.filter(g -> !CollectionUtils.isEmpty(g.getOutput().getToolCalls()))
+			.findFirst();
+
+		if (toolCallGeneration.isEmpty()) {
+			return Mono.error(new IllegalStateException("No tool call requested by the chat model"));
+		}
+
+		AssistantMessage assistantMessage = toolCallGeneration.get().getOutput();
+
+		ToolContext toolContext = buildToolContext(prompt, assistantMessage);
+
+		return executeToolCallAsync(prompt, assistantMessage, toolContext).map(internalToolExecutionResult -> {
+			List<Message> conversationHistory = buildConversationHistoryAfterToolExecution(prompt.getInstructions(),
+					assistantMessage, internalToolExecutionResult.toolResponseMessage());
+
+			return ToolExecutionResult.builder()
+				.conversationHistory(conversationHistory)
+				.returnDirect(internalToolExecutionResult.returnDirect())
+				.build();
+		});
+	}
+
 	private static ToolContext buildToolContext(Prompt prompt, AssistantMessage assistantMessage) {
 		Map<String, Object> toolContextMap = Map.of();
 
@@ -179,7 +212,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	}
 
 	/**
-	 * Execute the tool call and return the response message.
+	 * Execute the tool call and return the response message (synchronous mode).
 	 */
 	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
 			ToolContext toolContext) {
@@ -194,9 +227,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
-			logger.debug("Executing tool call: {}", toolCall.name());
-
 			String toolName = toolCall.name();
+
+			logger.debug("Executing tool call: {} (synchronous mode)", toolName);
 			String toolInputArguments = toolCall.arguments();
 
 			// Handle the possible null parameter situation in streaming mode.
@@ -218,6 +251,12 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			if (toolCallback == null) {
 				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+			}
+
+			// Log tool type information for performance awareness
+			if (toolCallback instanceof AsyncToolCallback) {
+				logger.debug("Tool '{}' implements AsyncToolCallback but executing in synchronous mode. "
+						+ "Consider using executeToolCallsAsync() for better performance.", toolName);
 			}
 
 			if (returnDirect == null) {
@@ -256,6 +295,127 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				Objects.requireNonNullElse(returnDirect, false));
 	}
 
+	/**
+	 * Execute the tool call and return the response message (asynchronous mode).
+	 * <p>
+	 * This method intelligently handles both synchronous and asynchronous tools:
+	 * <ul>
+	 * <li>If the tool implements {@link AsyncToolCallback} and supports async, it will be
+	 * executed asynchronously without blocking.</li>
+	 * <li>Otherwise, the tool will be executed on a bounded elastic scheduler to prevent
+	 * thread pool exhaustion.</li>
+	 * </ul>
+	 */
+	private Mono<InternalToolExecutionResult> executeToolCallAsync(Prompt prompt, AssistantMessage assistantMessage,
+			ToolContext toolContext) {
+		final List<ToolCallback> toolCallbacks = (prompt
+			.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions)
+					? toolCallingChatOptions.getToolCallbacks() : List.of();
+
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+
+		// Create a Flux that emits tool responses sequentially
+		return Flux.fromIterable(toolCalls)
+			.concatMap(toolCall -> executeSingleToolCallAsync(toolCall, toolCallbacks, toolContext))
+			.collectList()
+			.map(toolResponsesWithReturnDirect -> {
+				// Extract tool responses and determine returnDirect
+				List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
+				Boolean returnDirect = null;
+
+				for (ToolResponseWithReturnDirect item : toolResponsesWithReturnDirect) {
+					toolResponses.add(item.toolResponse());
+					if (returnDirect == null) {
+						returnDirect = item.returnDirect();
+					}
+					else {
+						returnDirect = returnDirect && item.returnDirect();
+					}
+				}
+
+				return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
+						returnDirect);
+			});
+	}
+
+	/**
+	 * Execute a single tool call asynchronously.
+	 */
+	private Mono<ToolResponseWithReturnDirect> executeSingleToolCallAsync(AssistantMessage.ToolCall toolCall,
+			List<ToolCallback> toolCallbacks, ToolContext toolContext) {
+
+		String toolName = toolCall.name();
+		String toolInputArguments = toolCall.arguments();
+
+		logger.debug("Executing async tool call: {}", toolName);
+
+		// Handle the possible null parameter situation in streaming mode.
+		final String finalToolInputArguments;
+		if (!StringUtils.hasText(toolInputArguments)) {
+			logger.warn("Tool call arguments are null or empty for tool: {}. Using empty JSON object as default.",
+					toolName);
+			finalToolInputArguments = "{}";
+		}
+		else {
+			finalToolInputArguments = toolInputArguments;
+		}
+
+		ToolCallback toolCallback = toolCallbacks.stream()
+			.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+			.findFirst()
+			.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+
+		if (toolCallback == null) {
+			logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+			return Mono.error(new IllegalStateException("No ToolCallback found for tool name: " + toolName));
+		}
+
+		boolean returnDirect = toolCallback.getToolMetadata().returnDirect();
+
+		ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
+			.toolDefinition(toolCallback.getToolDefinition())
+			.toolMetadata(toolCallback.getToolMetadata())
+			.toolCallArguments(finalToolInputArguments)
+			.build();
+
+		// Determine whether to use async execution or fallback to sync
+		Mono<String> toolResultMono;
+
+		if (toolCallback instanceof AsyncToolCallback asyncToolCallback && asyncToolCallback.supportsAsync()) {
+			// Use native async execution
+			logger.debug("Tool '{}' supports async execution, using callAsync()", toolName);
+			toolResultMono = asyncToolCallback.callAsync(finalToolInputArguments, toolContext)
+				.onErrorResume(ToolExecutionException.class,
+						ex -> Mono.just(this.toolExecutionExceptionProcessor.process(ex)));
+		}
+		else {
+			// Fallback to sync execution on boundedElastic
+			logger.debug("Tool '{}' does not support async, using sync fallback on boundedElastic scheduler", toolName);
+			toolResultMono = Mono.fromCallable(() -> {
+				try {
+					return toolCallback.call(finalToolInputArguments, toolContext);
+				}
+				catch (ToolExecutionException ex) {
+					return this.toolExecutionExceptionProcessor.process(ex);
+				}
+			}).subscribeOn(Schedulers.boundedElastic());
+		}
+
+		// Wrap with observation
+		return toolResultMono.map(toolResult -> {
+			observationContext.setToolCallResult(toolResult);
+			// Note: Observation with reactive context is complex and would require
+			// additional changes. For now, we preserve the basic structure.
+			// Full observation support in reactive mode can be added in a future
+			// enhancement.
+
+			ToolResponseMessage.ToolResponse toolResponse = new ToolResponseMessage.ToolResponse(toolCall.id(),
+					toolName, toolResult != null ? toolResult : "");
+
+			return new ToolResponseWithReturnDirect(toolResponse, returnDirect);
+		});
+	}
+
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
 			AssistantMessage assistantMessage, ToolResponseMessage toolResponseMessage) {
 		List<Message> messages = new ArrayList<>(previousMessages);
@@ -273,6 +433,13 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	}
 
 	private record InternalToolExecutionResult(ToolResponseMessage toolResponseMessage, boolean returnDirect) {
+	}
+
+	/**
+	 * Internal record to carry both tool response and returnDirect flag for async
+	 * execution.
+	 */
+	private record ToolResponseWithReturnDirect(ToolResponseMessage.ToolResponse toolResponse, boolean returnDirect) {
 	}
 
 	public final static class Builder {
