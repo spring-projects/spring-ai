@@ -82,6 +82,15 @@ public abstract class AbstractMessage implements Message {
 	}
 
 	/**
+	 * Get the text content of the message.
+	 * @return the text content of the message
+	 */
+	@Nullable
+	public String getTextContent() {
+		return this.textContent;
+	}
+
+	/**
 	 * Get the metadata of the message.
 	 * @return the metadata of the message
 	 */
