@@ -45,6 +45,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 /**
  * A Spring {@link ApplicationContext}-based implementation that provides a way to
@@ -60,7 +62,7 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringBeanToolCallbackResolver.class);
 
-	private static final Map<String, ToolCallback> toolCallbacksCache = new HashMap<>();
+	private static final Map<String, Tuple2<Integer, ToolCallback>> toolCallbacksCache = new HashMap<>();
 
 	private static final SchemaType DEFAULT_SCHEMA_TYPE = SchemaType.JSON_SCHEMA;
 
@@ -69,7 +71,7 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 	private final SchemaType schemaType;
 
 	public SpringBeanToolCallbackResolver(GenericApplicationContext applicationContext,
-			@Nullable SchemaType schemaType) {
+										  @Nullable SchemaType schemaType) {
 		Assert.notNull(applicationContext, "applicationContext cannot be null");
 
 		this.applicationContext = applicationContext;
@@ -82,23 +84,23 @@ public class SpringBeanToolCallbackResolver implements ToolCallbackResolver {
 
 		logger.debug("ToolCallback resolution attempt from Spring application context");
 
-		ToolCallback resolvedToolCallback = toolCallbacksCache.get(toolName);
-
-		if (resolvedToolCallback != null) {
-			return resolvedToolCallback;
-		}
-
 		try {
+			Object bean = this.applicationContext.getBean(toolName);
+
+			var cachedToolCallback = toolCallbacksCache.get(toolName);
+			if (cachedToolCallback != null && cachedToolCallback.getT1() == System.identityHashCode(bean)) {
+				return cachedToolCallback.getT2();
+			}
+
 			ResolvableType toolType = TypeResolverHelper.resolveBeanType(this.applicationContext, toolName);
 			ResolvableType toolInputType = (ResolvableType.forType(Supplier.class).isAssignableFrom(toolType))
 					? ResolvableType.forType(Void.class) : TypeResolverHelper.getFunctionArgumentType(toolType, 0);
 
 			String toolDescription = resolveToolDescription(toolName, toolInputType.toClass());
-			Object bean = this.applicationContext.getBean(toolName);
 
-			resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
+			ToolCallback resolvedToolCallback = buildToolCallback(toolName, toolType, toolInputType, toolDescription, bean);
 
-			toolCallbacksCache.put(toolName, resolvedToolCallback);
+			toolCallbacksCache.put(toolName, Tuples.of(System.identityHashCode(bean), resolvedToolCallback));
 
 			return resolvedToolCallback;
 		}
