@@ -49,8 +49,8 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 	protected void doExpression(Expression expression, StringBuilder context) {
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
 			context.append(getOperationSymbol(expression));
-			context.append("(");
 			this.convertOperand(expression.left(), context);
+			context.append("(");
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
@@ -105,7 +105,7 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				context.append(v);
+				this.doSingleValue(v, context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
