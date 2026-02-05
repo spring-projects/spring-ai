@@ -457,7 +457,7 @@ AnthropicApi.Usage firstUsage = (AnthropicApi.Usage) firstResponse.getMetadata()
 System.out.println("Cache creation tokens: " + firstUsage.cacheCreationInputTokens());
 System.out.println("Cache read tokens: " + firstUsage.cacheReadInputTokens());
 
-// Second request with same system prompt - reads from cache  
+// Second request with same system prompt - reads from cache
 ChatResponse secondResponse = chatModel.call(
     new Prompt(
         List.of(
@@ -580,7 +580,7 @@ List<String> reviews = new ArrayList<>();
 
 for (String filename : codeFiles) {
     String sourceCode = loadSourceFile(filename);
-    
+
     ChatResponse review = chatModel.call(
         new Prompt(
             List.of(
@@ -596,7 +596,7 @@ for (String filename : codeFiles) {
                 .build()
         )
     );
-    
+
     reviews.add(review.getResult().getOutput().getText());
 }
 
@@ -717,8 +717,9 @@ public class CustomerSupportService {
    - Changing **tools** invalidates: tools + system + messages (all caches) ❌❌❌
    - Changing **system** invalidates: system + messages (tools cache remains valid) ✅❌❌
    - Changing **messages** invalidates: messages only (tools and system caches remain valid) ✅✅❌
-
-   **Tool stability is critical** when using `SYSTEM_AND_TOOLS` or `CONVERSATION_HISTORY` strategies.
+    {empty} +
+    {empty} +
+    **Tool stability is critical** when using `SYSTEM_AND_TOOLS` or `CONVERSATION_HISTORY` strategies.
 
 3. **SYSTEM_AND_TOOLS Independence**: With `SYSTEM_AND_TOOLS`, changing the system message does NOT invalidate the tool cache, allowing efficient reuse of cached tools even when system prompts vary.
 
@@ -727,13 +728,15 @@ public class CustomerSupportService {
 5. **Reuse Identical Content**: Caching works best with exact matches of prompt content. Even small changes will require a new cache entry.
 
 6. **Monitor Token Usage**: Use the cache usage statistics to track cache effectiveness:
-   ```java
++
+[source,java]
+----
    AnthropicApi.Usage usage = (AnthropicApi.Usage) response.getMetadata().getUsage().getNativeUsage();
    if (usage != null) {
        System.out.println("Cache creation: " + usage.cacheCreationInputTokens());
        System.out.println("Cache read: " + usage.cacheReadInputTokens());
    }
-   ```
+----
 
 7. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with Anthropic's 4-breakpoint limit.
 
@@ -763,7 +766,7 @@ The prompt caching implementation in Spring AI follows these key design principl
 The current cache strategies are designed to handle **90% of common use cases** effectively. For applications requiring more granular control, future enhancements may include:
 
 - **Message-level cache control** for fine-grained breakpoint placement
-- **Multi-block content caching** within individual messages  
+- **Multi-block content caching** within individual messages
 - **Advanced cache boundary selection** for complex tool scenarios
 - **Mixed TTL strategies** for optimized cache hierarchies
 
@@ -1066,7 +1069,7 @@ String response = ChatClient.create(chatModel)
 
 == Multimodal
 
-Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, pdf, images, data formats. 
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, pdf, images, data formats.
 
 === Images
 Currently, Anthropic Claude 3 supports the `base64` source type for `images`, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.
