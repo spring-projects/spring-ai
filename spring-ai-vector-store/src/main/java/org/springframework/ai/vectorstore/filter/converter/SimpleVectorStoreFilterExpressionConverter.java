@@ -90,7 +90,11 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 			}
 			formattedList.append("}");
 
-			if (context.lastIndexOf("in ") == -1) {
+			String ctx = context.toString().trim();
+			boolean isInClause = ctx.endsWith(" in");
+			boolean isNotInClause = ctx.endsWith(" not in");
+
+			if (!isInClause && !isNotInClause) {
 				context.append(formattedList);
 			}
 			else {
