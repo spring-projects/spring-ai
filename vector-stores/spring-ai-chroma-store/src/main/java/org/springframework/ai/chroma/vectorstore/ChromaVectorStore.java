@@ -48,6 +48,7 @@ import org.springframework.ai.vectorstore.observation.VectorStoreObservationCont
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.HttpClientErrorException;
 
 /**
  * {@link ChromaVectorStore} is a concrete implementation of the {@link VectorStore}
@@ -116,7 +117,16 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		if (!this.initialized) {
-			var collection = this.chromaApi.getCollection(this.tenantName, this.databaseName, this.collectionName);
+			//if the collection doesn't exist, chromaApi.getCollection will throw an exception
+			ChromaApi.Collection collection = null;
+			try {
+				collection = this.chromaApi.getCollection(this.tenantName, this.databaseName, this.collectionName);
+			}
+			catch (Exception ex) {
+				if (!(ex.getCause() instanceof HttpClientErrorException.NotFound)) {
+					throw ex;
+				}
+			}
 			if (collection == null) {
 				if (this.initializeSchema) {
 					var tenant = this.chromaApi.getTenant(this.tenantName);
