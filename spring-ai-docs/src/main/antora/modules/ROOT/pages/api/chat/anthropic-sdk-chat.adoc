@@ -244,6 +244,61 @@ stream.subscribe(response -> {
 });
 ----
 
+== Multi-Modal Support
+
+The Anthropic SDK module supports multi-modal inputs, allowing you to send images and PDF documents alongside text in your prompts.
+
+=== Image Input
+
+Send images to Claude for analysis using the `Media` class:
+
+[source,java]
+----
+var imageResource = new ClassPathResource("/test-image.png");
+
+var userMessage = UserMessage.builder()
+    .text("What do you see in this image?")
+    .media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageResource)))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+----
+
+Supported image formats: PNG, JPEG, GIF, WebP. Images can be provided as:
+
+* Byte arrays (automatically base64-encoded)
+* HTTPS URLs (passed directly to the API)
+
+=== PDF Document Input
+
+Send PDF documents for Claude to analyze:
+
+[source,java]
+----
+var pdfResource = new ClassPathResource("/document.pdf");
+
+var userMessage = UserMessage.builder()
+    .text("Please summarize this document.")
+    .media(List.of(new Media(new MimeType("application", "pdf"), pdfResource)))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
+----
+
+=== Multiple Media Items
+
+You can include multiple images or documents in a single message:
+
+[source,java]
+----
+var userMessage = UserMessage.builder()
+    .text("Compare these two images.")
+    .media(List.of(
+        new Media(MimeTypeUtils.IMAGE_PNG, image1Resource),
+        new Media(MimeTypeUtils.IMAGE_PNG, image2Resource)))
+    .build();
+----
+
 == Sample Controller
 
 Here is an example of a simple `@RestController` class that uses the chat model for text generations:
@@ -289,7 +344,7 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 
 | **HTTP Client** | OkHttp (via official SDK) | Spring RestClient/WebClient
 | **API Updates** | Automatic via SDK updates | Manual maintenance
-| **Multi-Modal** | Not yet supported | Fully supported
+| **Multi-Modal** | Fully supported | Fully supported
 | **Extended Thinking** | Not yet supported | Fully supported
 | **Prompt Caching** | Not yet supported | Fully supported
 | **Auto-Configuration** | Not yet available | Full Spring Boot starter
@@ -304,7 +359,6 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 
 **When to use Spring AI Anthropic:**
 
-* You need multi-modal support (images, PDFs)
 * You need extended thinking features
 * You need prompt caching
 * You want full Spring Boot auto-configuration
@@ -328,7 +382,6 @@ export ANTHROPIC_LOG=debug
 
 The following features are not yet supported in the Anthropic SDK implementation:
 
-* Multi-modal inputs (images, PDFs)
 * Extended thinking (Claude's reasoning feature)
 * Prompt caching
 * Amazon Bedrock backend

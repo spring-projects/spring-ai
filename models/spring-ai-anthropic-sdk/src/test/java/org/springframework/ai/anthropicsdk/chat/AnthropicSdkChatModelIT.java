@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropicsdk.chat;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +49,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
@@ -56,7 +58,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.util.MimeType;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -524,6 +529,37 @@ class AnthropicSdkChatModelIT {
 			.flatMap(generation -> generation.getOutput().getToolCalls().stream())
 			.toList();
 		assertThat(allToolCalls).isEmpty();
+	}
+
+	@Test
+	void multiModalityTest() throws IOException {
+		var imageData = new ClassPathResource("/test.png");
+
+		var userMessage = UserMessage.builder()
+			.text("Explain what do you see on this picture?")
+			.media(List.of(new Media(MimeTypeUtils.IMAGE_PNG, imageData)))
+			.build();
+
+		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+
+		logger.info("Response: {}", response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit");
+	}
+
+	@Test
+	void multiModalityPdfTest() throws IOException {
+		var pdfData = new ClassPathResource("/spring-ai-reference-overview.pdf");
+
+		var userMessage = UserMessage.builder()
+			.text("You are a very professional document summarization specialist. Please summarize the given document.")
+			.media(List.of(new Media(new MimeType("application", "pdf"), pdfData)))
+			.build();
+
+		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+
+		logger.info("Response: {}", response.getResult().getOutput().getText());
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
