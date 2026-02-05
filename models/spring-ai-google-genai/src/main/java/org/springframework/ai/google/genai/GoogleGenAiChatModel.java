@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -649,45 +650,30 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.toString())
 			.build();
 
-		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
-				&& candidate.content().get().parts().get().stream().allMatch(part -> part.functionCall().isPresent());
+		List<Part> parts = candidate.content().get().parts().orElse(List.of());
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.filter(part -> part.functionCall().isPresent())
-				.map(part -> {
-					FunctionCall functionCall = part.functionCall().get();
-					var functionName = functionCall.name().orElse("");
-					String functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
-					return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
-				})
-				.toList();
+		List<AssistantMessage.ToolCall> assistantToolCalls = parts.stream()
+			.filter(part -> part.functionCall().isPresent())
+			.map(part -> {
+				FunctionCall functionCall = part.functionCall().get();
+				var functionName = functionCall.name().orElse("");
+				String functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
+				return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
+			})
+			.toList();
 
-			AssistantMessage assistantMessage = AssistantMessage.builder()
-				.content("")
-				.properties(messageMetadata)
-				.toolCalls(assistantToolCalls)
-				.build();
+		String text = parts.stream()
+			.filter(part -> part.text().isPresent() && !part.text().get().isEmpty())
+			.map(part -> part.text().get())
+			.collect(Collectors.joining(" "));
 
-			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
-		}
-		else {
-			return candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.map(part -> AssistantMessage.builder()
-					.content(part.text().orElse(""))
-					.properties(messageMetadata)
-					.build())
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
-		}
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content(text)
+			.properties(messageMetadata)
+			.toolCalls(assistantToolCalls)
+			.build();
+
+		return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(Usage usage, String modelVersion) {
