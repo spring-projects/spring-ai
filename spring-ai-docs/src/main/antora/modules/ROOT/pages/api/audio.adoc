@@ -1,0 +1,31 @@
+[[Audio]]
+= Audio Model API
+
+The Spring AI Audio API provides a unified interface for interacting with AI models specialized in audio processing, including Speech-to-Text (transcription) and Text-to-Speech (TTS) capabilities.
+
+== Transcription (Speech-to-Text)
+
+The Transcription API allows you to convert audio files into text. Spring AI provides a unified `TranscriptionModel` interface that works across different providers.
+
+=== Supported Providers
+
+* xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI Whisper API]
+* xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI Whisper API]
+
+For more details on the transcription API, see xref:api/audio/transcriptions.adoc[Transcription API].
+
+== Text-to-Speech (TTS)
+
+The Text-to-Speech API allows you to convert text into spoken audio. Spring AI provides unified `TextToSpeechModel` and `StreamingTextToSpeechModel` interfaces.
+
+=== Supported Providers
+
+* xref:api/audio/speech/openai-speech.adoc[OpenAI Speech API]
+* xref:api/audio/speech/elevenlabs-speech.adoc[ElevenLabs Text-to-Speech API]
+
+For more details on the Text-to-Speech API, see xref:api/audio/speech.adoc[Text-to-Speech (TTS) API].
+
+== Feedback and Contributions
+
+The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
+
