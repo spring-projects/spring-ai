@@ -371,8 +371,34 @@ System.out.println("Cache read tokens: " + cacheRead2);      // Should be > 0
 
 === Token Usage Tracking
 
-AWS Bedrock provides cache-specific metrics through the response metadata.
-Cache metrics are accessible via the metadata Map:
+AWS Bedrock provides cache-specific metrics through the response.
+Cache metrics are accessible via two methods:
+
+==== Native Usage Object (Recommended for Observability)
+
+For observability handlers and metrics collection, access cache metrics through the native `TokenUsage` object:
+
+[source,java]
+----
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
+
+ChatResponse response = chatModel.call(/* ... */);
+
+// Access cache metrics from native TokenUsage object
+TokenUsage tokenUsage = (TokenUsage) response.getMetadata()
+    .getUsage()
+    .getNativeUsage();
+
+if (tokenUsage != null) {
+    Integer cacheWrite = tokenUsage.cacheWriteInputTokens();
+    Integer cacheRead = tokenUsage.cacheReadInputTokens();
+    System.out.println("Cache write: " + cacheWrite + ", Cache read: " + cacheRead);
+}
+----
+
+==== Metadata Map (Backward Compatible)
+
+Cache metrics are also available via the metadata Map for backward compatibility:
 
 [source,java]
 ----

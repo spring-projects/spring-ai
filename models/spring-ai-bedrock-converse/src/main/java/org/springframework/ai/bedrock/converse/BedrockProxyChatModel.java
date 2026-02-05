@@ -24,6 +24,7 @@ import java.net.URLConnection;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -764,6 +765,18 @@ public class BedrockProxyChatModel implements ChatModel {
 		var metadataBuilder = ChatResponseMetadata.builder()
 			.id(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
 			.usage(usage);
+
+		// Add cache metrics to metadata if available (for backward compatibility)
+		Map<String, Object> additionalMetadata = new HashMap<>();
+		if (response.usage().cacheReadInputTokens() != null) {
+			additionalMetadata.put("cacheReadInputTokens", response.usage().cacheReadInputTokens());
+		}
+		if (response.usage().cacheWriteInputTokens() != null) {
+			additionalMetadata.put("cacheWriteInputTokens", response.usage().cacheWriteInputTokens());
+		}
+		if (!additionalMetadata.isEmpty()) {
+			metadataBuilder.metadata(additionalMetadata);
+		}
 
 		return new ChatResponse(allGenerations, metadataBuilder.build());
 	}
