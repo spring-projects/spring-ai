@@ -203,6 +203,18 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	private Boolean googleSearchRetrieval = false;
 
 	@JsonIgnore
+	private Boolean googleMaps = false;
+
+	@JsonIgnore
+	private Boolean googleMapsWidget = false;
+
+	@JsonIgnore
+	private Double latitude;
+
+	@JsonIgnore
+	private Double longitude;
+
+	@JsonIgnore
 	private List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
 
 	@JsonIgnore
@@ -241,6 +253,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		options.setUseCachedContent(fromOptions.getUseCachedContent());
 		options.setAutoCacheThreshold(fromOptions.getAutoCacheThreshold());
 		options.setAutoCacheTtl(fromOptions.getAutoCacheTtl());
+		options.setGoogleMaps(fromOptions.getGoogleMaps());
+		options.setGoogleMapsWidget(fromOptions.getGoogleMapsWidget());
+		options.setLatitude(fromOptions.getLatitude());
+		options.setLongitude(fromOptions.getLongitude());
 		return options;
 	}
 
@@ -458,6 +474,38 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.googleSearchRetrieval = googleSearchRetrieval;
 	}
 
+	public Boolean getGoogleMaps() {
+		return this.googleMaps;
+	}
+
+	public void setGoogleMaps(Boolean googleMaps) {
+		this.googleMaps = googleMaps;
+	}
+
+	public Boolean getGoogleMapsWidget() {
+		return this.googleMapsWidget;
+	}
+
+	public void setGoogleMapsWidget(Boolean googleMapsWidget) {
+		this.googleMapsWidget = googleMapsWidget;
+	}
+
+	public Double getLatitude() {
+		return this.latitude;
+	}
+
+	public void setLatitude(Double latitude) {
+		this.latitude = latitude;
+	}
+
+	public Double getLongitude() {
+		return this.longitude;
+	}
+
+	public void setLongitude(Double longitude) {
+		this.longitude = longitude;
+	}
+
 	public List<GoogleGenAiSafetySetting> getSafetySettings() {
 		return this.safetySettings;
 	}
@@ -522,7 +570,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
+				&& Objects.equals(this.googleMaps, that.googleMaps)
+				&& Objects.equals(this.googleMapsWidget, that.googleMapsWidget)
+				&& Objects.equals(this.latitude, that.latitude) && Objects.equals(this.longitude, that.longitude);
 	}
 
 	@Override
@@ -531,7 +582,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
 				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
 				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolContext, this.labels);
+				this.internalToolExecutionEnabled, this.toolContext, this.labels, this.googleMaps,
+				this.googleMapsWidget, this.latitude, this.longitude);
 	}
 
 	@Override
@@ -544,7 +596,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
 				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
-				+ '}';
+				+ ", googleMaps=" + this.googleMaps + ", googleMapsWidget=" + this.googleMapsWidget + ", latitude="
+				+ this.latitude + ", longitude=" + this.longitude + '}';
 	}
 
 	@Override
@@ -653,6 +706,26 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public Builder googleSearchRetrieval(boolean googleSearch) {
 			this.options.googleSearchRetrieval = googleSearch;
+			return this;
+		}
+
+		public Builder googleMaps(boolean googleMaps) {
+			this.options.googleMaps = googleMaps;
+			return this;
+		}
+
+		public Builder googleMapsWidget(boolean googleMapsWidget) {
+			this.options.googleMapsWidget = googleMapsWidget;
+			return this;
+		}
+
+		public Builder latitude(Double latitude) {
+			this.options.latitude = latitude;
+			return this;
+		}
+
+		public Builder longitude(Double longitude) {
+			this.options.longitude = longitude;
 			return this;
 		}
 
