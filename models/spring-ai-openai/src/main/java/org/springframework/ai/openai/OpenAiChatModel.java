@@ -181,7 +181,7 @@ public class OpenAiChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
