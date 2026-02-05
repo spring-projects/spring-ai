@@ -57,7 +57,7 @@ import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = AzureOpenAiChatModelIT.TestConfiguration.class)
+@SpringBootTest
 @RequiresAzureCredentials
 class AzureOpenAiChatModelIT {
 

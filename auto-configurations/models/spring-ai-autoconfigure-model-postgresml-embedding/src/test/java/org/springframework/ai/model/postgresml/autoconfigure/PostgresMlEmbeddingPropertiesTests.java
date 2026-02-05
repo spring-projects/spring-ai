@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Utkarsh Srivastava
  * @author Christian Tzolov
  */
-@SpringBootTest(properties = { "spring.ai.postgresml.embedding.options.metadata-mode=all",
+@SpringBootTest({ "spring.ai.postgresml.embedding.options.metadata-mode=all",
 		"spring.ai.postgresml.embedding.options.kwargs.key1=value1",
 		"spring.ai.postgresml.embedding.options.kwargs.key2=value2",
 		"spring.ai.postgresml.embedding.options.transformer=abc123" })
