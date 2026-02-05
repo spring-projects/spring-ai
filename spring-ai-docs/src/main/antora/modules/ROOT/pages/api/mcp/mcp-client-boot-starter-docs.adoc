@@ -343,7 +343,7 @@ spring:
               url: http://localhost:8080
             server2:
               url: http://otherserver:8081
-              endpoint: /custom-sse
+              endpoint: /mcp
 ----
 
 === SSE Transport Properties
