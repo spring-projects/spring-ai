@@ -60,4 +60,17 @@ public final class InMemoryChatMemoryRepository implements ChatMemoryRepository 
 		this.chatMemoryStore.remove(conversationId);
 	}
 
+	@Override
+	public void refresh(String conversationId, List<Message> deletes, List<Message> adds) {
+		this.chatMemoryStore.compute(conversationId, (key, currentMessages) -> {
+			if (currentMessages == null) {
+				return new ArrayList<>(adds);
+			}
+			List<Message> updatedMessages = new ArrayList<>(currentMessages);
+			updatedMessages.removeAll(deletes);
+			updatedMessages.addAll(adds);
+			return updatedMessages;
+		});
+	}
+
 }

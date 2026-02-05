@@ -110,8 +110,49 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		this.jdbcTemplate.update(this.dialect.getDeleteMessagesSql(), conversationId);
 	}
 
+	@Override
+	public void refresh(String conversationId, List<Message> deletes, List<Message> adds) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		Assert.notNull(deletes, "deletes cannot be null");
+		Assert.notNull(adds, "adds cannot be null");
+
+		this.transactionTemplate.execute(status -> {
+			if (!deletes.isEmpty()) {
+				// This is a simplification. In a real implementation, we would need a
+				// stable
+				// way to identify messages to delete, perhaps by adding a message_id
+				// column.
+				// For now, we delete based on content and type, which is not robust.
+				this.jdbcTemplate.batchUpdate(this.dialect.getDeleteMessageSql(),
+						new DeleteBatchPreparedStatement(conversationId, deletes));
+			}
+			if (!adds.isEmpty()) {
+				this.jdbcTemplate.batchUpdate(this.dialect.getInsertMessageSql(),
+						new AddBatchPreparedStatement(conversationId, adds));
+			}
+			return null;
+		});
+	}
+
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	private record DeleteBatchPreparedStatement(String conversationId,
+			List<Message> messages) implements BatchPreparedStatementSetter {
+
+		@Override
+		public void setValues(PreparedStatement ps, int i) throws SQLException {
+			var message = this.messages.get(i);
+			ps.setString(1, this.conversationId);
+			ps.setString(2, message.getText());
+			ps.setString(3, message.getMessageType().name());
+		}
+
+		@Override
+		public int getBatchSize() {
+			return this.messages.size();
+		}
 	}
 
 	private record AddBatchPreparedStatement(String conversationId, List<Message> messages,
