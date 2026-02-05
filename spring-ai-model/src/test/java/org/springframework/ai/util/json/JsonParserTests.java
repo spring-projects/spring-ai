@@ -278,6 +278,12 @@ class JsonParserTests {
 		assertThat(input).isEqualTo(result);
 	}
 
+	@Test
+	void emptyString() {
+		var value = JsonParser.toTypedObject("", Long.class);
+		assertThat(value).isEqualTo(null);
+	}
+
 	record TestRecord(String name, Integer age) {
 	}
 
