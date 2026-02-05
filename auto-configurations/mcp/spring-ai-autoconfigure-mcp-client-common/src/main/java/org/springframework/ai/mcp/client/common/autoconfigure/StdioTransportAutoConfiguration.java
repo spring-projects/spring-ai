@@ -28,6 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -73,13 +74,16 @@ public class StdioTransportAutoConfiguration {
 	 * @return list of named MCP transports
 	 */
 	@Bean
-	public List<NamedClientMcpTransport> stdioTransports(McpStdioClientProperties stdioProperties) {
+	public List<NamedClientMcpTransport> stdioTransports(McpStdioClientProperties stdioProperties,
+			ObjectProvider<ObjectMapper> objectMapperProvider) {
+
+		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		List<NamedClientMcpTransport> stdioTransports = new ArrayList<>();
 
 		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
 			var transport = new StdioClientTransport(serverParameters.getValue(),
-					new JacksonMcpJsonMapper(new ObjectMapper()));
+					new JacksonMcpJsonMapper(objectMapper));
 			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 
 		}

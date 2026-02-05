@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "server1": {
+      "command": "java",
+      "args": [
+        "--server.port=8080",
+        "-jar",
+        "server1.jar"
+      ],
+      "env": {
+        "API_KEY": "sk-abc123"
+      }
+    },
+    "server2": {
+      "command": "python",
+      "args": [
+        "server2.py"
+      ]
+    }
+  }
+}
