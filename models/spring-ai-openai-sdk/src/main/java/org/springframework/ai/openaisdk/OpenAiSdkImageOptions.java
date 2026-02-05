@@ -82,6 +82,17 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 	 */
 	private String user;
 
+	/**
+	 * The output format of the generated images. Must be one of png, jpeg, or webp.
+	 */
+	private String outputFormat;
+
+	/**
+	 * The compression level (0-100) for lossy formats like jpeg and webp. Only applies
+	 * when outputFormat is jpeg or webp.
+	 */
+	private Integer outputCompression;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -160,6 +171,22 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 		this.style = style;
 	}
 
+	public String getOutputFormat() {
+		return this.outputFormat;
+	}
+
+	public void setOutputFormat(String outputFormat) {
+		this.outputFormat = outputFormat;
+	}
+
+	public Integer getOutputCompression() {
+		return this.outputCompression;
+	}
+
+	public void setOutputCompression(Integer outputCompression) {
+		this.outputCompression = outputCompression;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (o == null || getClass() != o.getClass()) {
@@ -169,20 +196,23 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 		return Objects.equals(this.n, that.n) && Objects.equals(this.width, that.width)
 				&& Objects.equals(this.height, that.height) && Objects.equals(this.quality, that.quality)
 				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.size, that.size)
-				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user);
+				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user)
+				&& Objects.equals(this.outputFormat, that.outputFormat)
+				&& Objects.equals(this.outputCompression, that.outputCompression);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.n, this.width, this.height, this.quality, this.responseFormat, this.size, this.style,
-				this.user);
+				this.user, this.outputFormat, this.outputCompression);
 	}
 
 	@Override
 	public String toString() {
 		return "OpenAiSdkImageOptions{" + "n=" + this.n + ", width=" + this.width + ", height=" + this.height
 				+ ", quality='" + this.quality + '\'' + ", responseFormat='" + this.responseFormat + '\'' + ", size='"
-				+ this.size + '\'' + ", style='" + this.style + '\'' + ", user='" + this.user + '\'' + '}';
+				+ this.size + '\'' + ", style='" + this.style + '\'' + ", user='" + this.user + '\''
+				+ ", outputFormat='" + this.outputFormat + '\'' + ", outputCompression=" + this.outputCompression + '}';
 	}
 
 	public ImageGenerateParams toOpenAiImageGenerateParams(ImagePrompt imagePrompt) {
@@ -220,6 +250,12 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 		if (this.getUser() != null) {
 			builder.user(this.getUser());
 		}
+		if (this.getOutputFormat() != null) {
+			builder.outputFormat(ImageGenerateParams.OutputFormat.of(this.getOutputFormat().toLowerCase()));
+		}
+		if (this.getOutputCompression() != null) {
+			builder.outputCompression(this.getOutputCompression().longValue());
+		}
 
 		return builder.build();
 	}
@@ -256,6 +292,8 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 			this.options.setSize(fromOptions.getSize());
 			this.options.setStyle(fromOptions.getStyle());
 			this.options.setUser(fromOptions.getUser());
+			this.options.setOutputFormat(fromOptions.getOutputFormat());
+			this.options.setOutputCompression(fromOptions.getOutputCompression());
 			return this;
 		}
 
@@ -321,6 +359,12 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 				}
 				if (castFrom.getUser() != null) {
 					this.options.setUser(castFrom.getUser());
+				}
+				if (castFrom.getOutputFormat() != null) {
+					this.options.setOutputFormat(castFrom.getOutputFormat());
+				}
+				if (castFrom.getOutputCompression() != null) {
+					this.options.setOutputCompression(castFrom.getOutputCompression());
 				}
 			}
 			return this;
@@ -418,6 +462,16 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 
 		public Builder style(String style) {
 			this.options.setStyle(style);
+			return this;
+		}
+
+		public Builder outputFormat(String outputFormat) {
+			this.options.setOutputFormat(outputFormat);
+			return this;
+		}
+
+		public Builder outputCompression(Integer outputCompression) {
+			this.options.setOutputCompression(outputCompression);
 			return this;
 		}
 

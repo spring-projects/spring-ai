@@ -102,7 +102,9 @@ public class OpenAiSdkImagePropertiesTests {
 				"spring.ai.openai-sdk.image.options.responseFormat=url",
 				"spring.ai.openai-sdk.image.options.size=1024x1792",
 				"spring.ai.openai-sdk.image.options.style=vivid",
-				"spring.ai.openai-sdk.image.options.user=userXYZ"
+				"spring.ai.openai-sdk.image.options.user=userXYZ",
+				"spring.ai.openai-sdk.image.options.outputFormat=jpeg",
+				"spring.ai.openai-sdk.image.options.outputCompression=75"
 			)
 			// @formatter:on
 			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
@@ -122,6 +124,8 @@ public class OpenAiSdkImagePropertiesTests {
 				assertThat(imageProperties.getOptions().getSize()).isEqualTo("1024x1792");
 				assertThat(imageProperties.getOptions().getStyle()).isEqualTo("vivid");
 				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(imageProperties.getOptions().getOutputFormat()).isEqualTo("jpeg");
+				assertThat(imageProperties.getOptions().getOutputCompression()).isEqualTo(75);
 			});
 	}
 
