@@ -17,6 +17,7 @@
 package org.springframework.ai.anthropicsdk;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -25,17 +26,24 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.models.messages.Base64ImageSource;
+import com.anthropic.models.messages.Base64PdfSource;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.ContentBlockParam;
+import com.anthropic.models.messages.DocumentBlockParam;
+import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.TextBlock;
+import com.anthropic.models.messages.TextBlockParam;
 import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolResultBlockParam;
 import com.anthropic.models.messages.ToolUnion;
 import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.ToolUseBlockParam;
+import com.anthropic.models.messages.UrlImageSource;
+import com.anthropic.models.messages.UrlPdfSource;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -49,6 +57,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -65,6 +74,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -76,6 +86,7 @@ import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation using the official
@@ -560,9 +571,27 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 				}
 			}
 			else if (message.getMessageType() == MessageType.USER) {
-				String text = message.getText();
-				if (text != null) {
-					builder.addUserMessage(text);
+				UserMessage userMessage = (UserMessage) message;
+
+				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+					List<ContentBlockParam> contentBlocks = new ArrayList<>();
+
+					String text = userMessage.getText();
+					if (text != null && !text.isEmpty()) {
+						contentBlocks.add(ContentBlockParam.ofText(TextBlockParam.builder().text(text).build()));
+					}
+
+					for (Media media : userMessage.getMedia()) {
+						contentBlocks.add(getContentBlockParamByMedia(media));
+					}
+
+					builder.addUserMessageOfBlockParams(contentBlocks);
+				}
+				else {
+					String text = message.getText();
+					if (text != null) {
+						builder.addUserMessage(text);
+					}
 				}
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
@@ -874,6 +903,116 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		catch (Exception e) {
 			throw new RuntimeException("Failed to parse tool input schema: " + toolDefinition.inputSchema(), e);
 		}
+	}
+
+	/**
+	 * Converts a Spring AI {@link Media} object to an Anthropic SDK
+	 * {@link ContentBlockParam}. Supports images (PNG, JPEG, GIF, WebP) and PDF
+	 * documents. Data can be provided as byte[] (base64 encoded) or HTTPS URL string.
+	 * @param media the media object containing MIME type and data
+	 * @return the appropriate ContentBlockParam (ImageBlockParam or DocumentBlockParam)
+	 * @throws IllegalArgumentException if the media type is unsupported
+	 */
+	private ContentBlockParam getContentBlockParamByMedia(Media media) {
+		MimeType mimeType = media.getMimeType();
+		String data = fromMediaData(media.getData());
+
+		if (isImageMedia(mimeType)) {
+			return createImageBlockParam(mimeType, data);
+		}
+		else if (isPdfMedia(mimeType)) {
+			return createDocumentBlockParam(data);
+		}
+		throw new IllegalArgumentException("Unsupported media type: " + mimeType
+				+ ". Supported types are: images (image/*) and PDF documents (application/pdf)");
+	}
+
+	/**
+	 * Checks if the given MIME type represents an image.
+	 * @param mimeType the MIME type to check
+	 * @return true if the type is image/*
+	 */
+	private boolean isImageMedia(MimeType mimeType) {
+		return "image".equals(mimeType.getType());
+	}
+
+	/**
+	 * Checks if the given MIME type represents a PDF document.
+	 * @param mimeType the MIME type to check
+	 * @return true if the type is application/pdf
+	 */
+	private boolean isPdfMedia(MimeType mimeType) {
+		return "application".equals(mimeType.getType()) && "pdf".equals(mimeType.getSubtype());
+	}
+
+	/**
+	 * Extracts media data as a string. Converts byte[] to base64, passes through URL
+	 * strings.
+	 * @param mediaData the media data (byte[] or String)
+	 * @return base64-encoded string or URL string
+	 * @throws IllegalArgumentException if data type is unsupported
+	 */
+	private String fromMediaData(Object mediaData) {
+		if (mediaData instanceof byte[] bytes) {
+			return Base64.getEncoder().encodeToString(bytes);
+		}
+		else if (mediaData instanceof String text) {
+			return text;
+		}
+		throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName()
+				+ ". Expected byte[] or String.");
+	}
+
+	/**
+	 * Creates an {@link ImageBlockParam} from the given MIME type and data.
+	 * @param mimeType the image MIME type (image/png, image/jpeg, etc.)
+	 * @param data base64-encoded image data or HTTPS URL
+	 * @return the ImageBlockParam wrapped in ContentBlockParam
+	 */
+	private ContentBlockParam createImageBlockParam(MimeType mimeType, String data) {
+		ImageBlockParam.Source source;
+		if (data.startsWith("https://")) {
+			source = ImageBlockParam.Source.ofUrl(UrlImageSource.builder().url(data).build());
+		}
+		else {
+			source = ImageBlockParam.Source
+				.ofBase64(Base64ImageSource.builder().data(data).mediaType(toSdkImageMediaType(mimeType)).build());
+		}
+		return ContentBlockParam.ofImage(ImageBlockParam.builder().source(source).build());
+	}
+
+	/**
+	 * Creates a {@link DocumentBlockParam} for PDF documents.
+	 * @param data base64-encoded PDF data or HTTPS URL
+	 * @return the DocumentBlockParam wrapped in ContentBlockParam
+	 */
+	private ContentBlockParam createDocumentBlockParam(String data) {
+		DocumentBlockParam.Source source;
+		if (data.startsWith("https://")) {
+			source = DocumentBlockParam.Source.ofUrl(UrlPdfSource.builder().url(data).build());
+		}
+		else {
+			source = DocumentBlockParam.Source.ofBase64(Base64PdfSource.builder().data(data).build());
+		}
+		return ContentBlockParam.ofDocument(DocumentBlockParam.builder().source(source).build());
+	}
+
+	/**
+	 * Converts a Spring MIME type to the SDK's {@link Base64ImageSource.MediaType}.
+	 * @param mimeType the Spring MIME type
+	 * @return the SDK media type enum value
+	 * @throws IllegalArgumentException if the image type is unsupported
+	 */
+	private Base64ImageSource.MediaType toSdkImageMediaType(MimeType mimeType) {
+		String subtype = mimeType.getSubtype();
+		return switch (subtype) {
+			case "png" -> Base64ImageSource.MediaType.IMAGE_PNG;
+			case "jpeg", "jpg" -> Base64ImageSource.MediaType.IMAGE_JPEG;
+			case "gif" -> Base64ImageSource.MediaType.IMAGE_GIF;
+			case "webp" -> Base64ImageSource.MediaType.IMAGE_WEBP;
+			default -> throw new IllegalArgumentException("Unsupported image type: " + mimeType
+					+ ". Supported types: image/png, image/jpeg, image/gif, image/webp");
+		};
 	}
 
 	@Override
