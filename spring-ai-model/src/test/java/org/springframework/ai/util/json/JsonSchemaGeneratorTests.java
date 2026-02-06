@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.Locale;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
@@ -28,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +40,7 @@ import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Unit tests for {@link JsonSchemaGenerator}.
@@ -699,6 +702,23 @@ class JsonSchemaGeneratorTests {
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
+	}
+	
+	@Test
+	void shouldUppercaseTypesIndependentlyOfLocale() throws JsonProcessingException {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+
+			ObjectNode objectNode = JsonParser.getObjectMapper().createObjectNode();
+			objectNode.put("type", "integer");
+
+			JsonSchemaGenerator.convertTypeValuesToUpperCase(objectNode);
+
+			assertEquals("INTEGER", objectNode.get("type").asText());
+		} finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	static class TestMethods {
