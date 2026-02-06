@@ -78,6 +78,7 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.connectionTimeout | Max duration to wait while establishing connection | 5s
 | spring.ai.bedrock.aws.connectionAcquisitionTimeout | Max duration to wait for new connection from the pool | 30s
 | spring.ai.bedrock.aws.asyncReadTimeout | Max duration spent reading asynchronous responses | 30s
+| spring.ai.bedrock.aws.socketTimeout | Max duration to wait for response data on synchronous calls | 90s
 | spring.ai.bedrock.aws.access-key | AWS access key  | -
 | spring.ai.bedrock.aws.secret-key | AWS secret key  | -
 | spring.ai.bedrock.aws.session-token | AWS session token for temporary credentials | -
@@ -85,6 +86,9 @@ The prefix `spring.ai.bedrock.aws` is the property prefix to configure the conne
 | spring.ai.bedrock.aws.profile.credentials-path | AWS credentials file path.  | -
 | spring.ai.bedrock.aws.profile.configuration-path | AWS config file path.  | -
 |====
+
+TIP: When using models with large context windows (e.g. 80K+ tokens), the time to first token (TTFT) can exceed the default `asyncReadTimeout` (30s) for streaming or `socketTimeout` (90s) for non-streaming calls.
+Increase these values as needed, for example: `spring.ai.bedrock.aws.asyncReadTimeout=5m` and `spring.ai.bedrock.aws.socketTimeout=5m`.
 
 [NOTE]
 ====
