@@ -23,12 +23,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -132,7 +133,7 @@ public class DeepSeekApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+		Assert.isTrue(Boolean.FALSE.equals(chatRequest.stream()), "Request must set the stream property to false.");
 
 		return this.restClient.post()
 			.uri(this.getEndpoint(chatRequest))
@@ -163,7 +164,7 @@ public class DeepSeekApi {
 			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+		Assert.isTrue(Boolean.TRUE.equals(chatRequest.stream()), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -199,9 +200,7 @@ public class DeepSeekApi {
 			// Mono<ChatCompletionChunk>,
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
+				Mono<ChatCompletionChunk> monoChunk = window.reduce(this.chunkMerger::merge);
 				return List.of(monoChunk);
 			})
 			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
@@ -304,25 +303,20 @@ public class DeepSeekApi {
 		/**
 		 * The type of the tool. Currently, only 'function' is supported.
 		 */
-		@JsonProperty("type")
-		private Type type = Type.FUNCTION;
+		private Type type;
 
 		/**
 		 * The function definition.
 		 */
-		@JsonProperty("function")
 		private Function function;
-
-		public FunctionTool() {
-
-		}
 
 		/**
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param type the tool type
 		 * @param function function definition
 		 */
-		public FunctionTool(Type type, Function function) {
+		@JsonCreator
+		public FunctionTool(@JsonProperty("type") Type type, @JsonProperty("function") Function function) {
 			this.type = type;
 			this.function = function;
 		}
@@ -370,27 +364,15 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		public static class Function {
 
-			@JsonProperty("description")
 			private String description;
 
-			@JsonProperty("name")
 			private String name;
 
-			@JsonProperty("parameters")
 			private Map<String, Object> parameters;
 
-			@JsonProperty("strict")
-			Boolean strict;
+			private @Nullable Boolean strict;
 
-			@JsonIgnore
-			private String jsonSchema;
-
-			/**
-			 * NOTE: Required by Jackson, JSON deserialization!
-			 */
-			@SuppressWarnings("unused")
-			private Function() {
-			}
+			private @Nullable String jsonSchema;
 
 			/**
 			 * Create tool function definition.
@@ -406,7 +388,11 @@ public class DeepSeekApi {
 			 * defined in the parameters field. Only a subset of JSON Schema is supported
 			 * when strict is true.
 			 */
-			public Function(String description, String name, Map<String, Object> parameters, Boolean strict) {
+			@JsonCreator
+			public Function(@JsonProperty("description") String description, @JsonProperty("name") String name,
+					@JsonProperty("parameters") Map<String, Object> parameters,
+					@JsonProperty("strict") @Nullable Boolean strict) {
+
 				this.description = description;
 				this.name = name;
 				this.parameters = parameters;
@@ -447,19 +433,19 @@ public class DeepSeekApi {
 				this.parameters = parameters;
 			}
 
-			public Boolean getStrict() {
+			public @Nullable Boolean getStrict() {
 				return this.strict;
 			}
 
-			public void setStrict(Boolean strict) {
+			public void setStrict(@Nullable Boolean strict) {
 				this.strict = strict;
 			}
 
-			public String getJsonSchema() {
+			public @Nullable String getJsonSchema() {
 				return this.jsonSchema;
 			}
 
-			public void setJsonSchema(String jsonSchema) {
+			public void setJsonSchema(@Nullable String jsonSchema) {
 				this.jsonSchema = jsonSchema;
 				if (jsonSchema != null) {
 					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
@@ -522,18 +508,18 @@ public class DeepSeekApi {
 	public record ChatCompletionRequest(// @formatter:off
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
 			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Double frequencyPenalty,
-			@JsonProperty("max_tokens") Integer maxTokens, // Use maxCompletionTokens instead
-			@JsonProperty("presence_penalty") Double presencePenalty,
-			@JsonProperty("response_format") ResponseFormat responseFormat,
-			@JsonProperty("stop") List<String> stop,
-			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("temperature") Double temperature,
-			@JsonProperty("top_p") Double topP,
-			@JsonProperty("logprobs") Boolean logprobs,
-			@JsonProperty("top_logprobs") Integer topLogprobs,
-			@JsonProperty("tools") List<FunctionTool> tools,
-			@JsonProperty("tool_choice") Object toolChoice) {
+			@JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty,
+			@JsonProperty("max_tokens") @Nullable Integer maxTokens, // Use maxCompletionTokens instead
+			@JsonProperty("presence_penalty") @Nullable Double presencePenalty,
+			@JsonProperty("response_format") @Nullable ResponseFormat responseFormat,
+			@JsonProperty("stop") @Nullable List<String> stop,
+			@JsonProperty("stream") @Nullable Boolean stream,
+			@JsonProperty("temperature") @Nullable Double temperature,
+			@JsonProperty("top_p") @Nullable Double topP,
+			@JsonProperty("logprobs") @Nullable Boolean logprobs,
+			@JsonProperty("top_logprobs") @Nullable Integer topLogprobs,
+			@JsonProperty("tools") @Nullable List<FunctionTool> tools,
+			@JsonProperty("tool_choice") @Nullable Object toolChoice) {
 
 
 		/**
@@ -543,6 +529,7 @@ public class DeepSeekApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
+		@SuppressWarnings("NullAway") // Model nullable here due to streaming
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null,
 					null, stream, null, null, null, null, null, null);
@@ -619,12 +606,12 @@ public class DeepSeekApi {
 	public record ChatCompletionMessage(// @formatter:off
 			@JsonProperty("content") Object rawContent,
 			@JsonProperty("role") Role role,
-			@JsonProperty("name") String name,
-			@JsonProperty("tool_call_id") String toolCallId,
+			@JsonProperty("name") @Nullable String name,
+			@JsonProperty("tool_call_id") @Nullable String toolCallId,
 			@JsonProperty("tool_calls")
-			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
-			@JsonProperty("prefix") Boolean prefix,
-			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
+			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @Nullable List<ToolCall> toolCalls,
+			@JsonProperty("prefix") @Nullable Boolean prefix,
+			@JsonProperty("reasoning_content") @Nullable String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -645,8 +632,8 @@ public class DeepSeekApi {
 		 * @param toolCallId The id of the tool call.
 		 * @param toolCalls The tool calls generated by the model, such as function calls.
 		 */
-		public ChatCompletionMessage(Object content, Role role, String name, String toolCallId,
-				List<ToolCall> toolCalls) {
+		public ChatCompletionMessage(Object content, Role role, @Nullable String name, @Nullable String toolCallId,
+				@Nullable List<ToolCall> toolCalls) {
 			this(content, role, name, toolCallId, toolCalls, null, null);
 		}
 
@@ -654,9 +641,7 @@ public class DeepSeekApi {
 		 * Get message content as String.
 		 */
 		public String content() {
-			if (this.rawContent == null) {
-				return null;
-			}
+			Assert.state(this.rawContent != null, "Content must not be null");
 			if (this.rawContent instanceof String text) {
 				return text;
 			}
@@ -705,12 +690,12 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(// @formatter:off
-				@JsonProperty("index") Integer index,
+				@JsonProperty("index") @Nullable Integer index,
 				@JsonProperty("id") String id,
-				@JsonProperty("type") String type,
+				@JsonProperty("type") @Nullable String type,
 				@JsonProperty("function") ChatCompletionFunction function) { // @formatter:on
 
-			public ToolCall(String id, String type, ChatCompletionFunction function) {
+			public ToolCall(String id, @Nullable String type, ChatCompletionFunction function) {
 				this(null, id, type, function);
 			}
 
@@ -770,10 +755,10 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Choice(// @formatter:off
-				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+				@JsonProperty("finish_reason") @Nullable ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("message") ChatCompletionMessage message,
-				@JsonProperty("logprobs") LogProbs logprobs) { // @formatter:on
+				@JsonProperty("logprobs") @Nullable LogProbs logprobs) { // @formatter:on
 		}
 
 	}
@@ -852,7 +837,7 @@ public class DeepSeekApi {
 		@JsonProperty("completion_tokens") Integer completionTokens,
 		@JsonProperty("prompt_tokens") Integer promptTokens,
 		@JsonProperty("total_tokens") Integer totalTokens,
-		@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails) { // @formatter:on
+		@JsonProperty("prompt_tokens_details") @Nullable PromptTokensDetails promptTokensDetails) { // @formatter:on
 
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
 			this(completionTokens, promptTokens, totalTokens, null);
@@ -912,10 +897,10 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(// @formatter:off
-				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+				@JsonProperty("finish_reason") @Nullable ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("delta") ChatCompletionMessage delta,
-				@JsonProperty("logprobs") LogProbs logprobs) { // @formatter:on
+				@JsonProperty("logprobs") @Nullable LogProbs logprobs) { // @formatter:on
 
 		}
 
@@ -925,7 +910,7 @@ public class DeepSeekApi {
 
 		private String baseUrl = org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_BASE_URL;
 
-		private ApiKey apiKey;
+		private @Nullable ApiKey apiKey;
 
 		private HttpHeaders headers = new HttpHeaders();
 

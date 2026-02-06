@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.content.Media;
 
@@ -30,26 +32,27 @@ import org.springframework.ai.content.Media;
  */
 public class DeepSeekAssistantMessage extends AssistantMessage {
 
-	private Boolean prefix;
+	private @Nullable Boolean prefix;
 
-	private String reasoningContent;
+	private @Nullable String reasoningContent;
 
-	protected DeepSeekAssistantMessage(String content, String reasoningContent, Boolean prefix,
-			Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
+	protected DeepSeekAssistantMessage(@Nullable String content, @Nullable String reasoningContent,
+			@Nullable Boolean prefix, Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
 		super(content, properties, toolCalls, media);
 		this.reasoningContent = reasoningContent;
 		this.prefix = prefix;
 	}
 
-	public static DeepSeekAssistantMessage prefixAssistantMessage(String content) {
+	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content) {
 		return prefixAssistantMessage(content, null);
 	}
 
-	public static DeepSeekAssistantMessage prefixAssistantMessage(String content, String reasoningContent) {
+	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content,
+			@Nullable String reasoningContent) {
 		return new DeepSeekAssistantMessage.Builder().content(content).reasoningContent(reasoningContent).build();
 	}
 
-	public Boolean getPrefix() {
+	public @Nullable Boolean getPrefix() {
 		return this.prefix;
 	}
 
@@ -57,16 +60,16 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 		this.prefix = prefix;
 	}
 
-	public String getReasoningContent() {
+	public @Nullable String getReasoningContent() {
 		return this.reasoningContent;
 	}
 
-	public void setReasoningContent(String reasoningContent) {
+	public void setReasoningContent(@Nullable String reasoningContent) {
 		this.reasoningContent = reasoningContent;
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -93,7 +96,7 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	public static final class Builder {
 
-		private String content;
+		private @Nullable String content;
 
 		private Map<String, Object> properties = Map.of();
 
@@ -101,11 +104,11 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 		private List<Media> media = List.of();
 
-		private Boolean prefix;
+		private @Nullable Boolean prefix;
 
-		private String reasoningContent;
+		private @Nullable String reasoningContent;
 
-		public Builder content(String content) {
+		public Builder content(@Nullable String content) {
 			this.content = content;
 			return this;
 		}
@@ -125,12 +128,12 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 			return this;
 		}
 
-		public Builder prefix(Boolean prefix) {
+		public Builder prefix(@Nullable Boolean prefix) {
 			this.prefix = prefix;
 			return this;
 		}
 
-		public Builder reasoningContent(String reasoningContent) {
+		public Builder reasoningContent(@Nullable String reasoningContent) {
 			this.reasoningContent = reasoningContent;
 			return this;
 		}
