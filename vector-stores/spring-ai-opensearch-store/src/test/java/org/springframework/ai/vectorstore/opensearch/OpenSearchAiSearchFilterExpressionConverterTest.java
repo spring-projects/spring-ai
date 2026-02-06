@@ -53,7 +53,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 	public void testEQ() {
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country:BG");
+		assertThat(vectorExpr).isEqualTo("metadata.country:\"BG\"");
 	}
 
 	@Test
@@ -61,14 +61,14 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		String vectorExpr = this.converter.convertExpression(new Filter.Expression(AND,
 				new Filter.Expression(EQ, new Filter.Key("genre"), new Filter.Value("drama")),
 				new Filter.Expression(GTE, new Filter.Key("year"), new Filter.Value(2020))));
-		assertThat(vectorExpr).isEqualTo("metadata.genre:drama AND metadata.year:>=2020");
+		assertThat(vectorExpr).isEqualTo("metadata.genre:\"drama\" AND metadata.year:>=2020");
 	}
 
 	@Test
 	public void tesIn() {
 		String vectorExpr = this.converter.convertExpression(new Filter.Expression(IN, new Filter.Key("genre"),
 				new Filter.Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(vectorExpr).isEqualTo("(metadata.genre:comedy OR documentary OR drama)");
+		assertThat(vectorExpr).isEqualTo("metadata.genre:(\"comedy\" OR \"documentary\" OR \"drama\")");
 	}
 
 	@Test
@@ -78,7 +78,8 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(AND,
 								new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")),
 								new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia")))));
-		assertThat(vectorExpr).isEqualTo("metadata.year:>=2020 OR metadata.country:BG AND metadata.city: NOT Sofia");
+		assertThat(vectorExpr)
+			.isEqualTo("metadata.year:>=2020 OR metadata.country:\"BG\" AND metadata.city: NOT \"Sofia\"");
 	}
 
 	@Test
@@ -88,8 +89,8 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(GTE, new Filter.Key("year"), new Filter.Value(2020)),
 						new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")))),
 				new Filter.Expression(NIN, new Filter.Key("city"), new Filter.Value(List.of("Sofia", "Plovdiv")))));
-		assertThat(vectorExpr)
-			.isEqualTo("(metadata.year:>=2020 OR metadata.country:BG) AND NOT (metadata.city:Sofia OR Plovdiv)");
+		assertThat(vectorExpr).isEqualTo(
+				"(metadata.year:>=2020 OR metadata.country:\"BG\") AND NOT metadata.city:(\"Sofia\" OR \"Plovdiv\")");
 	}
 
 	@Test
@@ -99,8 +100,8 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(GTE, new Filter.Key("year"), new Filter.Value(2020))),
 				new Filter.Expression(IN, new Filter.Key("country"), new Filter.Value(List.of("BG", "NL", "US")))));
 
-		assertThat(vectorExpr)
-			.isEqualTo("metadata.isOpen:true AND metadata.year:>=2020 AND (metadata.country:BG OR NL OR US)");
+		assertThat(vectorExpr).isEqualTo(
+				"metadata.isOpen:true AND metadata.year:>=2020 AND metadata.country:(\"BG\" OR \"NL\" OR \"US\")");
 	}
 
 	@Test
@@ -116,11 +117,11 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
+		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:\"BG\"");
 
 		vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("'country 1 2 3'"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
+		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:\"BG\"");
 	}
 
 	@Test
@@ -128,7 +129,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// category IN []
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(IN, new Filter.Key("category"), new Filter.Value(List.of())));
-		assertThat(vectorExpr).isEqualTo("(metadata.category:)");
+		assertThat(vectorExpr).isEqualTo("metadata.category:()");
 	}
 
 	@Test
@@ -136,7 +137,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// status IN ["active"]
 		String vectorExpr = this.converter.convertExpression(
 				new Filter.Expression(IN, new Filter.Key("status"), new Filter.Value(List.of("active"))));
-		assertThat(vectorExpr).isEqualTo("(metadata.status:active)");
+		assertThat(vectorExpr).isEqualTo("metadata.status:(\"active\")");
 	}
 
 	@Test
@@ -152,7 +153,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// entity.profile.name == "EntityA"
 		String vectorExpr = this.converter.convertExpression(
 				new Filter.Expression(EQ, new Filter.Key("entity.profile.name"), new Filter.Value("EntityA")));
-		assertThat(vectorExpr).isEqualTo("metadata.entity.profile.name:EntityA");
+		assertThat(vectorExpr).isEqualTo("metadata.entity.profile.name:\"EntityA\"");
 	}
 
 	@Test
@@ -160,7 +161,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// id == "1"
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("id"), new Filter.Value("1")));
-		assertThat(vectorExpr).isEqualTo("metadata.id:1");
+		assertThat(vectorExpr).isEqualTo("metadata.id:\"1\"");
 	}
 
 	@Test
@@ -186,7 +187,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 				new Filter.Expression(NE, new Filter.Key("fieldC"), new Filter.Value("inactive"))));
 
 		assertThat(vectorExpr).isEqualTo(
-				"((metadata.fieldA:>=100 AND metadata.fieldB:X1) OR (metadata.fieldA:>=50 AND metadata.fieldB:Y2)) AND metadata.fieldC: NOT inactive");
+				"((metadata.fieldA:>=100 AND metadata.fieldB:\"X1\") OR (metadata.fieldA:>=50 AND metadata.fieldB:\"Y2\")) AND metadata.fieldC: NOT \"inactive\"");
 	}
 
 	@Test
@@ -200,7 +201,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 				new Filter.Expression(EQ, new Filter.Key("version"), new Filter.Value(1))));
 
 		assertThat(vectorExpr).isEqualTo(
-				"metadata.active:true AND metadata.score:>=1.5 AND (metadata.tags:featured OR premium) AND metadata.version:1");
+				"metadata.active:true AND metadata.score:>=1.5 AND metadata.tags:(\"featured\" OR \"premium\") AND metadata.version:1");
 	}
 
 	@Test
@@ -208,7 +209,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// status NIN ["A", "B", "C"]
 		String vectorExpr = this.converter.convertExpression(
 				new Filter.Expression(NIN, new Filter.Key("status"), new Filter.Value(List.of("A", "B", "C"))));
-		assertThat(vectorExpr).isEqualTo("NOT (metadata.status:A OR B OR C)");
+		assertThat(vectorExpr).isEqualTo("NOT metadata.status:(\"A\" OR \"B\" OR \"C\")");
 	}
 
 	@Test
@@ -216,7 +217,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// description != ""
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(NE, new Filter.Key("description"), new Filter.Value("")));
-		assertThat(vectorExpr).isEqualTo("metadata.description: NOT ");
+		assertThat(vectorExpr).isEqualTo("metadata.description: NOT \"\"");
 	}
 
 	@Test
@@ -224,7 +225,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// tags[0] == "important"
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("tags[0]"), new Filter.Value("important")));
-		assertThat(vectorExpr).isEqualTo("metadata.tags[0]:important");
+		assertThat(vectorExpr).isEqualTo("metadata.tags[0]:\"important\"");
 	}
 
 }
