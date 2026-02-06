@@ -338,6 +338,64 @@ class ToolUtilsTests {
 	}
 
 	@Test
+	void toSyncToolSpecificationShouldHandleProxiedTextContent() {
+		// Simulates SyncMcpToolCallback.call() returning serialized List<Content>
+		// without the 'type' discriminator field
+		String proxiedResult = "[{\"text\":\"Hello from proxied tool\"}]";
+		ToolCallback callback = createMockToolCallback("proxy-test", proxiedResult);
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("Hello from proxied tool");
+		assertThat(result.isError()).isFalse();
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldHandleProxiedMultipleTextContent() {
+		String proxiedResult = "[{\"text\":\"First\"},{\"text\":\"Second\"}]";
+		ToolCallback callback = createMockToolCallback("proxy-test", proxiedResult);
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		assertThat(result.content()).hasSize(2);
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("First");
+		assertThat(((TextContent) result.content().get(1)).text()).isEqualTo("Second");
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldHandleProxiedImageContent() {
+		String proxiedResult = "[{\"data\":\"base64data\",\"mimeType\":\"image/png\"}]";
+		ToolCallback callback = createMockToolCallback("proxy-test", proxiedResult);
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		assertThat(result.content()).hasSize(1);
+		assertThat(result.content().get(0)).isInstanceOf(McpSchema.ImageContent.class);
+		McpSchema.ImageContent imageContent = (McpSchema.ImageContent) result.content().get(0);
+		assertThat(imageContent.data()).isEqualTo("base64data");
+		assertThat(imageContent.mimeType()).isEqualTo("image/png");
+	}
+
+	@Test
+	void toSyncToolSpecificationShouldHandlePlainStringResult() {
+		// Non-JSON string should be wrapped in TextContent as-is
+		ToolCallback callback = createMockToolCallback("test", "plain text result");
+
+		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
+
+		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		assertThat(result.content()).hasSize(1);
+		TextContent content = (TextContent) result.content().get(0);
+		assertThat(content.text()).isEqualTo("plain text result");
+	}
+
+	@Test
 	void getToolCallbacksFromSyncClientsWithEmptyListShouldReturnEmptyList() {
 		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(List.of());
 		assertThat(result).isEmpty();
