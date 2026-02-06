@@ -69,7 +69,7 @@ public class MilvusVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MilvusVectorStore vectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
+	public MilvusVectorStore milvusVectorStore(MilvusServiceClient milvusClient, EmbeddingModel embeddingModel,
 			MilvusVectorStoreProperties properties, BatchingStrategy batchingStrategy,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention) {

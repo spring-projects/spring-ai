@@ -40,8 +40,8 @@ public class CouchbaseSearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public CouchbaseSearchVectorStore vectorStore(CouchbaseSearchVectorStoreProperties properties, Cluster cluster,
-			EmbeddingModel embeddingModel) {
+	public CouchbaseSearchVectorStore couchbaseSearchVectorStore(CouchbaseSearchVectorStoreProperties properties,
+			Cluster cluster, EmbeddingModel embeddingModel) {
 		var builder = CouchbaseSearchVectorStore.builder(cluster, embeddingModel);
 
 		PropertyMapper mapper = PropertyMapper.get();

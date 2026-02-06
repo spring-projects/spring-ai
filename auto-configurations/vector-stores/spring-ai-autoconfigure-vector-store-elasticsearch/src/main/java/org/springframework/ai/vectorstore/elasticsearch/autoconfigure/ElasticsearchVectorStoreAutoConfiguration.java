@@ -63,8 +63,9 @@ public class ElasticsearchVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	ElasticsearchVectorStore vectorStore(ElasticsearchVectorStoreProperties properties, Rest5Client restClient,
-			EmbeddingModel embeddingModel, ObjectProvider<ObservationRegistry> observationRegistry,
+	ElasticsearchVectorStore elasticsearchVectorStore(ElasticsearchVectorStoreProperties properties,
+			Rest5Client restClient, EmbeddingModel embeddingModel,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
 		ElasticsearchVectorStoreOptions elasticsearchVectorStoreOptions = new ElasticsearchVectorStoreOptions();

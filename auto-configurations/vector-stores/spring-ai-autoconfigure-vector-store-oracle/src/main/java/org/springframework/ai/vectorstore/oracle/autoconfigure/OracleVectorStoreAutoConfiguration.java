@@ -59,7 +59,7 @@ public class OracleVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OracleVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+	public OracleVectorStore oracleVectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 			OracleVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
