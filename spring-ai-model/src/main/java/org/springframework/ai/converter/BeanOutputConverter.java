@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.github.victools.jsonschema.generator.Option;
+import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -41,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.json.schema.SpringAiSchemaModule;
 import org.springframework.core.KotlinDetector;
 import org.springframework.core.ParameterizedTypeReference;
 
@@ -191,13 +195,14 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	private void generateSchema() {
 		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
 				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
-				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
-				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
+		Swagger2Module swagger2Module = new Swagger2Module();
+		SpringAiSchemaModule springAiSchemaModule = new SpringAiSchemaModule();
+		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
+				OptionPreset.PLAIN_JSON)
 			.with(jacksonModule)
+			.with(swagger2Module)
+			.with(springAiSchemaModule)
 			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
-
-		configBuilder.forFields().withRequiredCheck(f -> true);
 
 		if (KotlinDetector.isKotlinReflectPresent()) {
 			configBuilder.with(new KotlinModule());
