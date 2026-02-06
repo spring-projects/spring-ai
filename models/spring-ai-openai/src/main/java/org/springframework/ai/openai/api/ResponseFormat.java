@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,13 +97,15 @@ public class ResponseFormat {
 		}
 	}
 
-	private ResponseFormat(Type type, JsonSchema jsonSchema) {
+	private ResponseFormat(Type type, JsonSchema jsonSchema, String schema) {
 		this.type = type;
 		this.jsonSchema = jsonSchema;
+		this.schema = schema;
 	}
 
 	public ResponseFormat(Type type, String schema) {
-		this(type, StringUtils.hasText(schema) ? JsonSchema.builder().schema(schema).strict(true).build() : null);
+		this(type, StringUtils.hasText(schema) ? JsonSchema.builder().schema(schema).strict(true).build() : null,
+				schema);
 	}
 
 	public static Builder builder() {
@@ -136,6 +138,8 @@ public class ResponseFormat {
 
 		private Type type;
 
+		private String schema;
+
 		private JsonSchema jsonSchema;
 
 		private Builder() {
@@ -153,11 +157,12 @@ public class ResponseFormat {
 
 		public Builder jsonSchema(String jsonSchema) {
 			this.jsonSchema = JsonSchema.builder().schema(jsonSchema).build();
+			this.schema = jsonSchema;
 			return this;
 		}
 
 		public ResponseFormat build() {
-			return new ResponseFormat(this.type, this.jsonSchema);
+			return new ResponseFormat(this.type, this.jsonSchema, this.schema);
 		}
 
 	}

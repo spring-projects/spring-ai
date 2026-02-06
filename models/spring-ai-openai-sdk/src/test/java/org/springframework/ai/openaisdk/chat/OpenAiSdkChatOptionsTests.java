@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.openaisdk.OpenAiSdkChatModel.ResponseFormat;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkChatOptions.StreamOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -249,6 +250,7 @@ public class OpenAiSdkChatOptionsTests {
 		assertThat(options.getInternalToolExecutionEnabled()).isNull();
 		assertThat(options.getCustomHeaders()).isNotNull().isEmpty();
 		assertThat(options.getToolContext()).isNotNull().isEmpty();
+		assertThat(options.getOutputSchema()).isNull();
 	}
 
 	@Test
@@ -674,6 +676,29 @@ public class OpenAiSdkChatOptionsTests {
 		OpenAiSdkChatOptions options = new OpenAiSdkChatOptions();
 		// TopK is not supported by OpenAI, should always return null
 		assertThat(options.getTopK()).isNull();
+	}
+
+	@Test
+	void testSetOutputSchema() {
+		OpenAiSdkChatOptions options = new OpenAiSdkChatOptions();
+		// language=JSON
+		String schema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+				""";
+
+		options.setOutputSchema(schema);
+
+		assertThat(options.getResponseFormat()).isNotNull();
+		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+		assertThat(options.getResponseFormat().getJsonSchema()).isEqualTo(schema);
+		assertThat(options.getOutputSchema()).isEqualTo(schema);
 	}
 
 }

@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -127,6 +128,7 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getRandomSeed()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
+		assertThat(options.getOutputSchema()).isNull();
 	}
 
 	@Test
@@ -449,6 +451,13 @@ class MistralAiChatOptionsTests {
 
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+		ResponseFormat.JsonSchema jsonSchema = options.getResponseFormat().getJsonSchema();
+		assertThat(jsonSchema).isNotNull();
+		assertThat(jsonSchema.getName()).isEqualTo("custom_schema");
+		assertThat(jsonSchema.getStrict()).isTrue();
+		assertThat(jsonSchema.getSchema()).containsOnly(Assertions.entry("type", "object"),
+				Assertions.entry("properties", Map.of()));
+		assertThat(options.getOutputSchema()).isEqualTo(schema);
 	}
 
 	@Test
