@@ -21,6 +21,9 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.Assert;
 
 /**
  * An object specifying the format that the model must output. Setting to { "type":
@@ -90,7 +93,7 @@ public final class ResponseFormat {
 
 	public static final class Builder {
 
-		private Type type;
+		private @Nullable Type type;
 
 		private Builder() {
 		}
@@ -101,6 +104,7 @@ public final class ResponseFormat {
 		}
 
 		public ResponseFormat build() {
+			Assert.state(this.type != null, "type must not be null");
 			return new ResponseFormat(this.type);
 		}
 

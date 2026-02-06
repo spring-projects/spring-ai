@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -151,7 +152,7 @@ public class DeepSeekChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	public ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
 		ChatCompletionRequest request = createRequest(prompt, false);
 
@@ -193,12 +194,13 @@ public class DeepSeekChatModel implements ChatModel {
 				}).toList();
 
 				// Current usage
-				DeepSeekApi.Usage usage = completionEntity.getBody().usage();
+				ChatCompletion body = completionEntity.getBody();
+				Assert.state(body != null, "Body must not be null");
+				DeepSeekApi.Usage usage = body.usage();
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 						previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations,
-						from(completionEntity.getBody(), accumulatedUsage));
+				ChatResponse chatResponse = new ChatResponse(generations, from(body, accumulatedUsage));
 
 				observationContext.setResponse(chatResponse);
 
@@ -231,7 +233,7 @@ public class DeepSeekChatModel implements ChatModel {
 		return internalStream(requestPrompt, null);
 	}
 
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	public Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
@@ -433,7 +435,9 @@ public class DeepSeekChatModel implements ChatModel {
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
-				return List.of(new ChatCompletionMessage(message.getText(),
+				String text = message.getText();
+				Assert.state(text != null, "text must not be null");
+				return List.of(new ChatCompletionMessage(text,
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
@@ -450,8 +454,10 @@ public class DeepSeekChatModel implements ChatModel {
 						&& Boolean.TRUE.equals(((DeepSeekAssistantMessage) message).getPrefix())) {
 					isPrefixAssistantMessage = true;
 				}
-				return List.of(new ChatCompletionMessage(assistantMessage.getText(),
-						ChatCompletionMessage.Role.ASSISTANT, null, null, toolCalls, isPrefixAssistantMessage, null));
+				String text = assistantMessage.getText();
+				Assert.state(text != null, "text must not be null");
+				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
+						toolCalls, isPrefixAssistantMessage, null));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -493,18 +499,6 @@ public class DeepSeekChatModel implements ChatModel {
 		}).toList();
 	}
 
-	private ChatOptions buildRequestOptions(DeepSeekApi.ChatCompletionRequest request) {
-		return ChatOptions.builder()
-			.model(request.model())
-			.frequencyPenalty(request.frequencyPenalty())
-			.maxTokens(request.maxTokens())
-			.presencePenalty(request.presencePenalty())
-			.stopSequences(request.stop())
-			.temperature(request.temperature())
-			.topP(request.topP())
-			.build();
-	}
-
 	@Override
 	public ChatOptions getDefaultOptions() {
 		return DeepSeekChatOptions.fromOptions(this.defaultOptions);
@@ -530,14 +524,14 @@ public class DeepSeekChatModel implements ChatModel {
 
 	public static final class Builder {
 
-		private DeepSeekApi deepSeekApi;
+		private @Nullable DeepSeekApi deepSeekApi;
 
 		private DeepSeekChatOptions defaultOptions = DeepSeekChatOptions.builder()
 			.model(DeepSeekApi.DEFAULT_CHAT_MODEL)
 			.temperature(0.7)
 			.build();
 
-		private ToolCallingManager toolCallingManager;
+		private @Nullable ToolCallingManager toolCallingManager;
 
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
 
@@ -580,6 +574,7 @@ public class DeepSeekChatModel implements ChatModel {
 		}
 
 		public DeepSeekChatModel build() {
+			Assert.state(this.deepSeekApi != null, "DeepSeekApi must not be null");
 			if (this.toolCallingManager != null) {
 				return new DeepSeekChatModel(this.deepSeekApi, this.defaultOptions, this.toolCallingManager,
 						this.retryTemplate, this.observationRegistry, this.toolExecutionEligibilityPredicate);
