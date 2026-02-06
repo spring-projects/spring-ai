@@ -271,8 +271,6 @@ public class AnthropicChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)) {
 
 					if (chatResponse.hasFinishReasons(Set.of("tool_use"))) {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
 						return Flux.deferContextual(ctx -> {
 							// TODO: factor out the tool execution logic with setting context into a utility.
 							ToolExecutionResult toolExecutionResult;
