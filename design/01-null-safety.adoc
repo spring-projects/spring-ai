@@ -1,18 +1,15 @@
 = Design Document 01 - Null Safety
 
+This document is a quick reference for contributors to learn how to properly annotate the code base with JSpecify annotations. It can be seen as a TL,DR version of this https://docs.spring.io/spring-framework/reference/core/null-safety.html[Spring reference].
+
+Some sections of this document are of special interest when it comes to dealing with patterns present in the Spring AI codebase, such as `@ConfigurationProperties` and builders.
+
 == Problems
 The "billion dollar mistake" is well known, and Spring AI 2.0 aligns with the rest of the Spring portfolio in its use of JSpecify annotations to express (non-)nullability of its APIs.
 
-This document is a quick reference for contributors to learn how to properly annotate the code base with JSpecify annotations.
-
-For further reference, please consult the following:
-
-* JSpecify https://jspecify.dev/docs/user-guide/[user-guide]
-* Spring https://spring.io/blog/2025/03/10/null-safety-in-spring-apps-with-jspecify-and-null-away[Blog Post] about null safety
-* https://github.com/uber/NullAway[NullAway] and https://errorprone.info/[ErrorProne]
 
 == Solution
-Spring AI uses JSpecify + NullAway + ErrorProne to enforce nullability checks.
+Spring AI uses https://github.com/spring-projects/spring-ai/blob/a8d11421c9605c2eef609535448a94c5104960ed/pom.xml#L470-L531[JSpecify + NullAway + ErrorProne] to enforce nullability checks.
 
 For consistency in the Spring AI codebase, the granularity at which null safety is enabled is the package, and only production code is annotated (test code is not).
 Any new package should be annotated with `@NullMarked`, like so:
@@ -24,7 +21,7 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 package org.springframework.ai.foo;
 ----
-From there on, any element in that package assumes non nullability by default (for its own members).
+From there on, any element in that package assumes non-null type usage by default (for its own members).
 
 NOTE: As a reminder, packages in java are NOT hierarchical. This means that `org.springframework.ai.foo.bar` is NOT a "sub-package" of `org.springframework.ai.foo` and thus needs annotating on its own.
 
@@ -143,3 +140,10 @@ TODO
 Checks are only performed in scopes that are annotated as `@NullMarked`.
 
 What this means is that if consuming code does not leverage JSpecify annotations (both via annotating the consuming code and configuring the build to use tools like Error Prone + NullAway), then there is no impact whatsoever.
+
+=== FAQ
+For further reference, please consult the following:
+
+* JSpecify https://jspecify.dev/docs/user-guide/[user-guide]
+* Spring https://spring.io/blog/2025/03/10/null-safety-in-spring-apps-with-jspecify-and-null-away[Blog] https://spring.io/blog/2025/11/12/null-safe-applications-with-spring-boot-4[Posts] about null safety
+* https://github.com/uber/NullAway[NullAway] and https://errorprone.info/[ErrorProne]
