@@ -44,10 +44,20 @@ public class ZhiPuAiApiIT {
 	ZhiPuAiApi zhiPuAiApi = ZhiPuAiApi.builder().apiKey(System.getenv("ZHIPU_AI_API_KEY")).build();
 
 	@Test
+	void chatCompletionEntityWithDefaultModel() {
+		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
+		ResponseEntity<ChatCompletion> response = this.zhiPuAiApi
+				.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), null, 0.7, false));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getBody()).isNotNull();
+	}
+
+	@Test
 	void chatCompletionEntity() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = this.zhiPuAiApi
-			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-3-turbo", 0.7, false));
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-4.6", 0.7, false));
 
 		assertThat(response).isNotNull();
 		assertThat(response.getBody()).isNotNull();
@@ -57,7 +67,7 @@ public class ZhiPuAiApiIT {
 	void chatCompletionEntityWithMoreParams() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		ResponseEntity<ChatCompletion> response = this.zhiPuAiApi
-			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-4-flash", 1024, null,
+			.chatCompletionEntity(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-4.7", 1024, null,
 					false, 0.95, 0.7, null, null, null, "test_request_id", false, null, null));
 
 		assertThat(response).isNotNull();
@@ -69,7 +79,7 @@ public class ZhiPuAiApiIT {
 	void chatCompletionStream() {
 		ChatCompletionMessage chatCompletionMessage = new ChatCompletionMessage("Hello world", Role.USER);
 		Flux<ChatCompletionChunk> response = this.zhiPuAiApi
-			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-4-flash", 0.7, true));
+			.chatCompletionStream(new ChatCompletionRequest(List.of(chatCompletionMessage), "glm-4.7", 0.7, true));
 
 		assertThat(response).isNotNull();
 		List<ChatCompletionChunk> chunks = response.collectList().block();
