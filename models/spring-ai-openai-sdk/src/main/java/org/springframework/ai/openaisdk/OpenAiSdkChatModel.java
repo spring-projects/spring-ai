@@ -267,7 +267,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param previousChatResponse the previous chat response for accumulating usage
 	 * @return the chat response
 	 */
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		ChatCompletionCreateParams request = createRequest(prompt, false);
 
@@ -367,7 +367,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param previousChatResponse the previous chat response for accumulating usage
 	 * @return a Flux of chat responses
 	 */
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionCreateParams request = createRequest(prompt, true);
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
