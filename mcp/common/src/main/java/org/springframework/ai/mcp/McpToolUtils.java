@@ -264,12 +264,31 @@ public final class McpToolUtils {
 					return new McpSchema.CallToolResult(
 							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+				return new McpSchema.CallToolResult(parseContentList(callResult), false);
 			}
 			catch (Exception e) {
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
 			}
 		});
+	}
+
+	/**
+	 * Attempts to parse a string as a list of MCP Content objects. If the string is a
+	 * valid JSON array of Content objects (e.g., from a proxied MCP tool call), it
+	 * returns the deserialized list. Otherwise, it wraps the string in a single
+	 * TextContent.
+	 * @param callResult the string to parse
+	 * @return a list of Content objects
+	 */
+	private static List<McpSchema.Content> parseContentList(String callResult) {
+		try {
+			return ModelOptionsUtils.OBJECT_MAPPER.readValue(callResult,
+					new com.fasterxml.jackson.core.type.TypeReference<List<McpSchema.Content>>() {
+					});
+		}
+		catch (Exception e) {
+			return List.of(new McpSchema.TextContent(callResult));
+		}
 	}
 
 	/**
