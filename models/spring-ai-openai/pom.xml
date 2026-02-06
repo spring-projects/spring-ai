@@ -135,6 +135,11 @@
 			<artifactId>rest-assured</artifactId>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>net.javacrumbs.json-unit</groupId>
+			<artifactId>json-unit-assertj</artifactId>
+			<version>${json-unit-assertj.version}</version>
+		</dependency>
 
 	</dependencies>
 
