@@ -113,6 +113,20 @@ The prefix `spring.ai.mistralai` is used as the property prefix that lets you co
 | spring.ai.mistralai.api-key    | The API Key           |  -
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.mistralai` is used as the property prefix that lets you configure the HTTP client for Mistral AI API calls.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.mistralai.connect-timeout | HTTP connection timeout | -
+| spring.ai.mistralai.read-timeout | HTTP read timeout | -
+| spring.ai.mistralai.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.mistralai.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 ==== Configuration Properties
 
 [NOTE]
