@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,6 +25,8 @@ import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -34,6 +37,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Role;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -68,6 +73,10 @@ import org.springframework.util.MimeType;
  * @author Ilayaperumal Gopinathan
  */
 public final class McpToolUtils {
+
+	private static final Logger logger = LoggerFactory.getLogger(McpToolUtils.class);
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
 	 * The name of tool context key used to store the MCP exchange object.
@@ -264,12 +273,71 @@ public final class McpToolUtils {
 					return new McpSchema.CallToolResult(
 							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+				return new McpSchema.CallToolResult(parseContentList(callResult), false);
 			}
 			catch (Exception e) {
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
 			}
 		});
+	}
+
+	/**
+	 * Attempts to parse a string as a list of MCP Content objects. If the string is a
+	 * valid JSON array of Content objects (e.g., from a proxied MCP tool call), it
+	 * returns the deserialized list. Otherwise, it wraps the string in a single
+	 * TextContent.
+	 * @param callResult the string to parse
+	 * @return a list of Content objects
+	 */
+	static List<McpSchema.Content> parseContentList(String callResult) {
+		try {
+			JsonNode jsonNode = OBJECT_MAPPER.readTree(callResult);
+			if (jsonNode.isArray() && !jsonNode.isEmpty()) {
+				List<McpSchema.Content> contents = new ArrayList<>();
+				for (JsonNode node : jsonNode) {
+					if (node.isObject() && node.has("data") && node.has("mimeType")) {
+						String mimeType = node.get("mimeType").asText();
+						String data = node.get("data").asText();
+						if (mimeType.startsWith("audio")) {
+							contents.add(new McpSchema.AudioContent(null, data, mimeType));
+						}
+						else {
+							contents.add(new McpSchema.ImageContent(null, data, mimeType));
+						}
+					}
+					else if (node.isObject() && node.has("text")) {
+						contents.add(new McpSchema.TextContent(node.get("text").asText()));
+					}
+					else if (node.isObject() && node.has("resource")) {
+						// EmbeddedResource contains a sealed ResourceContents type that
+						// requires the MCP SDK ObjectMapper configuration to deserialize.
+						// Preserve the raw JSON as TextContent to avoid data loss.
+						contents.add(new McpSchema.TextContent(node.get("resource").toString()));
+					}
+					else if (node.isObject() && node.has("uri")) {
+						contents.add(McpSchema.ResourceLink.builder()
+							.uri(node.get("uri").asText())
+							.name(node.has("name") ? node.get("name").asText() : null)
+							.title(node.has("title") ? node.get("title").asText() : null)
+							.description(node.has("description") ? node.get("description").asText() : null)
+							.mimeType(node.has("mimeType") ? node.get("mimeType").asText() : null)
+							.size(node.has("size") ? node.get("size").asLong() : null)
+							.build());
+					}
+					else {
+						logger.warn(
+								"Unrecognized MCP content type in proxied tool result, falling back to TextContent: {}",
+								node);
+						contents.add(new McpSchema.TextContent(node.toString()));
+					}
+				}
+				return contents;
+			}
+		}
+		catch (Exception e) {
+			logger.debug("Failed to parse call result as MCP content list, falling back to plain text wrapping", e);
+		}
+		return List.of(new McpSchema.TextContent(callResult));
 	}
 
 	/**
