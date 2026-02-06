@@ -71,6 +71,30 @@ ChatResponse response = chatClient.prompt()
 
 The LLM sees the full conversation through the advisor chain, not through ToolContext.
 
+==== The access level of model internal methods changed to private
+
+* All `internalCall` and `internalStream` methods in model classes have been changed to `private`.
+
+===== Impact
+
+* Direct calls `xxxModel.internalCall` or `xxxModel.internalStream` method, will fail to compile.
+
+===== Migration
+
+* Replace all calls to `xxxModel.internalCall` with `xxxModel.call`.
+* Replace all calls to `xxxModel.internalStream` with `xxxModel.stream`.
++
+[source,java]
+----
+// Before
+ChatResponse response = model.internalCall(prompt, previousChatResponse);
+Flux<ChatResponse> responseFlux = model.internalStream(prompt, previousChatResponse);
+
+// After
+ChatResponse response = model.call(prompt);
+Flux<ChatResponse> responseFlux = model.stream(prompt);
+----
+
 [[upgrading-to-2-0-0-M2]]
 == Upgrading to 2.0.0-M2
 
@@ -548,13 +572,13 @@ Key changes include:
 [source,java]
 ----
 // Before
-ServerMcpTransport transport = new WebFluxSseServerTransport(jsonMapper, "/mcp/message");
+ServerMcpTransport transport = new WebFluxSseServerTransport(objectMapper, "/mcp/message");
 var server = McpServer.sync(transport)
     .serverInfo("my-server", "1.0.0")
     .build();
 
 // After
-McpServerTransportProvider transportProvider = new WebFluxSseServerTransportProvider(jsonMapper, "/mcp/message");
+McpServerTransportProvider transportProvider = new WebFluxSseServerTransportProvider(objectMapper, "/mcp/message");
 var server = McpServer.sync(transportProvider)
     .serverInfo("my-server", "1.0.0")
     .build();
