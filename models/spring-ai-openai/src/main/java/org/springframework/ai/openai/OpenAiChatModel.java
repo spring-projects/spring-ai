@@ -213,13 +213,17 @@ public class OpenAiChatModel implements ChatModel {
 
 			// @formatter:off
 				List<Generation> generations = choices.stream().map(choice -> {
-					Map<String, Object> metadata = Map.of(
-							"id", chatCompletion.id() != null ? chatCompletion.id() : "",
-							"role", choice.message().role() != null ? choice.message().role().name() : "",
-							"index", choice.index() != null ? choice.index() : 0,
-							"finishReason", getFinishReasonJson(choice.finishReason()),
-							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
-							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
+					Map<String, Object> metadata = new HashMap<>(); // Change to mutable HashMap for clarity or use Map.of
+					metadata.put("id", chatCompletion.id() != null ? chatCompletion.id() : "");
+					metadata.put("role", choice.message().role() != null ? choice.message().role().name() : "");
+					metadata.put("index", choice.index() != null ? choice.index() : 0);
+					metadata.put("finishReason", getFinishReasonJson(choice.finishReason()));
+					metadata.put("refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "");
+					metadata.put("annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of());
+
+					// THE FIX: Capture the reasoning text for #5265
+					metadata.put("reasoningContent", choice.message().reasoningContent() != null ? choice.message().reasoningContent() : "");
+
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 				// @formatter:on
@@ -509,7 +513,14 @@ public class OpenAiChatModel implements ChatModel {
 	}
 
 	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {
-		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(), usage);
+		// Safely extract reasoning tokens from the nested API response
+		Integer reasoningTokens = (usage.completionTokenDetails() != null)
+				? usage.completionTokenDetails().reasoningTokens() : null;
+
+		// Use the generic metadata map in DefaultUsage to store the reasoning tokens.
+		// This avoids changing the OpenAiUsage record file entirely.
+		return new DefaultUsage(usage.promptTokens(), usage.completionTokens(), usage.totalTokens(),
+				Map.of("reasoning-tokens", reasoningTokens != null ? reasoningTokens : 0));
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
