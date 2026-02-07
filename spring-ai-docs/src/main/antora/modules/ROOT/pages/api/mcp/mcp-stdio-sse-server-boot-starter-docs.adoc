@@ -53,7 +53,7 @@ Full MCP Server feature support with `SSE` (Server-Sent Events) server transport
 </dependency>
 ----
 
-The starter activates the `McpWebFluxServerAutoConfiguration` and `McpServerAutoConfiguration` auto-configurations to provide:
+The starter activates the `McpServerSseWebFluxAutoConfiguration` and `McpServerAutoConfiguration` auto-configurations to provide:
 
 * Reactive transport using Spring WebFlux (`WebFluxSseServerTransportProvider`)
 * Automatically configured reactive SSE endpoints

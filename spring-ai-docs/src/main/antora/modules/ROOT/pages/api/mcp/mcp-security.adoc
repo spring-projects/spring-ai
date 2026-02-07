@@ -454,13 +454,12 @@ Configure MCP clients programmatically instead of using Spring Boot properties. 
 ----
 @Bean
 McpSyncClient client(
-        ObjectMapper objectMapper,
         McpSyncHttpClientRequestCustomizer requestCustomizer,
         McpClientCommonProperties commonProps
 ) {
     var transport = HttpClientStreamableHttpTransport.builder(mcpServerUrl)
             .clientBuilder(HttpClient.newBuilder())
-            .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+            .jsonMapper(McpJsonMapper.getDefault())
             .httpRequestCustomizer(requestCustomizer)
             .build();
 
@@ -481,12 +480,11 @@ For WebClient-based clients:
 @Bean
 McpSyncClient client(
         WebClient.Builder mcpWebClientBuilder,
-        ObjectMapper objectMapper,
         McpClientCommonProperties commonProperties
 ) {
     var builder = mcpWebClientBuilder.baseUrl(mcpServerUrl);
     var transport = WebClientStreamableHttpTransport.builder(builder)
-            .jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+            .jsonMapper(McpJsonMapper.getDefault())
             .build();
 
     var clientInfo = new McpSchema.Implementation("clientName", commonProperties.getVersion());

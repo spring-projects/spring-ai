@@ -243,6 +243,8 @@
 
 		<module>mcp/common</module>
 		<module>mcp/mcp-annotations-spring</module>
+		<module>mcp/transport/mcp-spring-webflux</module>
+		<module>mcp/transport/mcp-spring-webmvc</module>
 	</modules>
 
 	<organization>
@@ -353,7 +355,7 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.17.1</mcp.sdk.version>
+		<mcp.sdk.version>0.18.0-SNAPSHOT</mcp.sdk.version>
 		<mcp-annotations.version>0.8.0</mcp-annotations.version>
 
 		<!-- plugin versions -->

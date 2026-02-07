@@ -259,7 +259,7 @@ public McpSyncClient mcpClient() {
                 .build();
     }
 
-    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonMapper.createDefault()))
+    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonMapper.getDefault()))
             .requestTimeout(Duration.ofSeconds(10))
             .build()
             .initialize();

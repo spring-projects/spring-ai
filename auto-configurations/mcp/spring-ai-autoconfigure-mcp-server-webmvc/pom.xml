@@ -49,8 +49,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>io.modelcontextprotocol.sdk</groupId>
+			<groupId>org.springframework.ai</groupId>
 			<artifactId>mcp-spring-webmvc</artifactId>
+			<version>${project.parent.version}</version>
 			<optional>true</optional>
 		</dependency>
 
