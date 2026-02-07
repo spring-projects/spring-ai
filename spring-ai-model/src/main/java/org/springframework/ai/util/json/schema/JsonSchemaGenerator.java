@@ -20,7 +20,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -68,8 +71,11 @@ import org.springframework.util.StringUtils;
  * If none of these annotations are present, the default behavior is to consider the
  * property as required and not to include a description.
  * <p>
+ * This class provides caching for method input schema generation to improve performance
+ * when the same method signatures are processed multiple times.
  *
  * @author Thomas Vitale
+ * @author Seol-JY
  * @since 1.0.0
  */
 public final class JsonSchemaGenerator {
@@ -81,6 +87,8 @@ public final class JsonSchemaGenerator {
 	 * {@link JsonProperty#required()}, or {@link Schema#requiredMode()}} annotation.
 	 */
 	private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
+
+	private static final Map<String, String> methodSchemaCache = new ConcurrentHashMap<>(256);
 
 	private static final SchemaGenerator TYPE_SCHEMA_GENERATOR;
 
@@ -117,8 +125,82 @@ public final class JsonSchemaGenerator {
 
 	/**
 	 * Generate a JSON Schema for a method's input parameters.
+	 *
+	 * <p>
+	 * This method uses caching to improve performance when the same method signature is
+	 * processed multiple times. The cache key includes method signature and schema
+	 * options to ensure correct cache hits.
+	 * @param method the method to generate schema for
+	 * @param schemaOptions options for schema generation
+	 * @return JSON Schema as a string
+	 * @throws IllegalArgumentException if method is null
 	 */
 	public static String generateForMethodInput(Method method, SchemaOption... schemaOptions) {
+		Assert.notNull(method, "method cannot be null");
+
+		String cacheKey = buildMethodCacheKey(method, schemaOptions);
+		return methodSchemaCache.computeIfAbsent(cacheKey, key -> generateMethodSchemaInternal(method, schemaOptions));
+	}
+
+	/**
+	 * Generate a JSON Schema for a class type.
+	 */
+	public static String generateForType(Type type, SchemaOption... schemaOptions) {
+		Assert.notNull(type, "type cannot be null");
+		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
+		if ((type == Void.class) && !schema.has("properties")) {
+			schema.putObject("properties");
+		}
+		processSchemaOptions(schemaOptions, schema);
+		return schema.toPrettyString();
+	}
+
+	/**
+	 * Build cache key for method input schema generation.
+	 *
+	 * <p>
+	 * The cache key includes:
+	 * <ul>
+	 * <li>Declaring class name</li>
+	 * <li>Method name</li>
+	 * <li>Parameter types (including generics)</li>
+	 * <li>Schema options</li>
+	 * </ul>
+	 * @param method the method
+	 * @param schemaOptions schema generation options
+	 * @return unique cache key
+	 */
+	private static String buildMethodCacheKey(Method method, SchemaOption... schemaOptions) {
+		StringBuilder keyBuilder = new StringBuilder(256);
+
+		// Class name
+		keyBuilder.append(method.getDeclaringClass().getName());
+		keyBuilder.append('#');
+
+		// Method name
+		keyBuilder.append(method.getName());
+		keyBuilder.append('(');
+
+		// Parameter types (including generic information)
+		Type[] parameterTypes = method.getGenericParameterTypes();
+		for (int i = 0; i < parameterTypes.length; i++) {
+			if (i > 0) {
+				keyBuilder.append(',');
+			}
+			keyBuilder.append(parameterTypes[i].getTypeName());
+		}
+		keyBuilder.append(')');
+
+		// Schema options
+		if (schemaOptions.length > 0) {
+			keyBuilder.append(':');
+			keyBuilder.append(Arrays.toString(schemaOptions));
+		}
+
+		return keyBuilder.toString();
+	}
+
+	private static String generateMethodSchemaInternal(Method method, SchemaOption... schemaOptions) {
 		ObjectNode schema = JsonParser.getObjectMapper().createObjectNode();
 		schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
 		schema.put("type", "object");
@@ -155,19 +237,6 @@ public final class JsonSchemaGenerator {
 
 		processSchemaOptions(schemaOptions, schema);
 
-		return schema.toPrettyString();
-	}
-
-	/**
-	 * Generate a JSON Schema for a class type.
-	 */
-	public static String generateForType(Type type, SchemaOption... schemaOptions) {
-		Assert.notNull(type, "type cannot be null");
-		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
-		if ((type == Void.class) && !schema.has("properties")) {
-			schema.putObject("properties");
-		}
-		processSchemaOptions(schemaOptions, schema);
 		return schema.toPrettyString();
 	}
 
