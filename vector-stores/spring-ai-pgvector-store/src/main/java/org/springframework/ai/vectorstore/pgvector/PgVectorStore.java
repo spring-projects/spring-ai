@@ -154,6 +154,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author YeongMin Song
  * @author Jonghoon Park
+ * @author Minhyeok Jung
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -213,6 +214,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final int maxDocumentBatchSize;
 
+	private final PgVectorColumnNames columnNames;
+
 	/**
 	 * @param builder {@link VectorStore.Builder} for pg vector store
 	 */
@@ -221,6 +224,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
+		this.columnNames = builder.columnNames;
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 		this.documentRowMapper = new DocumentRowMapper(this.objectMapper);
 
@@ -272,9 +276,19 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private void insertOrUpdateBatch(List<Document> batch, List<Document> documents, List<float[]> embeddings) {
-		String sql = "INSERT INTO " + getFullyQualifiedTableName()
-				+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
-				+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
+		String sql = """
+			INSERT INTO %s (%s, %s, %s, %s)
+			VALUES (?, ?, ?::jsonb, ?)
+			ON CONFLICT (%s) DO UPDATE SET
+				%s = ?,
+				%s = ?::jsonb,
+				%s = ?
+			""".formatted(
+				getFullyQualifiedTableName(),
+				columnNames.id(), columnNames.content(), columnNames.metadata(), columnNames.embedding(),
+				columnNames.id(),
+				columnNames.content(), columnNames.metadata(), columnNames.embedding()
+		);
 
 		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
 
@@ -437,19 +451,31 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		this.jdbcTemplate.execute(String.format("""
-				CREATE TABLE IF NOT EXISTS %s (
-					id %s PRIMARY KEY,
-					content text,
-					metadata json,
-					embedding vector(%d)
-				)
-				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.embeddingDimensions()));
+			CREATE TABLE IF NOT EXISTS %s (
+				%s %s PRIMARY KEY,
+				%s text,
+				%s json,
+				%s vector(%d)
+			)
+			""",
+				this.getFullyQualifiedTableName(),
+				columnNames.id(), this.getColumnTypeName(),
+				columnNames.content(),
+				columnNames.metadata(),
+				columnNames.embedding(), this.embeddingDimensions()
+		));
+
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
-					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
-					""", this.getVectorIndexName(), this.getFullyQualifiedTableName(), this.createIndexMethod,
-					this.getDistanceType().index));
+				CREATE INDEX IF NOT EXISTS %s ON %s USING %s (%s %s)
+				""",
+					this.getVectorIndexName(),
+					this.getFullyQualifiedTableName(),
+					this.createIndexMethod,
+					columnNames.embedding(), this.getDistanceType().index
+			));
+
 		}
 	}
 
@@ -671,6 +697,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
+		private PgVectorColumnNames columnNames = PgVectorColumnNames.DEFAULT;
+
 		private PgVectorStoreBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
@@ -724,6 +752,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStoreBuilder maxDocumentBatchSize(int maxDocumentBatchSize) {
 			this.maxDocumentBatchSize = maxDocumentBatchSize;
+			return this;
+		}
+
+		public PgVectorStoreBuilder columnMapping(PgVectorColumnNames columnNames) {
+			this.columnNames = columnNames;
 			return this;
 		}
 
