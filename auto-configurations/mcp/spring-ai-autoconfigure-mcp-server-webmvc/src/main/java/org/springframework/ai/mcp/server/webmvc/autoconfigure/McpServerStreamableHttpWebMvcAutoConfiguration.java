@@ -16,16 +16,14 @@
 
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -49,15 +47,16 @@ public class McpServerStreamableHttpWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper,
 			McpServerStreamableHttpProperties serverProperties) {
 
-		return WebMvcStreamableServerTransportProvider.builder()
-			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+		var builder = WebMvcStreamableServerTransportProvider.builder()
+			.jsonMapper(McpJsonMapper.getDefault())
 			.mcpEndpoint(serverProperties.getMcpEndpoint())
-			.keepAliveInterval(serverProperties.getKeepAliveInterval())
-			.disallowDelete(serverProperties.isDisallowDelete())
-			.build();
+			.disallowDelete(serverProperties.isDisallowDelete());
+		if (serverProperties.getKeepAliveInterval() != null) {
+			builder.keepAliveInterval(serverProperties.getKeepAliveInterval());
+		}
+		return builder.build();
 	}
 
 	// Router function for streamable http transport used by Spring WebFlux to start an

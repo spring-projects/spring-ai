@@ -20,10 +20,10 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -52,8 +52,8 @@ public class SseWebFluxTransportAutoConfigurationTests {
 	@Test
 	void webFluxClientTransportsNotPresentIfMissingWebFluxSseClientTransportNotPresent() {
 		this.applicationContext
-			.withClassLoader(
-					new FilteredClassLoader("io.modelcontextprotocol.client.transport.WebFluxSseClientTransport"))
+			.withClassLoader(new FilteredClassLoader(
+					"org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport"))
 			.run(context -> assertThat(context.containsBean("sseWebFluxClientTransports")).isFalse());
 	}
 
