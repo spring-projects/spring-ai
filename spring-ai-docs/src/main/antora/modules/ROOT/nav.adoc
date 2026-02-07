@@ -70,6 +70,7 @@
 *** xref:api/audio[Audio Models]
 **** xref:api/audio/transcriptions.adoc[]
 ***** xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI]
+***** xref:api/audio/transcriptions/elevenlabs-transcriptions.adoc[ElevenLabs]
 ***** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
 **** xref:api/audio/speech.adoc[]
 ***** xref:api/audio/speech/openai-speech.adoc[OpenAI]
