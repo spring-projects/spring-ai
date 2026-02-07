@@ -1,9 +1,9 @@
 = MCP Server Boot Starter
 
-link:https://modelcontextprotocol.io/docs/learn/server-concepts[Model Context Protocol (MCP) Servers] are programs that expose specific capabilities to AI applications through standardized protocol interfaces. 
+link:https://modelcontextprotocol.io/docs/learn/server-concepts[Model Context Protocol (MCP) Servers] are programs that expose specific capabilities to AI applications through standardized protocol interfaces.
 Each server provides focused functionality for a particular domain.
 
-The Spring AI MCP Server Boot Starters provide auto-configuration for setting up link:https://modelcontextprotocol.io/docs/learn/server-concepts[MCP Servers] in Spring Boot applications. 
+The Spring AI MCP Server Boot Starters provide auto-configuration for setting up link:https://modelcontextprotocol.io/docs/learn/server-concepts[MCP Servers] in Spring Boot applications.
 They enable seamless integration of MCP server capabilities with Spring Boot's auto-configuration system.
 
 The MCP Server Boot Starters offer:
@@ -96,7 +96,7 @@ The MCP Server Boot Starters provide comprehensive support for annotation-based 
 === Key Annotations
 
 * **xref:api/mcp/mcp-annotations-server.adoc#_mcptool[@McpTool]** - Mark methods as MCP tools with automatic JSON schema generation
-* **xref:api/mcp/mcp-annotations-server.adoc#_mcpresource[@McpResource]** - Provide access to resources via URI templates  
+* **xref:api/mcp/mcp-annotations-server.adoc#_mcpresource[@McpResource]** - Provide access to resources via URI templates
 * **xref:api/mcp/mcp-annotations-server.adoc#_mcpprompt[@McpPrompt]** - Generate prompt messages for AI interactions
 * **xref:api/mcp/mcp-annotations-server.adoc#_mcpcomplete[@McpComplete]** - Provide auto-completion functionality for prompts
 
@@ -131,6 +131,40 @@ public class CalculatorTools {
 }
 ----
 
+=== Adding data to McpTransportContext
+
+By default, the `McpTransportContext` is empty (`McpTransportContext.EMPTY`).
+This is by design, to keep the MCP server transport-agnostic.
+
+If you need transport-specific metadata (for example, HTTP headers, remote host, etc) in your tools,
+configure a `TransportContextExtractor` on your transport provider.
+
+[source,java]
+----
+@Bean
+public WebMvcStreamableServerTransportProvider transport(ObjectMapper objectMapper) {
+    return WebMvcStreamableServerTransportProvider.builder()
+        .contextExtractor(serverRequest -> {
+            String authorization = serverRequest.headers().firstHeader("Authorization");
+            return McpTransportContext.create(Map.of("authorization", authorization));
+        })
+        .build();
+}
+----
+
+Once configured, access the context via `McpSyncRequestContext` (or `McpAsyncRequestContext`) in your tool.
+
+[source,java]
+----
+@McpTool
+public String accessProtectedResource(McpSyncRequestContext requestContext) {
+    McpTransportContext context = requestContext.transportContext();
+    String authorization = (String) context.get("authorization");
+
+    return "Successfully accessed protected resource.";
+}
+----
+
 === Auto-Configuration
 
 With Spring Boot auto-configuration, annotated beans are automatically detected and registered:
@@ -148,7 +182,7 @@ public class McpServerApplication {
 The auto-configuration will:
 
 1. Scan for beans with MCP annotations
-2. Create appropriate specifications  
+2. Create appropriate specifications
 3. Register them with the MCP server
 4. Handle both sync and async implementations based on configuration
 
