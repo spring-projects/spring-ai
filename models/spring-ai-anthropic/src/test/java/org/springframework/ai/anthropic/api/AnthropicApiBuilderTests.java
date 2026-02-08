@@ -222,6 +222,93 @@ public class AnthropicApiBuilderTests {
 		}
 
 		@Test
+		void userAgentHeaderRestClient() throws InterruptedException {
+			AnthropicApi api = AnthropicApi.builder()
+				.apiKey(TEST_API_KEY)
+				.baseUrl(this.mockWebServer.url("/").toString())
+				.build();
+
+			MockResponse mockResponse = new MockResponse().setResponseCode(200)
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+				.setBody("""
+						{
+							"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY",
+						 	"type": "message",
+						 	"role": "assistant",
+						 	"content": [],
+						 	"model": "claude-opus-3-latest",
+						 	"max_tokens": 500,
+						 	"stop_reason": null,
+						 	"stop_sequence": null,
+							 "usage": {
+						     	"input_tokens": 25,
+						     	"output_tokens": 1
+							}
+						}
+						""");
+			this.mockWebServer.enqueue(mockResponse);
+
+			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
+					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
+			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+				.maxTokens(500)
+				.temperature(0.8)
+				.messages(List.of(chatCompletionMessage))
+				.build();
+			ResponseEntity<AnthropicApi.ChatCompletionResponse> response = api.chatCompletionEntity(request);
+			assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader("User-Agent")).isEqualTo("spring-ai");
+		}
+
+		@Test
+		void userAgentHeaderWebClient() throws InterruptedException {
+			AnthropicApi api = AnthropicApi.builder()
+				.apiKey(TEST_API_KEY)
+				.baseUrl(this.mockWebServer.url("/").toString())
+				.build();
+
+			MockResponse mockResponse = new MockResponse().setResponseCode(200)
+				.addHeader(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_EVENT_STREAM_VALUE)
+				.setBody("""
+						{
+							"type": "message_start",
+							"message": {
+								"id": "msg_1nZdL29xx5MUA1yADyHTEsnR8uuvGzszyY",
+								"type": "message",
+								"role": "assistant",
+								"content": [],
+								"model": "claude-opus-4-20250514",
+								"max_tokens": 500,
+								"stop_reason": null,
+								"stop_sequence": null,
+								"usage": {
+									"input_tokens": 25,
+									"output_tokens": 1
+								}
+							}
+						}
+						""".replace("\n", ""));
+			this.mockWebServer.enqueue(mockResponse);
+
+			AnthropicApi.AnthropicMessage chatCompletionMessage = new AnthropicApi.AnthropicMessage(
+					List.of(new AnthropicApi.ContentBlock("Hello world")), AnthropicApi.Role.USER);
+			AnthropicApi.ChatCompletionRequest request = AnthropicApi.ChatCompletionRequest.builder()
+				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+				.maxTokens(500)
+				.temperature(0.8)
+				.messages(List.of(chatCompletionMessage))
+				.stream(true)
+				.build();
+			api.chatCompletionStream(request).collectList().block();
+
+			RecordedRequest recordedRequest = this.mockWebServer.takeRequest();
+			assertThat(recordedRequest.getHeader("User-Agent")).isEqualTo("spring-ai");
+		}
+
+		@Test
 		void dynamicApiKeyRestClient() throws InterruptedException {
 			Queue<ApiKey> apiKeys = new LinkedList<>(List.of(new SimpleApiKey("key1"), new SimpleApiKey("key2")));
 			AnthropicApi api = AnthropicApi.builder()

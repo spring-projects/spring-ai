@@ -139,6 +139,7 @@ public final class AnthropicApi {
 			headers.add(HEADER_ANTHROPIC_VERSION, anthropicVersion);
 			headers.add(HEADER_ANTHROPIC_BETA, anthropicBetaFeatures);
 			headers.setContentType(MediaType.APPLICATION_JSON);
+			headers.set("User-Agent", "spring-ai");
 		};
 
 		this.completionsPath = completionsPath;
