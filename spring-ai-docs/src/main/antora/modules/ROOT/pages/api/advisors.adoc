@@ -384,7 +384,11 @@ Based on the article: [Re-Reading Improves Reasoning in LLMs](https://arxiv.org/
 * `SafeGuardAdvisor`
 +
 A simple advisor designed to prevent the model from generating harmful or inappropriate content.
-
++
+[NOTE]
+====
+If you have both `SafeGuardAdvisor` and `MessageChatMemoryAdvisor` enabled and have manually set their `order`, make sure that `SafeGuardAdvisor` has a higher priority than `MessageChatMemoryAdvisor` to prevent sensitive words in chat memory from repeatedly triggering `SafeGuardAdvisor`'s interception mechanism.
+====
 
 === Streaming vs Non-Streaming
 
