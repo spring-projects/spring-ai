@@ -364,15 +364,13 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		public static class Function {
 
-			private String description;
+			private final String description;
 
-			private String name;
+			private final String name;
 
-			private Map<String, Object> parameters;
+			private final Map<String, Object> parameters;
 
-			private @Nullable Boolean strict;
-
-			private @Nullable String jsonSchema;
+			private final @Nullable Boolean strict;
 
 			/**
 			 * Create tool function definition.
@@ -421,35 +419,8 @@ public class DeepSeekApi {
 				return this.parameters;
 			}
 
-			public void setDescription(String description) {
-				this.description = description;
-			}
-
-			public void setName(String name) {
-				this.name = name;
-			}
-
-			public void setParameters(Map<String, Object> parameters) {
-				this.parameters = parameters;
-			}
-
 			public @Nullable Boolean getStrict() {
 				return this.strict;
-			}
-
-			public void setStrict(@Nullable Boolean strict) {
-				this.strict = strict;
-			}
-
-			public @Nullable String getJsonSchema() {
-				return this.jsonSchema;
-			}
-
-			public void setJsonSchema(@Nullable String jsonSchema) {
-				this.jsonSchema = jsonSchema;
-				if (jsonSchema != null) {
-					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
-				}
 			}
 
 		}
