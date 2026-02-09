@@ -93,6 +93,12 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-template-spel</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI model -->
 
 			<dependency>
