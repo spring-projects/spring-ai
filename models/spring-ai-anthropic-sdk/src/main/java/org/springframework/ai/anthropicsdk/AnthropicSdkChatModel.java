@@ -18,7 +18,9 @@ package org.springframework.ai.anthropicsdk;
 
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,8 +37,10 @@ import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.RawMessageStreamEvent;
+import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.TextBlockParam;
+import com.anthropic.models.messages.ThinkingBlock;
 import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolResultBlockParam;
 import com.anthropic.models.messages.ToolUnion;
@@ -343,13 +347,21 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 
 		// -- Event: content_block_start --
 		// Detects the start of a tool_use block and prepares the state for JSON
-		// accumulation.
+		// accumulation. Also handles thinking and redacted_thinking block starts.
 		if (event.contentBlockStart().isPresent()) {
 			var startEvent = event.contentBlockStart().get();
 			var contentBlock = startEvent.contentBlock();
 			if (contentBlock.toolUse().isPresent()) {
 				var toolUseBlock = contentBlock.asToolUse();
 				streamingState.startToolUse(toolUseBlock.id(), toolUseBlock.name());
+			}
+			else if (contentBlock.isRedactedThinking()) {
+				// EXTENDED THINKING: Emit redacted thinking block immediately
+				RedactedThinkingBlock redactedBlock = contentBlock.asRedactedThinking();
+				Map<String, Object> redactedProperties = new HashMap<>();
+				redactedProperties.put("data", redactedBlock.data());
+				AssistantMessage assistantMessage = AssistantMessage.builder().properties(redactedProperties).build();
+				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
 			return null;
 		}
@@ -374,6 +386,30 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 				String partialJson = delta.asInputJson().partialJson();
 				streamingState.appendToolJson(partialJson);
 				return null;
+			}
+
+			// EXTENDED THINKING: A thinking chunk. Emit it as a generation with
+			// thinking metadata so downstream consumers can identify thinking content.
+			if (delta.isThinking()) {
+				String thinkingText = delta.asThinking().thinking();
+				Map<String, Object> thinkingProperties = new HashMap<>();
+				thinkingProperties.put("thinking", Boolean.TRUE);
+				AssistantMessage assistantMessage = AssistantMessage.builder()
+					.content(thinkingText)
+					.properties(thinkingProperties)
+					.build();
+				return new ChatResponse(List.of(new Generation(assistantMessage)));
+			}
+
+			// EXTENDED THINKING: A signature chunk. Emitted at the end of a
+			// thinking block. Capture it so the streaming path matches the sync
+			// path where ThinkingBlock.signature() is stored in properties.
+			if (delta.isSignature()) {
+				String signature = delta.asSignature().signature();
+				Map<String, Object> signatureProperties = new HashMap<>();
+				signatureProperties.put("signature", signature);
+				AssistantMessage assistantMessage = AssistantMessage.builder().properties(signatureProperties).build();
+				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
 		}
 
@@ -657,6 +693,9 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		if (requestOptions.getMetadata() != null) {
 			builder.metadata(requestOptions.getMetadata());
 		}
+		if (requestOptions.getThinking() != null) {
+			builder.thinking(requestOptions.getThinking());
+		}
 
 		// TOOL CALLING: Add tool definitions to enable the model to request tool use.
 		// The ToolCallingManager resolves tools from both:
@@ -679,16 +718,18 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 
 	/**
 	 * Builds generations from the Anthropic message response. Extracts text from
-	 * {@code TextBlock} and tool calls from {@code ToolUseBlock}. Tool call arguments are
+	 * {@code TextBlock}, tool calls from {@code ToolUseBlock}, and thinking content from
+	 * {@code ThinkingBlock} and {@code RedactedThinkingBlock}. Tool call arguments are
 	 * converted from SDK's {@link JsonValue} to JSON string via
 	 * {@link #convertJsonValueToString(JsonValue)}.
 	 * @param message the Anthropic message response
-	 * @return list of generations with text and/or tool calls
+	 * @return list of generations with text, tool calls, and/or thinking content
 	 */
 	private List<Generation> buildGenerations(Message message) {
 		List<Generation> generations = new ArrayList<>();
 
 		String finishReason = message.stopReason().map(r -> r.toString()).orElse("");
+		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 
 		// Collect all text content from text blocks and tool use blocks
 		StringBuilder textContent = new StringBuilder();
@@ -709,9 +750,29 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 				String arguments = convertJsonValueToString(toolUseBlock._input());
 				toolCalls.add(new ToolCall(toolUseBlock.id(), "function", toolUseBlock.name(), arguments));
 			}
+			else if (block.isThinking()) {
+				// EXTENDED THINKING: ThinkingBlock contains Claude's internal reasoning.
+				// Stored as a separate Generation with the thinking text as content and
+				// signature in metadata properties, matching the RestClient module
+				// pattern.
+				ThinkingBlock thinkingBlock = block.asThinking();
+				Map<String, Object> thinkingProperties = new HashMap<>();
+				thinkingProperties.put("signature", thinkingBlock.signature());
+				generations.add(new Generation(AssistantMessage.builder()
+					.content(thinkingBlock.thinking())
+					.properties(thinkingProperties)
+					.build(), generationMetadata));
+			}
+			else if (block.isRedactedThinking()) {
+				// EXTENDED THINKING: RedactedThinkingBlock is emitted when thinking
+				// content is redacted. The data field contains a redaction marker.
+				RedactedThinkingBlock redactedBlock = block.asRedactedThinking();
+				Map<String, Object> redactedProperties = new HashMap<>();
+				redactedProperties.put("data", redactedBlock.data());
+				generations.add(new Generation(AssistantMessage.builder().properties(redactedProperties).build(),
+						generationMetadata));
+			}
 		}
-
-		ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
 
 		AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder().content(textContent.toString());
 
@@ -719,7 +780,7 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 			assistantMessageBuilder.toolCalls(toolCalls);
 		}
 
-		generations.add(new Generation(assistantMessageBuilder.build(), metadata));
+		generations.add(new Generation(assistantMessageBuilder.build(), generationMetadata));
 
 		return generations;
 	}

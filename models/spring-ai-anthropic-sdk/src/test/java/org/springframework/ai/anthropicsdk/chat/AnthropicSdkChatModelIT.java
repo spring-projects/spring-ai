@@ -562,6 +562,78 @@ class AnthropicSdkChatModelIT {
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
 
+	@Test
+	void thinkingTest() {
+		UserMessage userMessage = new UserMessage(
+				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.temperature(1.0) // temperature must be 1 when thinking is enabled
+			.maxTokens(16000)
+			.thinkingEnabled(10000L)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
+
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getResults().size()).isGreaterThanOrEqualTo(2);
+
+		for (Generation generation : response.getResults()) {
+			AssistantMessage message = generation.getOutput();
+			if (message.getText() != null && !message.getText().isBlank()) {
+				// Text block
+				assertThat(message.getText()).isNotBlank();
+			}
+			else if (message.getMetadata().containsKey("signature")) {
+				// Thinking block
+				assertThat(message.getMetadata().get("signature")).isNotNull();
+			}
+			else if (message.getMetadata().containsKey("data")) {
+				// Redacted thinking block
+				assertThat(message.getMetadata().get("data")).isNotNull();
+			}
+		}
+	}
+
+	@Test
+	void thinkingWithStreamingTest() {
+		UserMessage userMessage = new UserMessage(
+				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
+
+		var promptOptions = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.temperature(1.0) // temperature must be 1 when thinking is enabled
+			.maxTokens(16000)
+			.thinkingEnabled(10000L)
+			.build();
+
+		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
+
+		List<ChatResponse> responses = responseFlux.collectList().block();
+
+		// Verify we got text content
+		String content = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.map(AssistantMessage::getText)
+			.filter(text -> text != null && !text.isBlank())
+			.collect(Collectors.joining());
+
+		logger.info("Thinking streaming response: {}", content);
+		assertThat(content).isNotBlank();
+
+		// Verify signature was captured in the stream
+		boolean hasSignature = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.anyMatch(msg -> msg.getMetadata().containsKey("signature"));
+
+		assertThat(hasSignature).as("Streaming should capture the thinking block signature").isTrue();
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
 	}

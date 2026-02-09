@@ -27,6 +27,9 @@ import java.util.Set;
 
 import com.anthropic.models.messages.Metadata;
 import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.ThinkingConfigAdaptive;
+import com.anthropic.models.messages.ThinkingConfigDisabled;
+import com.anthropic.models.messages.ThinkingConfigEnabled;
 import com.anthropic.models.messages.ThinkingConfigParam;
 import com.anthropic.models.messages.ToolChoice;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -488,6 +491,29 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 		public Builder thinking(ThinkingConfigParam thinking) {
 			this.options.setThinking(thinking);
 			return this;
+		}
+
+		/**
+		 * Convenience method to enable thinking with a specific budget in tokens.
+		 * @param budgetTokens the thinking budget (must be >= 1024 and < maxTokens)
+		 */
+		public Builder thinkingEnabled(long budgetTokens) {
+			return thinking(
+					ThinkingConfigParam.ofEnabled(ThinkingConfigEnabled.builder().budgetTokens(budgetTokens).build()));
+		}
+
+		/**
+		 * Convenience method to let Claude adaptively decide whether to think.
+		 */
+		public Builder thinkingAdaptive() {
+			return thinking(ThinkingConfigParam.ofAdaptive(ThinkingConfigAdaptive.builder().build()));
+		}
+
+		/**
+		 * Convenience method to explicitly disable thinking.
+		 */
+		public Builder thinkingDisabled() {
+			return thinking(ThinkingConfigParam.ofDisabled(ThinkingConfigDisabled.builder().build()));
 		}
 
 		public Builder disableParallelToolUse(Boolean disableParallelToolUse) {
