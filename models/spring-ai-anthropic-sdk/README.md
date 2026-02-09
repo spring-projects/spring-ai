@@ -27,14 +27,15 @@ This module supports:
 - **Chat Completions** - Synchronous and streaming responses
 - **Tool Calling** - Function calling with automatic tool execution
 - **Streaming Tool Calling** - Tool calls in streaming mode with partial JSON accumulation
+- **Multi-Modal** - Images and PDF documents
+- **Extended Thinking** - Claude's thinking/reasoning feature with full streaming support
 - **Observability** - Micrometer-based metrics and tracing
 
 ### Planned Features
 
 - **Amazon Bedrock** - Access Claude through AWS Bedrock
 - **Google Vertex AI** - Access Claude through Google Cloud
-- **Multi-Modal** - Images and PDF documents
-- **Extended Thinking** - Claude's thinking/reasoning feature
+- **Prompt Caching** - Reduce costs for repeated context
 - **Spring Boot Auto-Configuration** - Starter with configuration properties
 
 ## Basic Usage
@@ -68,6 +69,28 @@ var options = AnthropicSdkChatOptions.builder()
 
 ChatResponse response = chatModel.call(new Prompt("What's the weather in Paris?", options));
 ```
+
+## Extended Thinking
+
+Enable Claude's reasoning feature to see step-by-step thinking before the final answer:
+
+```java
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .temperature(1.0) // required when thinking is enabled
+    .maxTokens(16000)
+    .thinkingEnabled(10000L) // budget must be >= 1024 and < maxTokens
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Solve this step by step...", options));
+```
+
+Three thinking modes are available via convenience builders:
+- `thinkingEnabled(budgetTokens)` - Enable with a specific token budget
+- `thinkingAdaptive()` - Let Claude decide whether to think
+- `thinkingDisabled()` - Explicitly disable thinking
+
+Thinking is fully supported in both synchronous and streaming modes, including signature capture for thinking block verification.
 
 ## Logging
 
