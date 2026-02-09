@@ -198,9 +198,13 @@ public class FilterExpressionTextParserTests {
 	public void testLong() {
 		Expression exp2 = this.parser.parse("biz_id == 3L");
 		Expression exp3 = this.parser.parse("biz_id == -5L");
+		Expression exp4 = this.parser.parse("biz_id == " + Long.MAX_VALUE);
+		Expression exp5 = this.parser.parse("biz_id == " + Long.MIN_VALUE);
 
 		assertThat(exp2).isEqualTo(new Expression(EQ, new Key("biz_id"), new Value(3L)));
 		assertThat(exp3).isEqualTo(new Expression(EQ, new Key("biz_id"), new Value(-5L)));
+		assertThat(exp4).isEqualTo(new Expression(EQ, new Key("biz_id"), new Value(Long.MAX_VALUE)));
+		assertThat(exp5).isEqualTo(new Expression(EQ, new Key("biz_id"), new Value(Long.MIN_VALUE)));
 	}
 
 	@Test
