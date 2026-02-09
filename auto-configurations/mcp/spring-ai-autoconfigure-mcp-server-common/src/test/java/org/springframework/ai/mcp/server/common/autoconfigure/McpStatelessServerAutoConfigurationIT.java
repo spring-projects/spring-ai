@@ -41,6 +41,7 @@ import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springaicommunity.mcp.annotation.McpArg;
 import org.springaicommunity.mcp.annotation.McpComplete;
@@ -48,6 +49,8 @@ import org.springaicommunity.mcp.annotation.McpPrompt;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
+import org.springaicommunity.mcp.context.McpAsyncRequestContext;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.SyncMcpToolCallback;
@@ -59,6 +62,8 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -67,6 +72,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(OutputCaptureExtension.class)
 public class McpStatelessServerAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -388,6 +394,49 @@ public class McpStatelessServerAutoConfigurationIT {
 			});
 	}
 
+	@SuppressWarnings("unchecked")
+	@Test
+	void logsWarningWhenSyncStatelessToolUsesUnsupportedContextParameter(CapturedOutput output) {
+		this.contextRunner
+			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
+					StatelessServerSpecificationFactoryAutoConfiguration.class)
+			.withBean(SyncUnsupportedContextToolComponent.class)
+			.run(context -> {
+				McpStatelessSyncServer syncServer = context.getBean(McpStatelessSyncServer.class);
+				McpStatelessAsyncServer asyncServer = (McpStatelessAsyncServer) ReflectionTestUtils.getField(syncServer,
+						"asyncServer");
+
+				CopyOnWriteArrayList<AsyncToolSpecification> tools = (CopyOnWriteArrayList<AsyncToolSpecification>) ReflectionTestUtils
+					.getField(asyncServer, "tools");
+				assertThat(tools).isEmpty();
+
+				assertThat(output).contains("MCP stateless mode skipped @McpTool method");
+				assertThat(output).contains("SyncUnsupportedContextToolComponent");
+				assertThat(output).contains("McpSyncRequestContext");
+			});
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	void logsWarningWhenAsyncStatelessToolUsesUnsupportedContextParameter(CapturedOutput output) {
+		this.contextRunner
+			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
+					StatelessServerSpecificationFactoryAutoConfiguration.class)
+			.withBean(AsyncUnsupportedContextToolComponent.class)
+			.withPropertyValues("spring.ai.mcp.server.type=async")
+			.run(context -> {
+				McpStatelessAsyncServer asyncServer = context.getBean(McpStatelessAsyncServer.class);
+
+				CopyOnWriteArrayList<AsyncToolSpecification> tools = (CopyOnWriteArrayList<AsyncToolSpecification>) ReflectionTestUtils
+					.getField(asyncServer, "tools");
+				assertThat(tools).isEmpty();
+
+				assertThat(output).contains("MCP stateless mode skipped @McpTool method");
+				assertThat(output).contains("AsyncUnsupportedContextToolComponent");
+				assertThat(output).contains("McpAsyncRequestContext");
+			});
+	}
+
 	@Configuration
 	static class TestResourceConfiguration {
 
@@ -608,6 +657,26 @@ public class McpStatelessServerAutoConfigurationIT {
 				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
 				.limit(10)
 				.toList());
+		}
+
+	}
+
+	@Component
+	static class SyncUnsupportedContextToolComponent {
+
+		@McpTool(name = "unsupported-sync-tool", description = "Uses unsupported stateless context param")
+		public String unsupportedSyncTool(McpSyncRequestContext context) {
+			return "ok";
+		}
+
+	}
+
+	@Component
+	static class AsyncUnsupportedContextToolComponent {
+
+		@McpTool(name = "unsupported-async-tool", description = "Uses unsupported stateless context param")
+		public Mono<String> unsupportedAsyncTool(McpAsyncRequestContext context) {
+			return Mono.just("ok");
 		}
 
 	}
