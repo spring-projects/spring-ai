@@ -145,6 +145,22 @@ You can enable them by doing the following:
 ./mvnw clean package -DskipTests -Ddisable.checks=false
 ----
 
+== Run Formatting Checks
+
+Before opening a pull request, run Java format locally so that the `pr-check` workflow does not fail on style issues.
+
+[source,shell]
+----
+./mvnw io.spring.javaformat:spring-javaformat-maven-plugin:apply
+----
+
+You can also use the short alias:
+
+[source,shell]
+----
+./mvnw spring-javaformat:apply
+----
+
 === Source Code Style
 
 Spring AI source code checkstyle tries to follow the checkstyle guidelines used by the core Spring Framework project with some exceptions.
