@@ -297,7 +297,7 @@
 		<openai-sdk.version>4.17.0</openai-sdk.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<openai-sdk.version>4.13.0</openai-sdk.version>
-		<anthropic-sdk.version>2.11.1</anthropic-sdk.version>
+		<anthropic-sdk.version>2.14.0</anthropic-sdk.version>
 		<azure-identity.version>1.18.1</azure-identity.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.2.21</kotlin.version>
