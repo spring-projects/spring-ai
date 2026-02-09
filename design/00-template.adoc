@@ -1,0 +1,13 @@
+= Design Document xx - title
+
+== Problems
+
+== Anti Goals
+
+== Solution
+
+=== User Impact
+
+=== Backwards Compatibility and Upgrade Path
+
+== FAQ
