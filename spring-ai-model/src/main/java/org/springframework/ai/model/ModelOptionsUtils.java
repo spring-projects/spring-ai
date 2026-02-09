@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -443,7 +444,7 @@ public abstract class ModelOptionsUtils {
 				}
 				else if (value.isTextual() && entry.getKey().equals("type")) {
 					String oldValue = ((ObjectNode) node).get("type").asText();
-					((ObjectNode) node).put("type", oldValue.toUpperCase());
+					((ObjectNode) node).put("type", oldValue.toUpperCase(Locale.ROOT));
 				}
 			});
 		}
