@@ -125,6 +125,7 @@ ChatResponse response = chatModel.call(
 | maxRetries | Maximum number of retry attempts for failed requests. | 2
 | proxy | Proxy settings for the HTTP client. | -
 | customHeaders | Custom HTTP headers to include in requests. | -
+| thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingAdaptive()`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. | -
 |====
 
 === Tool Calling Options
@@ -244,6 +245,159 @@ stream.subscribe(response -> {
 });
 ----
 
+== Extended Thinking
+
+Anthropic Claude models support a "thinking" feature that allows the model to show its reasoning process before providing a final answer. This is especially useful for complex questions that require step-by-step reasoning, such as math, logic, and analysis tasks.
+
+[NOTE]
+====
+*Supported Models*
+
+The thinking feature is supported by the following Claude models:
+
+* Claude 4 models (`claude-opus-4-20250514`, `claude-sonnet-4-20250514`)
+* Claude 3.7 Sonnet (`claude-3-7-sonnet-20250219`)
+
+*Model capabilities:*
+
+* *Claude 3.7 Sonnet*: Returns full thinking output.
+* *Claude 4 models*: Support summarized thinking and enhanced tool integration.
+
+API request structure is the same across all supported models, but output behavior varies.
+====
+
+=== Thinking Configuration
+
+To enable thinking, configure the following:
+
+1. **Set a thinking budget**: The `budgetTokens` must be >= 1024 and less than `maxTokens`.
+2. **Set temperature to 1.0**: Required when thinking is enabled.
+
+=== Convenience Builder Methods
+
+`AnthropicSdkChatOptions.Builder` provides convenience methods for the three thinking modes:
+
+[source,java]
+----
+// Enable thinking with a specific token budget
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .temperature(1.0)
+    .maxTokens(16000)
+    .thinkingEnabled(10000L)    // budget must be >= 1024 and < maxTokens
+    .build();
+
+// Let Claude adaptively decide whether to think
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .thinkingAdaptive()
+    .build();
+
+// Explicitly disable thinking
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .thinkingDisabled()
+    .build();
+----
+
+You can also use the raw SDK `ThinkingConfigParam` directly:
+
+[source,java]
+----
+import com.anthropic.models.messages.ThinkingConfigParam;
+import com.anthropic.models.messages.ThinkingConfigEnabled;
+
+var options = AnthropicSdkChatOptions.builder()
+    .thinking(ThinkingConfigParam.ofEnabled(
+        ThinkingConfigEnabled.builder().budgetTokens(10000L).build()))
+    .build();
+----
+
+=== Non-streaming Example
+
+[source,java]
+----
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .temperature(1.0)
+    .maxTokens(16000)
+    .thinkingEnabled(10000L)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("Are there an infinite number of prime numbers such that n mod 4 == 3?", options));
+
+// The response contains multiple generations:
+// - ThinkingBlock generations (with "signature" in metadata)
+// - TextBlock generations (with the final answer)
+for (Generation generation : response.getResults()) {
+    AssistantMessage message = generation.getOutput();
+    if (message.getMetadata().containsKey("signature")) {
+        // This is a thinking block - contains Claude's reasoning
+        System.out.println("Thinking: " + message.getText());
+        System.out.println("Signature: " + message.getMetadata().get("signature"));
+    }
+    else if (message.getMetadata().containsKey("data")) {
+        // This is a redacted thinking block (safety-redacted reasoning)
+        System.out.println("Redacted thinking data: " + message.getMetadata().get("data"));
+    }
+    else if (message.getText() != null && !message.getText().isBlank()) {
+        // This is the final text response
+        System.out.println("Answer: " + message.getText());
+    }
+}
+----
+
+=== Streaming Example
+
+Thinking is fully supported in streaming mode. Thinking deltas and signature deltas are emitted as they arrive:
+
+[source,java]
+----
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .temperature(1.0)
+    .maxTokens(16000)
+    .thinkingEnabled(10000L)
+    .build();
+
+Flux<ChatResponse> stream = chatModel.stream(
+    new Prompt("Are there an infinite number of prime numbers such that n mod 4 == 3?", options));
+
+stream.subscribe(response -> {
+    Generation generation = response.getResult();
+    AssistantMessage message = generation.getOutput();
+
+    if (message.getMetadata().containsKey("thinking")) {
+        // Incremental thinking content
+        System.out.print(message.getText());
+    }
+    else if (message.getMetadata().containsKey("signature")) {
+        // Thinking block signature (emitted at end of thinking)
+        System.out.println("\nSignature: " + message.getMetadata().get("signature"));
+    }
+    else if (message.getText() != null) {
+        // Final text content
+        System.out.print(message.getText());
+    }
+});
+----
+
+=== Response Structure
+
+When thinking is enabled, the response contains different types of content:
+
+[cols="2,3,3", stripes=even]
+|====
+| Content Type | Metadata Key | Description
+
+| **Thinking Block** | `signature` | Claude's reasoning text with a cryptographic signature. In sync mode, the thinking text is in `getText()` and the signature is in `getMetadata().get("signature")`.
+| **Redacted Thinking** | `data` | Safety-redacted reasoning. Contains only a `data` marker, no visible text.
+| **Signature (streaming)** | `signature` | In streaming mode, the signature arrives as a separate delta at the end of a thinking block.
+| **Thinking Delta (streaming)** | `thinking` | Incremental thinking text chunks during streaming. The `thinking` metadata key is set to `true`.
+| **Text Block** | _(none)_ | The final answer text in `getText()`.
+|====
+
 == Multi-Modal Support
 
 The Anthropic SDK module supports multi-modal inputs, allowing you to send images and PDF documents alongside text in your prompts.
@@ -345,7 +499,7 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 | **HTTP Client** | OkHttp (via official SDK) | Spring RestClient/WebClient
 | **API Updates** | Automatic via SDK updates | Manual maintenance
 | **Multi-Modal** | Fully supported | Fully supported
-| **Extended Thinking** | Not yet supported | Fully supported
+| **Extended Thinking** | Fully supported | Fully supported
 | **Prompt Caching** | Not yet supported | Fully supported
 | **Auto-Configuration** | Not yet available | Full Spring Boot starter
 | **Dependencies** | Official Anthropic SDK | Spring WebFlux
@@ -359,7 +513,6 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 
 **When to use Spring AI Anthropic:**
 
-* You need extended thinking features
 * You need prompt caching
 * You want full Spring Boot auto-configuration
 * You have an existing project using it
@@ -382,7 +535,6 @@ export ANTHROPIC_LOG=debug
 
 The following features are not yet supported in the Anthropic SDK implementation:
 
-* Extended thinking (Claude's reasoning feature)
 * Prompt caching
 * Amazon Bedrock backend
 * Google Vertex AI backend
