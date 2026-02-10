@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,11 @@ public class ZhiPuAiImageApi {
 	 */
 	public enum ImageModel {
 
-		CogView_3("cogview-3");
+		CogView_3("cogview-3"),
+
+		CogView_3_Flash("cogview-3-flash"),
+
+		CogView_4("cogview-4"),;
 
 		private final String value;
 
@@ -106,29 +110,60 @@ public class ZhiPuAiImageApi {
 
 	}
 
+	public enum Quality {
+
+		HD("hd"),
+
+		STANDARD("standard");
+
+		private final String value;
+
+		Quality(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
 	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record ZhiPuAiImageRequest(
 		@JsonProperty("prompt") String prompt,
 		@JsonProperty("model") String model,
-		@JsonProperty("user_id") String user) {
+		@JsonProperty("user_id") String user,
+		@JsonProperty("size") String size,
+		@JsonProperty("quality") String quality,
+		@JsonProperty("watermark_enabled") Boolean watermarkEnabled) { // @formatter:on
 
 		public ZhiPuAiImageRequest(String prompt, String model) {
-			this(prompt, model, null);
+			this(prompt, model, null, null, null, null);
 		}
 	}
 
+	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ZhiPuAiImageResponse(
 		@JsonProperty("created") Long created,
-		@JsonProperty("data") List<Data> data) {
+		@JsonProperty("data") List<Data> data) { // @formatter:on
 	}
-	// @formatter:on
 
+	// @formatter:off
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
-	public record Data(@JsonProperty("url") String url) {
+	public record Data(@JsonProperty("url") String url,
+			@JsonProperty("content_filter") List<ContentFilter> contentFilter) { // @formatter:on
+
+	}
+
+	// @formatter:off
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record ContentFilter(@JsonProperty("role") String role,
+								@JsonProperty("level") Integer level) { // @formatter:on
 
 	}
 
