@@ -1684,6 +1684,12 @@ public class OpenAiApi {
 		public record ChatCompletionFunction(// @formatter:off
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) { // @formatter:on
+
+			public ChatCompletionFunction {
+				if (arguments == null) {
+					arguments = "{}";
+				}
+			}
 		}
 
 		/**
