@@ -35,9 +35,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsPropertyMapper;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -50,6 +55,7 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @author Issam El-atif
  * @author Yanming Zhou
+ * @author yinh
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
 		ToolCallingAutoConfiguration.class })
@@ -67,11 +73,20 @@ public class MiniMaxChatAutoConfiguration {
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate) {
+			ObjectProvider<ToolExecutionEligibilityPredicate> openAiToolExecutionEligibilityPredicate,
+			ObjectProvider<SslBundles> sslBundles, ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder) {
+
+		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
+				globalHttpClientSettings.getIfAvailable());
+		HttpClientSettings httpClientSettings = mapper.map(commonProperties.getHttp());
+
+		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
+		applyRestClientSettings(restClientBuilder, httpClientSettings,
+				factoryBuilder.getIfAvailable(ClientHttpRequestFactoryBuilder::detect));
 
 		var miniMaxApi = miniMaxApi(chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
-				chatProperties.getApiKey(), commonProperties.getApiKey(),
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+				chatProperties.getApiKey(), commonProperties.getApiKey(), restClientBuilder, responseErrorHandler);
 
 		var chatModel = new MiniMaxChatModel(miniMaxApi, chatProperties.getOptions(), toolCallingManager,
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
@@ -93,6 +108,12 @@ public class MiniMaxChatAutoConfiguration {
 
 		return new MiniMaxApi(resolvedBaseUrl, resolvedApiKey, restClientBuilder,
 				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
+	}
+
+	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
+		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
+		builder.requestFactory(requestFactory);
 	}
 
 }

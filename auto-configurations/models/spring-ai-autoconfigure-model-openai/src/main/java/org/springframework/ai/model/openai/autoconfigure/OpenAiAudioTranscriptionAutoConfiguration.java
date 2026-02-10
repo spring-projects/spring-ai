@@ -30,10 +30,17 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsPropertyMapper;
+import org.springframework.boot.http.client.reactive.ClientHttpConnectorBuilder;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -64,24 +71,51 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 			OpenAiAudioTranscriptionProperties transcriptionProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler, ObjectProvider<SslBundles> sslBundles,
+			ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder,
+			ObjectProvider<ClientHttpConnectorBuilder<?>> webConnectorBuilderProvider) {
 
 		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
 				commonProperties, transcriptionProperties, "transcription");
+
+		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
+				globalHttpClientSettings.getIfAvailable());
+		HttpClientSettings httpClientSettings = mapper.map(commonProperties.getHttp());
+
+		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
+		applyRestClientSettings(restClientBuilder, httpClientSettings,
+				factoryBuilder.getIfAvailable(ClientHttpRequestFactoryBuilder::detect));
+
+		WebClient.Builder webClientBuilder = webClientBuilderProvider.getIfAvailable(WebClient::builder);
+		applyWebClientSettings(webClientBuilder, httpClientSettings,
+				webConnectorBuilderProvider.getIfAvailable(ClientHttpConnectorBuilder::detect));
 
 		var openAiAudioApi = OpenAiAudioApi.builder()
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
 			.transcriptionPath(transcriptionProperties.getTranscriptionPath())
 			.headers(resolved.headers())
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
+			.restClientBuilder(restClientBuilder)
+			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 
 		return new OpenAiAudioTranscriptionModel(openAiAudioApi, transcriptionProperties.getOptions(),
 				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE));
 
+	}
+
+	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
+		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
+		builder.requestFactory(requestFactory);
+	}
+
+	private void applyWebClientSettings(WebClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpConnectorBuilder<?> connectorBuilder) {
+		ClientHttpConnector connector = connectorBuilder.build(httpClientSettings);
+		builder.clientConnector(connector);
 	}
 
 }

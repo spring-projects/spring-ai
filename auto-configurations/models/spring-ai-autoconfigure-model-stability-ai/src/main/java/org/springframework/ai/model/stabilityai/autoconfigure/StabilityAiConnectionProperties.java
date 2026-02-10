@@ -16,8 +16,15 @@
 
 package org.springframework.ai.model.stabilityai.autoconfigure;
 
+import java.time.Duration;
+
+import jakarta.annotation.Nullable;
+
 import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.http.client.HttpRedirects;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 @ConfigurationProperties(StabilityAiConnectionProperties.CONFIG_PREFIX)
 public class StabilityAiConnectionProperties extends StabilityAiParentProperties {
@@ -26,8 +33,47 @@ public class StabilityAiConnectionProperties extends StabilityAiParentProperties
 
 	public static final String DEFAULT_BASE_URL = StabilityAiApi.DEFAULT_BASE_URL;
 
+	@NestedConfigurationProperty
+	private final HttpClientSettingsProperties http = new HttpClientSettingsProperties() {
+	};
+
 	public StabilityAiConnectionProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
+	}
+
+	@Nullable
+	public HttpRedirects getRedirects() {
+		return this.http.getRedirects();
+	}
+
+	public void setRedirects(HttpRedirects redirects) {
+		this.http.setRedirects(redirects);
+	}
+
+	@Nullable
+	public Duration getConnectTimeout() {
+		return this.http.getConnectTimeout();
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.http.setConnectTimeout(connectTimeout);
+	}
+
+	@Nullable
+	public Duration getReadTimeout() {
+		return this.http.getReadTimeout();
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.http.setReadTimeout(readTimeout);
+	}
+
+	public HttpClientSettingsProperties.Ssl getSsl() {
+		return this.http.getSsl();
+	}
+
+	public HttpClientSettingsProperties getHttp() {
+		return this.http;
 	}
 
 }

@@ -16,7 +16,14 @@
 
 package org.springframework.ai.model.ollama.autoconfigure;
 
+import java.time.Duration;
+
+import jakarta.annotation.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.http.client.HttpRedirects;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Ollama connection autoconfiguration properties.
@@ -34,12 +41,51 @@ public class OllamaConnectionProperties {
 	 */
 	private String baseUrl = "http://localhost:11434";
 
+	@NestedConfigurationProperty
+	private final HttpClientSettingsProperties http = new HttpClientSettingsProperties() {
+	};
+
 	public String getBaseUrl() {
 		return this.baseUrl;
 	}
 
 	public void setBaseUrl(String baseUrl) {
 		this.baseUrl = baseUrl;
+	}
+
+	@Nullable
+	public HttpRedirects getRedirects() {
+		return this.http.getRedirects();
+	}
+
+	public void setRedirects(HttpRedirects redirects) {
+		this.http.setRedirects(redirects);
+	}
+
+	@Nullable
+	public Duration getConnectTimeout() {
+		return this.http.getConnectTimeout();
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.http.setConnectTimeout(connectTimeout);
+	}
+
+	@Nullable
+	public Duration getReadTimeout() {
+		return this.http.getReadTimeout();
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.http.setReadTimeout(readTimeout);
+	}
+
+	public HttpClientSettingsProperties.Ssl getSsl() {
+		return this.http.getSsl();
+	}
+
+	public HttpClientSettingsProperties getHttp() {
+		return this.http;
 	}
 
 }

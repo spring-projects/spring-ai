@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.azure.openai.autoconfigure;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,6 +46,31 @@ public class AzureOpenAiConnectionProperties {
 	private String endpoint;
 
 	private Map<String, String> customHeaders = new HashMap<>();
+
+	/**
+	 * HTTP connection timeout
+	 */
+	private Duration connectTimeout;
+
+	/**
+	 * HTTP read timeout
+	 */
+	private Duration readTimeout;
+
+	/**
+	 * HTTP write timeout
+	 */
+	private Duration writeTimeout;
+
+	/**
+	 * HTTP response timeout
+	 */
+	private Duration responseTimeout;
+
+	/**
+	 * The maximum number of connections in the HTTP connection pool
+	 */
+	private Integer maximumConnectionPoolSize;
 
 	public String getEndpoint() {
 		return this.endpoint;
@@ -76,6 +102,46 @@ public class AzureOpenAiConnectionProperties {
 
 	public void setCustomHeaders(Map<String, String> customHeaders) {
 		this.customHeaders = customHeaders;
+	}
+
+	public Duration getConnectTimeout() {
+		return this.connectTimeout;
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.connectTimeout = connectTimeout;
+	}
+
+	public Duration getReadTimeout() {
+		return this.readTimeout;
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.readTimeout = readTimeout;
+	}
+
+	public Duration getWriteTimeout() {
+		return this.writeTimeout;
+	}
+
+	public void setWriteTimeout(Duration writeTimeout) {
+		this.writeTimeout = writeTimeout;
+	}
+
+	public Duration getResponseTimeout() {
+		return this.responseTimeout;
+	}
+
+	public void setResponseTimeout(Duration responseTimeout) {
+		this.responseTimeout = responseTimeout;
+	}
+
+	public Integer getMaximumConnectionPoolSize() {
+		return this.maximumConnectionPoolSize;
+	}
+
+	public void setMaximumConnectionPoolSize(Integer maximumConnectionPoolSize) {
+		this.maximumConnectionPoolSize = maximumConnectionPoolSize;
 	}
 
 }

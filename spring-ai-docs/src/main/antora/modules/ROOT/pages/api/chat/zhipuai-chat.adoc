@@ -115,6 +115,20 @@ If you are using the Z.ai Platform, you need to set it to `https://api.z.ai/api/
 | spring.ai.zhipuai.api-key    | The API Key           |  -
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.zhipuai` is used as the property prefix that lets you configure the HTTP client for ZhiPu AI API calls.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.zhipuai.connect-timeout | HTTP connection timeout | -
+| spring.ai.zhipuai.read-timeout | HTTP read timeout | -
+| spring.ai.zhipuai.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.zhipuai.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 ==== Configuration Properties
 
 [NOTE]
