@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,19 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -296,6 +302,60 @@ class OllamaChatModelIT extends BaseOllamaIT {
 			.containsEntry("name", "Canada")
 			.containsEntry("capital", "Ottawa")
 			.containsEntry("languages", List.of("English", "French"));
+	}
+
+	@Test
+	void chatClientEntityWithStructuredOutput() {
+		// Test using ChatClient high-level API with .entity(Class) method
+		// This verifies that StructuredOutputChatOptions implementation works correctly
+		// with ChatClient
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		// Generate expected JSON schema as map for testing purpose
+		var expectedOutputSchemaMap = new BeanOutputConverter<>(ActorsFilmsRecord.class).getJsonSchemaMap();
+
+		// Advisor to verify that native structured output is being used
+		var nativeStructuredOutputUsed = new AtomicBoolean(false);
+		var verifyNativeStructuredOutputAdvisor = new CallAdvisor() {
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+				var response = chain.nextCall(request);
+				var chatOptions = request.prompt().getOptions();
+
+				if (chatOptions instanceof OllamaChatOptions ollamaChatOptions
+						&& ollamaChatOptions.getFormat() instanceof Map<?, ?> format
+						&& expectedOutputSchemaMap.equals(format)) {
+					nativeStructuredOutputUsed.set(true);
+				}
+				return response;
+			}
+
+			@Override
+			public String getName() {
+				return "VerifyNativeStructuredOutputAdvisor";
+			}
+
+			@Override
+			public int getOrder() {
+				return 0;
+			}
+		};
+
+		var actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			// forces native structured output handling via StructuredOutputChatOptions
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+			.advisors(verifyNativeStructuredOutputAdvisor)
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		// Verify that native structured output was used
+		assertThat(nativeStructuredOutputUsed.get())
+			.as("Native structured output should be used with OllamaChatOptions.setFormat.")
+			.isTrue();
+
+		assertThat(actorsFilms).isNotNull();
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
