@@ -377,14 +377,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.map(rowRecord -> {
 				String docId = String.valueOf(rowRecord.get(this.idFieldName));
 				String content = (String) rowRecord.get(this.contentFieldName);
-				JsonObject metadata = new JsonObject();
+				JsonObject metadata = null;
 				try {
-					metadata = (JsonObject) rowRecord.get(this.metadataFieldName);
-					if (metadata != null) {
-						// inject the distance into the metadata.
+                    Object o = rowRecord.get(this.metadataFieldName);
+					if (o instanceof JsonObject) {
+                        metadata = (JsonObject) o;
+                        // inject the distance into the metadata.
 						metadata.addProperty(DocumentMetadata.DISTANCE.value(), 1 - getResultSimilarity(rowRecord));
 					}
-				}
 				catch (ParamException e) {
 					// skip the ParamException if metadata doesn't exist for the custom
 					// collection
