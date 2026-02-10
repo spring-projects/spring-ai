@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.zhipuai;
 
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,11 @@ import org.springframework.ai.image.ImageModel;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.observation.ImageModelObservationContext;
+import org.springframework.ai.image.observation.ImageModelObservationConvention;
+import org.springframework.ai.image.observation.ImageModelObservationDocumentation;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
 import org.springframework.core.retry.RetryTemplate;
@@ -39,6 +44,7 @@ import org.springframework.util.Assert;
  * client for calling the ZhiPuAI image generation API.
  *
  * @author Geng Rong
+ * @author Yanming Zhou
  * @since 1.0.0 M1
  */
 public class ZhiPuAiImageModel implements ImageModel {
@@ -51,18 +57,38 @@ public class ZhiPuAiImageModel implements ImageModel {
 
 	private final ZhiPuAiImageApi zhiPuAiImageApi;
 
+	private final ObservationRegistry observationRegistry;
+
+	private ImageModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+
 	public ZhiPuAiImageModel(ZhiPuAiImageApi zhiPuAiImageApi) {
 		this(zhiPuAiImageApi, ZhiPuAiImageOptions.builder().build(), RetryUtils.DEFAULT_RETRY_TEMPLATE);
 	}
 
 	public ZhiPuAiImageModel(ZhiPuAiImageApi zhiPuAiImageApi, ZhiPuAiImageOptions defaultOptions,
 			RetryTemplate retryTemplate) {
+		this(zhiPuAiImageApi, defaultOptions, retryTemplate, ObservationRegistry.NOOP);
+	}
+
+	public ZhiPuAiImageModel(ZhiPuAiImageApi zhiPuAiImageApi, ZhiPuAiImageOptions defaultOptions,
+			RetryTemplate retryTemplate, ObservationRegistry observationRegistry) {
 		Assert.notNull(zhiPuAiImageApi, "ZhiPuAiImageApi must not be null");
 		Assert.notNull(defaultOptions, "defaultOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
+		Assert.notNull(observationRegistry, "observationRegistry must not be null");
 		this.zhiPuAiImageApi = zhiPuAiImageApi;
 		this.defaultOptions = defaultOptions;
 		this.retryTemplate = retryTemplate;
+		this.observationRegistry = observationRegistry;
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data
+	 * @param observationConvention The provided convention
+	 */
+	public void setObservationConvention(ImageModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 	public ZhiPuAiImageOptions getDefaultOptions() {
@@ -72,24 +98,33 @@ public class ZhiPuAiImageModel implements ImageModel {
 	@Override
 	public ImageResponse call(ImagePrompt imagePrompt) {
 
-		return RetryUtils.execute(this.retryTemplate, () -> {
+		String instructions = imagePrompt.getInstructions().get(0).getText();
 
-			String instructions = imagePrompt.getInstructions().get(0).getText();
+		ZhiPuAiImageApi.ZhiPuAiImageRequest imageRequest = new ZhiPuAiImageApi.ZhiPuAiImageRequest(instructions,
+				ZhiPuAiImageApi.DEFAULT_IMAGE_MODEL);
+		imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
+				ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+		imageRequest = ModelOptionsUtils.merge(toZhiPuAiImageOptions(imagePrompt.getOptions()), imageRequest,
+				ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
 
-			ZhiPuAiImageApi.ZhiPuAiImageRequest imageRequest = new ZhiPuAiImageApi.ZhiPuAiImageRequest(instructions,
-					ZhiPuAiImageApi.DEFAULT_IMAGE_MODEL);
-			imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-					ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
-			imageRequest = ModelOptionsUtils.merge(toZhiPuAiImageOptions(imagePrompt.getOptions()), imageRequest,
-					ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+		var observationContext = ImageModelObservationContext.builder()
+			.imagePrompt(imagePrompt)
+			.provider(AiProvider.ZHIPUAI.name())
+			.build();
 
-			// Make the request
-			ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity = this.zhiPuAiImageApi
-				.createImage(imageRequest);
+		ZhiPuAiImageApi.ZhiPuAiImageRequest imageRequestToUse = imageRequest;
+		return ImageModelObservationDocumentation.IMAGE_MODEL_OPERATION
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				// Make the request
+				ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity = RetryUtils
+					.execute(this.retryTemplate, () -> this.zhiPuAiImageApi.createImage(imageRequestToUse));
 
-			// Convert to org.springframework.ai.model derived ImageResponse data type
-			return convertResponse(imageResponseEntity, imageRequest);
-		});
+				// Convert to org.springframework.ai.model derived ImageResponse data type
+				return convertResponse(imageResponseEntity, imageRequestToUse);
+			});
+
 	}
 
 	private ImageResponse convertResponse(ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity,
