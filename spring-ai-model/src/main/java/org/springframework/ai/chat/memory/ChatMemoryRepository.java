@@ -40,4 +40,15 @@ public interface ChatMemoryRepository {
 
 	void deleteByConversationId(String conversationId);
 
+	/**
+	 * Atomically removes the messages in {@code deletes} and adds the messages in {@code adds}
+	 * for the given conversation ID. This provides a more efficient way to update
+	 * the memory than reading the entire history and overwriting it.
+	 *
+	 * @param conversationId The ID of the conversation to update.
+	 * @param deletes A list of messages to be removed from the memory.
+	 * @param adds A list of new messages to be added to the memory.
+	 */
+	void refresh(String conversationId, List<Message> deletes, List<Message> adds);
+
 }
