@@ -1,0 +1,26 @@
+[[Moderation]]
+= Moderation Model API
+
+The Spring AI Moderation API provides a unified interface for interacting with AI models specialized in content moderation. These models can detect potentially harmful, unsafe, or sensitive content in text.
+
+== Overview
+
+Content moderation is essential for applications that handle user-generated content. Moderation models can identify various categories of potentially problematic content, including:
+
+* Hate speech
+* Violence
+* Sexual content
+* Self-harm
+* Harassment
+
+== Supported Providers
+
+Spring AI provides integrations with the following moderation model providers:
+
+* xref:api/moderation/openai-moderation.adoc[OpenAI Moderation] - Uses OpenAI's moderation endpoint to classify text
+* xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI Moderation] - Uses Mistral AI's moderation capabilities
+
+== Feedback and Contributions
+
+The project's https://github.com/spring-projects/spring-ai/discussions[GitHub discussions] is a great place to send feedback.
+
