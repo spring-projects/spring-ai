@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -150,25 +151,37 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	/**
-	 * Generates S3 key for conversation. Pattern: {prefix}/{conversationId}.json
+	 * Generates S3 key for conversation. When a custom key resolver is configured,
+	 * delegates to it. Otherwise uses the default pattern: {prefix}/{conversationId}.json
 	 * @param conversationId the conversation ID
 	 * @param prefix the key prefix
 	 * @return the S3 key
 	 */
 	private String generateKey(final String conversationId, final String prefix) {
 		String normalizedConversationId = normalizeConversationId(conversationId);
+		Function<String, String> resolver = this.config.getKeyResolver();
+		if (resolver != null) {
+			return resolver.apply(normalizedConversationId);
+		}
 		Assert.hasText(prefix, "prefix cannot be null or empty");
 
 		return normalizePrefix(prefix) + "/" + normalizedConversationId + JSON_EXTENSION;
 	}
 
 	/**
-	 * Extracts conversation ID from S3 key.
+	 * Extracts conversation ID from S3 key. When a custom conversation ID extractor is
+	 * configured, delegates to it. Otherwise uses the default extraction logic based on
+	 * the key prefix.
 	 * @param key the S3 key
 	 * @param prefix the key prefix
 	 * @return the conversation ID or null if invalid
 	 */
 	private @Nullable String extractConversationId(final String key, final String prefix) {
+		Function<String, String> extractor = this.config.getConversationIdExtractor();
+		if (extractor != null) {
+			return extractor.apply(key);
+		}
+
 		Assert.hasText(key, "key cannot be null or empty");
 		Assert.hasText(prefix, "prefix cannot be null or empty");
 
@@ -485,6 +498,30 @@ public final class S3ChatMemoryRepository implements ChatMemoryRepository {
 		 */
 		public Builder storageClass(final software.amazon.awssdk.services.s3.model.StorageClass storage) {
 			this.configBuilder.storageClass(storage);
+			return this;
+		}
+
+		/**
+		 * Sets the key resolver function that maps a conversationId to a full S3 object
+		 * key.
+		 * @param resolver the key resolver function
+		 * @return this builder
+		 * @see S3ChatMemoryConfig.Builder#keyResolver(Function)
+		 */
+		public Builder keyResolver(final Function<String, String> resolver) {
+			this.configBuilder.keyResolver(resolver);
+			return this;
+		}
+
+		/**
+		 * Sets the conversation ID extractor function that maps an S3 object key back to
+		 * a conversationId.
+		 * @param extractor the conversation ID extractor function
+		 * @return this builder
+		 * @see S3ChatMemoryConfig.Builder#conversationIdExtractor(Function)
+		 */
+		public Builder conversationIdExtractor(final Function<String, String> extractor) {
+			this.configBuilder.conversationIdExtractor(extractor);
 			return this;
 		}
 

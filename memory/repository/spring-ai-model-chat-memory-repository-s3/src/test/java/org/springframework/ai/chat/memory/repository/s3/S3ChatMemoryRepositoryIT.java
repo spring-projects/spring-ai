@@ -375,4 +375,177 @@ class S3ChatMemoryRepositoryIT {
 			.hasMessageContaining("does not exist");
 	}
 
+	@Test
+	void testProductDateNamespacePattern() {
+		// Given: A repository with product/date namespace pattern
+		// Pattern: memory/{product}/{date}/{conversationId}.json
+		String prefix = "memory-" + System.currentTimeMillis();
+		S3ChatMemoryRepository nsRepository = S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(BUCKET_NAME)
+			.keyPrefix(prefix)
+			.keyResolver(conversationId -> {
+				String[] parts = conversationId.split(":");
+				return prefix + "/" + parts[0] + "/" + parts[1] + "/" + parts[2] + ".json";
+			})
+			.conversationIdExtractor(s3Key -> {
+				String path = s3Key.substring(prefix.length() + 1, s3Key.length() - 5); // strip
+																						// prefix/
+																						// and
+																						// .json
+				String[] parts = path.split("/");
+				return parts[0] + ":" + parts[1] + ":" + parts[2];
+			})
+			.build();
+
+		// When: Saving conversations for different products and dates
+		List<Message> messages1 = List.of(UserMessage.builder().text("Product A message").build());
+		List<Message> messages2 = List.of(UserMessage.builder().text("Product B message").build());
+		nsRepository.saveAll("productA:2024-01-15:conv1", messages1);
+		nsRepository.saveAll("productB:2024-01-16:conv2", messages2);
+
+		// Then: Messages can be retrieved by composite conversationId
+		List<Message> retrieved1 = nsRepository.findByConversationId("productA:2024-01-15:conv1");
+		assertThat(retrieved1).hasSize(1);
+		assertThat(retrieved1.get(0).getText()).isEqualTo("Product A message");
+
+		List<Message> retrieved2 = nsRepository.findByConversationId("productB:2024-01-16:conv2");
+		assertThat(retrieved2).hasSize(1);
+		assertThat(retrieved2.get(0).getText()).isEqualTo("Product B message");
+
+		// And: findConversationIds returns all composite IDs
+		List<String> conversationIds = nsRepository.findConversationIds();
+		assertThat(conversationIds).containsExactlyInAnyOrder("productA:2024-01-15:conv1", "productB:2024-01-16:conv2");
+	}
+
+	@Test
+	void testActorSessionNamespacePattern() {
+		// Given: A repository with actor/session namespace pattern
+		// Pattern: actor/{actorId}/session/{sessionId}.json
+		String prefix = "actor-" + System.currentTimeMillis();
+		S3ChatMemoryRepository nsRepository = S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(BUCKET_NAME)
+			.keyPrefix(prefix)
+			.keyResolver(conversationId -> {
+				String[] parts = conversationId.split(":");
+				return prefix + "/" + parts[0] + "/session/" + parts[1] + ".json";
+			})
+			.conversationIdExtractor(s3Key -> {
+				String path = s3Key.substring(prefix.length() + 1, s3Key.length() - 5); // strip
+																						// prefix/
+																						// and
+																						// .json
+				return path.replaceAll("/session/", ":").replace(".json", "");
+			})
+			.build();
+
+		// When: Saving conversations for different actors and sessions
+		List<Message> messages1 = List.of(UserMessage.builder().text("Hello from user-1").build(),
+				AssistantMessage.builder().content("Hi user-1!").build());
+		List<Message> messages2 = List.of(UserMessage.builder().text("Hello from user-2").build());
+		nsRepository.saveAll("user-1:session-100", messages1);
+		nsRepository.saveAll("user-2:session-200", messages2);
+
+		// Then: Messages can be retrieved
+		List<Message> retrieved1 = nsRepository.findByConversationId("user-1:session-100");
+		assertThat(retrieved1).hasSize(2);
+		assertThat(retrieved1.get(0).getText()).isEqualTo("Hello from user-1");
+		assertThat(retrieved1.get(1).getText()).isEqualTo("Hi user-1!");
+
+		// And: findConversationIds returns correct composite IDs
+		List<String> conversationIds = nsRepository.findConversationIds();
+		assertThat(conversationIds).containsExactlyInAnyOrder("user-1:session-100", "user-2:session-200");
+
+		// When: Deleting a conversation
+		nsRepository.deleteByConversationId("user-1:session-100");
+
+		// Then: Only the deleted conversation is gone
+		assertThat(nsRepository.findByConversationId("user-1:session-100")).isEmpty();
+		assertThat(nsRepository.findByConversationId("user-2:session-200")).hasSize(1);
+		assertThat(nsRepository.findConversationIds()).containsExactly("user-2:session-200");
+	}
+
+	@Test
+	void testCustomKeyResolverDelete() {
+		// Given: A repository with custom key resolver
+		String prefix = "delete-test-" + System.currentTimeMillis();
+		S3ChatMemoryRepository nsRepository = S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(BUCKET_NAME)
+			.keyPrefix(prefix)
+			.keyResolver(conversationId -> {
+				String[] parts = conversationId.split(":");
+				return prefix + "/" + parts[0] + "/" + parts[1] + ".json";
+			})
+			.conversationIdExtractor(s3Key -> {
+				String path = s3Key.substring(prefix.length() + 1, s3Key.length() - 5);
+				String[] parts = path.split("/");
+				return parts[0] + ":" + parts[1];
+			})
+			.build();
+
+		// When: Saving and then deleting
+		List<Message> messages = List.of(UserMessage.builder().text("To be deleted").build());
+		nsRepository.saveAll("tenant1:conv1", messages);
+		assertThat(nsRepository.findByConversationId("tenant1:conv1")).hasSize(1);
+
+		nsRepository.deleteByConversationId("tenant1:conv1");
+
+		// Then: Conversation is deleted
+		assertThat(nsRepository.findByConversationId("tenant1:conv1")).isEmpty();
+		assertThat(nsRepository.findConversationIds()).isEmpty();
+	}
+
+	@Test
+	void testKeyResolverWithoutExtractorThrows() {
+		// When/Then: Setting keyResolver without conversationIdExtractor should throw
+		assertThatThrownBy(() -> S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(BUCKET_NAME)
+			.keyPrefix("test")
+			.keyResolver(id -> "prefix/" + id + ".json")
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("keyResolver and conversationIdExtractor must both be provided or both be null");
+	}
+
+	@Test
+	void testExtractorWithoutKeyResolverThrows() {
+		// When/Then: Setting conversationIdExtractor without keyResolver should throw
+		assertThatThrownBy(() -> S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(BUCKET_NAME)
+			.keyPrefix("test")
+			.conversationIdExtractor(key -> key)
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("keyResolver and conversationIdExtractor must both be provided or both be null");
+	}
+
+	@Test
+	void testDefaultBehaviorUnchangedWithoutResolver() {
+		// Given: A repository without custom resolver (default behavior)
+		String uniquePrefix = "default-behavior-" + System.currentTimeMillis();
+		S3ChatMemoryRepository defaultRepository = S3ChatMemoryRepository.builder()
+			.s3Client(this.s3Client)
+			.bucketName(BUCKET_NAME)
+			.keyPrefix(uniquePrefix)
+			.build();
+
+		// When: Performing standard CRUD operations
+		String conversationId = "simple-conversation";
+		List<Message> messages = List.of(UserMessage.builder().text("Default behavior test").build());
+		defaultRepository.saveAll(conversationId, messages);
+
+		// Then: Default key pattern (prefix/conversationId.json) works as before
+		List<Message> retrieved = defaultRepository.findByConversationId(conversationId);
+		assertThat(retrieved).hasSize(1);
+		assertThat(retrieved.get(0).getText()).isEqualTo("Default behavior test");
+
+		List<String> conversationIds = defaultRepository.findConversationIds();
+		assertThat(conversationIds).containsExactly(conversationId);
+
+		defaultRepository.deleteByConversationId(conversationId);
+		assertThat(defaultRepository.findConversationIds()).isEmpty();
+	}
+
 }
