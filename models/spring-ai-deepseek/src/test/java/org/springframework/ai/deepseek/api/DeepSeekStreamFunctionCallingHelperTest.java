@@ -97,13 +97,13 @@ class DeepSeekStreamFunctionCallingHelperTest {
 		// Given
 		ChatCompletionFunction func1 = new ChatCompletionFunction("func1", "{\"arg1\":");
 		ToolCall toolCall1 = new ToolCall("call_123", "function", func1);
-		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null,
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage("content", Role.ASSISTANT, null, null,
 				List.of(toolCall1));
 
 		ChatCompletionFunction func2 = new ChatCompletionFunction("func1", "\"value1\"}");
 		ToolCall toolCall2 = new ToolCall(null, "function", func2); // No ID -
 																	// continuation
-		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null,
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage("content", Role.ASSISTANT, null, null,
 				List.of(toolCall2));
 
 		ChatCompletionChunk previous = new ChatCompletionChunk("id",
@@ -190,11 +190,11 @@ class DeepSeekStreamFunctionCallingHelperTest {
 	void mergeWhenCurrentToolCallsIsEmptyListShouldNotThrowException() {
 		// Given
 		ToolCall toolCall = new ToolCall("call_1", "function", new ChatCompletionFunction("func1", "{}"));
-		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null,
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage("content", Role.ASSISTANT, null, null,
 				List.of(toolCall));
 
 		// Empty list instead of null
-		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, List.of());
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage("content", Role.ASSISTANT, null, null, List.of());
 
 		ChatCompletionChunk previous = new ChatCompletionChunk("id",
 				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
