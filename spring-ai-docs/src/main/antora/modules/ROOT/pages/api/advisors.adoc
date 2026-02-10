@@ -384,6 +384,24 @@ Based on the article: [Re-Reading Improves Reasoning in LLMs](https://arxiv.org/
 * `SafeGuardAdvisor`
 +
 A simple advisor designed to prevent the model from generating harmful or inappropriate content.
+It blocks the call to the model provider if the user input contains any of the configured sensitive words.
++
+By default, the sensitive word matching is case-sensitive.
+You can enable case-insensitive matching by setting the `ignoreCase` option to `true` via the builder.
++
+[source,java]
+----
+// Case-sensitive matching (default)
+SafeGuardAdvisor.builder()
+    .sensitiveWords(List.of("kill", "attack"))
+    .build();
+
+// Case-insensitive matching
+SafeGuardAdvisor.builder()
+    .sensitiveWords(List.of("kill", "attack"))
+    .ignoreCase(true)
+    .build();
+----
 
 
 === Streaming vs Non-Streaming
