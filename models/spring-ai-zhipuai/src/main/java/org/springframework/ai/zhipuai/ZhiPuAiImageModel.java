@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
 import org.springframework.ai.image.ImageModel;
-import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -39,6 +38,7 @@ import org.springframework.util.Assert;
  * client for calling the ZhiPuAI image generation API.
  *
  * @author Geng Rong
+ * @author Yanming Zhou
  * @since 1.0.0 M1
  */
 public class ZhiPuAiImageModel implements ImageModel {
@@ -78,10 +78,9 @@ public class ZhiPuAiImageModel implements ImageModel {
 
 			ZhiPuAiImageApi.ZhiPuAiImageRequest imageRequest = new ZhiPuAiImageApi.ZhiPuAiImageRequest(instructions,
 					ZhiPuAiImageApi.DEFAULT_IMAGE_MODEL);
-			imageRequest = ModelOptionsUtils.merge(this.defaultOptions, imageRequest,
-					ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
-			imageRequest = ModelOptionsUtils.merge(toZhiPuAiImageOptions(imagePrompt.getOptions()), imageRequest,
-					ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
+			imageRequest = ModelOptionsUtils.merge(
+					ModelOptionsUtils.merge(imagePrompt.getOptions(), this.defaultOptions, ZhiPuAiImageOptions.class),
+					imageRequest, ZhiPuAiImageApi.ZhiPuAiImageRequest.class);
 
 			// Make the request
 			ResponseEntity<ZhiPuAiImageApi.ZhiPuAiImageResponse> imageResponseEntity = this.zhiPuAiImageApi
@@ -106,26 +105,6 @@ public class ZhiPuAiImageModel implements ImageModel {
 			.toList();
 
 		return new ImageResponse(imageGenerationList);
-	}
-
-	/**
-	 * Convert the {@link ImageOptions} into {@link ZhiPuAiImageOptions}.
-	 * @param runtimeImageOptions the image options to use.
-	 * @return the converted {@link ZhiPuAiImageOptions}.
-	 */
-	private ZhiPuAiImageOptions toZhiPuAiImageOptions(ImageOptions runtimeImageOptions) {
-		ZhiPuAiImageOptions.Builder zhiPuAiImageOptionsBuilder = ZhiPuAiImageOptions.builder();
-		if (runtimeImageOptions != null) {
-			if (runtimeImageOptions.getModel() != null) {
-				zhiPuAiImageOptionsBuilder.model(runtimeImageOptions.getModel());
-			}
-			if (runtimeImageOptions instanceof ZhiPuAiImageOptions runtimeZhiPuAiImageOptions) {
-				if (runtimeZhiPuAiImageOptions.getUser() != null) {
-					zhiPuAiImageOptionsBuilder.user(runtimeZhiPuAiImageOptions.getUser());
-				}
-			}
-		}
-		return zhiPuAiImageOptionsBuilder.build();
 	}
 
 }
