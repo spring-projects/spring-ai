@@ -581,8 +581,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				// @formatter:off
 				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
 					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
 						return Flux.deferContextual(ctx -> {
 							ToolExecutionResult toolExecutionResult;
 							try {

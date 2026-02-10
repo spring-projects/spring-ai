@@ -375,8 +375,6 @@ public class MiniMaxChatModel implements ChatModel {
 
 			Flux<ChatResponse> flux = chatResponse.flatMap(response -> {
 						if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(requestPrompt.getOptions(), response)) {
-							// FIXME: bounded elastic needs to be used since tool calling
-							//  is currently only synchronous
 							return Flux.deferContextual(ctx -> {
 								ToolExecutionResult toolExecutionResult;
 								try {
