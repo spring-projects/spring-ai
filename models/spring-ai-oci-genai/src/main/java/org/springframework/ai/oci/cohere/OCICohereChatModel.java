@@ -119,8 +119,11 @@ public class OCICohereChatModel implements ChatModel {
 
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
-		OCICohereChatOptions runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-				OCICohereChatOptions.class);
+		OCICohereChatOptions runtimeOptions = null;
+		if (prompt.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					OCICohereChatOptions.class);
+		}
 
 		// Define request options by merging runtime options and default options
 		OCICohereChatOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,

@@ -714,13 +714,15 @@ public class OpenAiSdkChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		OpenAiSdkChatOptions runtimeOptions = null;
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					OpenAiSdkChatOptions.class);
-		}
-		else {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					OpenAiSdkChatOptions.class);
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						OpenAiSdkChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						OpenAiSdkChatOptions.class);
+			}
 		}
 
 		// Define request options by merging runtime options and default options

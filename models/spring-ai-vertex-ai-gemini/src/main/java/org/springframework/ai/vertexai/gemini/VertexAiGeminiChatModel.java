@@ -436,13 +436,15 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		VertexAiGeminiChatOptions runtimeOptions = null;
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					VertexAiGeminiChatOptions.class);
-		}
-		else {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					VertexAiGeminiChatOptions.class);
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						VertexAiGeminiChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						VertexAiGeminiChatOptions.class);
+			}
 		}
 
 		// Define request options by merging runtime options and default options
@@ -677,8 +679,12 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 	}
 
 	private VertexAiGeminiChatOptions vertexAiGeminiChatOptions(Prompt prompt) {
-		VertexAiGeminiChatOptions updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(),
-				ChatOptions.class, VertexAiGeminiChatOptions.class);
+		VertexAiGeminiChatOptions updatedRuntimeOptions = VertexAiGeminiChatOptions.builder().build();
+		if (prompt.getOptions() != null) {
+			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+					VertexAiGeminiChatOptions.class);
+
+		}
 
 		updatedRuntimeOptions = ModelOptionsUtils.merge(updatedRuntimeOptions, this.defaultOptions,
 				VertexAiGeminiChatOptions.class);
@@ -792,9 +798,7 @@ public class VertexAiGeminiChatModel implements ChatModel, DisposableBean {
 		if (options.getLogprobs() != null) {
 			generationConfigBuilder.setLogprobs(options.getLogprobs());
 		}
-		if (options.getResponseLogprobs() != null) {
-			generationConfigBuilder.setResponseLogprobs(options.getResponseLogprobs());
-		}
+		generationConfigBuilder.setResponseLogprobs(options.getResponseLogprobs());
 
 		return generationConfigBuilder.build();
 	}

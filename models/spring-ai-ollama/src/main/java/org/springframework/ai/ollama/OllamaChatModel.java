@@ -287,7 +287,9 @@ public class OllamaChatModel implements ChatModel {
 
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+		ChatOptions options = prompt.getOptions();
+		Assert.state(options != null, "ChatOptions must not be null");
+		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
 				// Return tool execution result directly to the client.
@@ -298,8 +300,7 @@ public class OllamaChatModel implements ChatModel {
 			}
 			else {
 				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						response);
+				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), options), response);
 			}
 		}
 
@@ -365,7 +366,9 @@ public class OllamaChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> {
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
+				ChatOptions options = prompt.getOptions();
+				Assert.state(options != null, "ChatOptions must not be null");
+				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(options, response)) {
 					// FIXME: bounded elastic needs to be used since tool calling
 					//  is currently only synchronous
 					return Flux.deferContextual(ctx -> {
@@ -385,7 +388,7 @@ public class OllamaChatModel implements ChatModel {
 						}
 						else {
 							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), options),
 									response);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
@@ -408,17 +411,19 @@ public class OllamaChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		OllamaChatOptions runtimeOptions = null;
-		if (prompt.getOptions() instanceof OllamaChatOptions ollamaChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(OllamaChatOptions.fromOptions(ollamaChatOptions),
-					OllamaChatOptions.class, OllamaChatOptions.class);
-		}
-		else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					OllamaChatOptions.class);
-		}
-		else {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					OllamaChatOptions.class);
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof OllamaChatOptions ollamaChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(OllamaChatOptions.fromOptions(ollamaChatOptions),
+						OllamaChatOptions.class, OllamaChatOptions.class);
+			}
+			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						OllamaChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						OllamaChatOptions.class);
+			}
 		}
 
 		// Define request options by merging runtime options and default options
@@ -502,7 +507,7 @@ public class OllamaChatModel implements ChatModel {
 			throw new IllegalArgumentException("Unsupported message type: " + message.getMessageType());
 		}).flatMap(List::stream).toList();
 
-		OllamaChatOptions requestOptions;
+		OllamaChatOptions requestOptions = null;
 		if (prompt.getOptions() instanceof OllamaChatOptions) {
 			requestOptions = (OllamaChatOptions) prompt.getOptions();
 		}

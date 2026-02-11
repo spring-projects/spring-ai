@@ -405,7 +405,7 @@ public class OpenAiChatModel implements ChatModel {
 	private HttpHeaders getAdditionalHttpHeaders(Prompt prompt) {
 
 		Map<String, String> headers = new HashMap<>(this.defaultOptions.getHttpHeaders());
-		if (prompt.getOptions() instanceof OpenAiChatOptions chatOptions) {
+		if (prompt.getOptions() != null && prompt.getOptions() instanceof OpenAiChatOptions chatOptions) {
 			headers.putAll(chatOptions.getHttpHeaders());
 		}
 		HttpHeaders httpHeaders = new HttpHeaders();
@@ -515,13 +515,15 @@ public class OpenAiChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		OpenAiChatOptions runtimeOptions = null;
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					OpenAiChatOptions.class);
-		}
-		else {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					OpenAiChatOptions.class);
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						OpenAiChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						OpenAiChatOptions.class);
+			}
 		}
 
 		// Define request options by merging runtime options and default options

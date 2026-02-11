@@ -192,8 +192,11 @@ public class MiniMaxEmbeddingModel extends AbstractEmbeddingModel {
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
-		MiniMaxEmbeddingOptions runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(),
-				EmbeddingOptions.class, MiniMaxEmbeddingOptions.class);
+		MiniMaxEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					MiniMaxEmbeddingOptions.class);
+		}
 
 		// Define request options by merging runtime options and default options
 		MiniMaxEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,

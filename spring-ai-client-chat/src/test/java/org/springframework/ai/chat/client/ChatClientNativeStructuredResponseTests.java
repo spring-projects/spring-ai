@@ -67,7 +67,6 @@ public class ChatClientNativeStructuredResponseTests {
 				"""))), metadata);
 
 		given(this.chatModel.call(this.promptCaptor.capture())).willReturn(chatResponse);
-		given(this.structuredOutputChatOptions.copy()).willReturn(this.structuredOutputChatOptions);
 
 		var textCallAdvisor = new ContextCatcherCallAdvisor();
 		ResponseEntity<ChatResponse, UserEntity> responseEntity = ChatClient.builder(this.chatModel)

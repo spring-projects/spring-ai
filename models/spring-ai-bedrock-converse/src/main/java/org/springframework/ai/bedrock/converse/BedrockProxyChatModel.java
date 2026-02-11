@@ -273,15 +273,17 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	Prompt buildRequestPrompt(Prompt prompt) {
 		BedrockChatOptions runtimeOptions = null;
-		if (prompt.getOptions() instanceof BedrockChatOptions bedrockChatOptions) {
-			runtimeOptions = bedrockChatOptions.copy();
-		}
-		else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					BedrockChatOptions.class);
-		}
-		else {
-			runtimeOptions = from(prompt.getOptions());
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof BedrockChatOptions bedrockChatOptions) {
+				runtimeOptions = bedrockChatOptions.copy();
+			}
+			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						BedrockChatOptions.class);
+			}
+			else {
+				runtimeOptions = from(prompt.getOptions());
+			}
 		}
 
 		// Merge runtime options with the default options

@@ -120,7 +120,7 @@ class DefaultChatClientTests {
 		assertThat(spec.getMessages()).hasSize(2);
 		assertThat(spec.getMessages().get(0).getText()).isEqualTo("instructions");
 		assertThat(spec.getMessages().get(1).getText()).isEqualTo("my question");
-		assertThat(spec.getChatOptions()).isNotNull();
+		assertThat(spec.getChatOptions()).isNull();
 	}
 
 	@Test

@@ -446,13 +446,15 @@ public class ZhiPuAiChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		ZhiPuAiChatOptions runtimeOptions = null;
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					ZhiPuAiChatOptions.class);
-		}
-		else {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					ZhiPuAiChatOptions.class);
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						ZhiPuAiChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						ZhiPuAiChatOptions.class);
+			}
 		}
 
 		// Define request options by merging runtime options and default options
@@ -540,17 +542,19 @@ public class ZhiPuAiChatModel implements ChatModel {
 
 		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
 
-		ZhiPuAiChatOptions updatedRuntimeOptions;
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					ZhiPuAiChatOptions.class);
-		}
-		else {
-			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					ZhiPuAiChatOptions.class);
-		}
+		if (prompt.getOptions() != null) {
+			ZhiPuAiChatOptions updatedRuntimeOptions;
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
+						ToolCallingChatOptions.class, ZhiPuAiChatOptions.class);
+			}
+			else {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						ZhiPuAiChatOptions.class);
+			}
 
-		request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
+		}
 
 		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 

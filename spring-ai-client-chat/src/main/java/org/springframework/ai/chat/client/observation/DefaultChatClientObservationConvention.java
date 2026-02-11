@@ -121,6 +121,9 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 	}
 
 	protected KeyValues tools(KeyValues keyValues, ChatClientObservationContext context) {
+		if (context.getRequest().prompt().getOptions() == null) {
+			return keyValues;
+		}
 		if (!(context.getRequest().prompt().getOptions() instanceof ToolCallingChatOptions options)) {
 			return keyValues;
 		}

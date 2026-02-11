@@ -163,8 +163,11 @@ public class OCIEmbeddingModel extends AbstractEmbeddingModel {
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
-		OCIEmbeddingOptions runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(),
-				EmbeddingOptions.class, OCIEmbeddingOptions.class);
+		OCIEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OCIEmbeddingOptions.class);
+		}
 
 		// Define request options by merging runtime options and default options
 		OCIEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.options,

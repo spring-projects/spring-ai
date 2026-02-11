@@ -107,7 +107,8 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(callAdvisorChain, "callAdvisorChain must not be null");
 		Assert.notNull(chatClientRequest, "chatClientRequest must not be null");
 
-		if (!(chatClientRequest.prompt().getOptions() instanceof ToolCallingChatOptions)) {
+		if (chatClientRequest.prompt().getOptions() == null
+				|| !(chatClientRequest.prompt().getOptions() instanceof ToolCallingChatOptions)) {
 			throw new IllegalArgumentException(
 					"ToolCall Advisor requires ToolCallingChatOptions to be set in the ChatClientRequest options.");
 		}

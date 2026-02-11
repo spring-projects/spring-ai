@@ -64,7 +64,6 @@ public class OpenAiModerationModel implements ModerationModel {
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		this.openAiModerationApi = openAiModerationApi;
 		this.retryTemplate = retryTemplate;
-		this.defaultOptions = OpenAiModerationOptions.builder().build();
 	}
 
 	public OpenAiModerationOptions getDefaultOptions() {
@@ -84,10 +83,16 @@ public class OpenAiModerationModel implements ModerationModel {
 
 			OpenAiModerationApi.OpenAiModerationRequest moderationRequest = new OpenAiModerationApi.OpenAiModerationRequest(
 					instructions);
-			moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
-					OpenAiModerationApi.OpenAiModerationRequest.class);
-			moderationRequest = ModelOptionsUtils.merge(toOpenAiModerationOptions(moderationPrompt.getOptions()),
-					moderationRequest, OpenAiModerationApi.OpenAiModerationRequest.class);
+
+			if (this.defaultOptions != null) {
+				moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
+						OpenAiModerationApi.OpenAiModerationRequest.class);
+			}
+
+			if (moderationPrompt.getOptions() != null) {
+				moderationRequest = ModelOptionsUtils.merge(toOpenAiModerationOptions(moderationPrompt.getOptions()),
+						moderationRequest, OpenAiModerationApi.OpenAiModerationRequest.class);
+			}
 
 			ResponseEntity<OpenAiModerationApi.OpenAiModerationResponse> moderationResponseEntity = this.openAiModerationApi
 				.createModeration(moderationRequest);

@@ -53,8 +53,7 @@ public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, Audi
 	 * @return The transcribed text.
 	 */
 	default String transcribe(Resource resource, @Nullable AudioTranscriptionOptions options) {
-		AudioTranscriptionPrompt prompt = (options != null ? new AudioTranscriptionPrompt(resource, options)
-				: new AudioTranscriptionPrompt(resource));
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
 		AudioTranscription result = this.call(prompt).getResult();
 		return result != null ? result.getOutput() : "";
 	}

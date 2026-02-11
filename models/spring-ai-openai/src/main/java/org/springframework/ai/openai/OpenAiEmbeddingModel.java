@@ -210,8 +210,11 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
-		OpenAiEmbeddingOptions runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(),
-				EmbeddingOptions.class, OpenAiEmbeddingOptions.class);
+		OpenAiEmbeddingOptions runtimeOptions = null;
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OpenAiEmbeddingOptions.class);
+		}
 
 		OpenAiEmbeddingOptions requestOptions = runtimeOptions == null ? this.defaultOptions : OpenAiEmbeddingOptions
 			.builder()

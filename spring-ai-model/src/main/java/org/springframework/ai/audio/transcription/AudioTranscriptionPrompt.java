@@ -34,7 +34,7 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 
 	private final Resource audioResource;
 
-	private final AudioTranscriptionOptions modelOptions;
+	private @Nullable AudioTranscriptionOptions modelOptions;
 
 	/**
 	 * Construct a new AudioTranscriptionPrompt given the resource representing the audio
@@ -43,7 +43,7 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 	 * @param audioResource resource of the audio file.
 	 */
 	public AudioTranscriptionPrompt(Resource audioResource) {
-		this(audioResource, new EmptyAudioTranscriptionOptions());
+		this.audioResource = audioResource;
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 	 * @param audioResource resource of the audio file.
 	 * @param modelOptions
 	 */
-	public AudioTranscriptionPrompt(Resource audioResource, AudioTranscriptionOptions modelOptions) {
+	public AudioTranscriptionPrompt(Resource audioResource, @Nullable AudioTranscriptionOptions modelOptions) {
 		this.audioResource = audioResource;
 		this.modelOptions = modelOptions;
 	}
@@ -64,17 +64,8 @@ public class AudioTranscriptionPrompt implements ModelRequest<Resource> {
 	}
 
 	@Override
-	public AudioTranscriptionOptions getOptions() {
+	public @Nullable AudioTranscriptionOptions getOptions() {
 		return this.modelOptions;
-	}
-
-	private static class EmptyAudioTranscriptionOptions implements AudioTranscriptionOptions {
-
-		@Override
-		public @Nullable String getModel() {
-			return null;
-		}
-
 	}
 
 }

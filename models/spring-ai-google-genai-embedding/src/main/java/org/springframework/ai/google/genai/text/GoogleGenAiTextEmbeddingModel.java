@@ -228,8 +228,10 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
 		GoogleGenAiTextEmbeddingOptions runtimeOptions = null;
-		runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-				GoogleGenAiTextEmbeddingOptions.class);
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					GoogleGenAiTextEmbeddingOptions.class);
+		}
 
 		// Define request options by merging runtime options and default options
 		GoogleGenAiTextEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,

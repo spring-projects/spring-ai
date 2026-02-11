@@ -149,8 +149,10 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		// Process runtime options
 		OllamaEmbeddingOptions runtimeOptions = null;
-		runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-				OllamaEmbeddingOptions.class);
+		if (embeddingRequest.getOptions() != null) {
+			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
+					OllamaEmbeddingOptions.class);
+		}
 
 		// Define request options by merging runtime options and default options
 		OllamaEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
@@ -169,6 +171,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	 */
 	OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest(EmbeddingRequest embeddingRequest) {
 		OllamaEmbeddingOptions requestOptions = (OllamaEmbeddingOptions) embeddingRequest.getOptions();
+		Assert.state(requestOptions != null, "requestOptions must not be null");
 		String model = requestOptions.getModel();
 		Assert.state(model != null, "model must not be null");
 

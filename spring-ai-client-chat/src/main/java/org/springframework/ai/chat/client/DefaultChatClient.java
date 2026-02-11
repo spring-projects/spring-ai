@@ -112,8 +112,16 @@ public class DefaultChatClient implements ChatClient {
 		Assert.notNull(prompt, "prompt cannot be null");
 
 		DefaultChatClientRequestSpec spec = new DefaultChatClientRequestSpec(this.defaultChatClientRequest);
-		spec.options(prompt.getOptions());
-		spec.messages(prompt.getInstructions());
+
+		// Options
+		if (prompt.getOptions() != null) {
+			spec.options(prompt.getOptions());
+		}
+
+		// Messages
+		if (prompt.getInstructions() != null) {
+			spec.messages(prompt.getInstructions());
+		}
 
 		return spec;
 	}

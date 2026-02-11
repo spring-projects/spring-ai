@@ -467,13 +467,15 @@ public class MiniMaxChatModel implements ChatModel {
 	Prompt buildRequestPrompt(Prompt prompt) {
 		// Process runtime options
 		MiniMaxChatOptions runtimeOptions = null;
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					MiniMaxChatOptions.class);
-		}
-		else {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					MiniMaxChatOptions.class);
+		if (prompt.getOptions() != null) {
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
+						MiniMaxChatOptions.class);
+			}
+			else {
+				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						MiniMaxChatOptions.class);
+			}
 		}
 
 		// Define request options by merging runtime options and default options
@@ -557,17 +559,20 @@ public class MiniMaxChatModel implements ChatModel {
 					ChatCompletionRequest.class);
 		}
 
-		MiniMaxChatOptions updatedRuntimeOptions;
-		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-					MiniMaxChatOptions.class);
-		}
-		else {
-			updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-					MiniMaxChatOptions.class);
-		}
+		if (prompt.getOptions() != null) {
+			MiniMaxChatOptions updatedRuntimeOptions;
 
-		request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
+			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions,
+						ToolCallingChatOptions.class, MiniMaxChatOptions.class);
+			}
+			else {
+				updatedRuntimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
+						MiniMaxChatOptions.class);
+			}
+
+			request = ModelOptionsUtils.merge(updatedRuntimeOptions, request, ChatCompletionRequest.class);
+		}
 
 		request = ModelOptionsUtils.merge(request, this.defaultOptions, ChatCompletionRequest.class);
 
