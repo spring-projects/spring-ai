@@ -7,6 +7,7 @@ Spring AI provides a unified API for Speech-to-Text transcription through the `T
 
 - xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI's Whisper API]
 - xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI Whisper API]
+- xref:api/audio/transcriptions/elevenlabs-transcriptions.adoc[ElevenLabs Speech-to-Text API]
 
 == Common Interface
 
