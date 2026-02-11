@@ -35,7 +35,6 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
@@ -835,32 +834,27 @@ public class BedrockProxyChatModel implements ChatModel {
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
 						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
 
-					// FIXME: bounded elastic needs to be used since tool calling
-					// is currently only synchronous
 					return Flux.deferContextual(ctx -> {
-						ToolExecutionResult toolExecutionResult;
-						try {
-							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-						}
-						finally {
-							ToolCallReactiveContextHolder.clearContext();
-						}
-
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder()
-								.from(chatResponse)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build());
-						}
-						else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(
-									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse);
-						}
-					}).subscribeOn(Schedulers.boundedElastic());
+						ToolCallReactiveContextHolder.setContext(ctx);
+						return this.toolCallingManager.executeToolCallsAsync(prompt, chatResponse)
+							.doFinally(s -> ToolCallReactiveContextHolder.clearContext())
+							.flatMapMany(toolExecutionResult -> {
+								if (toolExecutionResult.returnDirect()) {
+									// Return tool execution result directly to the
+									// client.
+									return Flux.just(ChatResponse.builder()
+										.from(chatResponse)
+										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+										.build());
+								}
+								else {
+									// Send the tool execution result back to the model.
+									return this.internalStream(
+											new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+											chatResponse);
+								}
+							});
+					});
 				}
 				else {
 					return Flux.just(chatResponse);
