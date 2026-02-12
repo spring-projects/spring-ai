@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,22 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	float[] embed(Document document);
 
 	/**
+	 * Extracts the text content from a {@link Document} to be used for embedding. By
+	 * default, returns {@link Document#getText()}. Implementations that support
+	 * {@link org.springframework.ai.document.MetadataMode} should override this method to
+	 * return
+	 * {@link Document#getFormattedContent(org.springframework.ai.document.MetadataMode)}
+	 * with the appropriate metadata mode, so that metadata is included in the text sent
+	 * to the embedding API.
+	 * @param document the document to extract embedding content from.
+	 * @return the text content to embed.
+	 */
+	default @Nullable String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getText();
+	}
+
+	/**
 	 * Embeds a batch of texts into vectors.
 	 * @param texts list of texts to embed.
 	 * @return list of embedded vectors.
@@ -89,7 +105,7 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 		List<float[]> embeddings = new ArrayList<>(documents.size());
 		List<List<Document>> batch = batchingStrategy.batch(documents);
 		for (List<Document> subBatch : batch) {
-			List<String> texts = subBatch.stream().map(Document::getText).toList();
+			List<String> texts = subBatch.stream().map(this::getEmbeddingContent).toList();
 			EmbeddingRequest request = new EmbeddingRequest(texts, options);
 			EmbeddingResponse response = this.call(request);
 			for (int i = 0; i < subBatch.size(); i++) {
