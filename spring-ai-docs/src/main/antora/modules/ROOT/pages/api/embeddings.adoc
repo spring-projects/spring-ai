@@ -53,6 +53,17 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	float[] embed(Document document);
 
 	/**
+	 * Extracts the text content from a Document to be used for embedding.
+	 * By default, returns Document.getText(). Implementations that support
+	 * MetadataMode should override this to return
+	 * Document.getFormattedContent(MetadataMode) so that metadata is
+	 * included in the text sent to the embedding API.
+	 */
+	default String getEmbeddingContent(Document document) {
+		return document.getText();
+	}
+
+	/**
 	 * Embeds the given text into a vector.
 	 * @param text the text to embed.
 	 * @return the embedded vector.
@@ -101,6 +112,10 @@ The embed methods offer various options for converting text into embeddings, acc
 
 Multiple shortcut methods are provided for embedding text, including the `embed(String text)` method, which takes a single string and returns the corresponding embedding vector.
 All shortcuts are implemented around the `call` method, which is the primary method for invoking the embedding model.
+
+The `getEmbeddingContent(Document)` method controls how text is extracted from a `Document` before embedding.
+By default it returns `Document.getText()`, but embedding model implementations that support `MetadataMode` (such as OpenAI, Azure OpenAI, and Mistral AI) override this method to return `Document.getFormattedContent(MetadataMode)`, ensuring that document metadata is included in the text sent to the embedding API when configured.
+This method is used by the batched embedding path that vector stores rely on.
 
 Typically the embedding returns a lists of floats, representing the embeddings in a numerical vector format.
 
