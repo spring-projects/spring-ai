@@ -16,13 +16,21 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import org.springaicommunity.mcp.annotation.McpComplete;
 import org.springaicommunity.mcp.annotation.McpPrompt;
 import org.springaicommunity.mcp.annotation.McpResource;
 import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.context.McpAsyncRequestContext;
+import org.springaicommunity.mcp.context.McpSyncRequestContext;
 
 import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
@@ -36,6 +44,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.core.log.LogAccessor;
+import org.springframework.util.ClassUtils;
 
 /**
  * @author Christian Tzolov
@@ -47,6 +58,33 @@ import org.springframework.context.annotation.Configuration;
 		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class,
 		StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition.class })
 public class StatelessServerSpecificationFactoryAutoConfiguration {
+
+	private static final LogAccessor logger = new LogAccessor(
+			StatelessServerSpecificationFactoryAutoConfiguration.class);
+
+	private static final Set<Class<?>> STATELESS_UNSUPPORTED_TOOL_PARAMETER_TYPES = Set.of(McpSyncServerExchange.class,
+			McpAsyncServerExchange.class, McpSyncRequestContext.class, McpAsyncRequestContext.class);
+
+	private static void logSkippedStatelessToolMethods(List<Object> toolBeans) {
+		for (Object bean : toolBeans) {
+			Class<?> beanClass = ClassUtils.getUserClass(bean);
+			for (Method method : beanClass.getMethods()) {
+				if (!AnnotatedElementUtils.hasAnnotation(method, McpTool.class)) {
+					continue;
+				}
+				List<String> unsupportedParameterTypes = Arrays.stream(method.getParameterTypes())
+					.filter(STATELESS_UNSUPPORTED_TOOL_PARAMETER_TYPES::contains)
+					.map(Class::getSimpleName)
+					.distinct()
+					.collect(Collectors.toList());
+				if (!unsupportedParameterTypes.isEmpty()) {
+					logger.warn(() -> String.format(
+							"MCP stateless mode skipped @McpTool method %s#%s because it uses unsupported parameter type(s): %s. Use McpTransportContext or switch to stateful protocol.",
+							beanClass.getName(), method.getName(), String.join(", ", unsupportedParameterTypes)));
+				}
+			}
+		}
+	}
 
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
@@ -85,6 +123,7 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 		public List<McpStatelessServerFeatures.SyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+			logSkippedStatelessToolMethods(beansByAnnotation);
 			List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications = SyncMcpAnnotationProviders
 				.statelessToolSpecifications(beansByAnnotation);
 			return syncToolSpecifications;
@@ -127,8 +166,9 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 		@Bean
 		public List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs(
 				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return AsyncMcpAnnotationProviders
-				.statelessToolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
+			logSkippedStatelessToolMethods(beansByAnnotation);
+			return AsyncMcpAnnotationProviders.statelessToolSpecifications(beansByAnnotation);
 		}
 
 	}
