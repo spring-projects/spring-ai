@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import org.springframework.util.CollectionUtils;
  * Embedding Model implementation using the OpenAI Java SDK.
  *
  * @author Julien Dubois
+ * @author Soby Chacko
  */
 public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -168,6 +169,12 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 						this.options.getCustomHeaders()));
 		this.metadataMode = Objects.requireNonNullElse(metadataMode, MetadataMode.EMBED);
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
+	}
+
+	@Override
+	public String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getFormattedContent(this.metadataMode);
 	}
 
 	@Override
