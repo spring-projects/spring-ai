@@ -14,4 +14,7 @@
  * limitations under the License.
  */
 
+@NullMarked
 package org.springframework.ai.model.openaisdk.autoconfigure;
+
+import org.jspecify.annotations.NullMarked;

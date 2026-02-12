@@ -23,46 +23,47 @@ import java.util.Map;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
 import com.openai.credential.Credential;
+import org.jspecify.annotations.Nullable;
 
 public class AbstractOpenAiSdkOptions {
 
 	/**
 	 * The deployment URL to connect to OpenAI.
 	 */
-	private String baseUrl;
+	private @Nullable String baseUrl;
 
 	/**
 	 * The API key to connect to OpenAI.
 	 */
-	private String apiKey;
+	private @Nullable String apiKey;
 
 	/**
 	 * Credentials used to connect to Microsoft Foundry.
 	 */
-	private Credential credential;
+	private @Nullable Credential credential;
 
 	/**
 	 * The model name used. When using Microsoft Foundry, this is also used as the default
 	 * deployment name.
 	 */
-	private String model;
+	private @Nullable String model;
 
 	/**
 	 * The deployment name as defined in Microsoft Foundry. On Microsoft Foundry, the
 	 * default deployment name is the same as the model name. When using OpenAI directly,
 	 * this value isn't used.
 	 */
-	private String microsoftDeploymentName;
+	private @Nullable String microsoftDeploymentName;
 
 	/**
 	 * The Service version to use when connecting to Microsoft Foundry.
 	 */
-	private AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
+	private @Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion;
 
 	/**
 	 * The organization ID to use when connecting to Microsoft Foundry.
 	 */
-	private String organizationId;
+	private @Nullable String organizationId;
 
 	/**
 	 * Whether Microsoft Foundry is detected.
@@ -77,90 +78,90 @@ public class AbstractOpenAiSdkOptions {
 	/**
 	 * Request timeout for OpenAI client.
 	 */
-	private Duration timeout;
+	private @Nullable Duration timeout;
 
 	/**
 	 * Maximum number of retries for OpenAI client.
 	 */
-	private Integer maxRetries;
+	private @Nullable Integer maxRetries;
 
 	/**
 	 * Proxy settings for OpenAI client.
 	 */
-	private Proxy proxy;
+	private @Nullable Proxy proxy;
 
 	/**
 	 * Custom HTTP headers to add to OpenAI client requests.
 	 */
 	private Map<String, String> customHeaders = new HashMap<>();
 
-	public String getBaseUrl() {
+	public @Nullable String getBaseUrl() {
 		return this.baseUrl;
 	}
 
-	public void setBaseUrl(String baseUrl) {
+	public void setBaseUrl(@Nullable String baseUrl) {
 		this.baseUrl = baseUrl;
 	}
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 
-	public Credential getCredential() {
+	public @Nullable Credential getCredential() {
 		return this.credential;
 	}
 
-	public void setCredential(Credential credential) {
+	public void setCredential(@Nullable Credential credential) {
 		this.credential = credential;
 	}
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
-	public String getMicrosoftDeploymentName() {
+	public @Nullable String getMicrosoftDeploymentName() {
 		return this.microsoftDeploymentName;
 	}
 
-	public void setMicrosoftDeploymentName(String microsoftDeploymentName) {
+	public void setMicrosoftDeploymentName(@Nullable String microsoftDeploymentName) {
 		this.microsoftDeploymentName = microsoftDeploymentName;
 	}
 
 	/**
 	 * Alias for getAzureDeploymentName()
 	 */
-	public String getDeploymentName() {
+	public @Nullable String getDeploymentName() {
 		return this.microsoftDeploymentName;
 	}
 
 	/**
 	 * Alias for setAzureDeploymentName()
 	 */
-	public void setDeploymentName(String azureDeploymentName) {
+	public void setDeploymentName(@Nullable String azureDeploymentName) {
 		this.microsoftDeploymentName = azureDeploymentName;
 	}
 
-	public AzureOpenAIServiceVersion getMicrosoftFoundryServiceVersion() {
+	public @Nullable AzureOpenAIServiceVersion getMicrosoftFoundryServiceVersion() {
 		return this.microsoftFoundryServiceVersion;
 	}
 
-	public void setMicrosoftFoundryServiceVersion(AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
+	public void setMicrosoftFoundryServiceVersion(@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
 		this.microsoftFoundryServiceVersion = microsoftFoundryServiceVersion;
 	}
 
-	public String getOrganizationId() {
+	public @Nullable String getOrganizationId() {
 		return this.organizationId;
 	}
 
-	public void setOrganizationId(String organizationId) {
+	public void setOrganizationId(@Nullable String organizationId) {
 		this.organizationId = organizationId;
 	}
 
@@ -180,27 +181,27 @@ public class AbstractOpenAiSdkOptions {
 		this.isGitHubModels = gitHubModels;
 	}
 
-	public Duration getTimeout() {
+	public @Nullable Duration getTimeout() {
 		return this.timeout;
 	}
 
-	public void setTimeout(Duration timeout) {
+	public void setTimeout(@Nullable Duration timeout) {
 		this.timeout = timeout;
 	}
 
-	public Integer getMaxRetries() {
+	public @Nullable Integer getMaxRetries() {
 		return this.maxRetries;
 	}
 
-	public void setMaxRetries(Integer maxRetries) {
+	public void setMaxRetries(@Nullable Integer maxRetries) {
 		this.maxRetries = maxRetries;
 	}
 
-	public Proxy getProxy() {
+	public @Nullable Proxy getProxy() {
 		return this.proxy;
 	}
 
-	public void setProxy(Proxy proxy) {
+	public void setProxy(@Nullable Proxy proxy) {
 		this.proxy = proxy;
 	}
 
