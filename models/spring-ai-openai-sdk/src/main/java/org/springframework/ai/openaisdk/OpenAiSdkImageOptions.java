@@ -20,6 +20,7 @@ import java.util.Objects;
 
 import com.openai.models.images.ImageGenerateParams;
 import com.openai.models.images.ImageModel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
@@ -37,36 +38,36 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 	 * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1
 	 * is supported.
 	 */
-	private Integer n;
+	private @Nullable Integer n;
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
 	 */
-	private Integer width;
+	private @Nullable Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
 	 */
-	private Integer height;
+	private @Nullable Integer height;
 
 	/**
 	 * The quality of the image that will be generated. hd creates images with finer
 	 * details and greater consistency across the image. This param is only supported for
 	 * dall-e-3. standard or hd
 	 */
-	private String quality;
+	private @Nullable String quality;
 
 	/**
 	 * The format in which the generated images are returned. Must be one of url or
 	 * b64_json.
 	 */
-	private String responseFormat;
+	private @Nullable String responseFormat;
 
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
 	 * dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
 	 */
-	private String size;
+	private @Nullable String size;
 
 	/**
 	 * The style of the generated images. Must be one of vivid or natural. Vivid causes
@@ -74,89 +75,93 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 	 * the model to produce more natural, less hyper-real looking images. This param is
 	 * only supported for dall-e-3. natural or vivid
 	 */
-	private String style;
+	private @Nullable String style;
 
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor
 	 * and detect abuse.
 	 */
-	private String user;
+	private @Nullable String user;
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	@Override
-	public Integer getN() {
+	public @Nullable Integer getN() {
 		return this.n;
 	}
 
-	public void setN(Integer n) {
+	public void setN(@Nullable Integer n) {
 		this.n = n;
 	}
 
 	@Override
-	public Integer getWidth() {
+	public @Nullable Integer getWidth() {
 		return this.width;
 	}
 
-	public void setWidth(Integer width) {
+	public void setWidth(@Nullable Integer width) {
 		this.width = width;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
-	public Integer getHeight() {
+	public @Nullable Integer getHeight() {
 		return this.height;
 	}
 
-	public void setHeight(Integer height) {
+	public void setHeight(@Nullable Integer height) {
 		this.height = height;
-		this.size = this.width + "x" + this.height;
+		if (this.width != null && this.height != null) {
+			this.size = this.width + "x" + this.height;
+		}
 	}
 
 	@Override
-	public String getResponseFormat() {
+	public @Nullable String getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
+	public void setResponseFormat(@Nullable String responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
-	public String getSize() {
+	public @Nullable String getSize() {
 		if (this.size != null) {
 			return this.size;
 		}
 		return (this.width != null && this.height != null) ? this.width + "x" + this.height : null;
 	}
 
-	public void setSize(String size) {
+	public void setSize(@Nullable String size) {
 		this.size = size;
 	}
 
-	public String getUser() {
+	public @Nullable String getUser() {
 		return this.user;
 	}
 
-	public void setUser(String user) {
+	public void setUser(@Nullable String user) {
 		this.user = user;
 	}
 
-	public String getQuality() {
+	public @Nullable String getQuality() {
 		return this.quality;
 	}
 
-	public void setQuality(String quality) {
+	public void setQuality(@Nullable String quality) {
 		this.quality = quality;
 	}
 
 	@Override
-	public String getStyle() {
+	public @Nullable String getStyle() {
 		return this.style;
 	}
 
-	public void setStyle(String style) {
+	public void setStyle(@Nullable String style) {
 		this.style = style;
 	}
 
@@ -259,7 +264,10 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 			return this;
 		}
 
-		public Builder merge(ImageOptions from) {
+		public Builder merge(@Nullable ImageOptions from) {
+			if (from == null) {
+				return this;
+			}
 			if (from instanceof OpenAiSdkImageOptions castFrom) {
 				// Parent class fields
 				if (castFrom.getBaseUrl() != null) {
@@ -285,12 +293,8 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 				}
 				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
 				this.options.setGitHubModels(castFrom.isGitHubModels());
-				if (castFrom.getTimeout() != null) {
-					this.options.setTimeout(castFrom.getTimeout());
-				}
-				if (castFrom.getMaxRetries() != null) {
-					this.options.setMaxRetries(castFrom.getMaxRetries());
-				}
+				this.options.setTimeout(castFrom.getTimeout());
+				this.options.setMaxRetries(castFrom.getMaxRetries());
 				if (castFrom.getProxy() != null) {
 					this.options.setProxy(castFrom.getProxy());
 				}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-/**
- * Spring AI integration with the official OpenAI Java SDK.
- * <p>
- * This package provides chat, embedding, and image model implementations using the OpenAI
- * Java SDK client library.
- *
- * @author Julien Dubois
- */
+@NullMarked
 package org.springframework.ai.openaisdk;
+
+import org.jspecify.annotations.NullMarked;
