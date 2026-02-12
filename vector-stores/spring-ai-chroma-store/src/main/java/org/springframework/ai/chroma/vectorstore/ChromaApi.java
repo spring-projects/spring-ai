@@ -57,7 +57,8 @@ public class ChromaApi {
 		return new Builder();
 	}
 
-	// Regular expression pattern that looks for a message inside the ValueError(...).
+	// Regular expression pattern that looks for a message inside the
+	// ValueError(...).
 	private static final Pattern VALUE_ERROR_PATTERN = Pattern.compile("ValueError\\('([^']*)'\\)");
 
 	// Regular expression pattern that looks for a message.
@@ -409,13 +410,13 @@ public class ChromaApi {
 		@JsonProperty("metadata") Map<String, Object> metadata) { // @formatter:on
 
 		public CreateCollectionRequest(String name) {
-			this(name, new HashMap<>(Map.of("hnsw:space", "cosine")));
+			this(name, Map.of("hnsw:space", "cosine"));
 		}
-
 	}
 
 	//
-	// Chroma Collection API (https://docs.trychroma.com/reference/js-client/Collection)
+	// Chroma Collection API
+	// (https://docs.trychroma.com/reference/js-client/Collection)
 	//
 
 	/**

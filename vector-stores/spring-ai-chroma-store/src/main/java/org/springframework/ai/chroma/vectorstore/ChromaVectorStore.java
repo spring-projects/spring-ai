@@ -65,6 +65,31 @@ import org.springframework.util.CollectionUtils;
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	/**
+	 * Distance function types supported by ChromaDB for similarity search.
+	 *
+	 * @since 2.0.0
+	 */
+	public enum ChromaDistanceType {
+
+		COSINE("cosine"),
+
+		EUCLIDEAN("l2"),
+
+		INNER_PRODUCT("ip");
+
+		private final String value;
+
+		ChromaDistanceType(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
 	private final ChromaApi chromaApi;
 
 	private final String tenantName;
@@ -85,6 +110,14 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private static final Logger logger = LoggerFactory.getLogger(ChromaVectorStore.class);
 
+	private final int efConstruction;
+
+	private final int efSearch;
+
+	private final ChromaDistanceType distanceType;
+
+	private final Map<String, Object> collectionMetadata;
+
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
 	 */
@@ -97,6 +130,10 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
+		this.efConstruction = builder.efConstruction;
+		this.efSearch = builder.efSearch;
+		this.distanceType = builder.distanceType;
+		this.collectionMetadata = builder.collectionMetadata;
 		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		if (builder.initializeImmediately) {
@@ -129,8 +166,16 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 						this.chromaApi.createDatabase(this.tenantName, this.databaseName);
 					}
 
+					if (this.efConstruction != ChromaApiConstants.DEFAULT_EF_CONSTRUCTION) {
+						this.collectionMetadata.put("hnsw:construction_ef", this.efConstruction);
+					}
+					if (this.efSearch != ChromaApiConstants.DEFAULT_EF_SEARCH) {
+						this.collectionMetadata.put("hnsw:search_ef", this.efSearch);
+					}
+					// Always set the distance type for explicit configuration
+					this.collectionMetadata.put("hnsw:space", this.distanceType.getValue());
 					collection = this.chromaApi.createCollection(this.tenantName, this.databaseName,
-							new ChromaApi.CreateCollectionRequest(this.collectionName));
+							new ChromaApi.CreateCollectionRequest(this.collectionName, this.collectionMetadata));
 				}
 				else {
 					throw new RuntimeException("Collection " + this.collectionName + " with the tenant: "
@@ -219,7 +264,9 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 		for (Embedding chromaEmbedding : embeddings) {
 			float distance = chromaEmbedding.distances().floatValue();
-			if ((1 - distance) >= request.getSimilarityThreshold()) {
+			double similarity = convertDistanceToSimilarity(distance);
+
+			if (similarity >= request.getSimilarityThreshold()) {
 				String id = chromaEmbedding.id();
 				String content = chromaEmbedding.document();
 				Map<String, Object> metadata = chromaEmbedding.metadata();
@@ -232,13 +279,28 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 					.id(id)
 					.text(content)
 					.metadata(metadata)
-					.score(1.0 - distance)
+					.score(similarity)
 					.build();
 				responseDocuments.add(document);
 			}
 		}
 
 		return responseDocuments;
+	}
+
+	/**
+	 * Converts a distance value to a similarity score based on the configured distance
+	 * type.
+	 * @param distance the distance value returned by ChromaDB
+	 * @return a similarity score where higher values indicate more similarity
+	 * @since 2.0.0
+	 */
+	private double convertDistanceToSimilarity(float distance) {
+		return switch (this.distanceType) {
+			case COSINE -> 1.0 - distance;
+			case EUCLIDEAN -> 1.0 / (1.0 + distance);
+			case INNER_PRODUCT -> -distance;
+		};
 	}
 
 	@SuppressWarnings("unchecked")
@@ -266,7 +328,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	// used by the test
 	void createCollection() {
 		var collection = this.chromaApi.createCollection(this.tenantName, this.databaseName,
-				new ChromaApi.CreateCollectionRequest(this.collectionName));
+				new ChromaApi.CreateCollectionRequest(this.collectionName, new HashMap<>()));
 		if (collection != null) {
 			this.collectionId = collection.id();
 		}
@@ -292,6 +354,14 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		private FilterExpressionConverter filterExpressionConverter = new ChromaFilterExpressionConverter();
 
 		private boolean initializeImmediately = false;
+
+		private int efConstruction = ChromaApiConstants.DEFAULT_EF_CONSTRUCTION;
+
+		private int efSearch = ChromaApiConstants.DEFAULT_EF_SEARCH;
+
+		private ChromaDistanceType distanceType = ChromaApiConstants.DEFAULT_DISTANCE_TYPE;
+
+		private Map<String, Object> collectionMetadata = new HashMap<>();
 
 		private Builder(ChromaApi chromaApi, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -332,6 +402,53 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		public Builder collectionName(String collectionName) {
 			Assert.hasText(collectionName, "collectionName must not be null or empty");
 			this.collectionName = collectionName;
+			return this;
+		}
+
+		/**
+		 * Sets the HNSW ef_construction parameter for index construction.
+		 * @param efConstruction the ef_construction value (must be greater than 0)
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder efConstruction(int efConstruction) {
+			Assert.state(efConstruction > 0, "efConstruction must be greater than 0");
+			this.efConstruction = efConstruction;
+			return this;
+		}
+
+		/**
+		 * Sets the HNSW ef_search parameter for search operations.
+		 * @param efSearch the ef_search value (must be greater than 0)
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder efSearch(int efSearch) {
+			Assert.state(efSearch > 0, "efSearch must be greater than 0");
+			this.efSearch = efSearch;
+			return this;
+		}
+
+		/**
+		 * Sets the distance function type for similarity calculations.
+		 * @param distanceType the distance type to use
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder distanceType(ChromaDistanceType distanceType) {
+			Assert.notNull(distanceType, "distanceType must not be null");
+			this.distanceType = distanceType;
+			return this;
+		}
+
+		/**
+		 * Sets custom collection metadata for advanced ChromaDB configuration.
+		 * @param collectionMetadata the metadata map
+		 * @return the builder instance
+		 * @since 2.0.0
+		 */
+		public Builder collectionMetadata(Map<String, Object> collectionMetadata) {
+			this.collectionMetadata = collectionMetadata;
 			return this;
 		}
 
