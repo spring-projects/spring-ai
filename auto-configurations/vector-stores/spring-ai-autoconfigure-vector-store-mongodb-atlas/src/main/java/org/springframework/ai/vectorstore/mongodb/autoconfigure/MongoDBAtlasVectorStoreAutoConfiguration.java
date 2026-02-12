@@ -65,7 +65,7 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
+	MongoDBAtlasVectorStore mongoDBAtlasVectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBAtlasVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
