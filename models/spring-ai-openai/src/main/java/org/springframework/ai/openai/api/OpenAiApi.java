@@ -108,6 +108,8 @@ public class OpenAiApi {
 
 	private final String embeddingsPath;
 
+	private final String responsesPath;
+
 	private final ResponseErrorHandler responseErrorHandler;
 
 	private final RestClient restClient;
@@ -123,22 +125,25 @@ public class OpenAiApi {
 	 * @param headers the http headers to use.
 	 * @param completionsPath the path to the chat completions endpoint.
 	 * @param embeddingsPath the path to the embeddings endpoint.
+	 * @param responsesPath the path to the responses endpoint.
 	 * @param restClientBuilder RestClient builder.
 	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public OpenAiApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String completionsPath, String embeddingsPath,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			String responsesPath, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.headers = headers;
 		this.completionsPath = completionsPath;
 		this.embeddingsPath = embeddingsPath;
+		this.responsesPath = responsesPath;
 		this.responseErrorHandler = responseErrorHandler;
 
 		Assert.hasText(completionsPath, "Completions Path must not be null");
 		Assert.hasText(embeddingsPath, "Embeddings Path must not be null");
+		Assert.hasText(responsesPath, "Responses Path must not be null");
 		Assert.notNull(headers, "Headers must not be null");
 
 		// @formatter:off
@@ -166,17 +171,20 @@ public class OpenAiApi {
 	 * @param headers the http headers to use.
 	 * @param completionsPath the path to the chat completions endpoint.
 	 * @param embeddingsPath the path to the embeddings endpoint.
+	 * @param responsesPath the path to the responses endpoint.
 	 * @param restClient RestClient instance.
 	 * @param webClient WebClient instance.
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public OpenAiApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, String completionsPath, String embeddingsPath,
-			ResponseErrorHandler responseErrorHandler, RestClient restClient, WebClient webClient) {
+			String responsesPath, ResponseErrorHandler responseErrorHandler, RestClient restClient,
+			WebClient webClient) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.headers = headers;
 		this.completionsPath = completionsPath;
 		this.embeddingsPath = embeddingsPath;
+		this.responsesPath = responsesPath;
 		this.responseErrorHandler = responseErrorHandler;
 		this.restClient = restClient;
 		this.webClient = webClient;
@@ -350,6 +358,85 @@ public class OpenAiApi {
 			});
 	}
 
+	/**
+	 * Creates a model response for the given request using the Responses API.
+	 * @param responseRequest The response request.
+	 * @return Entity response with {@link Response} as a body and HTTP status code and
+	 * headers.
+	 */
+	public ResponseEntity<Response> responseEntity(ResponseRequest responseRequest) {
+		return responseEntity(responseRequest, new HttpHeaders());
+	}
+
+	/**
+	 * Creates a model response for the given request using the Responses API.
+	 * @param responseRequest The response request.
+	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
+	 * request.
+	 * @return Entity response with {@link Response} as a body and HTTP status code and
+	 * headers.
+	 */
+	public ResponseEntity<Response> responseEntity(ResponseRequest responseRequest, HttpHeaders additionalHttpHeader) {
+
+		Assert.notNull(responseRequest, REQUEST_BODY_NULL_MESSAGE);
+		Assert.isTrue(!Boolean.TRUE.equals(responseRequest.stream()), STREAM_FALSE_MESSAGE);
+		Assert.notNull(additionalHttpHeader, ADDITIONAL_HEADERS_NULL_MESSAGE);
+
+		// @formatter:off
+		return this.restClient.post()
+			.uri(this.responsesPath)
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			})
+			.body(responseRequest)
+			.retrieve()
+			.toEntity(Response.class);
+		// @formatter:on
+	}
+
+	/**
+	 * Creates a streaming response for the given request using the Responses API.
+	 * @param responseRequest The response request. Must have the stream property set to
+	 * true.
+	 * @return Returns a {@link Flux} stream from response stream events.
+	 */
+	public Flux<ResponseStreamEvent> responseStream(ResponseRequest responseRequest) {
+		return responseStream(responseRequest, new HttpHeaders());
+	}
+
+	/**
+	 * Creates a streaming response for the given request using the Responses API.
+	 * @param responseRequest The response request. Must have the stream property set to
+	 * true.
+	 * @param additionalHttpHeader Optional, additional HTTP headers to be added to the
+	 * request.
+	 * @return Returns a {@link Flux} stream from response stream events.
+	 */
+	public Flux<ResponseStreamEvent> responseStream(ResponseRequest responseRequest, HttpHeaders additionalHttpHeader) {
+
+		Assert.notNull(responseRequest, REQUEST_BODY_NULL_MESSAGE);
+		Assert.isTrue(Boolean.TRUE.equals(responseRequest.stream()), "Request must set the stream property to true.");
+		Assert.notNull(additionalHttpHeader, ADDITIONAL_HEADERS_NULL_MESSAGE);
+
+		// @formatter:off
+		return this.webClient.post()
+			.uri(this.responsesPath)
+			.headers(headers -> {
+				headers.addAll(additionalHttpHeader);
+				addDefaultHeadersIfMissing(headers);
+			})
+			.bodyValue(responseRequest)
+			.retrieve()
+			.bodyToFlux(String.class)
+			// cancels the flux stream after the "[DONE]" is received.
+			.takeUntil(SSE_DONE_PREDICATE)
+			// filters out the "[DONE]" message.
+			.filter(SSE_DONE_PREDICATE.negate())
+			.map(content -> ModelOptionsUtils.jsonToObject(content, ResponseStreamEvent.class));
+		// @formatter:on
+	}
+
 	private void addDefaultHeadersIfMissing(HttpHeaders headers) {
 		if (headers.get(HttpHeaders.AUTHORIZATION) == null && !(this.apiKey instanceof NoopApiKey)) {
 			headers.setBearerAuth(this.apiKey.getValue());
@@ -375,6 +462,10 @@ public class OpenAiApi {
 
 	String getEmbeddingsPath() {
 		return this.embeddingsPath;
+	}
+
+	String getResponsesPath() {
+		return this.responsesPath;
 	}
 
 	ResponseErrorHandler getResponseErrorHandler() {
@@ -2059,6 +2150,286 @@ public class OpenAiApi {
 			@JsonProperty("usage") Usage usage) { // @formatter:on
 	}
 
+	// Responses API
+
+	/**
+	 * Request to create a model response using the Responses API.
+	 *
+	 * @param model Model ID used to generate the response (e.g., "gpt-4o", "gpt-5").
+	 * @param input Text, image, or file inputs to the model. Can be a simple string or
+	 * array of input items.
+	 * @param instructions System (developer) message inserted into the model's context.
+	 * @param maxOutputTokens Upper bound for the number of tokens that can be generated.
+	 * @param maxToolCalls Maximum number of total calls to built-in tools.
+	 * @param temperature Sampling temperature to use, between 0 and 2.
+	 * @param topP Nucleus sampling parameter, between 0 and 1.
+	 * @param tools Array of tools the model may call.
+	 * @param toolChoice How the model should select which tool or tools to use.
+	 * @param parallelToolCalls Whether to allow the model to run tool calls in parallel.
+	 * @param stream If set, model response data will be streamed.
+	 * @param store Whether to store the generated model response.
+	 * @param metadata Set of key-value pairs that can be attached to the object.
+	 * @param conversation The conversation that this response belongs to.
+	 * @param previousResponseId The unique ID of the previous response for multi-turn
+	 * conversations.
+	 * @param text Configuration options for text response format.
+	 * @param reasoning Configuration options for reasoning models.
+	 * @param include Specify additional output data to include in the model response.
+	 * @param truncation The truncation strategy to use.
+	 * @param serviceTier Specifies the processing type used for serving the request.
+	 * @param promptCacheKey Used to cache responses for similar requests.
+	 * @param promptCacheRetention The retention policy for the prompt cache.
+	 * @param safetyIdentifier A stable identifier to help detect users violating usage
+	 * policies.
+	 * @param background Whether to run the model response in the background.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	public record ResponseRequest(// @formatter:off
+			@JsonProperty("model") String model,
+			@JsonProperty("input") Object input,
+			@JsonProperty("instructions") String instructions,
+			@JsonProperty("max_output_tokens") Integer maxOutputTokens,
+			@JsonProperty("max_tool_calls") Integer maxToolCalls,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("tools") List<Object> tools,
+			@JsonProperty("tool_choice") Object toolChoice,
+			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
+			@JsonProperty("stream") Boolean stream,
+			@JsonProperty("store") Boolean store,
+			@JsonProperty("metadata") Map<String, String> metadata,
+			@JsonProperty("conversation") Object conversation,
+			@JsonProperty("previous_response_id") String previousResponseId,
+			@JsonProperty("text") TextConfig text,
+			@JsonProperty("reasoning") ReasoningConfig reasoning,
+			@JsonProperty("include") List<String> include,
+			@JsonProperty("truncation") String truncation,
+			@JsonProperty("service_tier") String serviceTier,
+			@JsonProperty("prompt_cache_key") String promptCacheKey,
+			@JsonProperty("prompt_cache_retention") String promptCacheRetention,
+			@JsonProperty("safety_identifier") String safetyIdentifier,
+			@JsonProperty("background") Boolean background) { // @formatter:on
+
+		/**
+		 * Shortcut constructor for a response request with the given input and model.
+		 * @param input Text input to the model.
+		 * @param model ID of the model to use.
+		 */
+		public ResponseRequest(String input, String model) {
+			this(model, input, null, null, null, null, null, null, null, null, false, null, null, null, null, null,
+					null, null, null, null, null, null, null, null);
+		}
+
+		/**
+		 * Shortcut constructor for a streaming response request.
+		 * @param input Text input to the model.
+		 * @param model ID of the model to use.
+		 * @param stream If set, partial response deltas will be sent.
+		 */
+		public ResponseRequest(String input, String model, boolean stream) {
+			this(model, input, null, null, null, null, null, null, null, null, stream, null, null, null, null, null,
+					null, null, null, null, null, null, null, null);
+		}
+
+		/**
+		 * Text configuration for response format.
+		 *
+		 * @param format The format specification for text output.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record TextConfig(@JsonProperty("format") TextFormat format) {
+		}
+
+		/**
+		 * Text format specification.
+		 *
+		 * @param type The type of format (e.g., "text", "json_schema").
+		 * @param name Schema name (required for json_schema type).
+		 * @param strict Enable strict schema validation.
+		 * @param schema JSON schema object defining output structure.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record TextFormat(@JsonProperty("type") String type, @JsonProperty("name") String name,
+				@JsonProperty("strict") Boolean strict, @JsonProperty("schema") Map<String, Object> schema) {
+		}
+
+		/**
+		 * Reasoning configuration for reasoning models.
+		 *
+		 * @param effort Reasoning effort level (e.g., "low", "medium", "high").
+		 * @param generateSummary Whether to generate a summary of reasoning.
+		 * @param summary Summary of reasoning.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ReasoningConfig(@JsonProperty("effort") String effort,
+				@JsonProperty("generate_summary") Boolean generateSummary, @JsonProperty("summary") String summary) {
+		}
+	}
+
+	/**
+	 * Response from the Responses API.
+	 *
+	 * @param id Unique identifier for the response.
+	 * @param object Object type identifier (always "response").
+	 * @param createdAt Unix timestamp when the response was created.
+	 * @param status Current status of the response.
+	 * @param model Model identifier used to generate the response.
+	 * @param output Array of output items containing generated content.
+	 * @param usage Token usage statistics.
+	 * @param temperature Sampling temperature used.
+	 * @param topP Nucleus sampling parameter used.
+	 * @param toolChoice Tool selection method used.
+	 * @param tools Tools made available to the model.
+	 * @param parallelToolCalls Whether parallel tool execution was enabled.
+	 * @param truncation Truncation strategy applied.
+	 * @param text Text response configuration.
+	 * @param reasoning Reasoning details.
+	 * @param instructions System instructions used.
+	 * @param maxOutputTokens Maximum output tokens limit.
+	 * @param store Whether response is stored.
+	 * @param previousResponseId ID of previous response if continuation.
+	 * @param conversation Conversation context.
+	 * @param metadata Custom metadata.
+	 * @param error Error details if request failed.
+	 * @param incompleteDetails Details about incomplete responses.
+	 * @param serviceTier Service tier used for processing.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Response(// @formatter:off
+			@JsonProperty("id") String id,
+			@JsonProperty("object") String object,
+			@JsonProperty("created_at") Long createdAt,
+			@JsonProperty("status") String status,
+			@JsonProperty("model") String model,
+			@JsonProperty("output") List<OutputItem> output,
+			@JsonProperty("usage") Usage usage,
+			@JsonProperty("temperature") Double temperature,
+			@JsonProperty("top_p") Double topP,
+			@JsonProperty("tool_choice") Object toolChoice,
+			@JsonProperty("tools") List<Object> tools,
+			@JsonProperty("parallel_tool_calls") Boolean parallelToolCalls,
+			@JsonProperty("truncation") String truncation,
+			@JsonProperty("text") ResponseRequest.TextConfig text,
+			@JsonProperty("reasoning") ReasoningDetails reasoning,
+			@JsonProperty("instructions") String instructions,
+			@JsonProperty("max_output_tokens") Integer maxOutputTokens,
+			@JsonProperty("store") Boolean store,
+			@JsonProperty("previous_response_id") String previousResponseId,
+			@JsonProperty("conversation") Object conversation,
+			@JsonProperty("metadata") Map<String, String> metadata,
+			@JsonProperty("error") ResponseError error,
+			@JsonProperty("incomplete_details") IncompleteDetails incompleteDetails,
+			@JsonProperty("service_tier") String serviceTier) { // @formatter:on
+
+		/**
+		 * Output item from the response.
+		 *
+		 * @param id Unique identifier for the output item.
+		 * @param type Type of the output item (e.g., "message", "reasoning").
+		 * @param status Status of the output item.
+		 * @param role Role of the message (e.g., "assistant").
+		 * @param content Array of content items.
+		 * @param summary Summary of reasoning (for reasoning type).
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record OutputItem(// @formatter:off
+				@JsonProperty("id") String id,
+				@JsonProperty("type") String type,
+				@JsonProperty("status") String status,
+				@JsonProperty("role") String role,
+				@JsonProperty("content") List<ContentItem> content,
+				@JsonProperty("summary") String summary) { // @formatter:on
+		}
+
+		/**
+		 * Content item within an output item.
+		 *
+		 * @param type Type of the content (e.g., "output_text").
+		 * @param text Generated text content.
+		 * @param annotations Content annotations or metadata.
+		 * @param logprobs Log probability information.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ContentItem(// @formatter:off
+				@JsonProperty("type") String type,
+				@JsonProperty("text") String text,
+				@JsonProperty("annotations") List<Object> annotations,
+				@JsonProperty("logprobs") List<Object> logprobs) { // @formatter:on
+		}
+
+		/**
+		 * Reasoning details in the response.
+		 *
+		 * @param effort Reasoning effort level used.
+		 * @param generateSummary Whether summary generation was requested.
+		 * @param summary Generated summary of reasoning.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ReasoningDetails(// @formatter:off
+				@JsonProperty("effort") String effort,
+				@JsonProperty("generate_summary") Boolean generateSummary,
+				@JsonProperty("summary") String summary) { // @formatter:on
+		}
+
+		/**
+		 * Error information if the response failed.
+		 *
+		 * @param code Error code.
+		 * @param message Error message.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record ResponseError(// @formatter:off
+				@JsonProperty("code") String code,
+				@JsonProperty("message") String message) { // @formatter:on
+		}
+
+		/**
+		 * Details about incomplete responses.
+		 *
+		 * @param reason Reason why the response is incomplete.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record IncompleteDetails(// @formatter:off
+				@JsonProperty("reason") String reason) { // @formatter:on
+		}
+	}
+
+	/**
+	 * Stream event from the Responses API.
+	 *
+	 * @param type Type of the streaming event.
+	 * @param sequenceNumber Sequence number for this event.
+	 * @param response Full response object (for response.created, response.completed
+	 * events).
+	 * @param outputIndex Index of the output item.
+	 * @param item Output item that was added or updated.
+	 * @param contentIndex Index of the content part.
+	 * @param itemId ID of the item associated with this event.
+	 * @param delta Text delta for streaming output updates.
+	 * @param text Full text content (for done events).
+	 * @param part Content part that was added or updated.
+	 */
+	@JsonInclude(Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record ResponseStreamEvent(// @formatter:off
+			@JsonProperty("type") String type,
+			@JsonProperty("sequence_number") Integer sequenceNumber,
+			@JsonProperty("response") Response response,
+			@JsonProperty("output_index") Integer outputIndex,
+			@JsonProperty("item") Response.OutputItem item,
+			@JsonProperty("content_index") Integer contentIndex,
+			@JsonProperty("item_id") String itemId,
+			@JsonProperty("delta") String delta,
+			@JsonProperty("text") String text,
+			@JsonProperty("part") Response.ContentItem part) { // @formatter:on
+	}
+
 	public static final class Builder {
 
 		public Builder() {
@@ -2072,6 +2443,7 @@ public class OpenAiApi {
 			this.headers.addAll(api.getHeaders());
 			this.completionsPath = api.getCompletionsPath();
 			this.embeddingsPath = api.getEmbeddingsPath();
+			this.responsesPath = api.getResponsesPath();
 			this.restClientBuilder = api.restClient != null ? api.restClient.mutate() : RestClient.builder();
 			this.webClientBuilder = api.webClient != null ? api.webClient.mutate() : WebClient.builder();
 			this.responseErrorHandler = api.getResponseErrorHandler();
@@ -2086,6 +2458,8 @@ public class OpenAiApi {
 		private String completionsPath = "/v1/chat/completions";
 
 		private String embeddingsPath = "/v1/embeddings";
+
+		private String responsesPath = "/v1/responses";
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -2128,6 +2502,12 @@ public class OpenAiApi {
 			return this;
 		}
 
+		public Builder responsesPath(String responsesPath) {
+			Assert.hasText(responsesPath, "responsesPath cannot be null or empty");
+			this.responsesPath = responsesPath;
+			return this;
+		}
+
 		public Builder restClientBuilder(RestClient.Builder restClientBuilder) {
 			Assert.notNull(restClientBuilder, "restClientBuilder cannot be null");
 			this.restClientBuilder = restClientBuilder;
@@ -2149,7 +2529,7 @@ public class OpenAiApi {
 		public OpenAiApi build() {
 			Assert.notNull(this.apiKey, "apiKey must be set");
 			return new OpenAiApi(this.baseUrl, this.apiKey, this.headers, this.completionsPath, this.embeddingsPath,
-					this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
+					this.responsesPath, this.restClientBuilder, this.webClientBuilder, this.responseErrorHandler);
 		}
 
 	}
