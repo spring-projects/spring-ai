@@ -90,7 +90,7 @@ Note that you should set API key environment variables for OpenAI or other model
 
 To run a specific integration test allowing for up to two attempts to succeed.  This is useful when a hosted service is not reliable or times out.
 ```shell
-./mvnw -pl vector-stores/spring-ai-pgvector-store -Pintegration-tests -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
+./mvnw -pl vector-stores/spring-ai-pgvector-store -am -Pintegration-tests -Dfailsafe.failIfNoSpecifiedTests=false -Dfailsafe.rerunFailingTestsCount=2 -Dit.test=PgVectorStoreIT verify
 ```
 
 ### Integration Tests
