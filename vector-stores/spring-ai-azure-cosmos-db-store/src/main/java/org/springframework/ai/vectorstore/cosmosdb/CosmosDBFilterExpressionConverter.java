@@ -42,7 +42,10 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 	private Map<String, String> metadataFields;
 
 	CosmosDBFilterExpressionConverter(Collection<String> columns) {
-		this.metadataFields = columns.stream().collect(Collectors.toMap(Function.identity(), Function.identity()));
+		Assert.notNull(columns, "Columns must not be null");
+		this.metadataFields = columns.stream()
+				.distinct()
+				.collect(Collectors.toMap(Function.identity(), Function.identity()));
 	}
 
 	/**
@@ -58,13 +61,12 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		String keyName = key.key();
-		Optional<String> metadataField = getMetadataField(keyName);
-		if (metadataField.isPresent()) {
-			context.append("c.metadata." + metadataField.get());
-		}
-		else {
-			throw new IllegalArgumentException(String.format("No metadata field %s has been configured", keyName));
-		}
+
+		String field = getMetadataField(keyName)
+				.orElseThrow(() -> new IllegalArgumentException(
+						String.format("No metadata field %s has been configured", keyName)));
+
+		context.append("c.metadata.").append(field);
 	}
 
 	@Override
