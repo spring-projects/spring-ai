@@ -24,6 +24,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * Creates a new OpenAiSdkEmbeddingModel with the given options.
 	 * @param options the embedding options
 	 */
-	public OpenAiSdkEmbeddingModel(OpenAiSdkEmbeddingOptions options) {
+	public OpenAiSdkEmbeddingModel(@Nullable OpenAiSdkEmbeddingOptions options) {
 		this(null, null, options, null);
 	}
 
@@ -88,7 +89,7 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param metadataMode the metadata mode
 	 * @param options the embedding options
 	 */
-	public OpenAiSdkEmbeddingModel(MetadataMode metadataMode, OpenAiSdkEmbeddingOptions options) {
+	public OpenAiSdkEmbeddingModel(@Nullable MetadataMode metadataMode, @Nullable OpenAiSdkEmbeddingOptions options) {
 		this(null, metadataMode, options, null);
 	}
 
@@ -98,7 +99,8 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param options the embedding options
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkEmbeddingModel(OpenAiSdkEmbeddingOptions options, ObservationRegistry observationRegistry) {
+	public OpenAiSdkEmbeddingModel(@Nullable OpenAiSdkEmbeddingOptions options,
+			@Nullable ObservationRegistry observationRegistry) {
 		this(null, null, options, observationRegistry);
 	}
 
@@ -109,8 +111,8 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param options the embedding options
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkEmbeddingModel(MetadataMode metadataMode, OpenAiSdkEmbeddingOptions options,
-			ObservationRegistry observationRegistry) {
+	public OpenAiSdkEmbeddingModel(@Nullable MetadataMode metadataMode, @Nullable OpenAiSdkEmbeddingOptions options,
+			@Nullable ObservationRegistry observationRegistry) {
 		this(null, metadataMode, options, observationRegistry);
 	}
 
@@ -118,7 +120,7 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * Creates a new OpenAiSdkEmbeddingModel with the given OpenAI client.
 	 * @param openAiClient the OpenAI client
 	 */
-	public OpenAiSdkEmbeddingModel(OpenAIClient openAiClient) {
+	public OpenAiSdkEmbeddingModel(@Nullable OpenAIClient openAiClient) {
 		this(openAiClient, null, null, null);
 	}
 
@@ -128,7 +130,7 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param openAiClient the OpenAI client
 	 * @param metadataMode the metadata mode
 	 */
-	public OpenAiSdkEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode) {
+	public OpenAiSdkEmbeddingModel(@Nullable OpenAIClient openAiClient, @Nullable MetadataMode metadataMode) {
 		this(openAiClient, metadataMode, null, null);
 	}
 
@@ -138,8 +140,8 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param metadataMode the metadata mode
 	 * @param options the embedding options
 	 */
-	public OpenAiSdkEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
-			OpenAiSdkEmbeddingOptions options) {
+	public OpenAiSdkEmbeddingModel(@Nullable OpenAIClient openAiClient, @Nullable MetadataMode metadataMode,
+			@Nullable OpenAiSdkEmbeddingOptions options) {
 		this(openAiClient, metadataMode, options, null);
 	}
 
@@ -150,8 +152,8 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param options the embedding options
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkEmbeddingModel(OpenAIClient openAiClient, MetadataMode metadataMode,
-			OpenAiSdkEmbeddingOptions options, ObservationRegistry observationRegistry) {
+	public OpenAiSdkEmbeddingModel(@Nullable OpenAIClient openAiClient, @Nullable MetadataMode metadataMode,
+			@Nullable OpenAiSdkEmbeddingOptions options, @Nullable ObservationRegistry observationRegistry) {
 
 		if (options == null) {
 			this.options = OpenAiSdkEmbeddingOptions.builder().model(DEFAULT_MODEL_NAME).build();
@@ -173,7 +175,7 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public float[] embed(Document document) {
 		EmbeddingResponse response = this
-			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), null));
+			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), this.options));
 
 		if (CollectionUtils.isEmpty(response.getResults())) {
 			return new float[0];

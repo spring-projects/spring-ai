@@ -22,6 +22,7 @@ import java.util.Objects;
 import com.openai.client.OpenAIClient;
 import com.openai.models.images.ImageGenerateParams;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * Creates a new OpenAiSdkImageModel with the given options.
 	 * @param options the image options
 	 */
-	public OpenAiSdkImageModel(OpenAiSdkImageOptions options) {
+	public OpenAiSdkImageModel(@Nullable OpenAiSdkImageOptions options) {
 		this(null, options, null);
 	}
 
@@ -81,7 +82,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * Creates a new OpenAiSdkImageModel with the given observation registry.
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkImageModel(ObservationRegistry observationRegistry) {
+	public OpenAiSdkImageModel(@Nullable ObservationRegistry observationRegistry) {
 		this(null, null, observationRegistry);
 	}
 
@@ -90,7 +91,8 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * @param options the image options
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkImageModel(OpenAiSdkImageOptions options, ObservationRegistry observationRegistry) {
+	public OpenAiSdkImageModel(@Nullable OpenAiSdkImageOptions options,
+			@Nullable ObservationRegistry observationRegistry) {
 		this(null, options, observationRegistry);
 	}
 
@@ -98,7 +100,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * Creates a new OpenAiSdkImageModel with the given OpenAI client.
 	 * @param openAIClient the OpenAI client
 	 */
-	public OpenAiSdkImageModel(OpenAIClient openAIClient) {
+	public OpenAiSdkImageModel(@Nullable OpenAIClient openAIClient) {
 		this(openAIClient, null, null);
 	}
 
@@ -107,7 +109,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * @param openAIClient the OpenAI client
 	 * @param options the image options
 	 */
-	public OpenAiSdkImageModel(OpenAIClient openAIClient, OpenAiSdkImageOptions options) {
+	public OpenAiSdkImageModel(@Nullable OpenAIClient openAIClient, @Nullable OpenAiSdkImageOptions options) {
 		this(openAIClient, options, null);
 	}
 
@@ -117,7 +119,7 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * @param openAIClient the OpenAI client
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkImageModel(OpenAIClient openAIClient, ObservationRegistry observationRegistry) {
+	public OpenAiSdkImageModel(@Nullable OpenAIClient openAIClient, @Nullable ObservationRegistry observationRegistry) {
 		this(openAIClient, null, observationRegistry);
 	}
 
@@ -127,8 +129,8 @@ public class OpenAiSdkImageModel implements ImageModel {
 	 * @param options the image options
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkImageModel(OpenAIClient openAiClient, OpenAiSdkImageOptions options,
-			ObservationRegistry observationRegistry) {
+	public OpenAiSdkImageModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiSdkImageOptions options,
+			@Nullable ObservationRegistry observationRegistry) {
 
 		if (options == null) {
 			this.options = OpenAiSdkImageOptions.builder().model(DEFAULT_MODEL_NAME).build();
