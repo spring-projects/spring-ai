@@ -59,6 +59,7 @@ import com.openai.models.completions.CompletionUsage;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -142,7 +143,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * Creates a new OpenAiSdkChatModel with the given options.
 	 * @param options the chat options
 	 */
-	public OpenAiSdkChatModel(OpenAiSdkChatOptions options) {
+	public OpenAiSdkChatModel(@Nullable OpenAiSdkChatOptions options) {
 		this(null, null, options, null, null, null);
 	}
 
@@ -151,7 +152,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param options the chat options
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkChatModel(OpenAiSdkChatOptions options, ObservationRegistry observationRegistry) {
+	public OpenAiSdkChatModel(@Nullable OpenAiSdkChatOptions options,
+			@Nullable ObservationRegistry observationRegistry) {
 		this(null, null, options, null, observationRegistry, null);
 	}
 
@@ -162,8 +164,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param toolCallingManager the tool calling manager
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkChatModel(OpenAiSdkChatOptions options, ToolCallingManager toolCallingManager,
-			ObservationRegistry observationRegistry) {
+	public OpenAiSdkChatModel(@Nullable OpenAiSdkChatOptions options, @Nullable ToolCallingManager toolCallingManager,
+			@Nullable ObservationRegistry observationRegistry) {
 		this(null, null, options, toolCallingManager, observationRegistry, null);
 	}
 
@@ -172,7 +174,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param openAIClient the synchronous OpenAI client
 	 * @param openAiClientAsync the asynchronous OpenAI client
 	 */
-	public OpenAiSdkChatModel(OpenAIClient openAIClient, OpenAIClientAsync openAiClientAsync) {
+	public OpenAiSdkChatModel(@Nullable OpenAIClient openAIClient, @Nullable OpenAIClientAsync openAiClientAsync) {
 		this(openAIClient, openAiClientAsync, null, null, null, null);
 	}
 
@@ -182,8 +184,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param openAiClientAsync the asynchronous OpenAI client
 	 * @param options the chat options
 	 */
-	public OpenAiSdkChatModel(OpenAIClient openAIClient, OpenAIClientAsync openAiClientAsync,
-			OpenAiSdkChatOptions options) {
+	public OpenAiSdkChatModel(@Nullable OpenAIClient openAIClient, @Nullable OpenAIClientAsync openAiClientAsync,
+			@Nullable OpenAiSdkChatOptions options) {
 		this(openAIClient, openAiClientAsync, options, null, null, null);
 	}
 
@@ -195,8 +197,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param options the chat options
 	 * @param observationRegistry the observation registry
 	 */
-	public OpenAiSdkChatModel(OpenAIClient openAIClient, OpenAIClientAsync openAiClientAsync,
-			OpenAiSdkChatOptions options, ObservationRegistry observationRegistry) {
+	public OpenAiSdkChatModel(@Nullable OpenAIClient openAIClient, @Nullable OpenAIClientAsync openAiClientAsync,
+			@Nullable OpenAiSdkChatOptions options, @Nullable ObservationRegistry observationRegistry) {
 		this(openAIClient, openAiClientAsync, options, null, observationRegistry, null);
 	}
 
@@ -210,10 +212,10 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param toolExecutionEligibilityPredicate the predicate to determine tool execution
 	 * eligibility
 	 */
-	public OpenAiSdkChatModel(OpenAIClient openAiClient, OpenAIClientAsync openAiClientAsync,
-			OpenAiSdkChatOptions options, ToolCallingManager toolCallingManager,
-			ObservationRegistry observationRegistry,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+	public OpenAiSdkChatModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAIClientAsync openAiClientAsync,
+			@Nullable OpenAiSdkChatOptions options, @Nullable ToolCallingManager toolCallingManager,
+			@Nullable ObservationRegistry observationRegistry,
+			@Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 
 		if (options == null) {
 			this.options = OpenAiSdkChatOptions.builder().model(DEFAULT_MODEL_NAME).build();
@@ -253,10 +255,6 @@ public class OpenAiSdkChatModel implements ChatModel {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		if (this.openAiClient == null) {
-			throw new IllegalStateException(
-					"OpenAI sync client is not configured. Have you set the 'streamUsage' option to false?");
-		}
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		return this.internalCall(requestPrompt, null);
 	}
@@ -267,7 +265,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param previousChatResponse the previous chat response for accumulating usage
 	 * @return the chat response
 	 */
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	public ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
 		ChatCompletionCreateParams request = createRequest(prompt, false);
 
@@ -315,6 +313,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 
 			});
 
+		Assert.state(prompt.getOptions() != null, "Prompt options must not be null");
+		Assert.state(response != null, "Chat response must not be null");
 		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
 			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
 			if (toolExecutionResult.returnDirect()) {
@@ -336,10 +336,6 @@ public class OpenAiSdkChatModel implements ChatModel {
 
 	@Override
 	public Flux<ChatResponse> stream(Prompt prompt) {
-		if (this.openAiClientAsync == null) {
-			throw new IllegalStateException(
-					"OpenAI async client is not configured. Streaming is not supported with the current configuration. Have you set the 'streamUsage' option to true?");
-		}
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		return internalStream(requestPrompt, null);
 	}
@@ -349,7 +345,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param response the chat response
 	 * @return the assistant message, or null if not available
 	 */
-	public AssistantMessage safeAssistantMessage(ChatResponse response) {
+	public @Nullable AssistantMessage safeAssistantMessage(@Nullable ChatResponse response) {
 		if (response == null) {
 			return null;
 		}
@@ -367,7 +363,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @param previousChatResponse the previous chat response for accumulating usage
 	 * @return a Flux of chat responses
 	 */
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	public Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionCreateParams request = createRequest(prompt, true);
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
@@ -468,9 +464,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 					if (am.getText() != null) {
 						text.append(am.getText());
 					}
-					if (am.getMetadata() != null) {
-						props.putAll(am.getMetadata());
-					}
+					props.putAll(am.getMetadata());
 					if (!CollectionUtils.isEmpty(am.getToolCalls())) {
 						Object ccObj = am.getMetadata().get("chunkChoice");
 						if (ccObj instanceof ChatCompletionChunk.Choice chunkChoice
@@ -496,13 +490,10 @@ public class OpenAiSdkChatModel implements ChatModel {
 						}
 					}
 					Generation generation = chatResponse.getResult();
-					if (generation != null && generation.getMetadata() != null
-							&& generation.getMetadata() != ChatGenerationMetadata.NULL) {
+					if (generation != null && generation.getMetadata() != ChatGenerationMetadata.NULL) {
 						finalGenMetadata = generation.getMetadata();
 					}
-					if (chatResponse.getMetadata() != null) {
-						finalMetadata = chatResponse.getMetadata();
-					}
+					finalMetadata = chatResponse.getMetadata();
 				}
 				List<AssistantMessage.ToolCall> merged = builders.values()
 					.stream()
@@ -518,8 +509,10 @@ public class OpenAiSdkChatModel implements ChatModel {
 				AssistantMessage assistantMessage = assistantMessageBuilder.build();
 				Generation finalGen = new Generation(assistantMessage,
 						finalGenMetadata != null ? finalGenMetadata : ChatGenerationMetadata.NULL);
-				ChatResponse aggregated = new ChatResponse(List.of(finalGen), finalMetadata);
+				ChatResponse aggregated = new ChatResponse(List.of(finalGen),
+						finalMetadata != null ? finalMetadata : ChatResponseMetadata.builder().build());
 				observationContext.setResponse(aggregated);
+				Assert.state(prompt.getOptions() != null, "ChatOptions must not be null");
 				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), aggregated)) {
 					return Flux.deferContextual(ctx -> {
 						ToolExecutionResult tetoolExecutionResult;
@@ -643,9 +636,9 @@ public class OpenAiSdkChatModel implements ChatModel {
 	private ChatResponseMetadata from(ChatResponseMetadata chatResponseMetadata, Usage usage) {
 		Assert.notNull(chatResponseMetadata, "OpenAI ChatResponseMetadata must not be null");
 		return ChatResponseMetadata.builder()
-			.id(chatResponseMetadata.getId() != null ? chatResponseMetadata.getId() : "")
+			.id(chatResponseMetadata.getId())
 			.usage(usage)
-			.model(chatResponseMetadata.getModel() != null ? chatResponseMetadata.getModel() : "")
+			.model(chatResponseMetadata.getModel())
 			.build();
 	}
 
@@ -780,9 +773,10 @@ public class OpenAiSdkChatModel implements ChatModel {
 						// Handle media content (images, audio, files)
 						List<ChatCompletionContentPart> parts = new ArrayList<>();
 
-						if (!message.getText().isEmpty()) {
+						String messageText = message.getText();
+						if (messageText != null && !messageText.isEmpty()) {
 							parts.add(ChatCompletionContentPart
-								.ofText(ChatCompletionContentPartText.builder().text(message.getText()).build()));
+								.ofText(ChatCompletionContentPartText.builder().text(messageText).build()));
 						}
 
 						// Add media content parts
@@ -854,7 +848,10 @@ public class OpenAiSdkChatModel implements ChatModel {
 					}
 					else {
 						// Simple text message
-						builder.content(ChatCompletionContentPartText.builder().text(message.getText()).build().text());
+						String messageText = message.getText();
+						if (messageText != null) {
+							builder.content(ChatCompletionContentPartText.builder().text(messageText).build().text());
+						}
 					}
 
 					if (message.getMessageType() == MessageType.USER) {
@@ -926,6 +923,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 		chatCompletionMessageParams.forEach(builder::addMessage);
 
 		OpenAiSdkChatOptions requestOptions = (OpenAiSdkChatOptions) prompt.getOptions();
+		Assert.state(requestOptions != null, "ChatOptions must not be null");
 
 		// Use deployment name if available (for Microsoft Foundry), otherwise use model
 		// name
@@ -1213,7 +1211,7 @@ public class OpenAiSdkChatModel implements ChatModel {
 
 		private Type type = Type.TEXT;
 
-		private String jsonSchema;
+		private @Nullable String jsonSchema;
 
 		public Type getType() {
 			return this.type;
@@ -1223,11 +1221,11 @@ public class OpenAiSdkChatModel implements ChatModel {
 			this.type = type;
 		}
 
-		public String getJsonSchema() {
+		public @Nullable String getJsonSchema() {
 			return this.jsonSchema;
 		}
 
-		public void setJsonSchema(String jsonSchema) {
+		public void setJsonSchema(@Nullable String jsonSchema) {
 			this.jsonSchema = jsonSchema;
 		}
 
@@ -1298,16 +1296,16 @@ public class OpenAiSdkChatModel implements ChatModel {
 		private StringBuilder arguments = new StringBuilder();
 
 		void merge(AssistantMessage.ToolCall toolCall) {
-			if (toolCall.id() != null && !toolCall.id().isEmpty()) {
+			if (!toolCall.id().isEmpty()) {
 				this.id = toolCall.id();
 			}
-			if (toolCall.type() != null && !toolCall.type().isEmpty()) {
+			if (!toolCall.type().isEmpty()) {
 				this.type = toolCall.type();
 			}
-			if (toolCall.name() != null && !toolCall.name().isEmpty()) {
+			if (!toolCall.name().isEmpty()) {
 				this.name = toolCall.name();
 			}
-			if (toolCall.arguments() != null && !toolCall.arguments().isEmpty()) {
+			if (!toolCall.arguments().isEmpty()) {
 				this.arguments.append(toolCall.arguments());
 			}
 		}
