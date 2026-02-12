@@ -150,6 +150,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		return ToolExecutionResult.builder()
 			.conversationHistory(conversationHistory)
 			.returnDirect(internalToolExecutionResult.returnDirect())
+			.continuousStream(internalToolExecutionResult.continuousStream())
 			.build();
 	}
 
@@ -192,6 +193,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		Boolean returnDirect = null;
 
+		boolean continuousStream = false;
+
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
 			logger.debug("Executing tool call: {}", toolCall.name());
@@ -227,6 +230,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 			}
 
+			continuousStream = continuousStream || toolCallback.getToolMetadata().continuousStream();
+
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
 				.toolMetadata(toolCallback.getToolMetadata())
@@ -251,15 +256,21 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
 					toolCallResult != null ? toolCallResult : ""));
 		}
-
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
-				Objects.requireNonNullElse(returnDirect, false));
+				Objects.requireNonNullElse(returnDirect, false), continuousStream);
+
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
 			AssistantMessage assistantMessage, ToolResponseMessage toolResponseMessage) {
 		List<Message> messages = new ArrayList<>(previousMessages);
-		messages.add(assistantMessage);
+
+		messages.add(AssistantMessage.builder()
+			.content(Objects.requireNonNullElse(assistantMessage.getText(), ""))
+			.properties(assistantMessage.getMetadata())
+			.toolCalls(assistantMessage.getToolCalls())
+			.media(assistantMessage.getMedia())
+			.build());
 		messages.add(toolResponseMessage);
 		return messages;
 	}
@@ -272,7 +283,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		return new Builder();
 	}
 
-	private record InternalToolExecutionResult(ToolResponseMessage toolResponseMessage, boolean returnDirect) {
+	private record InternalToolExecutionResult(ToolResponseMessage toolResponseMessage, boolean returnDirect,
+			boolean continuousStream) {
 	}
 
 	public final static class Builder {

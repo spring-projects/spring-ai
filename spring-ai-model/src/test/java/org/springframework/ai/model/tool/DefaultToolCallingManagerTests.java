@@ -207,6 +207,54 @@ class DefaultToolCallingManagerTests {
 	}
 
 	@Test
+	void whenSingleToolCallWithContinuousStreamInChatResponseThenExecute() {
+		ToolCallback toolCallback = new TestToolCallback("toolA", false, true);
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
+			.build();
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.continuousStream()).isTrue();
+		assertThat(toolExecutionResult.returnDirect()).isFalse();
+	}
+
+	@Test
+	void whenMultipleToolCallsAndOneHasContinuousStreamThenExecute() {
+		ToolCallback toolCallbackA = new TestToolCallback("toolA", false, false);
+		ToolCallback toolCallbackB = new TestToolCallback("toolB", false, true);
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(
+				List.of(toolCallbackA, toolCallbackB));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}"),
+						new AssistantMessage.ToolCall("toolB", "function", "toolB", "{}")))
+				.build())))
+			.build();
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.continuousStream()).isTrue();
+	}
+
+	@Test
 	void whenMultipleToolCallsInChatResponseThenExecute() {
 		ToolCallback toolCallbackA = new TestToolCallback("toolA");
 		ToolCallback toolCallbackB = new TestToolCallback("toolB");
@@ -410,6 +458,14 @@ class DefaultToolCallingManagerTests {
 		TestToolCallback(String name, boolean returnDirect) {
 			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
 			this.toolMetadata = ToolMetadata.builder().returnDirect(returnDirect).build();
+		}
+
+		TestToolCallback(String name, boolean returnDirect, boolean continuousStream) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolMetadata = ToolMetadata.builder()
+				.returnDirect(returnDirect)
+				.continuousStream(continuousStream)
+				.build();
 		}
 
 		@Override

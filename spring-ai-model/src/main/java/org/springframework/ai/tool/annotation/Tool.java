@@ -64,6 +64,16 @@ public @interface Tool {
 	boolean returnDirect() default false;
 
 	/**
+	 * Whether, in streaming mode and when internal tool execution is enabled, the model
+	 * should continue its response after the tool execution result is sent back.
+	 * <p>
+	 * When enabled, the already-streamed assistant content is provided as prefix to the
+	 * assistant tool-call message so that the model can continue instead of starting a
+	 * new answer.
+	 */
+	boolean continuousStream() default false;
+
+	/**
 	 * The class to use to convert the tool call result to a String.
 	 */
 	Class<? extends ToolCallResultConverter> resultConverter() default DefaultToolCallResultConverter.class;
