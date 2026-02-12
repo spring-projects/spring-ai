@@ -16,15 +16,13 @@
 
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -75,16 +73,17 @@ public class McpServerSseWebMvcAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper, McpServerSseProperties serverProperties) {
+	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(McpServerSseProperties serverProperties) {
 
-		return WebMvcSseServerTransportProvider.builder()
-			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+		var builder = WebMvcSseServerTransportProvider.builder()
+			.jsonMapper(McpJsonMapper.getDefault())
 			.baseUrl(serverProperties.getBaseUrl())
 			.sseEndpoint(serverProperties.getSseEndpoint())
-			.messageEndpoint(serverProperties.getSseMessageEndpoint())
-			.keepAliveInterval(serverProperties.getKeepAliveInterval())
-			.build();
+			.messageEndpoint(serverProperties.getSseMessageEndpoint());
+		if (serverProperties.getKeepAliveInterval() != null) {
+			builder.keepAliveInterval(serverProperties.getKeepAliveInterval());
+		}
+		return builder.build();
 	}
 
 	@Bean

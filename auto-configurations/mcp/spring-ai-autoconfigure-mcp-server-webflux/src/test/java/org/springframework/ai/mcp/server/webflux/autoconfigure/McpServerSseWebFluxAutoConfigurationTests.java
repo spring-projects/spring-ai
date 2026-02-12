@@ -17,11 +17,11 @@
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

@@ -90,7 +90,7 @@ spring:
 Required dependencies:
 ```xml
 <dependency>
-    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <groupId>org.springframework.ai</groupId>
     <artifactId>mcp-spring-webmvc</artifactId>
 </dependency>
 <dependency>
@@ -115,7 +115,7 @@ spring:
 Required dependencies:
 ```xml
 <dependency>
-    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <groupId>org.springframework.ai</groupId>
     <artifactId>mcp-spring-webflux</artifactId>
 </dependency>
 <dependency>
@@ -171,8 +171,8 @@ spring:
 The MCP server auto-configuration is provided through:
 
 1. `McpServerAutoConfiguration`: Core server configuration supporting both sync and async modes
-2. `McpWebMvcServerAutoConfiguration`: WebMvc transport configuration (activated when WebMvc dependencies are present)
-3. `McpWebFluxServerAutoConfiguration`: WebFlux transport configuration (activated when WebFlux dependencies are present)
+2. `McpServerSseWebMvcAutoConfiguration`: WebMvc transport configuration (activated when WebMvc dependencies are present)
+3. `McpServerSseWebFluxAutoConfiguration`: WebFlux transport configuration (activated when WebFlux dependencies are present)
 
 The auto-configuration will automatically set up the appropriate server type and transport based on your configuration and available dependencies.
 

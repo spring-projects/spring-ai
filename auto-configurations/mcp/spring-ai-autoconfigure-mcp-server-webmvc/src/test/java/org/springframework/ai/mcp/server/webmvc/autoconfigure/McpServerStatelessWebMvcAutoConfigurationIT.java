@@ -18,10 +18,10 @@ package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.servlet.function.RouterFunction;

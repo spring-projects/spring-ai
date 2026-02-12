@@ -21,9 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.McpJsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
@@ -31,6 +29,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.PropertiesMcpSseCl
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -90,13 +89,11 @@ public class SseWebFluxTransportAutoConfiguration {
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> sseWebFluxClientTransports(McpSseClientConnectionDetails connectionDetails,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider) {
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 			String url = Objects.requireNonNull(serverParameters.getValue().url(),
@@ -105,7 +102,7 @@ public class SseWebFluxTransportAutoConfiguration {
 			String sseEndpoint = Objects.requireNonNullElse(serverParameters.getValue().sseEndpoint(), "/sse");
 			var transport = WebFluxSseClientTransport.builder(webClientBuilder)
 				.sseEndpoint(sseEndpoint)
-				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+				.jsonMapper(McpJsonMapper.getDefault())
 				.build();
 			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 		}

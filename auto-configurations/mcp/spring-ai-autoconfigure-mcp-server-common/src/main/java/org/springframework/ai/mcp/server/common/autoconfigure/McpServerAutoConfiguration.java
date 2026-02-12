@@ -22,8 +22,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServer;
@@ -54,7 +53,6 @@ import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions;
@@ -96,9 +94,8 @@ public class McpServerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public McpServerTransportProviderBase stdioServerTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper mcpServerObjectMapper) {
-		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerObjectMapper));
+	public McpServerTransportProviderBase stdioServerTransport() {
+		return new StdioServerTransportProvider(McpJsonMapper.getDefault());
 	}
 
 	@Bean
