@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Toshiaki Maki
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
 
@@ -94,6 +95,12 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 				"SELECT pgml.embed(?, ?, ?::JSONB)" + this.defaultOptions.getVectorType().cast + " AS embedding",
 				this.defaultOptions.getVectorType().rowMapper, this.defaultOptions.getTransformer(), text,
 				ModelOptionsUtils.toJsonString(this.defaultOptions.getKwargs()));
+	}
+
+	@Override
+	public String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getFormattedContent(this.defaultOptions.getMetadataMode());
 	}
 
 	@Override
