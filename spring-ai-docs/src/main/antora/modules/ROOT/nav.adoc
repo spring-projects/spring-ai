@@ -25,6 +25,7 @@
 ****** xref:api/chat/vertexai-gemini-chat.adoc[VertexAI Gemini]
 **** xref:api/chat/groq-chat.adoc[Groq]
 **** xref:api/chat/huggingface.adoc[Hugging Face]
+**** xref:api/chat/jlama-chat.adoc[Jlama]
 **** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/minimax-chat.adoc[MiniMax]
 **** xref:api/chat/moonshot-chat.adoc[Moonshot AI]

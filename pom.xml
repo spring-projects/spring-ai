@@ -305,7 +305,7 @@
 
 		<djl.version>0.32.0</djl.version>
 		<jlama.version>0.8.4</jlama.version>
-		<jlama.native.classifier>osx-aarch_64</jlama.native.classifier>
+		<jlama.native.classifier>${os.detected.classifier}</jlama.native.classifier>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>

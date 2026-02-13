@@ -19,6 +19,7 @@ package org.springframework.ai.jlama;
 import java.io.File;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.stream.Collectors;
 
 import com.github.tjake.jlama.model.AbstractModel;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -40,6 +42,7 @@ import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.jlama.api.JlamaChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.beans.factory.DisposableBean;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -49,11 +52,15 @@ import org.springframework.util.StringUtils;
  *
  * @author chabinhwang
  */
-public class JlamaChatModel implements ChatModel {
+public class JlamaChatModel implements ChatModel, DisposableBean {
 
 	private static final float DEFAULT_TEMPERATURE = 0.7f;
 
 	private static final int DEFAULT_MAX_TOKENS = 256;
+
+	private static final String DEFAULT_WORKING_DIRECTORY = new File(System.getProperty("java.io.tmpdir"),
+			"spring-ai-jlama")
+		.getAbsolutePath();
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -74,12 +81,20 @@ public class JlamaChatModel implements ChatModel {
 		this.model = ModelSupport.loadModel(resolvedModel, DType.F32, DType.I8);
 	}
 
+	JlamaChatModel(JlamaChatOptions defaultOptions, AbstractModel model) {
+		Assert.notNull(defaultOptions, "defaultOptions must not be null");
+		Assert.notNull(model, "model must not be null");
+		this.defaultOptions = defaultOptions;
+		this.model = model;
+	}
+
 	@Override
 	public ChatResponse call(Prompt prompt) {
 		String formattedPrompt = formatPrompt(prompt);
 
 		JlamaChatOptions options = ModelOptionsUtils.merge(prompt.getOptions(), this.defaultOptions,
 				JlamaChatOptions.class);
+		validateSupportedOptions(options);
 
 		float temperature = options.getTemperature() != null ? options.getTemperature().floatValue()
 				: DEFAULT_TEMPERATURE;
@@ -101,6 +116,7 @@ public class JlamaChatModel implements ChatModel {
 
 		JlamaChatOptions options = ModelOptionsUtils.merge(prompt.getOptions(), this.defaultOptions,
 				JlamaChatOptions.class);
+		validateSupportedOptions(options);
 
 		float temperature = options.getTemperature() != null ? options.getTemperature().floatValue()
 				: DEFAULT_TEMPERATURE;
@@ -108,7 +124,8 @@ public class JlamaChatModel implements ChatModel {
 
 		PromptContext promptContext = PromptContext.of(formattedPrompt);
 
-		return Flux.create(fluxSink -> generateStreaming(promptContext, temperature, maxTokens, fluxSink));
+		return Flux.<ChatResponse>create(fluxSink -> generateStreaming(promptContext, temperature, maxTokens, fluxSink))
+			.subscribeOn(Schedulers.boundedElastic());
 	}
 
 	@Override
@@ -116,19 +133,38 @@ public class JlamaChatModel implements ChatModel {
 		return this.defaultOptions;
 	}
 
+	@Override
+	public void destroy() throws Exception {
+		this.model.close();
+	}
+
 	private void generateStreaming(PromptContext promptContext, float temperature, int maxTokens,
 			FluxSink<ChatResponse> sink) {
 		try {
-			this.model.generate(UUID.randomUUID(), promptContext, temperature, maxTokens,
-					(token, score) -> emitChunk(sink, token));
+			this.model.generate(UUID.randomUUID(), promptContext, temperature, maxTokens, (token, score) -> {
+				if (sink.isCancelled()) {
+					throw new CancellationException("Jlama stream cancelled");
+				}
+				emitChunk(sink, token);
+			});
+			if (!sink.isCancelled()) {
+				sink.complete();
+			}
+		}
+		catch (CancellationException e) {
 			sink.complete();
 		}
 		catch (Exception e) {
-			sink.error(e);
+			if (!sink.isCancelled()) {
+				sink.error(e);
+			}
 		}
 	}
 
 	private static void emitChunk(FluxSink<ChatResponse> sink, String token) {
+		if (sink.isCancelled()) {
+			return;
+		}
 		Generation generation = new Generation(new AssistantMessage(token));
 		sink.next(new ChatResponse(Collections.singletonList(generation)));
 	}
@@ -162,22 +198,33 @@ public class JlamaChatModel implements ChatModel {
 		}
 
 		try {
-			if (StringUtils.hasText(workingDirectory)) {
-				Downloader downloader = new Downloader(workingDirectory, modelPath);
-				return downloader.huggingFaceModel();
-			}
-
-			String[] parts = modelPath.split("/");
-			if (parts.length >= 2) {
-				Downloader downloader = new Downloader(parts[0], parts[1]);
-				return downloader.huggingFaceModel();
-			}
+			Downloader downloader = createDownloader(modelPath, workingDirectory);
+			return downloader.huggingFaceModel();
 		}
 		catch (Exception ex) {
-			logger.warn("Failed to download from HuggingFace: " + ex.getMessage());
+			logger.warn("Failed to download from HuggingFace model '{}'", modelPath, ex);
+			throw new IllegalArgumentException("Model not found: " + modelPath, ex);
 		}
+	}
 
-		throw new IllegalArgumentException("Model not found: " + modelPath);
+	static Downloader createDownloader(String modelPath, String workingDirectory) {
+		String resolvedWorkingDirectory = StringUtils.hasText(workingDirectory) ? workingDirectory
+				: defaultWorkingDirectory();
+		return new Downloader(resolvedWorkingDirectory, modelPath);
+	}
+
+	static String defaultWorkingDirectory() {
+		return DEFAULT_WORKING_DIRECTORY;
+	}
+
+	static void validateSupportedOptions(JlamaChatOptions options) {
+		Assert.notNull(options, "options must not be null");
+		if (options.getTopK() != null || options.getTopP() != null || options.getFrequencyPenalty() != null
+				|| options.getPresencePenalty() != null || options.getSeed() != null
+				|| (options.getStopSequences() != null && !options.getStopSequences().isEmpty())) {
+			throw new IllegalArgumentException(
+					"Jlama supports only 'temperature' and 'maxTokens' chat options at this time");
+		}
 	}
 
 	private String formatPrompt(Prompt prompt) {

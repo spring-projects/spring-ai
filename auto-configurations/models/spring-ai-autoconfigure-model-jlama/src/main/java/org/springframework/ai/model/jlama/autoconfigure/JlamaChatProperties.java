@@ -41,7 +41,7 @@ public class JlamaChatProperties {
 	private String workingDirectory;
 
 	/**
-	 * Client level Jlama options (temperature, maxTokens, topK, topP, etc.).
+	 * Client level Jlama options (temperature and maxTokens).
 	 */
 	@NestedConfigurationProperty
 	private final JlamaChatOptions options = JlamaChatOptions.builder().build();

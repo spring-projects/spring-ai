@@ -17,9 +17,12 @@
 package org.springframework.ai.jlama;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.github.tjake.jlama.model.AbstractModel;
+import com.github.tjake.jlama.util.Downloader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -27,6 +30,8 @@ import org.springframework.ai.jlama.api.JlamaChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link JlamaChatModel}.
@@ -105,8 +110,6 @@ class JlamaChatModelTests {
 		Path modelFile = tempDir.resolve("test-model.jlama");
 		Files.write(modelFile, "dummy model content".getBytes());
 
-		var options = JlamaChatOptions.builder().build();
-
 		// This test would require Vector API and actual Jlama model loading
 		// Since we're doing unit tests without real models, we verify the file exists
 		assertThat(modelFile.toFile()).exists();
@@ -174,6 +177,59 @@ class JlamaChatModelTests {
 			// Vector API not available, skip test
 			assertThat(true).as("Vector API not available, skipping test").isTrue();
 		}
+	}
+
+	@Test
+	void createDownloaderUsesProvidedWorkingDirectory(@TempDir Path tempDir) throws Exception {
+		Downloader downloader = JlamaChatModel.createDownloader("owner/repo", tempDir.toString());
+		assertThat(readField(downloader, "modelDir")).isEqualTo(tempDir.toString());
+	}
+
+	@Test
+	void createDownloaderUsesDefaultWorkingDirectoryWhenMissing() throws Exception {
+		Downloader downloader = JlamaChatModel.createDownloader("owner/repo", null);
+		assertThat(readField(downloader, "modelDir")).isEqualTo(JlamaChatModel.defaultWorkingDirectory());
+	}
+
+	@Test
+	void createDownloaderPreservesHuggingFaceOwnerAndModelName() throws Exception {
+		Downloader downloader = JlamaChatModel.createDownloader("owner/repo", "/tmp/jlama");
+		assertThat(readField(downloader, "modelOwner")).isEqualTo("owner");
+		assertThat(readField(downloader, "modelName")).isEqualTo("repo");
+	}
+
+	@Test
+	void defaultWorkingDirectoryUsesSystemTempDirectory() {
+		assertThat(JlamaChatModel.defaultWorkingDirectory())
+			.isEqualTo(Path.of(System.getProperty("java.io.tmpdir"), "spring-ai-jlama").toString());
+	}
+
+	@Test
+	void validateSupportedOptionsAllowsSupportedFieldsOnly() {
+		var options = JlamaChatOptions.builder().temperature(0.8).maxTokens(256).build();
+		JlamaChatModel.validateSupportedOptions(options);
+	}
+
+	@Test
+	void validateSupportedOptionsRejectsUnsupportedFields() {
+		var options = JlamaChatOptions.builder().topP(0.9).build();
+		assertThatThrownBy(() -> JlamaChatModel.validateSupportedOptions(options))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("supports only 'temperature' and 'maxTokens'");
+	}
+
+	@Test
+	void destroyClosesUnderlyingModel() throws Exception {
+		AbstractModel model = mock(AbstractModel.class);
+		JlamaChatModel chatModel = new JlamaChatModel(JlamaChatOptions.builder().build(), model);
+		chatModel.destroy();
+		verify(model).close();
+	}
+
+	private static Object readField(Object target, String name) throws Exception {
+		Field field = target.getClass().getDeclaredField(name);
+		field.setAccessible(true);
+		return field.get(target);
 	}
 
 }
