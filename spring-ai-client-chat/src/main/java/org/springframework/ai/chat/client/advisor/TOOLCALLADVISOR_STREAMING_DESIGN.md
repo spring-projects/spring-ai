@@ -4,7 +4,7 @@ This document describes the design and implementation of streaming support in `T
 
 ## Problem Statement
 
-When using `ToolCallAdvisor` with `disableMemory()` and an external `MessageChatMemoryAdvisor`, the non-streaming (call) implementation works correctly, but the original streaming implementation failed due to:
+When using `ToolCallAdvisor` with `disableInternalConversationHistory()` and an external `MessageChatMemoryAdvisor`, the non-streaming (call) implementation works correctly, but the original streaming implementation failed due to:
 
 1. **Tool call detection on individual chunks**: The original implementation checked `hasToolCalls()` on each streaming chunk instead of the complete aggregated response
 2. **Race conditions with memory updates**: `MessageChatMemoryAdvisor.after()` fires via `doOnComplete` after all chunks are emitted, but tool call detection happened per-chunk, causing memory inconsistency
