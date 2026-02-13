@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.List;
+import java.util.Locale;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -614,6 +615,24 @@ class JsonSchemaGeneratorTests {
 				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForTypeWithUpperCaseValuesShouldBeLocaleIndependent() {
+		Locale previousDefault = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+		try {
+			String schema = JsonSchemaGenerator.generateForType(Person.class,
+					JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES);
+
+			assertThat(schema).contains("\"type\" : \"INTEGER\"");
+			assertThat(schema).contains("\"type\" : \"STRING\"");
+			assertThat(schema).doesNotContain("İNTEGER");
+			assertThat(schema).doesNotContain("STRİNG");
+		}
+		finally {
+			Locale.setDefault(previousDefault);
+		}
 	}
 
 	@Test
