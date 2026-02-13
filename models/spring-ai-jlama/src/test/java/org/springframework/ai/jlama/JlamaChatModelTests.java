@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.jlama.api.JlamaChatOptions;
+import org.springframework.ai.model.ModelOptionsUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -224,6 +225,18 @@ class JlamaChatModelTests {
 		JlamaChatModel chatModel = new JlamaChatModel(JlamaChatOptions.builder().build(), model);
 		chatModel.destroy();
 		verify(model).close();
+	}
+
+	@Test
+	void modelOptionsMergeAppliesRuntimeOverrides() {
+		JlamaChatOptions defaults = JlamaChatOptions.builder().model("model-a").temperature(0.7).maxTokens(256).build();
+		JlamaChatOptions runtime = JlamaChatOptions.builder().temperature(0.2).build();
+
+		JlamaChatOptions merged = ModelOptionsUtils.merge(runtime, defaults, JlamaChatOptions.class);
+
+		assertThat(merged.getModel()).isEqualTo("model-a");
+		assertThat(merged.getTemperature()).isEqualTo(0.2);
+		assertThat(merged.getMaxTokens()).isEqualTo(256);
 	}
 
 	private static Object readField(Object target, String name) throws Exception {

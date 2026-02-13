@@ -56,7 +56,7 @@ To enable: `spring.ai.model.chat=jlama` (enabled by default when Jlama is the ac
 To disable: `spring.ai.model.chat=none` (or any value which does not match `jlama`)
 ====
 
-The prefix `spring.ai.jlama` is the property prefix for configuring Jlama chat.
+The prefix `spring.ai.jlama.chat` is the property prefix for configuring Jlama chat.
 
 [cols="3,5,1", stripes=even]
 |====
@@ -66,25 +66,27 @@ The prefix `spring.ai.jlama` is the property prefix for configuring Jlama chat.
 | Enables the Jlama chat model.
 | `jlama`
 
-| `spring.ai.jlama.model`
+| `spring.ai.jlama.chat.model`
 | Model path. Supports a local file path or a HuggingFace model id in `owner/repo` format.
 | -
 
-| `spring.ai.jlama.working-directory`
+| `spring.ai.jlama.chat.working-directory`
 | Optional working directory for downloaded models.
 | `${java.io.tmpdir}/spring-ai-jlama`
 
-| `spring.ai.jlama.options.temperature`
+| `spring.ai.jlama.chat.options.temperature`
 | Sampling temperature.
 | `0.7`
 
-| `spring.ai.jlama.options.max-tokens`
+| `spring.ai.jlama.chat.options.max-tokens`
 | Maximum tokens to generate.
 | `256`
 |====
 
-NOTE: If `spring.ai.jlama.model` points to a HuggingFace id (`owner/repo`), Spring AI downloads the model automatically.
-When `spring.ai.jlama.working-directory` is not set, models are downloaded under `${java.io.tmpdir}/spring-ai-jlama`.
+NOTE: If `spring.ai.jlama.chat.model` points to a HuggingFace id (`owner/repo`), Spring AI downloads the model automatically.
+When `spring.ai.jlama.chat.working-directory` is not set, models are downloaded under `${java.io.tmpdir}/spring-ai-jlama`.
+
+NOTE: Legacy properties under `spring.ai.jlama.*` are still accepted for backward compatibility.
 
 NOTE: HTTP(S) model URLs are not supported by the Jlama chat integration. Use a local path or HuggingFace `owner/repo`.
 
@@ -113,10 +115,10 @@ Example `application.properties`:
 [source,properties]
 ----
 spring.ai.model.chat=jlama
-spring.ai.jlama.model=tjake/TinyLlama-1.1B-Chat-v1.0-Jlama-Q4
-spring.ai.jlama.working-directory=/tmp/jlama
-spring.ai.jlama.options.temperature=0.7
-spring.ai.jlama.options.max-tokens=256
+spring.ai.jlama.chat.model=tjake/TinyLlama-1.1B-Chat-v1.0-Jlama-Q4
+spring.ai.jlama.chat.working-directory=/tmp/jlama
+spring.ai.jlama.chat.options.temperature=0.7
+spring.ai.jlama.chat.options.max-tokens=256
 ----
 
 [source,java]

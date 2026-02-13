@@ -21,14 +21,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
- * Jlama Chat autoconfiguration properties.
+ * Legacy Jlama chat autoconfiguration properties.
  *
  * @author chabinhwang
  */
-@ConfigurationProperties(JlamaChatProperties.CONFIG_PREFIX)
-public class JlamaChatProperties {
+@ConfigurationProperties(JlamaLegacyChatProperties.CONFIG_PREFIX)
+public class JlamaLegacyChatProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.jlama.chat";
+	public static final String CONFIG_PREFIX = "spring.ai.jlama";
 
 	/**
 	 * Model path or HuggingFace model id (owner/repo).

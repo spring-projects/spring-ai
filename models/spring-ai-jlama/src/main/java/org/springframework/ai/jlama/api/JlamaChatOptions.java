@@ -20,6 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import org.springframework.ai.chat.prompt.ChatOptions;
 
 /**
@@ -27,24 +31,34 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  *
  * @author chabinhwang
  */
+@JsonInclude(Include.NON_NULL)
 public class JlamaChatOptions implements ChatOptions {
 
+	@JsonProperty("model")
 	private String model;
 
+	@JsonProperty("frequencyPenalty")
 	private Double frequencyPenalty;
 
+	@JsonProperty("maxTokens")
 	private Integer maxTokens;
 
+	@JsonProperty("presencePenalty")
 	private Double presencePenalty;
 
+	@JsonProperty("stopSequences")
 	private List<String> stopSequences;
 
+	@JsonProperty("temperature")
 	private Double temperature;
 
+	@JsonProperty("topK")
 	private Integer topK;
 
+	@JsonProperty("topP")
 	private Double topP;
 
+	@JsonProperty("seed")
 	private Long seed;
 
 	public JlamaChatOptions() {
