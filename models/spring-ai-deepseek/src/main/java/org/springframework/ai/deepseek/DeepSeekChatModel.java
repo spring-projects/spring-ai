@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +27,7 @@ import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccess
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.Message;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -236,6 +238,8 @@ public class DeepSeekChatModel implements ChatModel {
 
 	public Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
+			StringBuilder contentBuffer = new StringBuilder(256);
+
 			ChatCompletionRequest request = createRequest(prompt, true);
 
 			Flux<DeepSeekApi.ChatCompletionChunk> completionChunks = this.deepSeekApi.chatCompletionStream(request);
@@ -278,6 +282,10 @@ public class DeepSeekChatModel implements ChatModel {
 						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
 						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 
+						String content = chatCompletion2.choices().get(0).message().content();
+						if (content != null) {
+							contentBuffer.append(content);
+						}
 						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
 					}
 					catch (Exception e) {
@@ -311,7 +319,12 @@ public class DeepSeekChatModel implements ChatModel {
 						}
 						else {
 							// Send the tool execution result back to the model.
-							return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+							List<Message> messages = toolExecutionResult.conversationHistory();
+							if (toolExecutionResult.continuousStream() && !contentBuffer.isEmpty()) {
+								messages = applyContinuousStreamPrefix(messages, contentBuffer.toString());
+							}
+
+							return this.internalStream(new Prompt(messages, prompt.getOptions()),
 									response);
 						}
 					}).subscribeOn(Schedulers.boundedElastic());
@@ -328,6 +341,27 @@ public class DeepSeekChatModel implements ChatModel {
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 
 		});
+	}
+
+	private static List<Message> applyContinuousStreamPrefix(List<Message> conversationHistory, String prefix) {
+		if (conversationHistory.isEmpty() || prefix.isEmpty()) {
+			return conversationHistory;
+		}
+		List<Message> patched = new ArrayList<>(conversationHistory);
+		for (int i = patched.size() - 1; i >= 0; i--) {
+			Message message = patched.get(i);
+			if (message instanceof AssistantMessage assistantMessage
+					&& !CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
+				patched.set(i, AssistantMessage.builder()
+					.content(prefix)
+					.properties(assistantMessage.getMetadata())
+					.toolCalls(assistantMessage.getToolCalls())
+					.media(assistantMessage.getMedia())
+					.build());
+				break;
+			}
+		}
+		return patched;
 	}
 
 	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {

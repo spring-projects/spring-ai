@@ -37,6 +37,14 @@ public interface ToolMetadata {
 	}
 
 	/**
+	 * Whether, in streaming mode and when internal tool execution is enabled, the model
+	 * should continue its response after the tool execution result is sent back.
+	 */
+	default boolean continuousStream() {
+		return false;
+	}
+
+	/**
 	 * Create a default {@link ToolMetadata} builder.
 	 */
 	static DefaultToolMetadata.Builder builder() {
@@ -48,7 +56,10 @@ public interface ToolMetadata {
 	 */
 	static ToolMetadata from(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		return DefaultToolMetadata.builder().returnDirect(ToolUtils.getToolReturnDirect(method)).build();
+		return DefaultToolMetadata.builder()
+			.returnDirect(ToolUtils.getToolReturnDirect(method))
+			.continuousStream(ToolUtils.getToolContinuousStream(method))
+			.build();
 	}
 
 }
