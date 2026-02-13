@@ -663,10 +663,10 @@ public class ToolCallAdvisorTests {
 	}
 
 	@Test
-	void testDisableMemoryBuilderMethod() {
+	void testDisableInternalConversationHistoryBuilderMethod() {
 		ToolCallAdvisor advisor = ToolCallAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
-			.disableMemory()
+			.disableInternalConversationHistory()
 			.build();
 
 		ChatClientRequest request = createMockRequestWithSystemMessage();

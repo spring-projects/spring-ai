@@ -490,7 +490,7 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * registered next in the chain.
 		 * @return this Builder instance for method chaining
 		 */
-		public T disableMemory() {
+		public T disableInternalConversationHistory() {
 			this.conversationHistoryEnabled = false;
 			return self();
 		}

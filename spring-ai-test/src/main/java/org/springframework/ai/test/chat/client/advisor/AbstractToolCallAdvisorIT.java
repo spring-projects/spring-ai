@@ -104,7 +104,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			var response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.advisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user(u -> u.text("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?"))
@@ -139,7 +139,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void callDefaultAdvisorConfigurationWithExternalMemory() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.defaultAdvisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
 				.build();
 
@@ -199,7 +199,7 @@ public abstract class AbstractToolCallAdvisorIT {
 
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
-				.advisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.advisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().maxMessages(500).build())
 							.build())
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
@@ -238,7 +238,7 @@ public abstract class AbstractToolCallAdvisorIT {
 		void streamDefaultAdvisorConfigurationWithExternalMemory() {
 
 			var chatClient = ChatClient.builder(getChatModel())
-				.defaultAdvisors(ToolCallAdvisor.builder().disableMemory().build(),
+				.defaultAdvisors(ToolCallAdvisor.builder().disableInternalConversationHistory().build(),
 						MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build())
 				.build();
 
