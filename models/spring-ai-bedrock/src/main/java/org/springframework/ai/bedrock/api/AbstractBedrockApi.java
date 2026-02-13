@@ -18,7 +18,6 @@ package org.springframework.ai.bedrock.api;
 
 // @formatter:off
 
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
@@ -26,8 +25,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -46,6 +43,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelWithResponseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelWithResponseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.ResponseStream;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.util.Assert;
@@ -81,7 +80,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 
 	private final String modelId;
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 	private final Region region;
 	private final BedrockRuntimeClient client;
 	private final BedrockRuntimeAsyncClient clientStreaming;
@@ -93,7 +92,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param region The AWS region to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.OBJECT_MAPPER, Duration.ofMinutes(5));
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.JSON_MAPPER, Duration.ofMinutes(5));
 	}
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
@@ -103,7 +102,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param timeout The timeout to use.
 	 */
 	public AbstractBedrockApi(String modelId, String region, Duration timeout) {
-		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.OBJECT_MAPPER, timeout);
+		this(modelId, ProfileCredentialsProvider.builder().build(), region, ModelOptionsUtils.JSON_MAPPER, timeout);
 	}
 
 	/**
@@ -112,11 +111,11 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param modelId The model id to use.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and deserialization.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper) {
-		this(modelId, credentialsProvider, region, objectMapper, Duration.ofMinutes(5));
+			JsonMapper jsonMapper) {
+		this(modelId, credentialsProvider, region, jsonMapper, Duration.ofMinutes(5));
 	}
 
 	/**
@@ -125,37 +124,37 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 * @param modelId The model id to use.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and deserialization.
 	 * @param timeout Configure the amount of time to allow the client to complete the execution of an API call.
 	 * This timeout covers the entire client execution except for marshalling. This includes request handler execution,
 	 * all HTTP requests including retries, unmarshalling, etc. This value should always be positive, if present.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, String region,
-			ObjectMapper objectMapper, Duration timeout) {
-		this(modelId, credentialsProvider, Region.of(region), objectMapper, timeout);
+			JsonMapper jsonMapper, Duration timeout) {
+		this(modelId, credentialsProvider, Region.of(region), jsonMapper, timeout);
 	}
 
 	/**
-	 * Create a new AbstractBedrockApi instance using the provided credentials provider, region and object mapper.
+	 * Create a new AbstractBedrockApi instance using the provided credentials provider, region and JSON mapper.
 	 *
 	 * @param modelId The model id to use.
 	 * @param credentialsProvider The credentials provider to connect to AWS.
 	 * @param region The AWS region to use.
-	 * @param objectMapper The object mapper to use for JSON serialization and deserialization.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and deserialization.
 	 * @param timeout Configure the amount of time to allow the client to complete the execution of an API call.
 	 * This timeout covers the entire client execution except for marshalling. This includes request handler execution,
 	 * all HTTP requests including retries, unmarshalling, etc. This value should always be positive, if present.
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
-			ObjectMapper objectMapper, Duration timeout) {
+			JsonMapper jsonMapper, Duration timeout) {
 
 		Assert.hasText(modelId, "Model id must not be empty");
 		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
-		Assert.notNull(objectMapper, "Object mapper must not be null");
+		Assert.notNull(jsonMapper, "JSON mapper must not be null");
 		Assert.notNull(timeout, "Timeout must not be null");
 
 		this.modelId = modelId;
-		this.objectMapper = objectMapper;
+		this.jsonMapper = jsonMapper;
 		this.region = getRegion(region);
 
 		this.client = BedrockRuntimeClient.builder()
@@ -233,9 +232,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 		SdkBytes body;
 		try {
-			body = SdkBytes.fromUtf8String(this.objectMapper.writeValueAsString(request));
+			body = SdkBytes.fromUtf8String(this.jsonMapper.writeValueAsString(request));
 		}
-		catch (JsonProcessingException e) {
+		catch (JacksonException e) {
 			throw new IllegalArgumentException("Invalid JSON format for the input request: " + request, e);
 		}
 
@@ -249,10 +248,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		String responseBody = response.body().asString(StandardCharsets.UTF_8);
 
 		try {
-			return this.objectMapper.readValue(responseBody, clazz);
+			return this.jsonMapper.readValue(responseBody, clazz);
 		}
-		catch (JsonProcessingException | UncheckedIOException e) {
-
+		catch (JacksonException e) {
 			throw new IllegalArgumentException("Invalid JSON format for the response: " + responseBody, e);
 		}
 	}
@@ -271,9 +269,9 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 
 		SdkBytes body;
 		try {
-			body = SdkBytes.fromUtf8String(this.objectMapper.writeValueAsString(request));
+			body = SdkBytes.fromUtf8String(this.jsonMapper.writeValueAsString(request));
 		}
-		catch (JsonProcessingException e) {
+		catch (JacksonException e) {
 			eventSink.emitError(e, DEFAULT_EMIT_FAILURE_HANDLER);
 			return eventSink.asFlux();
 		}
@@ -288,10 +286,10 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 				.onChunk(chunk -> {
 					try {
 						logger.debug("Received chunk: {}", chunk.bytes().asString(StandardCharsets.UTF_8));
-						SO response = this.objectMapper.readValue(chunk.bytes().asByteArray(), clazz);
+						SO response = this.jsonMapper.readValue(chunk.bytes().asByteArray(), clazz);
 						eventSink.emitNext(response, DEFAULT_EMIT_FAILURE_HANDLER);
 					}
-					catch (Exception e) {
+					catch (JacksonException e) {
 						logger.error("Failed to unmarshall", e);
 						eventSink.emitError(e, DEFAULT_EMIT_FAILURE_HANDLER);
 					}

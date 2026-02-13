@@ -24,12 +24,10 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -104,7 +102,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	private final boolean initializeSchema;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private final String indexName;
 
@@ -160,7 +158,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		this.client = webClientBuilder.build();
 		this.filterExpressionConverter = new GemFireAiSearchFilterExpressionConverter();
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
 	public static Builder builder(EmbeddingModel embeddingModel) {
@@ -233,14 +231,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 					DOCUMENT_FIELD, Objects.requireNonNullElse(document.getText(), ""), document.getMetadata()))
 			.toList());
 
-		String embeddingsJson = null;
-		try {
-			String embeddingString = this.objectMapper.writeValueAsString(upload);
-			embeddingsJson = embeddingString.substring("{\"embeddings\":".length());
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(String.format("Embedding JSON parsing error: %s", e.getMessage()));
-		}
+		String embeddingString = this.jsonMapper.writeValueAsString(upload);
+		String embeddingsJson = embeddingString.substring("{\"embeddings\":".length());
 
 		this.client.post()
 			.uri("/" + this.indexName + EMBEDDINGS)
@@ -262,7 +254,7 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 				.bodyToMono(Void.class)
 				.block();
 		}
-		catch (Exception e) {
+		catch (RuntimeException e) {
 			logger.warn("Error removing embedding: {}", e.getMessage(), e);
 		}
 	}
@@ -302,13 +294,12 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	/**
 	 * Creates a new index in the GemFireVectorStore using specified parameters. This
 	 * method is invoked during initialization.
-	 * @throws JsonProcessingException if an error occurs during JSON processing
 	 */
-	public void createIndex() throws JsonProcessingException {
+	public void createIndex() {
 		CreateRequest createRequest = new CreateRequest(this.indexName, this.beamWidth, this.maxConnections,
 				this.vectorSimilarityFunction, this.fields, this.buckets);
 
-		String index = this.objectMapper.writeValueAsString(createRequest);
+		String index = this.jsonMapper.writeValueAsString(createRequest);
 
 		this.client.post()
 			.contentType(MediaType.APPLICATION_JSON)

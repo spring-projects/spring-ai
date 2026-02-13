@@ -16,10 +16,10 @@
 
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
@@ -47,11 +47,11 @@ public class McpServerStatelessWebFluxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebFluxStatelessServerTransport webFluxStatelessServerTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper objectMapper,
+			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper,
 			McpServerStreamableHttpProperties serverProperties) {
 
 		return WebFluxStatelessServerTransport.builder()
-			.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+			.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 			.messageEndpoint(serverProperties.getMcpEndpoint())
 			.build();
 	}

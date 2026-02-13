@@ -112,7 +112,7 @@ Key features:
 * Retries the call if validation fails, up to a configurable number of attempts
 * Augments the prompt with validation error messages on retry attempts to help the LLM correct its output
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls
-* Optionally supports a custom `ObjectMapper` for JSON processing
+* Optionally supports a custom `JsonMapper` for JSON processing
 
 Example usage:
 

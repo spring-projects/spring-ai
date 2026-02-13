@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
@@ -29,6 +28,7 @@ import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
 import org.junit.jupiter.api.Test;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
@@ -46,35 +46,35 @@ public class McpToolWithStdioIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				McpServerObjectMapperAutoConfiguration.class, McpServerAnnotationScannerAutoConfiguration.class,
+				McpServerJsonMapperAutoConfiguration.class, McpServerAnnotationScannerAutoConfiguration.class,
 				McpServerSpecificationFactoryAutoConfiguration.class));
 
 	/**
-	 * Verifies that a configured ObjectMapper bean is created for MCP server operations.
+	 * Verifies that a configured JsonMapper bean is created for MCP server operations.
 	 */
 	@Test
-	void shouldCreateConfiguredObjectMapperForMcpServer() {
+	void shouldCreateConfiguredJsonMapperForMcpServer() {
 		this.contextRunner.run(context -> {
-			assertThat(context).hasSingleBean(ObjectMapper.class);
-			ObjectMapper objectMapper = context.getBean("mcpServerObjectMapper", ObjectMapper.class);
+			assertThat(context).hasSingleBean(JsonMapper.class);
+			JsonMapper jsonMapper = context.getBean("mcpServerJsonMapper", JsonMapper.class);
 
-			assertThat(objectMapper).isNotNull();
+			assertThat(jsonMapper).isNotNull();
 
-			// Verify that the ObjectMapper is properly configured
-			String emptyBeanJson = objectMapper.writeValueAsString(new EmptyBean());
+			// Verify that the JsonMapper is properly configured
+			String emptyBeanJson = jsonMapper.writeValueAsString(new EmptyBean());
 			assertThat(emptyBeanJson).isEqualTo("{}"); // Should not fail on empty beans
 
-			String nullValueJson = objectMapper.writeValueAsString(new BeanWithNull());
+			String nullValueJson = jsonMapper.writeValueAsString(new BeanWithNull());
 			assertThat(nullValueJson).doesNotContain("null"); // Should exclude null
 																// values
 		});
 	}
 
 	/**
-	 * Verifies that STDIO transport uses the configured ObjectMapper.
+	 * Verifies that STDIO transport uses the configured JsonMapper.
 	 */
 	@Test
-	void stdioTransportShouldUseConfiguredObjectMapper() {
+	void stdioTransportShouldUseConfiguredJsonMapper() {
 		this.contextRunner.run(context -> {
 			assertThat(context).hasSingleBean(McpServerTransportProviderBase.class);
 			assertThat(context.getBean(McpServerTransportProviderBase.class))
@@ -114,7 +114,7 @@ public class McpToolWithStdioIT {
 			assertThat(toolNames).containsExactlyInAnyOrder("add", "subtract", "multiply");
 
 			// Verify that each tool has a valid inputSchema that can be serialized
-			ObjectMapper objectMapper = context.getBean("mcpServerObjectMapper", ObjectMapper.class);
+			JsonMapper jsonMapper = context.getBean("mcpServerJsonMapper", JsonMapper.class);
 
 			for (AsyncToolSpecification spec : tools) {
 				McpSchema.Tool tool = spec.tool();
@@ -125,11 +125,11 @@ public class McpToolWithStdioIT {
 
 				// Verify inputSchema can be serialized to JSON without errors
 				if (tool.inputSchema() != null) {
-					String schemaJson = objectMapper.writeValueAsString(tool.inputSchema());
+					String schemaJson = jsonMapper.writeValueAsString(tool.inputSchema());
 					assertThat(schemaJson).isNotBlank();
 
 					// Should be valid JSON
-					objectMapper.readTree(schemaJson);
+					jsonMapper.readTree(schemaJson);
 				}
 			}
 		});
@@ -156,8 +156,8 @@ public class McpToolWithStdioIT {
 			assertThat(spec.tool().name()).isEqualTo("processData");
 
 			// Verify the tool can be serialized
-			ObjectMapper objectMapper = context.getBean("mcpServerObjectMapper", ObjectMapper.class);
-			String toolJson = objectMapper.writeValueAsString(spec.tool());
+			JsonMapper jsonMapper = context.getBean("mcpServerJsonMapper", JsonMapper.class);
+			String toolJson = jsonMapper.writeValueAsString(spec.tool());
 			assertThat(toolJson).isNotBlank();
 		});
 	}
@@ -198,7 +198,7 @@ public class McpToolWithStdioIT {
 
 	}
 
-	// Test beans for ObjectMapper configuration verification
+	// Test beans for JsonMapper configuration verification
 
 	static class EmptyBean {
 

@@ -25,12 +25,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -187,7 +185,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final MariaDBDistanceType distanceType;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private final boolean removeExistingVectorStoreTable;
 
@@ -208,7 +206,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		this.vectorTableName = builder.vectorTableName.isEmpty() ? DEFAULT_TABLE_NAME
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.vectorTableName.trim(), false);
@@ -307,12 +305,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	private String toJson(Map<String, Object> map) {
-		try {
-			return this.objectMapper.writeValueAsString(map);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return this.jsonMapper.writeValueAsString(map);
 	}
 
 	@Override
@@ -366,7 +359,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		logger.debug("SQL query: {}", sql);
 
-		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), embedding, distance,
+		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.jsonMapper), embedding, distance,
 				request.getTopK());
 	}
 
@@ -479,10 +472,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private static class DocumentRowMapper implements RowMapper<Document> {
 
-		private final ObjectMapper objectMapper;
+		private final JsonMapper jsonMapper;
 
-		DocumentRowMapper(ObjectMapper objectMapper) {
-			this.objectMapper = objectMapper;
+		DocumentRowMapper(JsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
 		}
 
 		@Override
@@ -504,12 +497,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		}
 
 		private Map<String, Object> toMap(String source) {
-			try {
-				return (Map<String, Object>) this.objectMapper.readValue(source, Map.class);
-			}
-			catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
-			}
+			return (Map<String, Object>) this.jsonMapper.readValue(source, Map.class);
 		}
 
 	}

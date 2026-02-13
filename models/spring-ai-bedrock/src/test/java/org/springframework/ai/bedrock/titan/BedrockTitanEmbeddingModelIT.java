@@ -21,11 +21,11 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.RequiresAwsCredentials;
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
@@ -86,7 +86,7 @@ class BedrockTitanEmbeddingModelIT {
 		@Bean
 		public TitanEmbeddingBedrockApi titanEmbeddingApi() {
 			return new TitanEmbeddingBedrockApi(TitanEmbeddingModel.TITAN_EMBED_IMAGE_V1.id(),
-					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper(),
+					EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new JsonMapper(),
 					Duration.ofMinutes(2));
 		}
 

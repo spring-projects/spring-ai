@@ -16,13 +16,13 @@
 
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
-import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -40,7 +40,7 @@ class McpServerSseWebMvcAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class,
-				McpServerAutoConfiguration.class, McpServerObjectMapperAutoConfiguration.class));
+				McpServerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {
@@ -76,8 +76,8 @@ class McpServerSseWebMvcAutoConfigurationIT {
 	}
 
 	@Test
-	void objectMapperConfiguration() {
-		this.contextRunner.withBean(ObjectMapper.class, ObjectMapper::new).run(context -> {
+	void jsonMapperConfiguration() {
+		this.contextRunner.withBean(JsonMapper.class, JsonMapper::new).run(context -> {
 			assertThat(context).hasSingleBean(WebMvcSseServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
@@ -112,7 +112,7 @@ class McpServerSseWebMvcAutoConfigurationIT {
 				return new StandardServletEnvironment();
 			}
 		}).withConfiguration(AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class,
-				McpServerAutoConfiguration.class, McpServerObjectMapperAutoConfiguration.class))
+				McpServerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class))
 			.run(context -> {
 				var mcpSyncServer = context.getBean(McpSyncServer.class);
 				var field = ReflectionUtils.findField(McpSyncServer.class, "immediateExecution");

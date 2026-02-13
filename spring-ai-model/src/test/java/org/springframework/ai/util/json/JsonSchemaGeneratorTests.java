@@ -26,10 +26,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -246,7 +245,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForMethodInput(method,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getObjectMapper().readTree(schema);
+		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -427,11 +426,11 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
-	void generateSchemaForTypeWithAdditionalPropertiesAllowed() throws JsonProcessingException {
+	void generateSchemaForTypeWithAdditionalPropertiesAllowed() {
 		String schema = JsonSchemaGenerator.generateForType(Person.class,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getObjectMapper().readTree(schema);
+		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -670,7 +669,7 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
-	void generateSchemaForTypeWithJSpecifyNullableField() throws JsonProcessingException {
+	void generateSchemaForTypeWithJSpecifyNullableField() {
 		String schema = JsonSchemaGenerator.generateForType(JSpecifyNullablePerson.class);
 		String expectedJsonSchema = """
 						{

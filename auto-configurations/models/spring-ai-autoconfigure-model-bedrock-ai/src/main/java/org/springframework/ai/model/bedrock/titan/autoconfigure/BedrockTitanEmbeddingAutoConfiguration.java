@@ -16,10 +16,10 @@
 
 package org.springframework.ai.model.bedrock.titan.autoconfigure;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.observation.ObservationRegistry;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
@@ -58,7 +58,7 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public TitanEmbeddingBedrockApi titanEmbeddingBedrockApi(AwsCredentialsProvider credentialsProvider,
 			AwsRegionProvider regionProvider, BedrockTitanEmbeddingProperties properties,
-			BedrockAwsConnectionProperties awsProperties, ObjectMapper objectMapper) {
+			BedrockAwsConnectionProperties awsProperties, JsonMapper jsonMapper) {
 
 		// Validate required properties
 		if (properties.getModel() == null || awsProperties.getTimeout() == null) {
@@ -66,7 +66,7 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 		}
 
 		return new TitanEmbeddingBedrockApi(properties.getModel(), credentialsProvider, regionProvider.getRegion(),
-				objectMapper, awsProperties.getTimeout());
+				jsonMapper, awsProperties.getTimeout());
 	}
 
 	@Bean

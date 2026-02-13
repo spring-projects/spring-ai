@@ -19,12 +19,11 @@ package org.springframework.ai.mistralai.api.tool;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -57,17 +56,12 @@ public class MistralAiApiToolFunctionCallIT {
 	MistralAiApi completionApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
-		try {
-			return new ObjectMapper().readValue(json, targetClass);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return JsonMapper.shared().readValue(json, targetClass);
 	}
 
 	@Test
 	@SuppressWarnings("null")
-	public void toolFunctionCall() throws JsonProcessingException {
+	public void toolFunctionCall() {
 
 		// Step 1: send the conversation and available functions to the model
 		var message = new ChatCompletionMessage(
@@ -107,9 +101,6 @@ public class MistralAiApiToolFunctionCallIT {
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(messages, MISTRAL_AI_CHAT_MODEL,
 				List.of(functionTool), ToolChoice.AUTO);
-
-		System.out
-			.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(chatCompletionRequest));
 
 		ResponseEntity<ChatCompletion> chatCompletion = this.completionApi.chatCompletionEntity(chatCompletionRequest);
 

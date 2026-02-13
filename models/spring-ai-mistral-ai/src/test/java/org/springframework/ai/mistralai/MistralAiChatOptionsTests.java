@@ -20,9 +20,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
@@ -452,11 +451,11 @@ class MistralAiChatOptionsTests {
 	}
 
 	@Test
-	void testJsonSerializationOfResponseFormat() throws JsonProcessingException {
-		ObjectMapper objectMapper = new ObjectMapper();
+	void testJsonSerializationOfResponseFormat() {
+		JsonMapper jsonMapper = new JsonMapper();
 
 		ResponseFormat format = ResponseFormat.jsonSchema(Map.of("type", "object"));
-		String json = objectMapper.writeValueAsString(format);
+		String json = jsonMapper.writeValueAsString(format);
 
 		assertThat(json).contains("\"type\":\"json_schema\"");
 		assertThat(json).contains("\"json_schema\"");

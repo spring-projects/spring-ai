@@ -19,8 +19,8 @@ package org.springframework.ai.openai.api;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.openai.OpenAiChatOptions;
@@ -36,8 +36,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ExtraBodySerializationTest {
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
-
 	@Test
 	void testExtraBodySerializationFlattensToTopLevel() throws Exception {
 		// Arrange: Create request with extraBody containing vLLM/Ollama parameters
@@ -49,7 +47,7 @@ class ExtraBodySerializationTest {
 		);
 
 		// Act: Serialize to JSON
-		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
+		String json = JsonMapper.shared().writerWithDefaultPrettyPrinter().writeValueAsString(request);
 
 		// Assert: Verify @JsonAnyGetter flattens fields to top level
 		assertThat(json).contains("\"top_k\" : 50");
@@ -68,7 +66,7 @@ class ExtraBodySerializationTest {
 		);
 
 		// Act
-		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
+		String json = JsonMapper.shared().writerWithDefaultPrettyPrinter().writeValueAsString(request);
 
 		// Assert: No extra fields should appear
 		assertThat(json).doesNotContain("extra_body");
@@ -87,7 +85,7 @@ class ExtraBodySerializationTest {
 		);
 
 		// Act
-		String json = this.objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request);
+		String json = JsonMapper.shared().writerWithDefaultPrettyPrinter().writeValueAsString(request);
 
 		// Assert: extra_body should not appear in JSON when null
 		assertThat(json).doesNotContain("extra_body");
@@ -109,7 +107,7 @@ class ExtraBodySerializationTest {
 				""";
 
 		// Act: Deserialize JSON to ChatCompletionRequest
-		ChatCompletionRequest request = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+		ChatCompletionRequest request = JsonMapper.shared().readValue(json, ChatCompletionRequest.class);
 
 		// Assert: Extra fields should be captured in extraBody map
 		assertThat(request.extraBody()).isNotNull();
@@ -134,10 +132,10 @@ class ExtraBodySerializationTest {
 		);
 
 		// Act: Serialize to JSON
-		String json = this.objectMapper.writeValueAsString(originalRequest);
+		String json = JsonMapper.shared().writeValueAsString(originalRequest);
 
 		// Act: Deserialize back to object
-		ChatCompletionRequest deserializedRequest = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+		ChatCompletionRequest deserializedRequest = JsonMapper.shared().readValue(json, ChatCompletionRequest.class);
 
 		// Assert: All extraBody fields should survive round trip
 		assertThat(deserializedRequest.extraBody()).isNotNull();
@@ -163,7 +161,7 @@ class ExtraBodySerializationTest {
 				""";
 
 		// Act: Deserialize
-		ChatCompletionRequest request = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+		ChatCompletionRequest request = JsonMapper.shared().readValue(json, ChatCompletionRequest.class);
 
 		// Assert: extraBody should be null or empty when no extra fields present
 		// (depending on Jackson configuration and constructor behavior)
@@ -194,7 +192,7 @@ class ExtraBodySerializationTest {
 				""";
 
 		// Act: Deserialize
-		ChatCompletionRequest request = this.objectMapper.readValue(json, ChatCompletionRequest.class);
+		ChatCompletionRequest request = JsonMapper.shared().readValue(json, ChatCompletionRequest.class);
 
 		// Assert: Real vLLM extra fields should be captured
 		assertThat(request.extraBody()).isNotNull();

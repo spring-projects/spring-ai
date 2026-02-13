@@ -29,27 +29,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.cfg.CoercionAction;
-import com.fasterxml.jackson.databind.cfg.CoercionInputShape;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.BeanWrapper;
@@ -69,18 +64,17 @@ import org.springframework.util.ObjectUtils;
  */
 public abstract class ModelOptionsUtils {
 
-	public static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
-		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-		.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-		.addModules(JacksonUtils.instantiateAvailableModules())
-		.build()
-		.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+	public static final JsonMapper JSON_MAPPER;
 
 	static {
 		// Configure coercion for empty strings to null for Enum types
 		// This fixes the issue where empty string finish_reason values cause
 		// deserialization failures
-		OBJECT_MAPPER.coercionConfigFor(Enum.class).setCoercion(CoercionInputShape.EmptyString, CoercionAction.AsNull);
+		JSON_MAPPER = JsonMapper.builder()
+			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.build();
 	}
 
 	private static final List<String> BEAN_MERGE_FIELD_EXCISIONS = List.of("class");
@@ -95,28 +89,23 @@ public abstract class ModelOptionsUtils {
 
 	/**
 	 * Converts the given JSON string to a Map of String and Object using the default
-	 * ObjectMapper.
+	 * JsonMapper.
 	 * @param json the JSON string to convert to a Map.
 	 * @return the converted Map.
 	 */
 	public static Map<String, Object> jsonToMap(String json) {
-		return jsonToMap(json, OBJECT_MAPPER);
+		return jsonToMap(json, JSON_MAPPER);
 	}
 
 	/**
 	 * Converts the given JSON string to a Map of String and Object using a custom
-	 * ObjectMapper.
+	 * JsonMapper.
 	 * @param json the JSON string to convert to a Map.
-	 * @param objectMapper the ObjectMapper to use for deserialization.
+	 * @param jsonMapper the JsonMapper to use for deserialization.
 	 * @return the converted Map.
 	 */
-	public static Map<String, Object> jsonToMap(String json, ObjectMapper objectMapper) {
-		try {
-			return objectMapper.readValue(json, MAP_TYPE_REF);
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+	public static Map<String, Object> jsonToMap(String json, JsonMapper jsonMapper) {
+		return jsonMapper.readValue(json, MAP_TYPE_REF);
 	}
 
 	/**
@@ -127,12 +116,7 @@ public abstract class ModelOptionsUtils {
 	 * @return Object instance of the given type.
 	 */
 	public static <T> T jsonToObject(String json, Class<T> type) {
-		try {
-			return OBJECT_MAPPER.readValue(json, type);
-		}
-		catch (Exception e) {
-			throw new RuntimeException("Failed to json: " + json, e);
-		}
+		return JSON_MAPPER.readValue(json, type);
 	}
 
 	/**
@@ -141,12 +125,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the JSON string.
 	 */
 	public static String toJsonString(Object object) {
-		try {
-			return OBJECT_MAPPER.writeValueAsString(object);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return JSON_MAPPER.writeValueAsString(object);
 	}
 
 	/**
@@ -155,12 +134,7 @@ public abstract class ModelOptionsUtils {
 	 * @return the JSON string.
 	 */
 	public static String toJsonStringPrettyPrinter(Object object) {
-		try {
-			return OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return JSON_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(object);
 	}
 
 	/**
@@ -233,19 +207,14 @@ public abstract class ModelOptionsUtils {
 		if (source == null) {
 			return new HashMap<>();
 		}
-		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, new TypeReference<Map<String, @Nullable Object>>() {
+		String json = JSON_MAPPER.writeValueAsString(source);
+		return JSON_MAPPER.readValue(json, new TypeReference<Map<String, @Nullable Object>>() {
 
-			})
-				.entrySet()
-				.stream()
-				.filter(e -> e.getValue() != null)
-				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		})
+			.entrySet()
+			.stream()
+			.filter(e -> e.getValue() != null)
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
@@ -256,13 +225,8 @@ public abstract class ModelOptionsUtils {
 	 * @return the converted class.
 	 */
 	public static <T> T mapToClass(Map<String, Object> source, Class<T> clazz) {
-		try {
-			String json = OBJECT_MAPPER.writeValueAsString(source);
-			return OBJECT_MAPPER.readValue(json, clazz);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		String json = JSON_MAPPER.writeValueAsString(source);
+		return JSON_MAPPER.readValue(json, clazz);
 	}
 
 	/**
@@ -395,7 +359,7 @@ public abstract class ModelOptionsUtils {
 
 		if (SCHEMA_GENERATOR_CACHE.get() == null) {
 
-			JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+			JacksonSchemaModule jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
 			Swagger2Module swaggerModule = new Swagger2Module();
 
 			SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12,
@@ -429,13 +393,13 @@ public abstract class ModelOptionsUtils {
 			return;
 		}
 		if (node.isObject()) {
-			node.fields().forEachRemaining(entry -> {
+			node.properties().forEach(entry -> {
 				JsonNode value = entry.getValue();
 				if (value.isObject()) {
 					toUpperCaseTypeValues((ObjectNode) value);
 				}
 				else if (value.isArray()) {
-					((ArrayNode) value).elements().forEachRemaining(element -> {
+					value.forEach(element -> {
 						if (element.isObject() || element.isArray()) {
 							toUpperCaseTypeValues((ObjectNode) element);
 						}
@@ -448,7 +412,7 @@ public abstract class ModelOptionsUtils {
 			});
 		}
 		else if (node.isArray()) {
-			node.elements().forEachRemaining(element -> {
+			node.forEach(element -> {
 				if (element.isObject() || element.isArray()) {
 					toUpperCaseTypeValues((ObjectNode) element);
 				}

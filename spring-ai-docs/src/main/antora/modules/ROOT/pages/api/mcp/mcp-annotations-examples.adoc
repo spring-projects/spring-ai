@@ -489,14 +489,14 @@ public class StatelessTools {
             @McpToolParam(description = "JSON string", required = true) String json) {
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            JsonMapper mapper = new JsonMapper();
             mapper.readTree(json);
 
             return CallToolResult.builder()
                 .addTextContent("Valid JSON")
                 .structuredContent(Map.of("valid", true))
                 .build();
-        } catch (Exception e) {
+        } catch (JacksonException e) {
             return CallToolResult.builder()
                 .addTextContent("Invalid JSON: " + e.getMessage())
                 .structuredContent(Map.of("valid", false, "error", e.getMessage()))

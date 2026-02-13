@@ -478,13 +478,13 @@ Key changes include:
 [source,java]
 ----
 // Before
-ServerMcpTransport transport = new WebFluxSseServerTransport(objectMapper, "/mcp/message");
+ServerMcpTransport transport = new WebFluxSseServerTransport(jsonMapper, "/mcp/message");
 var server = McpServer.sync(transport)
     .serverInfo("my-server", "1.0.0")
     .build();
 
 // After
-McpServerTransportProvider transportProvider = new WebFluxSseServerTransportProvider(objectMapper, "/mcp/message");
+McpServerTransportProvider transportProvider = new WebFluxSseServerTransportProvider(jsonMapper, "/mcp/message");
 var server = McpServer.sync(transportProvider)
     .serverInfo("my-server", "1.0.0")
     .build();

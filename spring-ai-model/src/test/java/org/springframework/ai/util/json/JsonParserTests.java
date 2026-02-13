@@ -18,8 +18,8 @@ package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,9 +32,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class JsonParserTests {
 
 	@Test
-	void shouldGetObjectMapper() {
-		var objectMapper = JsonParser.getObjectMapper();
-		assertThat(objectMapper).isNotNull();
+	void shouldGetJsonMapper() {
+		var jsonMapper = JsonParser.getJsonMapper();
+		assertThat(jsonMapper).isNotNull();
 	}
 
 	@Test

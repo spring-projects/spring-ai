@@ -18,8 +18,8 @@ package org.springframework.ai.tool.augment;
 
 import java.util.List;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,8 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Christian Tzolov
  */
 class ToolInputSchemaAugmenterTest {
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	// Test record classes
 	public record SimpleRecord(@ToolParam(description = "A simple string field", required = true) String name,
@@ -230,7 +228,7 @@ class ToolInputSchemaAugmenterTest {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, "newField",
 					String.class, "A new field", true);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check that new property was added
 			assertTrue(schemaNode.get("properties").has("newField"));
@@ -262,7 +260,7 @@ class ToolInputSchemaAugmenterTest {
 
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, argumentTypes);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check that both new properties were added
 			assertTrue(schemaNode.get("properties").has("field1"));
@@ -302,7 +300,7 @@ class ToolInputSchemaAugmenterTest {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(minimalSchema, "newField",
 					String.class, "A new field", true);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check that properties object was created
 			assertTrue(schemaNode.has("properties"));
@@ -334,7 +332,7 @@ class ToolInputSchemaAugmenterTest {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(schemaWithoutRequired, "newField",
 					String.class, "A new field", true);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check that required array was created
 			assertTrue(schemaNode.has("required"));
@@ -349,7 +347,7 @@ class ToolInputSchemaAugmenterTest {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, "newField",
 					String.class, "", false);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 			JsonNode newFieldNode = schemaNode.get("properties").get("newField");
 
 			// Should not have description property when empty
@@ -362,7 +360,7 @@ class ToolInputSchemaAugmenterTest {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, "newField",
 					String.class, null, false);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 			JsonNode newFieldNode = schemaNode.get("properties").get("newField");
 
 			// Should not have description property when null
@@ -385,7 +383,7 @@ class ToolInputSchemaAugmenterTest {
 				.toAugmentedArgumentTypes(SimpleRecord.class);
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, argumentTypes);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check that record fields were added
 			assertTrue(schemaNode.get("properties").has("name"));
@@ -442,7 +440,7 @@ class ToolInputSchemaAugmenterTest {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(originalSchema, argumentTypes);
 
 			// Verify the result
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Original field should still be there
 			assertTrue(schemaNode.get("properties").has("productId"));
@@ -493,7 +491,7 @@ class ToolInputSchemaAugmenterTest {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(complexSchema, "newField",
 					String.class, "New field", false);
 
-			JsonNode schemaNode = objectMapper.readTree(augmentedSchema);
+			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check that metadata is preserved
 			assertEquals("https://json-schema.org/draft/2020-12/schema", schemaNode.get("$schema").asText());

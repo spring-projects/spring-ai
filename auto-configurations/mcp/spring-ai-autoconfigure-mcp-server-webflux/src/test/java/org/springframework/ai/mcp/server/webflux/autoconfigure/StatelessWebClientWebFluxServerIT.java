@@ -20,9 +20,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport;
@@ -44,6 +43,7 @@ import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.McpToolUtils;
@@ -52,7 +52,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAut
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
-import org.springframework.ai.mcp.server.common.autoconfigure.McpServerObjectMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -75,12 +75,12 @@ import static org.assertj.core.api.InstanceOfAssertFactories.map;
 
 public class StatelessWebClientWebFluxServerIT {
 
-	private static final JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new ObjectMapper());
+	private static final JacksonMcpJsonMapper jsonMapper = new JacksonMcpJsonMapper(new JsonMapper());
 
 	private final ApplicationContextRunner serverContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS")
 		.withConfiguration(AutoConfigurations.of(McpServerStatelessAutoConfiguration.class,
-				McpServerObjectMapperAutoConfiguration.class, StatelessToolCallbackConverterAutoConfiguration.class,
+				McpServerJsonMapperAutoConfiguration.class, StatelessToolCallbackConverterAutoConfiguration.class,
 				McpServerStatelessWebFluxAutoConfiguration.class));
 
 	private final ApplicationContextRunner clientApplicationContext = new ApplicationContextRunner()
@@ -363,7 +363,7 @@ public class StatelessWebClientWebFluxServerIT {
 							var systemInfo = Map.of("os", System.getProperty("os.name"), "os_version",
 									System.getProperty("os.version"), "java_version",
 									System.getProperty("java.version"));
-							String jsonContent = new ObjectMapper().writeValueAsString(systemInfo);
+							String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
 							return new McpSchema.ReadResourceResult(List.of(new McpSchema.TextResourceContents(
 									request.uri(), "application/json", jsonContent)));
 						}

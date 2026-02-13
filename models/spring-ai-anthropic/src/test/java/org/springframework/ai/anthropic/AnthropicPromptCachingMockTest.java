@@ -20,14 +20,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
@@ -59,8 +59,6 @@ class AnthropicPromptCachingMockTest {
 	private MockWebServer mockWebServer;
 
 	private AnthropicChatModel chatModel;
-
-	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@BeforeEach
 	void setUp() throws IOException {
@@ -127,7 +125,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify system message has cache control
 		assertThat(requestBody.has("system")).isTrue();
@@ -182,7 +180,7 @@ class AnthropicPromptCachingMockTest {
 
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
 		assertThat(recordedRequest).isNotNull();
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Ensure no cache_control present since system content was below min length
 		String req = requestBody.toString();
@@ -217,7 +215,7 @@ class AnthropicPromptCachingMockTest {
 
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
 		assertThat(recordedRequest).isNotNull();
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 		JsonNode systemNode = requestBody.get("system");
 		if (systemNode != null && systemNode.isArray()) {
 			JsonNode lastSystemBlock = systemNode.get(systemNode.size() - 1);
@@ -276,7 +274,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify tools array exists and last tool has cache control
 		assertThat(requestBody.has("tools")).isTrue();
@@ -343,7 +341,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify messages array exists
 		assertThat(requestBody.has("messages")).isTrue();
@@ -407,7 +405,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify NO cache_control fields exist anywhere
 		String requestBodyString = requestBody.toString();
@@ -534,7 +532,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Count cache_control occurrences in the entire request
 		int cacheControlCount = countCacheControlOccurrences(requestBody);
@@ -586,7 +584,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify that cache_control is included in the wire format for SYSTEM_ONLY
 		// strategy
@@ -672,7 +670,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify system message has cache control (SYSTEM_AND_TOOLS strategy)
 		assertThat(requestBody.has("system")).isTrue();
@@ -710,10 +708,8 @@ class AnthropicPromptCachingMockTest {
 			if (node.has("cache_control")) {
 				count++;
 			}
-			var fields = node.fields();
-			while (fields.hasNext()) {
-				var entry = fields.next();
-				count += countCacheControlOccurrences(entry.getValue());
+			for (JsonNode child : node.values()) {
+				count += countCacheControlOccurrences(child);
 			}
 		}
 		else if (node.isArray()) {

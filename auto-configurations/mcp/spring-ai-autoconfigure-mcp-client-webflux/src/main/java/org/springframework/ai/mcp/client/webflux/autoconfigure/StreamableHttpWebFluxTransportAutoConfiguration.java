@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -52,7 +52,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * <li>Creates WebFlux-based Streamable HTTP transports for configured MCP server
  * connections
  * <li>Configures WebClient.Builder for HTTP client operations
- * <li>Sets up ObjectMapper for JSON serialization/deserialization
+ * <li>Sets up JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different base URLs
  * </ul>
  *
@@ -73,26 +73,25 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 	 * Each transport is configured with:
 	 * <ul>
 	 * <li>A cloned WebClient.Builder with server-specific base URL
-	 * <li>ObjectMapper for JSON processing
+	 * <li>JsonMapper for JSON processing
 	 * <li>Server connection parameters from properties
 	 * </ul>
 	 * @param streamableProperties the Streamable HTTP client properties containing server
 	 * configurations
 	 * @param webClientBuilderProvider the provider for WebClient.Builder
-	 * @param objectMapperProvider the provider for ObjectMapper or a new instance if not
+	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
 	 * @return list of named MCP transports
 	 */
 	@Bean
 	public List<NamedClientMcpTransport> streamableHttpWebFluxClientTransports(
 			McpStreamableHttpClientProperties streamableProperties,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<JsonMapper> jsonMapperProvider) {
 
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
@@ -103,7 +102,7 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 
 			var transport = WebClientStreamableHttpTransport.builder(webClientBuilder)
 				.endpoint(streamableHttpEndpoint)
-				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
+				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 				.build();
 
 			streamableHttpTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));

@@ -25,13 +25,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.pgvector.PGvector;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -201,7 +199,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final PgDistanceType distanceType;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private final DocumentRowMapper documentRowMapper;
 
@@ -221,8 +219,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
-		this.documentRowMapper = new DocumentRowMapper(this.objectMapper);
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.documentRowMapper = new DocumentRowMapper(this.jsonMapper);
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
@@ -305,12 +303,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private String toJson(Map<String, Object> map) {
-		try {
-			return this.objectMapper.writeValueAsString(map);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return this.jsonMapper.writeValueAsString(map);
 	}
 
 	private Object convertIdToPgType(String id) {
@@ -609,10 +602,10 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private static final String COLUMN_DISTANCE = "distance";
 
-		private final ObjectMapper objectMapper;
+		private final JsonMapper jsonMapper;
 
-		DocumentRowMapper(ObjectMapper objectMapper) {
-			this.objectMapper = objectMapper;
+		DocumentRowMapper(JsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
 		}
 
 		@Override
@@ -637,12 +630,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		private Map<String, Object> toMap(PGobject pgObject) {
 
 			String source = pgObject.getValue();
-			try {
-				return (Map<String, Object>) this.objectMapper.readValue(source, Map.class);
-			}
-			catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
-			}
+			return (Map<String, Object>) this.jsonMapper.readValue(source, Map.class);
 		}
 
 	}
