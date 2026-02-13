@@ -206,6 +206,32 @@ NOTE: If you rely exclusively on Spring Boot auto-configuration via the Spring A
 
 For the full MCP transport migration reference, see xref:api/mcp/mcp-overview.adoc#_upgrading_to_spring_ai_2_0[Upgrading to Spring AI 2.0].
 
+=== Breaking Changes
+
+==== OpenSearch Dependencies Upgraded
+
+The OpenSearch vector store dependencies have been upgraded to newer versions:
+
+* **OpenSearch Java Client**: `2.23.0` → `3.6.0`
+* **OpenSearch Testcontainers**: `2.0.1` → `4.1.0`
+
+===== Background
+
+This upgrade was necessary for compatibility with Spring Boot 4.1.x, which uses HttpClient5 (`org.apache.httpcomponents.client5:httpclient5`) version 5.6. This version of HttpClient has a gzip content formatter breaking change that required the OpenSearch Java Client upgrade. See https://github.com/opensearch-project/opensearch-java/pull/1851[OpenSearch Java PR #1851] for details.
+
+===== Impact
+
+The OpenSearch Java Client 3.x introduces breaking API changes that affect custom code interacting directly with the native OpenSearch client.
+
+===== Migration
+
+If you're using the OpenSearch vector store through Spring AI's `VectorStore` interface, no action is required. The upgrade is transparent.
+
+**Testcontainers class renamed**: `OpensearchContainer` → `OpenSearchContainer` (proper camelCase)
+
+Spring AI's internal implementation has been updated to handle these changes automatically.
+>>>>>>> c00023e0c (Upgrade to Spring Boot 4.1.0-M1)
+
 [[upgrading-to-2-0-0-M2]]
 == Upgrading to 2.0.0-M2
 

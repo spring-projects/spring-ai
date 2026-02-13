@@ -319,7 +319,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 						.query(getOpenSearchQueryString(filterExpression)))))
 				.field("embedding")
 				.k(topK)
-				.vector(embedding))))
+				.vector(toFloatList(embedding)))))
 			.minScore(similarityThreshold)
 			.build();
 	}
@@ -343,9 +343,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 					.query(getOpenSearchQueryString(filterExpression))))
 				.script(scriptBuilder -> scriptBuilder
 					.inline(inlineScriptBuilder -> inlineScriptBuilder.source("knn_score")
-						.lang("knn")
+						.lang(langBuilder -> langBuilder.custom("knn"))
 						.params("field", JsonData.of("embedding"))
-						.params("query_value", JsonData.of(embedding))
+						.params("query_value", JsonData.of(toFloatList(embedding)))
 						.params("space_type", JsonData.of(this.similarityFunction))));
 			// https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script
 			// k-NN ensures non-negative scores by adding 1 to cosine similarity,
@@ -354,6 +354,14 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			return this.similarityFunction.equals(COSINE_SIMILARITY_FUNCTION) ? scriptScoreQueryBuilder.boost(0.5f)
 					: scriptScoreQueryBuilder;
 		}));
+	}
+
+	private List<Float> toFloatList(float[] array) {
+		List<Float> list = new java.util.ArrayList<>(array.length);
+		for (float value : array) {
+			list.add(value);
+		}
+		return list;
 	}
 
 	private String getOpenSearchQueryString(Filter.@Nullable Expression filterExpression) {
