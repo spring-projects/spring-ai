@@ -409,6 +409,20 @@ public class ChatClientTests {
 	}
 
 	@Test
+	void mutateAdvisorParams() {
+		ChatClient defaultChatClient = ChatClient.builder(this.chatModel)
+			.defaultAdvisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+			.build();
+
+		ChatClient mutatedChatClient = defaultChatClient.mutate().build();
+
+		ChatClient.ChatClientRequestSpec prompt = mutatedChatClient.prompt();
+
+		assertThat(((DefaultChatClient.DefaultChatClientRequestSpec) prompt).getAdvisorParams())
+			.containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
+	}
+
+	@Test
 	void mutatePrompt() {
 
 		ToolCallingChatOptions options = new DefaultToolCallingChatOptions();
