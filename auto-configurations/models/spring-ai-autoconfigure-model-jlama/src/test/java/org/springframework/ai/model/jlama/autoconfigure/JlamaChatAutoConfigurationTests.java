@@ -55,12 +55,13 @@ class JlamaChatAutoConfigurationTests {
 		}
 
 		this.contextRunner
-			.withPropertyValues("spring.ai.jlama.model=" + modelFile.toString(),
-					"spring.ai.jlama.working-directory=" + tempDir.toString(),
-					"spring.ai.jlama.options.temperature=0.9", "spring.ai.jlama.options.max-tokens=1024",
-					"spring.ai.jlama.options.top-k=50", "spring.ai.jlama.options.top-p=0.95")
+			.withPropertyValues("spring.ai.jlama.chat.model=" + modelFile,
+					"spring.ai.jlama.chat.working-directory=" + tempDir, "spring.ai.jlama.chat.options.temperature=0.9",
+					"spring.ai.jlama.chat.options.max-tokens=1024", "spring.ai.jlama.chat.options.top-k=50",
+					"spring.ai.jlama.chat.options.top-p=0.95")
 			.run(context -> {
 				assertThat(context).hasSingleBean(JlamaChatProperties.class);
+				assertThat(context).hasSingleBean(JlamaLegacyChatProperties.class);
 				assertThat(context).hasSingleBean(JlamaChatModel.class);
 
 				var properties = context.getBean(JlamaChatProperties.class);
@@ -88,7 +89,7 @@ class JlamaChatAutoConfigurationTests {
 			return;
 		}
 
-		this.contextRunner.withPropertyValues("spring.ai.jlama.model=" + modelFile.toString()).run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.jlama.chat.model=" + modelFile).run(context -> {
 			assertThat(context).hasSingleBean(JlamaChatProperties.class);
 			assertThat(context).hasSingleBean(JlamaChatModel.class);
 
@@ -116,8 +117,8 @@ class JlamaChatAutoConfigurationTests {
 		}
 
 		this.contextRunner
-			.withPropertyValues("spring.ai.jlama.model=" + modelFile.toString(),
-					"spring.ai.jlama.working-directory=" + workingDir.toString())
+			.withPropertyValues("spring.ai.jlama.chat.model=" + modelFile,
+					"spring.ai.jlama.chat.working-directory=" + workingDir)
 			.run(context -> {
 				assertThat(context).hasSingleBean(JlamaChatModel.class);
 
@@ -128,7 +129,7 @@ class JlamaChatAutoConfigurationTests {
 
 	@Test
 	void autoConfigurationDisabledWhenClassNotPresent() {
-		this.contextRunner.withPropertyValues("spring.ai.jlama.model=test-model")
+		this.contextRunner.withPropertyValues("spring.ai.jlama.chat.model=test-model")
 			.withClassLoader(new FilteredClassLoader(JlamaChatModel.class))
 			.run(context -> {
 				assertThat(context).doesNotHaveBean(JlamaChatAutoConfiguration.class);
@@ -138,11 +139,49 @@ class JlamaChatAutoConfigurationTests {
 
 	@Test
 	void autoConfigurationDisabledByProperty() {
-		this.contextRunner.withPropertyValues("spring.ai.model.chat=none", "spring.ai.jlama.model=test-model")
+		this.contextRunner.withPropertyValues("spring.ai.model.chat=none", "spring.ai.jlama.chat.model=test-model")
 			.run(context -> {
 				assertThat(context).doesNotHaveBean(JlamaChatAutoConfiguration.class);
 				assertThat(context).doesNotHaveBean(JlamaChatModel.class);
 			});
+	}
+
+	@Test
+	void autoConfigurationWithLegacyPrefix(@TempDir Path tempDir) throws IOException {
+		Path modelFile = tempDir.resolve("legacy-model.jlama");
+		Files.write(modelFile, "dummy model content".getBytes());
+
+		try {
+			Class.forName("jdk.incubator.vector.VectorSpecies");
+		}
+		catch (ClassNotFoundException e) {
+			assertThat(true).as("Vector API not available, skipping test").isTrue();
+			return;
+		}
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.jlama.model=" + modelFile, "spring.ai.jlama.options.temperature=0.65",
+					"spring.ai.jlama.options.max-tokens=384")
+			.run(context -> {
+				assertThat(context).hasSingleBean(JlamaChatModel.class);
+				var chatProperties = context.getBean(JlamaChatProperties.class);
+				var legacyProperties = context.getBean(JlamaLegacyChatProperties.class);
+
+				assertThat(chatProperties.getModel()).isNull();
+				assertThat(legacyProperties.getModel()).isEqualTo(modelFile.toString());
+				assertThat(legacyProperties.getOptions().getTemperature()).isEqualTo(0.65);
+				assertThat(legacyProperties.getOptions().getMaxTokens()).isEqualTo(384);
+			});
+	}
+
+	@Test
+	void missingModelPropertyFailsFast() {
+		this.contextRunner.run(context -> {
+			assertThat(context).hasFailed();
+			assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("spring.ai.jlama.chat.model")
+				.hasMessageContaining("spring.ai.jlama.model");
+		});
 	}
 
 	@Test
@@ -161,11 +200,11 @@ class JlamaChatAutoConfigurationTests {
 		}
 
 		this.contextRunner
-			.withPropertyValues("spring.ai.jlama.model=" + modelFile.toString(),
-					"spring.ai.jlama.options.temperature=0.8", "spring.ai.jlama.options.max-tokens=512",
-					"spring.ai.jlama.options.top-k=40", "spring.ai.jlama.options.top-p=0.9",
-					"spring.ai.jlama.options.frequency-penalty=0.5", "spring.ai.jlama.options.presence-penalty=0.6",
-					"spring.ai.jlama.options.seed=42")
+			.withPropertyValues("spring.ai.jlama.chat.model=" + modelFile,
+					"spring.ai.jlama.chat.options.temperature=0.8", "spring.ai.jlama.chat.options.max-tokens=512",
+					"spring.ai.jlama.chat.options.top-k=40", "spring.ai.jlama.chat.options.top-p=0.9",
+					"spring.ai.jlama.chat.options.frequency-penalty=0.5",
+					"spring.ai.jlama.chat.options.presence-penalty=0.6", "spring.ai.jlama.chat.options.seed=42")
 			.run(context -> {
 				var properties = context.getBean(JlamaChatProperties.class);
 				var options = properties.getOptions();

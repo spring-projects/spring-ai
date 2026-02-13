@@ -54,10 +54,11 @@ class JlamaChatAutoConfigurationIT {
 		String modelPath = System.getenv("JLAMA_MODEL_PATH");
 		String workingDir = System.getenv("JLAMA_WORKING_DIR");
 
-		ApplicationContextRunner runner = this.contextRunner.withPropertyValues("spring.ai.jlama.model=" + modelPath);
+		ApplicationContextRunner runner = this.contextRunner
+			.withPropertyValues("spring.ai.jlama.chat.model=" + modelPath);
 
 		if (workingDir != null && !workingDir.isEmpty()) {
-			runner = runner.withPropertyValues("spring.ai.jlama.working-directory=" + workingDir);
+			runner = runner.withPropertyValues("spring.ai.jlama.chat.working-directory=" + workingDir);
 		}
 
 		runner.run(context -> {
@@ -73,10 +74,11 @@ class JlamaChatAutoConfigurationIT {
 		String modelPath = System.getenv("JLAMA_MODEL_PATH");
 		String workingDir = System.getenv("JLAMA_WORKING_DIR");
 
-		ApplicationContextRunner runner = this.contextRunner.withPropertyValues("spring.ai.jlama.model=" + modelPath);
+		ApplicationContextRunner runner = this.contextRunner
+			.withPropertyValues("spring.ai.jlama.chat.model=" + modelPath);
 
 		if (workingDir != null && !workingDir.isEmpty()) {
-			runner = runner.withPropertyValues("spring.ai.jlama.working-directory=" + workingDir);
+			runner = runner.withPropertyValues("spring.ai.jlama.chat.working-directory=" + workingDir);
 		}
 
 		runner.run(context -> {
@@ -95,10 +97,11 @@ class JlamaChatAutoConfigurationIT {
 		String modelPath = System.getenv("JLAMA_MODEL_PATH");
 		String workingDir = System.getenv("JLAMA_WORKING_DIR");
 
-		ApplicationContextRunner runner = this.contextRunner.withPropertyValues("spring.ai.jlama.model=" + modelPath);
+		ApplicationContextRunner runner = this.contextRunner
+			.withPropertyValues("spring.ai.jlama.chat.model=" + modelPath);
 
 		if (workingDir != null && !workingDir.isEmpty()) {
-			runner = runner.withPropertyValues("spring.ai.jlama.working-directory=" + workingDir);
+			runner = runner.withPropertyValues("spring.ai.jlama.chat.working-directory=" + workingDir);
 		}
 
 		runner.run(context -> {
