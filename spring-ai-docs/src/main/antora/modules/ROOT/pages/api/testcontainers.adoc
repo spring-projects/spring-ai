@@ -48,7 +48,7 @@ The following service connection factories are provided in the `spring-ai-spring
 | Containers of type `OllamaContainer`
 
 | `OpenSearchConnectionDetails`
-| Containers of type `OpensearchContainer`
+| Containers of type `OpenSearchContainer`
 
 | `QdrantConnectionDetails`
 | Containers of type `QdrantContainer`
