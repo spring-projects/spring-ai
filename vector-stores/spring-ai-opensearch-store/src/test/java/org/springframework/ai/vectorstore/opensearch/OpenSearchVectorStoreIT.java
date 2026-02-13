@@ -40,7 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -79,7 +79,7 @@ import static org.hamcrest.Matchers.hasSize;
 class OpenSearchVectorStoreIT {
 
 	@Container
-	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
+	private static final OpenSearchContainer<?> opensearchContainer = new OpenSearchContainer<>(
 			OpenSearchImage.DEFAULT_IMAGE);
 
 	private static final String DEFAULT = "cosinesimil";
