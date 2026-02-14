@@ -264,12 +264,52 @@ public final class McpToolUtils {
 					return new McpSchema.CallToolResult(
 							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+				return new McpSchema.CallToolResult(parseContentList(callResult), false);
 			}
 			catch (Exception e) {
 				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
 			}
 		});
+	}
+
+	/**
+	 * Attempts to parse a string as a list of MCP Content objects. If the string is a
+	 * valid JSON array of Content objects (e.g., from a proxied MCP tool call), it
+	 * returns the deserialized list. Otherwise, it wraps the string in a single
+	 * TextContent.
+	 * @param callResult the string to parse
+	 * @return a list of Content objects
+	 */
+	private static List<McpSchema.Content> parseContentList(String callResult) {
+		try {
+			com.fasterxml.jackson.databind.JsonNode jsonNode = ModelOptionsUtils.OBJECT_MAPPER.readTree(callResult);
+			if (jsonNode.isArray() && !jsonNode.isEmpty()) {
+				List<McpSchema.Content> contents = new java.util.ArrayList<>();
+				for (com.fasterxml.jackson.databind.JsonNode node : jsonNode) {
+					if (node.isObject() && node.has("data") && node.has("mimeType")) {
+						String mimeType = node.get("mimeType").asText();
+						String data = node.get("data").asText();
+						if (mimeType.startsWith("audio")) {
+							contents.add(new McpSchema.AudioContent(null, data, mimeType));
+						}
+						else {
+							contents.add(new McpSchema.ImageContent(null, data, mimeType));
+						}
+					}
+					else if (node.isObject() && node.has("text")) {
+						contents.add(new McpSchema.TextContent(node.get("text").asText()));
+					}
+					else {
+						contents.add(new McpSchema.TextContent(node.toString()));
+					}
+				}
+				return contents;
+			}
+		}
+		catch (Exception e) {
+			// fall through to default
+		}
+		return List.of(new McpSchema.TextContent(callResult));
 	}
 
 	/**
