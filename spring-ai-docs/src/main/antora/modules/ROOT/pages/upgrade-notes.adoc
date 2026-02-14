@@ -1,6 +1,76 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M3]]
+== Upgrading to 2.0.0-M3
+
+==== Conversation History Removed from ToolContext
+
+Conversation history is no longer automatically added to `ToolContext`. The `TOOL_CALL_HISTORY` constant and `getToolCallHistory()` method have been removed from the `ToolContext` class.
+
+===== Impact
+
+* `ToolContext.TOOL_CALL_HISTORY` constant no longer exists
+* `ToolContext.getToolCallHistory()` method no longer exists
+* Conversation history is no longer automatically populated in `ToolContext`
+
+===== Why This Change?
+
+1. **Memory Efficiency**: Prevents unbounded memory growth in long conversations
+2. **Separation of Concerns**: Tools should operate on their parameters, not manage conversation state
+3. **Architecture Alignment**: Conversation context belongs at the advisor level, not in tool execution
+
+===== Migration
+
+If your application needs conversation history management, use `ToolCallAdvisor`:
+
+.Managing Conversation History with ToolCallAdvisor
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder()
+    .defaultAdvisors(
+        new ToolCallAdvisor()
+            .conversationHistoryEnabled(true)  // Full history (default)
+    )
+    .build();
+----
+
+**How ToolCallAdvisor Works:**
+
+The `ToolCallAdvisor` manages conversation history at the advisor level:
+
+* **conversationHistoryEnabled=true** (default): Full conversation history is maintained and sent to the LLM between tool call iterations, allowing the LLM to synthesize results with full context
+* **conversationHistoryEnabled=false**: Only the most recent tool response is sent to the LLM (useful when ChatMemory advisor manages history separately)
+
+**Key Point:** The conversation history is used by the *LLM* to understand context and formulate responses, not by the *tools* themselves. Tools receive only their input parameters and any custom context you explicitly provide.
+
+**Custom Context in Tools:**
+
+`ToolContext` remains available for passing custom, application-specific data to tools:
+
+.Passing Custom Context to Tools
+[source,java]
+----
+ChatResponse response = chatClient.prompt()
+    .user("What's the weather in SF?")
+    .options(ChatOptionsBuilder.builder()
+        .toolContext("userId", "user123")
+        .toolContext("apiKey", "secret")
+        .build())
+    .call()
+    .chatResponse();
+----
+
+**Example Flow:**
+
+1. User asks: "What's the weather in SF and LA?"
+2. LLM requests tool calls: `getWeather(SF)` and `getWeather(LA)`
+3. Tools execute with only their parameters (no conversation history)
+4. ToolCallAdvisor collects tool results and conversation history
+5. LLM receives conversation context from advisor and synthesizes: "The weather in SF is 72°F and in LA is 85°F"
+
+The LLM sees the full conversation through the advisor chain, not through ToolContext.
+
 [[upgrading-to-2-0-0-M2]]
 == Upgrading to 2.0.0-M2
 

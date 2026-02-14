@@ -16,7 +16,6 @@
 
 package org.springframework.ai.anthropic.client;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -32,7 +31,6 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ToolContext;
@@ -195,9 +193,8 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		assertThat(response).contains("30", "10", "15");
 		assertThat(arguments).containsEntry("tool", "value");
-		assertThat(arguments).containsKey(ToolContext.TOOL_CALL_HISTORY);
-		List<Message> tootConversationMessages = (List<Message>) arguments.get(ToolContext.TOOL_CALL_HISTORY);
-		assertThat(tootConversationMessages.size() == 6 || tootConversationMessages.size() == 2).isTrue();
+		// TOOL_CALL_HISTORY is no longer automatically added to ToolContext
+		assertThat(arguments).doesNotContainKey("TOOL_CALL_HISTORY");
 	}
 
 	@Test
@@ -350,7 +347,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 		public String getWeatherWithContext(String city, Unit unit, ToolContext context) {
 			arguments.put("tool", context.getContext().get("tool"));
-			arguments.put(ToolContext.TOOL_CALL_HISTORY, context.getToolCallHistory());
+			// TOOL_CALL_HISTORY no longer available - removed
 			return getWeatherStatic(city, unit);
 		}
 
