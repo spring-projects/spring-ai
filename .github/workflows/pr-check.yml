@@ -33,4 +33,4 @@ jobs:
 
       - name: Run tests
         run: |
-          ./mvnw -ntp -B -U test
+          ./mvnw -ntp -B -U clean test
