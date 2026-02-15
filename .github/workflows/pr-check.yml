@@ -33,4 +33,6 @@ jobs:
 
       - name: Run tests
         run: |
+          # Ensure jlama artifact is present in the local reactor cache before the full test run.
+          ./mvnw -ntp -B -U -pl models/spring-ai-jlama -am -DskipTests install
           ./mvnw -ntp -B -U clean test
