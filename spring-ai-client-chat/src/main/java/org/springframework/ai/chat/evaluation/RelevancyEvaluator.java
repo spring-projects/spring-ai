@@ -19,6 +19,7 @@ package org.springframework.ai.chat.evaluation;
 import java.util.Collections;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -33,6 +34,7 @@ import org.springframework.util.Assert;
  */
 public class RelevancyEvaluator implements Evaluator {
 
+	private boolean reasoningEnabled = false;
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 				Your task is to evaluate if the response for the query
 				is in line with the context information provided.
@@ -54,6 +56,21 @@ public class RelevancyEvaluator implements Evaluator {
 				Answer:
 			""");
 
+	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE_FOR_REASONING = new PromptTemplate("""
+				Your task is to evaluate if the response for the query
+				is in line with the context information provided.
+
+				Query:
+				{query}
+
+				Response:
+				{response}
+
+				Context:
+				{context}
+
+			""");
+
 	private final ChatClient.Builder chatClientBuilder;
 
 	private final PromptTemplate promptTemplate;
@@ -63,29 +80,50 @@ public class RelevancyEvaluator implements Evaluator {
 	}
 
 	private RelevancyEvaluator(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate) {
+		this(chatClientBuilder, promptTemplate, false);
+	}
+
+	private RelevancyEvaluator(ChatClient.Builder chatClientBuilder, @Nullable PromptTemplate promptTemplate, boolean reasoningEnabled) {
 		Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
 		this.chatClientBuilder = chatClientBuilder;
-		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
+		this.promptTemplate = promptTemplate != null ? promptTemplate :
+				(reasoningEnabled ? DEFAULT_PROMPT_TEMPLATE_FOR_REASONING : DEFAULT_PROMPT_TEMPLATE);
+		this.reasoningEnabled = reasoningEnabled;
 	}
 
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
-		var response = evaluationRequest.getResponseContent();
-		var context = doGetSupportingData(evaluationRequest);
+		var inputResponse = evaluationRequest.getResponseContent();
+		var inputContext = doGetSupportingData(evaluationRequest);
 
 		var userMessage = this.promptTemplate
-			.render(Map.of("query", evaluationRequest.getUserText(), "response", response, "context", context));
+				.render(Map.of("query", evaluationRequest.getUserText(), "response", inputResponse, "context", inputContext));
 
-		String evaluationResponse = this.chatClientBuilder.build().prompt().user(userMessage).call().content();
+		Response evalResponse = evaluateUserMessage(userMessage);
 
-		boolean passing = false;
-		float score = 0;
-		if ("yes".equalsIgnoreCase(evaluationResponse)) {
-			passing = true;
-			score = 1;
+		return new EvaluationResponse(
+				evalResponse.isInLine(),
+				evalResponse.isInLine() ? 1 : 0,
+				evalResponse.reasoning(),
+				Collections.emptyMap()
+		);
+	}
+
+	private Response evaluateUserMessage(String userMessage) {
+		Response evalResponse;
+		if (reasoningEnabled) {
+			evalResponse = this.chatClientBuilder.build().prompt().user(userMessage).call().entity(Response.class);
+
+			if (evalResponse == null) {
+				evalResponse = new Response("Error: NULL response from the chatClient during relevancy evaluation", false);
+			}
+		} else {
+			String clientResponse = this.chatClientBuilder.build().prompt().user(userMessage).call().content();
+
+			boolean passing = "yes".equalsIgnoreCase(clientResponse);
+			evalResponse = new Response("", passing);
 		}
-
-		return new EvaluationResponse(passing, score, "", Collections.emptyMap());
+		return evalResponse;
 	}
 
 	public static Builder builder() {
@@ -94,6 +132,7 @@ public class RelevancyEvaluator implements Evaluator {
 
 	public static final class Builder {
 
+		private boolean feedbackEnabled = false;
 		private ChatClient.@Nullable Builder chatClientBuilder;
 
 		private @Nullable PromptTemplate promptTemplate;
@@ -111,11 +150,21 @@ public class RelevancyEvaluator implements Evaluator {
 			return this;
 		}
 
-		public RelevancyEvaluator build() {
-			Assert.state(this.chatClientBuilder != null, "chatClientBuilder cannot be null");
-			return new RelevancyEvaluator(this.chatClientBuilder, this.promptTemplate);
+		public Builder feedbackEnabled(boolean feedbackEnabled) {
+			this.feedbackEnabled = feedbackEnabled;
+			return this;
 		}
 
+		public RelevancyEvaluator build() {
+			Assert.state(this.chatClientBuilder != null, "chatClientBuilder cannot be null");
+			return new RelevancyEvaluator(this.chatClientBuilder, this.promptTemplate, feedbackEnabled);
+		}
 	}
 
+	record Response(
+			@JsonPropertyDescription("Provides a short explanation of how the response for the query is or is not in line with the context information provided")
+			String reasoning,
+			@JsonPropertyDescription("Indicates whether the response for the query is in line with the context information provided")
+			boolean isInLine) {
+	}
 }
