@@ -518,6 +518,13 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Tool autoconfiguration-->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-tool</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Chat client autoconfiguration -->
 
 			<dependency>
