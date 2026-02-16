@@ -17,6 +17,8 @@
 package org.springframework.ai.tool.support;
 
 import java.lang.reflect.Method;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -33,9 +35,15 @@ import org.springframework.util.Assert;
  * </p>
  *
  * @author Mark Pollack
+ * @author Seol-JY
  * @since 1.0.0
  */
 public final class ToolDefinitions {
+
+	/**
+	 * Cache for tool definitions. Key is the Method instance.
+	 */
+	private static final Map<Method, ToolDefinition> toolDefinitionCache = new ConcurrentHashMap<>(256);
 
 	private ToolDefinitions() {
 		// prevents instantiation.
@@ -56,7 +64,16 @@ public final class ToolDefinitions {
 	 * Create a default {@link ToolDefinition} instance from a {@link Method}.
 	 */
 	public static ToolDefinition from(Method method) {
-		return builder(method).build();
+		Assert.notNull(method, "method cannot be null");
+		return toolDefinitionCache.computeIfAbsent(method, ToolDefinitions::createToolDefinition);
+	}
+
+	private static ToolDefinition createToolDefinition(Method method) {
+		return DefaultToolDefinition.builder()
+			.name(ToolUtils.getToolName(method))
+			.description(ToolUtils.getToolDescription(method))
+			.inputSchema(JsonSchemaGenerator.generateForMethodInput(method))
+			.build();
 	}
 
 }

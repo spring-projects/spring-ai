@@ -397,6 +397,48 @@ class JsonSchemaGeneratorTests {
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
 	}
 
+	// CACHING TESTS
+
+	@Test
+	void cacheMethodSchemaGeneration() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
+
+		String firstResult = JsonSchemaGenerator.generateForMethodInput(method);
+		String secondResult = JsonSchemaGenerator.generateForMethodInput(method);
+
+		assertThat(firstResult).isEqualTo(secondResult);
+		assertThat(firstResult).isSameAs(secondResult);
+	}
+
+	@Test
+	void cacheKeyIncludesSchemaOptions() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
+
+		String defaultResult = JsonSchemaGenerator.generateForMethodInput(method);
+		String upperCaseResult = JsonSchemaGenerator.generateForMethodInput(method,
+				JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES);
+
+		assertThat(defaultResult).isNotEqualTo(upperCaseResult);
+	}
+
+	@Test
+	void cacheDistinguishesDifferentMethods() throws Exception {
+		Method simpleMethod = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
+		Method annotatedMethod = TestMethods.class.getDeclaredMethod("annotatedMethod", String.class, String.class);
+
+		String simpleResult = JsonSchemaGenerator.generateForMethodInput(simpleMethod);
+		String annotatedResult = JsonSchemaGenerator.generateForMethodInput(annotatedMethod);
+
+		assertThat(simpleResult).isNotEqualTo(annotatedResult);
+	}
+
+	@Test
+	void throwExceptionWhenMethodIsNull() {
+		assertThatThrownBy(() -> JsonSchemaGenerator.generateForMethodInput(null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("method cannot be null");
+	}
+
 	// TYPES
 
 	@Test
