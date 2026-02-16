@@ -64,6 +64,7 @@ public class McpToolCallbackAutoConfiguration {
 	 * filter the discovered tools
 	 * @param syncMcpClients provider of MCP sync clients
 	 * @param mcpToolNamePrefixGenerator the tool name prefix generator
+	 * @param properties the MCP client common properties
 	 * @return list of tool callbacks for MCP integration
 	 */
 	@Bean
@@ -72,7 +73,8 @@ public class McpToolCallbackAutoConfiguration {
 	public SyncMcpToolCallbackProvider mcpToolCallbacks(ObjectProvider<McpToolFilter> syncClientsToolFilter,
 			ObjectProvider<List<McpSyncClient>> syncMcpClients,
 			ObjectProvider<McpToolNamePrefixGenerator> mcpToolNamePrefixGenerator,
-			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter) {
+			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter,
+			McpClientCommonProperties properties) {
 
 		List<McpSyncClient> mcpClients = syncMcpClients.stream().flatMap(List::stream).toList();
 
@@ -83,6 +85,7 @@ public class McpToolCallbackAutoConfiguration {
 					mcpToolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
 			.toolContextToMcpMetaConverter(
 					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
+			.cacheTtl(properties.getToolcallback().getCacheTtl())
 			.build();
 	}
 
@@ -91,7 +94,8 @@ public class McpToolCallbackAutoConfiguration {
 	public AsyncMcpToolCallbackProvider mcpAsyncToolCallbacks(ObjectProvider<McpToolFilter> asyncClientsToolFilter,
 			ObjectProvider<List<McpAsyncClient>> mcpClientsProvider,
 			ObjectProvider<McpToolNamePrefixGenerator> toolNamePrefixGenerator,
-			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter) { // TODO
+			ObjectProvider<ToolContextToMcpMetaConverter> toolContextToMcpMetaConverter,
+			McpClientCommonProperties properties) {
 		List<McpAsyncClient> mcpClients = mcpClientsProvider.stream().flatMap(List::stream).toList();
 		return AsyncMcpToolCallbackProvider.builder()
 			.toolFilter(asyncClientsToolFilter.getIfUnique(() -> (McpAsyncClient, tool) -> true))
@@ -99,6 +103,7 @@ public class McpToolCallbackAutoConfiguration {
 			.toolContextToMcpMetaConverter(
 					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
 			.mcpClients(mcpClients)
+			.cacheTtl(properties.getToolcallback().getCacheTtl())
 			.build();
 	}
 
