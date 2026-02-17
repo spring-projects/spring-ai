@@ -292,4 +292,50 @@ public class MessageWindowChatMemoryTests {
 				new SystemMessage("System instruction 2"));
 	}
 
+	@Test
+	void getConversationsReturnsAllConversationIds() {
+		MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+
+		String conversationId1 = UUID.randomUUID().toString();
+		String conversationId2 = UUID.randomUUID().toString();
+		String conversationId3 = UUID.randomUUID().toString();
+
+		chatMemory.add(conversationId1, new UserMessage("Hello from conversation 1"));
+		chatMemory.add(conversationId2, new UserMessage("Hello from conversation 2"));
+		chatMemory.add(conversationId3, new UserMessage("Hello from conversation 3"));
+
+		List<String> conversations = chatMemory.getConversations();
+
+		assertThat(conversations).contains(conversationId1, conversationId2, conversationId3);
+		assertThat(conversations).hasSize(3);
+	}
+
+	@Test
+	void getConversationsWithCustomRepository() {
+		InMemoryChatMemoryRepository customRepository = new InMemoryChatMemoryRepository();
+		MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(customRepository)
+			.build();
+
+		String conversationId1 = UUID.randomUUID().toString();
+		String conversationId2 = UUID.randomUUID().toString();
+
+		chatMemory.add(conversationId1, new UserMessage("Message in conversation 1"));
+		chatMemory.add(conversationId2, new UserMessage("Message in conversation 2"));
+
+		List<String> conversations = chatMemory.getConversations();
+
+		assertThat(conversations).contains(conversationId1, conversationId2);
+		assertThat(conversations).hasSize(2);
+	}
+
+	@Test
+	void getConversationsReturnsEmptyListWhenNoConversations() {
+		MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder().build();
+
+		List<String> conversations = chatMemory.getConversations();
+
+		assertThat(conversations).isEmpty();
+	}
+
 }
