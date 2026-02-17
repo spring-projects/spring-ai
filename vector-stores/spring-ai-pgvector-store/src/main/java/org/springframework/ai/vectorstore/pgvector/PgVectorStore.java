@@ -107,7 +107,7 @@ import org.springframework.util.StringUtils;
  * </p>
  * <pre>{@code
  * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
- *     .schemaName("custom_schema")
+ *     .schemaName("custom-schema")  // Special characters like hyphens are supported
  *     .vectorTableName("custom_vectors")
  *     .distanceType(PgDistanceType.NEGATIVE_INNER_PRODUCT)
  *     .removeExistingVectorStoreTable(true)
@@ -429,7 +429,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
 		}
 
-		this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS %s", this.getSchemaName()));
+		this.jdbcTemplate.execute(String.format("CREATE SCHEMA IF NOT EXISTS \"%s\"", this.getSchemaName()));
 
 		// Remove existing VectorStoreTable
 		if (this.removeExistingVectorStoreTable) {
@@ -453,8 +453,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 	}
 
+	/**
+	 * Returns the fully qualified table name with proper PostgreSQL identifier quoting.
+	 * This method ensures that schema and table names containing special characters (such
+	 * as hyphens, spaces, or reserved keywords) are properly quoted to prevent SQL syntax
+	 * errors.
+	 * @return the fully qualified table name in the format "schema"."table"
+	 */
 	private String getFullyQualifiedTableName() {
-		return this.schemaName + "." + this.vectorTableName;
+		return "\"" + this.schemaName + "\".\"" + this.vectorTableName + "\"";
 	}
 
 	private PgIdType getIdType() {
