@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.minimax.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -74,7 +76,9 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.base-url=TEST_BASE_URL2",
 				"spring.ai.minimax.chat.api-key=456",
 				"spring.ai.minimax.chat.options.model=MODEL_XYZ",
-				"spring.ai.minimax.chat.options.temperature=0.55")
+				"spring.ai.minimax.chat.options.temperature=0.55",
+				"spring.ai.minimax.connect-timeout=1s",
+				"spring.ai.minimax.read-timeout=1s")
 				// @formatter:on
 			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
 			.run(context -> {
@@ -89,6 +93,9 @@ public class MiniMaxPropertiesTests {
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(1));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(1));
 			});
 	}
 

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.zhipuai.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -76,7 +78,9 @@ public class ZhiPuAiPropertiesTests {
 				"spring.ai.zhipuai.chat.base-url=TEST_BASE_URL2",
 				"spring.ai.zhipuai.chat.api-key=456",
 				"spring.ai.zhipuai.chat.options.model=MODEL_XYZ",
-				"spring.ai.zhipuai.chat.options.temperature=0.55")
+				"spring.ai.zhipuai.chat.options.temperature=0.55",
+				"spring.ai.zhipuai.connect-timeout=5s",
+				"spring.ai.zhipuai.read-timeout=30s")
 				// @formatter:on
 			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
 			.run(context -> {
@@ -91,6 +95,9 @@ public class ZhiPuAiPropertiesTests {
 
 				assertThat(chatProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.55);
+
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
 			});
 	}
 

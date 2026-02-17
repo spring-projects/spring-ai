@@ -46,6 +46,20 @@ The prefix `spring.ai.elevenlabs` is used as the property prefix for *all* Eleve
 | spring.ai.elevenlabs.api-key  | Your ElevenLabs API key.           | -
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.elevenlabs` is used as the property prefix that lets you configure the HTTP client for ElevenLabs API calls.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.elevenlabs.connect-timeout | HTTP connection timeout | -
+| spring.ai.elevenlabs.read-timeout | HTTP read timeout | -
+| spring.ai.elevenlabs.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.elevenlabs.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 === Configuration Properties
 
 [NOTE]
