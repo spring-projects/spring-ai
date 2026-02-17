@@ -37,7 +37,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
 /**
- * @author Christian Tzolov
+ * @author Christian Tzolov, He-Pin
  */
 @AutoConfiguration
 @EnableConfigurationProperties(McpServerProperties.class)
@@ -73,9 +73,18 @@ public class ToolCallbackConverterAutoConfiguration {
 				String toolName = tool.getToolDefinition().name();
 				MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
 						? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-				return McpToolUtils.toSyncToolSpecification(tool, mimeType);
+				return createSyncToolSpecification(tool, mimeType);
 			})
 			.toList();
+	}
+
+	/**
+	 * An extension point to customize the creation of SyncToolSpecification from
+	 * ToolCallback.
+	 */
+	protected McpServerFeatures.SyncToolSpecification createSyncToolSpecification(ToolCallback toolCallback,
+			MimeType mimeType) {
+		return McpToolUtils.toSyncToolSpecification(toolCallback, mimeType);
 	}
 
 	@Bean
@@ -107,9 +116,18 @@ public class ToolCallbackConverterAutoConfiguration {
 				String toolName = tool.getToolDefinition().name();
 				MimeType mimeType = (serverProperties.getToolResponseMimeType().containsKey(toolName))
 						? MimeType.valueOf(serverProperties.getToolResponseMimeType().get(toolName)) : null;
-				return McpToolUtils.toAsyncToolSpecification(tool, mimeType);
+				return createAsyncToolSpecification(tool, mimeType);
 			})
 			.toList();
+	}
+
+	/**
+	 * An extension point to customize the creation of AsyncToolSpecification from
+	 * ToolCallback.
+	 */
+	protected McpServerFeatures.AsyncToolSpecification createAsyncToolSpecification(ToolCallback toolCallback,
+			MimeType mimeType) {
+		return McpToolUtils.toAsyncToolSpecification(toolCallback, mimeType);
 	}
 
 	private List<ToolCallback> aggregateToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
