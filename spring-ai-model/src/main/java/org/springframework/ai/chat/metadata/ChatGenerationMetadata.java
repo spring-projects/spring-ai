@@ -42,6 +42,22 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 	 */
 	@Nullable String getFinishReason();
 
+	/**
+	 * Get the normalized category for this finish reason.
+	 *
+	 * <p>
+	 * This method provides a provider-agnostic categorization of the raw finish reason,
+	 * making it easier to build consistent audits, metrics, and alerts across multiple AI
+	 * providers.
+	 * </p>
+	 * @return the categorized finish reason, never null
+	 * @see FinishReasonCategory#categorize(String)
+	 * @since 1.0.0
+	 */
+	default FinishReasonCategory getFinishReasonCategory() {
+		return FinishReasonCategory.categorize(getFinishReason());
+	}
+
 	Set<String> getContentFilters();
 
 	<T> @Nullable T get(String key);
