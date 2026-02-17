@@ -710,7 +710,8 @@ public class ToolCallAdvisorTests {
 
 	@Test
 	void testExtendedAdvisorWithCustomHooks() {
-		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
+		int[] hookCallCounts = { 0, 0, 0, 0 }; // initializeLoop, beforeCall, afterCall,
+												// doFinalizeLoop
 
 		// Create extended advisor to verify hooks are called
 		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
@@ -731,11 +732,13 @@ public class ToolCallAdvisorTests {
 		assertThat(hookCallCounts[0]).isEqualTo(1); // doInitializeLoop called once
 		assertThat(hookCallCounts[1]).isEqualTo(1); // doBeforeCall called once
 		assertThat(hookCallCounts[2]).isEqualTo(1); // doAfterCall called once
+		assertThat(hookCallCounts[3]).isEqualTo(1); // doFinalizeLoop called once
 	}
 
 	@Test
 	void testExtendedAdvisorHooksCalledMultipleTimesWithToolCalls() {
-		int[] hookCallCounts = { 0, 0, 0 }; // initializeLoop, beforeCall, afterCall
+		int[] hookCallCounts = { 0, 0, 0, 0 }; // initializeLoop, beforeCall, afterCall,
+												// doFinalizeLoop
 
 		TestableToolCallAdvisor advisor = new TestableToolCallAdvisor(this.toolCallingManager,
 				BaseAdvisor.HIGHEST_PRECEDENCE + 300, hookCallCounts);
@@ -772,6 +775,8 @@ public class ToolCallAdvisorTests {
 													// iteration)
 		assertThat(hookCallCounts[2]).isEqualTo(2); // doAfterCall called twice (each
 													// iteration)
+		assertThat(hookCallCounts[3]).isEqualTo(1); // doFinalizeLoop called once
+													// (after loop)
 	}
 
 	@Test
@@ -1011,6 +1016,15 @@ public class ToolCallAdvisorTests {
 				this.hookCallCounts[2]++;
 			}
 			return super.doAfterCall(chatClientResponse, callAdvisorChain);
+		}
+
+		@Override
+		protected ChatClientResponse doFinalizeLoop(ChatClientResponse chatClientResponse,
+				CallAdvisorChain callAdvisorChain) {
+			if (this.hookCallCounts != null) {
+				this.hookCallCounts[3]++;
+			}
+			return super.doFinalizeLoop(chatClientResponse, callAdvisorChain);
 		}
 
 		static TestableBuilder testBuilder() {
