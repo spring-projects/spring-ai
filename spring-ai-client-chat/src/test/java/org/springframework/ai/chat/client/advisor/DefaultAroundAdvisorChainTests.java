@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.core.Ordered;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -243,6 +244,263 @@ class DefaultAroundAdvisorChainTests {
 		CallAdvisorChain newChain = chain.copy(advisor1);
 
 		assertThat(newChain.getObservationRegistry()).isSameAs(customRegistry);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void chainIsReusableForMultipleCalls() {
+		// Terminal advisor (doesn't call next) - uses Ordered.LOWEST_PRECEDENCE
+		CallAdvisor terminal = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add("terminal");
+				return ChatClientResponse.builder().context("stack", stack).build();
+			}
+		};
+
+		// Around advisor (calls next, records before/after)
+		CallAdvisor around1 = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "around-1";
+			}
+
+			@Override
+			public int getOrder() {
+				return 1;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add(getName() + " before");
+				var response = chain.nextCall(request);
+				stack.add(getName() + " after");
+				return response;
+			}
+		};
+
+		CallAdvisor around2 = new CallAdvisor() {
+			@Override
+			public String getName() {
+				return "around-2";
+			}
+
+			@Override
+			public int getOrder() {
+				return 2;
+			}
+
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add(getName() + " before");
+				var response = chain.nextCall(request);
+				stack.add(getName() + " after");
+				return response;
+			}
+		};
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(around1, around2, terminal))
+			.build();
+
+		// First call
+		List<String> stack1 = new ArrayList<>();
+		ChatClientRequest request1 = ChatClientRequest.builder()
+			.prompt(new Prompt("Hello"))
+			.context("stack", stack1)
+			.build();
+		chain.nextCall(request1);
+
+		assertThat(stack1).containsExactly("around-1 before", "around-2 before", "terminal", "around-2 after",
+				"around-1 after");
+
+		// Second call on the same chain instance - should produce the same result
+		List<String> stack2 = new ArrayList<>();
+		ChatClientRequest request2 = ChatClientRequest.builder()
+			.prompt(new Prompt("Hello again"))
+			.context("stack", stack2)
+			.build();
+		chain.nextCall(request2);
+
+		assertThat(stack2).containsExactly("around-1 before", "around-2 before", "terminal", "around-2 after",
+				"around-1 after");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void chainIsReusableForMultipleStreams() {
+		// Terminal stream advisor (doesn't call next) - uses Ordered.LOWEST_PRECEDENCE
+		StreamAdvisor terminal = new StreamAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add("terminal");
+				return Flux.just(ChatClientResponse.builder().context("stack", stack).build());
+			}
+		};
+
+		// Around stream advisor (calls next, records before/after)
+		StreamAdvisor around1 = new StreamAdvisor() {
+			@Override
+			public String getName() {
+				return "around-1";
+			}
+
+			@Override
+			public int getOrder() {
+				return 1;
+			}
+
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add(getName() + " before");
+				return chain.nextStream(request).doOnComplete(() -> stack.add(getName() + " after"));
+			}
+		};
+
+		StreamAdvisor around2 = new StreamAdvisor() {
+			@Override
+			public String getName() {
+				return "around-2";
+			}
+
+			@Override
+			public int getOrder() {
+				return 2;
+			}
+
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add(getName() + " before");
+				return chain.nextStream(request).doOnComplete(() -> stack.add(getName() + " after"));
+			}
+		};
+
+		StreamAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(around1, around2, terminal))
+			.build();
+
+		// First call
+		List<String> stack1 = new ArrayList<>();
+		ChatClientRequest request1 = ChatClientRequest.builder()
+			.prompt(new Prompt("Hello"))
+			.context("stack", stack1)
+			.build();
+		chain.nextStream(request1).blockLast();
+
+		assertThat(stack1).containsExactly("around-1 before", "around-2 before", "terminal", "around-2 after",
+				"around-1 after");
+
+		// Second call on the same chain instance - should produce the same result
+		List<String> stack2 = new ArrayList<>();
+		ChatClientRequest request2 = ChatClientRequest.builder()
+			.prompt(new Prompt("Hello again"))
+			.context("stack", stack2)
+			.build();
+		chain.nextStream(request2).blockLast();
+
+		assertThat(stack2).containsExactly("around-1 before", "around-2 before", "terminal", "around-2 after",
+				"around-1 after");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void chainSupportsMultipleConcurrentSubscriptions() {
+		// Terminal stream advisor
+		StreamAdvisor terminal = new StreamAdvisor() {
+			@Override
+			public String getName() {
+				return "terminal";
+			}
+
+			@Override
+			public int getOrder() {
+				return Ordered.LOWEST_PRECEDENCE;
+			}
+
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add("terminal");
+				return Flux.just(ChatClientResponse.builder().build());
+			}
+		};
+
+		// Around advisor that creates multiple subscriptions (simulating takeUntil
+		// pattern)
+		StreamAdvisor around = new StreamAdvisor() {
+			@Override
+			public String getName() {
+				return "around";
+			}
+
+			@Override
+			public int getOrder() {
+				return 1;
+			}
+
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+				List<String> stack = (List<String>) request.context().get("stack");
+				stack.add("around before");
+
+				// Simulate takeUntil pattern: subscribe to chain twice concurrently
+				Flux<ChatClientResponse> mainStream = chain.nextStream(request);
+				Flux<ChatClientResponse> otherStream = chain.nextStream(request);
+
+				return mainStream.takeUntilOther(otherStream.then()).doOnComplete(() -> stack.add("around after"));
+			}
+		};
+
+		StreamAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(around, terminal))
+			.build();
+
+		// First call
+		List<String> stack1 = new ArrayList<>();
+		ChatClientRequest request1 = ChatClientRequest.builder()
+			.prompt(new Prompt("Hello"))
+			.context("stack", stack1)
+			.build();
+		chain.nextStream(request1).blockLast();
+
+		// Verify both subscriptions executed terminal
+		assertThat(stack1).contains("around before", "terminal");
+
+		// Second call - chain should still be reusable
+		List<String> stack2 = new ArrayList<>();
+		ChatClientRequest request2 = ChatClientRequest.builder()
+			.prompt(new Prompt("Hello again"))
+			.context("stack", stack2)
+			.build();
+		chain.nextStream(request2).blockLast();
+
+		assertThat(stack2).contains("around before", "terminal");
 	}
 
 	private CallAdvisor createMockAdvisor(String name, int order) {
