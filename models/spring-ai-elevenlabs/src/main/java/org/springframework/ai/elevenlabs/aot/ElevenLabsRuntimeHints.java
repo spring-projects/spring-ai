@@ -17,6 +17,7 @@
 package org.springframework.ai.elevenlabs.aot;
 
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
+import org.springframework.ai.elevenlabs.api.ElevenLabsSpeechToTextApi;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -37,6 +38,9 @@ public class ElevenLabsRuntimeHints implements RuntimeHintsRegistrar {
 	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
 		for (var tr : findJsonAnnotatedClassesInPackage(ElevenLabsApi.class)) {
+			hints.reflection().registerType(tr, mcs);
+		}
+		for (var tr : findJsonAnnotatedClassesInPackage(ElevenLabsSpeechToTextApi.class)) {
 			hints.reflection().registerType(tr, mcs);
 		}
 	}
