@@ -2,7 +2,7 @@
 
 = Advisors API
 
-The Spring AI Advisors API provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications. 
+The Spring AI Advisors API provides a flexible and powerful way to intercept, modify, and enhance AI-driven interactions in your Spring applications.
 By leveraging the Advisors API, developers can create more sophisticated, reusable, and maintainable AI components.
 
 The key benefits include encapsulating recurring Generative AI patterns, transforming data sent to and from Large Language Models (LLMs), and providing portability across various models and use cases.
@@ -25,7 +25,7 @@ var chatClient = ChatClient.builder(chatModel)
 var conversationId = "678";
 
 String response = this.chatClient.prompt()
-    // Set advisor parameters at runtime	
+    // Set advisor parameters at runtime
     .advisors(advisor -> advisor.param(ChatMemory.CONVERSATION_ID, conversationId))
     .user(userText)
     .call()
@@ -41,7 +41,7 @@ Advisors also participate in the Observability stack, so you can view metrics an
 
 == Core Components
 
-The API consists of `CallAdvisor` and `CallAdvisorChain` for non-streaming scenarios, and `StreamAdvisor` and `StreamAdvisorChain` for streaming scenarios. 
+The API consists of `CallAdvisor` and `CallAdvisorChain` for non-streaming scenarios, and `StreamAdvisor` and `StreamAdvisorChain` for streaming scenarios.
 It also includes `ChatClientRequest` to represent the unsealed Prompt request, `ChatClientResponse` for the Chat Completion response. Both hold an `advise-context` to share state across the advisor chain.
 
 image::advisors-api-classes.jpg[Advisors API Classes, width=600, align="center"]
@@ -50,8 +50,8 @@ The `adviseCall()` and the `adviseStream()` are the key advisor methods, typical
 
 In addition the `getOrder()` method determines advisor order in the chain, while `getName()` provides a unique advisor name.
 
-The Advisor Chain, created by the Spring AI framework, allows sequential invocation of multiple advisors ordered by their `getOrder()` values. 
-The lower values are executed first. 
+The Advisor Chain, created by the Spring AI framework, allows sequential invocation of multiple advisors ordered by their `getOrder()` values.
+The lower values are executed first.
 The last advisor, added automatically, sends the request to the LLM.
 
 Following flow diagram illustrates the interaction between the advisor chain and the Chat Model:
@@ -135,17 +135,19 @@ For use cases that need to be first in the chain on both the input and output si
 
 The main Advisor interfaces are located in the package `org.springframework.ai.chat.client.advisor.api`. Here are the key interfaces you'll encounter when creating your own advisor:
 
-```java
+[source,java]
+----
 public interface Advisor extends Ordered {
 
 	String getName();
 
 }
-```
+----
 
 The two sub-interfaces for synchronous and reactive Advisors are
 
-```java
+[source,java]
+----
 public interface CallAdvisor extends Advisor {
 
 	ChatClientResponse adviseCall(
@@ -153,24 +155,26 @@ public interface CallAdvisor extends Advisor {
 
 }
 
-```
+----
 
 and
 
-```java
+[source,java]
+----
 public interface StreamAdvisor extends Advisor {
 
 	Flux<ChatClientResponse> adviseStream(
 		ChatClientRequest chatClientRequest, StreamAdvisorChain streamAdvisorChain);
 
 }
-```
+----
 
 To continue the chain of Advice, use `CallAdvisorChain` and `StreamAdvisorChain` in your Advice implementation:
 
 The interfaces are
 
-```java
+[source,java]
+----
 public interface CallAdvisorChain extends AdvisorChain {
 
 	/**
@@ -186,11 +190,12 @@ public interface CallAdvisorChain extends AdvisorChain {
 	List<CallAdvisor> getCallAdvisors();
 
 }
-```
+----
 
 and
 
-```java
+[source,java]
+----
 public interface StreamAdvisorChain extends AdvisorChain {
 
 	/**
@@ -206,7 +211,7 @@ public interface StreamAdvisorChain extends AdvisorChain {
 	List<StreamAdvisor> getStreamAdvisors();
 
 }
-```
+----
 
 == Implementing an Advisor
 
@@ -235,7 +240,7 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
 	@Override
 	public int getOrder() { // <2>
-		return 0; 
+		return 0;
 	}
 
 
@@ -376,8 +381,8 @@ This advisor uses a vector store to provide question-answering capabilities, imp
 ===== Reasoning Advisor
 * `ReReadingAdvisor`
 +
-Implements a re-reading strategy for LLM reasoning, dubbed RE2, to enhance understanding in the input phase. 
-Based on the article: [Re-Reading Improves Reasoning in LLMs](https://arxiv.org/pdf/2309.06275).
+Implements a re-reading strategy for LLM reasoning, dubbed RE2, to enhance understanding in the input phase.
+Based on the article: https://arxiv.org/pdf/2309.06275[Re-Reading Improves Reasoning in LLMs].
 
 
 ===== Content Safety Advisor
@@ -400,7 +405,7 @@ image::advisors-non-stream-vs-stream.jpg[Advisors Streaming vs Non-Streaming Flo
 ----
 @Override
 public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest, StreamAdvisorChain chain) {
-    
+
     return  Mono.just(chatClientRequest)
             .publishOn(Schedulers.boundedElastic())
             .map(request -> {
@@ -433,7 +438,7 @@ public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest
 ** `StreamAroundAdvisor`
 * The `StreamResponseMode`, previously part of `ResponseAdvisor`, has been removed.
 * In 1.0.0 these interfaces have been replaced:
-** `CallAroundAdvisor` -> `CallAdvisor`, `StreamAroundAdvisor` -> `StreamAdvisor`, `CallAroundAdvisorChain` -> `CallAdvisorChain` and `StreamAroundAdvisorChain` -> `StreamAdvisorChain`. 
+** `CallAroundAdvisor` -> `CallAdvisor`, `StreamAroundAdvisor` -> `StreamAdvisor`, `CallAroundAdvisorChain` -> `CallAdvisorChain` and `StreamAroundAdvisorChain` -> `StreamAdvisorChain`.
 ** `AdvisedRequest` -> `ChatClientRequest` and `AdivsedResponse` -> `ChatClientResponse`.
 
 === Context Map Handling

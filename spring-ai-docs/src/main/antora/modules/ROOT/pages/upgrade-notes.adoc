@@ -427,7 +427,7 @@ Here's an example of code that worked in M7 but no longer functions as expected 
 // This worked in M7 but silently fails in M8
 ChatClient chatClient = new OpenAiChatClient(api)
     .tools(List.of(
-        new Tool("get_current_weather", "Get the current weather in a given location", 
+        new Tool("get_current_weather", "Get the current weather in a given location",
             new ToolSpecification.ToolParameter("location", "The city and state, e.g. San Francisco, CA", true))
     ))
     .toolCallbacks(List.of(
@@ -447,7 +447,7 @@ The solution is to use the `toolSpecifications()` method instead of the deprecat
 // This works in M8
 ChatClient chatClient = new OpenAiChatClient(api)
     .toolSpecifications(List.of(
-        new Tool("get_current_weather", "Get the current weather in a given location", 
+        new Tool("get_current_weather", "Get the current weather in a given location",
             new ToolSpecification.ToolParameter("location", "The city and state, e.g. San Francisco, CA", true))
     ))
     .toolCallbacks(List.of(
@@ -864,7 +864,7 @@ The `ToolContext` class has been enhanced to support both explicit and implicit 
 
 Starting with 1.0.0-M7, tools are only included in the call to the model if they are explicitly requested in the prompt or explicitly included in the call.
 
-Additionally, the `ToolContext` class has now been marked as final and cannot be extended anymore. It was never supposed to be subclassed. You can add all the contextual data you need when instantiating a `ToolContext`, in the form of a `Map<String, Object>`. For more information, check the [documentation](https://docs.spring.io/spring-ai/reference/api/tools.html#_tool_context).
+Additionally, the `ToolContext` class has now been marked as final and cannot be extended anymore. It was never supposed to be subclassed. You can add all the contextual data you need when instantiating a `ToolContext`, in the form of a `Map<String, Object>`. For more information, check the xref:api/tools.adoc#tool-context[documentation].
 
 [[upgrading-to-1-0-0-m6]]
 == Upgrading to 1.0.0-M6
@@ -1013,7 +1013,7 @@ On our march to release 1.0.0 M1 we have made several breaking changes.  Apologi
 
 === ChatClient changes
 
-A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done to support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the [JavaDoc](https://docs.spring.io/spring-ai/docs/api) for more information on the Fluent API, proper reference documentation is coming shortly.
+A major change was made that took the 'old' `ChatClient` and moved the functionality into `ChatModel`.  The 'new' `ChatClient` now takes an instance of `ChatModel`. This was done to support a fluent API for creating and executing prompts in a style similar to other client classes in the Spring ecosystem, such as `RestClient`, `WebClient`, and `JdbcClient`.  Refer to the https://docs.spring.io/spring-ai/docs/current/api/index.html[JavaDoc] for more information on the Fluent API, proper reference documentation is coming shortly.
 
 We renamed the 'old' `ModelClient` to `Model` and renamed implementing classes, for example `ImageClient` was renamed to `ImageModel`.  The `Model` implementation represents the portability layer that converts between the Spring AI API and the underlying AI Model API.
 

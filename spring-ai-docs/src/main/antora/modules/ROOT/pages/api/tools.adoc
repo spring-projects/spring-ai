@@ -138,7 +138,7 @@ Tools are the building blocks of tool calling and they are modeled by the `ToolC
 
 `ChatModel` implementations transparently dispatch tool call requests to the corresponding `ToolCallback` implementations and will send the tool call results back to the model, which will ultimately generate the final response. They do so using the `ToolCallingManager` interface, which is responsible for managing the tool execution lifecycle.
 
-Both `ChatClient` and `ChatModel` accept a list of `ToolCallback` objects to make the tools available to the model and the `ToolCallingManager` that will eventually execute them. 
+Both `ChatClient` and `ChatModel` accept a list of `ToolCallback` objects to make the tools available to the model and the `ToolCallingManager` that will eventually execute them.
 
 Besides passing the `ToolCallback` objects directly, you can also pass a list of tool names, that will be resolved dynamically using the `ToolCallbackResolver` interface.
 
@@ -205,7 +205,7 @@ class DateTimeTools {
 The `@ToolParam` annotation allows you to provide key information about a tool parameter:
 
 - `description`: The description for the parameter, which can be used by the model to understand better how to use it. For example, what format the parameter should be in, what values are allowed, and so on.
-- `required`: Whether the parameter is required or optional. By default, all parameters are considered required. 
+- `required`: Whether the parameter is required or optional. By default, all parameters are considered required.
 
 If a parameter is annotated as `@Nullable`, it will be considered optional unless explicitly marked as required using the `@ToolParam` annotation.
 
@@ -377,7 +377,7 @@ class DateTimeTools {
 The `@ToolParam` annotation allows you to provide key information about a tool parameter:
 
 - `description`: The description for the parameter, which can be used by the model to understand better how to use it. For example, what format the parameter should be in, what values are allowed, and so on.
-- `required`: Whether the parameter is required or optional. By default, all parameters are considered required. 
+- `required`: Whether the parameter is required or optional. By default, all parameters are considered required.
 
 If a parameter is annotated as `@Nullable`, it will be considered optional unless explicitly marked as required using the `@ToolParam` annotation.
 
@@ -682,7 +682,7 @@ The following types are not currently supported as input or output types for fun
 
 - Primitive types
 - `Optional`
-- Collection types (e.g. `List`, `Map`, `Array`, `Set`) 
+- Collection types (e.g. `List`, `Map`, `Array`, `Set`)
 - Asynchronous types (e.g. `CompletableFuture`, `Future`)
 - Reactive types (e.g. `Flow`, `Mono`, `Flux`).
 
@@ -927,9 +927,10 @@ When building tools from a function using the programmatic approach, you can pro
 
 See xref:_functions_as_tools[] for more details.
 
+[[tool-context]]
 === Tool Context
 
-Spring AI supports passing additional contextual information to tools through the `ToolContext` API. This feature allows you to provide extra, user-provided data that can be used within the tool execution along with the tool arguments passed by the AI model. 
+Spring AI supports passing additional contextual information to tools through the `ToolContext` API. This feature allows you to provide extra, user-provided data that can be used within the tool execution along with the tool arguments passed by the AI model.
 
 image::tools/tool-context.jpg[Providing additional contextual info to tools, width=700, align="center"]
 
@@ -1244,7 +1245,7 @@ ChatResponse newResponse = chatModel.call(new Prompt(chatMemory.get(conversation
 
 === Exception Handling
 
-When a tool call fails, the exception is propagated as a `ToolExecutionException` which can be caught to handle the error. 
+When a tool call fails, the exception is propagated as a `ToolExecutionException` which can be caught to handle the error.
 A `ToolExecutionExceptionProcessor` can be used to handle a `ToolExecutionException` with two outcomes: either producing an error message to be sent back to the AI model or throwing an exception to be handled by the caller.
 
 [source,java]
@@ -1290,7 +1291,7 @@ The `ToolExecutionExceptionProcessor` is used internally by the default `ToolCal
 The main approach for passing tools to a model is by providing the `ToolCallback`(s) when invoking the `ChatClient` or the `ChatModel`,
 using one of the strategies described in xref:_methods_as_tools[] and xref:_functions_as_tools[].
 
-However, Spring AI also supports resolving tools dynamically at runtime using the `ToolCallbackResolver` interface. 
+However, Spring AI also supports resolving tools dynamically at runtime using the `ToolCallbackResolver` interface.
 
 [source,java]
 ----
