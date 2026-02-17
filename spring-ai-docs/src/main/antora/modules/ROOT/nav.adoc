@@ -136,6 +136,7 @@
 
 * Guides
 ** https://github.com/spring-ai-community/awesome-spring-ai[Awesome Spring AI]
+** xref:guides/console-application.adoc[Creating a Console Application]
 ** xref:guides/getting-started-mcp.adoc[Getting Started with MCP]
 ** xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery]
 ** xref:guides/llm-as-judge.adoc[LLM-as-a-Judge Evaluation]
