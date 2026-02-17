@@ -38,7 +38,9 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.anthropicsdk.AnthropicSdkChatModel;
 import org.springframework.ai.anthropicsdk.AnthropicSdkChatOptions;
+import org.springframework.ai.anthropicsdk.AnthropicSdkCitationDocument;
 import org.springframework.ai.anthropicsdk.AnthropicSdkTestConfiguration;
+import org.springframework.ai.anthropicsdk.Citation;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -632,6 +634,182 @@ class AnthropicSdkChatModelIT {
 			.anyMatch(msg -> msg.getMetadata().containsKey("signature"));
 
 		assertThat(hasSignature).as("Streaming should capture the thinking block signature").isTrue();
+	}
+
+	@Test
+	void testPlainTextCitation() {
+		AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+			.plainText(
+					"The Eiffel Tower is located in Paris, France. It was completed in 1889 and stands 330 meters tall.")
+			.title("Eiffel Tower Facts")
+			.citationsEnabled(true)
+			.build();
+
+		UserMessage userMessage = new UserMessage(
+				"Based solely on the provided document, where is the Eiffel Tower located and when was it completed?");
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.maxTokens(2048)
+			.temperature(0.0)
+			.citationDocuments(document)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+
+		Object citationsObj = response.getMetadata().get("citations");
+		assertThat(citationsObj).as("Citations should be present in response metadata").isNotNull();
+
+		@SuppressWarnings("unchecked")
+		List<Citation> citations = (List<Citation>) citationsObj;
+		assertThat(citations).as("Citation list should not be empty").isNotEmpty();
+
+		for (Citation citation : citations) {
+			assertThat(citation.getType()).isEqualTo(Citation.LocationType.CHAR_LOCATION);
+			assertThat(citation.getCitedText()).isNotBlank();
+			assertThat(citation.getDocumentIndex()).isEqualTo(0);
+			assertThat(citation.getDocumentTitle()).isEqualTo("Eiffel Tower Facts");
+			assertThat(citation.getStartCharIndex()).isGreaterThanOrEqualTo(0);
+			assertThat(citation.getEndCharIndex()).isGreaterThan(citation.getStartCharIndex());
+		}
+	}
+
+	@Test
+	void testMultipleCitationDocuments() {
+		AnthropicSdkCitationDocument parisDoc = AnthropicSdkCitationDocument.builder()
+			.plainText("Paris is the capital city of France. It has a population of about 2.1 million people.")
+			.title("Paris Information")
+			.citationsEnabled(true)
+			.build();
+
+		AnthropicSdkCitationDocument eiffelDoc = AnthropicSdkCitationDocument.builder()
+			.plainText("The Eiffel Tower was designed by Gustave Eiffel and completed in 1889 for the World's Fair.")
+			.title("Eiffel Tower History")
+			.citationsEnabled(true)
+			.build();
+
+		UserMessage userMessage = new UserMessage(
+				"Based solely on the provided documents, what is the capital of France and who designed the Eiffel Tower?");
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.maxTokens(1024)
+			.temperature(0.0)
+			.citationDocuments(parisDoc, eiffelDoc)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+
+		Object citationsObj = response.getMetadata().get("citations");
+		assertThat(citationsObj).as("Citations should be present in response metadata").isNotNull();
+
+		@SuppressWarnings("unchecked")
+		List<Citation> citations = (List<Citation>) citationsObj;
+		assertThat(citations).as("Citation list should not be empty").isNotEmpty();
+
+		boolean hasDoc0 = citations.stream().anyMatch(c -> c.getDocumentIndex() == 0);
+		boolean hasDoc1 = citations.stream().anyMatch(c -> c.getDocumentIndex() == 1);
+		assertThat(hasDoc0 && hasDoc1).as("Should have citations from both documents").isTrue();
+
+		for (Citation citation : citations) {
+			assertThat(citation.getType()).isEqualTo(Citation.LocationType.CHAR_LOCATION);
+			assertThat(citation.getCitedText()).isNotBlank();
+			assertThat(citation.getDocumentIndex()).isIn(0, 1);
+			assertThat(citation.getDocumentTitle()).isIn("Paris Information", "Eiffel Tower History");
+			assertThat(citation.getStartCharIndex()).isGreaterThanOrEqualTo(0);
+			assertThat(citation.getEndCharIndex()).isGreaterThan(citation.getStartCharIndex());
+		}
+	}
+
+	@Test
+	void testCustomContentCitation() {
+		AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+			.customContent("The Great Wall of China is approximately 21,196 kilometers long.",
+					"It was built over many centuries, starting in the 7th century BC.",
+					"The wall was constructed to protect Chinese states from invasions.")
+			.title("Great Wall Facts")
+			.citationsEnabled(true)
+			.build();
+
+		UserMessage userMessage = new UserMessage(
+				"Based solely on the provided document, how long is the Great Wall of China and when was it started?");
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.maxTokens(1024)
+			.temperature(0.0)
+			.citationDocuments(document)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+
+		Object citationsObj = response.getMetadata().get("citations");
+		assertThat(citationsObj).as("Citations should be present in response metadata").isNotNull();
+
+		@SuppressWarnings("unchecked")
+		List<Citation> citations = (List<Citation>) citationsObj;
+		assertThat(citations).as("Citation list should not be empty").isNotEmpty();
+
+		for (Citation citation : citations) {
+			assertThat(citation.getType()).isEqualTo(Citation.LocationType.CONTENT_BLOCK_LOCATION);
+			assertThat(citation.getCitedText()).isNotBlank();
+			assertThat(citation.getDocumentIndex()).isEqualTo(0);
+			assertThat(citation.getDocumentTitle()).isEqualTo("Great Wall Facts");
+			assertThat(citation.getStartBlockIndex()).isGreaterThanOrEqualTo(0);
+			assertThat(citation.getEndBlockIndex()).isGreaterThanOrEqualTo(citation.getStartBlockIndex());
+		}
+	}
+
+	@Test
+	void testPdfCitation() throws IOException {
+		AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+			.pdfFile("src/test/resources/spring-ai-reference-overview.pdf")
+			.title("Spring AI Reference")
+			.citationsEnabled(true)
+			.build();
+
+		UserMessage userMessage = new UserMessage("Based solely on the provided document, what is Spring AI?");
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.maxTokens(1024)
+			.temperature(0.0)
+			.citationDocuments(document)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).isNotEmpty();
+		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+
+		Object citationsObj = response.getMetadata().get("citations");
+		assertThat(citationsObj).as("Citations should be present for PDF documents").isNotNull();
+
+		@SuppressWarnings("unchecked")
+		List<Citation> citations = (List<Citation>) citationsObj;
+		assertThat(citations).as("Citation list should not be empty for PDF").isNotEmpty();
+
+		for (Citation citation : citations) {
+			assertThat(citation.getType()).isEqualTo(Citation.LocationType.PAGE_LOCATION);
+			assertThat(citation.getCitedText()).isNotBlank();
+			assertThat(citation.getDocumentIndex()).isEqualTo(0);
+			assertThat(citation.getDocumentTitle()).isEqualTo("Spring AI Reference");
+			assertThat(citation.getStartPageNumber()).isGreaterThan(0);
+			assertThat(citation.getEndPageNumber()).isGreaterThanOrEqualTo(citation.getStartPageNumber());
+		}
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

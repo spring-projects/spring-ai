@@ -30,6 +30,10 @@ import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
+import com.anthropic.models.messages.CitationCharLocation;
+import com.anthropic.models.messages.CitationContentBlockLocation;
+import com.anthropic.models.messages.CitationPageLocation;
+import com.anthropic.models.messages.CitationsDelta;
 import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.ContentBlockParam;
 import com.anthropic.models.messages.DocumentBlockParam;
@@ -40,6 +44,7 @@ import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.TextBlockParam;
+import com.anthropic.models.messages.TextCitation;
 import com.anthropic.models.messages.ThinkingBlock;
 import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolResultBlockParam;
@@ -411,6 +416,16 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 				AssistantMessage assistantMessage = AssistantMessage.builder().properties(signatureProperties).build();
 				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
+
+			// CITATIONS: Accumulate citations for the final response metadata.
+			if (delta.isCitations()) {
+				CitationsDelta citationsDelta = delta.asCitations();
+				Citation citation = convertStreamingCitation(citationsDelta.citation());
+				if (citation != null) {
+					streamingState.addCitation(citation);
+				}
+				return null;
+			}
 		}
 
 		// -- Event: content_block_stop --
@@ -448,13 +463,17 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 			Usage accumulatedUsage = previousChatResponse != null
 					? UsageCalculator.getCumulativeUsage(usage, previousChatResponse) : usage;
 
-			ChatResponseMetadata responseMetadata = ChatResponseMetadata.builder()
+			ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
 				.id(streamingState.getMessageId())
 				.model(streamingState.getModel())
-				.usage(accumulatedUsage)
-				.build();
+				.usage(accumulatedUsage);
 
-			return new ChatResponse(List.of(generation), responseMetadata);
+			List<Citation> citations = streamingState.getCitations();
+			if (!citations.isEmpty()) {
+				metadataBuilder.keyValue("citations", citations).keyValue("citationCount", citations.size());
+			}
+
+			return new ChatResponse(List.of(generation), metadataBuilder.build());
 		});
 
 		return messageDeltaResponse.orElse(null);
@@ -493,7 +512,8 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 					return new ChatResponse(List.of());
 				}
 
-				List<Generation> generations = buildGenerations(message);
+				List<Citation> citations = new ArrayList<>();
+				List<Generation> generations = buildGenerations(message, citations);
 
 				// Current usage
 				com.anthropic.models.messages.Usage sdkUsage = message.usage();
@@ -502,7 +522,7 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 						? UsageCalculator.getCumulativeUsage(currentChatResponseUsage, previousChatResponse)
 						: currentChatResponseUsage;
 
-				ChatResponse chatResponse = new ChatResponse(generations, from(message, accumulatedUsage));
+				ChatResponse chatResponse = new ChatResponse(generations, from(message, accumulatedUsage, citations));
 
 				observationContext.setResponse(chatResponse);
 
@@ -567,6 +587,12 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 					this.options.getToolCallbacks()));
 			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
 					this.options.getToolContext()));
+			// Merge citationDocuments from original prompt options (@JsonIgnore, lost
+			// during copyToTarget)
+			if (prompt.getOptions() instanceof AnthropicSdkChatOptions originalAnthropicOptions
+					&& !originalAnthropicOptions.getCitationDocuments().isEmpty()) {
+				requestOptions.setCitationDocuments(new ArrayList<>(originalAnthropicOptions.getCitationDocuments()));
+			}
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -598,6 +624,10 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		long maxTokens = requestOptions.getMaxTokens() != null ? requestOptions.getMaxTokens() : DEFAULT_MAX_TOKENS;
 		builder.maxTokens(maxTokens);
 
+		// Prepare citation documents for inclusion in the first user message
+		List<AnthropicSdkCitationDocument> citationDocuments = requestOptions.getCitationDocuments();
+		boolean citationDocsAdded = false;
+
 		// Process messages
 		for (org.springframework.ai.chat.messages.Message message : prompt.getInstructions()) {
 			if (message.getMessageType() == MessageType.SYSTEM) {
@@ -608,17 +638,30 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 			}
 			else if (message.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) message;
+				boolean hasCitationDocs = !citationDocsAdded && !citationDocuments.isEmpty();
+				boolean hasMedia = !CollectionUtils.isEmpty(userMessage.getMedia());
 
-				if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
+				if (hasCitationDocs || hasMedia) {
 					List<ContentBlockParam> contentBlocks = new ArrayList<>();
+
+					// CITATIONS: Prepend citation document blocks to the first user
+					// message
+					if (hasCitationDocs) {
+						for (AnthropicSdkCitationDocument doc : citationDocuments) {
+							contentBlocks.add(ContentBlockParam.ofDocument(doc.toDocumentBlockParam()));
+						}
+						citationDocsAdded = true;
+					}
 
 					String text = userMessage.getText();
 					if (text != null && !text.isEmpty()) {
 						contentBlocks.add(ContentBlockParam.ofText(TextBlockParam.builder().text(text).build()));
 					}
 
-					for (Media media : userMessage.getMedia()) {
-						contentBlocks.add(getContentBlockParamByMedia(media));
+					if (hasMedia) {
+						for (Media media : userMessage.getMedia()) {
+							contentBlocks.add(getContentBlockParamByMedia(media));
+						}
 					}
 
 					builder.addUserMessageOfBlockParams(contentBlocks);
@@ -725,7 +768,7 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 	 * @param message the Anthropic message response
 	 * @return list of generations with text, tool calls, and/or thinking content
 	 */
-	private List<Generation> buildGenerations(Message message) {
+	private List<Generation> buildGenerations(Message message, List<Citation> citationAccumulator) {
 		List<Generation> generations = new ArrayList<>();
 
 		String finishReason = message.stopReason().map(r -> r.toString()).orElse("");
@@ -739,6 +782,16 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 			if (block.isText()) {
 				TextBlock textBlock = block.asText();
 				textContent.append(textBlock.text());
+
+				// CITATIONS: Extract citations from text blocks
+				textBlock.citations().ifPresent(textCitations -> {
+					for (TextCitation tc : textCitations) {
+						Citation citation = convertTextCitation(tc);
+						if (citation != null) {
+							citationAccumulator.add(citation);
+						}
+					}
+				});
 			}
 			else if (block.isToolUse()) {
 				ToolUseBlock toolUseBlock = block.asToolUse();
@@ -791,9 +844,16 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 	 * @param usage the usage information
 	 * @return the chat response metadata
 	 */
-	private ChatResponseMetadata from(Message message, Usage usage) {
+	private ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations) {
 		Assert.notNull(message, "Anthropic Message must not be null");
-		return ChatResponseMetadata.builder().id(message.id()).usage(usage).model(message.model().asString()).build();
+		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
+			.id(message.id())
+			.usage(usage)
+			.model(message.model().asString());
+		if (!citations.isEmpty()) {
+			metadataBuilder.keyValue("citations", citations).keyValue("citationCount", citations.size());
+		}
+		return metadataBuilder.build();
 	}
 
 	/**
@@ -809,6 +869,47 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		long outputTokens = usage.outputTokens();
 		return new DefaultUsage(Math.toIntExact(inputTokens), Math.toIntExact(outputTokens),
 				Math.toIntExact(inputTokens + outputTokens), usage);
+	}
+
+	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
+		if (textCitation.isCharLocation()) {
+			return fromCharLocation(textCitation.asCharLocation());
+		}
+		else if (textCitation.isPageLocation()) {
+			return fromPageLocation(textCitation.asPageLocation());
+		}
+		else if (textCitation.isContentBlockLocation()) {
+			return fromContentBlockLocation(textCitation.asContentBlockLocation());
+		}
+		return null;
+	}
+
+	private @Nullable Citation convertStreamingCitation(CitationsDelta.Citation citation) {
+		if (citation.isCharLocation()) {
+			return fromCharLocation(citation.asCharLocation());
+		}
+		else if (citation.isPageLocation()) {
+			return fromPageLocation(citation.asPageLocation());
+		}
+		else if (citation.isContentBlockLocation()) {
+			return fromContentBlockLocation(citation.asContentBlockLocation());
+		}
+		return null;
+	}
+
+	private Citation fromCharLocation(CitationCharLocation loc) {
+		return Citation.ofCharLocation(loc.citedText(), (int) loc.documentIndex(), loc.documentTitle().orElse(null),
+				(int) loc.startCharIndex(), (int) loc.endCharIndex());
+	}
+
+	private Citation fromPageLocation(CitationPageLocation loc) {
+		return Citation.ofPageLocation(loc.citedText(), (int) loc.documentIndex(), loc.documentTitle().orElse(null),
+				(int) loc.startPageNumber(), (int) loc.endPageNumber());
+	}
+
+	private Citation fromContentBlockLocation(CitationContentBlockLocation loc) {
+		return Citation.ofContentBlockLocation(loc.citedText(), (int) loc.documentIndex(),
+				loc.documentTitle().orElse(null), (int) loc.startBlockIndex(), (int) loc.endBlockIndex());
 	}
 
 	/**
@@ -1112,6 +1213,8 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 
 		private final List<ToolCall> completedToolCalls = new ArrayList<>();
 
+		private final List<Citation> accumulatedCitations = new ArrayList<>();
+
 		void setMessageInfo(String id, String modelName, long tokens) {
 			this.messageId.set(id);
 			this.model.set(modelName);
@@ -1177,6 +1280,14 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		 */
 		List<ToolCall> getCompletedToolCalls() {
 			return new ArrayList<>(this.completedToolCalls);
+		}
+
+		void addCitation(Citation citation) {
+			this.accumulatedCitations.add(citation);
+		}
+
+		List<Citation> getCitations() {
+			return new ArrayList<>(this.accumulatedCitations);
 		}
 
 	}

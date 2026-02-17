@@ -453,6 +453,307 @@ var userMessage = UserMessage.builder()
     .build();
 ----
 
+== Citations
+
+Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/citations[Citations API] allows Claude to reference specific parts of provided documents when generating responses.
+When citation documents are included in a prompt, Claude can cite the source material, and citation metadata (character ranges, page numbers, or content blocks) is returned in the response metadata.
+
+Citations help improve:
+
+* **Accuracy verification**: Users can verify Claude's responses against source material
+* **Transparency**: See exactly which parts of documents informed the response
+* **Compliance**: Meet requirements for source attribution in regulated industries
+* **Trust**: Build confidence by showing where information came from
+
+[NOTE]
+====
+*Supported Models*
+
+Citations are supported on Claude 3.7 Sonnet and Claude 4 models (Opus and Sonnet).
+
+*Document Types*
+
+Three types of citation documents are supported:
+
+* **Plain Text**: Text content with character-level citations
+* **PDF**: PDF documents with page-level citations
+* **Custom Content**: User-defined content blocks with block-level citations
+====
+
+=== Creating Citation Documents
+
+Use the `AnthropicSdkCitationDocument` builder to create documents that can be cited:
+
+==== Plain Text Documents
+
+[source,java]
+----
+AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+    .plainText("The Eiffel Tower was completed in 1889 in Paris, France. " +
+               "It stands 330 meters tall and was designed by Gustave Eiffel.")
+    .title("Eiffel Tower Facts")
+    .citationsEnabled(true)
+    .build();
+----
+
+==== PDF Documents
+
+[source,java]
+----
+// From file path
+AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+    .pdfFile("path/to/document.pdf")
+    .title("Technical Specification")
+    .citationsEnabled(true)
+    .build();
+
+// From byte array
+byte[] pdfBytes = loadPdfBytes();
+AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+    .pdf(pdfBytes)
+    .title("Product Manual")
+    .citationsEnabled(true)
+    .build();
+----
+
+==== Custom Content Blocks
+
+For fine-grained citation control, use custom content blocks:
+
+[source,java]
+----
+AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+    .customContent(
+        "The Great Wall of China is approximately 21,196 kilometers long.",
+        "It was built over many centuries, starting in the 7th century BC.",
+        "The wall was constructed to protect Chinese states from invasions."
+    )
+    .title("Great Wall Facts")
+    .citationsEnabled(true)
+    .build();
+----
+
+=== Using Citations in Requests
+
+Include citation documents in your chat options:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "When was the Eiffel Tower built and how tall is it?",
+        AnthropicSdkChatOptions.builder()
+            .model("claude-sonnet-4-20250514")
+            .maxTokens(1024)
+            .citationDocuments(document)
+            .build()
+    )
+);
+----
+
+==== Multiple Documents
+
+You can provide multiple documents for Claude to reference:
+
+[source,java]
+----
+AnthropicSdkCitationDocument parisDoc = AnthropicSdkCitationDocument.builder()
+    .plainText("Paris is the capital city of France with a population of 2.1 million.")
+    .title("Paris Information")
+    .citationsEnabled(true)
+    .build();
+
+AnthropicSdkCitationDocument eiffelDoc = AnthropicSdkCitationDocument.builder()
+    .plainText("The Eiffel Tower was designed by Gustave Eiffel for the 1889 World's Fair.")
+    .title("Eiffel Tower History")
+    .citationsEnabled(true)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What is the capital of France and who designed the Eiffel Tower?",
+        AnthropicSdkChatOptions.builder()
+            .model("claude-sonnet-4-20250514")
+            .citationDocuments(parisDoc, eiffelDoc)
+            .build()
+    )
+);
+----
+
+=== Accessing Citations
+
+Citations are returned in the response metadata:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+// Get citations from metadata
+@SuppressWarnings("unchecked")
+List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
+
+// Optional: Get citation count directly from metadata
+Integer citationCount = (Integer) response.getMetadata().get("citationCount");
+System.out.println("Total citations: " + citationCount);
+
+// Process each citation
+for (Citation citation : citations) {
+    System.out.println("Document: " + citation.getDocumentTitle());
+    System.out.println("Location: " + citation.getLocationDescription());
+    System.out.println("Cited text: " + citation.getCitedText());
+    System.out.println("Document index: " + citation.getDocumentIndex());
+    System.out.println();
+}
+----
+
+=== Citation Types
+
+Citations contain different location information depending on the document type:
+
+==== Character Location (Plain Text)
+
+For plain text documents, citations include character indices:
+
+[source,java]
+----
+Citation citation = citations.get(0);
+if (citation.getType() == Citation.LocationType.CHAR_LOCATION) {
+    int start = citation.getStartCharIndex();
+    int end = citation.getEndCharIndex();
+    String text = citation.getCitedText();
+    System.out.println("Characters " + start + "-" + end + ": " + text);
+}
+----
+
+==== Page Location (PDF)
+
+For PDF documents, citations include page numbers:
+
+[source,java]
+----
+Citation citation = citations.get(0);
+if (citation.getType() == Citation.LocationType.PAGE_LOCATION) {
+    int startPage = citation.getStartPageNumber();
+    int endPage = citation.getEndPageNumber();
+    System.out.println("Pages " + startPage + "-" + endPage);
+}
+----
+
+==== Content Block Location (Custom Content)
+
+For custom content, citations reference specific content blocks:
+
+[source,java]
+----
+Citation citation = citations.get(0);
+if (citation.getType() == Citation.LocationType.CONTENT_BLOCK_LOCATION) {
+    int startBlock = citation.getStartBlockIndex();
+    int endBlock = citation.getEndBlockIndex();
+    System.out.println("Content blocks " + startBlock + "-" + endBlock);
+}
+----
+
+=== Complete Example
+
+Here's a complete example demonstrating citation usage:
+
+[source,java]
+----
+// Create a citation document
+AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+    .plainText("Spring AI is an application framework for AI engineering. " +
+               "It provides a Spring-friendly API for developing AI applications. " +
+               "The framework includes abstractions for chat models, embedding models, " +
+               "and vector databases.")
+    .title("Spring AI Overview")
+    .citationsEnabled(true)
+    .build();
+
+// Call the model with the document
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What is Spring AI?",
+        AnthropicSdkChatOptions.builder()
+            .model("claude-sonnet-4-20250514")
+            .maxTokens(1024)
+            .citationDocuments(document)
+            .build()
+    )
+);
+
+// Display the response
+System.out.println("Response: " + response.getResult().getOutput().getText());
+System.out.println("\nCitations:");
+
+// Process citations
+List<Citation> citations = (List<Citation>) response.getMetadata().get("citations");
+
+if (citations != null && !citations.isEmpty()) {
+    for (int i = 0; i < citations.size(); i++) {
+        Citation citation = citations.get(i);
+        System.out.println("\n[" + (i + 1) + "] " + citation.getDocumentTitle());
+        System.out.println("    Location: " + citation.getLocationDescription());
+        System.out.println("    Text: " + citation.getCitedText());
+    }
+} else {
+    System.out.println("No citations were provided in the response.");
+}
+----
+
+=== Best Practices
+
+1. **Use descriptive titles**: Provide meaningful titles for citation documents to help users identify sources in the citations.
+2. **Check for null citations**: Not all responses will include citations, so always validate the citations metadata exists before accessing it.
+3. **Consider document size**: Larger documents provide more context but consume more input tokens and may affect response time.
+4. **Leverage multiple documents**: When answering questions that span multiple sources, provide all relevant documents in a single request rather than making multiple calls.
+5. **Use appropriate document types**: Choose plain text for simple content, PDF for existing documents, and custom content blocks when you need fine-grained control over citation granularity.
+
+=== Citation Document Options
+
+==== Context Field
+
+Optionally provide context about the document that won't be cited but can guide Claude's understanding:
+
+[source,java]
+----
+AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+    .plainText("...")
+    .title("Legal Contract")
+    .context("This is a merger agreement dated January 2024 between Company A and Company B")
+    .build();
+----
+
+==== Controlling Citations
+
+By default, citations are disabled for all documents (opt-in behavior).
+To enable citations, explicitly set `citationsEnabled(true)`:
+
+[source,java]
+----
+AnthropicSdkCitationDocument document = AnthropicSdkCitationDocument.builder()
+    .plainText("The Eiffel Tower was completed in 1889...")
+    .title("Historical Facts")
+    .citationsEnabled(true)  // Explicitly enable citations for this document
+    .build();
+----
+
+You can also provide documents without citations for background context:
+
+[source,java]
+----
+AnthropicSdkCitationDocument backgroundDoc = AnthropicSdkCitationDocument.builder()
+    .plainText("Background information about the industry...")
+    .title("Context Document")
+    // citationsEnabled defaults to false - Claude will use this but not cite it
+    .build();
+----
+
+[NOTE]
+====
+Anthropic requires consistent citation settings across all documents in a request.
+You cannot mix citation-enabled and citation-disabled documents in the same request.
+====
+
 == Sample Controller
 
 Here is an example of a simple `@RestController` class that uses the chat model for text generations:
@@ -500,6 +801,7 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 | **API Updates** | Automatic via SDK updates | Manual maintenance
 | **Multi-Modal** | Fully supported | Fully supported
 | **Extended Thinking** | Fully supported | Fully supported
+| **Citations** | Fully supported | Fully supported
 | **Prompt Caching** | Not yet supported | Fully supported
 | **Auto-Configuration** | Not yet available | Full Spring Boot starter
 | **Dependencies** | Official Anthropic SDK | Spring WebFlux

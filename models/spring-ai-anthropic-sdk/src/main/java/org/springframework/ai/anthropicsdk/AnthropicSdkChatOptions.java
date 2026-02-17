@@ -139,6 +139,12 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
+	 * Citation documents to include in the request for citation-enabled responses.
+	 */
+	@JsonIgnore
+	private List<AnthropicSdkCitationDocument> citationDocuments = new ArrayList<>();
+
+	/**
 	 * Creates a new builder for AnthropicSdkChatOptions.
 	 * @return a new builder instance
 	 */
@@ -268,6 +274,15 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 		this.toolContext = toolContext;
 	}
 
+	public List<AnthropicSdkCitationDocument> getCitationDocuments() {
+		return this.citationDocuments;
+	}
+
+	public void setCitationDocuments(List<AnthropicSdkCitationDocument> citationDocuments) {
+		Assert.notNull(citationDocuments, "citationDocuments cannot be null");
+		this.citationDocuments = citationDocuments;
+	}
+
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		// Not supported by Anthropic API
@@ -303,14 +318,15 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.citationDocuments, that.citationDocuments);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
-				this.toolNames, this.internalToolExecutionEnabled, this.toolContext);
+				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments);
 	}
 
 	@Override
@@ -321,7 +337,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				+ ", thinking=" + this.thinking + ", disableParallelToolUse=" + this.disableParallelToolUse
 				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
 				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
-				+ this.toolContext + '}';
+				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + '}';
 	}
 
 	/**
@@ -364,6 +380,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			this.options.setToolNames(new HashSet<>(fromOptions.getToolNames()));
 			this.options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 			this.options.setToolContext(new HashMap<>(fromOptions.getToolContext()));
+			this.options.setCitationDocuments(new ArrayList<>(fromOptions.getCitationDocuments()));
 			return this;
 		}
 
@@ -434,6 +451,9 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			}
 			if (!from.getToolContext().isEmpty()) {
 				this.options.setToolContext(new HashMap<>(from.getToolContext()));
+			}
+			if (!from.getCitationDocuments().isEmpty()) {
+				this.options.setCitationDocuments(new ArrayList<>(from.getCitationDocuments()));
 			}
 			return this;
 		}
@@ -559,6 +579,24 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			return this;
 		}
 
+		public Builder citationDocuments(List<AnthropicSdkCitationDocument> citationDocuments) {
+			Assert.notNull(citationDocuments, "citationDocuments cannot be null");
+			this.options.setCitationDocuments(new ArrayList<>(citationDocuments));
+			return this;
+		}
+
+		public Builder citationDocuments(AnthropicSdkCitationDocument... citationDocuments) {
+			Assert.notNull(citationDocuments, "citationDocuments cannot be null");
+			this.options.citationDocuments.addAll(Arrays.asList(citationDocuments));
+			return this;
+		}
+
+		public Builder addCitationDocument(AnthropicSdkCitationDocument citationDocument) {
+			Assert.notNull(citationDocument, "citationDocument cannot be null");
+			this.options.citationDocuments.add(citationDocument);
+			return this;
+		}
+
 		public Builder baseUrl(String baseUrl) {
 			this.options.setBaseUrl(baseUrl);
 			return this;
@@ -616,6 +654,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			result.setToolNames(new HashSet<>(this.options.getToolNames()));
 			result.setInternalToolExecutionEnabled(this.options.getInternalToolExecutionEnabled());
 			result.setToolContext(new HashMap<>(this.options.getToolContext()));
+			result.setCitationDocuments(new ArrayList<>(this.options.getCitationDocuments()));
 			return result;
 		}
 
