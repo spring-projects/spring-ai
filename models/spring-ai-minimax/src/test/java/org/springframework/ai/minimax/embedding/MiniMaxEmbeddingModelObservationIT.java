@@ -48,7 +48,7 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
  *
  * @author Geng Rong
  */
-@SpringBootTest(classes = MiniMaxEmbeddingModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class MiniMaxEmbeddingModelObservationIT {
 

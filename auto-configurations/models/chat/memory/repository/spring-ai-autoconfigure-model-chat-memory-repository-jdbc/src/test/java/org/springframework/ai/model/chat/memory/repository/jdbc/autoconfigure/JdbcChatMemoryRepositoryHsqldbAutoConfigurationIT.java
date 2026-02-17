@@ -20,7 +20,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -35,21 +34,17 @@ import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-@ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT.TestConfig.class,
-		properties = { "spring.datasource.url=jdbc:hsqldb:mem:chat_memory_auto_configuration_test;DB_CLOSE_DELAY=-1",
-				"spring.datasource.username=sa", "spring.datasource.password=",
-				"spring.datasource.driver-class-name=org.hsqldb.jdbcDriver",
-				"spring.ai.chat.memory.repository.jdbc.initialize-schema=always", "spring.sql.init.mode=always",
-				"spring.jpa.hibernate.ddl-auto=none", "spring.jpa.defer-datasource-initialization=true",
-				"spring.sql.init.continue-on-error=true", "spring.sql.init.schema-locations=classpath:schema.sql",
-				"logging.level.org.springframework.jdbc=DEBUG",
-				"logging.level.org.springframework.boot.sql.init=DEBUG" })
+@SpringBootTest({ "spring.datasource.url=jdbc:hsqldb:mem:chat_memory_auto_configuration_test;DB_CLOSE_DELAY=-1",
+		"spring.datasource.username=sa", "spring.datasource.password=",
+		"spring.datasource.driver-class-name=org.hsqldb.jdbcDriver",
+		"spring.ai.chat.memory.repository.jdbc.initialize-schema=always", "spring.sql.init.mode=always",
+		"spring.jpa.hibernate.ddl-auto=none", "spring.jpa.defer-datasource-initialization=true",
+		"spring.sql.init.continue-on-error=true", "spring.sql.init.schema-locations=classpath:schema.sql",
+		"logging.level.org.springframework.jdbc=DEBUG", "logging.level.org.springframework.boot.sql.init=DEBUG" })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 @ImportAutoConfiguration({ org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration.class,
 		JdbcChatMemoryRepositoryAutoConfiguration.class, JdbcTemplateAutoConfiguration.class,

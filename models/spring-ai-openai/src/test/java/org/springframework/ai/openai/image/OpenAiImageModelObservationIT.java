@@ -46,7 +46,7 @@ import static org.springframework.ai.image.observation.ImageModelObservationDocu
  *
  * @author Thomas Vitale
  */
-@SpringBootTest(classes = OpenAiImageModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiImageModelObservationIT {
 

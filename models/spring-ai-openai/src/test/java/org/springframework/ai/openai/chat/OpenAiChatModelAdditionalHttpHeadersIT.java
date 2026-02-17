@@ -39,7 +39,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 /**
  * @author Christian Tzolov
  */
-@SpringBootTest(classes = OpenAiChatModelAdditionalHttpHeadersIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelAdditionalHttpHeadersIT {
 

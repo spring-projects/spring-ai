@@ -33,7 +33,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
  */
-@SpringBootTest(classes = OpenAiAudioModelNoOpApiKeysIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiAudioModelNoOpApiKeysIT {
 

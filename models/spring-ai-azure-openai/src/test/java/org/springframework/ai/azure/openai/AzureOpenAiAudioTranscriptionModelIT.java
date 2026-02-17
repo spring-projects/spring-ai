@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Piotr Olaszewski
  */
-@SpringBootTest(classes = AzureOpenAiAudioTranscriptionModelIT.TestConfiguration.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariables({
 		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_TRANSCRIPTION_ENDPOINT", matches = ".+") })

@@ -28,7 +28,7 @@ import org.springframework.test.context.jdbc.Sql;
  * @author Yanming Zhou
  * @author Eddú Meléndez
  */
-@SpringBootTest(properties = "spring.datasource.url=jdbc:tc:sqlserver:2022-latest:///")
+@SpringBootTest("spring.datasource.url=jdbc:tc:sqlserver:2022-latest:///")
 @Sql(scripts = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-sqlserver.sql",
 		executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 class JdbcChatMemoryRepositorySqlServerIT extends AbstractJdbcChatMemoryRepositoryIT {

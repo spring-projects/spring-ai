@@ -66,7 +66,7 @@ import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = MistralWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
 class MistralWithOpenAiChatModelIT {
 

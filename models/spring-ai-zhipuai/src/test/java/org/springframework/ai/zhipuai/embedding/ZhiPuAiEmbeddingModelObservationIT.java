@@ -48,7 +48,7 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
  *
  * @author Geng Rong
  */
-@SpringBootTest(classes = ZhiPuAiEmbeddingModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".+")
 public class ZhiPuAiEmbeddingModelObservationIT {
 

@@ -61,7 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @since 1.0.0
  */
-@SpringBootTest(classes = NvidiaWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "NVIDIA_API_KEY", matches = ".+")
 @Disabled("Requires NVIDIA credits")
 class NvidiaWithOpenAiChatModelIT {

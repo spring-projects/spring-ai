@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * For more information on Perplexity's behavior, refer to its API documentation:
  * <a href="https://docs.perplexity.ai/api-reference/chat-completions">perplexity-api</a>
  */
-@SpringBootTest(classes = PerplexityWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "PERPLEXITY_API_KEY", matches = ".+")
 @Disabled("Requires Perplexity credits")
 class PerplexityWithOpenAiChatModelIT {

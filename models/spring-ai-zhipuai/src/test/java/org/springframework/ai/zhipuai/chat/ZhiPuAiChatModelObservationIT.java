@@ -50,7 +50,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  *
  * @author Geng Rong
  */
-@SpringBootTest(classes = ZhiPuAiChatModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "ZHIPU_AI_API_KEY", matches = ".+")
 public class ZhiPuAiChatModelObservationIT {
 

@@ -52,7 +52,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  *
  * @author Thomas Vitale
  */
-@SpringBootTest(classes = OpenAiChatModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelObservationIT {
 

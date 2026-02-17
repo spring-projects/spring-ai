@@ -68,7 +68,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0
  */
 @Testcontainers
-@SpringBootTest(classes = DockerModelRunnerWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 @Disabled("Requires Docker Model Runner enabled. See https://docs.docker.com/desktop/features/model-runner/")
 class DockerModelRunnerWithOpenAiChatModelIT {
 

@@ -49,7 +49,7 @@ import static org.springframework.ai.embedding.observation.EmbeddingModelObserva
  *
  * @author Thomas Vitale
  */
-@SpringBootTest(classes = OpenAiEmbeddingModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiEmbeddingModelObservationIT {
 

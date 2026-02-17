@@ -52,7 +52,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  *
  * @author Geng Rong
  */
-@SpringBootTest(classes = MiniMaxChatModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "MINIMAX_API_KEY", matches = ".+")
 public class MiniMaxChatModelObservationIT {
 
