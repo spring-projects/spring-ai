@@ -36,6 +36,7 @@
 **** xref:api/chat/openai-sdk-chat.adoc[OpenAI SDK (Official)]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
 **** xref:api/chat/qianfan-chat.adoc[QianFan]
+**** xref:api/chat/watsonx-ai-chat.adoc[IBM watsonx.ai]
 **** xref:api/chat/zhipuai-chat.adoc[ZhiPu AI]
 
 *** xref:api/embeddings.adoc[Embedding Models]
@@ -54,6 +55,7 @@
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
 **** xref:api/embeddings/postgresml-embeddings.adoc[PostgresML]
 **** xref:api/embeddings/qianfan-embeddings.adoc[QianFan]
+**** xref:api/embeddings/watsonx-ai-embeddings.adoc[IBM watsonx.ai]
 **** VertexAI
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
@@ -78,6 +80,7 @@
 *** xref:api/moderation[Moderation Models]
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]
 **** xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI]
+**** xref:api/moderation/watsonx-ai-moderation.adoc[IBM watsonx.ai]
 // ** xref:api/generic-model.adoc[]
 
 ** xref:api/chat-memory.adoc[Chat Memory]
