@@ -234,7 +234,7 @@ responseStream.subscribe(speechResponse -> {
 
 == Voices API
 
-The ElevenLabs Voices API allows you to retrieve information about available voices, their settings, and default voice settings. You can use this API to discover the `voiceId`s to use in your speech requests.
+The ElevenLabs Voices API allows you to retrieve information about available voices, their settings, and default voice settings. You can use this API to discover the ``voiceId``s to use in your speech requests.
 
 To use the Voices API, you'll need to create an instance of `ElevenLabsVoicesApi`:
 
