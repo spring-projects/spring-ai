@@ -54,8 +54,10 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Yanming Zhou
  * @since 1.0.0
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(
+		after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class, SpringAiRetryAutoConfiguration.class },
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @EnableConfigurationProperties({ AnthropicChatProperties.class, AnthropicConnectionProperties.class })
 @ConditionalOnClass(AnthropicApi.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.ANTHROPIC,
