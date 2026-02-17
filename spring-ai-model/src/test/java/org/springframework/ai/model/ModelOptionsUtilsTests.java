@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model;
 
+import java.util.Locale;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -266,6 +268,25 @@ public class ModelOptionsUtilsTests {
 				() -> ModelOptionsUtils.OBJECT_MAPPER.readValue(jsonWithInvalidFinishReason, TestApiResponse.class))
 			.isInstanceOf(JsonProcessingException.class)
 			.hasMessageContaining("INVALID_VALUE");
+	}
+
+	@Test
+	public void toUpperCaseTypeValuesShouldBeLocaleIndependent() {
+		Locale previousDefault = Locale.getDefault();
+		Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+		try {
+			ObjectNode root = JsonMapper.builder().build().createObjectNode();
+			root.put("type", "integer");
+			root.putObject("properties").putObject("id").put("type", "string");
+
+			ModelOptionsUtils.toUpperCaseTypeValues(root);
+
+			assertThat(root.get("type").asText()).isEqualTo("INTEGER");
+			assertThat(root.get("properties").get("id").get("type").asText()).isEqualTo("STRING");
+		}
+		finally {
+			Locale.setDefault(previousDefault);
+		}
 	}
 
 	public enum ColorEnum {

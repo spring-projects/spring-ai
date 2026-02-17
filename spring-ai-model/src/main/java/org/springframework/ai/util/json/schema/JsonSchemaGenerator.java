@@ -21,6 +21,7 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -273,7 +274,7 @@ public final class JsonSchemaGenerator {
 				}
 				else if (value.isTextual() && entry.getKey().equals("type")) {
 					String oldValue = node.get("type").asText();
-					node.put("type", oldValue.toUpperCase());
+					node.put("type", oldValue.toUpperCase(Locale.ROOT));
 				}
 			});
 		}
