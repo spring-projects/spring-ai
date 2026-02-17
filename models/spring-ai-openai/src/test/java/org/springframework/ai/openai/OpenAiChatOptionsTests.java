@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.openai.api.OpenAiApi;
@@ -36,6 +37,7 @@ import static org.springframework.ai.openai.api.OpenAiApi.ChatCompletionRequest.
  * Tests for {@link OpenAiChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Filip Hrisafov
  */
 class OpenAiChatOptionsTests {
 
@@ -268,6 +270,7 @@ class OpenAiChatOptionsTests {
 		assertThat(options.getStreamUsage()).isFalse();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getServiceTier()).isNull();
+		assertThat(options.getOutputSchema()).isNull();
 	}
 
 	@Test
@@ -538,6 +541,72 @@ class OpenAiChatOptionsTests {
 		// Both should be set when using setters directly
 		assertThat(options.getMaxTokens()).isEqualTo(50);
 		assertThat(options.getMaxCompletionTokens()).isEqualTo(100);
+	}
+
+	@Test
+	void testSetOutputSchema() {
+		OpenAiChatOptions options = new OpenAiChatOptions();
+		// language=JSON
+		String schema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+				""";
+
+		options.setOutputSchema(schema);
+
+		assertThat(options.getResponseFormat()).isNotNull();
+		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+		assertThat(options.getResponseFormat().getJsonSchema()).isNotNull();
+		assertThat(options.getResponseFormat().getJsonSchema().getSchema()).containsKey("type");
+		assertThat(options.getResponseFormat().getJsonSchema().getStrict()).isTrue();
+		assertThat(options.getResponseFormat().getJsonSchema().getName()).isEqualTo("custom_schema");
+		assertThat(options.getResponseFormat().getSchema()).isEqualTo(schema);
+		assertThat(options.getOutputSchema()).isEqualTo(schema);
+	}
+
+	@Test
+	void testGetOutputSchemaWithResponseFormatJsonSchema() {
+		OpenAiChatOptions options = new OpenAiChatOptions();
+		// language=JSON
+		String schema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+				""";
+
+		options.setResponseFormat(ResponseFormat.builder()
+			.type(ResponseFormat.Type.JSON_SCHEMA)
+			.jsonSchema(ResponseFormat.JsonSchema.builder().strict(true).schema(schema).build())
+			.build());
+
+		assertThat(options.getResponseFormat()).isNotNull();
+		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+		assertThat(options.getResponseFormat().getJsonSchema()).isNotNull();
+		assertThat(options.getResponseFormat().getJsonSchema().getSchema()).containsKey("type");
+		assertThat(options.getResponseFormat().getJsonSchema().getStrict()).isTrue();
+		assertThat(options.getResponseFormat().getJsonSchema().getName()).isEqualTo("custom_schema");
+		assertThat(options.getResponseFormat().getSchema()).isNull();
+		JsonAssertions.assertThatJson(options.getOutputSchema()).isEqualTo("""
+				{
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+				""");
 	}
 
 }
