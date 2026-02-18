@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Disabled;
@@ -492,6 +493,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.stream()
 				.filter(cr -> cr.getResult() != null)
 				.map(cr -> cr.getResult().getOutput().getText())
+				.filter(Objects::nonNull)
 				.collect(Collectors.joining());
 		// @formatter:on
 
@@ -528,6 +530,7 @@ class OpenAiChatClientIT extends AbstractIT {
 				.stream()
 				.filter(cr -> cr.getResult() != null)
 				.map(cr -> cr.getResult().getOutput().getText())
+				.filter(Objects::nonNull)
 				.collect(Collectors.joining());
 		// @formatter:on
 
