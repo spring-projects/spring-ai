@@ -28,6 +28,16 @@ import org.jspecify.annotations.Nullable;
 public class AbstractOpenAiSdkOptions {
 
 	/**
+	 * Default request timeout for the OpenAI client.
+	 */
+	public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
+
+	/**
+	 * Default maximum number of retries for the OpenAI client.
+	 */
+	public static final int DEFAULT_MAX_RETRIES = 3;
+
+	/**
 	 * The deployment URL to connect to OpenAI.
 	 */
 	private @Nullable String baseUrl;
@@ -78,12 +88,12 @@ public class AbstractOpenAiSdkOptions {
 	/**
 	 * Request timeout for OpenAI client.
 	 */
-	private @Nullable Duration timeout;
+	private Duration timeout = DEFAULT_TIMEOUT;
 
 	/**
 	 * Maximum number of retries for OpenAI client.
 	 */
-	private @Nullable Integer maxRetries;
+	private int maxRetries = DEFAULT_MAX_RETRIES;
 
 	/**
 	 * Proxy settings for OpenAI client.
@@ -181,19 +191,19 @@ public class AbstractOpenAiSdkOptions {
 		this.isGitHubModels = gitHubModels;
 	}
 
-	public @Nullable Duration getTimeout() {
+	public Duration getTimeout() {
 		return this.timeout;
 	}
 
-	public void setTimeout(@Nullable Duration timeout) {
+	public void setTimeout(Duration timeout) {
 		this.timeout = timeout;
 	}
 
-	public @Nullable Integer getMaxRetries() {
+	public int getMaxRetries() {
 		return this.maxRetries;
 	}
 
-	public void setMaxRetries(@Nullable Integer maxRetries) {
+	public void setMaxRetries(int maxRetries) {
 		this.maxRetries = maxRetries;
 	}
 

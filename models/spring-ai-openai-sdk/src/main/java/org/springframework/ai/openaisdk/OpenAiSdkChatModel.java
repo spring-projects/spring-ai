@@ -1346,17 +1346,17 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 */
 	public static final class Builder {
 
-		private OpenAIClient openAiClient;
+		private @Nullable OpenAIClient openAiClient;
 
-		private OpenAIClientAsync openAiClientAsync;
+		private @Nullable OpenAIClientAsync openAiClientAsync;
 
-		private OpenAiSdkChatOptions options;
+		private @Nullable OpenAiSdkChatOptions options;
 
-		private ToolCallingManager toolCallingManager;
+		private @Nullable ToolCallingManager toolCallingManager;
 
-		private ObservationRegistry observationRegistry;
+		private @Nullable ObservationRegistry observationRegistry;
 
-		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
+		private @Nullable ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
 		private Builder() {
 		}

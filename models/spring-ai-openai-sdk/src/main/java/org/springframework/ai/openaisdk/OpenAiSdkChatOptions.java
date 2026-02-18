@@ -796,12 +796,8 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 			this.options.setMicrosoftFoundry(from.isMicrosoftFoundry());
 			this.options.setGitHubModels(from.isGitHubModels());
 			this.options.setCustomHeaders(from.getCustomHeaders());
-			if (from.getTimeout() != null) {
-				this.options.setTimeout(from.getTimeout());
-			}
-			if (from.getMaxRetries() != null) {
-				this.options.setMaxRetries(from.getMaxRetries());
-			}
+			this.options.setTimeout(from.getTimeout());
+			this.options.setMaxRetries(from.getMaxRetries());
 			if (from.getProxy() != null) {
 				this.options.setProxy(from.getProxy());
 			}
@@ -943,7 +939,7 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 			return this;
 		}
 
-		public Builder maxRetries(Integer maxRetries) {
+		public Builder maxRetries(int maxRetries) {
 			this.options.setMaxRetries(maxRetries);
 			return this;
 		}

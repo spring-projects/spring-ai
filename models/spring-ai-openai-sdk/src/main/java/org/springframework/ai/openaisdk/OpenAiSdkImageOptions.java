@@ -293,12 +293,8 @@ public class OpenAiSdkImageOptions extends AbstractOpenAiSdkOptions implements I
 				}
 				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
 				this.options.setGitHubModels(castFrom.isGitHubModels());
-				if (castFrom.getTimeout() != null) {
-					this.options.setTimeout(castFrom.getTimeout());
-				}
-				if (castFrom.getMaxRetries() != null) {
-					this.options.setMaxRetries(castFrom.getMaxRetries());
-				}
+				this.options.setTimeout(castFrom.getTimeout());
+				this.options.setMaxRetries(castFrom.getMaxRetries());
 				if (castFrom.getProxy() != null) {
 					this.options.setProxy(castFrom.getProxy());
 				}

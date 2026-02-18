@@ -51,10 +51,6 @@ public final class OpenAiSdkSetup {
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiSdkSetup.class);
 
-	private static final Duration DEFAULT_DURATION = Duration.ofSeconds(60);
-
-	private static final int DEFAULT_MAX_RETRIES = 3;
-
 	private OpenAiSdkSetup() {
 	}
 
@@ -67,18 +63,12 @@ public final class OpenAiSdkSetup {
 	public static OpenAIClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String azureDeploymentName,
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
-			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, @Nullable Duration timeout,
-			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
+			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
+			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
-		if (timeout == null) {
-			timeout = DEFAULT_DURATION;
-		}
-		if (maxRetries == null) {
-			maxRetries = DEFAULT_MAX_RETRIES;
-		}
 		OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
@@ -126,18 +116,12 @@ public final class OpenAiSdkSetup {
 	public static OpenAIClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String azureDeploymentName,
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
-			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, @Nullable Duration timeout,
-			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
+			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
+			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
-		if (timeout == null) {
-			timeout = DEFAULT_DURATION;
-		}
-		if (maxRetries == null) {
-			maxRetries = DEFAULT_MAX_RETRIES;
-		}
 		OpenAIOkHttpClientAsync.Builder builder = OpenAIOkHttpClientAsync.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
