@@ -353,8 +353,7 @@
 		<json-unit-assertj.version>5.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<!-- TODO Update to 0.18.0 when released -->
-		<mcp.sdk.version>0.18.0-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>1.0.0-SNAPSHOT</mcp.sdk.version>
 		<!-- TODO Update to 0.9.0 when released -->
 		<mcp-annotations.version>0.9.0-SNAPSHOT</mcp-annotations.version>
 
