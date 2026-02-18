@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.util.DefaultIndenter;
 import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectWriter;
 import tools.jackson.databind.json.JsonMapper;
@@ -250,7 +251,10 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @return Configured JSON mapper.
 	 */
 	protected JsonMapper getJsonMapper() {
-		return JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		return JsonMapper.builder()
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 	}
 
 	/**
