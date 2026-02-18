@@ -103,7 +103,7 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 	open class Config {
 
 		@Bean
-		@Description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state.")
+		@Description("Find the weather conditions, forecasts, and temperatures for a location, like a city or state, represented by its geographical coordinates.")
 		open fun weatherInfo(): Function1<KotlinRequest, KotlinResponse> {
 			return MockKotlinWeatherService()
 		}
