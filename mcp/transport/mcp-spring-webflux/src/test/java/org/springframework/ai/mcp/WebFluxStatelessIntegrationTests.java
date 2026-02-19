@@ -56,12 +56,12 @@ class WebFluxStatelessIntegrationTests extends AbstractStatelessIntegrationTests
 	protected void prepareClients(int port, String mcpEndpoint) {
 		clientBuilders
 			.put("httpclient",
-					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
+					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port)
 						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
 						.build()).initializationTimeout(Duration.ofHours(10)).requestTimeout(Duration.ofHours(10)));
 		clientBuilders
 			.put("webflux", McpClient
-				.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://localhost:" + port))
+				.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 					.endpoint(CUSTOM_MESSAGE_ENDPOINT)
 					.build())
 				.initializationTimeout(Duration.ofHours(10))

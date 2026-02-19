@@ -260,13 +260,13 @@ public class AsyncServerMcpTransportContextIntegrationTests {
 		this.asyncStreamableClient = McpClient
 			.async(WebClientStreamableHttpTransport
 				.builder(
-						WebClient.builder().baseUrl("http://localhost:" + port).filter(this.asyncClientContextProvider))
+						WebClient.builder().baseUrl("http://127.0.0.1:" + port).filter(this.asyncClientContextProvider))
 				.build())
 			.build();
 		this.asyncSseClient = McpClient
 			.async(WebFluxSseClientTransport
 				.builder(
-						WebClient.builder().baseUrl("http://localhost:" + port).filter(this.asyncClientContextProvider))
+						WebClient.builder().baseUrl("http://127.0.0.1:" + port).filter(this.asyncClientContextProvider))
 				.build())
 			.build();
 	}

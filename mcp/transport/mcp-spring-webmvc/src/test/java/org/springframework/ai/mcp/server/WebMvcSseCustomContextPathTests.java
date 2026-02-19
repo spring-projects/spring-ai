@@ -61,7 +61,7 @@ class WebMvcSseCustomContextPathTests {
 		}
 
 		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
-		var clientTransport = HttpClientSseClientTransport.builder("http://localhost:" + port)
+		var clientTransport = HttpClientSseClientTransport.builder("http://127.0.0.1:" + port)
 			.sseEndpoint(CUSTOM_CONTEXT_PATH + WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
 			.build();
 

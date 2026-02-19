@@ -205,13 +205,13 @@ public class McpTransportContextIntegrationTests {
 		}
 		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
 		this.streamableClient = McpClient
-			.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
+			.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port)
 				.httpRequestCustomizer(this.clientRequestCustomizer)
 				.build())
 			.transportContextProvider(this.clientContextProvider)
 			.build();
 		this.sseClient = McpClient
-			.sync(HttpClientSseClientTransport.builder("http://localhost:" + port)
+			.sync(HttpClientSseClientTransport.builder("http://127.0.0.1:" + port)
 				.httpRequestCustomizer(this.clientRequestCustomizer)
 				.build())
 			.transportContextProvider(this.clientContextProvider)

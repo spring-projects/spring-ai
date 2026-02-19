@@ -81,13 +81,13 @@ class WebMvcStreamableIntegrationTests extends AbstractMcpClientServerIntegratio
 
 		this.clientBuilders
 			.put("httpclient",
-					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
+					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port)
 						.endpoint(MESSAGE_ENDPOINT)
 						.build()).initializationTimeout(Duration.ofHours(10)).requestTimeout(Duration.ofHours(10)));
 
 		this.clientBuilders.put("webflux",
 				McpClient.sync(WebClientStreamableHttpTransport
-					.builder(WebClient.builder().baseUrl("http://localhost:" + port))
+					.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 					.endpoint(MESSAGE_ENDPOINT)
 					.build()));
 
@@ -132,13 +132,13 @@ class WebMvcStreamableIntegrationTests extends AbstractMcpClientServerIntegratio
 	protected void prepareClients(int port, String mcpEndpoint) {
 
 		this.clientBuilders.put("httpclient", McpClient
-			.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port).endpoint(mcpEndpoint).build())
+			.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port).endpoint(mcpEndpoint).build())
 			.requestTimeout(Duration.ofHours(10)));
 
 		this.clientBuilders.put("webflux",
 				McpClient
 					.sync(WebClientStreamableHttpTransport
-						.builder(WebClient.builder().baseUrl("http://localhost:" + port))
+						.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 						.endpoint(mcpEndpoint)
 						.build())
 					.requestTimeout(Duration.ofHours(10)));

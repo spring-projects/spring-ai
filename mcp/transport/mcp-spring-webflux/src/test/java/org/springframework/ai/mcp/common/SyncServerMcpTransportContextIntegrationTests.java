@@ -248,7 +248,7 @@ public class SyncServerMcpTransportContextIntegrationTests {
 		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
 		int port = this.httpServer.port();
 		this.streamableClient = McpClient.sync(WebClientStreamableHttpTransport.builder(WebClient.builder()
-			.baseUrl("http://localhost:" + port)
+			.baseUrl("http://127.0.0.1:" + port)
 			.filter((request, next) -> Mono.deferContextual(ctx -> {
 				var context = ctx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
 				var headerValue = context.get("client-side-header-value");
@@ -259,7 +259,7 @@ public class SyncServerMcpTransportContextIntegrationTests {
 				return next.exchange(reqWithHeader);
 			}))).build()).transportContextProvider(this.clientContextProvider).build();
 		this.sseClient = McpClient.sync(WebFluxSseClientTransport.builder(WebClient.builder()
-			.baseUrl("http://localhost:" + port)
+			.baseUrl("http://127.0.0.1:" + port)
 			.filter((request, next) -> Mono.deferContextual(ctx -> {
 				var context = ctx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
 				var headerValue = context.get("client-side-header-value");

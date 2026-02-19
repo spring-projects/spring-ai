@@ -66,11 +66,11 @@ class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests 
 	protected void prepareClients(int port, String mcpEndpoint) {
 
 		clientBuilders.put("httpclient",
-				McpClient.sync(HttpClientSseClientTransport.builder("http://localhost:" + port).build())
+				McpClient.sync(HttpClientSseClientTransport.builder("http://127.0.0.1:" + port).build())
 					.requestTimeout(Duration.ofHours(10)));
 
 		clientBuilders.put("webflux", McpClient
-			.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://localhost:" + port)).build())
+			.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port)).build())
 			.requestTimeout(Duration.ofHours(10)));
 	}
 

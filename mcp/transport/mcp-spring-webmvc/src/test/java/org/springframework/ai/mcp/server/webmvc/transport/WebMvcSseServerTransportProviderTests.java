@@ -67,7 +67,7 @@ class WebMvcSseServerTransportProviderTests {
 		}
 
 		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
-		HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder("http://localhost:" + port)
+		HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder("http://127.0.0.1:" + port)
 			.sseEndpoint(WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
 			.build();
 

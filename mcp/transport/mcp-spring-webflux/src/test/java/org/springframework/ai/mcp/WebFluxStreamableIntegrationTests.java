@@ -64,13 +64,13 @@ class WebFluxStreamableIntegrationTests extends AbstractMcpClientServerIntegrati
 
 		clientBuilders
 			.put("httpclient",
-					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
+					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port)
 						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
 						.build()).requestTimeout(Duration.ofHours(10)));
 		clientBuilders.put("webflux",
 				McpClient
 					.sync(WebClientStreamableHttpTransport
-						.builder(WebClient.builder().baseUrl("http://localhost:" + port))
+						.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
 						.build())
 					.requestTimeout(Duration.ofHours(10)));

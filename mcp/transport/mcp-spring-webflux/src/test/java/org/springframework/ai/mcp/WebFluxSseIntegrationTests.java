@@ -66,13 +66,13 @@ class WebFluxSseIntegrationTests extends AbstractMcpClientServerIntegrationTests
 
 		clientBuilders
 			.put("httpclient",
-					McpClient.sync(HttpClientSseClientTransport.builder("http://localhost:" + port)
+					McpClient.sync(HttpClientSseClientTransport.builder("http://127.0.0.1:" + port)
 						.sseEndpoint(CUSTOM_SSE_ENDPOINT)
 						.build()).requestTimeout(Duration.ofHours(10)));
 
 		clientBuilders.put("webflux",
 				McpClient
-					.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://localhost:" + port))
+					.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 						.sseEndpoint(CUSTOM_SSE_ENDPOINT)
 						.build())
 					.requestTimeout(Duration.ofHours(10)));

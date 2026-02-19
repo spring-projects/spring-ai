@@ -102,7 +102,7 @@ class WebFluxStreamableHttpVersionNegotiationIntegrationTests {
 	@Test
 	void usesLatestVersion() {
 		var client = McpClient
-			.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://localhost:" + this.port))
+			.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + this.port))
 				.build())
 			.requestTimeout(Duration.ofHours(10))
 			.build();
@@ -131,7 +131,7 @@ class WebFluxStreamableHttpVersionNegotiationIntegrationTests {
 	@Test
 	void usesServerSupportedVersion() {
 		var transport = WebClientStreamableHttpTransport
-			.builder(WebClient.builder().baseUrl("http://localhost:" + this.port))
+			.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + this.port))
 			.supportedProtocolVersions(List.of(ProtocolVersions.MCP_2025_11_25, "2263-03-18"))
 			.build();
 		var client = McpClient.sync(transport).requestTimeout(Duration.ofHours(10)).build();
