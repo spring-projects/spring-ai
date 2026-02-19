@@ -4,23 +4,23 @@
 [[upgrading-to-2-0-0-M3]]
 == Upgrading to 2.0.0-M3
 
-==== Conversation History Removed from ToolContext
+=== Conversation History Removed from ToolContext
 
 Conversation history is no longer automatically added to `ToolContext`. The `TOOL_CALL_HISTORY` constant and `getToolCallHistory()` method have been removed from the `ToolContext` class.
 
-===== Impact
+==== Impact
 
 * `ToolContext.TOOL_CALL_HISTORY` constant no longer exists
 * `ToolContext.getToolCallHistory()` method no longer exists
 * Conversation history is no longer automatically populated in `ToolContext`
 
-===== Why This Change?
+==== Why This Change?
 
 1. **Memory Efficiency**: Prevents unbounded memory growth in long conversations
 2. **Separation of Concerns**: Tools should operate on their parameters, not manage conversation state
 3. **Architecture Alignment**: Conversation context belongs at the advisor level, not in tool execution
 
-===== Migration
+==== Migration
 
 If your application needs conversation history management, use `ToolCallAdvisor`:
 
@@ -94,6 +94,117 @@ Flux<ChatResponse> responseFlux = model.internalStream(prompt, previousChatRespo
 ChatResponse response = model.call(prompt);
 Flux<ChatResponse> responseFlux = model.stream(prompt);
 ----
+
+=== MCP Spring Transport Modules Moved to Spring AI
+
+The `mcp-spring-webflux` and `mcp-spring-webmvc` transport modules are no longer shipped by the MCP Java SDK. Starting with Spring AI 2.0, they are part of the Spring AI project itself.
+
+==== Impact
+
+* The Maven group ID for both artifacts has changed.
+* Java package names for all Spring-specific transport classes have changed.
+* The MCP Java SDK version requirement has been bumped from `0.18.x` to `1.0.x`.
+
+==== Maven Dependency Group ID Change
+
+.Before
+[source,xml]
+----
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+.After
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+NOTE: When using the `spring-ai-bom` or a Spring AI MCP starter (`spring-ai-starter-mcp-server-webflux`, `spring-ai-starter-mcp-server-webmvc`, `spring-ai-starter-mcp-client-webflux`), **no explicit version is needed** — the BOM manages it automatically.
+
+==== Java Package Relocation
+
+All Spring-specific transport classes have moved to `org.springframework.ai` packages.
+
+.Server transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebMvcSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+|===
+
+.Client transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseClientTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+
+|`WebClientStreamableHttpTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+|===
+
+==== Migration
+
+Update your Java imports:
+
+[source,java]
+----
+// Before
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
+import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
+
+// After
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
+import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+----
+
+NOTE: If you rely exclusively on Spring Boot auto-configuration via the Spring AI starters, **no Java code changes are required**. Only update your `pom.xml`/`build.gradle` dependency coordinates as described above.
+
+For the full MCP transport migration reference, see xref:api/mcp/mcp-overview.adoc#_upgrading_to_spring_ai_2_0[Upgrading to Spring AI 2.0].
 
 [[upgrading-to-2-0-0-M2]]
 == Upgrading to 2.0.0-M2

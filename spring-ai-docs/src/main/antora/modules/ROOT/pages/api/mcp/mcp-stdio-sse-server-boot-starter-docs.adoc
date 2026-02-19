@@ -39,7 +39,7 @@ Full MCP Server feature support with `SSE` (Server-Sent Events) server transport
 * HTTP-based transport using Spring MVC (`WebMvcSseServerTransportProvider`)
 * Automatically configured SSE endpoints
 * Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
-* Includes `spring-boot-starter-web` and `mcp-spring-webmvc` dependencies
+* Includes `spring-boot-starter-web` and `org.springframework.ai:mcp-spring-webmvc` dependencies
 
 === SSE WebFlux Server
 
@@ -58,7 +58,7 @@ The starter activates the `McpWebFluxServerAutoConfiguration` and `McpServerAuto
 * Reactive transport using Spring WebFlux (`WebFluxSseServerTransportProvider`)
 * Automatically configured reactive SSE endpoints
 * Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
-* Includes `spring-boot-starter-webflux` and `mcp-spring-webflux` dependencies
+* Includes `spring-boot-starter-webflux` and `org.springframework.ai:mcp-spring-webflux` dependencies
 
 [NOTE]
 ====
