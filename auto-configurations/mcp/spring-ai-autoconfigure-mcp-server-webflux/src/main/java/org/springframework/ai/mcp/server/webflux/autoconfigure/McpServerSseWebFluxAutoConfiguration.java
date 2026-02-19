@@ -17,13 +17,13 @@
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -58,7 +58,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  *
  * <pre>{@code
  * <dependency>
- *     <groupId>io.modelcontextprotocol.sdk</groupId>
+ *     <groupId>org.springframework.ai</groupId>
  *     <artifactId>mcp-spring-webflux</artifactId>
  * </dependency>
  * <dependency>

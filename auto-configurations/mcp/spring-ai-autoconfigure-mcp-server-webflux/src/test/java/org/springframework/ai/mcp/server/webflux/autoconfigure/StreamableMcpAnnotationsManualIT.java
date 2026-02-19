@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -83,6 +82,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpSer
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;

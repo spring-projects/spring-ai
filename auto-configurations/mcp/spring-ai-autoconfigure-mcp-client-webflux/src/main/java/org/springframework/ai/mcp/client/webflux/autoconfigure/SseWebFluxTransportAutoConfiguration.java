@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -31,6 +30,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.PropertiesMcpSseCl
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

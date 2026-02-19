@@ -29,7 +29,6 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -69,6 +68,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfi
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;

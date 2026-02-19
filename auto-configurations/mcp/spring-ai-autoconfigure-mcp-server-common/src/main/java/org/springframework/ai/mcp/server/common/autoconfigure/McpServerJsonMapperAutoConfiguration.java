@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.modelcontextprotocol.spec.McpSchema;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.SerializationFeature;
@@ -62,6 +63,8 @@ public class McpServerJsonMapperAutoConfiguration {
 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 			// Register Jackson modules via server loader
 			.addModules(JacksonUtils.instantiateAvailableModules())
+			.changeDefaultPropertyInclusion(
+					incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
 			.build();
 	}
 

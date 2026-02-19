@@ -17,11 +17,11 @@
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.web.servlet.function.RouterFunction;

@@ -17,7 +17,6 @@
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.McpSchema;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -25,6 +24,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfi
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
