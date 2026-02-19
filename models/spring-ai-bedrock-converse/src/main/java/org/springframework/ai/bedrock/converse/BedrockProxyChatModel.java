@@ -267,8 +267,8 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
-		return this.defaultOptions;
+	public BedrockChatOptions getDefaultOptions() {
+		return BedrockChatOptions.fromOptions(this.defaultOptions);
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {

@@ -562,7 +562,7 @@ public class OllamaChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public OllamaChatOptions getDefaultOptions() {
 		return OllamaChatOptions.fromOptions(this.defaultOptions);
 	}
 

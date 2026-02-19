@@ -133,7 +133,7 @@ public class OCICohereChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public OCICohereChatOptions getDefaultOptions() {
 		return OCICohereChatOptions.fromOptions(this.defaultOptions);
 	}
 

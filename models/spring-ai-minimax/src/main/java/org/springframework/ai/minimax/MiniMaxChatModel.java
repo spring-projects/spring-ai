@@ -316,7 +316,7 @@ public class MiniMaxChatModel implements ChatModel {
 	}
 
 	@Override
-	public ChatOptions getDefaultOptions() {
+	public MiniMaxChatOptions getDefaultOptions() {
 		return MiniMaxChatOptions.fromOptions(this.defaultOptions);
 	}
 
