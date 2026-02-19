@@ -1,0 +1,321 @@
+name: Build + Deploy on development branches
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow_ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-all:
+    name: Build all modules
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu22-4-16-OSS
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        if: ${{ github.event_name != 'schedule' }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/build-cache
+          # See pr-check.yml for an explanation of the key format
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
+            build-cache-${{ runner.os }}-
+
+      - name: Build all modules with unit tests
+        run: |
+          ./mvnw --batch-mode -ntp --update-snapshots clean install
+
+      - name: Upload Spring-AI Built Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: ~/.m2/repository/org/springframework/ai
+          retention-days: 1 # Intent is to share only with downstream jobs in this workflow
+
+      - name: Purge Spring AI Built Artifacts # We don't want the setup-java m2 cache to capture our products, only our deps
+        run: |
+          rm -fr ~/.m2/repository/org/springframework/ai
+
+
+  test-ollama:
+    name: Test Ollama
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    needs: build-all
+    services:
+      ollama:
+        image: ollama/ollama:latest
+        ports:
+          - 11434:11434
+    env:
+      OLLAMA_WITH_REUSE: true
+      OLLAMA_AUTOCONF_TESTS_ENABLED: "true"
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
+        if: ${{ github.event_name != 'schedule' }}
+        with:
+          path: ~/.m2/build-cache
+          key: build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-ollama-${{ hashFiles('**/pom.xml') }}-
+            build-cache-${{ runner.os }}-
+
+      - name: Download Spring-AI Built Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ~/.m2/repository/org/springframework/ai
+
+      - name: Configure Testcontainers
+        run: |
+          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
+
+      - name: Test Ollama modules
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw --batch-mode -ntp --no-snapshot-updates \
+            -pl models/spring-ai-ollama,auto-configurations/models/spring-ai-autoconfigure-model-ollama \
+            -Pci-fast-integration-tests \
+            -Dfailsafe.rerunFailingTestsCount=3 \
+            verify
+
+  test-openai:
+    name: Test OpenAI
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu-latest
+    needs: build-all
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/build-cache
+          key: build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-openai-${{ hashFiles('**/pom.xml') }}-
+            build-cache-${{ runner.os }}-
+
+      - name: Download Spring-AI Built Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ~/.m2/repository/org/springframework/ai
+
+      - name: Configure Testcontainers
+        run: |
+          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
+
+      - name: Test OpenAI modules
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw --batch-mode -ntp --no-snapshot-updates \
+            -pl models/spring-ai-openai,auto-configurations/models/spring-ai-autoconfigure-model-openai \
+            -Pci-fast-integration-tests \
+            -Dfailsafe.rerunFailingTestsCount=3 \
+            verify
+
+  test-mcp-genai:
+    name: Test MCP, Google GenAI
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu22-4-16-OSS
+    needs: build-all
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/build-cache
+          key: build-cache-${{ runner.os }}-mcp-genai-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-mcp-genai-${{ hashFiles('**/pom.xml') }}-
+            build-cache-${{ runner.os }}-
+
+      - name: Download Spring-AI Built Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ~/.m2/repository/org/springframework/ai
+
+      - name: Configure Testcontainers
+        run: |
+          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
+
+      - name: Test MCP and Google GenAI modules
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw --batch-mode -ntp --no-snapshot-updates \
+            -pl models/spring-ai-google-genai,auto-configurations/models/spring-ai-autoconfigure-model-google-genai,mcp/common,mcp/mcp-annotations-spring,mcp/transport/mcp-spring-webflux,mcp/transport/mcp-spring-webmvc,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux,spring-ai-integration-tests \
+            -Pci-fast-integration-tests \
+            -Dfailsafe.rerunFailingTestsCount=3 \
+            verify
+
+  test-vector-stores:
+    name: Test Vector Stores (Chroma, PgVector)
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ubuntu22-4-16-OSS
+    needs: build-all
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/build-cache
+          key: build-cache-${{ runner.os }}-vector-stores-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-vector-stores-${{ hashFiles('**/pom.xml') }}-
+            build-cache-${{ runner.os }}-
+
+      - name: Download Spring-AI Built Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: ~/.m2/repository/org/springframework/ai
+
+      - name: Configure Testcontainers
+        run: |
+          echo "testcontainers.reuse.enable=true" > $HOME/.testcontainers.properties
+
+      - name: Test vector store modules
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./mvnw --batch-mode -ntp --no-snapshot-updates \
+            -pl vector-stores/spring-ai-chroma-store,vector-stores/spring-ai-pgvector-store \
+            -Pci-fast-integration-tests \
+            -Dfailsafe.rerunFailingTestsCount=3 \
+            verify
+
+  handle-documentation:
+    name: Generate and upload javadocs, trigger antora reference doc
+    if: ${{  github.repository_owner == 'spring-projects'  && github.event_name != 'schedule'}}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    needs: [build-all, test-ollama, test-openai, test-mcp-genai, test-vector-stores]
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Trigger Antora build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-docs.yml -r docs-build
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # NOT setting up maven build-cache b/c javadoc:aggregate-jar is forking lifecyle and can't benefit from it anyway
+
+      - name: Generate Java docs
+        run: ./mvnw --batch-mode -ntp javadoc:aggregate-jar
+
+      - name: Capture project version
+        run: echo PROJECT_VERSION=$(./mvnw help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
+
+      - name: Setup SSH key
+        run: |
+          mkdir "$HOME/.ssh"
+          echo "${{ secrets.DOCS_SSH_KEY }}" > "$HOME/.ssh/key"
+          chmod 600 "$HOME/.ssh/key"
+          echo "${{ secrets.DOCS_SSH_HOST_KEY }}" > "$HOME/.ssh/known_hosts"
+
+      - name: Deploy docs
+        run: |
+          ssh -i $HOME/.ssh/key ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }} "cd ${{ secrets.DOCS_PATH }} && rm -fr $PROJECT_VERSION && mkdir -p $PROJECT_VERSION"
+          scp -i $HOME/.ssh/key target/spring-ai-parent-${PROJECT_VERSION}-javadoc.jar ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }}:${{ secrets.DOCS_PATH }}/$PROJECT_VERSION
+          ssh -i $HOME/.ssh/key ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }} "cd ${{ secrets.DOCS_PATH }}/${PROJECT_VERSION} && unzip spring-ai-parent-${PROJECT_VERSION}-javadoc.jar -d api && rm spring-ai-parent-${PROJECT_VERSION}-javadoc.jar"
+
+
+  deploy-artifactory:
+    name: Deploy to Artifactory
+    runs-on: ubuntu-latest
+    needs: [build-all, test-ollama, test-openai, test-mcp-genai, test-vector-stores]
+    if: ${{  github.repository_owner == 'spring-projects' && github.event_name != 'schedule' }}
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Maven Build-Cache (~/.m2/build-cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/build-cache
+          key: build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-${{ github.run_id }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}-
+            build-cache-${{ runner.os }}-
+
+      - name: Deploy to Artifactory
+        env:
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        run: |
+          ./mvnw -s settings.xml --batch-mode -ntp -Dmaven.test.skip deploy
