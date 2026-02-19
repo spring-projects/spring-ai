@@ -649,7 +649,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 	 */
 	public static class Builder {
 
-		private McpJsonMapper jsonMapper = McpJsonDefaults.getMapper();
+		private @Nullable McpJsonMapper jsonMapper;
 
 		private String mcpEndpoint = "/mcp";
 
@@ -744,8 +744,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		 */
 		public WebMvcStreamableServerTransportProvider build() {
 			Assert.notNull(this.mcpEndpoint, "MCP endpoint must be set");
-			return new WebMvcStreamableServerTransportProvider(this.jsonMapper, this.mcpEndpoint, this.disallowDelete,
-					this.contextExtractor, this.keepAliveInterval, this.securityValidator);
+			return new WebMvcStreamableServerTransportProvider(
+					this.jsonMapper == null ? McpJsonDefaults.getMapper() : this.jsonMapper, this.mcpEndpoint,
+					this.disallowDelete, this.contextExtractor, this.keepAliveInterval, this.securityValidator);
 		}
 
 	}

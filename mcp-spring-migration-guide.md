@@ -17,7 +17,7 @@ these transport classes.
 The `mcp-spring-webflux` and `mcp-spring-webmvc` artifacts have moved from the
 `io.modelcontextprotocol.sdk` group to `org.springframework.ai`.
 
-#### Before (MCP Java SDK ≤ 0.x)
+#### Before (MCP Java SDK < 1.0.x & Spring AI < 2.0.x)
 
 ```xml
 <dependency>
@@ -31,7 +31,7 @@ The `mcp-spring-webflux` and `mcp-spring-webmvc` artifacts have moved from the
 </dependency>
 ```
 
-#### After (Spring AI ≥ 2.0)
+#### After (MCP Java SDK ≥ 1.0.x & Spring AI ≥ 2.0.x)
 
 ```xml
 <dependency>
@@ -95,8 +95,7 @@ import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHt
 ### 3. MCP SDK Version Requirement
 
 Spring AI 2.0 requires **MCP Java SDK 1.0.0** (RC1 or later). The SDK version has
-been bumped from `0.9.x` / `1.0.0-SNAPSHOT` to the `1.0.0` release line. Update
-your BOM or explicit version accordingly.
+been bumped from `0.18.x` to the `1.0.x` release line. Update your BOM or explicit version accordingly.
 
 ---
 
@@ -108,16 +107,3 @@ updated internally to reference the new packages. Only update your `pom.xml`/`bu
 dependency coordinates as described in [section 1](#1-maven-dependency-group-id-change).
 
 ---
-
-## Step-by-Step Migration Checklist
-
-- [ ] **Update `pom.xml` / `build.gradle`**: change the `groupId` of `mcp-spring-webflux`
-  and `mcp-spring-webmvc` from `io.modelcontextprotocol.sdk` → `org.springframework.ai`.
-- [ ] **Update Java imports**: replace all `io.modelcontextprotocol.server.transport.*`
-  and `io.modelcontextprotocol.client.transport.*` imports with the corresponding
-  `org.springframework.ai.mcp.*` packages (see table above).
-- [ ] **Remove explicit `<version>` tags** if you are using `spring-ai-bom` — the BOM
-  now manages versions for these artifacts.
-- [ ] **Upgrade MCP Java SDK** to `1.0.0` (RC1+).
-- [ ] **Rebuild and retest** — the class APIs (builder patterns, method signatures) are
-  unchanged; only the coordinates and package names differ.

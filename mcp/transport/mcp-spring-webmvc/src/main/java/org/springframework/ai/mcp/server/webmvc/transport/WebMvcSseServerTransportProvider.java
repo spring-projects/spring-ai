@@ -109,6 +109,8 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 	 */
 	public static final String DEFAULT_SSE_ENDPOINT = "/sse";
 
+	public static final String DEFAULT_MESSAGE_ENDPOINT = "/mcp/message";
+
 	private final McpJsonMapper jsonMapper;
 
 	private final String messageEndpoint;
@@ -510,11 +512,11 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 	 */
 	public static class Builder {
 
-		private McpJsonMapper jsonMapper = McpJsonDefaults.getMapper();
+		private @Nullable McpJsonMapper jsonMapper;
 
 		private String baseUrl = "";
 
-		private @Nullable String messageEndpoint;
+		private String messageEndpoint = DEFAULT_MESSAGE_ENDPOINT;
 
 		private String sseEndpoint = DEFAULT_SSE_ENDPOINT;
 
@@ -621,8 +623,10 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 			if (this.messageEndpoint == null) {
 				throw new IllegalStateException("MessageEndpoint must be set");
 			}
-			return new WebMvcSseServerTransportProvider(this.jsonMapper, this.baseUrl, this.messageEndpoint,
-					this.sseEndpoint, this.keepAliveInterval, this.contextExtractor, this.securityValidator);
+			return new WebMvcSseServerTransportProvider(
+					this.jsonMapper == null ? McpJsonDefaults.getMapper() : this.jsonMapper, this.baseUrl,
+					this.messageEndpoint, this.sseEndpoint, this.keepAliveInterval, this.contextExtractor,
+					this.securityValidator);
 		}
 
 	}

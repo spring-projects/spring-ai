@@ -106,12 +106,12 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 	 */
 	public static final String ENDPOINT_EVENT_TYPE = "endpoint";
 
-	private static final String MCP_PROTOCOL_VERSION = "2025-06-18";
-
 	/**
 	 * Default SSE endpoint path as specified by the MCP transport specification.
 	 */
 	public static final String DEFAULT_SSE_ENDPOINT = "/sse";
+
+	public static final String DEFAULT_MESSAGE_ENDPOINT = "/mcp/message";
 
 	public static final String SESSION_ID = "sessionId";
 
@@ -475,7 +475,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
-		private @Nullable String messageEndpoint;
+		private String messageEndpoint = DEFAULT_MESSAGE_ENDPOINT;
 
 		private String sseEndpoint = DEFAULT_SSE_ENDPOINT;
 
@@ -583,8 +583,8 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		public WebFluxSseServerTransportProvider build() {
 			return new WebFluxSseServerTransportProvider(
 					this.jsonMapper == null ? McpJsonDefaults.getMapper() : this.jsonMapper, this.baseUrl,
-					Objects.requireNonNull(this.messageEndpoint, "Message endpoint must be set"), this.sseEndpoint,
-					this.keepAliveInterval, this.contextExtractor, this.securityValidator);
+					this.messageEndpoint, this.sseEndpoint, this.keepAliveInterval, this.contextExtractor,
+					this.securityValidator);
 		}
 
 	}

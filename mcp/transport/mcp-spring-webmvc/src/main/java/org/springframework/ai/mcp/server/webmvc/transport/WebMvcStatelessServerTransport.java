@@ -212,7 +212,7 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 	 */
 	public final static class Builder {
 
-		private McpJsonMapper jsonMapper = McpJsonDefaults.getMapper();
+		private @Nullable McpJsonMapper jsonMapper;
 
 		private String mcpEndpoint = "/mcp";
 
@@ -285,8 +285,9 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 		 */
 		public WebMvcStatelessServerTransport build() {
 			Assert.notNull(this.mcpEndpoint, "Message endpoint must be set");
-			return new WebMvcStatelessServerTransport(this.jsonMapper, this.mcpEndpoint, this.contextExtractor,
-					this.securityValidator);
+			return new WebMvcStatelessServerTransport(
+					this.jsonMapper == null ? McpJsonDefaults.getMapper() : this.jsonMapper, this.mcpEndpoint,
+					this.contextExtractor, this.securityValidator);
 		}
 
 	}

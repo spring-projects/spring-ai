@@ -53,19 +53,6 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * communication</li>
  * <li>A RouterFunction bean that sets up the reactive SSE endpoint</li>
  * </ul>
- * <p>
- * Required dependencies:
- *
- * <pre>{@code
- * <dependency>
- *     <groupId>org.springframework.ai</groupId>
- *     <artifactId>mcp-spring-webflux</artifactId>
- * </dependency>
- * <dependency>
- *     <groupId>org.springframework.boot</groupId>
- *     <artifactId>spring-boot-starter-webflux</artifactId>
- * </dependency>
- * }</pre>
  *
  * @author Christian Tzolov
  * @author Yanming Zhou

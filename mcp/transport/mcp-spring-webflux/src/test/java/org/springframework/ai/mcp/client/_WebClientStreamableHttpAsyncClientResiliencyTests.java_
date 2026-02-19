@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Timeout;
 import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
 import org.springframework.web.reactive.function.client.WebClient;
 
+// TODO: the host static variable in the Abstract* class is package private and is inaccessible from here.
+
 @Timeout(15)
 public class WebClientStreamableHttpAsyncClientResiliencyTests extends AbstractMcpAsyncClientResiliencyTests {
 
