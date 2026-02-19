@@ -28,7 +28,6 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.SingleSessionSyncSpecification;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.server.TestUtil;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.junit.jupiter.api.AfterEach;
@@ -51,8 +50,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(15)
 class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests {
-
-	private static final int PORT = TestUtil.findAvailablePort();
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
@@ -82,7 +79,7 @@ class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests 
 	@BeforeEach
 	public void before() {
 
-		this.tomcatServer = TomcatTestUtil.createTomcatServer("", PORT, TestConfig.class);
+		this.tomcatServer = TomcatTestUtil.createTomcatServer("", 0, TestConfig.class);
 
 		try {
 			this.tomcatServer.tomcat().start();
@@ -92,7 +89,8 @@ class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests 
 			throw new RuntimeException("Failed to start Tomcat", e);
 		}
 
-		prepareClients(PORT, MESSAGE_ENDPOINT);
+		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
+		prepareClients(port, MESSAGE_ENDPOINT);
 
 		// Get the transport from Spring context
 		this.mcpServerTransportProvider = this.tomcatServer.appContext()

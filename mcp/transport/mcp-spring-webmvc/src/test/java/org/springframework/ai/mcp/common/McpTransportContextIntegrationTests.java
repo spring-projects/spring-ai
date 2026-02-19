@@ -33,7 +33,6 @@ import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -82,8 +81,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Timeout(15)
 public class McpTransportContextIntegrationTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private TomcatServer tomcatServer;
 
 	private static final ThreadLocal<String> CLIENT_SIDE_HEADER_VALUE_HOLDER = new ThreadLocal<>();
@@ -117,19 +114,10 @@ public class McpTransportContextIntegrationTests {
 				: McpTransportContext.EMPTY;
 	};
 
-	private final McpSyncClient streamableClient = McpClient
-		.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + PORT)
-			.httpRequestCustomizer(this.clientRequestCustomizer)
-			.build())
-		.transportContextProvider(this.clientContextProvider)
-		.build();
+	// Sync clients (initialized in startTomcat after port is known)
+	private McpSyncClient streamableClient;
 
-	private final McpSyncClient sseClient = McpClient
-		.sync(HttpClientSseClientTransport.builder("http://localhost:" + PORT)
-			.httpRequestCustomizer(this.clientRequestCustomizer)
-			.build())
-		.transportContextProvider(this.clientContextProvider)
-		.build();
+	private McpSyncClient sseClient;
 
 	private static final McpSchema.Tool tool = McpSchema.Tool.builder()
 		.name("test-tool")
@@ -207,7 +195,7 @@ public class McpTransportContextIntegrationTests {
 	}
 
 	private void startTomcat(Class<?> componentClass) {
-		this.tomcatServer = TomcatTestUtil.createTomcatServer("", PORT, componentClass);
+		this.tomcatServer = TomcatTestUtil.createTomcatServer("", 0, componentClass);
 		try {
 			this.tomcatServer.tomcat().start();
 			assertThat(this.tomcatServer.tomcat().getServer().getState()).isEqualTo(LifecycleState.STARTED);
@@ -215,6 +203,19 @@ public class McpTransportContextIntegrationTests {
 		catch (Exception e) {
 			throw new RuntimeException("Failed to start Tomcat", e);
 		}
+		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
+		this.streamableClient = McpClient
+			.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
+				.httpRequestCustomizer(this.clientRequestCustomizer)
+				.build())
+			.transportContextProvider(this.clientContextProvider)
+			.build();
+		this.sseClient = McpClient
+			.sync(HttpClientSseClientTransport.builder("http://localhost:" + port)
+				.httpRequestCustomizer(this.clientRequestCustomizer)
+				.build())
+			.transportContextProvider(this.clientContextProvider)
+			.build();
 	}
 
 	private void stopTomcat() {

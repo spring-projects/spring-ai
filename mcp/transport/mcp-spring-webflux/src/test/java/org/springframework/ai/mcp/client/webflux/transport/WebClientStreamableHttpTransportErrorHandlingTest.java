@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import com.sun.net.httpserver.HttpServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -56,9 +55,7 @@ import static org.mockito.Mockito.verify;
 @Timeout(15)
 public class WebClientStreamableHttpTransportErrorHandlingTest {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
-	private static final String HOST = "http://localhost:" + PORT;
+	private String host;
 
 	private HttpServer server;
 
@@ -85,7 +82,7 @@ public class WebClientStreamableHttpTransportErrorHandlingTest {
 		this.secondRequestLatch = new CountDownLatch(1);
 		this.getRequestLatch = new CountDownLatch(1);
 
-		this.server = HttpServer.create(new InetSocketAddress(PORT), 0);
+		this.server = HttpServer.create(new InetSocketAddress(0), 0);
 
 		// Configure the /mcp endpoint with dynamic response
 		this.server.createContext("/mcp", exchange -> {
@@ -136,8 +133,9 @@ public class WebClientStreamableHttpTransportErrorHandlingTest {
 
 		this.server.setExecutor(null);
 		this.server.start();
+		this.host = "http://localhost:" + this.server.getAddress().getPort();
 
-		this.transport = WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl(HOST)).build();
+		this.transport = WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl(this.host)).build();
 	}
 
 	@AfterEach
@@ -378,7 +376,7 @@ public class WebClientStreamableHttpTransportErrorHandlingTest {
 		this.serverResponseStatus.set(200);
 		this.currentServerSessionId.set("sse-session-1");
 
-		var transport = WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl(HOST))
+		var transport = WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl(this.host))
 			.endpoint("/mcp-sse")
 			.openConnectionOnStartup(true) // This will trigger GET request on connect
 			.build();

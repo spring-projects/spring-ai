@@ -25,7 +25,6 @@ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTranspor
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessAsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
-import io.modelcontextprotocol.server.TestUtil;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.junit.jupiter.api.AfterEach;
@@ -47,8 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(15)
 class WebMvcStatelessIntegrationTests extends AbstractStatelessIntegrationTests {
-
-	private static final int PORT = TestUtil.findAvailablePort();
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
@@ -89,7 +86,7 @@ class WebMvcStatelessIntegrationTests extends AbstractStatelessIntegrationTests 
 	@BeforeEach
 	public void before() {
 
-		this.tomcatServer = TomcatTestUtil.createTomcatServer("", PORT, TestConfig.class);
+		this.tomcatServer = TomcatTestUtil.createTomcatServer("", 0, TestConfig.class);
 
 		try {
 			this.tomcatServer.tomcat().start();
@@ -99,7 +96,8 @@ class WebMvcStatelessIntegrationTests extends AbstractStatelessIntegrationTests 
 			throw new RuntimeException("Failed to start Tomcat", e);
 		}
 
-		prepareClients(PORT, MESSAGE_ENDPOINT);
+		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
+		prepareClients(port, MESSAGE_ENDPOINT);
 
 		// Get the transport from Spring context
 		this.mcpServerTransport = this.tomcatServer.appContext().getBean(WebMvcStatelessServerTransport.class);

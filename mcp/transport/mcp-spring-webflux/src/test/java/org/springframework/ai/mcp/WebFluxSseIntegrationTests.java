@@ -28,7 +28,6 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.SingleSessionSyncSpecification;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.server.TestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
@@ -46,8 +45,6 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 
 @Timeout(15)
 class WebFluxSseIntegrationTests extends AbstractMcpClientServerIntegrationTests {
-
-	private static final int PORT = TestUtil.findAvailablePort();
 
 	private static final String CUSTOM_SSE_ENDPOINT = "/somePath/sse";
 
@@ -69,13 +66,13 @@ class WebFluxSseIntegrationTests extends AbstractMcpClientServerIntegrationTests
 
 		clientBuilders
 			.put("httpclient",
-					McpClient.sync(HttpClientSseClientTransport.builder("http://localhost:" + PORT)
+					McpClient.sync(HttpClientSseClientTransport.builder("http://localhost:" + port)
 						.sseEndpoint(CUSTOM_SSE_ENDPOINT)
 						.build()).requestTimeout(Duration.ofHours(10)));
 
 		clientBuilders.put("webflux",
 				McpClient
-					.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://localhost:" + PORT))
+					.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://localhost:" + port))
 						.sseEndpoint(CUSTOM_SSE_ENDPOINT)
 						.build())
 					.requestTimeout(Duration.ofHours(10)));
@@ -103,9 +100,9 @@ class WebFluxSseIntegrationTests extends AbstractMcpClientServerIntegrationTests
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(this.mcpServerTransportProvider.getRouterFunction());
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(PORT).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
 
-		prepareClients(PORT, null);
+		prepareClients(this.httpServer.port(), null);
 	}
 
 	@AfterEach

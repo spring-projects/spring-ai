@@ -28,7 +28,6 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -90,8 +89,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Timeout(15)
 public class SyncServerMcpTransportContextIntegrationTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private static final ThreadLocal<String> CLIENT_SIDE_HEADER_VALUE_HOLDER = new ThreadLocal<>();
 
 	private static final String HEADER_NAME = "x-test";
@@ -131,34 +128,10 @@ public class SyncServerMcpTransportContextIntegrationTests {
 		.messageEndpoint("/mcp/message")
 		.build();
 
-	private final McpSyncClient streamableClient = McpClient
-		.sync(WebClientStreamableHttpTransport.builder(WebClient.builder()
-			.baseUrl("http://localhost:" + PORT)
-			.filter((request, next) -> Mono.deferContextual(ctx -> {
-				var context = ctx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
-				// // do stuff with the context
-				var headerValue = context.get("client-side-header-value");
-				if (headerValue == null) {
-					return next.exchange(request);
-				}
-				var reqWithHeader = ClientRequest.from(request).header(HEADER_NAME, headerValue.toString()).build();
-				return next.exchange(reqWithHeader);
-			}))).build())
-		.transportContextProvider(this.clientContextProvider)
-		.build();
+	// Sync clients (initialized in startHttpServer after port is known)
+	private McpSyncClient streamableClient;
 
-	private final McpSyncClient sseClient = McpClient.sync(WebFluxSseClientTransport.builder(WebClient.builder()
-		.baseUrl("http://localhost:" + PORT)
-		.filter((request, next) -> Mono.deferContextual(ctx -> {
-			var context = ctx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
-			// // do stuff with the context
-			var headerValue = context.get("client-side-header-value");
-			if (headerValue == null) {
-				return next.exchange(request);
-			}
-			var reqWithHeader = ClientRequest.from(request).header(HEADER_NAME, headerValue.toString()).build();
-			return next.exchange(reqWithHeader);
-		}))).build()).transportContextProvider(this.clientContextProvider).build();
+	private McpSyncClient sseClient;
 
 	private final McpSchema.Tool tool = McpSchema.Tool.builder()
 		.name("test-tool")
@@ -272,7 +245,30 @@ public class SyncServerMcpTransportContextIntegrationTests {
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(routerFunction);
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(PORT).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		int port = this.httpServer.port();
+		this.streamableClient = McpClient.sync(WebClientStreamableHttpTransport.builder(WebClient.builder()
+			.baseUrl("http://localhost:" + port)
+			.filter((request, next) -> Mono.deferContextual(ctx -> {
+				var context = ctx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
+				var headerValue = context.get("client-side-header-value");
+				if (headerValue == null) {
+					return next.exchange(request);
+				}
+				var reqWithHeader = ClientRequest.from(request).header(HEADER_NAME, headerValue.toString()).build();
+				return next.exchange(reqWithHeader);
+			}))).build()).transportContextProvider(this.clientContextProvider).build();
+		this.sseClient = McpClient.sync(WebFluxSseClientTransport.builder(WebClient.builder()
+			.baseUrl("http://localhost:" + port)
+			.filter((request, next) -> Mono.deferContextual(ctx -> {
+				var context = ctx.getOrDefault(McpTransportContext.KEY, McpTransportContext.EMPTY);
+				var headerValue = context.get("client-side-header-value");
+				if (headerValue == null) {
+					return next.exchange(request);
+				}
+				var reqWithHeader = ClientRequest.from(request).header(HEADER_NAME, headerValue.toString()).build();
+				return next.exchange(reqWithHeader);
+			}))).build()).transportContextProvider(this.clientContextProvider).build();
 	}
 
 	private void stopHttpServer() {

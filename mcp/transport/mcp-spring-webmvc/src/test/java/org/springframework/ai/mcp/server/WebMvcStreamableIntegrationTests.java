@@ -28,7 +28,6 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.server.TestUtil;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.junit.jupiter.api.AfterEach;
@@ -52,8 +51,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Timeout(15)
 class WebMvcStreamableIntegrationTests extends AbstractMcpClientServerIntegrationTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
 	private WebMvcStreamableServerTransportProvider mcpServerTransportProvider;
@@ -70,7 +67,7 @@ class WebMvcStreamableIntegrationTests extends AbstractMcpClientServerIntegratio
 	@BeforeEach
 	public void before() {
 
-		this.tomcatServer = TomcatTestUtil.createTomcatServer("", PORT, TestConfig.class);
+		this.tomcatServer = TomcatTestUtil.createTomcatServer("", 0, TestConfig.class);
 
 		try {
 			this.tomcatServer.tomcat().start();
@@ -80,15 +77,17 @@ class WebMvcStreamableIntegrationTests extends AbstractMcpClientServerIntegratio
 			throw new RuntimeException("Failed to start Tomcat", e);
 		}
 
+		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
+
 		this.clientBuilders
 			.put("httpclient",
-					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + PORT)
+					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
 						.endpoint(MESSAGE_ENDPOINT)
 						.build()).initializationTimeout(Duration.ofHours(10)).requestTimeout(Duration.ofHours(10)));
 
 		this.clientBuilders.put("webflux",
 				McpClient.sync(WebClientStreamableHttpTransport
-					.builder(WebClient.builder().baseUrl("http://localhost:" + PORT))
+					.builder(WebClient.builder().baseUrl("http://localhost:" + port))
 					.endpoint(MESSAGE_ENDPOINT)
 					.build()));
 

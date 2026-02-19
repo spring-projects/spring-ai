@@ -21,7 +21,6 @@ import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -45,8 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class WebMvcSseServerTransportProviderTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private static final String CUSTOM_CONTEXT_PATH = "";
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
@@ -59,7 +56,7 @@ class WebMvcSseServerTransportProviderTests {
 
 	@BeforeEach
 	public void before() {
-		this.tomcatServer = TomcatTestUtil.createTomcatServer(CUSTOM_CONTEXT_PATH, PORT, TestConfig.class);
+		this.tomcatServer = TomcatTestUtil.createTomcatServer(CUSTOM_CONTEXT_PATH, 0, TestConfig.class);
 
 		try {
 			this.tomcatServer.tomcat().start();
@@ -69,7 +66,8 @@ class WebMvcSseServerTransportProviderTests {
 			throw new RuntimeException("Failed to start Tomcat", e);
 		}
 
-		HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder("http://localhost:" + PORT)
+		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
+		HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder("http://localhost:" + port)
 			.sseEndpoint(WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
 			.build();
 
@@ -114,7 +112,6 @@ class WebMvcSseServerTransportProviderTests {
 		public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider() {
 
 			return WebMvcSseServerTransportProvider.builder()
-				.baseUrl("http://localhost:" + PORT + "/")
 				.messageEndpoint(MESSAGE_ENDPOINT)
 				.sseEndpoint(WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
 				.jsonMapper(McpJsonDefaults.getMapper())

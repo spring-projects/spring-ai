@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server;
 import io.modelcontextprotocol.server.AbstractMcpSyncServerTests;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
@@ -44,8 +43,6 @@ import org.springframework.web.servlet.function.ServerResponse;
 @Timeout(15) // Giving extra time beyond the client timeout
 class WebMcpStreamableSyncServerTransportTests extends AbstractMcpSyncServerTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private static final String MCP_ENDPOINT = "/mcp";
 
 	private DisposableServer httpServer;
@@ -59,7 +56,7 @@ class WebMcpStreamableSyncServerTransportTests extends AbstractMcpSyncServerTest
 	private McpStreamableServerTransportProvider createMcpTransportProvider() {
 		// Set up Tomcat first
 		this.tomcat = new Tomcat();
-		this.tomcat.setPort(PORT);
+		this.tomcat.setPort(0);
 
 		// Set Tomcat base directory to java.io.tmpdir to avoid permission issues
 		String baseDir = System.getProperty("java.io.tmpdir");

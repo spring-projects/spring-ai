@@ -23,7 +23,6 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.server.transport.DefaultServerTransportSecurityValidator;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.AfterAll;
@@ -80,9 +79,7 @@ public class WebFluxServerTransportSecurityIntegrationTests {
 
 	@BeforeParameterizedClassInvocation
 	static void createTransportAndStartServer(Transport transport) {
-		var port = TestUtil.findAvailablePort();
-		baseUrl = "http://localhost:" + port;
-		startServer(transport.routerFunction(), port);
+		startServer(transport.routerFunction());
 	}
 
 	@AfterAll
@@ -165,10 +162,11 @@ public class WebFluxServerTransportSecurityIntegrationTests {
 	// Server management
 	// ----------------------------------------------------
 
-	private static void startServer(RouterFunction<?> routerFunction, int port) {
+	private static void startServer(RouterFunction<?> routerFunction) {
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(routerFunction);
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		httpServer = HttpServer.create().port(port).handle(adapter).bindNow();
+		httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		baseUrl = "http://localhost:" + httpServer.port();
 	}
 
 	private static void stopServer() {

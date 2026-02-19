@@ -27,7 +27,6 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -80,8 +79,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Timeout(15)
 public class AsyncServerMcpTransportContextIntegrationTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private static final String HEADER_NAME = "x-test";
 
 	// Async client context provider
@@ -131,18 +128,10 @@ public class AsyncServerMcpTransportContextIntegrationTests {
 		.messageEndpoint("/mcp/message")
 		.build();
 
-	// Async clients
-	private final McpAsyncClient asyncStreamableClient = McpClient
-		.async(WebClientStreamableHttpTransport
-			.builder(WebClient.builder().baseUrl("http://localhost:" + PORT).filter(this.asyncClientContextProvider))
-			.build())
-		.build();
+	// Async clients (initialized in startHttpServer after port is known)
+	private McpAsyncClient asyncStreamableClient;
 
-	private final McpAsyncClient asyncSseClient = McpClient
-		.async(WebFluxSseClientTransport
-			.builder(WebClient.builder().baseUrl("http://localhost:" + PORT).filter(this.asyncClientContextProvider))
-			.build())
-		.build();
+	private McpAsyncClient asyncSseClient;
 
 	private DisposableServer httpServer;
 
@@ -266,7 +255,20 @@ public class AsyncServerMcpTransportContextIntegrationTests {
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(routerFunction);
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(PORT).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		int port = this.httpServer.port();
+		this.asyncStreamableClient = McpClient
+			.async(WebClientStreamableHttpTransport
+				.builder(
+						WebClient.builder().baseUrl("http://localhost:" + port).filter(this.asyncClientContextProvider))
+				.build())
+			.build();
+		this.asyncSseClient = McpClient
+			.async(WebFluxSseClientTransport
+				.builder(
+						WebClient.builder().baseUrl("http://localhost:" + port).filter(this.asyncClientContextProvider))
+				.build())
+			.build();
 	}
 
 	private void stopHttpServer() {

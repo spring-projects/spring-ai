@@ -25,7 +25,6 @@ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTranspor
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessAsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification;
-import io.modelcontextprotocol.server.TestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
@@ -43,8 +42,6 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 @Timeout(15)
 class WebFluxStatelessIntegrationTests extends AbstractStatelessIntegrationTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private static final String CUSTOM_MESSAGE_ENDPOINT = "/otherPath/mcp/message";
 
 	private DisposableServer httpServer;
@@ -59,12 +56,12 @@ class WebFluxStatelessIntegrationTests extends AbstractStatelessIntegrationTests
 	protected void prepareClients(int port, String mcpEndpoint) {
 		clientBuilders
 			.put("httpclient",
-					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + PORT)
+					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://localhost:" + port)
 						.endpoint(CUSTOM_MESSAGE_ENDPOINT)
 						.build()).initializationTimeout(Duration.ofHours(10)).requestTimeout(Duration.ofHours(10)));
 		clientBuilders
 			.put("webflux", McpClient
-				.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://localhost:" + PORT))
+				.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://localhost:" + port))
 					.endpoint(CUSTOM_MESSAGE_ENDPOINT)
 					.build())
 				.initializationTimeout(Duration.ofHours(10))
@@ -89,9 +86,9 @@ class WebFluxStatelessIntegrationTests extends AbstractStatelessIntegrationTests
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(this.mcpStreamableServerTransport.getRouterFunction());
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(PORT).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
 
-		prepareClients(PORT, null);
+		prepareClients(this.httpServer.port(), null);
 	}
 
 	@AfterEach
