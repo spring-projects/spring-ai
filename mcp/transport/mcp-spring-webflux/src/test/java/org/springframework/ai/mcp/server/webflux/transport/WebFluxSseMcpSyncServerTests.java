@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.webflux.transport;
 import io.modelcontextprotocol.server.AbstractMcpSyncServerTests;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.junit.jupiter.api.Timeout;
 import reactor.netty.DisposableServer;
@@ -36,8 +35,6 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
  */
 @Timeout(15) // Giving extra time beyond the client timeout
 class WebFluxSseMcpSyncServerTests extends AbstractMcpSyncServerTests {
-
-	private static final int PORT = TestUtil.findAvailablePort();
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
@@ -60,7 +57,7 @@ class WebFluxSseMcpSyncServerTests extends AbstractMcpSyncServerTests {
 	protected void onStart() {
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(this.transportProvider.getRouterFunction());
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(PORT).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
 	}
 
 	@Override

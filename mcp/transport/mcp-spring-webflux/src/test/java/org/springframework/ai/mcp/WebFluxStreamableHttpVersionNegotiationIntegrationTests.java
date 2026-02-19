@@ -27,7 +27,6 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import org.junit.jupiter.api.AfterEach;
@@ -51,9 +50,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class WebFluxStreamableHttpVersionNegotiationIntegrationTests {
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private DisposableServer httpServer;
+
+	private int port;
 
 	private final McpTestRequestRecordingExchangeFilterFunction recordingFilterFunction = new McpTestRequestRecordingExchangeFilterFunction();
 
@@ -86,7 +85,8 @@ class WebFluxStreamableHttpVersionNegotiationIntegrationTests {
 
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
 
-		this.httpServer = HttpServer.create().port(PORT).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		this.port = this.httpServer.port();
 	}
 
 	@AfterEach
@@ -102,7 +102,7 @@ class WebFluxStreamableHttpVersionNegotiationIntegrationTests {
 	@Test
 	void usesLatestVersion() {
 		var client = McpClient
-			.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://localhost:" + PORT))
+			.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://localhost:" + this.port))
 				.build())
 			.requestTimeout(Duration.ofHours(10))
 			.build();
@@ -131,7 +131,7 @@ class WebFluxStreamableHttpVersionNegotiationIntegrationTests {
 	@Test
 	void usesServerSupportedVersion() {
 		var transport = WebClientStreamableHttpTransport
-			.builder(WebClient.builder().baseUrl("http://localhost:" + PORT))
+			.builder(WebClient.builder().baseUrl("http://localhost:" + this.port))
 			.supportedProtocolVersions(List.of(ProtocolVersions.MCP_2025_11_25, "2263-03-18"))
 			.build();
 		var client = McpClient.sync(transport).requestTimeout(Duration.ofHours(10)).build();

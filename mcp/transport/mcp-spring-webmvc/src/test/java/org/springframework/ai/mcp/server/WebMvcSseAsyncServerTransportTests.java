@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server;
 
 import io.modelcontextprotocol.server.AbstractMcpAsyncServerTests;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
@@ -39,8 +38,6 @@ class WebMvcSseAsyncServerTransportTests extends AbstractMcpAsyncServerTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private Tomcat tomcat;
 
 	private McpServerTransportProvider transportProvider;
@@ -50,7 +47,7 @@ class WebMvcSseAsyncServerTransportTests extends AbstractMcpAsyncServerTests {
 	private McpServerTransportProvider createMcpTransportProvider() {
 		// Set up Tomcat first
 		this.tomcat = new Tomcat();
-		this.tomcat.setPort(PORT);
+		this.tomcat.setPort(0);
 
 		// Set Tomcat base directory to java.io.tmpdir to avoid permission issues
 		String baseDir = System.getProperty("java.io.tmpdir");

@@ -31,7 +31,6 @@ import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.server.transport.DefaultServerTransportSecurityValidator;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.catalina.LifecycleException;
@@ -85,9 +84,7 @@ public class ServerTransportSecurityIntegrationTests {
 
 	@BeforeParameterizedClassInvocation
 	static void createTransportAndStartTomcat(Class<?> configClass) {
-		var port = TestUtil.findAvailablePort();
-		baseUrl = "http://localhost:" + port;
-		startTomcat(configClass, port);
+		startTomcat(configClass);
 	}
 
 	@AfterAll
@@ -172,8 +169,8 @@ public class ServerTransportSecurityIntegrationTests {
 	// Tomcat management
 	// ----------------------------------------------------
 
-	private static void startTomcat(Class<?> componentClass, int port) {
-		tomcatServer = TomcatTestUtil.createTomcatServer("", port, componentClass);
+	private static void startTomcat(Class<?> componentClass) {
+		tomcatServer = TomcatTestUtil.createTomcatServer("", 0, componentClass);
 		try {
 			tomcatServer.tomcat().start();
 			assertThat(tomcatServer.tomcat().getServer().getState()).isEqualTo(LifecycleState.STARTED);
@@ -181,6 +178,7 @@ public class ServerTransportSecurityIntegrationTests {
 		catch (Exception e) {
 			throw new RuntimeException("Failed to start Tomcat", e);
 		}
+		baseUrl = "http://localhost:" + tomcatServer.tomcat().getConnector().getLocalPort();
 	}
 
 	private static void stopTomcat() {

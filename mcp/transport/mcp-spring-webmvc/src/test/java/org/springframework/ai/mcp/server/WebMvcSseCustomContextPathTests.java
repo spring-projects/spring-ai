@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.TestUtil;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -40,8 +39,6 @@ class WebMvcSseCustomContextPathTests {
 
 	private static final String CUSTOM_CONTEXT_PATH = "/app/1";
 
-	private static final int PORT = TestUtil.findAvailablePort();
-
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
 	private WebMvcSseServerTransportProvider mcpServerTransportProvider;
@@ -53,7 +50,7 @@ class WebMvcSseCustomContextPathTests {
 	@BeforeEach
 	public void before() {
 
-		this.tomcatServer = TomcatTestUtil.createTomcatServer(CUSTOM_CONTEXT_PATH, PORT, TestConfig.class);
+		this.tomcatServer = TomcatTestUtil.createTomcatServer(CUSTOM_CONTEXT_PATH, 0, TestConfig.class);
 
 		try {
 			this.tomcatServer.tomcat().start();
@@ -63,7 +60,8 @@ class WebMvcSseCustomContextPathTests {
 			throw new RuntimeException("Failed to start Tomcat", e);
 		}
 
-		var clientTransport = HttpClientSseClientTransport.builder("http://localhost:" + PORT)
+		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
+		var clientTransport = HttpClientSseClientTransport.builder("http://localhost:" + port)
 			.sseEndpoint(CUSTOM_CONTEXT_PATH + WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
 			.build();
 
