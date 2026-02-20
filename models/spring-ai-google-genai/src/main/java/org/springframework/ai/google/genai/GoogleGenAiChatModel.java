@@ -400,7 +400,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			}
 		}
 		catch (Exception e) {
-			throw new RuntimeException("Failed to parse JSON: " + json, e);
+			// Gracefully handle non-JSON tool responses (e.g. plain text)
+			// by wrapping them as {"result": "<text>"}, consistent with
+			// how non-Map parsed values (List, primitives) are already wrapped.
+			Map<String, Object> wrapper = new HashMap<>();
+			wrapper.put("result", json);
+			return wrapper;
 		}
 	}
 
