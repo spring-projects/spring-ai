@@ -110,6 +110,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-jlama</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai-sdk</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
@@ -187,6 +188,7 @@
 		<module>models/spring-ai-bedrock-converse</module>
 		<module>models/spring-ai-elevenlabs</module>
 		<module>models/spring-ai-huggingface</module>
+		<module>models/spring-ai-jlama</module>
 		<module>models/spring-ai-minimax</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-oci-genai</module>
@@ -211,6 +213,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-jlama</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-oci-genai</module>
@@ -303,6 +306,8 @@
 		<awssdk.version>2.36.3</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
+		<jlama.version>0.8.4</jlama.version>
+		<jlama.native.classifier>${os.detected.classifier}</jlama.native.classifier>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>
