@@ -49,7 +49,8 @@ public final class ToolDefinitions {
 		return DefaultToolDefinition.builder()
 			.name(ToolUtils.getToolName(method))
 			.description(ToolUtils.getToolDescription(method))
-			.inputSchema(JsonSchemaGenerator.generateForMethodInput(method));
+			.inputSchema(JsonSchemaGenerator.generateForMethodInput(method))
+			.metadata(ToolUtils.getToolMetadata(method));
 	}
 
 	/**
