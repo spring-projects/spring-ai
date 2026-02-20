@@ -16,10 +16,10 @@
 
 package org.springframework.ai.mcp.server.webflux.transport;
 
-import io.modelcontextprotocol.server.AbstractMcpAsyncServerTests;
+import io.modelcontextprotocol.server.AbstractMcpSyncServerTests;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.spec.McpServerTransportProvider;
+import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import org.junit.jupiter.api.Timeout;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
@@ -29,19 +29,22 @@ import org.springframework.http.server.reactive.ReactorHttpHandlerAdapter;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 
 /**
- * Tests for {@link McpAsyncServer} using {@link WebFluxSseServerTransportProvider}.
+ * Tests for {@link McpAsyncServer} using
+ * {@link WebFluxStreamableServerTransportProvider}.
  *
  * @author Christian Tzolov
+ * @author Dariusz Jędrzejczyk
  */
 @Timeout(15) // Giving extra time beyond the client timeout
-class WebFluxSseMcpAsyncServerTests extends AbstractMcpAsyncServerTests {
+class WebFluxStreamableMcpSyncServerIT extends AbstractMcpSyncServerTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
 	private DisposableServer httpServer;
 
-	private McpServerTransportProvider createMcpTransportProvider() {
-		var transportProvider = new WebFluxSseServerTransportProvider.Builder().messageEndpoint(MESSAGE_ENDPOINT)
+	private McpStreamableServerTransportProvider createMcpTransportProvider() {
+		var transportProvider = WebFluxStreamableServerTransportProvider.builder()
+			.messageEndpoint(MESSAGE_ENDPOINT)
 			.build();
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(transportProvider.getRouterFunction());
@@ -51,8 +54,8 @@ class WebFluxSseMcpAsyncServerTests extends AbstractMcpAsyncServerTests {
 	}
 
 	@Override
-	protected McpServer.AsyncSpecification<?> prepareAsyncServerBuilder() {
-		return McpServer.async(createMcpTransportProvider());
+	protected McpServer.SyncSpecification<?> prepareSyncServerBuilder() {
+		return McpServer.sync(createMcpTransportProvider());
 	}
 
 	@Override

@@ -79,7 +79,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @Timeout(15)
-public class McpTransportContextIntegrationTests {
+public class McpTransportContextIT {
 
 	private TomcatServer tomcatServer;
 

@@ -53,7 +53,7 @@ import static org.mockito.Mockito.verify;
  * @author Christian Tzolov
  */
 @Timeout(15)
-public class WebClientStreamableHttpTransportErrorHandlingTest {
+public class WebClientStreamableHttpTransportErrorHandlingIT {
 
 	private String host;
 

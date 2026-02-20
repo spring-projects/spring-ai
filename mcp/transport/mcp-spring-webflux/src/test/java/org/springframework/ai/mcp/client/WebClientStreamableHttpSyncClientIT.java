@@ -28,7 +28,7 @@ import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHt
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Timeout(15)
-public class WebClientStreamableHttpSyncClientTests extends AbstractMcpSyncClientTests {
+public class WebClientStreamableHttpSyncClientIT extends AbstractMcpSyncClientTests {
 
 	static String host = "http://localhost:3001";
 

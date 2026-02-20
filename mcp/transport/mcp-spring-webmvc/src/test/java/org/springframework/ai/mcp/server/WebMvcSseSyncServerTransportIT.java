@@ -18,15 +18,12 @@ package org.springframework.ai.mcp.server;
 
 import io.modelcontextprotocol.server.AbstractMcpSyncServerTests;
 import io.modelcontextprotocol.server.McpServer;
-import io.modelcontextprotocol.server.McpSyncServer;
-import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
 import org.junit.jupiter.api.Timeout;
-import reactor.netty.DisposableServer;
 
-import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
@@ -35,25 +32,23 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
-/**
- * Tests for {@link McpSyncServer} using {@link WebMvcStreamableServerTransportProvider}.
- *
- * @author Christian Tzolov
- */
-@Timeout(15) // Giving extra time beyond the client timeout
-class WebMcpStreamableSyncServerTransportTests extends AbstractMcpSyncServerTests {
+@Timeout(15)
+class WebMvcSseSyncServerTransportIT extends AbstractMcpSyncServerTests {
 
-	private static final String MCP_ENDPOINT = "/mcp";
-
-	private DisposableServer httpServer;
-
-	private AnnotationConfigWebApplicationContext appContext;
+	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
 	private Tomcat tomcat;
 
-	private McpStreamableServerTransportProvider transportProvider;
+	private WebMvcSseServerTransportProvider transportProvider;
 
-	private McpStreamableServerTransportProvider createMcpTransportProvider() {
+	private AnnotationConfigWebApplicationContext appContext;
+
+	@Override
+	protected McpServer.SyncSpecification<?> prepareSyncServerBuilder() {
+		return McpServer.sync(createMcpTransportProvider());
+	}
+
+	private WebMvcSseServerTransportProvider createMcpTransportProvider() {
 		// Set up Tomcat first
 		this.tomcat = new Tomcat();
 		this.tomcat.setPort(0);
@@ -72,7 +67,7 @@ class WebMcpStreamableSyncServerTransportTests extends AbstractMcpSyncServerTest
 		this.appContext.refresh();
 
 		// Get the transport from Spring context
-		this.transportProvider = this.appContext.getBean(McpStreamableServerTransportProvider.class);
+		this.transportProvider = this.appContext.getBean(WebMvcSseServerTransportProvider.class);
 
 		// Create DispatcherServlet with our Spring context
 		DispatcherServlet dispatcherServlet = new DispatcherServlet(this.appContext);
@@ -94,18 +89,25 @@ class WebMcpStreamableSyncServerTransportTests extends AbstractMcpSyncServerTest
 	}
 
 	@Override
-	protected McpServer.SyncSpecification<?> prepareSyncServerBuilder() {
-		return McpServer.sync(createMcpTransportProvider());
-	}
-
-	@Override
 	protected void onStart() {
 	}
 
 	@Override
 	protected void onClose() {
-		if (this.httpServer != null) {
-			this.httpServer.disposeNow();
+		if (this.transportProvider != null) {
+			this.transportProvider.closeGracefully().block();
+		}
+		if (this.appContext != null) {
+			this.appContext.close();
+		}
+		if (this.tomcat != null) {
+			try {
+				this.tomcat.stop();
+				this.tomcat.destroy();
+			}
+			catch (LifecycleException e) {
+				throw new RuntimeException("Failed to stop Tomcat", e);
+			}
 		}
 	}
 
@@ -114,13 +116,12 @@ class WebMcpStreamableSyncServerTransportTests extends AbstractMcpSyncServerTest
 	static class TestConfig {
 
 		@Bean
-		public WebMvcStreamableServerTransportProvider webMvcSseServerTransportProvider() {
-			return WebMvcStreamableServerTransportProvider.builder().mcpEndpoint(MCP_ENDPOINT).build();
+		public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider() {
+			return WebMvcSseServerTransportProvider.builder().messageEndpoint(MESSAGE_ENDPOINT).build();
 		}
 
 		@Bean
-		public RouterFunction<ServerResponse> routerFunction(
-				WebMvcStreamableServerTransportProvider transportProvider) {
+		public RouterFunction<ServerResponse> routerFunction(WebMvcSseServerTransportProvider transportProvider) {
 			return transportProvider.getRouterFunction();
 		}
 

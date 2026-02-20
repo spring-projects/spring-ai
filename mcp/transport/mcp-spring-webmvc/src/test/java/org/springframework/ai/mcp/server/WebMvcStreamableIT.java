@@ -22,11 +22,11 @@ import java.util.stream.Stream;
 
 import io.modelcontextprotocol.AbstractMcpClientServerIntegrationTests;
 import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
-import io.modelcontextprotocol.server.McpServer.SingleSessionSyncSpecification;
+import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -36,8 +36,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.provider.Arguments;
 import reactor.core.scheduler.Schedulers;
 
-import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
-import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
+import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -49,29 +49,17 @@ import org.springframework.web.servlet.function.ServerResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(15)
-class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests {
+class WebMvcStreamableIT extends AbstractMcpClientServerIntegrationTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
-	private WebMvcSseServerTransportProvider mcpServerTransportProvider;
+	private WebMvcStreamableServerTransportProvider mcpServerTransportProvider;
 
 	static McpTransportContextExtractor<ServerRequest> TEST_CONTEXT_EXTRACTOR = r -> McpTransportContext
 		.create(Map.of("important", "value"));
 
 	static Stream<Arguments> clientsForTesting() {
 		return Stream.of(Arguments.of("httpclient"), Arguments.of("webflux"));
-	}
-
-	@Override
-	protected void prepareClients(int port, String mcpEndpoint) {
-
-		clientBuilders.put("httpclient",
-				McpClient.sync(HttpClientSseClientTransport.builder("http://127.0.0.1:" + port).build())
-					.requestTimeout(Duration.ofHours(10)));
-
-		clientBuilders.put("webflux", McpClient
-			.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port)).build())
-			.requestTimeout(Duration.ofHours(10)));
 	}
 
 	private TomcatTestUtil.TomcatServer tomcatServer;
@@ -90,12 +78,33 @@ class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests 
 		}
 
 		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
-		prepareClients(port, MESSAGE_ENDPOINT);
+
+		this.clientBuilders
+			.put("httpclient",
+					McpClient.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port)
+						.endpoint(MESSAGE_ENDPOINT)
+						.build()).initializationTimeout(Duration.ofHours(10)).requestTimeout(Duration.ofHours(10)));
+
+		this.clientBuilders.put("webflux",
+				McpClient.sync(WebClientStreamableHttpTransport
+					.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
+					.endpoint(MESSAGE_ENDPOINT)
+					.build()));
 
 		// Get the transport from Spring context
 		this.mcpServerTransportProvider = this.tomcatServer.appContext()
-			.getBean(WebMvcSseServerTransportProvider.class);
+			.getBean(WebMvcStreamableServerTransportProvider.class);
 
+	}
+
+	@Override
+	protected AsyncSpecification<?> prepareAsyncServerBuilder() {
+		return McpServer.async(this.mcpServerTransportProvider);
+	}
+
+	@Override
+	protected SyncSpecification<?> prepareSyncServerBuilder() {
+		return McpServer.sync(this.mcpServerTransportProvider);
 	}
 
 	@AfterEach
@@ -120,13 +129,19 @@ class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests 
 	}
 
 	@Override
-	protected AsyncSpecification<?> prepareAsyncServerBuilder() {
-		return McpServer.async(this.mcpServerTransportProvider);
-	}
+	protected void prepareClients(int port, String mcpEndpoint) {
 
-	@Override
-	protected SingleSessionSyncSpecification prepareSyncServerBuilder() {
-		return McpServer.sync(this.mcpServerTransportProvider);
+		this.clientBuilders.put("httpclient", McpClient
+			.sync(HttpClientStreamableHttpTransport.builder("http://127.0.0.1:" + port).endpoint(mcpEndpoint).build())
+			.requestTimeout(Duration.ofHours(10)));
+
+		this.clientBuilders.put("webflux",
+				McpClient
+					.sync(WebClientStreamableHttpTransport
+						.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
+						.endpoint(mcpEndpoint)
+						.build())
+					.requestTimeout(Duration.ofHours(10)));
 	}
 
 	@Configuration
@@ -134,15 +149,16 @@ class WebMvcSseIntegrationTests extends AbstractMcpClientServerIntegrationTests 
 	static class TestConfig {
 
 		@Bean
-		public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider() {
-			return WebMvcSseServerTransportProvider.builder()
-				.messageEndpoint(MESSAGE_ENDPOINT)
+		public WebMvcStreamableServerTransportProvider webMvcStreamableServerTransportProvider() {
+			return WebMvcStreamableServerTransportProvider.builder()
 				.contextExtractor(TEST_CONTEXT_EXTRACTOR)
+				.mcpEndpoint(MESSAGE_ENDPOINT)
 				.build();
 		}
 
 		@Bean
-		public RouterFunction<ServerResponse> routerFunction(WebMvcSseServerTransportProvider transportProvider) {
+		public RouterFunction<ServerResponse> routerFunction(
+				WebMvcStreamableServerTransportProvider transportProvider) {
 			return transportProvider.getRouterFunction();
 		}
 

@@ -54,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Christian Tzolov
  */
 @Timeout(15)
-class WebFluxSseClientTransportTests {
+class WebFluxSseClientTransportIT {
 
 	static String host = "http://localhost:3001";
 

@@ -26,7 +26,7 @@ import reactor.test.StepVerifier;
 
 import org.springframework.web.reactive.function.client.WebClient;
 
-class WebClientStreamableHttpTransportTest {
+class WebClientStreamableHttpTransportIT {
 
 	static String host = "http://localhost:3001";
 

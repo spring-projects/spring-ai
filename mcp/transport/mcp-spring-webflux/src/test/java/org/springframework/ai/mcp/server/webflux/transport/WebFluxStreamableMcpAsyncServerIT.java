@@ -36,7 +36,7 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
  * @author Dariusz Jędrzejczyk
  */
 @Timeout(15) // Giving extra time beyond the client timeout
-class WebFluxStreamableMcpAsyncServerTests extends AbstractMcpAsyncServerTests {
+class WebFluxStreamableMcpAsyncServerIT extends AbstractMcpAsyncServerTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 

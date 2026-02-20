@@ -87,7 +87,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @see WebFluxSseServerTransportProvider
  */
 @Timeout(15)
-public class SyncServerMcpTransportContextIntegrationTests {
+public class SyncServerMcpTransportContextIT {
 
 	private static final ThreadLocal<String> CLIENT_SIDE_HEADER_VALUE_HOLDER = new ThreadLocal<>();
 

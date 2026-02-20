@@ -71,7 +71,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Disabled
 @ParameterizedClass
 @MethodSource("transports")
-public class ServerTransportSecurityIntegrationTests {
+public class ServerTransportSecurityIT {
 
 	private static final String DISALLOWED_ORIGIN = "https://malicious.example.com";
 

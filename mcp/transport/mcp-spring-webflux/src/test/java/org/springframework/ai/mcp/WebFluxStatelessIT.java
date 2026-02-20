@@ -40,7 +40,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 
 @Timeout(15)
-class WebFluxStatelessIntegrationTests extends AbstractStatelessIntegrationTests {
+class WebFluxStatelessIT extends AbstractStatelessIntegrationTests {
 
 	private static final String CUSTOM_MESSAGE_ENDPOINT = "/otherPath/mcp/message";
 

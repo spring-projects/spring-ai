@@ -66,7 +66,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Disabled
 @ParameterizedClass
 @MethodSource("transports")
-public class WebFluxServerTransportSecurityIntegrationTests {
+public class WebFluxServerTransportSecurityIT {
 
 	private static final String DISALLOWED_ORIGIN = "https://malicious.example.com";
 

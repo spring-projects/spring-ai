@@ -77,7 +77,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  */
 @Timeout(15)
-public class AsyncServerMcpTransportContextIntegrationTests {
+public class AsyncServerMcpTransportContextIT {
 
 	private static final String HEADER_NAME = "x-test";
 

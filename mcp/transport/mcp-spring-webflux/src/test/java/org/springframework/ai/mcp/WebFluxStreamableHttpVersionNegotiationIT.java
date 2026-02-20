@@ -48,7 +48,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class WebFluxStreamableHttpVersionNegotiationIntegrationTests {
+class WebFluxStreamableHttpVersionNegotiationIT {
 
 	private DisposableServer httpServer;
 

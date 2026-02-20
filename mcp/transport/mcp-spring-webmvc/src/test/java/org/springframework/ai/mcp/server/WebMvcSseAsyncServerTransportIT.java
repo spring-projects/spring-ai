@@ -16,8 +16,9 @@
 
 package org.springframework.ai.mcp.server;
 
-import io.modelcontextprotocol.server.AbstractMcpSyncServerTests;
+import io.modelcontextprotocol.server.AbstractMcpAsyncServerTests;
 import io.modelcontextprotocol.server.McpServer;
+import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
@@ -33,22 +34,17 @@ import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 
 @Timeout(15)
-class WebMvcSseSyncServerTransportTests extends AbstractMcpSyncServerTests {
+class WebMvcSseAsyncServerTransportIT extends AbstractMcpAsyncServerTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
 	private Tomcat tomcat;
 
-	private WebMvcSseServerTransportProvider transportProvider;
+	private McpServerTransportProvider transportProvider;
 
 	private AnnotationConfigWebApplicationContext appContext;
 
-	@Override
-	protected McpServer.SyncSpecification<?> prepareSyncServerBuilder() {
-		return McpServer.sync(createMcpTransportProvider());
-	}
-
-	private WebMvcSseServerTransportProvider createMcpTransportProvider() {
+	private McpServerTransportProvider createMcpTransportProvider() {
 		// Set up Tomcat first
 		this.tomcat = new Tomcat();
 		this.tomcat.setPort(0);
@@ -89,6 +85,11 @@ class WebMvcSseSyncServerTransportTests extends AbstractMcpSyncServerTests {
 	}
 
 	@Override
+	protected McpServer.AsyncSpecification<?> prepareAsyncServerBuilder() {
+		return McpServer.async(createMcpTransportProvider());
+	}
+
+	@Override
 	protected void onStart() {
 	}
 
@@ -117,7 +118,10 @@ class WebMvcSseSyncServerTransportTests extends AbstractMcpSyncServerTests {
 
 		@Bean
 		public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider() {
-			return WebMvcSseServerTransportProvider.builder().messageEndpoint(MESSAGE_ENDPOINT).build();
+			return WebMvcSseServerTransportProvider.builder()
+				.messageEndpoint(MESSAGE_ENDPOINT)
+				.sseEndpoint(WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
+				.build();
 		}
 
 		@Bean

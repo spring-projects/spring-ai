@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.mcp.server.webmvc.transport;
+package org.springframework.ai.mcp.server;
 
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
-import io.modelcontextprotocol.common.McpTransportContext;
-import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.catalina.LifecycleException;
@@ -28,7 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.mcp.server.TomcatTestUtil;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -37,14 +35,9 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Integration tests for WebMvcSseServerTransportProvider
- *
- * @author lance
- */
-class WebMvcSseServerTransportProviderTests {
+class WebMvcSseCustomContextPathIT {
 
-	private static final String CUSTOM_CONTEXT_PATH = "";
+	private static final String CUSTOM_CONTEXT_PATH = "/app/1";
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
@@ -56,6 +49,7 @@ class WebMvcSseServerTransportProviderTests {
 
 	@BeforeEach
 	public void before() {
+
 		this.tomcatServer = TomcatTestUtil.createTomcatServer(CUSTOM_CONTEXT_PATH, 0, TestConfig.class);
 
 		try {
@@ -67,22 +61,14 @@ class WebMvcSseServerTransportProviderTests {
 		}
 
 		int port = this.tomcatServer.tomcat().getConnector().getLocalPort();
-		HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder("http://127.0.0.1:" + port)
-			.sseEndpoint(WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
+		var clientTransport = HttpClientSseClientTransport.builder("http://127.0.0.1:" + port)
+			.sseEndpoint(CUSTOM_CONTEXT_PATH + WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
 			.build();
 
-		this.clientBuilder = McpClient.sync(transport);
+		this.clientBuilder = McpClient.sync(clientTransport);
+
 		this.mcpServerTransportProvider = this.tomcatServer.appContext()
 			.getBean(WebMvcSseServerTransportProvider.class);
-	}
-
-	@Test
-	void validBaseUrl() {
-		McpServer.async(this.mcpServerTransportProvider).serverInfo("test-server", "1.0.0").build();
-		try (var client = this.clientBuilder.clientInfo(new McpSchema.Implementation("Sample " + "client", "0.0.0"))
-			.build()) {
-			assertThat(client.initialize()).isNotNull();
-		}
 	}
 
 	@AfterEach
@@ -104,6 +90,13 @@ class WebMvcSseServerTransportProviderTests {
 		}
 	}
 
+	@Test
+	void testCustomContextPath() {
+		McpServer.async(this.mcpServerTransportProvider).serverInfo("test-server", "1.0.0").build();
+		var client = this.clientBuilder.clientInfo(new McpSchema.Implementation("Sample " + "client", "0.0.0")).build();
+		assertThat(client.initialize()).isNotNull();
+	}
+
 	@Configuration
 	@EnableWebMvc
 	static class TestConfig {
@@ -112,11 +105,13 @@ class WebMvcSseServerTransportProviderTests {
 		public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider() {
 
 			return WebMvcSseServerTransportProvider.builder()
+				.baseUrl(CUSTOM_CONTEXT_PATH)
 				.messageEndpoint(MESSAGE_ENDPOINT)
 				.sseEndpoint(WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT)
-				.jsonMapper(McpJsonDefaults.getMapper())
-				.contextExtractor(req -> McpTransportContext.EMPTY)
 				.build();
+			// return new WebMvcSseServerTransportProvider(new ObjectMapper(),
+			// CUSTOM_CONTEXT_PATH, MESSAGE_ENDPOINT,
+			// WebMvcSseServerTransportProvider.DEFAULT_SSE_ENDPOINT);
 		}
 
 		@Bean

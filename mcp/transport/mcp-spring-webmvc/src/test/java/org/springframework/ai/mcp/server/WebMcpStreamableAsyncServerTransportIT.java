@@ -42,7 +42,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @author Christian Tzolov
  */
 @Timeout(15) // Giving extra time beyond the client timeout
-class WebMcpStreamableAsyncServerTransportTests extends AbstractMcpAsyncServerTests {
+class WebMcpStreamableAsyncServerTransportIT extends AbstractMcpAsyncServerTests {
 
 	private static final String MCP_ENDPOINT = "/mcp";
 

@@ -45,7 +45,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Timeout(15)
-class WebMvcStatelessIntegrationTests extends AbstractStatelessIntegrationTests {
+class WebMvcStatelessIT extends AbstractStatelessIntegrationTests {
 
 	private static final String MESSAGE_ENDPOINT = "/mcp/message";
 
