@@ -432,7 +432,7 @@ public class DefaultChatClient implements ChatClient {
 
 			this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
 
-			if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+			if (Boolean.TRUE.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))
 					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
 				this.request.context()
 					.put(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), beanOutputConverter.getJsonSchema());
@@ -474,7 +474,7 @@ public class DefaultChatClient implements ChatClient {
 				this.request.context().put(ChatClientAttributes.OUTPUT_FORMAT.getKey(), outputConverter.getFormat());
 			}
 
-			if (this.request.context().containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey())
+			if (Boolean.TRUE.equals(this.request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()))
 					&& outputConverter instanceof BeanOutputConverter beanOutputConverter) {
 				// Used for native structured output support, e.g. AI model API should
 				// provide structured output support.
