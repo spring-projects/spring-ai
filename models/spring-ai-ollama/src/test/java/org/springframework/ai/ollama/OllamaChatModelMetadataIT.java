@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * ITs for {@link OllamaChatModel} asserting AI metadata.
  *
  * @author Sun Yuhan
+ * @author Ilayaperumal Gopinathan
  */
 @SpringBootTest(classes = OllamaChatModelMetadataIT.Config.class)
 class OllamaChatModelMetadataIT extends BaseOllamaIT {
@@ -88,6 +89,42 @@ class OllamaChatModelMetadataIT extends BaseOllamaIT {
 			var thinking = chatGenerationMetadata.get("thinking");
 			assertThat(thinking).isNull();
 		});
+	}
+
+	@Test
+	void ollamaThinkingMetadataCapturedInStreaming() {
+		var options = OllamaChatOptions.builder().model(MODEL).enableThinking().build();
+		Prompt prompt = new Prompt("Why is the sky blue?", options);
+		var responses = this.chatModel.stream(prompt).collectList().block();
+		assertThat(responses).isNotNull().isNotEmpty();
+
+		// At least one response should contain thinking metadata
+		boolean hasThinkingMetadata = responses.stream()
+			.flatMap(response -> response.getResults().stream())
+			.map(generation -> generation.getMetadata())
+			.anyMatch(metadata -> metadata != null && metadata.containsKey("thinking"));
+
+		assertThat(hasThinkingMetadata).isTrue();
+	}
+
+	@Test
+	void ollamaThinkingMetadataNotCapturedInStreamingWhenSetThinkFlagToFalse() {
+		// Note: Thinking-capable models (e.g., qwen3:*) auto-enable thinking by default
+		// in Ollama 0.12+.
+		// This test explicitly disables thinking to verify null metadata is returned.
+		var options = OllamaChatOptions.builder().model(MODEL).disableThinking().build();
+
+		Prompt prompt = new Prompt("Why is the sky blue?", options);
+		var responses = this.chatModel.stream(prompt).collectList().block();
+		assertThat(responses).isNotNull().isNotEmpty();
+
+		// No response should contain thinking metadata
+		boolean hasThinkingMetadata = responses.stream()
+			.flatMap(response -> response.getResults().stream())
+			.map(generation -> generation.getMetadata())
+			.anyMatch(metadata -> metadata != null && metadata.containsKey("thinking"));
+
+		assertThat(hasThinkingMetadata).isFalse();
 	}
 
 	@SpringBootConfiguration
