@@ -32,12 +32,18 @@ import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.util.Assert;
 
 /**
- * Memory is retrieved added as a collection of messages to the prompt
+ * Memory is retrieved added as a collection of messages to the prompt.
+ * <p>
+ * When used together with {@link ToolCallAdvisor}, tool call messages
+ * ({@link AssistantMessage} with tool calls and
+ * {@link org.springframework.ai.chat.messages.ToolResponseMessage}) are automatically
+ * persisted in memory across tool call iterations.
  *
  * @author Christian Tzolov
  * @author Mark Pollack
@@ -83,10 +89,24 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 		List<Message> memoryMessages = this.chatMemory.get(conversationId);
 
 		// 2. Advise the request messages list.
-		List<Message> processedMessages = new ArrayList<>(memoryMessages);
-		processedMessages.addAll(chatClientRequest.prompt().getInstructions());
+		List<Message> instructions = chatClientRequest.prompt().getInstructions();
 
-		// 2.1. Ensure system message, if present, appears first in the list.
+		// 2.1. Check if the instructions already contain conversation history
+		// (e.g., when ToolCallAdvisor provides the full history in subsequent
+		// tool call iterations). In that case, skip prepending memory to avoid
+		// message duplication.
+		boolean instructionsContainHistory = instructions.stream().anyMatch(msg -> msg instanceof AssistantMessage);
+
+		List<Message> processedMessages;
+		if (instructionsContainHistory) {
+			processedMessages = new ArrayList<>(instructions);
+		}
+		else {
+			processedMessages = new ArrayList<>(memoryMessages);
+			processedMessages.addAll(instructions);
+		}
+
+		// 2.2. Ensure system message, if present, appears first in the list.
 		for (int i = 0; i < processedMessages.size(); i++) {
 			if (processedMessages.get(i) instanceof SystemMessage) {
 				Message systemMessage = processedMessages.remove(i);

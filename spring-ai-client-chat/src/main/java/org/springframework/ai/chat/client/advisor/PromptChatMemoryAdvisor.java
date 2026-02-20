@@ -40,6 +40,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.util.Assert;
 
@@ -114,9 +115,21 @@ public final class PromptChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 				conversationId, memoryMessages);
 
 		// 2. Process memory messages as a string.
+		// Include USER, ASSISTANT, and TOOL messages to preserve tool call context
+		// in multi-turn conversations when used with ToolCallAdvisor.
 		String memory = memoryMessages.stream()
-			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT)
-			.map(m -> m.getMessageType() + ":" + m.getText())
+			.filter(m -> m.getMessageType() == MessageType.USER || m.getMessageType() == MessageType.ASSISTANT
+					|| m.getMessageType() == MessageType.TOOL)
+			.map(m -> {
+				if (m instanceof ToolResponseMessage toolResponseMessage) {
+					String toolText = toolResponseMessage.getResponses()
+						.stream()
+						.map(r -> r.name() + ": " + r.responseData())
+						.collect(Collectors.joining(", "));
+					return m.getMessageType() + ":" + toolText;
+				}
+				return m.getMessageType() + ":" + m.getText();
+			})
 			.collect(Collectors.joining(System.lineSeparator()));
 
 		// 3. Augment the system message.
