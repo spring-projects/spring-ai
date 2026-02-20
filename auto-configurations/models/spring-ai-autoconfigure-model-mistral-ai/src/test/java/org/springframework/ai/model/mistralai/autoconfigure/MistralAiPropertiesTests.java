@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,32 +16,46 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit Tests for {@link MistralAiCommonProperties}, {@link MistralAiEmbeddingProperties}.
  */
-public class MistralAiPropertiesTests {
+class MistralAiPropertiesTests {
+
+	private static final MistralAiCommonProperties COMMON_WITH_PROPERTIES = createCommonPropertiesWithDefaultValues();
+
+	private static final MistralAiCommonProperties COMMON_WITHOUT_PROPERTIES = createCommonPropertiesWithoutDefaultValues();
+
+	private static final String COMMON_API_KEY = "common_api_key";
+
+	private static final String SPECIFIC_API_KEY = "specific_api_key";
+
+	private static final String SPECIFIC_BASE_URL = "https://my-mistral-ai-api.com";
 
 	@Test
-	public void embeddingProperties() {
-
+	void embeddingProperties() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL", "spring.ai.mistralai.api-key=abc123",
 					"spring.ai.mistralai.embedding.options.model=MODEL_XYZ")
 			.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(MistralAiEmbeddingProperties.class);
-				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
+				var commonProperties = context.getBean(MistralAiCommonProperties.class);
 
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
 				assertThat(embeddingProperties.getApiKey()).isNull();
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
@@ -51,8 +65,7 @@ public class MistralAiPropertiesTests {
 	}
 
 	@Test
-	public void chatOptionsTest() {
-
+	void chatOptionsTest() {
 		new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL",
 				"spring.ai.mistralai.chat.options.tools[0].function.name=myFunction1",
 				"spring.ai.mistralai.chat.options.tools[0].function.description=function description",
@@ -98,18 +111,17 @@ public class MistralAiPropertiesTests {
 	}
 
 	@Test
-	public void embeddingOverrideConnectionProperties() {
-
+	void embeddingOverrideConnectionProperties() {
 		new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.base-url=TEST_BASE_URL",
 				"spring.ai.mistralai.api-key=abc123", "spring.ai.mistralai.embedding.base-url=TEST_BASE_URL2",
 				"spring.ai.mistralai.embedding.api-key=456", "spring.ai.mistralai.embedding.options.model=MODEL_XYZ")
 			.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(MistralAiEmbeddingProperties.class);
-				var connectionProperties = context.getBean(MistralAiCommonProperties.class);
+				var commonProperties = context.getBean(MistralAiCommonProperties.class);
 
-				assertThat(connectionProperties.getApiKey()).isEqualTo("abc123");
-				assertThat(connectionProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
+				assertThat(commonProperties.getApiKey()).isEqualTo("abc123");
+				assertThat(commonProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL");
 
 				assertThat(embeddingProperties.getApiKey()).isEqualTo("456");
 				assertThat(embeddingProperties.getBaseUrl()).isEqualTo("TEST_BASE_URL2");
@@ -119,8 +131,7 @@ public class MistralAiPropertiesTests {
 	}
 
 	@Test
-	public void embeddingOptionsTest() {
-
+	void embeddingOptionsTest() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.mistralai.api-key=API_KEY", "spring.ai.mistralai.base-url=TEST_BASE_URL",
 					"spring.ai.mistralai.embedding.options.model=MODEL_XYZ",
@@ -139,7 +150,7 @@ public class MistralAiPropertiesTests {
 	}
 
 	@Test
-	public void moderationOptionsTest() {
+	void moderationOptionsTest() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.mistralai.moderation.base-url=TEST_BASE_URL",
 					"spring.ai.mistralai.moderation.api-key=abc123",
@@ -151,6 +162,119 @@ public class MistralAiPropertiesTests {
 				assertThat(moderationProperties.getApiKey()).isEqualTo("abc123");
 				assertThat(moderationProperties.getOptions().getModel()).isEqualTo("MODERATION_MODEL");
 			});
+	}
+
+	@Test
+	void commonPropertiesApiKeyDefaulting() {
+		assertThatThrownBy(() -> new MistralAiCommonProperties().getApiKeyOrDefaultFrom(COMMON_WITH_PROPERTIES))
+			.isInstanceOf(UnsupportedOperationException.class)
+			.hasMessage("Mistral AI common properties can't be defaulted!");
+	}
+
+	@Test
+	void commonPropertiesBaseUrlDefaulting() {
+		assertThatThrownBy(() -> new MistralAiCommonProperties().getBaseUrlOrDefaultFrom(COMMON_WITH_PROPERTIES))
+			.isInstanceOf(UnsupportedOperationException.class)
+			.hasMessage("Mistral AI common properties can't be defaulted!");
+	}
+
+	static List<? extends MistralAiParentProperties> properties() {
+		return List.of(createChatProperties(SPECIFIC_API_KEY, SPECIFIC_BASE_URL),
+				createEmbeddingProperties(SPECIFIC_API_KEY, SPECIFIC_BASE_URL),
+				createModerationProperties(SPECIFIC_API_KEY, SPECIFIC_BASE_URL),
+				createOcrProperties(SPECIFIC_API_KEY, SPECIFIC_BASE_URL));
+	}
+
+	static List<? extends MistralAiParentProperties> defaultedProperties() {
+		return List.of(createChatProperties(null, null), createEmbeddingProperties(null, null),
+				createModerationProperties(null, null), createOcrProperties(null, null));
+	}
+
+	@ParameterizedTest
+	@MethodSource("properties")
+	void propertiesApiKey(MistralAiParentProperties properties) {
+		assertThat(properties.getApiKeyOrDefaultFrom(COMMON_WITH_PROPERTIES)).isEqualTo(SPECIFIC_API_KEY);
+	}
+
+	@ParameterizedTest
+	@MethodSource("properties")
+	void propertiesBaseUrl(MistralAiParentProperties properties) {
+		assertThat(properties.getBaseUrlOrDefaultFrom(COMMON_WITH_PROPERTIES)).isEqualTo(SPECIFIC_BASE_URL);
+	}
+
+	@ParameterizedTest
+	@MethodSource("defaultedProperties")
+	void propertiesApiKeyDefaulting(MistralAiParentProperties properties) {
+		assertThat(properties.getApiKeyOrDefaultFrom(COMMON_WITH_PROPERTIES)).isEqualTo(COMMON_API_KEY);
+	}
+
+	@ParameterizedTest
+	@MethodSource("defaultedProperties")
+	void propertiesBaseUrlDefaulting(MistralAiParentProperties properties) {
+		assertThat(properties.getBaseUrlOrDefaultFrom(COMMON_WITH_PROPERTIES))
+			.isEqualTo(MistralAiCommonProperties.DEFAULT_BASE_URL);
+	}
+
+	@ParameterizedTest
+	@MethodSource("defaultedProperties")
+	void propertiesMissingApiKey(MistralAiParentProperties properties) {
+		assertThatThrownBy(() -> properties.getApiKeyOrDefaultFrom(COMMON_WITHOUT_PROPERTIES))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessage("Mistral AI API key must be set!");
+	}
+
+	@ParameterizedTest
+	@MethodSource("defaultedProperties")
+	void propertiesMissingBaseUrl(MistralAiParentProperties properties) {
+		assertThatThrownBy(() -> properties.getBaseUrlOrDefaultFrom(COMMON_WITHOUT_PROPERTIES))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessage("Mistral AI base URL must be set!");
+	}
+
+	private static MistralAiCommonProperties createCommonPropertiesWithoutDefaultValues() {
+		var commonProperties = new MistralAiCommonProperties();
+		commonProperties.setBaseUrl(null);
+
+		return commonProperties;
+	}
+
+	private static MistralAiCommonProperties createCommonPropertiesWithDefaultValues() {
+		var commonProperties = new MistralAiCommonProperties();
+		commonProperties.setApiKey(COMMON_API_KEY);
+
+		return commonProperties;
+	}
+
+	private static MistralAiChatProperties createChatProperties(String apiKey, String baseUrl) {
+		var chatProperties = new MistralAiChatProperties();
+		chatProperties.setApiKey(apiKey);
+		chatProperties.setBaseUrl(baseUrl);
+
+		return chatProperties;
+	}
+
+	private static MistralAiEmbeddingProperties createEmbeddingProperties(String apiKey, String baseUrl) {
+		var embeddingProperties = new MistralAiEmbeddingProperties();
+		embeddingProperties.setApiKey(apiKey);
+		embeddingProperties.setBaseUrl(baseUrl);
+
+		return embeddingProperties;
+	}
+
+	private static MistralAiModerationProperties createModerationProperties(String apiKey, String baseUrl) {
+		var moderationProperties = new MistralAiModerationProperties();
+		moderationProperties.setApiKey(apiKey);
+		moderationProperties.setBaseUrl(baseUrl);
+
+		return moderationProperties;
+	}
+
+	private static MistralAiOcrProperties createOcrProperties(String apiKey, String baseUrl) {
+		var ocrProperties = new MistralAiOcrProperties();
+		ocrProperties.setApiKey(apiKey);
+		ocrProperties.setBaseUrl(baseUrl);
+
+		return ocrProperties;
 	}
 
 }
