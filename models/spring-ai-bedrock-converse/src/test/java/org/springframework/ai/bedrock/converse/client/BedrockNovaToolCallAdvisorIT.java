@@ -44,7 +44,6 @@ class BedrockNovaToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 	@Override
 	protected ChatModel getChatModel() {
 		String modelId = "us.amazon.nova-pro-v1:0";
-		// String modelId = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
 
 		return BedrockProxyChatModel.builder()
 			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())

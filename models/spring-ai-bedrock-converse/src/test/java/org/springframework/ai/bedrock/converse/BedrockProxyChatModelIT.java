@@ -86,8 +86,8 @@ class BedrockProxyChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "us.anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-sonnet-20240229-v1:0",
-			"us.anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@ValueSource(strings = { "us.anthropic.claude-haiku-4-5-20251001-v1:0", "us.anthropic.claude-sonnet-4-6",
+			"us.anthropic.claude-opus-4-6-v1" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -318,7 +318,7 @@ class BedrockProxyChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = BedrockChatOptions.builder()
-			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -352,7 +352,7 @@ class BedrockProxyChatModelIT {
 
 		var promptOptions = BedrockChatOptions.builder()
 			.maxTokens(maxTokens)
-			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -370,7 +370,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(BedrockChatOptions.builder().model(model).build())
@@ -385,7 +385,7 @@ class BedrockProxyChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(BedrockChatOptions.builder().model(model).build())
@@ -412,13 +412,13 @@ class BedrockProxyChatModelIT {
 		// If you get ValidationException about "on-demand throughput isn't supported",
 		// you need to:
 		// 1. Use an inference profile ARN/ID (e.g.,
-		// "us.anthropic.claude-3-5-haiku-20241022-v1:0")
+		// "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 		// 2. Ensure your AWS account/region has cross-region inference profiles enabled
 		// 3. Or use Amazon Nova models which work with direct model IDs
 		//
 		// Amazon Nova models work without inference profiles and are used in this test
 		// for reliability.
-		String model = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 		// Create a large system prompt (needs to exceed minimum token threshold for
 		// caching)
@@ -507,7 +507,7 @@ class BedrockProxyChatModelIT {
 		// 3.7 Sonnet)
 		// Amazon Nova models do NOT support tool caching and will return
 		// ValidationException
-		String model = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 		// Create multiple tool callbacks to exceed the 1K token minimum for caching
 		// Each tool definition adds ~200-300 tokens, so we need 4-5 tools
@@ -569,7 +569,7 @@ class BedrockProxyChatModelIT {
 		// 3.7 Sonnet)
 		// Amazon Nova models do NOT support tool caching and will return
 		// ValidationException
-		String model = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 		// Create large system prompt (1K+ tokens)
 		String basePrompt = """
@@ -662,7 +662,7 @@ class BedrockProxyChatModelIT {
 		// NOTE: Conversation history caching is verified to work with Claude models
 		// Amazon Nova models theoretically support this but haven't been verified in
 		// tests
-		String model = "us.anthropic.claude-3-7-sonnet-20250219-v1:0";
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 		// Create a large system prompt to contribute to total token count
 		// Need 1024+ tokens total for caching to activate

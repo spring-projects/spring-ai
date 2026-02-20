@@ -48,7 +48,7 @@ public class FunctionCallWithPromptFunctionIT {
 	void functionCallTest() {
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0")
+					"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-haiku-4-5-20251001-v1:0")
 			.run(context -> {
 
 				BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);

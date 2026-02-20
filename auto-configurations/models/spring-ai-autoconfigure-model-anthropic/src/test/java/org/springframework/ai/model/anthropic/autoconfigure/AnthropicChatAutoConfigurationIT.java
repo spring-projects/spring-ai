@@ -61,7 +61,7 @@ public class AnthropicChatAutoConfigurationIT {
 	void callWith8KResponseContext() {
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue())
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.run(context -> {
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
 				var options = AnthropicChatOptions.builder().maxTokens(8192).build();

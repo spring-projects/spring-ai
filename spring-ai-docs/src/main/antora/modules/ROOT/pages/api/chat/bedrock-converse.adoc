@@ -123,7 +123,7 @@ At run-time you can override the default options by adding new, request specific
 [source,java]
 ----
 var options = BedrockChatOptions.builder()
-        .model("anthropic.claude-3-5-sonnet-20240620-v1:0")
+        .model("anthropic.claude-haiku-4-5-20251001-v1:0")
         .temperature(0.6)
         .maxTokens(300)
         .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
@@ -198,7 +198,7 @@ ChatResponse response = chatModel.call(
             new UserMessage("What is machine learning?")
         ),
         BedrockChatOptions.builder()
-            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
             .cacheOptions(BedrockCacheOptions.builder()
                 .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
                 .build())
@@ -219,7 +219,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "What's the weather in San Francisco?",
         BedrockChatOptions.builder()
-            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
             .cacheOptions(BedrockCacheOptions.builder()
                 .strategy(BedrockCacheStrategy.TOOLS_ONLY)
                 .build())
@@ -247,7 +247,7 @@ ChatResponse response = chatModel.call(
             new UserMessage("What's the weather like in Tokyo?")
         ),
         BedrockChatOptions.builder()
-            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
             .cacheOptions(BedrockCacheOptions.builder()
                 .strategy(BedrockCacheStrategy.SYSTEM_AND_TOOLS)
                 .build())
@@ -278,7 +278,7 @@ ChatClient chatClient = ChatClient.builder(chatModel)
 String response = chatClient.prompt()
     .user("What career advice would you give me?")
     .options(BedrockChatOptions.builder()
-        .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+        .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
         .cacheOptions(BedrockCacheOptions.builder()
             .strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
             .build())
@@ -297,7 +297,7 @@ String response = ChatClient.create(chatModel)
     .system("You are an expert document analyst...")
     .user("Analyze this large document: " + document)
     .options(BedrockChatOptions.builder()
-        .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+        .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
         .cacheOptions(BedrockCacheOptions.builder()
             .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
             .build())
@@ -324,7 +324,7 @@ ChatResponse firstResponse = chatModel.call(
             new UserMessage("What is microservices architecture?")
         ),
         BedrockChatOptions.builder()
-            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
             .cacheOptions(BedrockCacheOptions.builder()
                 .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
                 .build())
@@ -352,7 +352,7 @@ ChatResponse secondResponse = chatModel.call(
             new UserMessage("What are the benefits of event sourcing?")
         ),
         BedrockChatOptions.builder()
-            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
             .cacheOptions(BedrockCacheOptions.builder()
                 .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
                 .build())
@@ -453,7 +453,7 @@ ChatResponse riskAnalysis = chatModel.call(
             new UserMessage("What are the key termination clauses and associated penalties?")
         ),
         BedrockChatOptions.builder()
-            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
             .cacheOptions(BedrockCacheOptions.builder()
                 .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
                 .build())
@@ -470,7 +470,7 @@ ChatResponse obligationAnalysis = chatModel.call(
             new UserMessage("List all financial obligations and payment schedules.")
         ),
         BedrockChatOptions.builder()
-            .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
             .cacheOptions(BedrockCacheOptions.builder()
                 .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
                 .build())
@@ -512,7 +512,7 @@ for (String filename : codeFiles) {
                 new UserMessage("Review this " + filename + " code:\n\n" + sourceCode)
             ),
             BedrockChatOptions.builder()
-                .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+                .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
                 .cacheOptions(BedrockCacheOptions.builder()
                     .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
                     .build())
@@ -555,7 +555,7 @@ public class CustomerSupportService {
                     new UserMessage("Customer " + customerId + " asks: " + customerQuery)
                 ),
                 BedrockChatOptions.builder()
-                    .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+                    .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
                     .cacheOptions(BedrockCacheOptions.builder()
                         .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
                         .build())
@@ -596,7 +596,7 @@ public class MultiTenantAIService {
                     new UserMessage(userQuery)
                 ),
                 BedrockChatOptions.builder()
-                    .model("us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+                    .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
                     .cacheOptions(BedrockCacheOptions.builder()
                         .strategy(BedrockCacheStrategy.TOOLS_ONLY)
                         .build())

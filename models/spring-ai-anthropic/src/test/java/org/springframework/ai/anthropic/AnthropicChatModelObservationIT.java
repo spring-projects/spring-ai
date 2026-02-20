@@ -69,12 +69,11 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topK(1)
-			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -91,12 +90,11 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topK(1)
-			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -127,12 +125,12 @@ public class AnthropicChatModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.hasContextualNameEqualTo("chat " + AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.ANTHROPIC.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+					AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
@@ -141,7 +139,6 @@ public class AnthropicChatModelObservationIT {
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), "1")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), finishReasons)
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),

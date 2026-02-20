@@ -393,6 +393,21 @@ public final class AnthropicApi {
 
 		// @formatter:off
 		/**
+		 * The claude-opus-4-6 model.
+		 */
+		CLAUDE_OPUS_4_6("claude-opus-4-6"),
+
+		/**
+		 * The claude-sonnet-4-6 model.
+		 */
+		CLAUDE_SONNET_4_6("claude-sonnet-4-6"),
+
+		/**
+		 * The claude-haiku-4-5 model.
+		 */
+		CLAUDE_HAIKU_4_5("claude-haiku-4-5"),
+
+		/**
 		 * The claude-sonnet-4-5 model.
 		 */
 		CLAUDE_SONNET_4_5("claude-sonnet-4-5"),
@@ -403,19 +418,9 @@ public final class AnthropicApi {
 		CLAUDE_OPUS_4_5("claude-opus-4-5"),
 
 		/**
-		 * The claude-haiku-4-5 model.
-		 */
-		CLAUDE_HAIKU_4_5("claude-haiku-4-5"),
-
-		/**
 		 * The claude-opus-4-1 model.
 		 */
 		CLAUDE_OPUS_4_1("claude-opus-4-1"),
-
-		/**
-		 * The claude-opus-4-0 model.
-		 */
-		CLAUDE_OPUS_4_0("claude-opus-4-0"),
 
 		/**
 		 * The claude-sonnet-4-0 model.
@@ -423,34 +428,9 @@ public final class AnthropicApi {
 		CLAUDE_SONNET_4_0("claude-sonnet-4-0"),
 
 		/**
-		 * The claude-3-7-sonnet-latest model.
+		 * The claude-opus-4-0 model.
 		 */
-		CLAUDE_3_7_SONNET("claude-3-7-sonnet-latest"),
-
-		/**
-		 * The claude-3-5-sonnet-latest model.(Deprecated on October 28, 2025)
-		 */
-		CLAUDE_3_5_SONNET("claude-3-5-sonnet-latest"),
-
-		/**
-		 * The CLAUDE_3_OPUS
-		 */
-		CLAUDE_3_OPUS("claude-3-opus-latest"),
-
-		/**
-		 * The CLAUDE_3_SONNET (Deprecated. To be removed on July 21, 2025)
-		 */
-		CLAUDE_3_SONNET("claude-3-sonnet-20240229"),
-
-		/**
-		 * The CLAUDE 3.5 HAIKU
-		 */
-		CLAUDE_3_5_HAIKU("claude-3-5-haiku-latest"),
-
-		/**
-		 * The CLAUDE_3_HAIKU
-		 */
-		CLAUDE_3_HAIKU("claude-3-haiku-20240307");
+		CLAUDE_OPUS_4_0("claude-opus-4-0");
 
 		// @formatter:on
 
