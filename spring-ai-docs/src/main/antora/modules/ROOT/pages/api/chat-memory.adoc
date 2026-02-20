@@ -618,6 +618,13 @@ Supported field types are: `tag` (for exact match filtering), `text` (for full-t
 The auto-configuration will automatically create the Redis search index on startup if it does not already exist.
 You can disable this behavior by setting `spring.ai.chat.memory.redis.initialize-schema=false`.
 
+The schema includes:
+
+* Core message fields (type, content, timestamp, conversation_id)
+* Explicitly defined metadata fields based on your configuration
+
+NOTE: Metadata fields are only indexed when explicitly defined in the `metadata-fields` configuration.
+
 ==== Requirements
 
 * Redis Stack 7.0 or higher (includes Redis Query Engine and RedisJSON modules)
