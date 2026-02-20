@@ -89,7 +89,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Hello! I understand you want to test caching."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"stop_sequence": null,
 					"usage": {
@@ -161,7 +161,7 @@ class AnthropicPromptCachingMockTest {
 					"type": "message",
 					"role": "assistant",
 					"content": [ { "type": "text", "text": "ok" } ],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": { "input_tokens": 10, "output_tokens": 2 }
 				}
@@ -195,7 +195,7 @@ class AnthropicPromptCachingMockTest {
 					"type": "message",
 					"role": "assistant",
 					"content": [ { "type": "text", "text": "ok" } ],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": { "input_tokens": 10, "output_tokens": 2 }
 				}
@@ -237,7 +237,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "I'll help you with the weather information."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 150,
@@ -313,7 +313,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Based on our previous conversation, I can help with that."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 200,
@@ -380,7 +380,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Simple response without caching."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 20,
@@ -430,7 +430,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response with 1-hour cache TTL."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 30,
@@ -477,7 +477,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response with maximum cache breakpoints."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 500,
@@ -557,7 +557,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response for wire format test."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 200,
@@ -627,7 +627,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response for complex multi-breakpoint scenario."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 800,

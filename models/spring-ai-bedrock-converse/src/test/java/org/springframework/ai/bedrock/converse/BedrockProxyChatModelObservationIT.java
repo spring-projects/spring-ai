@@ -67,7 +67,7 @@ public class BedrockProxyChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = BedrockChatOptions.builder()
-			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -89,7 +89,7 @@ public class BedrockProxyChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = BedrockChatOptions.builder()
-			.model("us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -124,13 +124,13 @@ public class BedrockProxyChatModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + "us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+			.hasContextualNameEqualTo("chat " + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(),
 					AiProvider.BEDROCK_CONVERSE.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					"us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+					"us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			// .hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(),
 			// responseMetadata.getModel())
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
@@ -166,7 +166,7 @@ public class BedrockProxyChatModelObservationIT {
 		@Bean
 		public BedrockProxyChatModel bedrockConverseChatModel(ObservationRegistry observationRegistry) {
 
-			String modelId = "us.anthropic.claude-3-5-sonnet-20240620-v1:0";
+			String modelId = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 			return BedrockProxyChatModel.builder()
 				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())

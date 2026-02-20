@@ -118,7 +118,7 @@ public class OpenAiStreamingFinishReasonTests {
 					"id": "chatcmpl-msg_bdrk_012bpm3yfa9inEuftTWYQ46F",
 					"object": "chat.completion.chunk",
 					"created": 1726239401,
-					"model": "claude-3-5-sonnet-20240620",
+					"model": "claude-haiku-4-5",
 					"choices": [{
 						"index": 0,
 						"delta": {
@@ -189,8 +189,7 @@ public class OpenAiStreamingFinishReasonTests {
 			// deserialized
 			var choice = new ChunkChoice(null, 0, new ChatCompletionMessage("", Role.ASSISTANT), null);
 			ChatCompletionChunk chunk = new ChatCompletionChunk("chatcmpl-msg_bdrk_012bpm3yfa9inEuftTWYQ46F",
-					List.of(choice), 1726239401L, "claude-3-5-sonnet-20240620", null, null, "chat.completion.chunk",
-					null);
+					List.of(choice), 1726239401L, "claude-haiku-4-5", null, null, "chat.completion.chunk", null);
 
 			given(this.openAiApi.chatCompletionStream(isA(ChatCompletionRequest.class), any()))
 				.willReturn(Flux.just(chunk));
@@ -221,7 +220,7 @@ public class OpenAiStreamingFinishReasonTests {
 					"id": "chatcmpl-msg_bdrk_012bpm3yfa9inEuftTWYQ46F",
 					"object": "chat.completion.chunk",
 					"created": 1726239401,
-					"model": "claude-3-5-sonnet-20240620",
+					"model": "claude-haiku-4-5",
 					"choices": [{
 						"index": 0,
 						"delta": {
