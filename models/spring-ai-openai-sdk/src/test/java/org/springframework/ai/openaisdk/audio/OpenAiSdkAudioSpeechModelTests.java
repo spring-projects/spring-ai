@@ -41,6 +41,13 @@ class OpenAiSdkAudioSpeechModelTests {
 	private OpenAIClient mockClient;
 
 	@Test
+	void testModelCreation() {
+		OpenAiSdkAudioSpeechModel model = OpenAiSdkAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		assertThat(model).isNotNull();
+		assertThat(model.getDefaultOptions()).isNotNull();
+	}
+
+	@Test
 	void testDefaultConstructor() {
 		OpenAiSdkAudioSpeechModel model = OpenAiSdkAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 
@@ -88,6 +95,17 @@ class OpenAiSdkAudioSpeechModelTests {
 
 		assertThat(model).isNotNull();
 		assertThat(model.getDefaultOptions()).isEqualTo(options);
+	}
+
+	@Test
+	void testDefaultOptions() {
+		OpenAiSdkAudioSpeechModel model = OpenAiSdkAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		OpenAiSdkAudioSpeechOptions options = (OpenAiSdkAudioSpeechOptions) model.getDefaultOptions();
+
+		assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
+		assertThat(options.getVoice()).isEqualTo("alloy");
+		assertThat(options.getResponseFormat()).isEqualTo("mp3");
+		assertThat(options.getSpeed()).isEqualTo(1.0);
 	}
 
 	@Test

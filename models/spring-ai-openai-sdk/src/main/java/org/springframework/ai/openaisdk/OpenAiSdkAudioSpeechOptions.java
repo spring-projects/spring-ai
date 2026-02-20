@@ -16,10 +16,12 @@
 
 package org.springframework.ai.openaisdk;
 
+import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
 
@@ -106,77 +108,77 @@ public class OpenAiSdkAudioSpeechOptions extends AbstractOpenAiSdkOptions implem
 	}
 
 	@JsonProperty("model")
-	private String model;
+	private @Nullable String model;
 
 	@JsonProperty("input")
-	private String input;
+	private @Nullable String input;
 
 	@JsonProperty("voice")
-	private String voice;
+	private @Nullable String voice;
 
 	@JsonProperty("response_format")
-	private String responseFormat;
+	private @Nullable String responseFormat;
 
 	@JsonProperty("speed")
-	private Double speed;
+	private @Nullable Double speed;
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
-	public String getInput() {
+	public @Nullable String getInput() {
 		return this.input;
 	}
 
-	public void setInput(String input) {
+	public void setInput(@Nullable String input) {
 		this.input = input;
 	}
 
 	@Override
-	public String getVoice() {
+	public @Nullable String getVoice() {
 		return this.voice;
 	}
 
-	public void setVoice(String voice) {
+	public void setVoice(@Nullable String voice) {
 		this.voice = voice;
 	}
 
-	public void setVoice(Voice voice) {
-		this.voice = voice.getValue();
+	public void setVoice(@Nullable Voice voice) {
+		this.voice = (voice != null) ? voice.getValue() : null;
 	}
 
-	public String getResponseFormat() {
+	public @Nullable String getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
+	public void setResponseFormat(@Nullable String responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
-	public void setResponseFormat(AudioResponseFormat responseFormat) {
-		this.responseFormat = responseFormat.getValue();
+	public void setResponseFormat(@Nullable AudioResponseFormat responseFormat) {
+		this.responseFormat = (responseFormat != null) ? responseFormat.getValue() : null;
 	}
 
 	@Override
-	public Double getSpeed() {
+	public @Nullable Double getSpeed() {
 		return this.speed;
 	}
 
-	public void setSpeed(Double speed) {
+	public void setSpeed(@Nullable Double speed) {
 		this.speed = speed;
 	}
 
 	@Override
-	public String getFormat() {
+	public @Nullable String getFormat() {
 		return (this.responseFormat != null) ? this.responseFormat.toLowerCase() : null;
 	}
 
@@ -262,7 +264,10 @@ public class OpenAiSdkAudioSpeechOptions extends AbstractOpenAiSdkOptions implem
 			return this;
 		}
 
-		public Builder merge(TextToSpeechOptions from) {
+		public Builder merge(@Nullable TextToSpeechOptions from) {
+			if (from == null) {
+				return this;
+			}
 			if (from instanceof OpenAiSdkAudioSpeechOptions castFrom) {
 				// Parent class fields
 				if (castFrom.getBaseUrl() != null) {
@@ -288,18 +293,12 @@ public class OpenAiSdkAudioSpeechOptions extends AbstractOpenAiSdkOptions implem
 				}
 				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
 				this.options.setGitHubModels(castFrom.isGitHubModels());
-				if (castFrom.getTimeout() != null) {
-					this.options.setTimeout(castFrom.getTimeout());
-				}
-				if (castFrom.getMaxRetries() != null) {
-					this.options.setMaxRetries(castFrom.getMaxRetries());
-				}
+				this.options.setTimeout(castFrom.getTimeout());
+				this.options.setMaxRetries(castFrom.getMaxRetries());
 				if (castFrom.getProxy() != null) {
 					this.options.setProxy(castFrom.getProxy());
 				}
-				if (castFrom.getCustomHeaders() != null) {
-					this.options.setCustomHeaders(castFrom.getCustomHeaders());
-				}
+				this.options.setCustomHeaders(castFrom.getCustomHeaders());
 				// Child class fields
 				if (castFrom.getInput() != null) {
 					this.options.setInput(castFrom.getInput());
@@ -317,68 +316,68 @@ public class OpenAiSdkAudioSpeechOptions extends AbstractOpenAiSdkOptions implem
 			return this;
 		}
 
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.options.setModel(model);
 			return this;
 		}
 
-		public Builder input(String input) {
+		public Builder input(@Nullable String input) {
 			this.options.setInput(input);
 			return this;
 		}
 
-		public Builder voice(String voice) {
+		public Builder voice(@Nullable String voice) {
 			this.options.setVoice(voice);
 			return this;
 		}
 
-		public Builder voice(Voice voice) {
+		public Builder voice(@Nullable Voice voice) {
 			this.options.setVoice(voice);
 			return this;
 		}
 
-		public Builder responseFormat(String responseFormat) {
+		public Builder responseFormat(@Nullable String responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
-		public Builder responseFormat(AudioResponseFormat responseFormat) {
+		public Builder responseFormat(@Nullable AudioResponseFormat responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
-		public Builder speed(Double speed) {
+		public Builder speed(@Nullable Double speed) {
 			this.options.setSpeed(speed);
 			return this;
 		}
 
-		public Builder deploymentName(String deploymentName) {
+		public Builder deploymentName(@Nullable String deploymentName) {
 			this.options.setDeploymentName(deploymentName);
 			return this;
 		}
 
-		public Builder baseUrl(String baseUrl) {
+		public Builder baseUrl(@Nullable String baseUrl) {
 			this.options.setBaseUrl(baseUrl);
 			return this;
 		}
 
-		public Builder apiKey(String apiKey) {
+		public Builder apiKey(@Nullable String apiKey) {
 			this.options.setApiKey(apiKey);
 			return this;
 		}
 
-		public Builder credential(com.openai.credential.Credential credential) {
+		public Builder credential(com.openai.credential.@Nullable Credential credential) {
 			this.options.setCredential(credential);
 			return this;
 		}
 
 		public Builder microsoftFoundryServiceVersion(
-				com.openai.azure.AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
+				com.openai.azure.@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion) {
 			this.options.setMicrosoftFoundryServiceVersion(microsoftFoundryServiceVersion);
 			return this;
 		}
 
-		public Builder organizationId(String organizationId) {
+		public Builder organizationId(@Nullable String organizationId) {
 			this.options.setOrganizationId(organizationId);
 			return this;
 		}
@@ -398,17 +397,17 @@ public class OpenAiSdkAudioSpeechOptions extends AbstractOpenAiSdkOptions implem
 			return this;
 		}
 
-		public Builder maxRetries(Integer maxRetries) {
+		public Builder maxRetries(int maxRetries) {
 			this.options.setMaxRetries(maxRetries);
 			return this;
 		}
 
-		public Builder proxy(java.net.Proxy proxy) {
+		public Builder proxy(java.net.@Nullable Proxy proxy) {
 			this.options.setProxy(proxy);
 			return this;
 		}
 
-		public Builder customHeaders(java.util.Map<String, String> customHeaders) {
+		public Builder customHeaders(Map<String, String> customHeaders) {
 			this.options.setCustomHeaders(customHeaders);
 			return this;
 		}

@@ -102,6 +102,7 @@ class OpenAiSdkAudioSpeechModelWithResponseMetadataTests {
 		assertThat(rateLimit.getRequestsLimit()).isEqualTo(1000L);
 		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(500L);
 		assertThat(rateLimit.getRequestsReset()).isEqualTo(Duration.ofSeconds(60));
+		// When token headers are not present, should return null (not 0)
 		assertThat(rateLimit.getTokensLimit()).isNull();
 		assertThat(rateLimit.getTokensRemaining()).isNull();
 		assertThat(rateLimit.getTokensReset()).isNull();

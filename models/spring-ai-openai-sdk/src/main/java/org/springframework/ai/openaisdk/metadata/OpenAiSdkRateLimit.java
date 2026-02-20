@@ -18,6 +18,8 @@ package org.springframework.ai.openaisdk.metadata;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.RateLimit;
 
 /**
@@ -29,24 +31,24 @@ import org.springframework.ai.chat.metadata.RateLimit;
  * "https://developers.openai.com/api/docs/guides/rate-limits/#rate-limits-in-headers">Rate
  * limits in headers</a>
  */
+@SuppressWarnings("NullAway")
 public class OpenAiSdkRateLimit implements RateLimit {
 
-	private static final String RATE_LIMIT_STRING = "{ @type: %1$s, requestsLimit: %2$s, requestsRemaining: %3$s, requestsReset: %4$s, tokensLimit: %5$s; tokensRemaining: %6$s; tokensReset: %7$s }";
+	private final @Nullable Long requestsLimit;
 
-	private final Long requestsLimit;
+	private final @Nullable Long requestsRemaining;
 
-	private final Long requestsRemaining;
+	private final @Nullable Long tokensLimit;
 
-	private final Long tokensLimit;
+	private final @Nullable Long tokensRemaining;
 
-	private final Long tokensRemaining;
+	private final @Nullable Duration requestsReset;
 
-	private final Duration requestsReset;
+	private final @Nullable Duration tokensReset;
 
-	private final Duration tokensReset;
-
-	public OpenAiSdkRateLimit(Long requestsLimit, Long requestsRemaining, Duration requestsReset, Long tokensLimit,
-			Long tokensRemaining, Duration tokensReset) {
+	public OpenAiSdkRateLimit(@Nullable Long requestsLimit, @Nullable Long requestsRemaining,
+			@Nullable Duration requestsReset, @Nullable Long tokensLimit, @Nullable Long tokensRemaining,
+			@Nullable Duration tokensReset) {
 
 		this.requestsLimit = requestsLimit;
 		this.requestsRemaining = requestsRemaining;
@@ -88,8 +90,9 @@ public class OpenAiSdkRateLimit implements RateLimit {
 
 	@Override
 	public String toString() {
-		return RATE_LIMIT_STRING.formatted(getClass().getName(), getRequestsLimit(), getRequestsRemaining(),
-				getRequestsReset(), getTokensLimit(), getTokensRemaining(), getTokensReset());
+		return "{ @type: %1$s, requestsLimit: %2$s, requestsRemaining: %3$s, requestsReset: %4$s, tokensLimit: %5$s; tokensRemaining: %6$s; tokensReset: %7$s }"
+			.formatted(getClass().getName(), getRequestsLimit(), getRequestsRemaining(), getRequestsReset(),
+					getTokensLimit(), getTokensRemaining(), getTokensReset());
 	}
 
 }

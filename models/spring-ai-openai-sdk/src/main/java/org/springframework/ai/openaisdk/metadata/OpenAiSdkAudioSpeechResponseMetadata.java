@@ -51,7 +51,7 @@ public class OpenAiSdkAudioSpeechResponseMetadata extends TextToSpeechResponseMe
 
 	private static final String TOKENS_RESET_HEADER = "x-ratelimit-reset-tokens";
 
-	@Nullable private final RateLimit rateLimit;
+	private final @Nullable RateLimit rateLimit;
 
 	public OpenAiSdkAudioSpeechResponseMetadata() {
 		this(null);
@@ -78,7 +78,7 @@ public class OpenAiSdkAudioSpeechResponseMetadata extends TextToSpeechResponseMe
 		return new OpenAiSdkAudioSpeechResponseMetadata(rateLimit);
 	}
 
-	private static Long getHeaderAsLong(Headers headers, String headerName) {
+	private static @Nullable Long getHeaderAsLong(Headers headers, String headerName) {
 		var values = headers.values(headerName);
 		if (!values.isEmpty()) {
 			try {
@@ -91,7 +91,7 @@ public class OpenAiSdkAudioSpeechResponseMetadata extends TextToSpeechResponseMe
 		return null;
 	}
 
-	private static Duration getHeaderAsDuration(Headers headers, String headerName) {
+	private static @Nullable Duration getHeaderAsDuration(Headers headers, String headerName) {
 		var values = headers.values(headerName);
 		if (!values.isEmpty()) {
 			try {
@@ -104,7 +104,7 @@ public class OpenAiSdkAudioSpeechResponseMetadata extends TextToSpeechResponseMe
 		return null;
 	}
 
-	@Nullable public RateLimit getRateLimit() {
+	public @Nullable RateLimit getRateLimit() {
 		RateLimit rateLimit = this.rateLimit;
 		return rateLimit != null ? rateLimit : new EmptyRateLimit();
 	}

@@ -44,13 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class OpenAiSdkAudioSpeechModelIT {
 
 	@Test
-	void testModelCreation() {
-		OpenAiSdkAudioSpeechModel model = OpenAiSdkAudioSpeechModel.builder().build();
-		assertThat(model).isNotNull();
-		assertThat(model.getDefaultOptions()).isNotNull();
-	}
-
-	@Test
 	void testSimpleSpeechGeneration() {
 		OpenAiSdkAudioSpeechModel model = OpenAiSdkAudioSpeechModel.builder().build();
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Hello world");
@@ -66,17 +59,6 @@ class OpenAiSdkAudioSpeechModelIT {
 	}
 
 	@Test
-	void testDefaultOptions() {
-		OpenAiSdkAudioSpeechModel model = OpenAiSdkAudioSpeechModel.builder().build();
-		OpenAiSdkAudioSpeechOptions options = (OpenAiSdkAudioSpeechOptions) model.getDefaultOptions();
-
-		assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
-		assertThat(options.getVoice()).isEqualTo("alloy");
-		assertThat(options.getResponseFormat()).isEqualTo("mp3");
-		assertThat(options.getSpeed()).isEqualTo(1.0);
-	}
-
-	@Test
 	void testCustomOptions() {
 		OpenAiSdkAudioSpeechOptions options = OpenAiSdkAudioSpeechOptions.builder()
 			.model("tts-1-hd")
@@ -86,6 +68,14 @@ class OpenAiSdkAudioSpeechModelIT {
 			.build();
 
 		OpenAiSdkAudioSpeechModel model = OpenAiSdkAudioSpeechModel.builder().defaultOptions(options).build();
+
+		// Verify that the custom options were set on the model
+		OpenAiSdkAudioSpeechOptions defaultOptions = (OpenAiSdkAudioSpeechOptions) model.getDefaultOptions();
+		assertThat(defaultOptions.getModel()).isEqualTo("tts-1-hd");
+		assertThat(defaultOptions.getVoice()).isEqualTo("nova");
+		assertThat(defaultOptions.getResponseFormat()).isEqualTo("opus");
+		assertThat(defaultOptions.getSpeed()).isEqualTo(1.5);
+
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing custom options");
 
 		TextToSpeechResponse response = model.call(prompt);

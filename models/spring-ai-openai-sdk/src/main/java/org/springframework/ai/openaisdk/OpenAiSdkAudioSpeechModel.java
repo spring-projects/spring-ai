@@ -25,7 +25,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.core.http.Headers;
 import com.openai.models.audio.speech.SpeechCreateParams;
 import com.openai.models.audio.speech.SpeechModel;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -63,12 +63,15 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 	private final OpenAiSdkAudioSpeechOptions defaultOptions;
 
 	/**
-	 * Private constructor that takes a Builder instance.
-	 * @param builder The builder containing the configuration.
+	 * Private constructor that takes individual configuration parameters.
+	 * @param openAiClient The OpenAI client instance.
+	 * @param defaultOptions The default options for speech generation.
 	 */
-	private OpenAiSdkAudioSpeechModel(Builder builder) {
-		this.defaultOptions = builder.defaultOptions;
-		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
+	private OpenAiSdkAudioSpeechModel(@Nullable OpenAIClient openAiClient,
+			@Nullable OpenAiSdkAudioSpeechOptions defaultOptions) {
+		this.defaultOptions = Objects.requireNonNullElseGet(defaultOptions,
+				() -> OpenAiSdkAudioSpeechOptions.builder().model(DEFAULT_MODEL_NAME).build());
+		this.openAiClient = Objects.requireNonNullElseGet(openAiClient,
 				() -> OpenAiSdkSetup.setupSyncClient(this.defaultOptions.getBaseUrl(), this.defaultOptions.getApiKey(),
 						this.defaultOptions.getCredential(), this.defaultOptions.getMicrosoftDeploymentName(),
 						this.defaultOptions.getMicrosoftFoundryServiceVersion(),
@@ -94,9 +97,8 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 		return new Builder(this);
 	}
 
-	@NotNull
 	@Override
-	public byte[] call(@NotNull String text) {
+	public byte[] call(String text) {
 		Assert.hasText(text, "Text must not be null or empty");
 		TextToSpeechPrompt prompt = new TextToSpeechPrompt(text);
 		return call(prompt).getResult().getOutput();
@@ -154,21 +156,18 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 		return new TextToSpeechResponse(List.of(speech), metadata);
 	}
 
-	@NotNull
 	@Override
-	public Flux<TextToSpeechResponse> stream(@NotNull TextToSpeechPrompt prompt) {
+	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		// TODO: The OpenAI SDK audio().speech() API does not support streaming yet.
 		// Return the full response as a single element Flux.
 		return Flux.just(call(prompt));
 	}
 
-	@NotNull
 	@Override
 	public TextToSpeechOptions getDefaultOptions() {
 		return this.defaultOptions;
 	}
 
-	@NotNull
 	private OpenAiSdkAudioSpeechOptions mergeOptions(TextToSpeechPrompt prompt) {
 		OpenAiSdkAudioSpeechOptions runtimeOptions = (prompt
 			.getOptions() instanceof OpenAiSdkAudioSpeechOptions openAiSdkOptions) ? openAiSdkOptions : null;
@@ -201,8 +200,8 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 				source.getOrganizationId() != null ? source.getOrganizationId() : target.getOrganizationId());
 		builder.microsoftFoundry(source.isMicrosoftFoundry() || target.isMicrosoftFoundry());
 		builder.gitHubModels(source.isGitHubModels() || target.isGitHubModels());
-		builder.timeout(source.getTimeout() != null ? source.getTimeout() : target.getTimeout());
-		builder.maxRetries(source.getMaxRetries() != null ? source.getMaxRetries() : target.getMaxRetries());
+		builder.timeout(source.getTimeout());
+		builder.maxRetries(source.getMaxRetries());
 		builder.proxy(source.getProxy() != null ? source.getProxy() : target.getProxy());
 		builder
 			.customHeaders(source.getCustomHeaders() != null ? source.getCustomHeaders() : target.getCustomHeaders());
@@ -222,9 +221,9 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 	 */
 	public static final class Builder {
 
-		private OpenAIClient openAiClient;
+		private @Nullable OpenAIClient openAiClient;
 
-		private OpenAiSdkAudioSpeechOptions defaultOptions;
+		private @Nullable OpenAiSdkAudioSpeechOptions defaultOptions;
 
 		/**
 		 * Default constructor with default options.
@@ -252,7 +251,7 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 		 * @param openAiClient The OpenAIClient to use
 		 * @return This builder
 		 */
-		public Builder openAiClient(OpenAIClient openAiClient) {
+		public Builder openAiClient(@Nullable OpenAIClient openAiClient) {
 			this.openAiClient = openAiClient;
 			return this;
 		}
@@ -262,7 +261,7 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 		 * @param defaultOptions The default options to use
 		 * @return This builder
 		 */
-		public Builder defaultOptions(OpenAiSdkAudioSpeechOptions defaultOptions) {
+		public Builder defaultOptions(@Nullable OpenAiSdkAudioSpeechOptions defaultOptions) {
 			if (defaultOptions != null) {
 				this.defaultOptions = defaultOptions;
 			}
@@ -274,7 +273,7 @@ public final class OpenAiSdkAudioSpeechModel implements TextToSpeechModel {
 		 * @return A new OpenAiSdkAudioSpeechModel instance
 		 */
 		public OpenAiSdkAudioSpeechModel build() {
-			return new OpenAiSdkAudioSpeechModel(this);
+			return new OpenAiSdkAudioSpeechModel(this.openAiClient, this.defaultOptions);
 		}
 
 	}
