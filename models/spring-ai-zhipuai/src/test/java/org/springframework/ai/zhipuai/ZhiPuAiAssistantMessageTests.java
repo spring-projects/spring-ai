@@ -87,15 +87,15 @@ class ZhiPuAiAssistantMessageTests {
 		List<Media> media = List.of();
 
 		ZhiPuAiAssistantMessage message1 = new ZhiPuAiAssistantMessage(content, reasoningContent, properties, toolCalls,
-				media);
+				media, false);
 		ZhiPuAiAssistantMessage message2 = new ZhiPuAiAssistantMessage(content, reasoningContent, properties, toolCalls,
-				media);
+				media, false);
 
 		assertThat(message1).isEqualTo(message2);
 		assertThat(message1.hashCode()).isEqualTo(message2.hashCode());
 
 		ZhiPuAiAssistantMessage message3 = new ZhiPuAiAssistantMessage(content, "different reasoning", properties,
-				toolCalls, media);
+				toolCalls, media, false);
 		assertThat(message1).isNotEqualTo(message3);
 	}
 
@@ -109,7 +109,7 @@ class ZhiPuAiAssistantMessageTests {
 		List<Media> media = List.of();
 
 		ZhiPuAiAssistantMessage message = new ZhiPuAiAssistantMessage(content, reasoningContent, properties, toolCalls,
-				media);
+				media, false);
 
 		assertThatNoException().isThrownBy(message::toString);
 		assertThat(message.toString()).contains(content, reasoningContent);

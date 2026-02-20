@@ -37,8 +37,9 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 	private @Nullable String reasoningContent;
 
 	protected DeepSeekAssistantMessage(@Nullable String content, @Nullable String reasoningContent,
-			@Nullable Boolean prefix, Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
-		super(content, properties, toolCalls, media);
+			@Nullable Boolean prefix, Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media,
+			boolean thought) {
+		super(content, properties, toolCalls, media, thought);
 		this.reasoningContent = reasoningContent;
 		this.prefix = prefix;
 	}
@@ -98,6 +99,8 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 		private @Nullable String content;
 
+		private boolean thought;
+
 		private Map<String, Object> properties = Map.of();
 
 		private List<ToolCall> toolCalls = List.of();
@@ -110,6 +113,11 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 		public Builder content(@Nullable String content) {
 			this.content = content;
+			return this;
+		}
+
+		public Builder thought(boolean thought) {
+			this.thought = thought;
 			return this;
 		}
 
@@ -140,7 +148,7 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 		public DeepSeekAssistantMessage build() {
 			return new DeepSeekAssistantMessage(this.content, this.reasoningContent, this.prefix, this.properties,
-					this.toolCalls, this.media);
+					this.toolCalls, this.media, this.thought);
 		}
 
 	}

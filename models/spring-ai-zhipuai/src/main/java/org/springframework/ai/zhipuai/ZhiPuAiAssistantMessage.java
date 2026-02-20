@@ -35,8 +35,8 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 	private String reasoningContent;
 
 	protected ZhiPuAiAssistantMessage(String content, String reasoningContent, Map<String, Object> properties,
-			List<ToolCall> toolCalls, List<Media> media) {
-		super(content, properties, toolCalls, media);
+			List<ToolCall> toolCalls, List<Media> media, boolean thought) {
+		super(content, properties, toolCalls, media, thought);
 		this.reasoningContent = reasoningContent;
 	}
 
@@ -79,6 +79,8 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 
 		private String content;
 
+		private boolean thought;
+
 		private Map<String, Object> properties = Map.of();
 
 		private List<ToolCall> toolCalls = List.of();
@@ -89,6 +91,11 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 
 		public Builder content(String content) {
 			this.content = content;
+			return this;
+		}
+
+		public Builder thought(boolean thought) {
+			this.thought = thought;
 			return this;
 		}
 
@@ -114,7 +121,7 @@ public class ZhiPuAiAssistantMessage extends AssistantMessage {
 
 		public ZhiPuAiAssistantMessage build() {
 			return new ZhiPuAiAssistantMessage(this.content, this.reasoningContent, this.properties, this.toolCalls,
-					this.media);
+					this.media, this.thought);
 		}
 
 	}
