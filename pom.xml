@@ -198,6 +198,7 @@
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 		<module>models/spring-ai-vertex-ai-gemini</module>
+		<module>models/spring-ai-vertex-ai-imagen</module>
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-zhipuai</module>
@@ -222,6 +223,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-imagen</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
 
@@ -888,6 +890,7 @@
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
+								<exclude>org.springframework.ai.vertexai.imagen/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.zhipuai/**/*IT.java</exclude>
 
 								<!-- Vector Stores -->
