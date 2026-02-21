@@ -29,7 +29,11 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public static final String DEFAULT_COMPLETIONS_PATH = "/v1/chat/completions";
 
+	public static final String DEFAULT_RESPONSES_PATH = "/v1/responses";
+
 	private String completionsPath = DEFAULT_COMPLETIONS_PATH;
+
+	private String responsesPath = DEFAULT_RESPONSES_PATH;
 
 	@NestedConfigurationProperty
 	private final OpenAiChatOptions options = OpenAiChatOptions.builder().model(DEFAULT_CHAT_MODEL).build();
@@ -44,6 +48,14 @@ public class OpenAiChatProperties extends OpenAiParentProperties {
 
 	public void setCompletionsPath(String completionsPath) {
 		this.completionsPath = completionsPath;
+	}
+
+	public String getResponsesPath() {
+		return this.responsesPath;
+	}
+
+	public void setResponsesPath(String responsesPath) {
+		this.responsesPath = responsesPath;
 	}
 
 }
