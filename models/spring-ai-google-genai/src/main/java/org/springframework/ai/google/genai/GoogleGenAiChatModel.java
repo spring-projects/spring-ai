@@ -16,6 +16,7 @@
 
 package org.springframework.ai.google.genai;
 
+import com.google.genai.types.UrlContext;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -524,6 +525,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					this.defaultOptions.getSafetySettings()));
 			requestOptions
 				.setLabels(ModelOptionsUtils.mergeOption(runtimeOptions.getLabels(), this.defaultOptions.getLabels()));
+			requestOptions.setUrlContextEnabled(ModelOptionsUtils.mergeOption(runtimeOptions.getUrlContextEnabled(),
+					this.defaultOptions.getUrlContextEnabled()));
 		}
 		else {
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
@@ -534,6 +537,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			requestOptions.setGoogleSearchRetrieval(this.defaultOptions.getGoogleSearchRetrieval());
 			requestOptions.setSafetySettings(this.defaultOptions.getSafetySettings());
 			requestOptions.setLabels(this.defaultOptions.getLabels());
+			requestOptions.setUrlContextEnabled(this.defaultOptions.getUrlContextEnabled());
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -813,6 +817,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			var googleSearch = GoogleSearch.builder().build();
 			final var googleSearchRetrievalTool = Tool.builder().googleSearch(googleSearch).build();
 			tools.add(googleSearchRetrievalTool);
+		}
+
+		if (prompt.getOptions() instanceof GoogleGenAiChatOptions options && Boolean.TRUE.equals(options.getUrlContextEnabled())) {
+			final var urlContextTool = Tool.builder()
+					.urlContext(UrlContext.builder().build())
+					.build();
+
+			tools.add(urlContextTool);
 		}
 
 		if (!CollectionUtils.isEmpty(tools)) {

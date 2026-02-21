@@ -209,6 +209,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	private Map<String, String> labels = new HashMap<>();
 	// @formatter:on
 
+	/**
+	 * Enable Google's UrlContext tool
+	 */
+	@JsonIgnore
+	private Boolean urlContextEnabled;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -241,6 +247,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		options.setUseCachedContent(fromOptions.getUseCachedContent());
 		options.setAutoCacheThreshold(fromOptions.getAutoCacheThreshold());
 		options.setAutoCacheTtl(fromOptions.getAutoCacheTtl());
+		options.setUrlContextEnabled(fromOptions.getUrlContextEnabled());
 		return options;
 	}
 
@@ -498,6 +505,14 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.setResponseMimeType("application/json");
 	}
 
+	public Boolean getUrlContextEnabled() {
+		return this.urlContextEnabled;
+	}
+
+	public void setUrlContextEnabled(Boolean urlContextEnabled) {
+		this.urlContextEnabled = urlContextEnabled;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {
@@ -522,16 +537,18 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels);
+				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
+				&& Objects.equals(this.urlContextEnabled, that.urlContextEnabled);
 	}
 
-	@Override
+  @Override
 	public int hashCode() {
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.candidateCount,
-				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts,
-				this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
+				this.frequencyPenalty, this.presencePenalty, this.thinkingBudget, this.includeThoughts, this.thinkingLevel,
+				this.maxOutputTokens, this.model, this.responseMimeType, this.responseSchema,
 				this.toolCallbacks, this.toolNames, this.googleSearchRetrieval, this.safetySettings,
-				this.internalToolExecutionEnabled, this.toolContext, this.labels);
+				this.internalToolExecutionEnabled, this.toolContext, this.labels,
+				this.urlContextEnabled);
 	}
 
 	@Override
@@ -544,7 +561,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				+ this.model + '\'' + ", responseMimeType='" + this.responseMimeType + '\'' + ", toolCallbacks="
 				+ this.toolCallbacks + ", toolNames=" + this.toolNames + ", googleSearchRetrieval="
 				+ this.googleSearchRetrieval + ", safetySettings=" + this.safetySettings + ", labels=" + this.labels
-				+ '}';
+				+ ", urlContextEnabled=" + this.urlContextEnabled + '}';
 	}
 
 	@Override
@@ -720,6 +737,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public Builder autoCacheTtl(java.time.Duration autoCacheTtl) {
 			this.options.setAutoCacheTtl(autoCacheTtl);
+			return this;
+		}
+
+		public Builder urlContextEnabled(boolean enabled) {
+			this.options.setUrlContextEnabled(enabled);
 			return this;
 		}
 
