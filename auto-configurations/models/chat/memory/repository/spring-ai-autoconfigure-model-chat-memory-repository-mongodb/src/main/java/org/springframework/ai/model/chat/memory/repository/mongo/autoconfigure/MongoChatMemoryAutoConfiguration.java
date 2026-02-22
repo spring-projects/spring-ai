@@ -30,6 +30,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
  * @author Łukasz Jernaś
  * @since 1.1.0
  */
+// Ordering is to make sure ChatMemoryRepository bean is mongo one
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @EnableConfigurationProperties(MongoChatMemoryProperties.class)
 public class MongoChatMemoryAutoConfiguration {
