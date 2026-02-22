@@ -25,7 +25,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
 import org.springframework.boot.sql.autoconfigure.init.OnDatabaseInitializationCondition;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -37,7 +36,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Yanming Zhou
  * @since 1.0.0
  */
-@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
+// Ordering is to make sure ChatMemoryRepository bean is jdbc one
+@AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ JdbcChatMemoryRepository.class, DataSource.class, JdbcTemplate.class })
 @EnableConfigurationProperties(JdbcChatMemoryRepositoryProperties.class)
 public class JdbcChatMemoryRepositoryAutoConfiguration {
