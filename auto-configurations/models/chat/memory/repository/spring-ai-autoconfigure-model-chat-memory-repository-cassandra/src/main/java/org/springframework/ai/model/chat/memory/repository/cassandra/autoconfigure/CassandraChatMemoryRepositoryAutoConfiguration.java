@@ -22,7 +22,6 @@ import org.springframework.ai.chat.memory.repository.cassandra.CassandraChatMemo
 import org.springframework.ai.chat.memory.repository.cassandra.CassandraChatMemoryRepositoryConfig;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.cassandra.CassandraAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -35,7 +34,8 @@ import org.springframework.context.annotation.Bean;
  * @author Jihoon Kim
  * @since 1.0.0
  */
-@AutoConfiguration(after = CassandraAutoConfiguration.class, before = ChatMemoryAutoConfiguration.class)
+// Ordering is to make sure ChatMemoryRepository bean is cassandra one
+@AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ CassandraChatMemoryRepository.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraChatMemoryRepositoryProperties.class)
 public class CassandraChatMemoryRepositoryAutoConfiguration {
