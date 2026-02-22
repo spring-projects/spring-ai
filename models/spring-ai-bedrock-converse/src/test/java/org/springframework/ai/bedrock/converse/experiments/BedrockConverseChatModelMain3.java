@@ -18,8 +18,10 @@ package org.springframework.ai.bedrock.converse.experiments;
 
 import java.util.List;
 
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.bedrock.converse.MockWeatherService;
@@ -55,8 +57,14 @@ public final class BedrockConverseChatModelMain3 {
 					.build());
 
 		BedrockProxyChatModel chatModel = BedrockProxyChatModel.builder()
-			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-			.region(Region.US_EAST_1)
+			.bedrockRuntimeClient(BedrockRuntimeClient.builder()
+				.credentialsProvider(DefaultCredentialsProvider.builder().build())
+				.region(Region.US_EAST_1)
+				.build())
+			.bedrockRuntimeAsyncClient(BedrockRuntimeAsyncClient.builder()
+				.credentialsProvider(DefaultCredentialsProvider.builder().build())
+				.region(Region.US_EAST_1)
+				.build())
 			.build();
 
 		var response = chatModel.call(prompt);

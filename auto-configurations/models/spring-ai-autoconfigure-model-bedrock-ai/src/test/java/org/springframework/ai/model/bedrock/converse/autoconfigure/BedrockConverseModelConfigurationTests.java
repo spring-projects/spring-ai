@@ -19,6 +19,7 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsCredentialsAndRegionAutoConfiguration;
 import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -35,7 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockConverseModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(SpringAiTestAutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
+		.withConfiguration(SpringAiTestAutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+				BedrockAwsCredentialsAndRegionAutoConfiguration.class));
 
 	@Test
 	void chatModelActivation() {

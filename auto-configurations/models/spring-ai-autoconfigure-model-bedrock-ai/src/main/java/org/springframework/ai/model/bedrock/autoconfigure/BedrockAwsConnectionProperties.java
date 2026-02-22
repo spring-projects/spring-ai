@@ -16,7 +16,11 @@
 
 package org.springframework.ai.model.bedrock.autoconfigure;
 
+import java.net.URI;
 import java.time.Duration;
+
+import org.jspecify.annotations.Nullable;
+import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -26,6 +30,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *
  * @author Christian Tzolov
  * @author Baojun Jiang
+ * @author Matej Nedic
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockAwsConnectionProperties.CONFIG_PREFIX)
@@ -55,11 +60,16 @@ public class BedrockAwsConnectionProperties {
 	private String sessionToken;
 
 	/**
+	 * Configures an instance profile credentials provider with no further configuration.
+	 */
+	private boolean instanceProfile = false;
+
+	/**
 	 * Aws profile. (optional) When the {@link #accessKey} and {@link #secretKey} are not
 	 * declared. Otherwise, the AwsBasicCredentials are used.
 	 */
 	@NestedConfigurationProperty
-	private ProfileProperties profile;
+	@Nullable private ProfileProperties profile;
 
 	/**
 	 * Maximum duration of the entire API call operation.
@@ -67,24 +77,43 @@ public class BedrockAwsConnectionProperties {
 	private Duration timeout = Duration.ofMinutes(5L);
 
 	/**
-	 * Maximum time to wait while establishing connection with AWS service.
+	 * Sync HTTP client properties (Apache).
 	 */
-	private Duration connectionTimeout = Duration.ofSeconds(5L);
+	@NestedConfigurationProperty
+	private SyncClientProperties syncClient = new SyncClientProperties();
 
 	/**
-	 * Maximum duration spent reading response data.
+	 * Async HTTP client properties (Netty).
 	 */
-	private Duration asyncReadTimeout = Duration.ofSeconds(30L);
+	@NestedConfigurationProperty
+	private AsyncClientProperties asyncClient = new AsyncClientProperties();
 
 	/**
-	 * Maximum time to wait for a new connection from the pool.
+	 * STS credential provider configuration for assume role and web identity token
+	 * authentication.
 	 */
-	private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
+	@NestedConfigurationProperty
+	@Nullable private StsProperties stsProperties;
 
 	/**
-	 * Maximum time to wait for response data.
+	 * AWS SDK defaults mode.
 	 */
-	private Duration socketTimeout = Duration.ofSeconds(90L);
+	@Nullable private DefaultsMode defaultsMode;
+
+	/**
+	 * Whether to use FIPS endpoints.
+	 */
+	@Nullable private Boolean fipsEnabled;
+
+	/**
+	 * Whether to use dualstack endpoints.
+	 */
+	@Nullable private Boolean dualstackEnabled;
+
+	/**
+	 * Custom endpoint URI to override the default AWS service endpoint.
+	 */
+	@Nullable private URI endpoint;
 
 	public String getRegion() {
 		return this.region;
@@ -118,36 +147,20 @@ public class BedrockAwsConnectionProperties {
 		this.timeout = timeout;
 	}
 
-	public Duration getConnectionTimeout() {
-		return this.connectionTimeout;
+	public SyncClientProperties getSyncClient() {
+		return this.syncClient;
 	}
 
-	public void setConnectionTimeout(Duration connectionTimeout) {
-		this.connectionTimeout = connectionTimeout;
+	public void setSyncClient(SyncClientProperties syncClient) {
+		this.syncClient = syncClient;
 	}
 
-	public Duration getAsyncReadTimeout() {
-		return this.asyncReadTimeout;
+	public AsyncClientProperties getAsyncClient() {
+		return this.asyncClient;
 	}
 
-	public void setAsyncReadTimeout(Duration asyncReadTimeout) {
-		this.asyncReadTimeout = asyncReadTimeout;
-	}
-
-	public Duration getConnectionAcquisitionTimeout() {
-		return this.connectionAcquisitionTimeout;
-	}
-
-	public void setConnectionAcquisitionTimeout(Duration connectionAcquisitionTimeout) {
-		this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
-	}
-
-	public Duration getSocketTimeout() {
-		return this.socketTimeout;
-	}
-
-	public void setSocketTimeout(Duration socketTimeout) {
-		this.socketTimeout = socketTimeout;
+	public void setAsyncClient(AsyncClientProperties asyncClient) {
+		this.asyncClient = asyncClient;
 	}
 
 	public String getSessionToken() {
@@ -158,12 +171,60 @@ public class BedrockAwsConnectionProperties {
 		this.sessionToken = sessionToken;
 	}
 
-	public ProfileProperties getProfile() {
+	@Nullable public ProfileProperties getProfile() {
 		return this.profile;
 	}
 
-	public void setProfile(ProfileProperties profile) {
+	public void setProfile(@Nullable ProfileProperties profile) {
 		this.profile = profile;
+	}
+
+	public boolean isInstanceProfile() {
+		return this.instanceProfile;
+	}
+
+	public void setInstanceProfile(boolean instanceProfile) {
+		this.instanceProfile = instanceProfile;
+	}
+
+	public StsProperties getStsProperties() {
+		return this.stsProperties;
+	}
+
+	public void setStsProperties(StsProperties stsProperties) {
+		this.stsProperties = stsProperties;
+	}
+
+	@Nullable public DefaultsMode getDefaultsMode() {
+		return this.defaultsMode;
+	}
+
+	public void setDefaultsMode(@Nullable DefaultsMode defaultsMode) {
+		this.defaultsMode = defaultsMode;
+	}
+
+	@Nullable public Boolean getFipsEnabled() {
+		return this.fipsEnabled;
+	}
+
+	public void setFipsEnabled(@Nullable Boolean fipsEnabled) {
+		this.fipsEnabled = fipsEnabled;
+	}
+
+	@Nullable public Boolean getDualstackEnabled() {
+		return this.dualstackEnabled;
+	}
+
+	public void setDualstackEnabled(@Nullable Boolean dualstackEnabled) {
+		this.dualstackEnabled = dualstackEnabled;
+	}
+
+	@Nullable public URI getEndpoint() {
+		return this.endpoint;
+	}
+
+	public void setEndpoint(@Nullable URI endpoint) {
+		this.endpoint = endpoint;
 	}
 
 }

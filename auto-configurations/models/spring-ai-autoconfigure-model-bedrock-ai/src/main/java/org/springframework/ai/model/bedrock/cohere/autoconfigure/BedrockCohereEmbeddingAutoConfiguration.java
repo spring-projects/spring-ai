@@ -24,16 +24,16 @@ import org.springframework.ai.bedrock.cohere.BedrockCohereEmbeddingModel;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsCredentialsAndRegionAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Cohere Embedding Model.
@@ -47,7 +47,7 @@ import org.springframework.context.annotation.Import;
 @EnableConfigurationProperties({ BedrockCohereEmbeddingProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.BEDROCK_COHERE,
 		matchIfMissing = true)
-@Import(BedrockAwsConnectionConfiguration.class)
+@AutoConfigureAfter(BedrockAwsCredentialsAndRegionAutoConfiguration.class)
 public class BedrockCohereEmbeddingAutoConfiguration {
 
 	@Bean
