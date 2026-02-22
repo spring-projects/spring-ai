@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2025 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -307,7 +307,10 @@ public class ZhiPuAiPropertiesTests {
 						"spring.ai.zhipuai.api-key=API_KEY",
 						"spring.ai.zhipuai.base-url=TEST_BASE_URL",
 						"spring.ai.zhipuai.image.options.model=MODEL_XYZ",
-						"spring.ai.zhipuai.image.options.user=userXYZ"
+						"spring.ai.zhipuai.image.options.size=1024x1024",
+						"spring.ai.zhipuai.image.options.user=userXYZ",
+						"spring.ai.zhipuai.image.options.quality=standard",
+						"spring.ai.zhipuai.image.options.watermark-enabled=true"
 				)
 				// @formatter:on
 			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
@@ -319,6 +322,9 @@ public class ZhiPuAiPropertiesTests {
 				assertThat(connectionProperties.getApiKey()).isEqualTo("API_KEY");
 				assertThat(imageProperties.getOptions().getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(imageProperties.getOptions().getUser()).isEqualTo("userXYZ");
+				assertThat(imageProperties.getOptions().getSize()).isEqualTo("1024x1024");
+				assertThat(imageProperties.getOptions().getQuality()).isEqualTo("standard");
+				assertThat(imageProperties.getOptions().getWatermarkEnabled()).isTrue();
 			});
 	}
 
