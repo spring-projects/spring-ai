@@ -253,6 +253,17 @@ public final class OllamaApi {
 				.bodyToFlux(ProgressResponse.class);
 	}
 
+	public Flux<ProgressResponse> createModel(CreateModelRequest createModelRequest) {
+		Assert.notNull(createModelRequest, "createModelRequest must not be null");
+		Assert.isTrue(createModelRequest.stream(), "Request must set the stream property to true.");
+
+		return this.webClient.post()
+				.uri("/api/create")
+				.bodyValue(createModelRequest)
+				.retrieve()
+				.bodyToFlux(ProgressResponse.class);
+	}
+
 	/**
 	 * Chat message object.
 	 *
@@ -780,6 +791,32 @@ public final class OllamaApi {
 
 		public PullModelRequest(String model) {
 			this(model, false, null, null, true);
+		}
+	}
+
+	@JsonInclude(Include.NON_NULL)
+	public record CreateModelRequest(
+			@JsonProperty("model") String model,
+			@JsonProperty("from") String from,
+			@JsonProperty("files") Map<String, Object> files,
+			@JsonProperty("adapters") Map<String, Object> adapters,
+			@JsonProperty("template") String template,
+			@JsonProperty("license") List<String> license,
+			@JsonProperty("system") String system,
+			@JsonProperty("parameters") Map<String, Object> parameters,
+			@JsonProperty("messages") List<Message> messages,
+			@JsonProperty("stream") boolean stream,
+			@JsonProperty("quantize") String quantize
+	) {
+		public CreateModelRequest {
+			if (!stream) {
+				logger.warn("Enforcing streaming of the model creation request");
+			}
+			stream = true;
+		}
+
+		public CreateModelRequest(String model, String from) {
+			this(model, from, null, null, null, null, null, null, null, true, null);
 		}
 	}
 

@@ -26,6 +26,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.DeleteModelRequest;
 import org.springframework.ai.ollama.api.OllamaApi.ListModelResponse;
 import org.springframework.ai.ollama.api.OllamaApi.PullModelRequest;
+import org.springframework.ai.ollama.api.OllamaApi.CreateModelRequest;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -123,6 +124,28 @@ public class OllamaModelManager {
 				.retryWhen(Retry.backoff(this.options.maxRetries(), Duration.ofSeconds(5)))
 				.blockLast();
 		logger.info("Completed pulling the '{}' model", modelName);
+
+		// @formatter:on
+	}
+
+	public void createModel(String newModelName, String originalModelName) {
+		// @formatter:off
+
+		logger.info("Start creating model {} from {}", newModelName, originalModelName);
+		this.ollamaApi.createModel(new CreateModelRequest(newModelName, originalModelName))
+				.bufferUntilChanged(OllamaApi.ProgressResponse::status)
+				.doOnEach(signal -> {
+					var progressResponses = signal.get();
+					if (!CollectionUtils.isEmpty(progressResponses) && progressResponses.get(progressResponses.size() - 1) != null) {
+						logger.info("Creating the '{}' model - Status: {}", newModelName, progressResponses.get(progressResponses.size() - 1).status());
+					}
+				})
+				.takeUntil(progressResponses ->
+						progressResponses.get(0) != null && "success".equals(progressResponses.get(0).status()))
+				.timeout(this.options.timeout())
+				.retryWhen(Retry.backoff(this.options.maxRetries(), Duration.ofSeconds(5)))
+				.blockLast();
+		logger.info("Completed creating model {} from {}", newModelName, originalModelName);
 
 		// @formatter:on
 	}
