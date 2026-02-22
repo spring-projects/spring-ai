@@ -182,11 +182,15 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 			context.append(String.format("valueBoolean:%s ", b));
 		}
 		else if (value instanceof String s) {
-			context.append(String.format("valueText:\"%s\" ", s));
+			context.append("valueText:\"");
+			context.append(escapeStringValue(s));
+			context.append("\" ");
 		}
 		else if (value instanceof Date date) {
 			String dateString = DateFormatUtils.format(date, "yyyy-MM-dd\'T\'HH:mm:ssZZZZZ");
-			context.append(String.format("valueDate:\"%s\" ", dateString));
+			context.append("valueDate:\"");
+			context.append(escapeStringValue(dateString));
+			context.append("\" ");
 		}
 		else {
 			throw new RuntimeException("Unsupported value type: " + value);

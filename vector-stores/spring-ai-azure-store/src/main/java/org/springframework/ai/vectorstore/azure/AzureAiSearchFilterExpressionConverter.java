@@ -151,12 +151,31 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 				}
 			}
 			else {
-				context.append(String.format("'%s'", text));
+				context.append("'");
+				context.append(escapeODataStringValue(text));
+				context.append("'");
 			}
 		}
 		else {
 			context.append(value);
 		}
+	}
+
+	/**
+	 * Escape special characters in string values for OData to prevent injection attacks.
+	 *
+	 * <p>
+	 * This method escapes characters according to OData string literal rules. Single
+	 * quotes are escaped by doubling them (') (''). See:
+	 * <a href="https://learn.microsoft.com/en-us/azure/search/search-query-odata-filter">
+	 * Azure Search OData Filter Syntax</a>
+	 * @param input the string to escape
+	 * @return the escaped string safe for use in OData string literals
+	 * @author Zexuan Peng &lt;pengzexuan@gmail.com&gt;
+	 */
+	private String escapeODataStringValue(String input) {
+		// In OData, single quotes are escaped by doubling them
+		return input.replace("'", "''");
 	}
 
 	@Override

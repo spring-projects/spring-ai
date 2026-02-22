@@ -145,8 +145,10 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 	 * @param context the context to append the string representation to
 	 */
 	protected void doSingleValue(Object value, StringBuilder context) {
-		if (value instanceof String) {
-			context.append(String.format("\"%s\"", value));
+		if (value instanceof String s) {
+			context.append("\"");
+			context.append(escapeStringValue(s));
+			context.append("\"");
 		}
 		else {
 			context.append(value);
@@ -208,6 +210,35 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 	}
 
 	// Utilities
+
+	/**
+	 * Escape special characters in string values to prevent injection attacks.
+	 *
+	 * <p>
+	 * This method escapes characters that could break the filter syntax or enable
+	 * injection attacks. The order of replacements is critical: backslashes must be
+	 * escaped first to avoid double-escaping.
+	 *
+	 * <p>
+	 * Subclasses can override this method to implement custom escaping rules specific to
+	 * their vector store implementation.
+	 *
+	 * <p>
+	 * <b>Note:</b> This method escapes backslashes and double quotes as required by
+	 * JSON-like filter syntax. Single quotes are NOT escaped as they are not special
+	 * characters in JSON. Subclasses targeting vector stores with different escaping
+	 * requirements (e.g., SQL-based stores) should override this method.
+	 * @param input the string to escape
+	 * @return the escaped string safe for use in filter expressions
+	 * @author Zexuan Peng <pengzexuan@gmail.com>
+	 */
+	protected String escapeStringValue(String input) {
+		// Replace in order: \ first, then "
+		// Backslash MUST be first to avoid double-escaping
+		// Single quotes are not escaped as they are not special in JSON
+		return input.replace("\\", "\\\\").replace("\"", "\\\"");
+	}
+
 	/**
 	 * Check if the given string has outer quotes.
 	 * @param str the string to check

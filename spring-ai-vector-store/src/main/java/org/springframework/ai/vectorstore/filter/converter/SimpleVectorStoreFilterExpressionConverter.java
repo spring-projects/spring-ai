@@ -133,7 +133,7 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 				}
 			}
 			else {
-				context.append(text);
+				context.append(escapeSpELStringValue(text));
 			}
 			context.append("'");
 		}
@@ -147,6 +147,21 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 		context.append("(");
 		super.doGroup(group, context);
 		context.append(")");
+	}
+
+	/**
+	 * Escape special characters in string values for SpEL to prevent injection attacks.
+	 *
+	 * <p>
+	 * This method escapes characters according to SpEL (Spring Expression Language)
+	 * string literal rules. Single quotes are escaped by doubling them (') ('').
+	 * @param input the string to escape
+	 * @return the escaped string safe for use in SpEL string literals
+	 * @author Zexuan Peng &lt;pengzexuan@gmail.com&gt;
+	 */
+	private String escapeSpELStringValue(String input) {
+		// In SpEL, single quotes are escaped by doubling them
+		return input.replace("'", "''");
 	}
 
 }
