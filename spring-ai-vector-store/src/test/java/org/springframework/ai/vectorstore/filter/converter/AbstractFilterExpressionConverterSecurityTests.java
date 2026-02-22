@@ -47,7 +47,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
  * <li>Tests will fail until Issue #4545 is fixed, providing continuous reminder</li>
  * </ul>
  *
- * @author Zexuan Peng &lt;pengzexuan@gmail.com&gt;
+ * @author Zexuan Peng &lt;pengzexuan2001@gmail.com&gt;
  * @see <a href="https://github.com/spring-projects/spring-ai/issues/4545">Issue #4545</a>
  * <p>
  */

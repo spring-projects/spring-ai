@@ -157,7 +157,7 @@ public class SimpleVectorStoreFilterExpressionConverter extends AbstractFilterEx
 	 * string literal rules. Single quotes are escaped by doubling them (') ('').
 	 * @param input the string to escape
 	 * @return the escaped string safe for use in SpEL string literals
-	 * @author Zexuan Peng &lt;pengzexuan@gmail.com&gt;
+	 * @author Zexuan Peng &lt;pengzexuan2001@gmail.com&gt;
 	 */
 	private String escapeSpELStringValue(String input) {
 		// In SpEL, single quotes are escaped by doubling them

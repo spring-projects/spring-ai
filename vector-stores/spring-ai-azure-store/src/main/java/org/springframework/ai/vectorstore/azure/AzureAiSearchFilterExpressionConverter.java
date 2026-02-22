@@ -171,7 +171,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 	 * Azure Search OData Filter Syntax</a>
 	 * @param input the string to escape
 	 * @return the escaped string safe for use in OData string literals
-	 * @author Zexuan Peng &lt;pengzexuan@gmail.com&gt;
+	 * @author Zexuan Peng &lt;pengzexuan2001@gmail.com&gt;
 	 */
 	private String escapeODataStringValue(String input) {
 		// In OData, single quotes are escaped by doubling them

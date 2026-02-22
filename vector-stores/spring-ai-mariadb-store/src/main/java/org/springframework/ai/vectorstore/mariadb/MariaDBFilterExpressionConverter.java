@@ -66,7 +66,7 @@ public class MariaDBFilterExpressionConverter extends AbstractFilterExpressionCo
 	 * unintended escape sequences.
 	 * @param input the string to escape
 	 * @return the escaped string safe for use in SQL string literals
-	 * @author Zexuan Peng &lt;pengzexuan@gmail.com&gt;
+	 * @author Zexuan Peng &lt;pengzexuan2001@gmail.com&gt;
 	 */
 	private String escapeSqlStringValue(String input) {
 		// Replace in order: \ first, then '

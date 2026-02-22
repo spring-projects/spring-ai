@@ -230,7 +230,7 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 	 * requirements (e.g., SQL-based stores) should override this method.
 	 * @param input the string to escape
 	 * @return the escaped string safe for use in filter expressions
-	 * @author Zexuan Peng <pengzexuan@gmail.com>
+	 * @author Zexuan Peng &lt;pengzexuan2001@gmail.com&gt;
 	 */
 	protected String escapeStringValue(String input) {
 		// Replace in order: \ first, then "
