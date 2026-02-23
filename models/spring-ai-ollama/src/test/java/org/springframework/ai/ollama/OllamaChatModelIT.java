@@ -96,8 +96,8 @@ class OllamaChatModelIT extends BaseOllamaIT {
 			.content();
 
 		assertThat(joke).isNotEmpty();
-
-		modelManager.deleteModel(ADDITIONAL_MODEL);
+		if (!KEEP_ADDITIONAL_MODELS)
+			modelManager.deleteModel(ADDITIONAL_MODEL);
 	}
 
 	@Test
