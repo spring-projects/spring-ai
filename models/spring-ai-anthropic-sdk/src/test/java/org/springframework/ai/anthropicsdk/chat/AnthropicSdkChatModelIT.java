@@ -271,7 +271,7 @@ class AnthropicSdkChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicSdkChatOptions.builder()
-			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.model(Model.CLAUDE_HAIKU_4_5.asString())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -300,7 +300,7 @@ class AnthropicSdkChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicSdkChatOptions.builder()
-			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.model(Model.CLAUDE_HAIKU_4_5.asString())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -330,7 +330,7 @@ class AnthropicSdkChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicSdkChatOptions.builder()
-			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.model(Model.CLAUDE_HAIKU_4_5.asString())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -413,7 +413,7 @@ class AnthropicSdkChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicSdkChatOptions.builder()
-			.model(Model.CLAUDE_3_5_HAIKU_20241022.asString())
+			.model(Model.CLAUDE_HAIKU_4_5.asString())
 			.internalToolExecutionEnabled(false)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(

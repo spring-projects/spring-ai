@@ -53,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
 public class AnthropicSdkChatModelObservationIT {
 
-	private static final String TEST_MODEL = Model.CLAUDE_3_5_HAIKU_20241022.asString();
+	private static final String TEST_MODEL = Model.CLAUDE_HAIKU_4_5.asString();
 
 	@Autowired
 	TestObservationRegistry observationRegistry;
