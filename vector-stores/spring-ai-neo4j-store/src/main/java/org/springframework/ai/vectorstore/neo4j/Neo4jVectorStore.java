@@ -37,6 +37,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -176,9 +177,9 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final String constraintName;
 
-	private final Neo4jVectorFilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
-
 	private final boolean initializeSchema;
+
+	private final FilterExpressionConverter filterExpressionConverter;
 
 	protected Neo4jVectorStore(Builder builder) {
 		super(builder);
@@ -197,6 +198,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		this.textProperty = SchemaNames.sanitize(builder.textProperty).orElseThrow();
 		this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
 		this.initializeSchema = builder.initializeSchema;
+		this.filterExpressionConverter = builder.filterExpressionConverter;
 	}
 
 	@Override
@@ -420,6 +422,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private boolean initializeSchema = false;
 
+		private FilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
+
 		private Builder(Driver driver, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
 			Assert.notNull(driver, "Neo4j driver must not be null");
@@ -552,6 +556,19 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the {@link FilterExpressionConverter} to use when converting filter
+		 * expressions to Neo4j Cypher queries. Defaults to
+		 * {@link Neo4jVectorFilterExpressionConverter}.
+		 * @param filterExpressionConverter the filter expression converter to use
+		 * @return the builder instance
+		 */
+		public Builder filterExpressionConverter(FilterExpressionConverter filterExpressionConverter) {
+			Assert.notNull(filterExpressionConverter, "FilterExpressionConverter must not be null");
+			this.filterExpressionConverter = filterExpressionConverter;
 			return this;
 		}
 
