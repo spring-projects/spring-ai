@@ -74,7 +74,7 @@ public class CricketWorldCupHanaController {
 	public ResponseEntity<String> handleFileUpload(@RequestParam("pdf") MultipartFile file) throws IOException {
 		Resource pdf = file.getResource();
 		Supplier<List<Document>> reader = new PagePdfDocumentReader(pdf);
-		Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
+		Function<List<Document>, List<Document>> splitter = TokenTextSplitter.builder().build();
 		List<Document> documents = splitter.apply(reader.get());
 		logger.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
 		this.hanaCloudVectorStore.accept(documents);

@@ -282,7 +282,7 @@ The `TextReader` processes text content as follows:
 [source,java]
 ----
 List<Document> documents = textReader.get();
-List<Document> splitDocuments = new TokenTextSplitter().apply(this.documents);
+List<Document> splitDocuments = TokenTextSplitter.builder().build().apply(this.documents);
 ----
 
 * The reader uses Spring's `Resource` abstraction, allowing it to read from various sources (classpath, file system, URL, etc.).
@@ -676,7 +676,7 @@ The `TextSplitter` an abstract base class that helps divides documents to fit th
 
 
 === TokenTextSplitter
-The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text into chunks based on token count, using the CL100K_BASE encoding.
+The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text into chunks based on token count. It supports configurable encoding types (e.g., `CL100K_BASE`, `P50K_BASE`, `O200K_BASE`) and defaults to `CL100K_BASE`.
 
 ==== Usage
 
@@ -688,27 +688,11 @@ The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text 
 class MyTokenTextSplitter {
 
     public List<Document> splitDocuments(List<Document> documents) {
-        TokenTextSplitter splitter = new TokenTextSplitter();
+        TokenTextSplitter splitter = TokenTextSplitter.builder().build();
         return splitter.apply(documents);
     }
 
     public List<Document> splitCustomized(List<Document> documents) {
-        TokenTextSplitter splitter = new TokenTextSplitter(1000, 400, 10, 5000, true, List.of('.', '?', '!', '\n'));
-        return splitter.apply(documents);
-    }
-}
-----
-
-===== Using the Builder Pattern
-
-The recommended way to create a `TokenTextSplitter` is using the builder pattern, which provides a more readable and flexible API:
-
-[source,java]
-----
-@Component
-class MyTokenTextSplitter {
-
-    public List<Document> splitWithBuilder(List<Document> documents) {
         TokenTextSplitter splitter = TokenTextSplitter.builder()
             .withChunkSize(1000)
             .withMinChunkSizeChars(400)
@@ -716,10 +700,21 @@ class MyTokenTextSplitter {
             .withMaxNumChunks(5000)
             .withKeepSeparator(true)
             .build();
-
         return splitter.apply(documents);
     }
 }
+----
+
+===== Custom Encoding Type
+
+You can configure the encoding type used for tokenization. This is useful when working with models that use different tokenizers:
+
+[source,java]
+----
+TokenTextSplitter splitter = TokenTextSplitter.builder()
+    .withEncodingType(EncodingType.O200K_BASE)
+    .withChunkSize(1000)
+    .build();
 ----
 
 ===== Custom Punctuation Marks
@@ -754,18 +749,13 @@ class MyInternationalTextSplitter {
 }
 ----
 
-==== Constructor Options
+==== Configuration
 
-The `TokenTextSplitter` provides three constructor options:
-
-1. `TokenTextSplitter()`: Creates a splitter with default settings.
-2. `TokenTextSplitter(boolean keepSeparator)`: Creates a splitter with custom separator behavior.
-3. `TokenTextSplitter(int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator, List<Character> punctuationMarks)`: Full constructor with all customization options.
-
-NOTE: The builder pattern (shown above) is the recommended approach for creating instances with custom configurations.
+Use `TokenTextSplitter.builder()` to create instances. All constructors are deprecated in favor of the builder.
 
 ==== Parameters
 
+* `encodingType`: The tokenizer encoding type to use (default: `CL100K_BASE`). Supported values include `CL100K_BASE`, `P50K_BASE`, and `O200K_BASE`.
 * `chunkSize`: The target size of each text chunk in tokens (default: 800).
 * `minChunkSizeChars`: The minimum size of each text chunk in characters (default: 350).
 * `minChunkLengthToEmbed`: The minimum length of a chunk to be included (default: 5).
@@ -799,8 +789,8 @@ Document doc1 = new Document("This is a long piece of text that needs to be spli
 Document doc2 = new Document("Another document with content that will be split based on token count.",
         Map.of("source", "example2.txt"));
 
-TokenTextSplitter splitter = new TokenTextSplitter();
-List<Document> splitDocuments = this.splitter.apply(List.of(this.doc1, this.doc2));
+TokenTextSplitter splitter = TokenTextSplitter.builder().build();
+List<Document> splitDocuments = splitter.apply(List.of(doc1, doc2));
 
 for (Document doc : splitDocuments) {
     System.out.println("Chunk: " + doc.getContent());

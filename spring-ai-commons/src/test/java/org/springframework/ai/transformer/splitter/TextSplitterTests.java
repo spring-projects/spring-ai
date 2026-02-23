@@ -144,7 +144,7 @@ public class TextSplitterTests {
 				+ "4being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
 				Map.of("file_name", "sample1.pdf", "page_number", 4));
 
-		var tokenTextSplitter = new TokenTextSplitter();
+		var tokenTextSplitter = TokenTextSplitter.builder().build();
 
 		// when
 		List<Document> splitedDocument = tokenTextSplitter.apply(List.of(doc1, doc2, doc3, doc4));
@@ -212,7 +212,7 @@ public class TextSplitterTests {
 				+ "3being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
 				Map.of("file_name", "sample1.pdf", "page_number", 3));
 
-		var tokenTextSplitter = new TokenTextSplitter();
+		var tokenTextSplitter = TokenTextSplitter.builder().build();
 
 		// when
 		List<Document> splitedDocument = tokenTextSplitter.apply(List.of(doc1, doc2, doc3));
