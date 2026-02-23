@@ -71,34 +71,56 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private final List<Character> punctuationMarks;
 
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
+	@SuppressWarnings("deprecation")
 	public TokenTextSplitter() {
 		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, KEEP_SEPARATOR,
 				DEFAULT_PUNCTUATION_MARKS);
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
 	public TokenTextSplitter(boolean keepSeparator) {
 		this(DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, keepSeparator,
 				DEFAULT_PUNCTUATION_MARKS);
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
 	public TokenTextSplitter(EncodingType encodingType) {
 		this(encodingType, DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS,
 				KEEP_SEPARATOR, DEFAULT_PUNCTUATION_MARKS);
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
 	public TokenTextSplitter(EncodingType encodingType, boolean keepSeparator) {
 		this(encodingType, DEFAULT_CHUNK_SIZE, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS,
 				keepSeparator, DEFAULT_PUNCTUATION_MARKS);
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
 	public TokenTextSplitter(int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
 			boolean keepSeparator, List<Character> punctuationMarks) {
 		this(DEFAULT_ENCODING_TYPE, chunkSize, minChunkSizeChars, minChunkLengthToEmbed, maxNumChunks, keepSeparator,
 				punctuationMarks);
 	}
 
-	public TokenTextSplitter(EncodingType encodingType, int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed,
-			int maxNumChunks, boolean keepSeparator, List<Character> punctuationMarks) {
+	private TokenTextSplitter(EncodingType encodingType, int chunkSize, int minChunkSizeChars,
+			int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator, List<Character> punctuationMarks) {
+		Assert.notNull(encodingType, "encodingType must not be null");
 		this.encoding = this.registry.getEncoding(encodingType);
 		this.chunkSize = chunkSize;
 		this.minChunkSizeChars = minChunkSizeChars;

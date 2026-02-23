@@ -26,6 +26,7 @@ import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Ricken Bazolo
@@ -50,7 +51,7 @@ public class TokenTextSplitterTest {
 				Map.of("key2", "value22", "key3", "value3"));
 		doc2.setContentFormatter(contentFormatter2);
 
-		var tokenTextSplitter = new TokenTextSplitter();
+		var tokenTextSplitter = TokenTextSplitter.builder().build();
 
 		var chunks = tokenTextSplitter.apply(List.of(doc1, doc2));
 
@@ -205,6 +206,13 @@ public class TokenTextSplitterTest {
 		assertThat(chunks.get(5).getText()).isEqualTo("business logic。");
 		assertThat(chunks.get(6).getText()).isEqualTo("We just want to test it works or not？");
 
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNullEncodingTypeThrows() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withEncodingType(null).build())
+			.withMessage("encodingType must not be null");
 	}
 
 	@Test
