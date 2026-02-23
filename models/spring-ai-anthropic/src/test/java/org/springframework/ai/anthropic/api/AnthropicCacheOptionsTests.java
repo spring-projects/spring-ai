@@ -46,6 +46,21 @@ class AnthropicCacheOptionsTests {
 	}
 
 	@Test
+	void multiBlockSystemCachingDefaultsToFalse() {
+		AnthropicCacheOptions options = new AnthropicCacheOptions();
+		assertThat(options.isMultiBlockSystemCaching()).isFalse();
+	}
+
+	@Test
+	void multiBlockSystemCachingBuilderOverride() {
+		AnthropicCacheOptions options = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.multiBlockSystemCaching(true)
+			.build();
+		assertThat(options.isMultiBlockSystemCaching()).isTrue();
+	}
+
+	@Test
 	void builderOverrides() {
 		Function<String, Integer> clf = s -> 123;
 		AnthropicCacheOptions options = AnthropicCacheOptions.builder()
