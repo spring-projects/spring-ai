@@ -674,7 +674,7 @@ public class AnthropicChatModel implements ChatModel {
 		CacheEligibilityResolver cacheEligibilityResolver = CacheEligibilityResolver.from(cacheOptions);
 
 		// Process system - as array if caching, string otherwise
-		Object systemContent = buildSystemContent(prompt, cacheEligibilityResolver);
+		Object systemContent = buildSystemContent(prompt, cacheEligibilityResolver, cacheOptions);
 
 		// Build messages WITHOUT blanket cache control - strategic placement only
 		List<AnthropicMessage> userMessages = buildMessages(prompt, cacheEligibilityResolver);
@@ -960,13 +960,25 @@ public class AnthropicChatModel implements ChatModel {
 	}
 
 	/**
-	 * Build system content - as array if caching, string otherwise.
+	 * Build system content - as array if caching, string otherwise. When
+	 * {@link AnthropicCacheOptions#isMultiBlockSystemCaching()} is enabled, each
+	 * {@code SystemMessage} is emitted as a separate content block with
+	 * {@code cache_control} applied to the second-to-last block, allowing a static prefix
+	 * to be cached while the last (dynamic) block can change freely.
 	 */
-	private @Nullable Object buildSystemContent(Prompt prompt, CacheEligibilityResolver cacheEligibilityResolver) {
+	private @Nullable Object buildSystemContent(Prompt prompt, CacheEligibilityResolver cacheEligibilityResolver,
+			AnthropicCacheOptions cacheOptions) {
 
-		String systemText = prompt.getInstructions()
+		List<Message> systemMessages = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
+			.toList();
+
+		if (systemMessages.isEmpty()) {
+			return null;
+		}
+
+		String systemText = systemMessages.stream()
 			.map(Message::getText)
 			.collect(Collectors.joining(System.lineSeparator()));
 
@@ -976,6 +988,19 @@ public class AnthropicChatModel implements ChatModel {
 
 		// Use array format when caching system
 		if (cacheEligibilityResolver.isCachingEnabled()) {
+			if (cacheOptions.isMultiBlockSystemCaching() && systemMessages.size() > 1) {
+				// Multi-block mode: emit one ContentBlock per SystemMessage
+				// Cache the second-to-last block (end of static prefix)
+				List<ContentBlock> blocks = new ArrayList<>();
+				for (int i = 0; i < systemMessages.size(); i++) {
+					ContentBlock block = new ContentBlock(systemMessages.get(i).getText());
+					if (i == systemMessages.size() - 2) {
+						block = cacheAwareContentBlock(block, MessageType.SYSTEM, cacheEligibilityResolver);
+					}
+					blocks.add(block);
+				}
+				return blocks;
+			}
 			return List
 				.of(cacheAwareContentBlock(new ContentBlock(systemText), MessageType.SYSTEM, cacheEligibilityResolver));
 		}
