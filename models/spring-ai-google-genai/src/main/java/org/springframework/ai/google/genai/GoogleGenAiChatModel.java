@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -657,15 +658,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.toString())
 			.build();
 
-		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
-				&& candidate.content().get().parts().get().stream().allMatch(part -> part.functionCall().isPresent());
+		boolean hasFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
+				&& candidate.content().get().parts().get().stream().anyMatch(part -> part.functionCall().isPresent());
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
+		if (hasFunctionCall) {
+			List<Part> parts = candidate.content().get().parts().orElse(List.of());
+
+			List<AssistantMessage.ToolCall> assistantToolCalls = parts.stream()
 				.filter(part -> part.functionCall().isPresent())
 				.map(part -> {
 					FunctionCall functionCall = part.functionCall().get();
@@ -675,8 +674,13 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				})
 				.toList();
 
+			String textContent = parts.stream()
+				.filter(part -> part.functionCall().isEmpty() && part.text().isPresent())
+				.map(part -> part.text().get())
+				.collect(Collectors.joining("\n"));
+
 			AssistantMessage assistantMessage = AssistantMessage.builder()
-				.content("")
+				.content(textContent)
 				.properties(messageMetadata)
 				.toolCalls(assistantToolCalls)
 				.build();
