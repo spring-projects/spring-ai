@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.common;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -102,8 +103,9 @@ public class McpTransportContextIT {
 	};
 
 	private static final BiFunction<McpTransportContext, McpSchema.CallToolRequest, McpSchema.CallToolResult> statelessHandler = (
-			transportContext,
-			request) -> new McpSchema.CallToolResult(transportContext.get("server-side-header-value").toString(), null);
+			transportContext, request) -> new McpSchema.CallToolResult(
+					List.of(new McpSchema.TextContent(transportContext.get("server-side-header-value").toString())),
+					false, null, null);
 
 	private static final BiFunction<McpSyncServerExchange, McpSchema.CallToolRequest, McpSchema.CallToolResult> statefulHandler = (
 			exchange, request) -> statelessHandler.apply(exchange.transportContext(), request);
@@ -275,7 +277,7 @@ public class McpTransportContextIT {
 		public McpSyncServer mcpStreamableServer(WebMvcStreamableServerTransportProvider transportProvider) {
 			return McpServer.sync(transportProvider)
 				.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-				.tools(new McpServerFeatures.SyncToolSpecification(tool, null, statefulHandler))
+				.tools(new McpServerFeatures.SyncToolSpecification(tool, statefulHandler))
 				.build();
 		}
 
@@ -303,7 +305,7 @@ public class McpTransportContextIT {
 		public McpSyncServer mcpSseServer(WebMvcSseServerTransportProvider transportProvider) {
 			return McpServer.sync(transportProvider)
 				.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-				.tools(new McpServerFeatures.SyncToolSpecification(tool, null, statefulHandler))
+				.tools(new McpServerFeatures.SyncToolSpecification(tool, statefulHandler))
 				.build();
 
 		}

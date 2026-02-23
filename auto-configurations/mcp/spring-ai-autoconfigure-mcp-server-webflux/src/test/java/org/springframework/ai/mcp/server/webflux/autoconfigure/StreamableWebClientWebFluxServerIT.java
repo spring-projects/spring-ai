@@ -354,7 +354,7 @@ public class StreamableWebClientWebFluxServerIT {
 
 					return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(
 							"CALL RESPONSE: " + samplingResponse.toString() + ", " + elicitationResult.toString())),
-							null);
+							false, null, null);
 				})
 				.build();
 

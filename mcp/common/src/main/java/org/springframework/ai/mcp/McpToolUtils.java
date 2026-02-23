@@ -203,8 +203,6 @@ public final class McpToolUtils {
 		SharedSyncToolSpecification sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
 
 		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(),
-				(exchange, map) -> sharedSpec.sharedHandler()
-					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map)),
 				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
 	}
 
@@ -262,12 +260,14 @@ public final class McpToolUtils {
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
 					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
 					return new McpSchema.CallToolResult(
-							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
+							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false,
+							null, null);
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false, null, null);
 			}
 			catch (Exception e) {
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
+				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true, null,
+						null);
 			}
 		});
 	}

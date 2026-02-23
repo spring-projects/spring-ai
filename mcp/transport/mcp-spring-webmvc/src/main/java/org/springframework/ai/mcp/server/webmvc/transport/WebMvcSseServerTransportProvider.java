@@ -365,14 +365,18 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		}
 
 		if (request.param(SESSION_ID).isEmpty()) {
-			return ServerResponse.badRequest().body(new McpError("Session ID missing in message endpoint"));
+			return ServerResponse.badRequest()
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+						"Session ID missing in message endpoint", null)));
 		}
 
 		String sessionId = request.param(SESSION_ID).get();
 		McpServerSession session = this.sessions.get(sessionId);
 
 		if (session == null) {
-			return ServerResponse.status(HttpStatus.NOT_FOUND).body(new McpError("Session not found: " + sessionId));
+			return ServerResponse.status(HttpStatus.NOT_FOUND)
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+						"Session not found: " + sessionId, null)));
 		}
 
 		try {
@@ -391,11 +395,15 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		}
 		catch (IllegalArgumentException | IOException e) {
 			logger.error("Failed to deserialize message: {}", e.getMessage());
-			return ServerResponse.badRequest().body(new McpError("Invalid message format"));
+			return ServerResponse.badRequest()
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.PARSE_ERROR,
+						"Invalid message format", null)));
 		}
 		catch (Exception e) {
 			logger.error("Error handling message: {}", e.getMessage());
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
+						e.getMessage(), null)));
 		}
 	}
 

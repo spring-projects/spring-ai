@@ -27,6 +27,7 @@ import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
@@ -228,7 +229,8 @@ class ToolUtilsTests {
 		assertThat(toolSpecification).isNotNull();
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new CallToolRequest("test", Map.of()));
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
@@ -241,7 +243,8 @@ class ToolUtilsTests {
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
 		assertThat(toolSpecification).isNotNull();
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new CallToolRequest("test", Map.of()));
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();

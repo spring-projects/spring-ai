@@ -381,14 +381,17 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		}
 
 		if (request.queryParam("sessionId").isEmpty()) {
-			return ServerResponse.badRequest().bodyValue(new McpError("Session ID missing in message endpoint"));
+			return ServerResponse.badRequest()
+				.bodyValue(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+						"Session ID missing in message endpoint", null)));
 		}
 
 		McpServerSession session = this.sessions.get(request.queryParam("sessionId").get());
 
 		if (session == null) {
 			return ServerResponse.status(HttpStatus.NOT_FOUND)
-				.bodyValue(new McpError("Session not found: " + request.queryParam("sessionId").get()));
+				.bodyValue(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+						"Session not found: " + request.queryParam("sessionId").get(), null)));
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
@@ -402,12 +405,15 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					// - the error is signalled on the SSE connection
 					// return ServerResponse.ok().build();
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.bodyValue(new McpError(error.getMessage()));
+						.bodyValue(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(
+								McpSchema.ErrorCodes.INTERNAL_ERROR, error.getMessage(), null)));
 				});
 			}
 			catch (IllegalArgumentException | IOException e) {
 				logger.error("Failed to deserialize message: {}", e.getMessage());
-				return ServerResponse.badRequest().bodyValue(new McpError("Invalid message format"));
+				return ServerResponse.badRequest()
+					.bodyValue(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.PARSE_ERROR,
+							"Invalid message format", null)));
 			}
 		}).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext));
 	}

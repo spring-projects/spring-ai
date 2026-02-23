@@ -115,14 +115,10 @@ class McpToolCallbackParameterlessToolIT {
 
 				// Create a tool specification that returns a simple response
 				McpServerFeatures.SyncToolSpecification toolSpec = new McpServerFeatures.SyncToolSpecification(
-						parameterlessTool, (exchange, arguments) -> {
+						parameterlessTool, (exchange, request) -> {
 							McpSchema.TextContent content = new McpSchema.TextContent(
 									"Current time: " + Instant.now().toString());
-							return new McpSchema.CallToolResult(List.of(content), false, null);
-						}, (exchange, request) -> {
-							McpSchema.TextContent content = new McpSchema.TextContent(
-									"Current time: " + Instant.now().toString());
-							return new McpSchema.CallToolResult(List.of(content), false, null);
+							return new McpSchema.CallToolResult(List.of(content), false, null, null);
 						});
 
 				// Add the tool with incomplete schema to the server

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.common;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
@@ -100,8 +101,10 @@ public class AsyncServerMcpTransportContextIT {
 		.build();
 
 	private final BiFunction<McpTransportContext, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> asyncStatelessHandler = (
-			transportContext, request) -> Mono
-				.just(new McpSchema.CallToolResult(transportContext.get("server-side-header-value").toString(), null));
+			transportContext,
+			request) -> Mono.just(new McpSchema.CallToolResult(
+					List.of(new McpSchema.TextContent(transportContext.get("server-side-header-value").toString())),
+					false, null, null));
 
 	private final BiFunction<McpAsyncServerExchange, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> asyncStatefulHandler = (
 			exchange, request) -> this.asyncStatelessHandler.apply(exchange.transportContext(), request);
@@ -194,7 +197,7 @@ public class AsyncServerMcpTransportContextIT {
 
 		var mcpServer = McpServer.async(this.streamableServerTransport)
 			.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-			.tools(new McpServerFeatures.AsyncToolSpecification(this.tool, null, this.asyncStatefulHandler))
+			.tools(new McpServerFeatures.AsyncToolSpecification(this.tool, this.asyncStatefulHandler))
 			.build();
 
 		StepVerifier.create(this.asyncStreamableClient.initialize())
@@ -226,7 +229,7 @@ public class AsyncServerMcpTransportContextIT {
 
 		var mcpServer = McpServer.async(this.sseServerTransport)
 			.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-			.tools(new McpServerFeatures.AsyncToolSpecification(this.tool, null, this.asyncStatefulHandler))
+			.tools(new McpServerFeatures.AsyncToolSpecification(this.tool, this.asyncStatefulHandler))
 			.build();
 
 		StepVerifier.create(this.asyncSseClient.initialize())

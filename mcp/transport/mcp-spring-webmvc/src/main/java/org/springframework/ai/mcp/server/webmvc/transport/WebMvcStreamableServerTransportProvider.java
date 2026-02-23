@@ -361,7 +361,8 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		if (!acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM)
 				|| !acceptHeaders.contains(MediaType.APPLICATION_JSON)) {
 			return ServerResponse.badRequest()
-				.body(new McpError("Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON"));
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+						"Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON", null)));
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
@@ -379,7 +380,8 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				var sf = this.sessionFactory;
 				if (sf == null) {
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(new McpError("SessionFactory not configured"));
+						.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(
+								McpSchema.ErrorCodes.INTERNAL_ERROR, "SessionFactory not configured", null)));
 				}
 				McpStreamableServerSession.McpStreamableServerSessionInit init = sf.startSession(initializeRequest);
 				this.sessions.put(init.session().getId(), init.session());
@@ -395,13 +397,17 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				}
 				catch (Exception e) {
 					logger.error("Failed to initialize session: {}", e.getMessage());
-					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(
+								McpSchema.ErrorCodes.INTERNAL_ERROR, e.getMessage(), null)));
 				}
 			}
 
 			// Handle other messages that require a session
 			if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
-				return ServerResponse.badRequest().body(new McpError("Session ID missing"));
+				return ServerResponse.badRequest()
+					.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+							"Session ID missing", null)));
 			}
 
 			String sessionId = request.headers().header(HttpHeaders.MCP_SESSION_ID).get(0);
@@ -409,7 +415,8 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 			if (session == null) {
 				return ServerResponse.status(HttpStatus.NOT_FOUND)
-					.body(new McpError("Session not found: " + sessionId));
+					.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INVALID_PARAMS,
+							"Session not found: " + sessionId, null)));
 			}
 
 			if (message instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
@@ -448,16 +455,21 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			}
 			else {
 				return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new McpError("Unknown message type"));
+					.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.METHOD_NOT_FOUND,
+							"Unknown message type", null)));
 			}
 		}
 		catch (IllegalArgumentException | IOException e) {
 			logger.error("Failed to deserialize message: {}", e.getMessage());
-			return ServerResponse.badRequest().body(new McpError("Invalid message format"));
+			return ServerResponse.badRequest()
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.PARSE_ERROR,
+						"Invalid message format", null)));
 		}
 		catch (Exception e) {
 			logger.error("Error handling message: {}", e.getMessage());
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
+						e.getMessage(), null)));
 		}
 	}
 
@@ -504,7 +516,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete session {}: {}", sessionId, e.getMessage());
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new McpError(new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
+						e.getMessage(), null)));
 		}
 	}
 
