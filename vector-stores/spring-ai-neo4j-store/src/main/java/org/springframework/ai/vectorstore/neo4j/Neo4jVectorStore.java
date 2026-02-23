@@ -38,6 +38,7 @@ import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetri
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.neo4j.filter.Neo4jVectorFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -177,7 +178,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final String constraintName;
 
-	private final Neo4jVectorFilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
+	private final FilterExpressionConverter filterExpressionConverter;
 
 	private final boolean initializeSchema;
 
@@ -197,6 +198,7 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		this.idProperty = SchemaNames.sanitize(builder.idProperty).orElseThrow();
 		this.textProperty = SchemaNames.sanitize(builder.textProperty).orElseThrow();
 		this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
+		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.initializeSchema = builder.initializeSchema;
 	}
 
@@ -420,6 +422,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 		private String constraintName = DEFAULT_CONSTRAINT_NAME;
 
+		private FilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
+
 		private boolean initializeSchema = false;
 
 		private Builder(Driver driver, EmbeddingModel embeddingModel) {
@@ -554,6 +558,17 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the filter expression converter.
+		 * @param filterExpressionConverter the filter expression converter to use
+		 * @return the builder instance
+		 */
+		public Builder filterExpressionConverter(FilterExpressionConverter filterExpressionConverter) {
+			Assert.notNull(filterExpressionConverter, "FilterExpressionConverter must not be null");
+			this.filterExpressionConverter = filterExpressionConverter;
 			return this;
 		}
 
