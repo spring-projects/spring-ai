@@ -356,7 +356,7 @@
 
 		<!-- MCP-->
 		<!-- TODO Update to 1.0.0-RC1 when released -->
-		<mcp.sdk.version>1.0.1-SNAPSHOT</mcp.sdk.version>
+		<mcp.sdk.version>1.0.0</mcp.sdk.version>
 		<!-- TODO Update to 1.0.0-alpha when released -->
 		<mcp-annotations.version>1.0.0-SNAPSHOT</mcp-annotations.version>
 
