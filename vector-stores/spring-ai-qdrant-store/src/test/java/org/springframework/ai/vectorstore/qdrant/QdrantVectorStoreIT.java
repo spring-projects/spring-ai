@@ -353,6 +353,84 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 		});
 	}
 
+	@Test
+	void metadataTypePreservationInSearchResults() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			// Create document with different metadata types
+			var doc = new Document("Spring Framework is a powerful Java framework",
+					Map.of(
+						"title", "Spring Guide",
+						"version", 3.0,       // Double type
+						"published", true));   // Boolean type
+
+			// Add document to vector store
+			vectorStore.add(List.of(doc));
+
+			// Search and retrieve document
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Spring Framework").topK(1).build());
+
+			assertThat(results).hasSize(1);
+			Map<String, Object> metadata = results.get(0).getMetadata();
+
+			// Verify metadata types are preserved correctly (no silent conversions)
+			// String should stay String
+			assertThat(metadata.get("title")).isInstanceOf(String.class).isEqualTo("Spring Guide");
+			// Double should stay Double (not converted to String like "3.0")
+			assertThat(metadata.get("version")).isInstanceOf(Double.class).isEqualTo(3.0);
+			// Boolean should stay Boolean (not converted to String like "true")
+			assertThat(metadata.get("published")).isInstanceOf(Boolean.class).isEqualTo(true);
+
+			// Clean up
+			vectorStore.delete(List.of(doc.getId()));
+		});
+	}
+
+	@Test
+	void metadataPreservationInFilteredResults() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			// Create documents with boolean metadata for filtering
+			var doc1 = new Document("Spring Framework documentation",
+					Map.of(
+						"published", true,
+						"source", "spring-docs"));
+
+			var doc2 = new Document("Kubernetes documentation",
+					Map.of(
+						"published", false,
+						"source", "k8s-docs"));
+
+			// Add documents to vector store
+			vectorStore.add(List.of(doc1, doc2));
+
+			// Search with filter expression on boolean metadata
+			List<Document> filteredResults = vectorStore.similaritySearch(
+				SearchRequest.builder()
+					.query("documentation")
+					.topK(5)
+					.similarityThresholdAll()
+					.filterExpression("published == true")
+					.build());
+
+			// Verify filter works and metadata is preserved
+			assertThat(filteredResults).hasSize(1);
+			Document filteredDoc = filteredResults.get(0);
+
+			// Verify all metadata fields are present and correct in filtered results
+			Map<String, Object> metadata = filteredDoc.getMetadata();
+			assertThat(metadata)
+				.containsEntry("published", true)
+				.containsEntry("source", "spring-docs");
+
+			// Clean up
+			vectorStore.delete(List.of(doc1.getId(), doc2.getId()));
+		});
+	}
+
 	@SpringBootConfiguration
 	public static class TestApplication {
 
