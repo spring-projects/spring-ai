@@ -269,7 +269,8 @@ public class StatelessWebClientWebFluxServerIT {
 							"properties": {}
 						}
 						""").build())
-				.callHandler((exchange, request) -> new CallToolResult(List.of(new TextContent("CALL RESPONSE")), null))
+				.callHandler((exchange,
+						request) -> CallToolResult.builder().content(List.of(new TextContent("CALL RESPONSE"))).build())
 				.build();
 
 			// Tool 2

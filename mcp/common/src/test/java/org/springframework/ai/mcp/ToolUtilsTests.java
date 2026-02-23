@@ -228,7 +228,8 @@ class ToolUtilsTests {
 		assertThat(toolSpecification).isNotNull();
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
@@ -241,7 +242,8 @@ class ToolUtilsTests {
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
 		assertThat(toolSpecification).isNotNull();
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();

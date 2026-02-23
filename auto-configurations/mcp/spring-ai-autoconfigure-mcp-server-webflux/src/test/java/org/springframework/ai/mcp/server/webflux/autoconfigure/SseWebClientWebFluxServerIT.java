@@ -353,9 +353,10 @@ public class SseWebClientWebFluxServerIT {
 					exchange
 						.progressNotification(new ProgressNotification(progressToken, 1.0, 1.0, "sampling completed"));
 
-					return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(
-							"CALL RESPONSE: " + samplingResponse.toString() + ", " + elicitationResult.toString())),
-							null);
+					return McpSchema.CallToolResult.builder()
+						.content(List.of(new McpSchema.TextContent(
+								"CALL RESPONSE: " + samplingResponse.toString() + ", " + elicitationResult.toString())))
+						.build();
 				})
 				.build();
 
