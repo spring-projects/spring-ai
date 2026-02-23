@@ -361,7 +361,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		if (!acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM)
 				|| !acceptHeaders.contains(MediaType.APPLICATION_JSON)) {
 			return ServerResponse.badRequest()
-				.body(new McpError("Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON"));
+				.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+					.message("Invalid Accept headers. Expected TEXT_EVENT_STREAM and APPLICATION_JSON")
+					.build());
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
@@ -379,7 +381,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				var sf = this.sessionFactory;
 				if (sf == null) {
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(new McpError("SessionFactory not configured"));
+						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+							.message("SessionFactory not configured")
+							.build());
 				}
 				McpStreamableServerSession.McpStreamableServerSessionInit init = sf.startSession(initializeRequest);
 				this.sessions.put(init.session().getId(), init.session());
@@ -395,13 +399,17 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				}
 				catch (Exception e) {
 					logger.error("Failed to initialize session: {}", e.getMessage());
-					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 				}
 			}
 
 			// Handle other messages that require a session
 			if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
-				return ServerResponse.badRequest().body(new McpError("Session ID missing"));
+				return ServerResponse.badRequest()
+					.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+						.message("Session ID missing")
+						.build());
 			}
 
 			String sessionId = request.headers().header(HttpHeaders.MCP_SESSION_ID).get(0);
@@ -409,7 +417,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 			if (session == null) {
 				return ServerResponse.status(HttpStatus.NOT_FOUND)
-					.body(new McpError("Session not found: " + sessionId));
+					.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Session not found: " + sessionId)
+						.build());
 			}
 
 			if (message instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
@@ -448,16 +458,20 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			}
 			else {
 				return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new McpError("Unknown message type"));
+					.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+						.message("Unknown message type")
+						.build());
 			}
 		}
 		catch (IllegalArgumentException | IOException e) {
 			logger.error("Failed to deserialize message: {}", e.getMessage());
-			return ServerResponse.badRequest().body(new McpError("Invalid message format"));
+			return ServerResponse.badRequest()
+				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
 			logger.error("Error handling message: {}", e.getMessage());
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 		}
 	}
 
@@ -504,7 +518,8 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 		catch (Exception e) {
 			logger.error("Failed to delete session {}: {}", sessionId, e.getMessage());
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 		}
 	}
 

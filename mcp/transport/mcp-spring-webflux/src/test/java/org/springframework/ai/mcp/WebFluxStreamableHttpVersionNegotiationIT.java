@@ -62,8 +62,10 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 		.build();
 
 	private final BiFunction<McpSyncServerExchange, McpSchema.CallToolRequest, McpSchema.CallToolResult> toolHandler = (
-			exchange, request) -> new McpSchema.CallToolResult(
-					exchange.transportContext().get("protocol-version").toString(), null);
+			exchange, request) -> McpSchema.CallToolResult.builder()
+				.content(List
+					.of(new McpSchema.TextContent(exchange.transportContext().get("protocol-version").toString())))
+				.build();
 
 	private final WebFluxStreamableServerTransportProvider mcpStreamableServerTransportProvider = WebFluxStreamableServerTransportProvider
 		.builder()
@@ -73,7 +75,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 
 	private final McpSyncServer mcpServer = McpServer.sync(this.mcpStreamableServerTransportProvider)
 		.capabilities(McpSchema.ServerCapabilities.builder().tools(false).build())
-		.tools(new McpServerFeatures.SyncToolSpecification(this.toolSpec, null, this.toolHandler))
+		.tools(new McpServerFeatures.SyncToolSpecification(this.toolSpec, this.toolHandler))
 		.build();
 
 	@BeforeEach
