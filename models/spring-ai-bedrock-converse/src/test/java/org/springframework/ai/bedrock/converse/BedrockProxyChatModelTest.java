@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -42,6 +43,25 @@ class BedrockProxyChatModelTest {
 			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
 			BedrockProxyChatModel.builder().build();
 		}
+	}
+
+	@Test
+	void sanitizeDocumentNameShouldReplaceDotsWithHyphens() {
+		String name = "media-vnd.openxmlformats-officedocument.spreadsheetml.sheet-abc123";
+		assertThat(BedrockProxyChatModel.sanitizeDocumentName(name))
+			.isEqualTo("media-vnd-openxmlformats-officedocument-spreadsheetml-sheet-abc123");
+	}
+
+	@Test
+	void sanitizeDocumentNameShouldPreserveValidName() {
+		String name = "media-pdf-abc123";
+		assertThat(BedrockProxyChatModel.sanitizeDocumentName(name)).isEqualTo(name);
+	}
+
+	@Test
+	void sanitizeDocumentNameShouldPreserveAllowedSpecialCharacters() {
+		String name = "my document (1) [draft]";
+		assertThat(BedrockProxyChatModel.sanitizeDocumentName(name)).isEqualTo(name);
 	}
 
 }
