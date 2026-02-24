@@ -160,7 +160,7 @@ public class SseWebClientWebFluxServerIT {
 						CallToolResult response = mcpClient.callTool(toolRequest);
 
 						assertThat(response).isNotNull();
-						assertThat(response.isError()).isNull();
+						assertThat(response.isError()).isFalse();
 						String responseText = ((TextContent) response.content().get(0)).text();
 						assertThat(responseText).contains("CALL RESPONSE");
 						assertThat(responseText).contains("Response Test Sampling Message with model hint OpenAi");
