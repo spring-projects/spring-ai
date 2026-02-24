@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -267,6 +267,35 @@ public class OpenAiSdkChatModel implements ChatModel {
 		this.observationRegistry = Objects.requireNonNullElse(observationRegistry, ObservationRegistry.NOOP);
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
 		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(toolExecutionEligibilityPredicate,
+				new DefaultToolExecutionEligibilityPredicate());
+	}
+
+	private OpenAiSdkChatModel(Builder builder) {
+		if (builder.options == null) {
+			this.options = OpenAiSdkChatOptions.builder().model(DEFAULT_MODEL_NAME).build();
+		}
+		else {
+			this.options = builder.options;
+		}
+		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
+				() -> OpenAiSdkSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
+
+		this.openAiClientAsync = Objects.requireNonNullElseGet(builder.openAiClientAsync,
+				() -> OpenAiSdkSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders()));
+
+		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
+		this.toolCallingManager = Objects.requireNonNullElse(builder.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
+		this.toolExecutionEligibilityPredicate = Objects.requireNonNullElse(builder.toolExecutionEligibilityPredicate,
 				new DefaultToolExecutionEligibilityPredicate());
 	}
 
@@ -1426,10 +1455,8 @@ public class OpenAiSdkChatModel implements ChatModel {
 		 * Builds a new {@link OpenAiSdkChatModel} instance.
 		 * @return the configured chat model
 		 */
-		@SuppressWarnings("deprecation")
 		public OpenAiSdkChatModel build() {
-			return new OpenAiSdkChatModel(this.openAiClient, this.openAiClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.toolExecutionEligibilityPredicate);
+			return new OpenAiSdkChatModel(this);
 		}
 
 	}
