@@ -470,6 +470,8 @@ This produces the following wire format:
 NOTE: If only a single `SystemMessage` is present, it still gets `cache_control` applied (same as the default behavior).
 The `multiBlockSystemCaching` option only changes behavior when there are two or more system messages.
 
+IMPORTANT: Message ordering matters. The `cache_control` marker is always placed on the second-to-last system block, so static content must come before dynamic content in the message list. If you register your base instructions as the first `SystemMessage` and let advisors append dynamic context after, this ordering is naturally satisfied.
+
 === Usage Example
 
 Here's a complete example demonstrating prompt caching with cost tracking:
