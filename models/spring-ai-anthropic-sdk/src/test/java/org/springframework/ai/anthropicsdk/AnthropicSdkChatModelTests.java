@@ -224,6 +224,28 @@ class AnthropicSdkChatModelTests {
 	}
 
 	@Test
+	void cacheOptionsIsMergedFromRuntimePrompt() {
+		AnthropicSdkChatModel model = AnthropicSdkChatModel.builder()
+			.anthropicClient(this.anthropicClient)
+			.anthropicClientAsync(this.anthropicClientAsync)
+			.options(AnthropicSdkChatOptions.builder().model("default-model").maxTokens(1000).build())
+			.build();
+
+		AnthropicSdkCacheOptions cacheOptions = AnthropicSdkCacheOptions.builder()
+			.strategy(AnthropicSdkCacheStrategy.SYSTEM_ONLY)
+			.build();
+
+		AnthropicSdkChatOptions runtimeOptions = AnthropicSdkChatOptions.builder().cacheOptions(cacheOptions).build();
+
+		Prompt originalPrompt = new Prompt("Test", runtimeOptions);
+		Prompt requestPrompt = model.buildRequestPrompt(originalPrompt);
+
+		AnthropicSdkChatOptions mergedOptions = (AnthropicSdkChatOptions) requestPrompt.getOptions();
+		assertThat(mergedOptions.getCacheOptions()).isNotNull();
+		assertThat(mergedOptions.getCacheOptions().getStrategy()).isEqualTo(AnthropicSdkCacheStrategy.SYSTEM_ONLY);
+	}
+
+	@Test
 	void multiTurnConversation() {
 		Message mockResponse = createMockMessage("Paris is the capital of France.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);

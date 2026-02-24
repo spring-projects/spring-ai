@@ -145,6 +145,12 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 	private List<AnthropicSdkCitationDocument> citationDocuments = new ArrayList<>();
 
 	/**
+	 * Cache options for configuring prompt caching behavior.
+	 */
+	@JsonIgnore
+	private AnthropicSdkCacheOptions cacheOptions = AnthropicSdkCacheOptions.DISABLED;
+
+	/**
 	 * Creates a new builder for AnthropicSdkChatOptions.
 	 * @return a new builder instance
 	 */
@@ -283,6 +289,15 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 		this.citationDocuments = citationDocuments;
 	}
 
+	public AnthropicSdkCacheOptions getCacheOptions() {
+		return this.cacheOptions;
+	}
+
+	public void setCacheOptions(AnthropicSdkCacheOptions cacheOptions) {
+		Assert.notNull(cacheOptions, "cacheOptions cannot be null");
+		this.cacheOptions = cacheOptions;
+	}
+
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		// Not supported by Anthropic API
@@ -319,14 +334,16 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				&& Objects.equals(this.toolNames, that.toolNames)
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.citationDocuments, that.citationDocuments);
+				&& Objects.equals(this.citationDocuments, that.citationDocuments)
+				&& Objects.equals(this.cacheOptions, that.cacheOptions);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
-				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments);
+				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments,
+				this.cacheOptions);
 	}
 
 	@Override
@@ -337,7 +354,8 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				+ ", thinking=" + this.thinking + ", disableParallelToolUse=" + this.disableParallelToolUse
 				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
 				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
-				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + '}';
+				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
+				+ this.cacheOptions + '}';
 	}
 
 	/**
@@ -381,6 +399,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			this.options.setInternalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled());
 			this.options.setToolContext(new HashMap<>(fromOptions.getToolContext()));
 			this.options.setCitationDocuments(new ArrayList<>(fromOptions.getCitationDocuments()));
+			this.options.setCacheOptions(fromOptions.getCacheOptions());
 			return this;
 		}
 
@@ -454,6 +473,10 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			}
 			if (!from.getCitationDocuments().isEmpty()) {
 				this.options.setCitationDocuments(new ArrayList<>(from.getCitationDocuments()));
+			}
+			if (from.getCacheOptions() != null
+					&& from.getCacheOptions().getStrategy() != AnthropicSdkCacheStrategy.NONE) {
+				this.options.setCacheOptions(from.getCacheOptions());
 			}
 			return this;
 		}
@@ -597,6 +620,12 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			return this;
 		}
 
+		public Builder cacheOptions(AnthropicSdkCacheOptions cacheOptions) {
+			Assert.notNull(cacheOptions, "cacheOptions cannot be null");
+			this.options.setCacheOptions(cacheOptions);
+			return this;
+		}
+
 		public Builder baseUrl(String baseUrl) {
 			this.options.setBaseUrl(baseUrl);
 			return this;
@@ -655,6 +684,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			result.setInternalToolExecutionEnabled(this.options.getInternalToolExecutionEnabled());
 			result.setToolContext(new HashMap<>(this.options.getToolContext()));
 			result.setCitationDocuments(new ArrayList<>(this.options.getCitationDocuments()));
+			result.setCacheOptions(this.options.getCacheOptions());
 			return result;
 		}
 

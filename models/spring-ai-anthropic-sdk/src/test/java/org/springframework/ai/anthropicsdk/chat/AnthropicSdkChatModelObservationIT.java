@@ -74,7 +74,6 @@ public class AnthropicSdkChatModelObservationIT {
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topK(1)
-			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -96,7 +95,6 @@ public class AnthropicSdkChatModelObservationIT {
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
 			.topK(1)
-			.topP(1.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -140,7 +138,6 @@ public class AnthropicSdkChatModelObservationIT {
 					"[\"this-is-the-end\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), "1")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
 					String.valueOf(responseMetadata.getUsage().getPromptTokens()))

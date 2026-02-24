@@ -754,6 +754,144 @@ Anthropic requires consistent citation settings across all documents in a reques
 You cannot mix citation-enabled and citation-disabled documents in the same request.
 ====
 
+== Prompt Caching
+
+Anthropic's https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching[Prompt Caching] reduces costs and latency by caching repeated context across API calls. The Anthropic SDK module supports prompt caching with configurable strategies, TTL, and per-message-type settings.
+
+=== Caching Strategies
+
+Five caching strategies are available via `AnthropicSdkCacheStrategy`:
+
+[cols="2,5", stripes=even]
+|====
+| Strategy | Description
+
+| `NONE` | No caching (default). No cache control headers are added.
+| `SYSTEM_ONLY` | Cache system message content. Uses 1 cache breakpoint.
+| `TOOLS_ONLY` | Cache tool definitions only. Uses 1 cache breakpoint.
+| `SYSTEM_AND_TOOLS` | Cache both system messages and tool definitions. Uses 2 cache breakpoints.
+| `CONVERSATION_HISTORY` | Cache system messages, tool definitions, and conversation messages. Uses up to 4 cache breakpoints.
+|====
+
+NOTE: Anthropic allows a maximum of 4 cache breakpoints per request. The implementation tracks breakpoint usage and stops adding cache control once the limit is reached.
+
+=== Basic Usage
+
+[source,java]
+----
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .maxTokens(1024)
+    .cacheOptions(AnthropicSdkCacheOptions.builder()
+        .strategy(AnthropicSdkCacheStrategy.SYSTEM_ONLY)
+        .build())
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(List.of(
+        new SystemMessage("You are an expert assistant with deep domain knowledge..."),
+        new UserMessage("What is the capital of France?")),
+        options));
+----
+
+=== Cache Configuration Options
+
+`AnthropicSdkCacheOptions` provides fine-grained control over caching behavior:
+
+[source,java]
+----
+var cacheOptions = AnthropicSdkCacheOptions.builder()
+    .strategy(AnthropicSdkCacheStrategy.SYSTEM_AND_TOOLS)
+    .messageTypeTtl(MessageType.SYSTEM, AnthropicSdkCacheTtl.ONE_HOUR)     // 1 hour TTL
+    .messageTypeMinContentLength(MessageType.SYSTEM, 100)                   // Min 100 chars
+    .multiBlockSystemCaching(true)                                          // Per-block caching
+    .build();
+----
+
+[cols="3,5,1", stripes=even]
+|====
+| Option | Description | Default
+
+| `strategy` | The caching strategy to use. | `NONE`
+| `messageTypeTtl` | TTL per message type. Available values: `FIVE_MINUTES`, `ONE_HOUR`. | `FIVE_MINUTES` for all types
+| `messageTypeMinContentLength` | Minimum content length required before caching a message type. | `1`
+| `contentLengthFunction` | Custom function to compute content length (e.g., token counting). | `String::length`
+| `multiBlockSystemCaching` | When `true`, each system message becomes a separate cacheable block; cache control is applied to the second-to-last block (static prefix pattern). When `false`, all system messages are joined into one block. | `false`
+|====
+
+=== Multi-Block System Caching
+
+When you have both a static system prompt and dynamic instructions, use multi-block system caching to cache only the static portion:
+
+[source,java]
+----
+var cacheOptions = AnthropicSdkCacheOptions.builder()
+    .strategy(AnthropicSdkCacheStrategy.SYSTEM_ONLY)
+    .multiBlockSystemCaching(true)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt(List.of(
+        new SystemMessage("You are an expert knowledge base assistant..."),  // Static (cached)
+        new SystemMessage("Today's date is 2025-02-23. User timezone: PST"), // Dynamic
+        new UserMessage("What are the latest updates?")),
+        AnthropicSdkChatOptions.builder()
+            .model("claude-sonnet-4-20250514")
+            .cacheOptions(cacheOptions)
+            .build()));
+----
+
+=== Accessing Cache Token Usage
+
+Cache token metrics are available through the native SDK `Usage` object:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+com.anthropic.models.messages.Usage sdkUsage =
+    (com.anthropic.models.messages.Usage) response.getMetadata().getUsage().getNativeUsage();
+long cacheCreation = sdkUsage.cacheCreationInputTokens().orElse(0L);
+long cacheRead = sdkUsage.cacheReadInputTokens().orElse(0L);
+
+System.out.println("Cache creation tokens: " + cacheCreation);
+System.out.println("Cache read tokens: " + cacheRead);
+----
+
+On the first request, `cacheCreationInputTokens` will be non-zero (tokens written to cache). On subsequent requests with the same cached prefix, `cacheReadInputTokens` will be non-zero (tokens read from cache at reduced cost).
+
+=== Conversation History Caching
+
+The `CONVERSATION_HISTORY` strategy caches the entire conversation context, including system messages, tool definitions, and the last user message. This is useful for multi-turn conversations where the growing context would otherwise be re-processed on every request:
+
+[source,java]
+----
+var cacheOptions = AnthropicSdkCacheOptions.builder()
+    .strategy(AnthropicSdkCacheStrategy.CONVERSATION_HISTORY)
+    .build();
+
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-20250514")
+    .cacheOptions(cacheOptions)
+    .build();
+
+// First turn
+ChatResponse response1 = chatModel.call(
+    new Prompt(List.of(
+        new SystemMessage("You are a helpful assistant."),
+        new UserMessage("What is machine learning?")),
+        options));
+
+// Second turn - previous context is cached
+ChatResponse response2 = chatModel.call(
+    new Prompt(List.of(
+        new SystemMessage("You are a helpful assistant."),
+        new UserMessage("What is machine learning?"),
+        new AssistantMessage(response1.getResult().getOutput().getText()),
+        new UserMessage("Can you give me an example?")),
+        options));
+----
+
 == Sample Controller
 
 Here is an example of a simple `@RestController` class that uses the chat model for text generations:
@@ -802,7 +940,7 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 | **Multi-Modal** | Fully supported | Fully supported
 | **Extended Thinking** | Fully supported | Fully supported
 | **Citations** | Fully supported | Fully supported
-| **Prompt Caching** | Not yet supported | Fully supported
+| **Prompt Caching** | Fully supported | Fully supported
 | **Auto-Configuration** | Not yet available | Full Spring Boot starter
 | **Dependencies** | Official Anthropic SDK | Spring WebFlux
 |====
@@ -815,7 +953,6 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 
 **When to use Spring AI Anthropic:**
 
-* You need prompt caching
 * You want full Spring Boot auto-configuration
 * You have an existing project using it
 
@@ -837,7 +974,6 @@ export ANTHROPIC_LOG=debug
 
 The following features are not yet supported in the Anthropic SDK implementation:
 
-* Prompt caching
 * Amazon Bedrock backend
 * Google Vertex AI backend
 * Spring Boot auto-configuration

@@ -30,6 +30,7 @@ import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
+import com.anthropic.models.messages.CacheControlEphemeral;
 import com.anthropic.models.messages.CitationCharLocation;
 import com.anthropic.models.messages.CitationContentBlockLocation;
 import com.anthropic.models.messages.CitationPageLocation;
@@ -593,6 +594,13 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 					&& !originalAnthropicOptions.getCitationDocuments().isEmpty()) {
 				requestOptions.setCitationDocuments(new ArrayList<>(originalAnthropicOptions.getCitationDocuments()));
 			}
+			// Merge cacheOptions from original prompt options (@JsonIgnore, lost
+			// during copyToTarget)
+			if (prompt.getOptions() instanceof AnthropicSdkChatOptions originalAnthropicOptions
+					&& originalAnthropicOptions.getCacheOptions() != null
+					&& originalAnthropicOptions.getCacheOptions().getStrategy() != AnthropicSdkCacheStrategy.NONE) {
+				requestOptions.setCacheOptions(originalAnthropicOptions.getCacheOptions());
+			}
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -624,24 +632,98 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		long maxTokens = requestOptions.getMaxTokens() != null ? requestOptions.getMaxTokens() : DEFAULT_MAX_TOKENS;
 		builder.maxTokens(maxTokens);
 
+		// Create cache resolver
+		SdkCacheEligibilityResolver cacheResolver = SdkCacheEligibilityResolver.from(requestOptions.getCacheOptions());
+
 		// Prepare citation documents for inclusion in the first user message
 		List<AnthropicSdkCitationDocument> citationDocuments = requestOptions.getCitationDocuments();
 		boolean citationDocsAdded = false;
 
-		// Process messages
+		// Collect system messages and non-system messages separately
+		List<String> systemTexts = new ArrayList<>();
+		List<org.springframework.ai.chat.messages.Message> nonSystemMessages = new ArrayList<>();
 		for (org.springframework.ai.chat.messages.Message message : prompt.getInstructions()) {
 			if (message.getMessageType() == MessageType.SYSTEM) {
 				String text = message.getText();
 				if (text != null) {
-					builder.system(text);
+					systemTexts.add(text);
 				}
 			}
-			else if (message.getMessageType() == MessageType.USER) {
+			else {
+				nonSystemMessages.add(message);
+			}
+		}
+
+		// Process system messages with cache support
+		if (!systemTexts.isEmpty()) {
+			if (!cacheResolver.isCachingEnabled()) {
+				// No caching: join all system texts and use simple string format
+				builder.system(String.join("\n\n", systemTexts));
+			}
+			else if (requestOptions.getCacheOptions().isMultiBlockSystemCaching() && systemTexts.size() > 1) {
+				// Multi-block system caching: each text becomes a separate
+				// TextBlockParam.
+				// Cache control is applied to the second-to-last block.
+				List<TextBlockParam> systemBlocks = new ArrayList<>();
+				for (int i = 0; i < systemTexts.size(); i++) {
+					TextBlockParam.Builder textBlockBuilder = TextBlockParam.builder().text(systemTexts.get(i));
+					if (i == systemTexts.size() - 2) {
+						CacheControlEphemeral cacheControl = cacheResolver.resolve(MessageType.SYSTEM,
+								String.join("\n\n", systemTexts));
+						if (cacheControl != null) {
+							textBlockBuilder.cacheControl(cacheControl);
+							cacheResolver.useCacheBlock();
+						}
+					}
+					systemBlocks.add(textBlockBuilder.build());
+				}
+				builder.systemOfTextBlockParams(systemBlocks);
+			}
+			else {
+				// Single-block system caching: join all texts into one TextBlockParam
+				String joinedText = String.join("\n\n", systemTexts);
+				CacheControlEphemeral cacheControl = cacheResolver.resolve(MessageType.SYSTEM, joinedText);
+				if (cacheControl != null) {
+					builder.systemOfTextBlockParams(
+							List.of(TextBlockParam.builder().text(joinedText).cacheControl(cacheControl).build()));
+					cacheResolver.useCacheBlock();
+				}
+				else {
+					builder.system(joinedText);
+				}
+			}
+		}
+
+		// Pre-compute last user message index for CONVERSATION_HISTORY strategy
+		int lastUserIndex = -1;
+		if (cacheResolver.isCachingEnabled()) {
+			for (int i = nonSystemMessages.size() - 1; i >= 0; i--) {
+				if (nonSystemMessages.get(i).getMessageType() == MessageType.USER) {
+					lastUserIndex = i;
+					break;
+				}
+			}
+		}
+
+		// Process non-system messages
+		for (int i = 0; i < nonSystemMessages.size(); i++) {
+			org.springframework.ai.chat.messages.Message message = nonSystemMessages.get(i);
+
+			if (message.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) message;
 				boolean hasCitationDocs = !citationDocsAdded && !citationDocuments.isEmpty();
 				boolean hasMedia = !CollectionUtils.isEmpty(userMessage.getMedia());
+				boolean isLastUserMessage = (i == lastUserIndex);
+				boolean applyCacheToUser = isLastUserMessage && cacheResolver.isCachingEnabled();
 
-				if (hasCitationDocs || hasMedia) {
+				// Compute cache control for last user message
+				CacheControlEphemeral userCacheControl = null;
+				if (applyCacheToUser) {
+					String combinedText = combineEligibleMessagesText(nonSystemMessages, lastUserIndex);
+					userCacheControl = cacheResolver.resolve(MessageType.USER, combinedText);
+				}
+
+				if (hasCitationDocs || hasMedia || userCacheControl != null) {
 					List<ContentBlockParam> contentBlocks = new ArrayList<>();
 
 					// CITATIONS: Prepend citation document blocks to the first user
@@ -655,7 +737,12 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 
 					String text = userMessage.getText();
 					if (text != null && !text.isEmpty()) {
-						contentBlocks.add(ContentBlockParam.ofText(TextBlockParam.builder().text(text).build()));
+						TextBlockParam.Builder textBlockBuilder = TextBlockParam.builder().text(text);
+						if (userCacheControl != null) {
+							textBlockBuilder.cacheControl(userCacheControl);
+							cacheResolver.useCacheBlock();
+						}
+						contentBlocks.add(ContentBlockParam.ofText(textBlockBuilder.build()));
 					}
 
 					if (hasMedia) {
@@ -676,13 +763,6 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				AssistantMessage assistantMessage = (AssistantMessage) message;
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					// TOOL CALLING: When rebuilding conversation history, we must include
-					// the assistant's tool use requests. The Anthropic API requires the
-					// conversation to show: assistant requested tool → user provided
-					// result.
-					// Each tool call becomes a ToolUseBlockParam with the original ID,
-					// name, AND input arguments. The input MUST be included - without it,
-					// the model may generate malformed tool calls in the follow-up.
 					List<ContentBlockParam> toolUseBlocks = assistantMessage.getToolCalls()
 						.stream()
 						.map(toolCall -> ContentBlockParam.ofToolUse(ToolUseBlockParam.builder()
@@ -701,13 +781,6 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 				}
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
-				// TOOL CALLING: Tool execution results are sent back to the model.
-				// Anthropic's API expects tool results as "user" messages containing
-				// ToolResultBlockParam. This is different from some other providers
-				// that have a separate "tool" role.
-				//
-				// The toolUseId must match the id from the original ToolUseBlock
-				// so the model knows which tool call this result corresponds to.
 				ToolResponseMessage toolResponseMessage = (ToolResponseMessage) message;
 				List<ContentBlockParam> toolResultBlocks = toolResponseMessage.getResponses()
 					.stream()
@@ -741,14 +814,27 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		}
 
 		// TOOL CALLING: Add tool definitions to enable the model to request tool use.
-		// The ToolCallingManager resolves tools from both:
-		// - toolCallbacks (inline function definitions with implementations)
-		// - toolNames (references to tools registered in a ToolCallbackProvider)
-		// Each ToolDefinition is converted to SDK's Tool format via toAnthropicTool().
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			List<ToolUnion> tools = toolDefinitions.stream().map(td -> ToolUnion.ofTool(toAnthropicTool(td))).toList();
-			builder.tools(tools);
+			List<Tool> tools = toolDefinitions.stream().map(this::toAnthropicTool).toList();
+
+			// PROMPT CACHING: Apply cache control to the last tool if strategy includes
+			// tools
+			CacheControlEphemeral toolCacheControl = cacheResolver.resolveToolCacheControl();
+			if (toolCacheControl != null && !tools.isEmpty()) {
+				List<Tool> modifiedTools = new ArrayList<>();
+				for (int i = 0; i < tools.size(); i++) {
+					Tool tool = tools.get(i);
+					if (i == tools.size() - 1) {
+						tool = tool.toBuilder().cacheControl(toolCacheControl).build();
+						cacheResolver.useCacheBlock();
+					}
+					modifiedTools.add(tool);
+				}
+				tools = modifiedTools;
+			}
+
+			builder.tools(tools.stream().map(ToolUnion::ofTool).toList());
 
 			// Set tool choice if specified
 			if (requestOptions.getToolChoice() != null) {
@@ -757,6 +843,25 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		}
 
 		return builder.build();
+	}
+
+	/**
+	 * Combines text from all messages up to and including the specified index, for use in
+	 * cache eligibility length checks during CONVERSATION_HISTORY caching.
+	 * @param messages the list of non-system messages
+	 * @param lastUserIndex the index of the last user message (inclusive)
+	 * @return the combined text of eligible messages
+	 */
+	private String combineEligibleMessagesText(List<org.springframework.ai.chat.messages.Message> messages,
+			int lastUserIndex) {
+		StringBuilder combined = new StringBuilder();
+		for (int i = 0; i <= lastUserIndex && i < messages.size(); i++) {
+			String text = messages.get(i).getText();
+			if (text != null) {
+				combined.append(text);
+			}
+		}
+		return combined.toString();
 	}
 
 	/**
