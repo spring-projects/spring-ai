@@ -40,7 +40,7 @@ class DefaultToolExecutionExceptionProcessorTests {
 	private final Error toolError = new Error("Error");
 
 	private final DefaultToolDefinition toolDefinition = new DefaultToolDefinition("toolName", "toolDescription",
-			"inputSchema");
+			"inputSchema", "outputSchema");
 
 	private final ToolExecutionException toolExecutionException = new ToolExecutionException(this.toolDefinition,
 			this.toolException);
