@@ -80,82 +80,108 @@ public interface ChatOptions extends ModelOptions {
 	 * Returns a copy of this {@link ChatOptions}.
 	 * @return a copy of this {@link ChatOptions}
 	 */
+	// TODO: can become default mutate().build()
 	<T extends ChatOptions> T copy();
+
+	/**
+	 * Returns a new {@link Builder} initialized with the values of this
+	 * {@link ChatOptions}.
+	 *
+	 * Concrete ChatOptions classes must override this to return the most concrete builder
+	 * implementation.
+	 */
+	// TODO: change from default() to abstract once all models use customizers
+	default ChatOptions.Builder<?> mutate() {
+		throw new UnsupportedOperationException("mutate() must be overridden to return most concrete Builder");
+	}
+	/*
+	 * default ChatOptions.Builder<?> mutate() { return ChatOptions.builder()
+	 * .model(this.getModel()) .frequencyPenalty(this.getFrequencyPenalty())
+	 * .maxTokens(this.getMaxTokens()) .presencePenalty(this.getPresencePenalty())
+	 * .stopSequences(this.getStopSequences()) .temperature(this.getTemperature())
+	 * .topK(this.getTopK()) .topP(this.getTopP()); }
+	 */
 
 	/**
 	 * Creates a new {@link Builder} to create the default {@link ChatOptions}.
 	 * @return Returns a new {@link Builder}.
 	 */
-	static Builder builder() {
-		return new DefaultChatOptionsBuilder();
+	static ChatOptions.Builder<?> builder() {
+		return new DefaultChatOptionsBuilder<>();
 	}
 
 	/**
 	 * Builder for creating {@link ChatOptions} instance.
 	 */
-	interface Builder {
+	interface Builder<B extends Builder<B>> {
 
 		/**
 		 * Builds with the model to use for the chat.
 		 * @param model
 		 * @return the builder
 		 */
-		Builder model(String model);
+		B model(@Nullable String model);
 
 		/**
 		 * Builds with the frequency penalty to use for the chat.
 		 * @param frequencyPenalty
 		 * @return the builder.
 		 */
-		Builder frequencyPenalty(Double frequencyPenalty);
+		B frequencyPenalty(@Nullable Double frequencyPenalty);
 
 		/**
 		 * Builds with the maximum number of tokens to use for the chat.
 		 * @param maxTokens
 		 * @return the builder.
 		 */
-		Builder maxTokens(Integer maxTokens);
+		B maxTokens(@Nullable Integer maxTokens);
 
 		/**
 		 * Builds with the presence penalty to use for the chat.
 		 * @param presencePenalty
 		 * @return the builder.
 		 */
-		Builder presencePenalty(Double presencePenalty);
+		B presencePenalty(@Nullable Double presencePenalty);
 
 		/**
 		 * Builds with the stop sequences to use for the chat.
 		 * @param stopSequences
 		 * @return the builder.
 		 */
-		Builder stopSequences(List<String> stopSequences);
+		B stopSequences(@Nullable List<String> stopSequences);
 
 		/**
 		 * Builds with the temperature to use for the chat.
 		 * @param temperature
 		 * @return the builder.
 		 */
-		Builder temperature(Double temperature);
+		B temperature(@Nullable Double temperature);
 
 		/**
 		 * Builds with the top K to use for the chat.
 		 * @param topK
 		 * @return the builder.
 		 */
-		Builder topK(Integer topK);
+		B topK(@Nullable Integer topK);
 
 		/**
 		 * Builds with the top P to use for the chat.
 		 * @param topP
 		 * @return the builder.
 		 */
-		Builder topP(Double topP);
+		B topP(@Nullable Double topP);
 
 		/**
 		 * Build the {@link ChatOptions}.
 		 * @return the Chat options.
 		 */
 		ChatOptions build();
+
+		/**
+		 * Mutate this builder by taking all {@code other}'s values that are non-null,
+		 * retaining {@code this} other values.
+		 */
+		B combineWith(ChatOptions.Builder<?> other);
 
 	}
 
