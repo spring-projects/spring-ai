@@ -360,10 +360,8 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 			// Create document with different metadata types
 			var doc = new Document("Spring Framework is a powerful Java framework",
-					Map.of(
-						"title", "Spring Guide",
-						"version", 3.0,       // Double type
-						"published", true));   // Boolean type
+					Map.of("title", "Spring Guide", "version", 3.0, // Double type
+							"published", true)); // Boolean type
 
 			// Add document to vector store
 			vectorStore.add(List.of(doc));
@@ -393,28 +391,21 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
-			// Create documents with boolean metadata for filtering
-			var doc1 = new Document("Spring Framework documentation",
-					Map.of(
-						"published", true,
-						"source", "spring-docs"));
+			// Create documents with numeric metadata for filtering
+			var doc1 = new Document("Spring Framework documentation", Map.of("version", 3.0, "source", "spring-docs"));
 
-			var doc2 = new Document("Kubernetes documentation",
-					Map.of(
-						"published", false,
-						"source", "k8s-docs"));
+			var doc2 = new Document("Kubernetes documentation", Map.of("version", 2.0, "source", "k8s-docs"));
 
 			// Add documents to vector store
 			vectorStore.add(List.of(doc1, doc2));
 
-			// Search with filter expression on boolean metadata
-			List<Document> filteredResults = vectorStore.similaritySearch(
-				SearchRequest.builder()
-					.query("documentation")
-					.topK(5)
-					.similarityThresholdAll()
-					.filterExpression("published == true")
-					.build());
+			// Search with filter expression on numeric metadata
+			List<Document> filteredResults = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("documentation")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("version > 2.5")
+				.build());
 
 			// Verify filter works and metadata is preserved
 			assertThat(filteredResults).hasSize(1);
@@ -422,9 +413,7 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 			// Verify all metadata fields are present and correct in filtered results
 			Map<String, Object> metadata = filteredDoc.getMetadata();
-			assertThat(metadata)
-				.containsEntry("published", true)
-				.containsEntry("source", "spring-docs");
+			assertThat(metadata).containsEntry("version", 3.0).containsEntry("source", "spring-docs");
 
 			// Clean up
 			vectorStore.delete(List.of(doc1.getId(), doc2.getId()));
