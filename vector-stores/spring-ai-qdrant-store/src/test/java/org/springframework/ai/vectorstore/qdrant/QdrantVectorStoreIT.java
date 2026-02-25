@@ -392,16 +392,18 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
 
 			// Create documents with numeric metadata for filtering
-			var doc1 = new Document("Spring Framework documentation", Map.of("version", 3.0, "source", "spring-docs"));
+			var doc1 = new Document("metadata test content with numeric version filtering capability",
+					Map.of("version", 3.0, "source", "metadata-test"));
 
-			var doc2 = new Document("Kubernetes documentation", Map.of("version", 2.0, "source", "k8s-docs"));
+			var doc2 = new Document("metadata test reference with numeric version comparison value",
+					Map.of("version", 2.0, "source", "metadata-test"));
 
 			// Add documents to vector store
 			vectorStore.add(List.of(doc1, doc2));
 
 			// Search with filter expression on numeric metadata
 			List<Document> filteredResults = vectorStore.similaritySearch(SearchRequest.builder()
-				.query("documentation")
+				.query("numeric version filtering")
 				.topK(5)
 				.similarityThresholdAll()
 				.filterExpression("version > 2.5")
@@ -413,7 +415,7 @@ public class QdrantVectorStoreIT extends BaseVectorStoreTests {
 
 			// Verify all metadata fields are present and correct in filtered results
 			Map<String, Object> metadata = filteredDoc.getMetadata();
-			assertThat(metadata).containsEntry("version", 3.0).containsEntry("source", "spring-docs");
+			assertThat(metadata).containsEntry("version", 3.0).containsEntry("source", "metadata-test");
 
 			// Clean up
 			vectorStore.delete(List.of(doc1.getId(), doc2.getId()));
