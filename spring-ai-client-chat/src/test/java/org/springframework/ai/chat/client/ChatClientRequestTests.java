@@ -63,6 +63,30 @@ class ChatClientRequestTests {
 	}
 
 	@Test
+	void whenContextHasNullValuesThenThrow() {
+		Map<String, Object> context = new HashMap<>();
+		context.put("key", null);
+
+		assertThatThrownBy(() -> new ChatClientRequest(new Prompt(), context))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("context values cannot be null");
+
+		assertThatThrownBy(() -> ChatClientRequest.builder().prompt(new Prompt()).context(context).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("context values cannot be null");
+	}
+
+	@Test
+	void whenBuilderContextMapHasNullKeyThenThrow() {
+		Map<String, Object> context = new HashMap<>();
+		context.put(null, "value");
+
+		assertThatThrownBy(() -> ChatClientRequest.builder().prompt(new Prompt()).context(context).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("context keys cannot be null");
+	}
+
+	@Test
 	void whenCopyThenImmutableContext() {
 		Map<String, Object> context = new HashMap<>();
 		context.put("key", "value");
@@ -84,6 +108,13 @@ class ChatClientRequestTests {
 
 		assertThat(request.context()).isEqualTo(Map.of("key", "value"));
 		assertThat(copy.context()).isEqualTo(Map.of("key", "newValue"));
+	}
+
+	@Test
+	void whenBuilderAddsNullValueThenThrow() {
+		assertThatThrownBy(() -> ChatClientRequest.builder().prompt(new Prompt()).context("key", null).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("value cannot be null");
 	}
 
 	@Test
