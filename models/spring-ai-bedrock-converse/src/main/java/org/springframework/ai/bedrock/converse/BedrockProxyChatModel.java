@@ -58,7 +58,11 @@ import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
+import software.amazon.awssdk.services.bedrockruntime.model.JsonSchemaDefinition;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputConfig;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputFormat;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputFormatStructure;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
@@ -322,6 +326,8 @@ public class BedrockProxyChatModel implements ChatModel {
 						: this.defaultOptions.getInternalToolExecutionEnabled())
 				.cacheOptions(runtimeOptions.getCacheOptions() != null ? runtimeOptions.getCacheOptions()
 						: this.defaultOptions.getCacheOptions())
+				.outputSchema(runtimeOptions.getOutputSchema() != null ? runtimeOptions.getOutputSchema()
+						: this.defaultOptions.getOutputSchema())
 				.build();
 		}
 
@@ -535,6 +541,23 @@ public class BedrockProxyChatModel implements ChatModel {
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
 			.requestMetadata(requestMetadata)
+			.outputConfig(buildOutputConfig(updatedRuntimeOptions))
+			.build();
+	}
+
+	private OutputConfig buildOutputConfig(BedrockChatOptions options) {
+		String schema = options.getOutputSchema();
+		if (schema == null) {
+			return null;
+		}
+
+		return OutputConfig.builder()
+			.textFormat(OutputFormat.builder()
+				.type("json_schema")
+				.structure(OutputFormatStructure.builder()
+					.jsonSchema(JsonSchemaDefinition.builder().schema(schema).name("response_schema").build())
+					.build())
+				.build())
 			.build();
 	}
 
@@ -835,6 +858,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
 				.toolConfig(converseRequest.toolConfig())
 				.requestMetadata(converseRequest.requestMetadata())
+				.outputConfig(converseRequest.outputConfig())
 				.build();
 
 			Usage accumulatedUsage = null;

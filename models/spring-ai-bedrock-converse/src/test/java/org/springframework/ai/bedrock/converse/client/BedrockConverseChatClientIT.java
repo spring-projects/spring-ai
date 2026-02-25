@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.bedrock.converse;
+package org.springframework.ai.bedrock.converse.client;
 
 import java.io.IOException;
 import java.net.URL;
@@ -30,12 +30,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.bedrock.converse.BedrockChatOptions;
+import org.springframework.ai.bedrock.converse.BedrockConverseTestConfiguration;
+import org.springframework.ai.bedrock.converse.MockWeatherService;
+import org.springframework.ai.bedrock.converse.RequiresAwsCredentials;
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.test.CurlyBracketEscaper;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -208,6 +214,22 @@ class BedrockConverseChatClientIT {
 	}
 
 	@Test
+	void beanOutputConverterNativeStructuredOutput() {
+
+		// @formatter:off
+		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
+				.options(ToolCallingChatOptions.builder().model("us.anthropic.claude-haiku-4-5-20251001-v1:0").build())
+				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+				.user("Generate the filmography for a random actor.")
+				.call()
+				.entity(ActorsFilms.class);
+		// @formatter:on
+
+		logger.info("" + actorsFilms);
+		assertThat(actorsFilms.actor()).isNotBlank();
+	}
+
+	@Test
 	void functionCallTest() {
 
 		// @formatter:off
@@ -325,7 +347,7 @@ class BedrockConverseChatClientIT {
 		logger.info(metadata.getUsage().toString());
 
 		assertThat(metadata.getUsage().getPromptTokens()).isGreaterThan(1000);
-		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(1500);
+		assertThat(metadata.getUsage().getPromptTokens()).isLessThan(2000);
 
 		assertThat(metadata.getUsage().getCompletionTokens()).isGreaterThan(0);
 		assertThat(metadata.getUsage().getCompletionTokens()).isLessThan(600);

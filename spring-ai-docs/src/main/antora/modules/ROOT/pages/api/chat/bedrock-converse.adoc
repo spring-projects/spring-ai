@@ -795,6 +795,71 @@ String response = ChatClient.create(this.chatModel)
 
 Find more in xref:api/tools.adoc[Tools] documentation.
 
+== Structured Output [[structured-output]]
+
+AWS Bedrock supports native structured outputs through JSON Schema, ensuring the model generates responses that strictly conform to your specified structure.
+This feature is available for link:https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference-supported-models-features.html[supported models] including Anthropic Claude and Amazon Nova.
+
+=== Using ChatClient with Native Structured Output
+
+The simplest way to use structured output is with the `ChatClient` high-level API and the `ENABLE_NATIVE_STRUCTURED_OUTPUT` advisor:
+
+[source,java]
+----
+record ActorsFilms(String actor, List<String> movies) {}
+
+ActorsFilms actorsFilms = ChatClient.create(chatModel).prompt()
+    .options(ToolCallingChatOptions.builder()
+        .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
+        .build())
+    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+    .user("Generate the filmography for a random actor.")
+    .call()
+    .entity(ActorsFilms.class);
+----
+
+This approach automatically:
+
+- Generates a JSON schema from your Java class
+- Sets the `outputSchema` on `BedrockChatOptions` via the AWS Bedrock `OutputConfig` API
+- Parses the JSON response into your specified type
+
+=== Using outputSchema Directly
+
+For more control, you can set the JSON schema directly on `BedrockChatOptions`:
+
+[source,java]
+----
+String jsonSchema = """
+        {
+            "type": "object",
+            "properties": {
+                "actor": { "type": "string" },
+                "movies": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                }
+            },
+            "required": ["actor", "movies"],
+            "additionalProperties": false
+        }
+        """;
+
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the filmography for a random actor.",
+        BedrockChatOptions.builder()
+            .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
+            .outputSchema(jsonSchema)
+            .build()));
+
+String content = response.getResult().getOutput().getText();
+----
+
+NOTE: AWS Bedrock structured output uses a fixed schema name `response_schema` internally when constructing the `OutputConfig`.
+The schema JSON is passed directly to the AWS SDK's `JsonSchemaDefinition`.
+
+For more information, see the xref:api/structured-output-converter.adoc[Structured Output Converter] documentation.
+
 == Multimodal
 
 Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, video, pdf, doc, html, md and more data formats.

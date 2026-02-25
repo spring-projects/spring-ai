@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,6 +57,7 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 			.temperature(0.7)
 			.topP(0.8)
 			.topK(50)
+			.outputSchema("{\"type\":\"object\"}")
 			.build();
 
 		assertThat(options)
@@ -63,6 +65,7 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 					"stopSequences", "temperature", "topP", "topK")
 			.containsExactly("test-model", 0.0, 100, 0.0, Map.of("requestId", "1234"), List.of("stop1", "stop2"), 0.7,
 					0.8, 50);
+		assertThat(options.getOutputSchema()).isEqualTo("{\"type\":\"object\"}");
 	}
 
 	@Test
@@ -77,6 +80,7 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 			.topP(0.8)
 			.topK(50)
 			.toolContext(Map.of("key1", "value1"))
+			.outputSchema("{\"type\":\"object\"}")
 			.build();
 
 		BedrockChatOptions copied = original.copy();
@@ -85,6 +89,7 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 		// Ensure deep copy
 		assertThat(copied.getStopSequences()).isNotSameAs(original.getStopSequences());
 		assertThat(copied.getToolContext()).isNotSameAs(original.getToolContext());
+		assertThat(copied.getOutputSchema()).isEqualTo(original.getOutputSchema());
 	}
 
 	@Test
@@ -98,6 +103,7 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 		options.setTopK(50);
 		options.setTopP(0.8);
 		options.setStopSequences(List.of("stop1", "stop2"));
+		options.setOutputSchema("{\"type\":\"object\"}");
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getFrequencyPenalty()).isEqualTo(0.0);
@@ -107,6 +113,7 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 		assertThat(options.getTopK()).isEqualTo(50);
 		assertThat(options.getTopP()).isEqualTo(0.8);
 		assertThat(options.getStopSequences()).isEqualTo(List.of("stop1", "stop2"));
+		assertThat(options.getOutputSchema()).isEqualTo("{\"type\":\"object\"}");
 	}
 
 	@Test
@@ -120,6 +127,23 @@ class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
 		assertThat(options.getTopK()).isNull();
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
+		assertThat(options.getOutputSchema()).isNull();
+	}
+
+	@Test
+	void testImplementsStructuredOutputChatOptions() {
+		BedrockChatOptions options = new BedrockChatOptions();
+
+		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
+	}
+
+	@Test
+	void testOutputSchemaOverwrite() {
+		BedrockChatOptions options = BedrockChatOptions.builder().outputSchema("{\"type\":\"object\"}").build();
+
+		options.setOutputSchema("{\"type\":\"array\"}");
+
+		assertThat(options.getOutputSchema()).isEqualTo("{\"type\":\"array\"}");
 	}
 
 }

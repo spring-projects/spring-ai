@@ -70,7 +70,7 @@ public class BedrockProxyChatModelObservationIT {
 			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
-			.temperature(0.7)
+			// .temperature(0.7)
 			// .withTopK(1)
 			.topP(1.0)
 			.build();
@@ -92,7 +92,7 @@ public class BedrockProxyChatModelObservationIT {
 			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
-			.temperature(0.7)
+			// .temperature(0.7)
 			.topP(1.0)
 			.build();
 
