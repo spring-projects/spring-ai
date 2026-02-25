@@ -30,6 +30,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.lang.Nullable;
@@ -41,7 +42,7 @@ import org.springframework.util.Assert;
  * @author Sun Yuhan
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class BedrockChatOptions implements ToolCallingChatOptions {
+public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	@JsonProperty("model")
 	private String model;
@@ -85,6 +86,9 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private BedrockCacheOptions cacheOptions;
 
+	@JsonIgnore
+	private String outputSchema;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -106,6 +110,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 			.toolContext(new HashMap<>(fromOptions.getToolContext()))
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
 			.cacheOptions(fromOptions.getCacheOptions())
+			.outputSchema(fromOptions.getOutputSchema())
 			.build();
 	}
 
@@ -285,6 +290,18 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
 	}
 
+	@Override
+	@JsonIgnore
+	public @Nullable String getOutputSchema() {
+		return this.outputSchema;
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(String outputSchema) {
+		this.outputSchema = outputSchema;
+	}
+
 	public static final class Builder {
 
 		private final BedrockChatOptions options = new BedrockChatOptions();
@@ -374,6 +391,11 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 
 		public Builder cacheOptions(BedrockCacheOptions cacheOptions) {
 			this.options.setCacheOptions(cacheOptions);
+			return this;
+		}
+
+		public Builder outputSchema(String outputSchema) {
+			this.options.outputSchema = outputSchema;
 			return this;
 		}
 
