@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.mongodb.autoconfigure;
 
+import com.mongodb.MongoDriverInformation;
+import com.mongodb.client.MongoClient;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,6 +30,7 @@ import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -65,11 +68,14 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
+	MongoDBAtlasVectorStore vectorStore(@Autowired(required = false) MongoClient mongoClient, MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBAtlasVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-
+		if(mongoClient != null) {
+			// append framework name to the driver info
+			mongoClient.appendMetadata(MongoDriverInformation.builder().driverName("spring-ai").build());
+		}
 		MongoDBAtlasVectorStore.Builder builder = MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
