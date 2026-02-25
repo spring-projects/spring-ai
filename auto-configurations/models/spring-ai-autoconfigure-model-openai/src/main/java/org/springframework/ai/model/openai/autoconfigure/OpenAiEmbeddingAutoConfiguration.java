@@ -96,6 +96,7 @@ public class OpenAiEmbeddingAutoConfiguration {
 			.headers(resolved.headers())
 			.completionsPath(OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH)
 			.embeddingsPath(embeddingProperties.getEmbeddingsPath())
+			.responsesPath(OpenAiChatProperties.DEFAULT_RESPONSES_PATH)
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
