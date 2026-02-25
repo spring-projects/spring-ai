@@ -20,27 +20,30 @@ import io.micrometer.observation.ObservationRegistry;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClientBuilder;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClientBuilder;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionConfiguration;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsConnectionProperties;
+import org.springframework.ai.model.bedrock.autoconfigure.BedrockAwsCredentialsAndRegionAutoConfiguration;
+import org.springframework.ai.model.bedrock.configure.BedrockAwsClientConfigurer;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Bedrock Converse Proxy Chat Client.
@@ -50,42 +53,55 @@ import org.springframework.context.annotation.Import;
  * @author Christian Tzolov
  * @author Wei Jiang
  * @author Pawel Potaczala
+ * @author Matej Nedic
  */
 @AutoConfiguration(after = ToolCallingAutoConfiguration.class)
-@EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionConfiguration.class })
+@EnableConfigurationProperties({ BedrockConverseProxyChatProperties.class, BedrockAwsConnectionProperties.class })
 @ConditionalOnClass({ BedrockProxyChatModel.class, BedrockRuntimeClient.class, BedrockRuntimeAsyncClient.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.BEDROCK_CONVERSE,
 		matchIfMissing = true)
-@Import(BedrockAwsConnectionConfiguration.class)
+@AutoConfigureAfter(BedrockAwsCredentialsAndRegionAutoConfiguration.class)
 public class BedrockConverseProxyChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public BedrockProxyChatModel bedrockProxyChatModel(AwsCredentialsProvider credentialsProvider,
-			AwsRegionProvider regionProvider, BedrockAwsConnectionProperties connectionProperties,
-			BedrockConverseProxyChatProperties chatProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+	public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient(BedrockAwsConnectionProperties properties,
+			AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
+		BedrockRuntimeAsyncClientBuilder builder = BedrockAwsClientConfigurer
+			.configure(BedrockRuntimeAsyncClient.builder(), properties, awsRegionProvider, awsCredentialsProvider);
+		BedrockAwsClientConfigurer.configureAsyncHttpClient(builder, properties);
+		return builder.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
+	public BedrockRuntimeClient bedrockRuntimeClient(BedrockAwsConnectionProperties properties,
+			AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
+		BedrockRuntimeClientBuilder builder = BedrockAwsClientConfigurer.configure(BedrockRuntimeClient.builder(),
+				properties, awsRegionProvider, awsCredentialsProvider);
+		BedrockAwsClientConfigurer.configureSyncHttpClient(builder, properties);
+		return builder.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean({ BedrockRuntimeAsyncClient.class, BedrockRuntimeClient.class })
+	public BedrockProxyChatModel bedrockProxyChatModel(BedrockConverseProxyChatProperties chatProperties,
+			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<BedrockRuntimeClient> bedrockRuntimeClient,
-			ObjectProvider<BedrockRuntimeAsyncClient> bedrockRuntimeAsyncClient,
+			BedrockRuntimeClient bedrockRuntimeClient, BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient,
 			ObjectProvider<ToolExecutionEligibilityPredicate> bedrockToolExecutionEligibilityPredicate) {
 
 		var chatModel = BedrockProxyChatModel.builder()
-			.credentialsProvider(credentialsProvider)
-			.region(regionProvider.getRegion())
-			.timeout(connectionProperties.getTimeout())
-			.connectionTimeout(connectionProperties.getConnectionTimeout())
-			.asyncReadTimeout(connectionProperties.getAsyncReadTimeout())
-			.connectionAcquisitionTimeout(connectionProperties.getConnectionAcquisitionTimeout())
-			.socketTimeout(connectionProperties.getSocketTimeout())
 			.defaultOptions(chatProperties.getOptions())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallingManager(toolCallingManager)
 			.toolExecutionEligibilityPredicate(
 					bedrockToolExecutionEligibilityPredicate.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
-			.bedrockRuntimeClient(bedrockRuntimeClient.getIfAvailable())
-			.bedrockRuntimeAsyncClient(bedrockRuntimeAsyncClient.getIfAvailable())
+			.bedrockRuntimeClient(bedrockRuntimeClient)
+			.bedrockRuntimeAsyncClient(bedrockRuntimeAsyncClient)
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);

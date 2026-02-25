@@ -21,12 +21,12 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import io.micrometer.observation.Observation;
@@ -36,14 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
-import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.http.apache.ApacheHttpClient;
-import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.CachePointBlock;
@@ -139,6 +133,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author Soby Chacko
  * @author Sun Yuhan
+ * @author Matej Nedic
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -892,20 +887,6 @@ public class BedrockProxyChatModel implements ChatModel {
 
 	public static final class Builder {
 
-		private AwsCredentialsProvider credentialsProvider;
-
-		private Region region = Region.US_EAST_1;
-
-		private Duration timeout = Duration.ofMinutes(5L);
-
-		private Duration connectionTimeout = Duration.ofSeconds(5L);
-
-		private Duration asyncReadTimeout = Duration.ofSeconds(30L);
-
-		private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
-
-		private Duration socketTimeout = Duration.ofSeconds(30L);
-
 		private ToolCallingManager toolCallingManager;
 
 		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
@@ -921,12 +902,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
-			try {
-				this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
-			}
-			catch (SdkClientException e) {
-				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
-			}
 		}
 
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
@@ -937,48 +912,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		public Builder toolExecutionEligibilityPredicate(
 				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
 			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
-			return this;
-		}
-
-		public Builder credentialsProvider(AwsCredentialsProvider credentialsProvider) {
-			Assert.notNull(credentialsProvider, "'credentialsProvider' must not be null.");
-			this.credentialsProvider = credentialsProvider;
-			return this;
-		}
-
-		public Builder region(Region region) {
-			Assert.notNull(region, "'region' must not be null.");
-			this.region = region;
-			return this;
-		}
-
-		public Builder timeout(Duration timeout) {
-			Assert.notNull(timeout, "'timeout' must not be null.");
-			this.timeout = timeout;
-			return this;
-		}
-
-		public Builder connectionTimeout(Duration connectionTimeout) {
-			Assert.notNull(connectionTimeout, "'connectionTimeout' must not be null.");
-			this.connectionTimeout = connectionTimeout;
-			return this;
-		}
-
-		public Builder asyncReadTimeout(Duration asyncReadTimeout) {
-			Assert.notNull(asyncReadTimeout, "'asyncReadTimeout' must not be null.");
-			this.asyncReadTimeout = asyncReadTimeout;
-			return this;
-		}
-
-		public Builder connectionAcquisitionTimeout(Duration connectionAcquisitionTimeout) {
-			Assert.notNull(connectionAcquisitionTimeout, "'connectionAcquisitionTimeout' must not be null.");
-			this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
-			return this;
-		}
-
-		public Builder socketTimeout(Duration socketTimeout) {
-			Assert.notNull(socketTimeout, "'socketTimeout' must not be null.");
-			this.socketTimeout = socketTimeout;
 			return this;
 		}
 
@@ -1011,52 +944,17 @@ public class BedrockProxyChatModel implements ChatModel {
 		}
 
 		public BedrockProxyChatModel build() {
+			Assert.notNull(this.bedrockRuntimeAsyncClient,
+					"bedrockRuntimeAsyncClient is required when building BedrockProxyChatModel!");
+			Assert.notNull(this.bedrockRuntimeClient,
+					"bedrockRuntimeClient is required when building BedrockProxyChatModel!");
 
-			if (this.bedrockRuntimeClient == null) {
+			BedrockProxyChatModel bedrockProxyChatModel;
 
-				var httpClientBuilder = ApacheHttpClient.builder()
-					.connectionAcquisitionTimeout(this.connectionAcquisitionTimeout)
-					.connectionTimeout(this.connectionTimeout)
-					.socketTimeout(this.socketTimeout);
-
-				this.bedrockRuntimeClient = BedrockRuntimeClient.builder()
-					.region(this.region)
-					.httpClientBuilder(httpClientBuilder)
-					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
-					.build();
-			}
-
-			if (this.bedrockRuntimeAsyncClient == null) {
-
-				var httpClientBuilder = NettyNioAsyncHttpClient.builder()
-					.tcpKeepAlive(true)
-					.readTimeout(this.asyncReadTimeout)
-					.connectionTimeout(this.connectionTimeout)
-					.connectionAcquisitionTimeout(this.connectionAcquisitionTimeout)
-					.maxConcurrency(200);
-
-				var builder = BedrockRuntimeAsyncClient.builder()
-					.region(this.region)
-					.httpClientBuilder(httpClientBuilder)
-					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout));
-				this.bedrockRuntimeAsyncClient = builder.build();
-			}
-
-			BedrockProxyChatModel bedrockProxyChatModel = null;
-
-			if (this.toolCallingManager != null) {
-				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
-						this.toolCallingManager, this.toolExecutionEligibilityPredicate);
-
-			}
-			else {
-				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
-						DEFAULT_TOOL_CALLING_MANAGER, this.toolExecutionEligibilityPredicate);
-			}
+			bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient, this.bedrockRuntimeAsyncClient,
+					this.defaultOptions, this.observationRegistry,
+					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
+					this.toolExecutionEligibilityPredicate);
 
 			if (this.customObservationConvention != null) {
 				bedrockProxyChatModel.setObservationConvention(this.customObservationConvention);

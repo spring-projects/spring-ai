@@ -16,11 +16,7 @@
 
 package org.springframework.ai.bedrock.converse.client;
 
-import java.time.Duration;
-
 import org.junit.jupiter.api.Disabled;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
@@ -46,9 +42,6 @@ class BedrockNovaToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
 		String modelId = "us.amazon.nova-pro-v1:0";
 
 		return BedrockProxyChatModel.builder()
-			.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-			.region(Region.US_EAST_1)
-			.timeout(Duration.ofSeconds(120))
 			.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
 			.build();
 	}

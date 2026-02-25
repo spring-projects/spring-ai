@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
@@ -264,10 +266,25 @@ public class BedrockNovaChatClientIT {
 
 			String modelId = "us.amazon.nova-pro-v1:0";
 
+			var credentialsProvider = EnvironmentVariableCredentialsProvider.create();
+			var region = Region.US_EAST_1;
+			var timeout = Duration.ofSeconds(120);
+
+			var syncClient = BedrockRuntimeClient.builder()
+				.credentialsProvider(credentialsProvider)
+				.region(region)
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+				.build();
+
+			var asyncClient = BedrockRuntimeAsyncClient.builder()
+				.credentialsProvider(credentialsProvider)
+				.region(region)
+				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+				.build();
+
 			return BedrockProxyChatModel.builder()
-				.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-				.region(Region.US_EAST_1)
-				.timeout(Duration.ofSeconds(120))
+				.bedrockRuntimeClient(syncClient)
+				.bedrockRuntimeAsyncClient(asyncClient)
 				.defaultOptions(BedrockChatOptions.builder().model(modelId).build())
 				.build();
 		}
