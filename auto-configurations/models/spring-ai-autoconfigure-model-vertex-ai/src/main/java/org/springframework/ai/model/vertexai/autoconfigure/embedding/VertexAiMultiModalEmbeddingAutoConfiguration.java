@@ -22,7 +22,6 @@ import com.google.cloud.vertexai.VertexAI;
 
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -40,7 +39,7 @@ import org.springframework.context.annotation.Bean;
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class })
+@AutoConfiguration(after = VertexAiEmbeddingConnectionAutoConfiguration.class)
 @ConditionalOnClass({ VertexAI.class, VertexAiMultimodalEmbeddingModel.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.MULTI_MODAL_EMBEDDING_MODEL,
 		havingValue = SpringAIModels.VERTEX_AI, matchIfMissing = true)

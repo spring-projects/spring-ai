@@ -19,7 +19,6 @@ package org.springframework.ai.model.zhipuai.autoconfigure;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiImageApi;
@@ -44,7 +43,7 @@ import org.springframework.web.client.RestClient;
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(after = RestClientAutoConfiguration.class)
 @ConditionalOnClass(ZhiPuAiApi.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.ZHIPUAI,
 		matchIfMissing = true)
