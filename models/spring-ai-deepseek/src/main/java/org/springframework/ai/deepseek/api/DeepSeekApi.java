@@ -95,12 +95,13 @@ public class DeepSeekApi {
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 		};
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(finalHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(finalHeaders).build();
 
 	}
 
