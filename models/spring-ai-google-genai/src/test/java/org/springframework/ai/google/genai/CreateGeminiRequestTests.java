@@ -302,6 +302,26 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
+	public void createRequestWithUrlContextToolEnabled() {
+
+		var client = GoogleGenAiChatModel.builder()
+				.genAiClient(this.genAiClient)
+				.defaultOptions(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").urlContextEnabled(true).build())
+				.build();
+
+		GeminiRequest request = client
+				.createGeminiRequest(client.buildRequestPrompt(new Prompt("Test message content")));
+
+		assertThat(request.config().tools()).isPresent();
+		assertThat(request.config().tools().get()).anySatisfy(tool -> assertThat(tool.urlContext()).isPresent());
+
+		request = client.createGeminiRequest(client.buildRequestPrompt(
+				new Prompt("Test message content", GoogleGenAiChatOptions.builder().urlContextEnabled(false).build())));
+
+		assertThat(request.config().tools()).isEmpty();
+	}
+
+	@Test
 	public void createRequestWithThinkingBudget() {
 
 		var client = GoogleGenAiChatModel.builder()
