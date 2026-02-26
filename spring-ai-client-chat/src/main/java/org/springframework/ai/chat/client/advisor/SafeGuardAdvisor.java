@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Linar Abzaltdinov
  * @since 1.0.0
  */
 public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
@@ -53,6 +54,8 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final List<String> sensitiveWords;
 
+	private final boolean ignoreCase;
+
 	private final int order;
 
 	public SafeGuardAdvisor(List<String> sensitiveWords) {
@@ -60,11 +63,16 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	public SafeGuardAdvisor(List<String> sensitiveWords, String failureResponse, int order) {
+		this(sensitiveWords, failureResponse, order, false);
+	}
+
+	public SafeGuardAdvisor(List<String> sensitiveWords, String failureResponse, int order, boolean ignoreCase) {
 		Assert.notNull(sensitiveWords, "Sensitive words must not be null!");
 		Assert.notNull(failureResponse, "Failure response must not be null!");
 		this.sensitiveWords = sensitiveWords;
 		this.failureResponse = failureResponse;
 		this.order = order;
+		this.ignoreCase = ignoreCase;
 	}
 
 	public static Builder builder() {
@@ -77,8 +85,7 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
-		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> chatClientRequest.prompt().getContents().contains(w))) {
+		if (containsSensitiveWord(chatClientRequest)) {
 			return createFailureResponse(chatClientRequest);
 		}
 
@@ -88,12 +95,23 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
 			StreamAdvisorChain streamAdvisorChain) {
-		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> chatClientRequest.prompt().getContents().contains(w))) {
+		if (containsSensitiveWord(chatClientRequest)) {
 			return Flux.just(createFailureResponse(chatClientRequest));
 		}
 
 		return streamAdvisorChain.nextStream(chatClientRequest);
+	}
+
+	private boolean containsSensitiveWord(ChatClientRequest chatClientRequest) {
+		if (CollectionUtils.isEmpty(this.sensitiveWords)) {
+			return false;
+		}
+		String content = chatClientRequest.prompt().getContents();
+		if (this.ignoreCase) {
+			String lowerContent = content.toLowerCase();
+			return this.sensitiveWords.stream().anyMatch(w -> lowerContent.contains(w.toLowerCase()));
+		}
+		return this.sensitiveWords.stream().anyMatch(content::contains);
 	}
 
 	private ChatClientResponse createFailureResponse(ChatClientRequest chatClientRequest) {
@@ -118,6 +136,8 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private int order = DEFAULT_ORDER;
 
+		private boolean ignoreCase = false;
+
 		private Builder() {
 		}
 
@@ -136,9 +156,14 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 			return this;
 		}
 
+		public Builder ignoreCase(boolean ignoreCase) {
+			this.ignoreCase = ignoreCase;
+			return this;
+		}
+
 		public SafeGuardAdvisor build() {
 			Assert.state(this.sensitiveWords != null, "Sensitive words must not be null!");
-			return new SafeGuardAdvisor(this.sensitiveWords, this.failureResponse, this.order);
+			return new SafeGuardAdvisor(this.sensitiveWords, this.failureResponse, this.order, this.ignoreCase);
 		}
 
 	}
