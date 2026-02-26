@@ -69,7 +69,7 @@ public class ZhiPuAiApi {
 		return new Builder();
 	}
 
-	public static final String DEFAULT_CHAT_MODEL = ChatModel.GLM_4_Air.getValue();
+	public static final String DEFAULT_CHAT_MODEL = ChatModel.GLM_4_7.getValue();
 
 	public static final String DEFAULT_EMBEDDING_MODEL = EmbeddingModel.Embedding_2.getValue();
 
@@ -344,6 +344,8 @@ public class ZhiPuAiApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
+		GLM_4_7("glm-4.7"),
+
 		GLM_4_6("glm-4.6"),
 
 		GLM_4_5("glm-4.5"),
