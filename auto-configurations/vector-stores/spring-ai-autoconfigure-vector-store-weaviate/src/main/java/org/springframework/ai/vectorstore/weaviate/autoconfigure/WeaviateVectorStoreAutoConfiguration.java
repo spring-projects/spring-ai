@@ -81,7 +81,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public WeaviateVectorStore vectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient,
+	public WeaviateVectorStore weaviateVectorStore(EmbeddingModel embeddingModel, WeaviateClient weaviateClient,
 			WeaviateVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
