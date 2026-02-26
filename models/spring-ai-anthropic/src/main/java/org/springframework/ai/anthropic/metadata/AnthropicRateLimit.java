@@ -21,14 +21,14 @@ import java.time.Duration;
 import org.springframework.ai.chat.metadata.RateLimit;
 
 /**
- * {@link RateLimit} implementation for {@literal OpenAI}.
+ * {@link RateLimit} implementation for {@literal Anthropic}.
  *
  * @author Christian Tzolov
  * @since 1.0.0
  */
 public class AnthropicRateLimit implements RateLimit {
 
-	private static final String RATE_LIMIT_STRING = "{ @type: %1$s, requestsLimit: %2$s, requestsRemaining: %3$s, requestsReset: %4$s, tokensLimit: %5$s; tokensRemaining: %6$s; tokensReset: %7$s }";
+	private static final String RATE_LIMIT_STRING = "{ @type: %1$s, requestsLimit: %2$s, requestsRemaining: %3$s, requestsReset: %4$s, tokensLimit: %5$s, tokensRemaining: %6$s, tokensReset: %7$s }";
 
 	private final Long requestsLimit;
 
