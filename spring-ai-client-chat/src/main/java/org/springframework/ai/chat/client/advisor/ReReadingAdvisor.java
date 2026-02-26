@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.openai.chat.client;
+package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
 
