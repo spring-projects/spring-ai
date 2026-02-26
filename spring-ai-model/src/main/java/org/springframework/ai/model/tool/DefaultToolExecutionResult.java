@@ -27,8 +27,12 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolExecutionResult(List<Message> conversationHistory,
-		boolean returnDirect) implements ToolExecutionResult {
+public record DefaultToolExecutionResult(List<Message> conversationHistory, boolean returnDirect,
+		boolean continuousStream) implements ToolExecutionResult {
+
+	public DefaultToolExecutionResult(List<Message> conversationHistory, boolean returnDirect) {
+		this(conversationHistory, returnDirect, false);
+	}
 
 	public DefaultToolExecutionResult {
 		Assert.notNull(conversationHistory, "conversationHistory cannot be null");
@@ -45,6 +49,8 @@ public record DefaultToolExecutionResult(List<Message> conversationHistory,
 
 		private boolean returnDirect;
 
+		private boolean continuousStream;
+
 		private Builder() {
 		}
 
@@ -58,8 +64,13 @@ public record DefaultToolExecutionResult(List<Message> conversationHistory,
 			return this;
 		}
 
+		public Builder continuousStream(boolean continuousStream) {
+			this.continuousStream = continuousStream;
+			return this;
+		}
+
 		public DefaultToolExecutionResult build() {
-			return new DefaultToolExecutionResult(this.conversationHistory, this.returnDirect);
+			return new DefaultToolExecutionResult(this.conversationHistory, this.returnDirect, this.continuousStream);
 		}
 
 	}

@@ -611,8 +611,11 @@ public class DeepSeekApi {
 		/**
 		 * Get message content as String.
 		 */
+		@Nullable
 		public String content() {
-			Assert.state(this.rawContent != null, "Content must not be null");
+			if (this.rawContent == null) {
+				return null;
+			}
 			if (this.rawContent instanceof String text) {
 				return text;
 			}
