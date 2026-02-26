@@ -226,6 +226,39 @@ class ChatCompletionRequestTests {
 		assertThat(request.extraBody()).containsEntry("enable_thinking", true);
 	}
 
+	@Test
+	void extraBodyIsPreservedWhenToolDefinitionsArePresent() {
+		// This test verifies the fix for GitHub issue #5056
+		// When toolDefinitions is not empty, the extraBody field should not be lost
+		// during the merge operation in createRequest()
+		final String TOOL_FUNCTION_NAME = "CurrentWeather";
+
+		var client = OpenAiChatModel.builder()
+			.openAiApi(OpenAiApi.builder().apiKey("TEST").build())
+			.defaultOptions(OpenAiChatOptions.builder().model("gpt-4").build())
+			.build();
+
+		var prompt = client.buildRequestPrompt(new Prompt("Test message",
+				OpenAiChatOptions.builder()
+					.extraBody(Map.of("top_k", 50, "enable_thinking", true))
+					.toolCallbacks(List.of(FunctionToolCallback.builder(TOOL_FUNCTION_NAME, new MockWeatherService())
+						.description("Get the weather in location")
+						.inputType(MockWeatherService.Request.class)
+						.build()))
+					.build()));
+
+		var request = client.createRequest(prompt, false);
+
+		// Verify tools are present
+		assertThat(request.tools()).hasSize(1);
+		assertThat(request.tools().get(0).getFunction().getName()).isEqualTo(TOOL_FUNCTION_NAME);
+
+		// Verify extraBody is preserved after the tool merge operation
+		assertThat(request.extraBody()).isNotNull();
+		assertThat(request.extraBody()).containsEntry("top_k", 50);
+		assertThat(request.extraBody()).containsEntry("enable_thinking", true);
+	}
+
 	static class TestToolCallback implements ToolCallback {
 
 		private final ToolDefinition toolDefinition;
