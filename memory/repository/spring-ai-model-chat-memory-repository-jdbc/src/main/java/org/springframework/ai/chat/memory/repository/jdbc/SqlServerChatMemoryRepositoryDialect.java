@@ -26,7 +26,8 @@ public class SqlServerChatMemoryRepositoryDialect implements JdbcChatMemoryRepos
 
 	@Override
 	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY [timestamp]";
+    	// Added [timestamp] at index 3 and explicit ASC for consistency
+    	return "SELECT content, type, [timestamp] FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY [timestamp] ASC";
 	}
 
 	@Override

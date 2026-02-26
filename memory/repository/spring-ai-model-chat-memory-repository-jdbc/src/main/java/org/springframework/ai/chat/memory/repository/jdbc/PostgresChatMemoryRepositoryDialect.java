@@ -25,9 +25,10 @@ package org.springframework.ai.chat.memory.repository.jdbc;
 public class PostgresChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override
-	public String getSelectMessagesSql() {
-		return "SELECT content, type FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY \"timestamp\"";
-	}
+    public String getSelectMessagesSql() {
+        // Updated to include "timestamp" at index 3
+        return "SELECT content, type, \"timestamp\" FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY \"timestamp\" ASC";
+    }
 
 	@Override
 	public String getInsertMessageSql() {
