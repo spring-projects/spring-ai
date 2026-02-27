@@ -88,6 +88,8 @@
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
+		<module>auto-configurations/models/http/client/spring-ai-autoconfigure-http-client</module>
+
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
 		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
@@ -938,6 +940,8 @@
 								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
+
+								 <exclude>org.springframework.ai.http.client.autoconfigure/**/**IT.java</exclude>
 
 								 <exclude>org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
 								 <exclude>org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
