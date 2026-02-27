@@ -1,0 +1,155 @@
+= Jlama Chat
+
+Jlama lets you run supported language models locally inside the JVM.
+Spring AI provides a `ChatModel` integration for Jlama through `spring-ai-starter-model-jlama`.
+
+== Prerequisites
+
+Jlama requires the Java Vector API module.
+Run your application with:
+
+[source,bash]
+----
+java --add-modules jdk.incubator.vector -jar app.jar
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project.
+Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Jlama chat model.
+To enable it, add the following dependency to your project's Maven `pom.xml`:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-jlama</artifactId>
+</dependency>
+----
+
+or to your Gradle build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-jlama'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are configured via `spring.ai.model.chat`.
+
+To enable: `spring.ai.model.chat=jlama` (enabled by default when Jlama is the active chat model)
+
+To disable: `spring.ai.model.chat=none` (or any value which does not match `jlama`)
+====
+
+The prefix `spring.ai.jlama.chat` is the property prefix for configuring Jlama chat.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| `spring.ai.model.chat`
+| Enables the Jlama chat model.
+| `jlama`
+
+| `spring.ai.jlama.chat.model`
+| Model path. Supports a local file path or a HuggingFace model id in `owner/repo` format.
+| -
+
+| `spring.ai.jlama.chat.working-directory`
+| Optional working directory for downloaded models.
+| `${java.io.tmpdir}/spring-ai-jlama`
+
+| `spring.ai.jlama.chat.options.temperature`
+| Sampling temperature.
+| `0.7`
+
+| `spring.ai.jlama.chat.options.max-tokens`
+| Maximum tokens to generate.
+| `256`
+|====
+
+NOTE: If `spring.ai.jlama.chat.model` points to a HuggingFace id (`owner/repo`), Spring AI downloads the model automatically.
+When `spring.ai.jlama.chat.working-directory` is not set, models are downloaded under `${java.io.tmpdir}/spring-ai-jlama`.
+
+NOTE: Legacy properties under `spring.ai.jlama.*` are still accepted for backward compatibility.
+
+NOTE: HTTP(S) model URLs are not supported by the Jlama chat integration. Use a local path or HuggingFace `owner/repo`.
+
+== Runtime Options [[chat-options]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-jlama/src/main/java/org/springframework/ai/jlama/api/JlamaChatOptions.java[JlamaChatOptions] type can be used to override defaults per request.
+
+Only `temperature` and `maxTokens` are currently supported at runtime.
+Setting other chat options (such as `topK`, `topP`, `frequencyPenalty`, `presencePenalty`, `seed`, or `stopSequences`) results in an `IllegalArgumentException`.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        JlamaChatOptions.builder()
+            .temperature(0.6)
+            .maxTokens(128)
+            .build()));
+----
+
+== Sample Controller (Auto-configuration)
+
+Example `application.properties`:
+
+[source,properties]
+----
+spring.ai.model.chat=jlama
+spring.ai.jlama.chat.model=tjake/TinyLlama-1.1B-Chat-v1.0-Jlama-Q4
+spring.ai.jlama.chat.working-directory=/tmp/jlama
+spring.ai.jlama.chat.options.temperature=0.7
+spring.ai.jlama.chat.options.max-tokens=256
+----
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final ChatModel chatModel;
+
+    public ChatController(ChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map<String, String> generate(@RequestParam(defaultValue = "Tell me a joke") String message) {
+        String content = this.chatModel.call(new Prompt(message)).getResult().getOutput().getText();
+        return Map.of("generation", content);
+    }
+}
+----
+
+== Manual Configuration
+
+You can instantiate `JlamaChatModel` directly:
+
+[source,java]
+----
+JlamaChatModel chatModel = new JlamaChatModel(
+    "tjake/TinyLlama-1.1B-Chat-v1.0-Jlama-Q4",
+    JlamaChatOptions.builder()
+        .temperature(0.7)
+        .maxTokens(256)
+        .build());
+----

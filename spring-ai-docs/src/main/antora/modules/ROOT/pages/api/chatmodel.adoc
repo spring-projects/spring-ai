@@ -223,6 +223,7 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="1000px"]
 * xref:api/chat/azure-openai-chat.adoc[Microsoft Azure Open AI Chat Completion] (streaming & function-calling support)
 * xref:api/chat/ollama-chat.adoc[Ollama Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/chat/huggingface.adoc[Hugging Face Chat Completion] (no streaming support)
+* xref:api/chat/jlama-chat.adoc[Jlama Chat Completion] (streaming support, local JVM inference)
 * xref:api/chat/vertexai-gemini-chat.adoc[Google Vertex AI Gemini Chat Completion] (streaming, multi-modality & function-calling support)
 * xref:api/bedrock.adoc[Amazon Bedrock]
 * xref:api/chat/mistralai-chat.adoc[Mistral AI Chat Completion] (streaming & function-calling support)
