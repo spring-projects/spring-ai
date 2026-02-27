@@ -273,7 +273,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@ParameterizedTest
-	@ValueSource(strings = { "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-7-sonnet-latest" })
+	@ValueSource(strings = { "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-sonnet-4-5" })
 	void streamingParameterLessTool(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
