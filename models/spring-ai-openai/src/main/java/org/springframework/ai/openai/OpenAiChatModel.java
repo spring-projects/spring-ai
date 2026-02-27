@@ -219,7 +219,8 @@ public class OpenAiChatModel implements ChatModel {
 							"index", choice.index() != null ? choice.index() : 0,
 							"finishReason", getFinishReasonJson(choice.finishReason()),
 							"refusal", StringUtils.hasText(choice.message().refusal()) ? choice.message().refusal() : "",
-							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of()));
+							"annotations", choice.message().annotations() != null ? choice.message().annotations() : List.of(Map.of())),
+							"reasoningContent", choice.message().reasoningContent() != null ? choice.message().reasoningContent() : "");
 					return buildGeneration(choice, metadata, request);
 				}).toList();
 				// @formatter:on
