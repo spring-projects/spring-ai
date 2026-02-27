@@ -18,6 +18,7 @@ package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -61,8 +62,10 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		Assert.noNullElements(messages, "messages cannot contain null elements");
 
 		List<Message> memoryMessages = this.chatMemoryRepository.findByConversationId(conversationId);
-		List<Message> processedMessages = process(memoryMessages, messages);
-		this.chatMemoryRepository.saveAll(conversationId, processedMessages);
+		MessageChanges changes = process(memoryMessages, messages);
+		if (!changes.toDelete.isEmpty() || !changes.toAdd.isEmpty()) {
+			this.chatMemoryRepository.refresh(conversationId, changes.toDelete, changes.toAdd);
+		}
 	}
 
 	@Override
@@ -77,38 +80,58 @@ public final class MessageWindowChatMemory implements ChatMemory {
 		this.chatMemoryRepository.deleteByConversationId(conversationId);
 	}
 
-	private List<Message> process(List<Message> memoryMessages, List<Message> newMessages) {
-		List<Message> processedMessages = new ArrayList<>();
+	private MessageChanges process(List<Message> memoryMessages, List<Message> newMessages) {
+		Set<Message> originalMessageSet = new LinkedHashSet<>(memoryMessages);
+		List<Message> uniqueNewMessages = newMessages.stream()
+			.filter(msg -> !originalMessageSet.contains(msg))
+			.toList();
+		boolean hasNewSystemMessage = uniqueNewMessages.stream().anyMatch(SystemMessage.class::isInstance);
 
-		Set<Message> memoryMessagesSet = new HashSet<>(memoryMessages);
-		boolean hasNewSystemMessage = newMessages.stream()
-			.filter(SystemMessage.class::isInstance)
-			.anyMatch(message -> !memoryMessagesSet.contains(message));
-
-		memoryMessages.stream()
-			.filter(message -> !(hasNewSystemMessage && message instanceof SystemMessage))
-			.forEach(processedMessages::add);
-
-		processedMessages.addAll(newMessages);
-
-		if (processedMessages.size() <= this.maxMessages) {
-			return processedMessages;
+		List<Message> finalMessages = new ArrayList<>();
+		if (hasNewSystemMessage) {
+			memoryMessages.stream().filter(msg -> !(msg instanceof SystemMessage)).forEach(finalMessages::add);
+			finalMessages.addAll(uniqueNewMessages);
+		}
+		else {
+			finalMessages.addAll(memoryMessages);
+			finalMessages.addAll(uniqueNewMessages);
 		}
 
-		int messagesToRemove = processedMessages.size() - this.maxMessages;
-
-		List<Message> trimmedMessages = new ArrayList<>();
-		int removed = 0;
-		for (Message message : processedMessages) {
-			if (message instanceof SystemMessage || removed >= messagesToRemove) {
-				trimmedMessages.add(message);
+		if (finalMessages.size() > this.maxMessages) {
+			List<Message> trimmedMessages = new ArrayList<>();
+			int messagesToRemove = finalMessages.size() - this.maxMessages;
+			int removed = 0;
+			for (Message message : finalMessages) {
+				if (message instanceof SystemMessage || removed >= messagesToRemove) {
+					trimmedMessages.add(message);
+				}
+				else {
+					removed++;
+				}
 			}
-			else {
-				removed++;
-			}
+			finalMessages = trimmedMessages;
 		}
 
-		return trimmedMessages;
+		Set<Message> finalMessageSet = new LinkedHashSet<>(finalMessages);
+
+		List<Message> toDelete = originalMessageSet.stream().filter(m -> !finalMessageSet.contains(m)).toList();
+
+		List<Message> toAdd = finalMessageSet.stream().filter(m -> !originalMessageSet.contains(m)).toList();
+
+		return new MessageChanges(toDelete, toAdd);
+	}
+
+	private static class MessageChanges {
+
+		final List<Message> toDelete;
+
+		final List<Message> toAdd;
+
+		MessageChanges(List<Message> toDelete, List<Message> toAdd) {
+			this.toDelete = toDelete;
+			this.toAdd = toAdd;
+		}
+
 	}
 
 	public static Builder builder() {

@@ -41,4 +41,9 @@ public class HsqldbChatMemoryRepositoryDialect implements JdbcChatMemoryReposito
 		return "SELECT DISTINCT conversation_id FROM SPRING_AI_CHAT_MEMORY";
 	}
 
+	@Override
+	public String getDeleteMessageSql() {
+		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? AND content = ? AND type = ?";
+	}
+
 }

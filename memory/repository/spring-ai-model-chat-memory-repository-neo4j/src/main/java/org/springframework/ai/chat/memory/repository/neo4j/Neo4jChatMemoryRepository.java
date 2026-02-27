@@ -167,6 +167,34 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 		}
 	}
 
+	@Override
+	public void refresh(String conversationId, List<Message> deletes, List<Message> adds) {
+		try (Session s = this.config.getDriver().session()) {
+			s.executeWriteWithoutResult(tx -> {
+				if (!deletes.isEmpty()) {
+					List<String> messageIds = deletes.stream().map(m -> (String) m.getMetadata().get("id")).toList();
+
+					String deleteStatement = """
+							MATCH (m:%s) WHERE m.id IN $messageIds
+							OPTIONAL MATCH (m)-[:HAS_METADATA]->(metadata:%s)
+							OPTIONAL MATCH (m)-[:HAS_MEDIA]->(media:%s)
+							OPTIONAL MATCH (m)-[:HAS_TOOL_RESPONSE]-(tr:%s)
+							OPTIONAL MATCH (m)-[:HAS_TOOL_CALL]->(tc:%s)
+							DETACH DELETE m, metadata, media, tr, tc
+							""".formatted(this.config.getMessageLabel(), this.config.getMetadataLabel(),
+							this.config.getMediaLabel(), this.config.getToolResponseLabel(),
+							this.config.getToolCallLabel());
+					tx.run(deleteStatement, Map.of("messageIds", messageIds));
+				}
+				if (!adds.isEmpty()) {
+					for (Message m : adds) {
+						addMessageToTransaction(tx, conversationId, m);
+					}
+				}
+			});
+		}
+	}
+
 	public Neo4jChatMemoryRepositoryConfig getConfig() {
 		return this.config;
 	}

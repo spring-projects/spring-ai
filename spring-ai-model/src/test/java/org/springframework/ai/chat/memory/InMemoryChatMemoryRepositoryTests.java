@@ -153,4 +153,25 @@ public class InMemoryChatMemoryRepositoryTests {
 			.hasMessageContaining("messages cannot contain null elements");
 	}
 
+	@Test
+	void refreshConversation() {
+		String conversationId = UUID.randomUUID().toString();
+		List<Message> initialMessages = List.of(new UserMessage("Hello"), new AssistantMessage("Hi"));
+		this.chatMemoryRepository.saveAll(conversationId, initialMessages);
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(2);
+
+		List<Message> toDelete = List.of(new UserMessage("Hello"));
+		List<Message> toAdd = List.of(new UserMessage("How are you?"), new AssistantMessage("I'm fine, thanks!"));
+
+		this.chatMemoryRepository.refresh(conversationId, toDelete, toAdd);
+
+		List<Message> updatedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(updatedMessages).hasSize(3);
+		assertThat(updatedMessages).contains(new AssistantMessage("Hi"));
+		assertThat(updatedMessages).contains(new UserMessage("How are you?"));
+		assertThat(updatedMessages).contains(new AssistantMessage("I'm fine, thanks!"));
+		assertThat(updatedMessages).doesNotContain(new UserMessage("Hello"));
+	}
+
 }

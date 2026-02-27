@@ -167,6 +167,20 @@ public final class CassandraChatMemoryRepository implements ChatMemoryRepository
 		saveAll(conversationId, List.of());
 	}
 
+	@Override
+	public void refresh(String conversationId, List<Message> deletes, List<Message> adds) {
+		Assert.hasText(conversationId, "conversationId cannot be null or empty");
+		Assert.notNull(deletes, "deletes cannot be null");
+		Assert.notNull(adds, "adds cannot be null");
+
+		// RMW (Read-Modify-Write) is the only way with the current schema.
+		// This is not efficient, but it is correct.
+		List<Message> currentMessages = new ArrayList<>(this.findByConversationId(conversationId));
+		currentMessages.removeAll(deletes);
+		currentMessages.addAll(adds);
+		this.saveAll(conversationId, currentMessages);
+	}
+
 	private PreparedStatement prepareAddStmt() {
 		RegularInsert stmt = null;
 		InsertInto stmtStart = QueryBuilder.insertInto(this.conf.schema.keyspace(), this.conf.schema.table());
