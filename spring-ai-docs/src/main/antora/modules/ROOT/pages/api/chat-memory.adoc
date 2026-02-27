@@ -486,6 +486,181 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 ==== Collection Initialization
 The auto-configuration will automatically create the `ai_chat_memory` collection on startup if it does not already exist.
 
+=== S3ChatMemoryRepository
+
+`S3ChatMemoryRepository` is a built-in implementation that uses Amazon S3 to store chat messages as JSON documents. It is suitable for applications that require scalable, cost-effective, and durable chat memory persistence with support for multiple S3 storage classes and lifecycle policies.
+
+The repository stores each conversation as a single JSON document in S3, providing atomic updates and efficient retrieval. It supports S3-compatible services like MinIO for local development and testing.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<!-- S3 Chat Memory Repository Starter (includes both core and auto-configuration) -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-s3</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-s3'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `S3ChatMemoryRepository`, which you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+S3ChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `S3ChatMemoryRepository` manually, you can do so by providing an S3 client and configuration:
+
+[source,java]
+----
+S3Client s3Client = S3Client.builder()
+    .region(Region.US_WEST_2)
+    .build();
+
+ChatMemoryRepository chatMemoryRepository = S3ChatMemoryRepository.builder()
+    .s3Client(s3Client)
+    .bucketName("my-chat-conversations")
+    .keyPrefix("chat-memory")
+    .initializeBucket(true)
+    .storageClass(StorageClass.STANDARD_IA)
+    .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+| `spring.ai.chat.memory.repository.s3.bucket-name` | S3 bucket name for storing conversations. Required for auto-configuration. |
+| `spring.ai.chat.memory.repository.s3.region` | AWS region for S3 operations | `us-east-1`
+| `spring.ai.chat.memory.repository.s3.key-prefix` | S3 key prefix for conversation objects | `chat-memory`
+| `spring.ai.chat.memory.repository.s3.initialize-bucket` | Auto-create bucket if it doesn't exist | `false`
+| `spring.ai.chat.memory.repository.s3.storage-class` | S3 storage class (`STANDARD`, `STANDARD_IA`, `ONEZONE_IA`, `REDUCED_REDUNDANCY`) | `STANDARD`
+|===
+
+==== AWS Credentials
+
+Configure AWS credentials using standard AWS credential providers:
+
+* Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+* AWS credentials file (`~/.aws/credentials`)
+* IAM roles (recommended for EC2/ECS/Lambda deployments)
+* AWS profiles
+
+==== S3-Specific Considerations
+
+* **Consistency**: S3 provides strong read-after-write consistency for new objects and strong consistency for overwrite PUTS and DELETES
+* **Performance**: Each conversation is stored as a single JSON document for atomic updates and efficient retrieval
+* **Cost Optimization**: Use appropriate storage classes (`STANDARD_IA` for infrequent access) and implement lifecycle policies for long-term archival
+* **Security**: Enable server-side encryption and use minimal IAM permissions for production deployments
+
+==== Custom S3 Endpoint
+
+For S3-compatible services like MinIO or LocalStack:
+
+[source,java]
+----
+S3Client s3Client = S3Client.builder()
+    .endpointOverride(URI.create("http://localhost:9000")) // MinIO endpoint
+    .region(Region.US_EAST_1)
+    .credentialsProvider(StaticCredentialsProvider.create(
+        AwsBasicCredentials.create("minioadmin", "minioadmin")))
+    .forcePathStyle(true) // Required for MinIO
+    .build();
+----
+
+==== Dynamic Key Resolution
+
+By default, conversations are stored with the key pattern `{keyPrefix}/{conversationId}.json`. For multi-tenant scenarios or when you need to partition history by business dimensions, you can provide custom `keyResolver` and `conversationIdExtractor` functions to control the full S3 key structure at runtime.
+
+The `keyResolver` maps a `conversationId` to a full S3 object key. The `conversationIdExtractor` is the inverse — it maps an S3 key back to a `conversationId` and is used by `findConversationIds()`. Both must be provided together.
+
+NOTE: Dynamic key resolution requires programmatic bean definition. The auto-configured bean will back off when you define your own `S3ChatMemoryRepository` bean.
+
+**Example — product/date partitioning** (`memory/{product}/{date}/{conversationId}.json`):
+
+[source,java]
+----
+@Bean
+S3ChatMemoryRepository s3ChatMemoryRepository(S3Client s3Client) {
+    return S3ChatMemoryRepository.builder()
+        .s3Client(s3Client)
+        .bucketName("my-bucket")
+        .keyPrefix("memory") // base prefix for listing
+        .keyResolver(conversationId -> {
+            // conversationId = "widgetPro:2024-01-15:conv123"
+            String[] parts = conversationId.split(":");
+            return "memory/" + parts[0] + "/" + parts[1] + "/" + parts[2] + ".json";
+        })
+        .conversationIdExtractor(s3Key -> {
+            // s3Key = "memory/widgetPro/2024-01-15/conv123.json"
+            String path = s3Key.replace("memory/", "").replace(".json", "");
+            String[] parts = path.split("/");
+            return parts[0] + ":" + parts[1] + ":" + parts[2];
+        })
+        .build();
+}
+
+// Usage: repository.saveAll("widgetPro:2024-01-15:conv123", messages);
+// S3 key: memory/widgetPro/2024-01-15/conv123.json
+----
+
+**Example — actor/session namespace** (`actor/{actorId}/session/{sessionId}.json`):
+
+[source,java]
+----
+@Bean
+S3ChatMemoryRepository s3ChatMemoryRepository(S3Client s3Client) {
+    return S3ChatMemoryRepository.builder()
+        .s3Client(s3Client)
+        .bucketName("my-bucket")
+        .keyPrefix("actor") // base prefix for listing
+        .keyResolver(conversationId -> {
+            // conversationId = "user-123:session-456"
+            String[] parts = conversationId.split(":");
+            return "actor/" + parts[0] + "/session/" + parts[1] + ".json";
+        })
+        .conversationIdExtractor(s3Key -> {
+            // s3Key = "actor/user-123/session/session-456.json"
+            return s3Key.replaceAll("^actor/", "")
+                        .replaceAll("/session/", ":")
+                        .replace(".json", "");
+        })
+        .build();
+}
+
+// Usage: repository.saveAll("user-123:session-456", messages);
+// S3 key: actor/user-123/session/session-456.json
+----
+
+The `keyPrefix` is still used by `findConversationIds()` as the base prefix for listing S3 objects, so it should match the common prefix of keys produced by your resolver.
+
 === RedisChatMemoryRepository
 
 `RedisChatMemoryRepository` is a built-in implementation that uses Redis Stack (with Redis Query Engine and RedisJSON) to store chat messages.
