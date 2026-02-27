@@ -52,7 +52,7 @@ import org.springframework.util.Assert;
  *     .build();
  *
  * AnthropicChatOptions options = AnthropicChatOptions.builder()
- *     .model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+ *     .model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName())
  *     .citationDocuments(document)
  *     .build();
  *

@@ -306,7 +306,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	@ValueSource(strings = { "claude-sonnet-4-5", "claude-sonnet-4-0" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -323,7 +323,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	@ValueSource(strings = { "claude-sonnet-4-5", "claude-sonnet-4-0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wraps the checked exception.
@@ -347,7 +347,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET)
+				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
@@ -362,7 +362,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	@ValueSource(strings = { "claude-sonnet-4-5", "claude-sonnet-4-0" })
 	void streamToolCallingResponseShouldNotContainToolCallMessages(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
