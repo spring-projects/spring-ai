@@ -78,6 +78,7 @@ import org.springframework.util.Assert;
  * @author Theo van Kraay
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class CosmosDBVectorStore extends AbstractObservationVectorStore implements AutoCloseable {
@@ -221,32 +222,37 @@ public class CosmosDBVectorStore extends AbstractObservationVectorStore implemen
 
 		// Create a list to hold both the CosmosItemOperation and the corresponding
 		// document ID
-		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = documents.stream().map(doc -> {
-			String partitionKeyValue;
+		List<ImmutablePair<String, CosmosItemOperation>> itemOperationsWithIds = IntStream.range(0, documents.size())
+			.mapToObj(i -> {
+				Document doc = documents.get(i);
+				String partitionKeyValue;
 
-			if ("/id".equals(this.partitionKeyPath)) {
-				partitionKeyValue = doc.getId();
-			}
-			else if (this.partitionKeyPath.startsWith("/metadata/")) {
-				// Extract the key, e.g. "/metadata/country" -> "country"
-				String metadataKey = this.partitionKeyPath.substring("/metadata/".length());
-				Object value = doc.getMetadata() != null ? doc.getMetadata().get(metadataKey) : null;
-				if (value == null) {
-					throw new IllegalArgumentException(
-							"Partition key '" + metadataKey + "' not found in document metadata.");
+				if ("/id".equals(this.partitionKeyPath)) {
+					partitionKeyValue = doc.getId();
 				}
-				partitionKeyValue = value.toString();
-			}
-			else {
-				throw new IllegalArgumentException("Unsupported partition key path: " + this.partitionKeyPath);
-			}
+				else if (this.partitionKeyPath.startsWith("/metadata/")) {
+					// Extract the key, e.g. "/metadata/country" -> "country"
+					String metadataKey = this.partitionKeyPath.substring("/metadata/".length());
+					Object value = doc.getMetadata() != null ? doc.getMetadata().get(metadataKey) : null;
+					if (value == null) {
+						throw new IllegalArgumentException(
+								"Partition key '" + metadataKey + "' not found in document metadata.");
+					}
+					partitionKeyValue = value.toString();
+				}
+				else {
+					throw new IllegalArgumentException("Unsupported partition key path: " + this.partitionKeyPath);
+				}
 
-			CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
-					mapCosmosDocument(doc, embeddings.get(documents.indexOf(doc))),
-					new PartitionKey(partitionKeyValue)); // Pair the document ID
-			// with the operation
-			return new ImmutablePair<>(doc.getId(), operation);
-		}).toList();
+				CosmosItemOperation operation = CosmosBulkOperations.getCreateItemOperation(
+						mapCosmosDocument(doc, embeddings.get(i)), new PartitionKey(partitionKeyValue)); // Pair
+																											// the
+																											// document
+																											// ID
+				// with the operation
+				return new ImmutablePair<>(doc.getId(), operation);
+			})
+			.toList();
 
 		try {
 			// Extract just the CosmosItemOperations from the pairs
