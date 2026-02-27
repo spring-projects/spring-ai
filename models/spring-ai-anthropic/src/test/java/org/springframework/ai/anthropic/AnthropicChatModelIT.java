@@ -116,7 +116,7 @@ class AnthropicChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(userMessage, systemMessage),
-				AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET).build());
+				AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5).build());
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
@@ -269,7 +269,7 @@ class AnthropicChatModelIT {
 			.build();
 
 		var response = this.chatModel.call(new Prompt(List.of(userMessage),
-				ToolCallingChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName()).build()));
+				ToolCallingChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName()).build()));
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Spring AI", "portable API");
 	}
@@ -283,7 +283,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getName())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -315,7 +315,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -345,7 +345,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName())
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -366,7 +366,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName();
+		String model = AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder().model(model).build())
@@ -381,7 +381,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName();
+		String model = AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder().model(model).build())
@@ -402,7 +402,7 @@ class AnthropicChatModelIT {
 				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName())
 			.temperature(1.0) // temperature should be set to 1 when thinking is enabled
 			.maxTokens(8192)
 			.thinking(AnthropicApi.ThinkingType.ENABLED, 2048) // Must be ≥1024 && <
@@ -434,7 +434,7 @@ class AnthropicChatModelIT {
 				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getName())
 			.temperature(1.0) // Temperature should be set to 1 when thinking is enabled
 			.maxTokens(8192)
 			.thinking(AnthropicApi.ThinkingType.ENABLED, 2048) // Must be ≥1024 && <
@@ -468,7 +468,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getName())
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")

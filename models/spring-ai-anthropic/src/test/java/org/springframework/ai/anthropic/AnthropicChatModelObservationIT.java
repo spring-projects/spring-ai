@@ -69,7 +69,7 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -91,7 +91,7 @@ public class AnthropicChatModelObservationIT {
 	@Test
 	void observationForStreamingChatOperation() {
 		var options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
 			.temperature(0.7)
@@ -127,12 +127,12 @@ public class AnthropicChatModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("chat " + AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+			.hasContextualNameEqualTo("chat " + AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.ANTHROPIC.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue())
+					AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")

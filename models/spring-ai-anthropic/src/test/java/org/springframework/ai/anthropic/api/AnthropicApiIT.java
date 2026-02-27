@@ -77,7 +77,7 @@ public class AnthropicApiIT {
 				Role.USER);
 		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi
 			.chatCompletionEntity(ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+				.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 				.messages(List.of(chatCompletionMessage))
 				.maxTokens(100)
 				.temperature(0.8)
@@ -99,7 +99,7 @@ public class AnthropicApiIT {
 				Role.USER);
 
 		ChatCompletionRequest request = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(8192)
 			.temperature(1.0) // temperature should be set to 1 when thinking is enabled
@@ -144,7 +144,7 @@ public class AnthropicApiIT {
 				Role.USER);
 
 		Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(100)
 			.temperature(0.8)
@@ -186,7 +186,7 @@ public class AnthropicApiIT {
 				Role.USER);
 
 		ChatCompletionRequest request = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(2048)
 			.temperature(1.0)
@@ -275,7 +275,7 @@ public class AnthropicApiIT {
 		messageConversation.add(chatCompletionMessage);
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5)
 			.messages(messageConversation)
 			.maxTokens(1500)
 			.stream(true)
@@ -312,7 +312,7 @@ public class AnthropicApiIT {
 		AnthropicApi api = AnthropicApi.builder().apiKey("FAKE_KEY_FOR_ERROR_RESPONSE").build();
 
 		Flux<ChatCompletionResponse> response = api.chatCompletionStream(ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(100)
 			.temperature(0.8)

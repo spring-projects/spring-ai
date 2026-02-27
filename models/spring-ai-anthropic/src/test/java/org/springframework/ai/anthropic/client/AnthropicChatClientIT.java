@@ -327,7 +327,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET)
+				.options(AnthropicChatOptions.builder().model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5)
 						.build())
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
