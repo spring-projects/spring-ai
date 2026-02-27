@@ -286,7 +286,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	@ValueSource(strings = { "claude-sonnet-4-5", "claude-sonnet-4-0" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -303,7 +303,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	@ValueSource(strings = { "claude-sonnet-4-5", "claude-sonnet-4-0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wrapps the checked exception.
@@ -346,7 +346,7 @@ class AnthropicChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest", "claude-sonnet-4-0" })
+	@ValueSource(strings = { "claude-sonnet-4-5", "claude-sonnet-4-0" })
 	void streamToolCallingResponseShouldNotContainToolCallMessages(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();

@@ -88,7 +88,7 @@ class AnthropicChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-3-7-sonnet-latest" })
+	@ValueSource(strings = { "claude-sonnet-4-5" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
