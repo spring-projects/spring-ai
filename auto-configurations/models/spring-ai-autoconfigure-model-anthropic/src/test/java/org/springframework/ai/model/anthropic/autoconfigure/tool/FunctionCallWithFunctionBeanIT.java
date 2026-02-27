@@ -57,7 +57,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
@@ -87,7 +87,7 @@ class FunctionCallWithFunctionBeanIT {
 
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+					"spring.ai.anthropic.chat.options.model=" + AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
