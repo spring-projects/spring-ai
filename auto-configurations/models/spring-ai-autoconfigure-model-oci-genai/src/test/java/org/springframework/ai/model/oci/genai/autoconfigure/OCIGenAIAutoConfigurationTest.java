@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.time.Duration;
 
 import com.oracle.bmc.http.client.pki.Pem;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,11 @@ class OCIGenAIAutoConfigurationTest {
 				"spring.ai.oci.genai.cohere.chat.options.topP=0.8",
 				"spring.ai.oci.genai.cohere.chat.options.maxTokens=1000",
 				"spring.ai.oci.genai.cohere.chat.options.frequencyPenalty=0.1",
-				"spring.ai.oci.genai.cohere.chat.options.presencePenalty=0.2"
+				"spring.ai.oci.genai.cohere.chat.options.presencePenalty=0.2",
+
+				"spring.ai.oci.genai.connect-timeout:1s",
+				"spring.ai.oci.genai.read-timeout:1s",
+				"spring.ai.oci.genai.max-async-threads:30"
 				// @formatter:on
 		).withConfiguration(SpringAiTestAutoConfigurations.of(OCIGenAiChatAutoConfiguration.class));
 
@@ -78,6 +83,10 @@ class OCIGenAIAutoConfigurationTest {
 			assertThat(props.getFingerprint()).isEqualTo("xyz");
 			assertThat(props.getPrivateKey()).isEqualTo(tmp.toAbsolutePath().toString());
 			assertThat(props.getRegion()).isEqualTo("us-ashburn-1");
+
+			assertThat(props.getConnectTimeout()).isEqualTo(Duration.ofSeconds(1));
+			assertThat(props.getReadTimeout()).isEqualTo(Duration.ofSeconds(1));
+			assertThat(props.getMaxAsyncThreads()).isEqualTo(30);
 
 		});
 	}

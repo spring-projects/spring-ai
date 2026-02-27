@@ -16,7 +16,9 @@
 
 package org.springframework.ai.model.zhipuai.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
@@ -109,6 +111,48 @@ public class ZhiPuAiAutoConfigurationIT {
 				assertThat(imageResponse.getResults()).hasSize(1);
 				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
 				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+			});
+	}
+
+	@Test
+	void generateWithCustomTimeout() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.zhipuai.connect-timeout=1s", "spring.ai.zhipuai.read-timeout=1s")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
+			.run(context -> {
+				ZhiPuAiChatModel client = context.getBean(ZhiPuAiChatModel.class);
+
+				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(5));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(30));
+
+				String response = client.call("Hello");
+				assertThat(response).isNotEmpty();
+				logger.info("Response with custom timeout: " + response);
+			});
+	}
+
+	@Test
+	void generateStreamingWithCustomTimeout() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.zhipuai.connect-timeout=1s", "spring.ai.zhipuai.read-timeout=1s")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
+			.run(context -> {
+				ZhiPuAiChatModel client = context.getBean(ZhiPuAiChatModel.class);
+
+				// Verify that the HTTP client configuration is applied
+				var connectionProperties = context.getBean(ZhiPuAiConnectionProperties.class);
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(1));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(1));
+
+				Flux<ChatResponse> responseFlux = client.stream(new Prompt(new UserMessage("Hello")));
+				String response = Objects.requireNonNull(responseFlux.collectList().block())
+					.stream()
+					.map(chatResponse -> chatResponse.getResults().get(0).getOutput().getText())
+					.collect(Collectors.joining());
+
+				assertThat(response).isNotEmpty();
+				logger.info("Response with custom timeout: " + response);
 			});
 	}
 

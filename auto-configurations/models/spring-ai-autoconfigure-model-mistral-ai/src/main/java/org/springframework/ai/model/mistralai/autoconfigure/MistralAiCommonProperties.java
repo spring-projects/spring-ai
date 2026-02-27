@@ -16,7 +16,14 @@
 
 package org.springframework.ai.model.mistralai.autoconfigure;
 
+import java.time.Duration;
+
+import jakarta.annotation.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.http.client.HttpRedirects;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsProperties;
 
 /**
  * Common properties for Mistral AI.
@@ -32,8 +39,47 @@ public class MistralAiCommonProperties extends MistralAiParentProperties {
 
 	public static final String DEFAULT_BASE_URL = "https://api.mistral.ai";
 
+	@NestedConfigurationProperty
+	private final HttpClientSettingsProperties http = new HttpClientSettingsProperties() {
+	};
+
 	public MistralAiCommonProperties() {
 		super.setBaseUrl(DEFAULT_BASE_URL);
+	}
+
+	@Nullable
+	public HttpRedirects getRedirects() {
+		return this.http.getRedirects();
+	}
+
+	public void setRedirects(HttpRedirects redirects) {
+		this.http.setRedirects(redirects);
+	}
+
+	@Nullable
+	public Duration getConnectTimeout() {
+		return this.http.getConnectTimeout();
+	}
+
+	public void setConnectTimeout(Duration connectTimeout) {
+		this.http.setConnectTimeout(connectTimeout);
+	}
+
+	@Nullable
+	public Duration getReadTimeout() {
+		return this.http.getReadTimeout();
+	}
+
+	public void setReadTimeout(Duration readTimeout) {
+		this.http.setReadTimeout(readTimeout);
+	}
+
+	public HttpClientSettingsProperties.Ssl getSsl() {
+		return this.http.getSsl();
+	}
+
+	public HttpClientSettingsProperties getHttp() {
+		return this.http;
 	}
 
 }

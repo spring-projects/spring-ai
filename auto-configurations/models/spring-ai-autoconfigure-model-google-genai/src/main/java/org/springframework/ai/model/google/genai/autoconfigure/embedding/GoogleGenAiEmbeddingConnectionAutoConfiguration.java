@@ -19,7 +19,10 @@ package org.springframework.ai.model.google.genai.autoconfigure.embedding;
 import java.io.IOException;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.common.collect.ImmutableMap;
 import com.google.genai.Client;
+import com.google.genai.types.ClientOptions;
+import com.google.genai.types.HttpOptions;
 
 import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -49,28 +52,55 @@ public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
 			GoogleGenAiEmbeddingConnectionProperties connectionProperties) throws IOException {
 
 		var connectionBuilder = GoogleGenAiEmbeddingConnectionDetails.builder();
+		Client client = buildGenAiClient(connectionProperties);
+		connectionBuilder.genAiClient(client);
+		return connectionBuilder.build();
+	}
+
+	private Client buildGenAiClient(GoogleGenAiEmbeddingConnectionProperties connectionProperties) throws IOException {
+		Client.Builder clientBuilder = Client.builder();
 
 		if (StringUtils.hasText(connectionProperties.getApiKey())) {
 			// Gemini Developer API mode
-			connectionBuilder.apiKey(connectionProperties.getApiKey());
+			clientBuilder.apiKey(connectionProperties.getApiKey());
 		}
 		else {
 			// Vertex AI mode
 			Assert.hasText(connectionProperties.getProjectId(), "Google GenAI project-id must be set!");
 			Assert.hasText(connectionProperties.getLocation(), "Google GenAI location must be set!");
 
-			connectionBuilder.projectId(connectionProperties.getProjectId())
-				.location(connectionProperties.getLocation());
+			clientBuilder.project(connectionProperties.getProjectId())
+				.location(connectionProperties.getLocation())
+				.vertexAI(true);
 
 			if (connectionProperties.getCredentialsUri() != null) {
 				GoogleCredentials credentials = GoogleCredentials
 					.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-				// Note: Credentials are handled automatically by the SDK when using
-				// Vertex AI mode
+				// Note: The new SDK doesn't have a direct setCredentials method,
+				// credentials are handled automatically when vertexAI is true
 			}
 		}
+		HttpOptions.Builder httpOptionsBuilder = HttpOptions.builder();
+		if (connectionProperties.getTimeout() != null) {
+			httpOptionsBuilder.timeout((int) connectionProperties.getTimeout().getSeconds());
+		}
+		if (!connectionProperties.getCustomHeaders().isEmpty()) {
+			httpOptionsBuilder.headers(ImmutableMap.copyOf(connectionProperties.getCustomHeaders()));
+		}
 
-		return connectionBuilder.build();
+		ClientOptions.Builder clientOptionsBuilder = ClientOptions.builder();
+		if (connectionProperties.getMaxConnections() != null) {
+			clientOptionsBuilder.maxConnections(connectionProperties.getMaxConnections());
+		}
+
+		if (connectionProperties.getMaxConnectionsPerHost() != null) {
+			clientOptionsBuilder.maxConnectionsPerHost(connectionProperties.getMaxConnectionsPerHost());
+		}
+
+		clientBuilder.httpOptions(httpOptionsBuilder.build());
+		clientBuilder.clientOptions(clientOptionsBuilder.build());
+
+		return clientBuilder.build();
 	}
 
 }

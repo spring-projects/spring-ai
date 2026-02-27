@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.elevenlabs.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechModel;
@@ -46,7 +48,10 @@ public class ElevenLabsPropertiesTests {
 				"spring.ai.elevenlabs.tts.options.voice-settings.similarity-boost=0.8",
 				"spring.ai.elevenlabs.tts.options.voice-settings.style=0.2",
 				"spring.ai.elevenlabs.tts.options.voice-settings.use-speaker-boost=false",
-				"spring.ai.elevenlabs.tts.options.voice-settings.speed=1.5"
+				"spring.ai.elevenlabs.tts.options.voice-settings.speed=1.5",
+
+				"spring.ai.elevenlabs.connect-timeout=1s",
+				"spring.ai.elevenlabs.read-timeout=1s"
 				// @formatter:on
 		).withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class)).run(context -> {
 			var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
@@ -62,6 +67,9 @@ public class ElevenLabsPropertiesTests {
 			assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
 			assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
 			assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.5f);
+
+			assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofSeconds(1));
+			assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofSeconds(1));
 		});
 	}
 

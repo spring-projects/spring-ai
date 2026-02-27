@@ -97,6 +97,19 @@ The prefix `spring.ai.google.genai` is used as the property prefix that lets you
 | spring.ai.google.genai.credentials-uri    | URI to Google Cloud credentials. When provided it is used to create a `GoogleCredentials` instance for authentication. |  -
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.google.genai` is used as the property prefix that lets you configure the HTTP client for Google GenAI API calls.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.timeout | Timeout for the request | -
+| spring.ai.google.genai.max-connections | Maximum number of connections allowed in the pool | -
+| spring.ai.google.genai.max-connections-per-host | Maximum number of connections allowed per host | -
+|====
+
 ==== Chat Model Properties
 
 The prefix `spring.ai.google.genai.chat` is the property prefix that lets you configure the chat model implementation for Google GenAI Chat.

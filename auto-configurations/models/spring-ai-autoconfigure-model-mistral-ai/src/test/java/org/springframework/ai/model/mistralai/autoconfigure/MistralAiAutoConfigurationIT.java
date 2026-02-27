@@ -97,4 +97,18 @@ public class MistralAiAutoConfigurationIT {
 			});
 	}
 
+	@Test
+	void generateWithCustomTimeout() {
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiChatAutoConfiguration.class))
+			.withPropertyValues("spring.ai.mistralai.connect-timeout=1ms", "spring.ai.mistralai.read-timeout=1ms")
+			.run(context -> {
+				MistralAiChatModel chatModel = context.getBean(MistralAiChatModel.class);
+
+				String response = chatModel.call("Hello");
+				assertThat(response).isNotNull();
+
+				logger.info("Response with custom timeout: " + response);
+			});
+	}
+
 }

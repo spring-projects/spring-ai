@@ -94,4 +94,18 @@ public class MiniMaxAutoConfigurationIT {
 			});
 	}
 
+	@Test
+	void generateWithCustomTimeout() {
+		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.withPropertyValues("spring.ai.minimax.connect-timeout=1s", "spring.ai.minimax.read-timeout=1s")
+			.run(context -> {
+				MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
+
+				String response = chatModel.call("Hello");
+				assertThat(response).isNotNull();
+
+				logger.info("Response with custom timeout: " + response);
+			});
+	}
+
 }
