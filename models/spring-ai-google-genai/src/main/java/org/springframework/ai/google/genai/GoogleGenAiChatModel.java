@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -306,7 +307,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			// Add text part (without thought signature - signatures go on functionCall
 			// parts)
 			if (StringUtils.hasText(assistantMessage.getText())) {
-				parts.add(Part.builder().text(assistantMessage.getText()).build());
+				parts
+					.add(Part.builder().text(assistantMessage.getText()).thought(assistantMessage.isThought()).build());
 			}
 
 			// Add function call parts with thought signatures attached.
@@ -318,6 +320,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					AssistantMessage.ToolCall toolCall = toolCalls.get(i);
 					Part.Builder partBuilder = Part.builder()
 						.functionCall(FunctionCall.builder()
+							.id(toolCall.id())
 							.name(toolCall.name())
 							.args(parseJsonToMap(toolCall.arguments()))
 							.build());
@@ -657,45 +660,44 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.toString())
 			.build();
 
-		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
-				&& candidate.content().get().parts().get().stream().allMatch(part -> part.functionCall().isPresent());
+		List<Part> parts = candidate.content().flatMap(Content::parts).orElse(List.of());
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.filter(part -> part.functionCall().isPresent())
-				.map(part -> {
-					FunctionCall functionCall = part.functionCall().get();
-					var functionName = functionCall.name().orElse("");
-					String functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
-					return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
-				})
-				.toList();
-
-			AssistantMessage assistantMessage = AssistantMessage.builder()
-				.content("")
+		List<AssistantMessage> messages = parts.stream()
+			.filter(part -> part.text().isPresent())
+			.map(part -> AssistantMessage.builder()
+				.content(part.text().orElse(""))
 				.properties(messageMetadata)
-				.toolCalls(assistantToolCalls)
-				.build();
+				.thought(part.thought().orElse(false))
+				.build())
+			.collect(Collectors.toCollection(ArrayList::new));
 
-			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+		List<AssistantMessage.ToolCall> toolCalls = parts.stream()
+			.filter(part -> part.functionCall().isPresent())
+			.map(part -> {
+				FunctionCall functionCall = part.functionCall().get();
+				var id = functionCall.id().orElse("");
+				var functionName = functionCall.name().orElse("");
+				var functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
+				return new AssistantMessage.ToolCall(id, "function", functionName, functionArguments);
+			})
+			.toList();
+
+		if (messages.isEmpty()) {
+			messages
+				.add(AssistantMessage.builder().content("").properties(messageMetadata).toolCalls(toolCalls).build());
 		}
 		else {
-			return candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.map(part -> AssistantMessage.builder()
-					.content(part.text().orElse(""))
-					.properties(messageMetadata)
-					.build())
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
+			AssistantMessage lastMessage = messages.remove(messages.size() - 1);
+			messages.add(AssistantMessage.builder()
+				.content(lastMessage.getText())
+				.thought(lastMessage.isThought())
+				.properties(lastMessage.getMetadata())
+				.toolCalls(toolCalls)
+				.media(lastMessage.getMedia())
+				.build());
 		}
+
+		return messages.stream().map(m -> new Generation(m, chatGenerationMetadata)).toList();
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(Usage usage, String modelVersion) {
