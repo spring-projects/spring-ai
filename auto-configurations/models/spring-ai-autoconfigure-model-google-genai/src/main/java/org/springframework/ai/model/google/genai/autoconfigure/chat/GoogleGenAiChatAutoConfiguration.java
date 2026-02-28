@@ -59,7 +59,8 @@ import org.springframework.util.StringUtils;
  * @author Yanming Zhou
  * @since 1.1.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class },
+		beforeName = "org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration")
 @ConditionalOnClass({ Client.class, GoogleGenAiChatModel.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.GOOGLE_GEN_AI,
 		matchIfMissing = true)
