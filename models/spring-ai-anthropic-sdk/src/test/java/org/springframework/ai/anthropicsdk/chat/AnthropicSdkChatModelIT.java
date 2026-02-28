@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAny;
 import com.anthropic.models.messages.ToolChoiceNone;
@@ -810,6 +811,66 @@ class AnthropicSdkChatModelIT {
 			assertThat(citation.getStartPageNumber()).isGreaterThan(0);
 			assertThat(citation.getEndPageNumber()).isGreaterThanOrEqualTo(citation.getStartPageNumber());
 		}
+	}
+
+	@Test
+	void structuredOutputWithJsonSchema() {
+		String schema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": {"type": "string"},
+						"capital": {"type": "string"},
+						"population": {"type": "integer"}
+					},
+					"required": ["name", "capital"],
+					"additionalProperties": false
+				}
+				""";
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_6)
+			.outputSchema(schema)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt("Tell me about France. Respond in JSON.", options));
+
+		assertThat(response).isNotNull();
+		String text = response.getResult().getOutput().getText();
+		assertThat(text).isNotEmpty();
+		logger.info("Structured output response: {}", text);
+		// The response should contain JSON with the expected fields
+		assertThat(text).contains("name");
+		assertThat(text).contains("capital");
+	}
+
+	@Test
+	void structuredOutputWithEffort() {
+		String schema = """
+				{
+					"type": "object",
+					"properties": {
+						"answer": {"type": "integer"}
+					},
+					"required": ["answer"],
+					"additionalProperties": false
+				}
+				""";
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_6)
+			.outputSchema(schema)
+			.effort(OutputConfig.Effort.LOW)
+			.build();
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt("What is 2+2? Return the result as JSON with an 'answer' field.", options));
+
+		assertThat(response).isNotNull();
+		String text = response.getResult().getOutput().getText();
+		assertThat(text).isNotEmpty();
+		logger.info("Structured output with effort response: {}", text);
+		assertThat(text).contains("answer");
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {

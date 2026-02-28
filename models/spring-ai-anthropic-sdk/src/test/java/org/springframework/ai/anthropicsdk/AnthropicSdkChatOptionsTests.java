@@ -23,11 +23,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.anthropic.core.JsonValue;
+import com.anthropic.models.messages.JsonOutputFormat;
 import com.anthropic.models.messages.Metadata;
 import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAuto;
 import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -243,6 +248,104 @@ class AnthropicSdkChatOptionsTests {
 		// Anthropic API does not support these OpenAI-specific parameters
 		assertThat(options.getFrequencyPenalty()).isNull();
 		assertThat(options.getPresencePenalty()).isNull();
+	}
+
+	@Test
+	void testImplementsStructuredOutputChatOptions() {
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder().build();
+		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
+	}
+
+	@Test
+	void testOutputSchemaRoundTrip() {
+		String schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}},\"required\":[\"name\"]}";
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder().outputSchema(schema).build();
+
+		assertThat(options.getOutputSchema()).isNotNull();
+		assertThat(options.getOutputConfig()).isNotNull();
+		assertThat(options.getOutputConfig().format()).isPresent();
+
+		// Verify round-trip: the schema should parse and serialize back
+		String roundTripped = options.getOutputSchema();
+		assertThat(roundTripped).contains("\"type\"");
+		assertThat(roundTripped).contains("\"properties\"");
+		assertThat(roundTripped).contains("\"name\"");
+		assertThat(roundTripped).contains("\"required\"");
+	}
+
+	@Test
+	void testEffortConfiguration() {
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder().effort(OutputConfig.Effort.HIGH).build();
+
+		assertThat(options.getOutputConfig()).isNotNull();
+		assertThat(options.getOutputConfig().effort()).isPresent();
+		assertThat(options.getOutputConfig().effort().get()).isEqualTo(OutputConfig.Effort.HIGH);
+		// No format set, so outputSchema should be null
+		assertThat(options.getOutputSchema()).isNull();
+	}
+
+	@Test
+	void testOutputConfigWithEffortAndSchema() {
+		String schema = "{\"type\":\"object\",\"properties\":{\"result\":{\"type\":\"string\"}}}";
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.effort(OutputConfig.Effort.HIGH)
+			.outputSchema(schema)
+			.build();
+
+		assertThat(options.getOutputConfig()).isNotNull();
+		assertThat(options.getOutputConfig().effort()).isPresent();
+		assertThat(options.getOutputConfig().effort().get()).isEqualTo(OutputConfig.Effort.HIGH);
+		assertThat(options.getOutputConfig().format()).isPresent();
+		assertThat(options.getOutputSchema()).contains("result");
+	}
+
+	@Test
+	void testOutputConfigDirectBuilder() {
+		OutputConfig outputConfig = OutputConfig.builder()
+			.effort(OutputConfig.Effort.MEDIUM)
+			.format(JsonOutputFormat.builder()
+				.schema(JsonOutputFormat.Schema.builder()
+					.putAdditionalProperty("type", JsonValue.from("object"))
+					.build())
+				.build())
+			.build();
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder().outputConfig(outputConfig).build();
+
+		assertThat(options.getOutputConfig()).isNotNull();
+		assertThat(options.getOutputConfig().effort()).isPresent();
+		assertThat(options.getOutputConfig().format()).isPresent();
+		assertThat(options.getOutputSchema()).contains("object");
+	}
+
+	@Test
+	void testMergePreservesOutputConfig() {
+		OutputConfig outputConfig = OutputConfig.builder().effort(OutputConfig.Effort.MEDIUM).build();
+
+		AnthropicSdkChatOptions base = AnthropicSdkChatOptions.builder().model("base-model").build();
+
+		AnthropicSdkChatOptions override = AnthropicSdkChatOptions.builder().outputConfig(outputConfig).build();
+
+		AnthropicSdkChatOptions merged = AnthropicSdkChatOptions.builder().from(base).merge(override).build();
+
+		assertThat(merged.getModel()).isEqualTo("base-model");
+		assertThat(merged.getOutputConfig()).isNotNull();
+		assertThat(merged.getOutputConfig().effort()).isPresent();
+		assertThat(merged.getOutputConfig().effort().get()).isEqualTo(OutputConfig.Effort.MEDIUM);
+	}
+
+	@Test
+	void testOutputConfigNullSchemaResetsConfig() {
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.outputSchema("{\"type\":\"object\"}")
+			.build();
+		assertThat(options.getOutputConfig()).isNotNull();
+
+		options.setOutputSchema(null);
+		assertThat(options.getOutputConfig()).isNull();
+		assertThat(options.getOutputSchema()).isNull();
 	}
 
 }

@@ -26,6 +26,7 @@ import com.anthropic.models.messages.ContentBlock;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.ToolUseBlock;
@@ -263,6 +264,49 @@ class AnthropicSdkChatModelTests {
 
 		MessageCreateParams request = captor.getValue();
 		assertThat(request.messages()).hasSize(3);
+	}
+
+	@Test
+	void callWithOutputConfig() {
+		Message mockResponse = createMockMessage("{ \"name\": \"test\" }", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		OutputConfig outputConfig = OutputConfig.builder().effort(OutputConfig.Effort.HIGH).build();
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder().outputConfig(outputConfig).build();
+
+		ChatResponse response = this.chatModel.call(new Prompt("Generate JSON", options));
+
+		assertThat(response).isNotNull();
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+
+		MessageCreateParams request = captor.getValue();
+		assertThat(request.outputConfig()).isPresent();
+		assertThat(request.outputConfig().get().effort()).isPresent();
+		assertThat(request.outputConfig().get().effort().get()).isEqualTo(OutputConfig.Effort.HIGH);
+	}
+
+	@Test
+	void callWithOutputSchema() {
+		Message mockResponse = createMockMessage("{ \"name\": \"France\" }", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		AnthropicSdkChatOptions options = AnthropicSdkChatOptions.builder()
+			.outputSchema("{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}")
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt("Generate JSON", options));
+
+		assertThat(response).isNotNull();
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+
+		MessageCreateParams request = captor.getValue();
+		assertThat(request.outputConfig()).isPresent();
+		assertThat(request.outputConfig().get().format()).isPresent();
 	}
 
 	private Message createMockMessage(String text, StopReason stopReason) {

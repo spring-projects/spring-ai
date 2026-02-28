@@ -601,6 +601,12 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 					&& originalAnthropicOptions.getCacheOptions().getStrategy() != AnthropicSdkCacheStrategy.NONE) {
 				requestOptions.setCacheOptions(originalAnthropicOptions.getCacheOptions());
 			}
+			// Merge outputConfig from original prompt options (@JsonIgnore, lost
+			// during copyToTarget)
+			if (prompt.getOptions() instanceof AnthropicSdkChatOptions originalAnthropicOptions
+					&& originalAnthropicOptions.getOutputConfig() != null) {
+				requestOptions.setOutputConfig(originalAnthropicOptions.getOutputConfig());
+			}
 		}
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
@@ -811,6 +817,11 @@ public final class AnthropicSdkChatModel implements ChatModel, StreamingChatMode
 		}
 		if (requestOptions.getThinking() != null) {
 			builder.thinking(requestOptions.getThinking());
+		}
+
+		// STRUCTURED OUTPUT: Add output configuration (format and/or effort)
+		if (requestOptions.getOutputConfig() != null) {
+			builder.outputConfig(requestOptions.getOutputConfig());
 		}
 
 		// TOOL CALLING: Add tool definitions to enable the model to request tool use.

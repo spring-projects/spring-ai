@@ -20,13 +20,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import com.anthropic.core.JsonValue;
+import com.anthropic.models.messages.JsonOutputFormat;
 import com.anthropic.models.messages.Metadata;
 import com.anthropic.models.messages.Model;
+import com.anthropic.models.messages.OutputConfig;
 import com.anthropic.models.messages.ThinkingConfigAdaptive;
 import com.anthropic.models.messages.ThinkingConfigDisabled;
 import com.anthropic.models.messages.ThinkingConfigEnabled;
@@ -35,8 +39,12 @@ import com.anthropic.models.messages.ToolChoice;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
@@ -56,7 +64,8 @@ import org.springframework.util.Assert;
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
 @JsonInclude(Include.NON_NULL)
-public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions implements ToolCallingChatOptions {
+public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions
+		implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	/**
 	 * Default model to use for chat completions.
@@ -149,6 +158,15 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 	 */
 	@JsonIgnore
 	private AnthropicSdkCacheOptions cacheOptions = AnthropicSdkCacheOptions.DISABLED;
+
+	/**
+	 * Output configuration for controlling response format and effort level. Includes
+	 * structured output (JSON schema) and effort control (LOW, MEDIUM, HIGH, MAX).
+	 */
+	@JsonIgnore
+	private @Nullable OutputConfig outputConfig;
+
+	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	/**
 	 * Creates a new builder for AnthropicSdkChatOptions.
@@ -298,6 +316,112 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 		this.cacheOptions = cacheOptions;
 	}
 
+	@JsonIgnore
+	public @Nullable OutputConfig getOutputConfig() {
+		return this.outputConfig;
+	}
+
+	public void setOutputConfig(@Nullable OutputConfig outputConfig) {
+		this.outputConfig = outputConfig;
+	}
+
+	@Override
+	@JsonIgnore
+	public @Nullable String getOutputSchema() {
+		if (this.outputConfig == null) {
+			return null;
+		}
+		return this.outputConfig.format().map(format -> {
+			Map<String, JsonValue> schemaProps = format.schema()._additionalProperties();
+			Map<String, Object> nativeMap = new LinkedHashMap<>();
+			for (Map.Entry<String, JsonValue> entry : schemaProps.entrySet()) {
+				nativeMap.put(entry.getKey(), convertJsonValueToNative(entry.getValue()));
+			}
+			try {
+				return OBJECT_MAPPER.writeValueAsString(nativeMap);
+			}
+			catch (JsonProcessingException ex) {
+				throw new RuntimeException("Failed to convert output schema to JSON string", ex);
+			}
+		}).orElse(null);
+	}
+
+	@Override
+	@JsonIgnore
+	public void setOutputSchema(@Nullable String outputSchema) {
+		if (outputSchema == null) {
+			this.outputConfig = null;
+			return;
+		}
+		try {
+			Map<String, Object> schemaMap = OBJECT_MAPPER.readValue(outputSchema,
+					new TypeReference<Map<String, Object>>() {
+					});
+			JsonOutputFormat.Schema.Builder schemaBuilder = JsonOutputFormat.Schema.builder();
+			for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
+				schemaBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
+			}
+			JsonOutputFormat jsonOutputFormat = JsonOutputFormat.builder().schema(schemaBuilder.build()).build();
+			OutputConfig.Builder configBuilder = OutputConfig.builder().format(jsonOutputFormat);
+			if (this.outputConfig != null) {
+				this.outputConfig.effort().ifPresent(configBuilder::effort);
+			}
+			this.outputConfig = configBuilder.build();
+		}
+		catch (JsonProcessingException ex) {
+			throw new RuntimeException("Failed to parse output schema JSON: " + outputSchema, ex);
+		}
+	}
+
+	/**
+	 * Converts a {@link JsonValue} to a native Java object using the visitor pattern.
+	 * Maps to null, Boolean, Number, String, List, or Map recursively.
+	 * @param jsonValue the SDK's JsonValue to convert
+	 * @return the equivalent native Java object, or null for JSON null
+	 */
+	private static @Nullable Object convertJsonValueToNative(JsonValue jsonValue) {
+		return jsonValue.accept(new JsonValue.Visitor<@Nullable Object>() {
+			@Override
+			public @Nullable Object visitNull() {
+				return null;
+			}
+
+			@Override
+			public @Nullable Object visitMissing() {
+				return null;
+			}
+
+			@Override
+			public Object visitBoolean(boolean value) {
+				return value;
+			}
+
+			@Override
+			public Object visitNumber(Number value) {
+				return value;
+			}
+
+			@Override
+			public Object visitString(String value) {
+				return value;
+			}
+
+			@Override
+			public Object visitArray(List<? extends JsonValue> values) {
+				return values.stream().map(v -> convertJsonValueToNative(v)).toList();
+			}
+
+			@Override
+			public Object visitObject(Map<String, ? extends JsonValue> values) {
+				Map<String, Object> result = new LinkedHashMap<>();
+				for (Map.Entry<String, ? extends JsonValue> entry : values.entrySet()) {
+					result.put(entry.getKey(), convertJsonValueToNative(entry.getValue()));
+				}
+				return result;
+			}
+		});
+	}
+
 	@Override
 	public @Nullable Double getFrequencyPenalty() {
 		// Not supported by Anthropic API
@@ -335,7 +459,8 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, that.toolContext)
 				&& Objects.equals(this.citationDocuments, that.citationDocuments)
-				&& Objects.equals(this.cacheOptions, that.cacheOptions);
+				&& Objects.equals(this.cacheOptions, that.cacheOptions)
+				&& Objects.equals(this.outputConfig, that.outputConfig);
 	}
 
 	@Override
@@ -343,7 +468,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 		return Objects.hash(this.getModel(), this.maxTokens, this.metadata, this.stopSequences, this.temperature,
 				this.topP, this.topK, this.toolChoice, this.thinking, this.disableParallelToolUse, this.toolCallbacks,
 				this.toolNames, this.internalToolExecutionEnabled, this.toolContext, this.citationDocuments,
-				this.cacheOptions);
+				this.cacheOptions, this.outputConfig);
 	}
 
 	@Override
@@ -355,7 +480,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 				+ ", toolCallbacks=" + this.toolCallbacks + ", toolNames=" + this.toolNames
 				+ ", internalToolExecutionEnabled=" + this.internalToolExecutionEnabled + ", toolContext="
 				+ this.toolContext + ", citationDocuments=" + this.citationDocuments + ", cacheOptions="
-				+ this.cacheOptions + '}';
+				+ this.cacheOptions + ", outputConfig=" + this.outputConfig + '}';
 	}
 
 	/**
@@ -400,6 +525,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			this.options.setToolContext(new HashMap<>(fromOptions.getToolContext()));
 			this.options.setCitationDocuments(new ArrayList<>(fromOptions.getCitationDocuments()));
 			this.options.setCacheOptions(fromOptions.getCacheOptions());
+			this.options.setOutputConfig(fromOptions.getOutputConfig());
 			return this;
 		}
 
@@ -477,6 +603,9 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			if (from.getCacheOptions() != null
 					&& from.getCacheOptions().getStrategy() != AnthropicSdkCacheStrategy.NONE) {
 				this.options.setCacheOptions(from.getCacheOptions());
+			}
+			if (from.getOutputConfig() != null) {
+				this.options.setOutputConfig(from.getOutputConfig());
 			}
 			return this;
 		}
@@ -626,6 +755,40 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			return this;
 		}
 
+		/**
+		 * Sets the output configuration for controlling response format and effort.
+		 * @param outputConfig the output configuration
+		 * @return this builder
+		 */
+		public Builder outputConfig(@Nullable OutputConfig outputConfig) {
+			this.options.setOutputConfig(outputConfig);
+			return this;
+		}
+
+		/**
+		 * Convenience method to set structured output via JSON schema string.
+		 * @param outputSchema the JSON schema string
+		 * @return this builder
+		 */
+		public Builder outputSchema(@Nullable String outputSchema) {
+			this.options.setOutputSchema(outputSchema);
+			return this;
+		}
+
+		/**
+		 * Convenience method to set the effort level for the model's response.
+		 * @param effort the desired effort level (LOW, MEDIUM, HIGH, MAX)
+		 * @return this builder
+		 */
+		public Builder effort(OutputConfig.Effort effort) {
+			OutputConfig.Builder configBuilder = OutputConfig.builder().effort(effort);
+			if (this.options.getOutputConfig() != null) {
+				this.options.getOutputConfig().format().ifPresent(configBuilder::format);
+			}
+			this.options.setOutputConfig(configBuilder.build());
+			return this;
+		}
+
 		public Builder baseUrl(String baseUrl) {
 			this.options.setBaseUrl(baseUrl);
 			return this;
@@ -685,6 +848,7 @@ public class AnthropicSdkChatOptions extends AbstractAnthropicSdkOptions impleme
 			result.setToolContext(new HashMap<>(this.options.getToolContext()));
 			result.setCitationDocuments(new ArrayList<>(this.options.getCitationDocuments()));
 			result.setCacheOptions(this.options.getCacheOptions());
+			result.setOutputConfig(this.options.getOutputConfig());
 			return result;
 		}
 

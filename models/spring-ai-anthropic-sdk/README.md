@@ -31,6 +31,7 @@ This module supports:
 - **Extended Thinking** - Claude's thinking/reasoning feature with full streaming support
 - **Citations** - Document-grounded responses with source attribution
 - **Prompt Caching** - Reduce costs for repeated context with configurable strategies
+- **Structured Output** - JSON schema-constrained responses with effort control
 - **Observability** - Micrometer-based metrics and tracing
 
 ### Planned Features
@@ -171,6 +172,83 @@ var options = AnthropicSdkCacheOptions.builder()
     .messageTypeTtl(MessageType.SYSTEM, AnthropicSdkCacheTtl.ONE_HOUR)
     .messageTypeMinContentLength(MessageType.SYSTEM, 100)
     .multiBlockSystemCaching(true)
+    .build();
+```
+
+## Structured Output
+
+Structured output constrains Claude to produce responses conforming to a JSON schema. The SDK module also supports Anthropic's effort control for tuning response quality vs speed.
+
+> **Model Requirement:** Structured output and effort control require `claude-sonnet-4-6` or newer. Older models like `claude-sonnet-4-20250514` do not support these features.
+
+### JSON Schema Output
+
+```java
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputSchema("""
+        {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "capital": {"type": "string"},
+                "population": {"type": "integer"}
+            },
+            "required": ["name", "capital"],
+            "additionalProperties": false
+        }
+        """)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Tell me about France.", options));
+// Response text will be valid JSON conforming to the schema
+```
+
+### Effort Control
+
+Control how much compute Claude spends on its response. Lower effort means faster, cheaper responses; higher effort means more thorough reasoning.
+
+```java
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .effort(OutputConfig.Effort.LOW) // LOW, MEDIUM, HIGH, or MAX
+    .build();
+```
+
+### Combined Schema + Effort
+
+```java
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputSchema("{\"type\":\"object\",\"properties\":{\"answer\":{\"type\":\"integer\"}},\"required\":[\"answer\"],\"additionalProperties\":false}")
+    .effort(OutputConfig.Effort.HIGH)
+    .build();
+```
+
+### Direct OutputConfig
+
+For full control, use the SDK's `OutputConfig` directly:
+
+```java
+import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.JsonOutputFormat;
+import com.anthropic.core.JsonValue;
+
+var outputConfig = OutputConfig.builder()
+    .effort(OutputConfig.Effort.HIGH)
+    .format(JsonOutputFormat.builder()
+        .schema(JsonOutputFormat.Schema.builder()
+            .putAdditionalProperty("type", JsonValue.from("object"))
+            .putAdditionalProperty("properties", JsonValue.from(Map.of(
+                "name", Map.of("type", "string"))))
+            .putAdditionalProperty("additionalProperties", JsonValue.from(false))
+            .build())
+        .build())
+    .build();
+
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputConfig(outputConfig)
     .build();
 ```
 

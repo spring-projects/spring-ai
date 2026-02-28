@@ -126,6 +126,7 @@ ChatResponse response = chatModel.call(
 | proxy | Proxy settings for the HTTP client. | -
 | customHeaders | Custom HTTP headers to include in requests. | -
 | thinking | Thinking configuration. Use the convenience builders `thinkingEnabled(budgetTokens)`, `thinkingAdaptive()`, or `thinkingDisabled()`, or pass a raw `ThinkingConfigParam`. | -
+| outputConfig | Output configuration for structured output (JSON schema) and effort control. Use `outputConfig(OutputConfig)` for full control, or the convenience methods `outputSchema(String)` and `effort(OutputConfig.Effort)`. Requires `claude-sonnet-4-6` or newer. | -
 |====
 
 === Tool Calling Options
@@ -892,6 +893,131 @@ ChatResponse response2 = chatModel.call(
         options));
 ----
 
+== Structured Output
+
+Structured output constrains Claude to produce responses conforming to a JSON schema. The Anthropic SDK module also supports Anthropic's effort control for tuning response quality vs speed.
+
+[NOTE]
+====
+*Model Requirement*
+
+Structured output and effort control require `claude-sonnet-4-6` or newer. Older models like `claude-sonnet-4-20250514` do not support these features.
+
+*Schema Requirements*
+
+When using JSON schema output, Anthropic requires `"additionalProperties": false` for all object types in the schema.
+====
+
+=== JSON Schema Output
+
+Constrain Claude's responses to a specific JSON schema using the `outputSchema` convenience method:
+
+[source,java]
+----
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputSchema("""
+        {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "capital": {"type": "string"},
+                "population": {"type": "integer"}
+            },
+            "required": ["name", "capital"],
+            "additionalProperties": false
+        }
+        """)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Tell me about France.", options));
+// Response text will be valid JSON conforming to the schema
+----
+
+=== Effort Control
+
+Control how much compute Claude spends on its response. Lower effort means faster, cheaper responses; higher effort means more thorough reasoning.
+
+[cols="2,5", stripes=even]
+|====
+| Effort Level | Description
+
+| `LOW` | Fast and concise responses with minimal reasoning
+| `MEDIUM` | Balanced trade-off between speed and thoroughness
+| `HIGH` | More thorough reasoning and detailed responses
+| `MAX` | Maximum compute for the most thorough possible responses
+|====
+
+[source,java]
+----
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .effort(OutputConfig.Effort.LOW)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("What is the capital of France?", options));
+----
+
+=== Combined Schema and Effort
+
+You can combine JSON schema output with effort control:
+
+[source,java]
+----
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputSchema("""
+        {
+            "type": "object",
+            "properties": {
+                "answer": {"type": "integer"},
+                "explanation": {"type": "string"}
+            },
+            "required": ["answer", "explanation"],
+            "additionalProperties": false
+        }
+        """)
+    .effort(OutputConfig.Effort.HIGH)
+    .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("What is 15 * 23? Show your reasoning.", options));
+----
+
+=== Direct OutputConfig
+
+For full control, use the SDK's `OutputConfig` directly:
+
+[source,java]
+----
+import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.JsonOutputFormat;
+import com.anthropic.core.JsonValue;
+
+var outputConfig = OutputConfig.builder()
+    .effort(OutputConfig.Effort.HIGH)
+    .format(JsonOutputFormat.builder()
+        .schema(JsonOutputFormat.Schema.builder()
+            .putAdditionalProperty("type", JsonValue.from("object"))
+            .putAdditionalProperty("properties", JsonValue.from(Map.of(
+                "name", Map.of("type", "string"))))
+            .putAdditionalProperty("additionalProperties", JsonValue.from(false))
+            .build())
+        .build())
+    .build();
+
+var options = AnthropicSdkChatOptions.builder()
+    .model("claude-sonnet-4-6")
+    .outputConfig(outputConfig)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Tell me about France.", options));
+----
+
+=== StructuredOutputChatOptions Interface
+
+`AnthropicSdkChatOptions` implements the `StructuredOutputChatOptions` interface, which provides portable `getOutputSchema()` and `setOutputSchema(String)` methods. This allows structured output to work with Spring AI's generic structured output infrastructure.
+
 == Sample Controller
 
 Here is an example of a simple `@RestController` class that uses the chat model for text generations:
@@ -941,6 +1067,7 @@ This implementation differs from the xref:api/chat/anthropic-chat.adoc[Spring AI
 | **Extended Thinking** | Fully supported | Fully supported
 | **Citations** | Fully supported | Fully supported
 | **Prompt Caching** | Fully supported | Fully supported
+| **Structured Output** | Fully supported (JSON schema + effort control) | Supported (JSON schema only)
 | **Auto-Configuration** | Not yet available | Full Spring Boot starter
 | **Dependencies** | Official Anthropic SDK | Spring WebFlux
 |====
