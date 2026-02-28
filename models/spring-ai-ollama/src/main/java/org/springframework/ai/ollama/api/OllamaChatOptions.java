@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -39,6 +40,7 @@ import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -56,7 +58,8 @@ import org.springframework.util.Assert;
 @JsonInclude(Include.NON_NULL)
 public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
-	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
+	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate",
+			"think");
 
 	public OllamaChatOptions() {
 		// Temporary constructor to maintain compat with ModelOptionUtils
@@ -757,8 +760,43 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.thinkOption;
 	}
 
+	@JsonIgnore
 	public void setThinkOption(@Nullable ThinkOption thinkOption) {
 		this.thinkOption = thinkOption;
+	}
+
+	/**
+	 * Supports property binding from values such as true/false/high/medium/low.
+	 * @param think the think property value
+	 */
+	@JsonProperty("think")
+	public void setThink(@Nullable Object think) {
+		if (think == null) {
+			this.thinkOption = null;
+			return;
+		}
+		if (think instanceof ThinkOption parsedThinkOption) {
+			this.thinkOption = parsedThinkOption;
+			return;
+		}
+		if (think instanceof Boolean enabled) {
+			this.thinkOption = enabled ? ThinkOption.ThinkBoolean.ENABLED : ThinkOption.ThinkBoolean.DISABLED;
+			return;
+		}
+
+		String normalized = think.toString().trim().toLowerCase(Locale.ROOT);
+		if (!StringUtils.hasText(normalized)) {
+			this.thinkOption = null;
+		}
+		else if ("true".equals(normalized)) {
+			this.thinkOption = ThinkOption.ThinkBoolean.ENABLED;
+		}
+		else if ("false".equals(normalized)) {
+			this.thinkOption = ThinkOption.ThinkBoolean.DISABLED;
+		}
+		else {
+			this.thinkOption = new ThinkOption.ThinkLevel(normalized);
+		}
 	}
 
 	@Override

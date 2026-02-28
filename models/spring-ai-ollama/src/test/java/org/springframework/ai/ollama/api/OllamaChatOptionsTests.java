@@ -59,6 +59,44 @@ class OllamaChatOptionsTests<B extends OllamaChatOptions.Builder<B>>
 	}
 
 	@Test
+	void testThinkOptionSerializedAsScalar() {
+		var enabledThinkingOptions = OllamaChatOptions.builder().enableThinking().build();
+		assertThat(enabledThinkingOptions.toMap()).containsEntry("think", true);
+
+		var levelThinkingOptions = OllamaChatOptions.builder().thinkHigh().build();
+		assertThat(levelThinkingOptions.toMap()).containsEntry("think", "high");
+	}
+
+	@Test
+	void testSetThinkParsesBooleanAndStringValues() {
+		var options = OllamaChatOptions.builder().build();
+
+		options.setThink(true);
+		assertThat(options.getThinkOption()).isEqualTo(ThinkOption.ThinkBoolean.ENABLED);
+
+		options.setThink(false);
+		assertThat(options.getThinkOption()).isEqualTo(ThinkOption.ThinkBoolean.DISABLED);
+
+		options.setThink("false");
+		assertThat(options.getThinkOption()).isEqualTo(ThinkOption.ThinkBoolean.DISABLED);
+
+		options.setThink("true");
+		assertThat(options.getThinkOption()).isEqualTo(ThinkOption.ThinkBoolean.ENABLED);
+
+		options.setThink("medium");
+		assertThat(options.getThinkOption()).isEqualTo(ThinkOption.ThinkLevel.MEDIUM);
+
+		options.setThink("   ");
+		assertThat(options.getThinkOption()).isNull();
+
+		options.setThink(ThinkOption.ThinkLevel.HIGH);
+		assertThat(options.getThinkOption()).isEqualTo(ThinkOption.ThinkLevel.HIGH);
+
+		options.setThink(null);
+		assertThat(options.getThinkOption()).isNull();
+	}
+
+	@Test
 	void testAllNumericOptions() {
 		var options = OllamaChatOptions.builder()
 			.numCtx(2048)

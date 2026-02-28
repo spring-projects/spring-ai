@@ -32,6 +32,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.ai.ollama.api.ThinkOption;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
@@ -142,6 +143,17 @@ class OllamaChatRequestTests {
 		assertThat(request.options().get("top_p")).isEqualTo(0.5); // new field introduced
 		// by the
 		// promptOptions.
+	}
+
+	@Test
+	void createRequestWithThinkOptionShouldSetTopLevelThink() {
+		OllamaChatOptions promptOptions = OllamaChatOptions.builder().enableThinking().build();
+		var prompt = this.chatModel.buildRequestPrompt(new Prompt("Test message content", promptOptions));
+
+		var request = this.chatModel.ollamaChatRequest(prompt, true);
+
+		assertThat(request.think()).isEqualTo(ThinkOption.ThinkBoolean.ENABLED);
+		assertThat(request.options()).doesNotContainKey("think");
 	}
 
 	@Test
