@@ -173,6 +173,44 @@ public class AzureVectorStoreAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	public void metadataFieldsAreBoundFromProperties() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.type=azure",
+					"spring.ai.vectorstore.azure.metadata-fields[0].name=department",
+					"spring.ai.vectorstore.azure.metadata-fields[0].field-type=string",
+					"spring.ai.vectorstore.azure.metadata-fields[1].name=year",
+					"spring.ai.vectorstore.azure.metadata-fields[1].field-type=int64")
+			.run(context -> {
+				AzureVectorStoreProperties properties = context.getBean(AzureVectorStoreProperties.class);
+				assertThat(properties.getMetadataFields()).hasSize(2);
+				assertThat(properties.getMetadataFields().get(0).getName()).isEqualTo("department");
+				assertThat(properties.getMetadataFields().get(0).getFieldType()).isEqualTo("string");
+				assertThat(properties.getMetadataFields().get(1).getName()).isEqualTo("year");
+				assertThat(properties.getMetadataFields().get(1).getFieldType()).isEqualTo("int64");
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				assertThat(vectorStore).isInstanceOf(AzureVectorStore.class);
+			});
+	}
+
+	@Test
+	public void metadataFiledsTypoAliasIsSupported() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.type=azure",
+					"spring.ai.vectorstore.azure.metadata-fileds[0].name=filterField",
+					"spring.ai.vectorstore.azure.metadata-fileds[0].fieldType=string")
+			.run(context -> {
+				AzureVectorStoreProperties properties = context.getBean(AzureVectorStoreProperties.class);
+				assertThat(properties.getMetadataFields()).hasSize(1);
+				assertThat(properties.getMetadataFields().get(0).getName()).isEqualTo("filterField");
+				assertThat(properties.getMetadataFields().get(0).getFieldType()).isEqualTo("string");
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				assertThat(vectorStore).isInstanceOf(AzureVectorStore.class);
+			});
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
 
