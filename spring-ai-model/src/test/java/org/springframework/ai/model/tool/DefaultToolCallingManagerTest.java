@@ -423,4 +423,59 @@ class DefaultToolCallingManagerTest {
 		assertThatNoException().isThrownBy(() -> manager.executeToolCalls(prompt, chatResponse));
 	}
 
+	@Test
+	void shouldHandleMultipleGenerationsWithToolCallsWhenNameIsEmpty() {
+		ToolCallback toolCallback = new ToolCallback() {
+			@Override
+			public ToolDefinition getToolDefinition() {
+				return DefaultToolDefinition.builder()
+					.name("multiGenTool")
+					.description("Tool for multiple generations")
+					.inputSchema("{}")
+					.build();
+			}
+
+			@Override
+			public ToolMetadata getToolMetadata() {
+				return ToolMetadata.builder().build();
+			}
+
+			@Override
+			public String call(String toolInput) {
+				return "{\"result\": \"success\"}";
+			}
+		};
+
+		// Create multiple generations with tool calls
+		AssistantMessage.ToolCall toolCall1 = new AssistantMessage.ToolCall("1", "function", "multiGenTool", "{}");
+		AssistantMessage.ToolCall toolCall2 = new AssistantMessage.ToolCall("2", "function", "multiGenTool", "{}");
+		AssistantMessage.ToolCall toolCall3 = new AssistantMessage.ToolCall("3", "function", "", "{}");
+
+		AssistantMessage assistantMessage1 = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of())
+			.toolCalls(List.of(toolCall1))
+			.build();
+
+		AssistantMessage assistantMessage2 = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of())
+			.toolCalls(List.of(toolCall2, toolCall3))
+			.build();
+
+		Generation generation1 = new Generation(assistantMessage1);
+		Generation generation2 = new Generation(assistantMessage2);
+
+		ChatResponse chatResponse = new ChatResponse(List.of(generation1, generation2));
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("test multiple generations")));
+
+		DefaultToolCallingManager manager = DefaultToolCallingManager.builder()
+			.observationRegistry(ObservationRegistry.NOOP)
+			.toolCallbackResolver(toolName -> "multiGenTool".equals(toolName) ? toolCallback : null)
+			.build();
+
+		assertThatNoException().isThrownBy(() -> manager.executeToolCalls(prompt, chatResponse));
+	}
+
 }
