@@ -81,11 +81,11 @@ public class AnthropicApiIT {
 				+ "In the same way, Silmarillion can be taken to mean \"Of/About the Silmarils\"";
 
 		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
-				List.of(new ContentBlock(userMessageText.repeat(20), AnthropicCacheType.EPHEMERAL.cacheControl())),
+				List.of(new ContentBlock(userMessageText.repeat(30), AnthropicCacheType.EPHEMERAL.cacheControl())),
 				Role.USER);
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
-				AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue(), List.of(chatCompletionMessage), null, 100, 0.8,
+				AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getValue(), List.of(chatCompletionMessage), null, 2048, 0.8,
 				false);
 
 		// First request - creates cache
