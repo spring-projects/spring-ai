@@ -623,6 +623,11 @@ public class MyPagePdfDocumentReader {
 === Tika (DOCX, PPTX, HTML...)
 The `TikaDocumentReader` uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/3.1.0/formats.html[Tika documentation].
 
+Spring AI provides two Tika implementations:
+
+* *Embedded* (`TikaDocumentReader`): Uses Apache Tika directly in-process. Best for simple deployments.
+* *Remote* (`TikaRemoteDocumentReader`): Uses a Tika Server instance over HTTP. Use when you need shared instances, additional language support, or want to reduce memory footprint. Run Tika Server via Docker: `docker run -p 9998:9998 apache/tika:latest`
+
 ==== Dependencies
 Add the dependency to your project using Maven or Gradle.
 
@@ -667,6 +672,28 @@ class MyTikaDocumentReader {
         return tikaDocumentReader.read();
     }
 }
+----
+
+==== Remote Tika Server
+
+Use `TikaRemoteDocumentReader` when running Tika as a separate server (e.g. via Docker):
+
+[source,java]
+----
+// Default: http://localhost:9998
+TikaRemoteDocumentReader reader = new TikaRemoteDocumentReader(resource);
+List<Document> docs = reader.get();
+
+// Custom Tika Server URL
+TikaRemoteDocumentReader reader = new TikaRemoteDocumentReader("http://tika-server:9998", resource);
+List<Document> docs = reader.get();
+----
+
+Start Tika Server with Docker:
+
+[source,bash]
+----
+docker run -p 9998:9998 apache/tika:latest
 ----
 
 == Transformers
