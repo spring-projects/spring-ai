@@ -1,0 +1,1 @@
+org.springframework.ai.chat.memory.repository.arcadedb.autoconfigure.ArcadeDBChatMemoryRepositoryAutoConfiguration

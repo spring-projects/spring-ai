@@ -41,6 +41,7 @@
 		<module>spring-ai-rag</module>
 		<module>advisors/spring-ai-advisors-vector-store</module>
 
+		<module>memory/repository/spring-ai-model-chat-memory-repository-arcadedb</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-cosmos-db</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
@@ -60,6 +61,7 @@
 		<module>document-readers/pdf-reader</module>
 		<module>document-readers/tika-reader</module>
 
+		<module>vector-stores/spring-ai-arcadedb-store</module>
 		<module>vector-stores/spring-ai-azure-cosmos-db-store</module>
 		<module>vector-stores/spring-ai-azure-store</module>
 		<module>vector-stores/spring-ai-cassandra-store</module>
@@ -93,6 +95,7 @@
 		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
 
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-arcadedb</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cosmos-db</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
@@ -133,6 +136,7 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-arcadedb</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
@@ -158,6 +162,7 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
 
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-arcadedb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
@@ -226,6 +231,7 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-arcadedb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
