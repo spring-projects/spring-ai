@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai.api;
 
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -1280,6 +1282,29 @@ public class OpenAiApi {
 			if (this.extraBody != null) {
 				this.extraBody.put(key, value);
 			}
+		}
+
+		/**
+		 * Returns the list of field names that can be merged with other ChatCompletionRequest instances.
+		 * This includes all @JsonProperty annotated fields plus special fields like extra_body
+		 * that use @JsonAnyGetter/@JsonAnySetter.
+		 * @return list of mergeable field names
+		 */
+		public static List<String> getMergableFieldNames() {
+			List<String> fieldNames = new ArrayList<>();
+
+			// Get all @JsonProperty annotated fields
+			for (Field field : ChatCompletionRequest.class.getDeclaredFields()) {
+				JsonProperty jsonPropertyAnnotation = field.getAnnotation(JsonProperty.class);
+				if (jsonPropertyAnnotation != null) {
+					fieldNames.add(jsonPropertyAnnotation.value());
+				}
+			}
+
+			// Add extra_body field (uses @JsonAnyGetter/@JsonAnySetter, not @JsonProperty)
+			fieldNames.add("extra_body");
+
+			return fieldNames;
 		}
 
 		/**
