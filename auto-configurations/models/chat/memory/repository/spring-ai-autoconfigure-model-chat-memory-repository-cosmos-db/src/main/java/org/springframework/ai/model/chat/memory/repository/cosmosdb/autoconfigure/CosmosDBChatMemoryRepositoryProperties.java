@@ -18,7 +18,7 @@ package org.springframework.ai.model.chat.memory.repository.cosmosdb.autoconfigu
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
+import org.springframework.ai.model.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**

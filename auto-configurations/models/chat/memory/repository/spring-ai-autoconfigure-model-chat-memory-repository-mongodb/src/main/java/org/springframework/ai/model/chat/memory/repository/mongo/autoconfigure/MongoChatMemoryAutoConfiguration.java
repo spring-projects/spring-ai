@@ -16,8 +16,8 @@
 
 package org.springframework.ai.model.chat.memory.repository.mongo.autoconfigure;
 
-import org.springframework.ai.chat.memory.repository.mongo.MongoChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
+import org.springframework.ai.model.chat.memory.repository.mongo.MongoChatMemoryRepository;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

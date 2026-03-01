@@ -24,8 +24,8 @@ import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
-import org.springframework.ai.chat.memory.repository.mongo.Conversation;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.model.chat.memory.repository.mongo.Conversation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;

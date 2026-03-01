@@ -30,7 +30,7 @@ public class JdbcChatMemoryRepositoryProperties extends DatabaseInitializationPr
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.jdbc";
 
-	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/chat/memory/repository/jdbc/schema-@@platform@@.sql";
+	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/model/chat/memory/repository/jdbc/schema-@@platform@@.sql";
 
 	@Override
 	public String getDefaultSchemaLocation() {

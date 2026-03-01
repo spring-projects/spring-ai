@@ -22,10 +22,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -130,7 +130,7 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 		try {
 			java.util.Enumeration<java.net.URL> resources = Thread.currentThread()
 				.getContextClassLoader()
-				.getResources("org/springframework/ai/chat/memory/repository/jdbc/schema-hsqldb.sql");
+				.getResources("org/springframework/ai/model/chat/memory/repository/jdbc/schema-hsqldb.sql");
 			System.out.println("--- schema-hsqldb.sql resources found on classpath ---");
 			while (resources.hasMoreElements()) {
 				System.out.println(resources.nextElement());
