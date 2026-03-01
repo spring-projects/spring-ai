@@ -299,8 +299,8 @@
 		<kotlin.version>2.2.21</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.36.3</bedrockruntime.version>
-		<awssdk.version>2.36.3</awssdk.version>
+		<bedrockruntime.version>2.41.22</bedrockruntime.version>
+		<awssdk.version>2.41.22</awssdk.version>
 
 		<djl.version>0.32.0</djl.version>
 		<onnxruntime.version>1.19.2</onnxruntime.version>
