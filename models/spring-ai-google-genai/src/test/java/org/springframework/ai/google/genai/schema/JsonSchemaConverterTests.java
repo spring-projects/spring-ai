@@ -55,6 +55,25 @@ class JsonSchemaConverterTests {
 	}
 
 	@Test
+	void convertToOpenApiSchemaShouldRejectDefs() {
+		String json = """
+				{
+					"$defs": {
+						"myDef": {
+							"type": "string"
+						}
+					},
+					"type": "object"
+				}
+				""";
+		ObjectNode schema = JsonSchemaConverter.fromJson(json);
+
+		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(schema))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Google's Structured Output schema doesn't support $defs property");
+	}
+
+	@Test
 	void fromJsonShouldHandleEmptyObject() {
 		String json = "{}";
 		ObjectNode result = JsonSchemaConverter.fromJson(json);
@@ -166,6 +185,25 @@ class JsonSchemaConverterTests {
 
 			assertThat(result.get("properties").get("tags").get("type").asText()).isEqualTo("array");
 			assertThat(result.get("properties").get("tags").get("items").get("type").asText()).isEqualTo("string");
+		}
+
+		@Test
+		void shouldHandleNullableTypes() {
+			String json = """
+					{
+						"type": "object",
+						"properties": {
+							"nickname": {
+								"type": ["string", "null"]
+							}
+						}
+					}
+					""";
+
+			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
+
+			assertThat(result.get("properties").get("nickname").get("type").asText()).isEqualTo("string");
+			assertThat(result.get("properties").get("nickname").get("nullable").asBoolean()).isTrue();
 		}
 
 		@Test

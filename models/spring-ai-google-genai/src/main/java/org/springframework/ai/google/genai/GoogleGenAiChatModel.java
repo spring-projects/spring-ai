@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -567,7 +568,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				ResponseStream<GenerateContentResponse> responseStream = this.genAiClient.models
 					.generateContentStream(request.modelName, request.contents, request.config);
 
-				Flux<ChatResponse> chatResponseFlux = Flux.fromIterable(responseStream).switchMap(response -> {
+				Flux<ChatResponse> chatResponseFlux = Flux.fromIterable(responseStream).concatMap(response -> {
 					List<Generation> generations = response.candidates()
 						.orElse(List.of())
 						.stream()
@@ -585,42 +586,48 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					return Flux.just(chatResponse);
 				});
 
-				// @formatter:off
-				Flux<ChatResponse> flux = chatResponseFlux.flatMap(response -> {
-					if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), response)) {
-						// FIXME: bounded elastic needs to be used since tool calling
-						//  is currently only synchronous
-						return Flux.deferContextual(ctx -> {
-							ToolExecutionResult toolExecutionResult;
-							try {
-								ToolCallReactiveContextHolder.setContext(ctx);
-								toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, response);
-							}
-							finally {
-								ToolCallReactiveContextHolder.clearContext();
-							}
-							if (toolExecutionResult.returnDirect()) {
-								// Return tool execution result directly to the client.
-								return Flux.just(ChatResponse.builder().from(response)
-										.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-										.build());
-							}
-							else {
-								// Send the tool execution result back to the model.
-								return this.internalStream(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()), response);
-							}
-						}).subscribeOn(Schedulers.boundedElastic());
-					}
-					else {
-						return Flux.just(response);
-					}
-				})
-				.doOnError(observation::error)
-				.doFinally(s -> observation.stop())
-				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-				// @formatter:on;
+				AtomicReference<ChatResponse> aggregatedResponseRef = new AtomicReference<>();
 
-				return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+				Flux<ChatResponse> aggregatedFlux = new MessageAggregator().aggregate(chatResponseFlux,
+						aggregatedResponse -> {
+							aggregatedResponseRef.set(aggregatedResponse);
+							observationContext.setResponse(aggregatedResponse);
+						});
+
+				Flux<ChatResponse> resultFlux = aggregatedFlux.concatWith(Flux.deferContextual(ctx -> {
+					ChatResponse aggregatedResponse = aggregatedResponseRef.get();
+					if (aggregatedResponse != null && this.toolExecutionEligibilityPredicate
+						.isToolExecutionRequired(prompt.getOptions(), aggregatedResponse)) {
+						// FIXME: bounded elastic needs to be used since tool calling
+						// is currently only synchronous
+						ToolExecutionResult toolExecutionResult;
+						try {
+							ToolCallReactiveContextHolder.setContext(ctx);
+							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, aggregatedResponse);
+						}
+						finally {
+							ToolCallReactiveContextHolder.clearContext();
+						}
+						if (toolExecutionResult.returnDirect()) {
+							// Return tool execution result directly to the client.
+							return Flux.just(ChatResponse.builder()
+								.from(aggregatedResponse)
+								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
+								.build());
+						}
+						else {
+							// Send the tool execution result back to the model.
+							return this.internalStream(
+									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
+									aggregatedResponse);
+						}
+					}
+					return Flux.empty();
+				}).subscribeOn(Schedulers.boundedElastic()));
+
+				return resultFlux.doOnError(observation::error)
+					.doFinally(s -> observation.stop())
+					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			}
 			catch (Exception e) {
@@ -684,17 +691,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
 		else {
-			return candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.map(part -> AssistantMessage.builder()
+			return candidate.content().get().parts().orElse(List.of()).stream().map(part -> {
+				var partMessageMetadata = new HashMap<>(messageMetadata);
+				partMessageMetadata.put("isThought", part.thought().orElse(false));
+				return AssistantMessage.builder()
 					.content(part.text().orElse(""))
-					.properties(messageMetadata)
-					.build())
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
+					.properties(partMessageMetadata)
+					.build();
+			}).map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata)).toList();
 		}
 	}
 

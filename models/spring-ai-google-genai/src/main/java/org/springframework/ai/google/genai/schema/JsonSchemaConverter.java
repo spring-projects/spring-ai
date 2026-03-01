@@ -64,6 +64,7 @@ public final class JsonSchemaConverter {
 	 */
 	public static ObjectNode convertToOpenApiSchema(ObjectNode jsonSchemaNode) {
 		Assert.notNull(jsonSchemaNode, "JSON Schema node must not be null");
+		Assert.isTrue(!jsonSchemaNode.has("$defs"), "Google's Structured Output schema doesn't support $defs property");
 
 		try {
 			// Convert to OpenAPI schema using our custom conversion logic
@@ -91,10 +92,10 @@ public final class JsonSchemaConverter {
 		Assert.notNull(target, "Target node must not be null");
 		String[] commonProperties = {
 				// Core schema properties
-				"type", "format", "description", "default", "maximum", "minimum", "maxLength", "minLength", "pattern",
-				"enum", "multipleOf", "uniqueItems",
+				"format", "description", "default", "maximum", "minimum", "maxLength", "minLength", "pattern", "enum",
+				"multipleOf", "uniqueItems",
 				// OpenAPI specific properties
-				"example", "deprecated", "readOnly", "writeOnly", "nullable", "discriminator", "xml", "externalDocs" };
+				"example", "deprecated", "readOnly", "writeOnly", "discriminator", "xml", "externalDocs" };
 
 		for (String prop : commonProperties) {
 			if (source.has(prop)) {
@@ -107,10 +108,50 @@ public final class JsonSchemaConverter {
 	 * Handles JSON Schema specific attributes and converts them to OpenAPI format.
 	 * @param source The source ObjectNode containing JSON Schema
 	 * @param target The target ObjectNode to store OpenAPI schema
+	 * @param factory The JsonNodeFactory to create new nodes
 	 */
-	private static void handleJsonSchemaSpecifics(ObjectNode source, ObjectNode target) {
+	private static void handleJsonSchemaSpecifics(ObjectNode source, ObjectNode target,
+			com.fasterxml.jackson.databind.node.JsonNodeFactory factory) {
 		Assert.notNull(source, "Source node must not be null");
 		Assert.notNull(target, "Target node must not be null");
+		Assert.notNull(factory, "JsonNodeFactory must not be null");
+
+		// Handle nullable types
+		JsonNode typeNode = source.get("type");
+		boolean nullable = false;
+		if (typeNode != null) {
+			if (typeNode.isArray()) {
+				ArrayNode nonNullTypes = factory.arrayNode();
+				for (JsonNode typeValue : typeNode) {
+					if (typeValue.isTextual() && "null".equals(typeValue.asText())) {
+						nullable = true;
+					}
+					else {
+						nonNullTypes.add(typeValue);
+					}
+				}
+				if (nonNullTypes.size() == 1) {
+					target.set("type", nonNullTypes.get(0));
+				}
+				else if (nonNullTypes.size() > 1) {
+					target.set("type", nonNullTypes);
+				}
+			}
+			else if (typeNode.isTextual() && "null".equals(typeNode.asText())) {
+				nullable = true;
+			}
+			else {
+				target.set("type", typeNode);
+			}
+		}
+		if (source.has("nullable")) {
+			target.set("nullable", source.get("nullable"));
+		}
+		if (nullable) {
+			target.put("nullable", true);
+		}
+
+		// Handle properties
 		if (source.has("properties")) {
 			ObjectNode properties = target.putObject("properties");
 			var fields = source.get("properties").properties();
@@ -171,7 +212,7 @@ public final class JsonSchemaConverter {
 
 		ObjectNode converted = factory.objectNode();
 		copyCommonProperties(source, converted);
-		handleJsonSchemaSpecifics(source, converted);
+		handleJsonSchemaSpecifics(source, converted, factory);
 		return converted;
 	}
 
