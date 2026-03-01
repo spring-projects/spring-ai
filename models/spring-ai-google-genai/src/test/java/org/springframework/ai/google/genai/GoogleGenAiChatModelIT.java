@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.genai.Client;
+import com.google.genai.types.GroundingMetadata;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -116,6 +117,113 @@ class GoogleGenAiChatModelIT {
 				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_0_FLASH).googleSearchRetrieval(true).build());
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew", "Bob");
+	}
+
+	@Test
+	void googleMapsToolPro() {
+		Prompt prompt = new Prompt("Could you recommend some tourist spots around the White House?",
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_PRO).googleMaps(true).build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Washington Monument", "Lincoln Memorial");
+		assertThat(response.getResult().getMetadata().containsKey("groundingMetadata")).isTrue();
+
+		GroundingMetadata groundingMetadata = response.getResult().getMetadata().get("groundingMetadata");
+		assertThat(groundingMetadata.groundingChunks()).isNotEmpty();
+		assertThat(groundingMetadata.groundingSupports()).isNotEmpty();
+		assertThat(groundingMetadata.retrievalQueries()).isNotEmpty();
+		assertThat(groundingMetadata.googleMapsWidgetContextToken()).isNotPresent();
+	}
+
+	@Test
+	void googleMapsToolFlash() {
+		Prompt prompt = new Prompt("Could you recommend some tourist spots around the White House?",
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_0_FLASH).googleMaps(true).build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getMetadata().containsKey("groundingMetadata")).isTrue();
+
+		GroundingMetadata groundingMetadata = response.getResult().getMetadata().get("groundingMetadata");
+		assertThat(groundingMetadata.groundingChunks()).isNotEmpty();
+		assertThat(groundingMetadata.groundingSupports()).isNotEmpty();
+		assertThat(groundingMetadata.retrievalQueries()).isNotEmpty();
+		assertThat(groundingMetadata.googleMapsWidgetContextToken()).isNotPresent();
+	}
+
+	@Test
+	void googleMapsToolProWithWidget() {
+		Prompt prompt = new Prompt("Could you recommend some tourist spots around the White House?",
+				GoogleGenAiChatOptions.builder()
+					.model(ChatModel.GEMINI_2_5_PRO)
+					.googleMaps(true)
+					.googleMapsWidget(true)
+					.build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Washington Monument", "Lincoln Memorial");
+		assertThat(response.getResult().getMetadata().containsKey("groundingMetadata")).isTrue();
+
+		GroundingMetadata groundingMetadata = response.getResult().getMetadata().get("groundingMetadata");
+		assertThat(groundingMetadata.groundingChunks()).isNotEmpty();
+		assertThat(groundingMetadata.groundingSupports()).isNotEmpty();
+		assertThat(groundingMetadata.retrievalQueries()).isNotEmpty();
+		assertThat(groundingMetadata.googleMapsWidgetContextToken()).isPresent();
+	}
+
+	@Test
+	void googleMapsToolFlashWithWidget() {
+		Prompt prompt = new Prompt("Could you recommend some tourist spots around the White House?",
+				GoogleGenAiChatOptions.builder()
+					.model(ChatModel.GEMINI_2_0_FLASH)
+					.googleMaps(true)
+					.googleMapsWidget(true)
+					.build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Washington Monument", "Lincoln Memorial");
+		assertThat(response.getResult().getMetadata().containsKey("groundingMetadata")).isTrue();
+
+		GroundingMetadata groundingMetadata = response.getResult().getMetadata().get("groundingMetadata");
+		assertThat(groundingMetadata.groundingChunks()).isNotEmpty();
+		assertThat(groundingMetadata.groundingSupports()).isNotEmpty();
+		assertThat(groundingMetadata.retrievalQueries()).isNotEmpty();
+		assertThat(groundingMetadata.googleMapsWidgetContextToken()).isPresent();
+	}
+
+	@Test
+	void googleMapsToolProWithLatLng() {
+		Prompt prompt = new Prompt("Please tell me about some tourist spots near my current location",
+				GoogleGenAiChatOptions.builder()
+					.model(ChatModel.GEMINI_2_5_PRO)
+					.googleMaps(true)
+					.latitude(38.890307)
+					.longitude(-77.036256)
+					.build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Washington Monument", "Lincoln Memorial");
+		assertThat(response.getResult().getMetadata().containsKey("groundingMetadata")).isTrue();
+
+		GroundingMetadata groundingMetadata = response.getResult().getMetadata().get("groundingMetadata");
+		assertThat(groundingMetadata.groundingChunks()).isNotEmpty();
+		assertThat(groundingMetadata.groundingSupports()).isNotEmpty();
+		assertThat(groundingMetadata.retrievalQueries()).isNotEmpty();
+		assertThat(groundingMetadata.googleMapsWidgetContextToken()).isNotPresent();
+	}
+
+	@Test
+	void googleMapsToolFlashWithLatLng() {
+		Prompt prompt = new Prompt("Please tell me about some tourist spots near my current location",
+				GoogleGenAiChatOptions.builder()
+					.model(ChatModel.GEMINI_2_0_FLASH)
+					.googleMaps(true)
+					.latitude(38.890307)
+					.longitude(-77.036256)
+					.build());
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Washington Monument", "Lincoln Memorial");
+		assertThat(response.getResult().getMetadata().containsKey("groundingMetadata")).isTrue();
+
+		GroundingMetadata groundingMetadata = response.getResult().getMetadata().get("groundingMetadata");
+		assertThat(groundingMetadata.groundingChunks()).isNotEmpty();
+		assertThat(groundingMetadata.groundingSupports()).isNotEmpty();
+		assertThat(groundingMetadata.retrievalQueries()).isNotEmpty();
+		assertThat(groundingMetadata.googleMapsWidgetContextToken()).isNotPresent();
 	}
 
 	@Test
