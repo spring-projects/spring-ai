@@ -78,12 +78,8 @@ public class RelevancyEvaluator implements Evaluator {
 
 		String evaluationResponse = this.chatClientBuilder.build().prompt().user(userMessage).call().content();
 
-		boolean passing = false;
-		float score = 0;
-		if ("yes".equalsIgnoreCase(evaluationResponse)) {
-			passing = true;
-			score = 1;
-		}
+		boolean passing = evaluationResponse != null && evaluationResponse.toLowerCase().contains("yes");
+		float score = passing ? 1 : 0;
 
 		return new EvaluationResponse(passing, score, "", Collections.emptyMap());
 	}
