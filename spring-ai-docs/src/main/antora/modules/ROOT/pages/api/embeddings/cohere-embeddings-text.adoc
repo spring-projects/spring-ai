@@ -1,0 +1,313 @@
+= Cohere Text Embeddings
+
+Cohere supports two types of embeddings models, text and multimodal.
+This document describes how to create text embeddings using the Cohere link:https://docs.cohere.com/docs/embeddings[Text embeddings API].
+
+Embeddings are vectorial representations of text that capture the semantic meaning of paragraphs through their position in a high dimensional vector space. Cohere Embeddings API offers cutting-edge, state-of-the-art embeddings for text, which can be used for many NLP tasks.
+
+== Available Models
+
+Cohere provides several embedding models, each optimized for different use cases:
+
+[cols="2,2,1,4", stripes=even]
+|====
+| Model | Dimensions | Use Case | Description
+
+| `embed-v4`
+| 1024
+| General text
+| Latest general-purpose embedding model suitable for semantic search, clustering, and text similarity tasks. Offers improved performance and multilingual support.
+
+| `embed-english-v3.0`
+| 1024
+| English text
+| Optimized for English language content. Ideal for semantic search and text classification tasks with English documents.
+
+| `embed-multilingual-v3.0`
+| 1024
+| Multilingual text
+| Supports over 100 languages. Perfect for applications requiring multilingual semantic search and text similarity.
+
+| `embed-english-light-v3.0`
+| 384
+| English text (lightweight)
+| Lightweight model for English content. Faster inference with reduced memory footprint while maintaining good accuracy.
+
+| `embed-multilingual-light-v3.0`
+| 384
+| Multilingual text (lightweight)
+| Lightweight multilingual model. Balances performance and resource usage for multilingual applications.
+|====
+
+When choosing a model:
+
+* Use `embed-v4` for the latest features and best overall performance
+* Use `embed-english-v3.0` for high-quality English-only embeddings
+* Use `embed-multilingual-v3.0` when working with multiple languages
+* Use the "light" variants when you need faster inference or have resource constraints
+
+TIP: For multimodal embedding use cases (combining text and images), we recommend using the xref:api/embeddings/cohere-embeddings-multimodal.adoc[Cohere Multimodal Embedding model] instead.
+
+== Prerequisites
+
+You will need to create an API key with Cohere to access Cohere embedding models.
+
+Create an account at https://dashboard.cohere.com/welcome/register[Cohere registration page] and generate the token on the https://dashboard.cohere.com/api-keys[API Keys page].
+
+The Spring AI project defines a configuration property named `spring.ai.cohere.api-key` that you should set to the value of the API Key obtained from dashboard.cohere.com.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
+----
+spring.ai.cohere.api-key=<your-cohere-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference an environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    cohere:
+      api-key: ${COHERE_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export COHERE_API_KEY=<your-cohere-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("COHERE_API_KEY");
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Cohere Text Embedding Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-cohere</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-cohere'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Embedding Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Cohere Embedding model.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.cohere` is used as the property prefix that lets you connect to Cohere.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.cohere.base-url   | The URL to connect to |  https://api.cohere.com
+| spring.ai.cohere.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the embedding auto-configurations are now configured via top level properties with the prefix `spring.ai.model.embedding`.
+
+To enable, spring.ai.model.embedding=cohere (It is enabled by default)
+
+To disable, spring.ai.model.embedding=none (or any value which doesn't match cohere)
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.cohere.embedding` is property prefix that configures the `EmbeddingModel` implementation for Cohere.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.model.embedding | Enable Cohere embedding model.  | cohere
+| spring.ai.cohere.embedding.base-url   | Optional overrides the spring.ai.cohere.base-url to provide embedding specific url | -
+| spring.ai.cohere.embedding.api-key    | Optional overrides the spring.ai.cohere.api-key to provide embedding specific api-key  | -
+| spring.ai.cohere.embedding.metadata-mode      | Document content extraction mode.      | EMBED
+| spring.ai.cohere.embedding.options.model      | The model to use      | embed-v4
+| spring.ai.cohere.embedding.options.input-type | The type of input (search_document, search_query, classification, clustering) | classification
+| spring.ai.cohere.embedding.options.embedding-types | The types of embeddings to return (float, int8, uint8, binary, ubinary) | [float]
+| spring.ai.cohere.embedding.options.truncate | How to handle inputs longer than maximum token length (NONE, START, END) | -
+|====
+
+NOTE: You can override the common `spring.ai.cohere.base-url` and `spring.ai.cohere.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
+The `spring.ai.cohere.embedding.base-url` and `spring.ai.cohere.embedding.api-key` properties if set take precedence over the common properties.
+Similarly, the `spring.ai.cohere.chat.base-url` and `spring.ai.cohere.chat.api-key` properties if set take precedence over the common properties.
+This is useful if you want to use different Cohere accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.cohere.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+
+== Runtime Options [[embedding-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-cohere/src/main/java/org/springframework/ai/cohere/embedding/CohereEmbeddingOptions.java[CohereEmbeddingOptions.java] provides the Cohere configurations, such as the model to use and etc.
+
+The default options can be configured using the `spring.ai.cohere.embedding.options` properties as well.
+
+At start-time use the `CohereEmbeddingModel` constructor to set the  default options used for all embedding requests.
+At run-time you can override the default options, using a `CohereEmbeddingOptions` instance as part of your `EmbeddingRequest`.
+
+For example to override the default model name and input type for a specific request:
+
+[source,java]
+----
+// Using embed-v4 for general text embeddings
+EmbeddingResponse embeddingResponse = embeddingModel.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        CohereEmbeddingOptions.builder()
+            .model("embed-v4")
+            .inputType(InputType.SEARCH_DOCUMENT)
+        .build()));
+
+// Using embed-multilingual-v3.0 for multilingual content
+EmbeddingResponse multilingualResponse = embeddingModel.call(
+    new EmbeddingRequest(List.of("Bonjour le monde", "Hola mundo"),
+        CohereEmbeddingOptions.builder()
+            .model("embed-multilingual-v3.0")
+            .inputType(InputType.CLUSTERING)
+        .build()));
+----
+
+== Understanding Input Types
+
+Cohere embeddings support different input types to optimize the embeddings for specific use cases:
+
+* `SEARCH_DOCUMENT`: Use when embedding documents to be retrieved in a search system
+* `SEARCH_QUERY`: Use when embedding search queries to match against documents
+* `CLASSIFICATION`: Use for text classification tasks
+* `CLUSTERING`: Use for clustering documents by similarity
+
+For best results in semantic search applications, use `SEARCH_DOCUMENT` for your corpus and `SEARCH_QUERY` for user queries.
+
+== Sample Controller
+
+This will create a `EmbeddingModel` implementation that you can inject into your class.
+Here is an example of a simple `@Controller` class that uses the `EmbeddingModel` implementation.
+
+[source,application.properties]
+----
+spring.ai.cohere.api-key=YOUR_API_KEY
+spring.ai.cohere.embedding.options.model=embed-v4
+spring.ai.cohere.embedding.options.input-type=classification
+----
+
+[source,java]
+----
+@RestController
+public class EmbeddingController {
+
+    private final EmbeddingModel embeddingModel;
+
+    @Autowired
+    public EmbeddingController(EmbeddingModel embeddingModel) {
+        this.embeddingModel = embeddingModel;
+    }
+
+    @GetMapping("/ai/embedding")
+    public Map embed(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        var embeddingResponse = this.embeddingModel.embedForResponse(List.of(message));
+        return Map.of("embedding", embeddingResponse);
+    }
+}
+----
+
+== Manual Configuration
+
+If you are not using Spring Boot, you can manually configure the Cohere Text Embedding Model.
+For this add the `spring-ai-cohere` dependency to your project's Maven `pom.xml` file:
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-cohere</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-cohere'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+NOTE: The `spring-ai-cohere` dependency provides access also to the `CohereChatModel`.
+For more information about the `CohereChatModel` refer to the link:../chat/cohere-chat.html[Cohere Chat Client] section.
+
+Next, create a `CohereEmbeddingModel` instance and use it to compute the similarity between two input texts:
+
+[source,java]
+----
+var cohereApi = new CohereApi(System.getenv("COHERE_API_KEY"));
+
+var embeddingModel = new CohereEmbeddingModel(this.cohereApi,
+        CohereEmbeddingOptions.builder()
+                .model("embed-v4")
+                .inputType(InputType.CLASSIFICATION)
+                .embeddingTypes(List.of(EmbeddingType.FLOAT))
+                .build());
+
+EmbeddingResponse embeddingResponse = this.embeddingModel
+        .embedForResponse(List.of("Hello World", "World is big and salvation is near"));
+----
+
+The `CohereEmbeddingOptions` provides the configuration information for the embedding requests.
+The options class offers a `builder()` for easy options creation.

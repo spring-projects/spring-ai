@@ -17,6 +17,7 @@
 **** xref:api/chat/bedrock-converse.adoc[Amazon Bedrock Converse]
 **** xref:api/chat/anthropic-chat.adoc[Anthropic]
 **** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
+**** xref:api/chat/cohere-chat.adoc[Cohere]
 **** xref:api/chat/deepseek-chat.adoc[DeepSeek]
 **** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
 **** Google
@@ -58,6 +59,9 @@
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
 **** xref:api/embeddings/zhipuai-embeddings.adoc[ZhiPu AI]
+**** Cohere
+***** xref:api/embeddings/cohere-embeddings-text.adoc[Text Embedding]
+***** xref:api/embeddings/cohere-embeddings-multimodal.adoc[Multimodal Embedding]
 
 *** xref:api/imageclient.adoc[Image Models]
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]

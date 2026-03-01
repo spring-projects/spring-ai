@@ -1,0 +1,339 @@
+= Cohere Chat
+
+Spring AI supports the various AI language models from Cohere. You can interact with Cohere language models and create multilingual conversational assistants based on Cohere's powerful models.
+
+== Prerequisites
+
+You will need to create an API key with Cohere to access Cohere language models.
+
+Create an account at https://dashboard.cohere.com/welcome/register[Cohere registration page] and generate the token on the https://dashboard.cohere.com/api-keys[API Keys page].
+
+The Spring AI project defines a configuration property named `spring.ai.cohere.api-key` that you should set to the value of the API Key obtained from dashboard.cohere.com.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
+----
+spring.ai.cohere.api-key=<your-cohere-api-key>
+----
+
+Alternatively, you can set this as an environment variable:
+
+[source,bash]
+----
+export COHERE_API_KEY=<your-cohere-api-key>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Cohere Chat Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-cohere</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-cohere'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+==== Retry Properties
+
+The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the Cohere chat model.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
+| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
+| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
+| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
+| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
+| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
+| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
+|====
+
+==== Connection Properties
+
+The prefix `spring.ai.cohere` is used as the property prefix that lets you connect to Cohere.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.cohere.base-url   | The URL to connect to |  https://api.cohere.com
+| spring.ai.cohere.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the chat auto-configurations are now configured via top level properties with the prefix `spring.ai.model.chat`.
+
+To enable, spring.ai.model.chat=cohere (It is enabled by default)
+
+To disable, spring.ai.model.chat=none (or any value which doesn't match cohere)
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.cohere.chat` is the property prefix that lets you configure the chat model implementation for Cohere.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.cohere.chat.enabled (Removed and no longer valid) | Enable Cohere chat model.  | true
+| spring.ai.model.chat | Enable Cohere chat model.  | cohere
+| spring.ai.cohere.chat.base-url   | Optional override for the `spring.ai.cohere.base-url` property to provide chat-specific URL. |  -
+| spring.ai.cohere.chat.api-key   | Optional override for the `spring.ai.cohere.api-key` to provide chat-specific API Key. |  -
+| spring.ai.cohere.chat.options.model | This is the Cohere Chat model to use | `command-r7b-12-2024` (see available models below)
+| spring.ai.cohere.chat.options.temperature | The sampling temperature to use that controls the apparent creativity of generated completions. Higher values will make output more random while lower values will make results more focused and deterministic. It is not recommended to modify `temperature` and `p` for the same completions request as the interaction of these two settings is difficult to predict. | 0.3
+| spring.ai.cohere.chat.options.max-tokens | The maximum number of tokens to generate in the chat completion. The total length of input tokens and generated tokens is limited by the model's context length. | -
+| spring.ai.cohere.chat.options.p | Ensures that only the most likely tokens, with total probability mass of p, are considered for generation at each step. If both k and p are enabled, p acts after k. min value of 0.01, max value of 0.99. | 1.0
+| spring.ai.cohere.chat.options.k | Ensures that only the top k most likely tokens are considered for generation at each step. When k is set to 0, k-sampling is disabled. min value of 0, max value of 500. | 0
+| spring.ai.cohere.chat.options.frequency-penalty | Used to reduce repetitiveness of generated tokens. The higher the value, the stronger a penalty is applied to previously present tokens, proportional to how many times they have already appeared in the prompt or prior generation. Min value of 0.0, max value of 1.0. | 0.0
+| spring.ai.cohere.chat.options.presence-penalty | Used to reduce repetitiveness of generated tokens. Similar to frequency_penalty, except that this penalty is applied equally to all tokens that have already appeared, regardless of their exact frequencies. Min value of 0.0, max value of 1.0. | 0.0
+| spring.ai.cohere.chat.options.seed | If specified, the backend will make a best effort to sample tokens deterministically, such that repeated requests with the same seed and parameters should return the same result. | -
+| spring.ai.cohere.chat.options.stop-sequences | A list of up to 5 strings that the model will use to stop generation. If the model generates a string that matches any of the strings in the list, it will stop generating tokens. | -
+| spring.ai.cohere.chat.options.response-format | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON.| -
+| spring.ai.cohere.chat.options.safety-mode | Used to select the safety instruction inserted into the prompt. Can be OFF, CONTEXTUAL, or STRICT. When OFF is specified, the safety instruction will be omitted. | CONTEXTUAL
+| spring.ai.cohere.chat.options.logprobs | When set to true, the log probabilities of the generated tokens will be included in the response. | false
+| spring.ai.cohere.chat.options.strict-tools | When enabled, tool calls are validated against the tool JSON schemas. | -
+| spring.ai.cohere.chat.options.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
+| spring.ai.cohere.chat.options.tool-choice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `required` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `required` is the default when no functions are present. `required` is the default if functions are present. | -
+| spring.ai.cohere.chat.options.tool-names | List of tools, identified by their names, to enable for function calling in a single prompt request. Tools with those names must exist in the ToolCallback registry. | -
+| spring.ai.cohere.chat.options.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
+| spring.ai.cohere.chat.options.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
+|====
+
+NOTE: You can override the common `spring.ai.cohere.base-url` and `spring.ai.cohere.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
+The `spring.ai.cohere.chat.base-url` and `spring.ai.cohere.chat.api-key` properties, if set, take precedence over the common properties.
+This is useful if you want to use different Cohere accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.cohere.chat.options` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
+
+== Available Models
+
+Cohere provides several chat models, each optimized for different use cases:
+
+[cols="2,1,4", stripes=even]
+|====
+| Model | Context Length | Description
+
+| `command-a-03-2025`
+| 128K tokens
+| Latest flagship model with enhanced reasoning capabilities. Best overall performance for complex tasks.
+
+| `command-a-reasoning-08-2025`
+| 128K tokens
+| Specialized model optimized for reasoning tasks, mathematical problem-solving, and logical deduction.
+
+| `command-a-translate-08-2025`
+| 128K tokens
+| Optimized for translation tasks across multiple languages. Provides high-quality translations.
+
+| `command-a-vision-07-2025`
+| 128K tokens
+| Multimodal model with vision capabilities. Can process and understand images along with text.
+
+| `command-r7b-12-2024`
+| 128K tokens
+| Lightweight 7 billion parameter model. Faster and more cost-effective while maintaining good quality. Default model.
+
+| `command-r-plus-08-2024`
+| 128K tokens
+| Enhanced version of Command R with improved performance and multilingual capabilities.
+
+| `command-r-08-2024`
+| 128K tokens
+| General-purpose model with strong multilingual support and retrieval-augmented generation capabilities.
+|====
+
+
+== Runtime Options [[chat-options]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-cohere/src/main/java/org/springframework/ai/cohere/chat/CohereChatOptions.java[CohereChatOptions.java] provides model configurations, such as the model to use, the temperature, the frequency penalty, etc.
+
+On start-up, the default options can be configured with the `CohereChatModel(api, options)` constructor or the `spring.ai.cohere.chat.options.*` properties.
+
+At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
+For example, to override the default model and temperature for a specific request:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Generate the names of 5 famous pirates.",
+        CohereChatOptions.builder()
+            .model(CohereApi.ChatModel.COMMAND_A.getName())
+            .temperature(0.5)
+        .build()
+    ));
+----
+
+TIP: In addition to the model specific link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-cohere/src/main/java/org/springframework/ai/cohere/chat/CohereChatOptions.java[CohereChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Function Calling
+
+You can register custom Java functions with the `CohereChatModel` and have the Cohere model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
+This is a powerful technique to connect the LLM capabilities with external tools and APIs.
+Read more about xref:api/tools.adoc[Tool Calling].
+
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
+Cohere supports text and vision modalities.
+
+=== Vision
+
+Cohere models that offer vision multimodal support include `command-a-vision-07-2025`.
+Refer to the link:https://docs.cohere.com/docs/vision[Vision] guide for more information.
+
+The Cohere link:https://docs.cohere.com/reference/chat[Chat API] can incorporate a list of base64-encoded images or image urls with the message.
+Spring AI's link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/messages/Message.java[Message] interface facilitates multimodal AI models by introducing the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-commons/src/main/java/org/springframework/ai/content/Media.java[Media] type.
+This type encompasses data and details regarding media attachments in messages, utilizing Spring's `org.springframework.util.MimeType` and a `org.springframework.core.io.Resource` for the raw media data.
+
+Below is a code example illustrating the fusion of user text with an image:
+
+[source,java]
+----
+var imageResource = new ClassPathResource("/multimodal.test.png");
+
+var userMessage = new UserMessage("Explain what do you see on this picture?",
+        new Media(MimeTypeUtils.IMAGE_PNG, imageResource));
+
+ChatResponse response = chatModel.call(new Prompt(userMessage,
+        ChatOptions.builder().model(CohereApi.ChatModel.COMMAND_A_VISION.getName()).build()));
+----
+
+TIP: You can pass multiple images as well.
+
+== Sample Controller (Auto-configuration)
+
+https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-cohere` to your pom (or gradle) dependencies.
+
+Add a `application.properties` file under the `src/main/resources` directory to enable and configure the Cohere chat model:
+
+[source,application.properties]
+----
+spring.ai.cohere.api-key=YOUR_API_KEY
+spring.ai.cohere.chat.options.model=command-r7b-12-2024
+spring.ai.cohere.chat.options.temperature=0.7
+----
+
+TIP: Replace the `api-key` with your Cohere credentials.
+
+This will create a `CohereChatModel` implementation that you can inject into your classes.
+Here is an example of a simple `@RestController` class that uses the chat model for text generations.
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final CohereChatModel chatModel;
+
+    @Autowired
+    public ChatController(CohereChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map<String,String> generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", this.chatModel.call(message));
+    }
+
+    @GetMapping("/ai/generateStream")
+	public Flux<ChatResponse> generateStream(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        var prompt = new Prompt(new UserMessage(message));
+        return this.chatModel.stream(prompt);
+    }
+}
+----
+
+== Manual Configuration
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-cohere/src/main/java/org/springframework/ai/cohere/chat/CohereChatModel.java[CohereChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the Cohere service.
+
+Add the `spring-ai-cohere` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-cohere</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-cohere'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `CohereChatModel` and use it for text generations:
+
+[source,java]
+----
+var cohereApi = new CohereApi(System.getenv("COHERE_API_KEY"));
+var chatModel = new CohereChatModel(cohereApi, CohereChatOptions.builder()
+                .model(CohereApi.ChatModel.COMMAND_A.getName())
+                .temperature(0.4)
+                .build());
+
+ChatResponse response = chatModel.call(new Prompt("Generate the names of 5 famous pirates."));
+----
+
+=== Low-level CohereApi Client [[low-level-api]]
+
+The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-cohere/src/main/java/org/springframework/ai/cohere/api/CohereApi.java[CohereApi] provides a lightweight Java client for link:https://docs.cohere.com/reference/chat[Cohere API].
+
+Here is a simple snippet showing how to use the API programmatically:
+
+[source,java]
+----
+CohereApi cohereApi = new CohereApi(System.getenv("COHERE_API_KEY"));
+ChatCompletionMessage message = new ChatCompletionMessage("Hello world", Role.USER);
+ResponseEntity<ChatCompletion> response = cohereApi.chatCompletionEntity(
+    new ChatCompletionRequest(List.of(message), CohereApi.ChatModel.COMMAND_A.getName(), 0.8, false));
+----
+
+==== CohereApi Samples
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-cohere/src/test/java/org/springframework/ai/cohere/api/CohereApiIT.java[CohereApiIT.java] tests provide some general examples of how to use the lightweight library.
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-cohere/src/test/java/org/springframework/ai/cohere/chat/CohereChatModelIT.java[CohereChatModelIT.java] tests show examples of using function calling and streaming.
