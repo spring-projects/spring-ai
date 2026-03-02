@@ -202,6 +202,11 @@ public class OpenAiSdkEmbeddingModel extends AbstractEmbeddingModel {
 
 		EmbeddingCreateParams embeddingCreateParams = options
 			.toOpenAiCreateParams(embeddingRequestWithMergedOptions.getInstructions());
+		if (!CollectionUtils.isEmpty(options.getCustomHeaders())) {
+			var embeddingCreateParamsBuilder = embeddingCreateParams.toBuilder();
+			options.getCustomHeaders().forEach(embeddingCreateParamsBuilder::putAdditionalHeader);
+			embeddingCreateParams = embeddingCreateParamsBuilder.build();
+		}
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("OpenAiSdkEmbeddingModel call {} with the following options : {} ", options.getModel(),
