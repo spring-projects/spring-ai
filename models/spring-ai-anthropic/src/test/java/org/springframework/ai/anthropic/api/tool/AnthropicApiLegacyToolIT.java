@@ -16,7 +16,9 @@
 
 package org.springframework.ai.anthropic.api.tool;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -127,8 +129,10 @@ public class AnthropicApiLegacyToolIT {
 
 		logger.info("FunctionCalls from the LLM: " + functionCalls);
 
-		MockWeatherService.Request request = ModelOptionsUtils.mapToClass(functionCalls.invoke().parameters(),
-				MockWeatherService.Request.class);
+		// Transform parameters to the expected format
+		Map<String, Object> parameters = transformParameters(functionCalls.invoke().parameters());
+
+		MockWeatherService.Request request = ModelOptionsUtils.mapToClass(parameters, MockWeatherService.Request.class);
 
 		logger.info("Resolved function request param: " + request);
 
@@ -145,6 +149,56 @@ public class AnthropicApiLegacyToolIT {
 
 		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue(),
 				List.of(chatCompletionMessage2), null, 500, 0.8, false));
+	}
+
+	/**
+	 * Transforms parameters from nested format to flat format. Handles both the expected
+	 * format (e.g., {location: "Paris", unit: "C"}) and various nested formats returned
+	 * by Claude models.
+	 * @param parameters the parameters map from the function call
+	 * @return transformed parameters in flat format
+	 */
+	@SuppressWarnings("unchecked")
+	private static Map<String, Object> transformParameters(Map<String, Object> parameters) {
+		// Handle format: {parameter_name: [...], parameter_value: [...]}
+		if (parameters.containsKey("parameter_name") && parameters.containsKey("parameter_value")) {
+			List<String> names = (List<String>) parameters.get("parameter_name");
+			List<String> values = (List<String>) parameters.get("parameter_value");
+			Map<String, Object> flatParams = new HashMap<>();
+			for (int i = 0; i < Math.min(names.size(), values.size()); i++) {
+				flatParams.put(names.get(i), values.get(i));
+			}
+			return flatParams;
+		}
+
+		// Handle format: {parameter: [{name: "location", value/parameter/"": "Paris"},
+		// ...]}
+		if (parameters.containsKey("parameter")) {
+			Object paramValue = parameters.get("parameter");
+			if (paramValue instanceof List) {
+				Map<String, Object> flatParams = new HashMap<>();
+				List<Map<String, Object>> paramList = (List<Map<String, Object>>) paramValue;
+				for (Map<String, Object> param : paramList) {
+					String name = (String) param.get("name");
+					// Try different keys for the value: "value", "parameter", or empty
+					// string
+					Object value = param.get("value");
+					if (value == null) {
+						value = param.get("parameter");
+					}
+					if (value == null) {
+						value = param.get("");
+					}
+					if (name != null && value != null) {
+						flatParams.put(name, value);
+					}
+				}
+				return flatParams.isEmpty() ? parameters : flatParams;
+			}
+		}
+
+		// Return as-is if already in the expected format
+		return parameters;
 	}
 
 	static {
