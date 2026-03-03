@@ -133,16 +133,14 @@ This command, will provide the following output, which in this case shows a nice
 If you see intersecting lines, that usually means that you forgot to rebase you branch.
 As mentioned earlier, **please rebase against main** before issuing a pull request.
 
-== Enabling Checkstyle
+== Run Formatting Checks and Make Sure the Build Passes
 
-Checkstyles are currently disabled in the project.
-However, we encourage all PR contributors to run checkstyles by enabling them before submitting a PR.
-
-You can enable them by doing the following:
+Before opening a pull request, make sure that the following full build passes locally. As a side effect of that build, some files may get re-formatted to
+automatically adhere to the conventions used in the project (see below). Be sure to commit those reformats before opening a PR if that happens.
 
 [source,shell]
 ----
-./mvnw clean package -DskipTests -Ddisable.checks=false
+./mvnw package
 ----
 
 === Source Code Style
@@ -258,6 +256,13 @@ or locally for the *spring-ai* repository only by omitting the '--global' flag:
 == Run all tests prior to submission
 
 Make sure that all tests pass prior to submitting your pull request.
+Again, CI will run the equivalent of the following command on your PR. Make
+sure that it passes locally before opening your PR:
+
+[source,shell]
+----
+./mvnw package
+----
 
 == Mention your pull request on the associated GitHub issue
 

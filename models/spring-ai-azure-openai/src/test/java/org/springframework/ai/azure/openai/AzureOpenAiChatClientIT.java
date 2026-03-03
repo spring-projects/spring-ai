@@ -18,6 +18,7 @@ package org.springframework.ai.azure.openai;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.azure.ai.openai.OpenAIClientBuilder;
@@ -96,6 +97,7 @@ public class AzureOpenAiChatClientIT {
 		String generationTextFromStream = chatResponses
 				.stream()
 				.map(cr -> cr.getResult().getOutput().getText())
+				.filter(Objects::nonNull)
 				.collect(Collectors.joining());
 		// @formatter:on
 

@@ -16,4 +16,4 @@
 org.springframework.ai.model.openaisdk.autoconfigure.OpenAiSdkChatAutoConfiguration
 org.springframework.ai.model.openaisdk.autoconfigure.OpenAiSdkEmbeddingAutoConfiguration
 org.springframework.ai.model.openaisdk.autoconfigure.OpenAiSdkImageAutoConfiguration
-
+org.springframework.ai.model.openaisdk.autoconfigure.OpenAiSdkAudioSpeechAutoConfiguration

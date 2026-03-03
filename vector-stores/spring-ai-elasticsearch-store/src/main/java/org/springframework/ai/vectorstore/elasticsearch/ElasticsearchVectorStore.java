@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.elasticsearch;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +36,10 @@ import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -149,6 +154,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
 			VectorStoreSimilarityMetric.EUCLIDEAN, SimilarityFunction.dot_product, VectorStoreSimilarityMetric.DOT);
 
+	private final JsonMapper jsonMapper = JsonMapper.builder()
+		.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+		.enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+		.build();
+
 	private final ElasticsearchClient elasticsearchClient;
 
 	private final ElasticsearchVectorStoreOptions options;
@@ -168,7 +178,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 		String version = Version.VERSION == null ? "Unknown" : Version.VERSION.toString();
 		this.elasticsearchClient = new ElasticsearchClient(
-				new Rest5ClientTransport(builder.restClient, new Jackson3JsonpMapper()))
+				new Rest5ClientTransport(builder.restClient, new Jackson3JsonpMapper(this.jsonMapper)))
 			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
 	}
 
@@ -247,7 +257,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			final float finalThreshold = threshold;
 			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
-			SearchResponse<Document> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
+			SearchResponse<ObjectNode> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
 					.similarity(finalThreshold)
 					.k(searchRequest.getTopK())
@@ -255,7 +265,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 					.numCandidates((int) (1.5 * searchRequest.getTopK()))
 					.filter(fl -> fl
 						.queryString(qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression())))))
-				.size(searchRequest.getTopK()), Document.class);
+				.size(searchRequest.getTopK()), ObjectNode.class);
 
 			return res.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
 		}
@@ -270,13 +280,27 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	}
 
-	private Document toDocument(Hit<Document> hit) {
-		Document document = hit.source();
-		Assert.notNull(document, "document unexpectedly null");
-		Document.Builder documentBuilder = document.mutate();
+	private Document toDocument(Hit<ObjectNode> hit) {
+		ObjectNode source = hit.source();
+		Assert.notNull(source, "source unexpectedly null");
+		Assert.notNull(source.get("id"), "id must not be null");
+		String id = source.get("id").asString();
+		Assert.notNull(id, "id must not be null");
+		String content = source.has("content") ? source.get("content").asString() : null;
+		Map<String, Object> metadata = new HashMap<>();
+		if (source.has("metadata")) {
+			tools.jackson.databind.JsonNode metadataNode = source.get("metadata");
+			Map<String, Object> extractedMetadata = this.jsonMapper.convertValue(metadataNode,
+					new tools.jackson.core.type.TypeReference<Map<String, Object>>() {
+					});
+			metadata.putAll(extractedMetadata);
+		}
+
+		Document.Builder documentBuilder = Document.builder().id(id).text(content).metadata(metadata);
 		if (hit.score() != null) {
-			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizeSimilarityScore(hit.score()));
-			documentBuilder.score(normalizeSimilarityScore(hit.score()));
+			double normalizedScore = normalizeSimilarityScore(hit.score());
+			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - normalizedScore);
+			documentBuilder.score(normalizedScore);
 		}
 		return documentBuilder.build();
 	}

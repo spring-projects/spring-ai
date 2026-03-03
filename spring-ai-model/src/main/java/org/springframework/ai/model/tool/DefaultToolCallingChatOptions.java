@@ -27,6 +27,7 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.DefaultChatOptionsBuilder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
 
@@ -184,133 +185,136 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends ChatOptions> T copy() {
-		DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
-		options.setToolCallbacks(getToolCallbacks());
-		options.setToolNames(getToolNames());
-		options.setToolContext(getToolContext());
-		options.setInternalToolExecutionEnabled(getInternalToolExecutionEnabled());
-		options.setModel(getModel());
-		options.setFrequencyPenalty(getFrequencyPenalty());
-		options.setMaxTokens(getMaxTokens());
-		options.setPresencePenalty(getPresencePenalty());
-		options.setStopSequences(getStopSequences());
-		options.setTemperature(getTemperature());
-		options.setTopK(getTopK());
-		options.setTopP(getTopP());
-		return (T) options;
+		return (T) mutate().build();
 	}
 
-	public static Builder builder() {
-		return new Builder();
+	@Override
+	public ToolCallingChatOptions.Builder<?> mutate() {
+		return DefaultToolCallingChatOptions.builder()
+			.model(getModel())
+			.frequencyPenalty(getFrequencyPenalty())
+			.maxTokens(getMaxTokens())
+			.presencePenalty(getPresencePenalty())
+			.stopSequences(getStopSequences())
+			.temperature(getTemperature())
+			.topK(getTopK())
+			.topP(getTopP())
+			.toolCallbacks(getToolCallbacks())
+			.toolNames(getToolNames())
+			.toolContext(getToolContext())
+			.internalToolExecutionEnabled(getInternalToolExecutionEnabled());
+	}
+
+	public static Builder<?> builder() {
+		return new Builder<>();
 	}
 
 	/**
 	 * Default implementation of {@link ToolCallingChatOptions.Builder}.
 	 */
-	public static final class Builder implements ToolCallingChatOptions.Builder {
+	public static class Builder<B extends Builder<B>> extends DefaultChatOptionsBuilder<B>
+			implements ToolCallingChatOptions.Builder<B> {
 
-		private final DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+		protected List<ToolCallback> toolCallbacks = new ArrayList<>();
+
+		protected Set<String> toolNames = new HashSet<>();
+
+		protected Map<String, Object> toolContext = new HashMap<>();
+
+		protected @Nullable Boolean internalToolExecutionEnabled;
 
 		@Override
-		public ToolCallingChatOptions.Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
+		public B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
+			if (toolCallbacks == null) {
+				this.toolCallbacks.clear();
+			}
+			else {
+				this.toolCallbacks = new ArrayList<>(toolCallbacks);
+			}
+			return self();
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolCallbacks(ToolCallback... toolCallbacks) {
+		public B toolCallbacks(ToolCallback... toolCallbacks) {
 			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.setToolCallbacks(Arrays.asList(toolCallbacks));
-			return this;
+			this.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
+			return self();
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolNames(Set<String> toolNames) {
-			this.options.setToolNames(toolNames);
-			return this;
+		public B toolNames(@Nullable Set<String> toolNames) {
+			if (toolNames != null) {
+				this.toolNames = toolNames;
+			}
+			else {
+				this.toolNames.clear();
+			}
+			return self();
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolNames(String... toolNames) {
+		public B toolNames(String... toolNames) {
 			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(Set.of(toolNames));
-			return this;
+			this.toolNames.addAll(Set.of(toolNames));
+			return self();
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolContext(Map<String, Object> context) {
-			this.options.setToolContext(context);
-			return this;
+		public B toolContext(@Nullable Map<String, Object> context) {
+			if (context != null) {
+				this.toolContext.putAll(context);
+			}
+			else {
+				this.toolContext.clear();
+			}
+			return self();
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder toolContext(String key, Object value) {
+		public B toolContext(String key, Object value) {
 			Assert.hasText(key, "key cannot be null");
 			Assert.notNull(value, "value cannot be null");
-			Map<String, Object> updatedToolContext = new HashMap<>(this.options.getToolContext());
-			updatedToolContext.put(key, value);
-			this.options.setToolContext(updatedToolContext);
-			return this;
+			this.toolContext.put(key, value);
+			return self();
 		}
 
 		@Override
-		public ToolCallingChatOptions.Builder internalToolExecutionEnabled(
-				@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder model(@Nullable String model) {
-			this.options.setModel(model);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder frequencyPenalty(@Nullable Double frequencyPenalty) {
-			this.options.setFrequencyPenalty(frequencyPenalty);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder maxTokens(@Nullable Integer maxTokens) {
-			this.options.setMaxTokens(maxTokens);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder presencePenalty(@Nullable Double presencePenalty) {
-			this.options.setPresencePenalty(presencePenalty);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder stopSequences(@Nullable List<String> stopSequences) {
-			this.options.setStopSequences(stopSequences);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder temperature(@Nullable Double temperature) {
-			this.options.setTemperature(temperature);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder topK(@Nullable Integer topK) {
-			this.options.setTopK(topK);
-			return this;
-		}
-
-		@Override
-		public ToolCallingChatOptions.Builder topP(@Nullable Double topP) {
-			this.options.setTopP(topP);
-			return this;
+		public B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
+			this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+			return self();
 		}
 
 		@Override
 		public ToolCallingChatOptions build() {
-			return this.options;
+			DefaultToolCallingChatOptions options = new DefaultToolCallingChatOptions();
+			options.setToolCallbacks(this.toolCallbacks);
+			options.setToolNames(this.toolNames);
+			options.setToolContext(this.toolContext);
+			options.setInternalToolExecutionEnabled(this.internalToolExecutionEnabled);
+
+			options.setModel(this.model);
+			options.setFrequencyPenalty(this.frequencyPenalty);
+			options.setMaxTokens(this.maxTokens);
+			options.setPresencePenalty(this.presencePenalty);
+			options.setStopSequences(this.stopSequences);
+			options.setTemperature(this.temperature);
+			options.setTopK(this.topK);
+			options.setTopP(this.topP);
+			return options;
+		}
+
+		@Override
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof Builder<?> options) {
+				this.toolCallbacks = options.toolCallbacks;
+				this.toolNames = options.toolNames;
+				this.toolContext.putAll(options.toolContext);
+				if (options.internalToolExecutionEnabled != null) {
+					this.internalToolExecutionEnabled = options.internalToolExecutionEnabled;
+				}
+			}
+			return self();
 		}
 
 	}

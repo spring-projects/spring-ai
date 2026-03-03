@@ -17,6 +17,7 @@
 org.springframework.boot.autoconfigure.service.connection.ConnectionDetailsFactory=\
 org.springframework.ai.docker.compose.service.connection.chroma.ChromaDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.docker.DockerMcpGatewayDockerComposeConnectionDetailsFactory,\
+org.springframework.ai.docker.compose.service.connection.milvus.MilvusDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.ollama.OllamaDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.opensearch.AwsOpenSearchDockerComposeConnectionDetailsFactory,\
 org.springframework.ai.docker.compose.service.connection.opensearch.OpenSearchDockerComposeConnectionDetailsFactory,\

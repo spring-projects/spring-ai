@@ -34,11 +34,9 @@ import java.util.function.Consumer;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
 import co.elastic.clients.elasticsearch.indices.stats.IndicesStats;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
+import co.elastic.clients.json.jackson.Jackson3JsonpMapper;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hc.core5.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,6 +48,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -618,8 +619,11 @@ class ElasticsearchVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		ElasticsearchClient elasticsearchClient(Rest5Client restClient) {
-			return new ElasticsearchClient(new Rest5ClientTransport(restClient, new JacksonJsonpMapper(
-					new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false))));
+			JsonMapper jsonMapper = JsonMapper.builder()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.enable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+				.build();
+			return new ElasticsearchClient(new Rest5ClientTransport(restClient, new Jackson3JsonpMapper(jsonMapper)));
 		}
 
 	}

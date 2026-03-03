@@ -68,7 +68,7 @@ public class HanaCloudVectorStoreIT {
 			logger.info("Purged all embeddings: count={}", deleteCount);
 
 			Supplier<List<Document>> reader = new PagePdfDocumentReader("classpath:Cricket_World_Cup.pdf");
-			Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
+			Function<List<Document>, List<Document>> splitter = TokenTextSplitter.builder().build();
 			List<Document> documents = splitter.apply(reader.get());
 			vectorStore.accept(documents);
 

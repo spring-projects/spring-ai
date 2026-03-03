@@ -280,7 +280,9 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 						&& jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
 					if (this.sessionFactory == null) {
 						return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-							.bodyValue(new McpError("Session factory not initialized"));
+							.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+								.message("Session factory not initialized")
+								.build());
 					}
 					var typeReference = new TypeRef<McpSchema.InitializeRequest>() {
 					};
@@ -307,7 +309,10 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 				}
 
 				if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
-					return ServerResponse.badRequest().bodyValue(new McpError("Session ID missing"));
+					return ServerResponse.badRequest()
+						.bodyValue(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+							.message("Session ID missing")
+							.build());
 				}
 
 				String sessionId = request.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID);
@@ -315,7 +320,9 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 
 				if (session == null) {
 					return ServerResponse.status(HttpStatus.NOT_FOUND)
-						.bodyValue(new McpError("Session not found: " + sessionId));
+						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+							.message("Session not found: " + sessionId)
+							.build());
 				}
 
 				if (message instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
@@ -341,12 +348,18 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 								ServerSentEvent.class);
 				}
 				else {
-					return ServerResponse.badRequest().bodyValue(new McpError("Unknown message type"));
+					return ServerResponse.badRequest()
+						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+							.message("Unknown message type")
+							.build());
 				}
 			}
 			catch (IllegalArgumentException | IOException e) {
 				logger.error("Failed to deserialize message: {}", e.getMessage());
-				return ServerResponse.badRequest().bodyValue(new McpError("Invalid message format"));
+				return ServerResponse.badRequest()
+					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+						.message("Invalid message format")
+						.build());
 			}
 		})
 			.switchIfEmpty(ServerResponse.badRequest().build())

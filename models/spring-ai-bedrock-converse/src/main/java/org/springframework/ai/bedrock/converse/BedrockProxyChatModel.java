@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -614,13 +614,27 @@ public class BedrockProxyChatModel implements ChatModel {
 		else if (BedrockMediaFormat.isSupportedDocumentFormat(mimeType)) { // Document
 
 			return ContentBlock.fromDocument(DocumentBlock.builder()
-				.name(media.getName())
+				.name(sanitizeDocumentName(media.getName()))
 				.format(BedrockMediaFormat.getDocumentFormat(mimeType))
 				.source(DocumentSource.builder().bytes(SdkBytes.fromByteArray(media.getDataAsByteArray())).build())
 				.build());
 		}
 
 		throw new IllegalArgumentException("Unsupported media format: " + mimeType);
+	}
+
+	/**
+	 * Sanitizes a document name to conform to Amazon Bedrock's naming restrictions. The
+	 * name can only contain alphanumeric characters, whitespace characters (no more than
+	 * one in a row), hyphens, parentheses, and square brackets.
+	 * @param name the document name to sanitize
+	 * @return the sanitized document name
+	 * @see <a href=
+	 * "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_DocumentBlock.html">DocumentBlock
+	 * API Reference</a>
+	 */
+	static String sanitizeDocumentName(String name) {
+		return name.replaceAll("[^a-zA-Z0-9\\s\\-()\\[\\]]", "-");
 	}
 
 	private static byte[] getContentMediaData(Object mediaData) {

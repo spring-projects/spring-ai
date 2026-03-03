@@ -17,11 +17,11 @@
 package org.springframework.ai.ollama.api;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,7 +32,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -55,6 +57,65 @@ import org.springframework.util.Assert;
 public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
+
+	public OllamaChatOptions() {
+		// Temporary constructor to maintain compat with ModelOptionUtils
+		this.toolNames = new HashSet<String>();
+		this.toolContext = new HashMap<>();
+	}
+
+	protected OllamaChatOptions(@Nullable Boolean useNUMA, @Nullable Integer numCtx, @Nullable Integer numBatch,
+			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM, @Nullable Boolean f16KV,
+			@Nullable Boolean logitsAll, @Nullable Boolean vocabOnly, @Nullable Boolean useMMap,
+			@Nullable Boolean useMLock, @Nullable Integer numThread, @Nullable Integer numKeep, @Nullable Integer seed,
+			@Nullable Integer numPredict, @Nullable Integer topK, @Nullable Double topP, @Nullable Double minP,
+			@Nullable Float tfsZ, @Nullable Float typicalP, @Nullable Integer repeatLastN, @Nullable Double temperature,
+			@Nullable Double repeatPenalty, @Nullable Double presencePenalty, @Nullable Double frequencyPenalty,
+			@Nullable Integer mirostat, @Nullable Float mirostatTau, @Nullable Float mirostatEta,
+			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
+			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
+			@Nullable ThinkOption thinkOption, @Nullable Boolean internalToolExecutionEnabled,
+			List<ToolCallback> toolCallbacks, Set<String> toolNames, Map<String, Object> toolContext) {
+		this.useNUMA = useNUMA;
+		this.numCtx = numCtx;
+		this.numBatch = numBatch;
+		this.numGPU = numGPU;
+		this.mainGPU = mainGPU;
+		this.lowVRAM = lowVRAM;
+		this.f16KV = f16KV;
+		this.logitsAll = logitsAll;
+		this.vocabOnly = vocabOnly;
+		this.useMMap = useMMap;
+		this.useMLock = useMLock;
+		this.numThread = numThread;
+		this.numKeep = numKeep;
+		this.seed = seed;
+		this.numPredict = numPredict;
+		this.topK = topK;
+		this.topP = topP;
+		this.minP = minP;
+		this.tfsZ = tfsZ;
+		this.typicalP = typicalP;
+		this.repeatLastN = repeatLastN;
+		this.temperature = temperature;
+		this.repeatPenalty = repeatPenalty;
+		this.presencePenalty = presencePenalty;
+		this.frequencyPenalty = frequencyPenalty;
+		this.mirostat = mirostat;
+		this.mirostatTau = mirostatTau;
+		this.mirostatEta = mirostatEta;
+		this.penalizeNewline = penalizeNewline;
+		this.stop = stop;
+		this.model = model;
+		this.format = format;
+		this.keepAlive = keepAlive;
+		this.truncate = truncate;
+		this.thinkOption = thinkOption;
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+		this.toolCallbacks = toolCallbacks;
+		this.toolNames = toolNames;
+		this.toolContext = toolContext;
+	}
 
 	// Following fields are options which must be set when the model is loaded into
 	// memory.
@@ -365,13 +426,13 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
 	 */
 	@JsonIgnore
-	private Set<String> toolNames = new HashSet<>();
+	private Set<String> toolNames;
 
 	@JsonIgnore
-	private Map<String, Object> toolContext = new HashMap<>();
+	private Map<String, Object> toolContext;
 
-	public static Builder builder() {
-		return new Builder();
+	public static Builder<?> builder() {
+		return new Builder<>();
 	}
 
 	/**
@@ -386,46 +447,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	}
 
 	public static OllamaChatOptions fromOptions(OllamaChatOptions fromOptions) {
-		return builder()
-				.model(fromOptions.getModel())
-				.format(fromOptions.getFormat())
-				.keepAlive(fromOptions.getKeepAlive())
-				.truncate(fromOptions.getTruncate())
-				.thinkOption(fromOptions.getThinkOption())
-				.useNUMA(fromOptions.getUseNUMA())
-				.numCtx(fromOptions.getNumCtx())
-				.numBatch(fromOptions.getNumBatch())
-				.numGPU(fromOptions.getNumGPU())
-				.mainGPU(fromOptions.getMainGPU())
-				.lowVRAM(fromOptions.getLowVRAM())
-				.f16KV(fromOptions.getF16KV())
-				.logitsAll(fromOptions.getLogitsAll())
-				.vocabOnly(fromOptions.getVocabOnly())
-				.useMMap(fromOptions.getUseMMap())
-				.useMLock(fromOptions.getUseMLock())
-				.numThread(fromOptions.getNumThread())
-				.numKeep(fromOptions.getNumKeep())
-				.seed(fromOptions.getSeed())
-				.numPredict(fromOptions.getNumPredict())
-				.topK(fromOptions.getTopK())
-				.topP(fromOptions.getTopP())
-				.minP(fromOptions.getMinP())
-				.tfsZ(fromOptions.getTfsZ())
-				.typicalP(fromOptions.getTypicalP())
-				.repeatLastN(fromOptions.getRepeatLastN())
-				.temperature(fromOptions.getTemperature())
-				.repeatPenalty(fromOptions.getRepeatPenalty())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.mirostat(fromOptions.getMirostat())
-				.mirostatTau(fromOptions.getMirostatTau())
-				.mirostatEta(fromOptions.getMirostatEta())
-				.penalizeNewline(fromOptions.getPenalizeNewline())
-				.stop(fromOptions.getStop())
-				.toolNames(fromOptions.getToolNames())
-				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolContext(fromOptions.getToolContext()).build();
+		return fromOptions.mutate().build();
 	}
 
 	// -------------------
@@ -508,8 +530,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.f16KV;
 	}
 
-	public void setF16KV(@Nullable Boolean f16kv) {
-		this.f16KV = f16kv;
+	public void setF16KV(@Nullable Boolean f16KV) {
+		this.f16KV = f16KV;
 	}
 
 	public @Nullable Boolean getLogitsAll() {
@@ -815,12 +837,97 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
-		return ModelOptionsUtils.objectToMap(this);
+		Map<String, @Nullable Object> map = new HashMap<>();
+		map.put("numa", this.useNUMA);
+		map.put("num_ctx", this.numCtx);
+		map.put("num_batch", this.numBatch);
+		map.put("num_gpu", this.numGPU);
+		map.put("main_gpu", this.mainGPU);
+		map.put("low_vram", this.lowVRAM);
+		map.put("f16_kv", this.f16KV);
+		map.put("logits_all",  this.logitsAll);
+		map.put("vocab_only",  this.vocabOnly);
+		map.put("use_mmap", this.useMMap);
+		map.put("use_mlock",  this.useMLock);
+		map.put("num_thread", this.numThread);
+		map.put("num_keep", this.numKeep);
+		map.put("seed", this.seed);
+		map.put("num_predict", this.numPredict);
+		map.put("top_k", this.topK);
+		map.put("top_p", this.topP);
+		map.put("min_p", this.minP);
+		map.put("tfs_z", this.tfsZ);
+		map.put("typical_p", this.typicalP);
+		map.put("repeat_last_n", this.repeatLastN);
+		map.put("temperature", this.temperature);
+		map.put("repeat_penalty", this.repeatPenalty);
+		map.put("presence_penalty", this.presencePenalty);
+		map.put("frequency_penalty", this.frequencyPenalty);
+		map.put("mirostat", this.mirostat);
+		map.put("mirostat_tau", this.mirostatTau);
+		map.put("mirostat_eta", this.mirostatEta);
+		map.put("penalize_newline", this.penalizeNewline);
+		map.put("stop", this.stop);
+
+		map.put("model", this.model);
+		map.put("format", this.format);
+		map.put("keep_alive", this.keepAlive);
+		map.put("truncate", this.truncate);
+		return map.entrySet().stream().filter(kv -> kv.getValue() != null).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		//return ModelOptionsUtils.objectToMap(this);
 	}
 
 	@Override
 	public OllamaChatOptions copy() {
-		return fromOptions(this);
+		return mutate().build();
+	}
+
+	@Override
+	public OllamaChatOptions.Builder<?> mutate() {
+		return OllamaChatOptions.builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(getNumPredict())
+			.presencePenalty(this.presencePenalty)
+			.stopSequences(this.stop)
+			.temperature(this.temperature)
+			.topK(this.topK)
+			.topP(this.topP)
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolNames(this.getToolNames())
+			.toolContext(this.getToolContext())
+			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
+			// StructuredOutputChatOptions
+			.format(this.format)
+			// Ollama Specific
+			.keepAlive(this.keepAlive)
+			.truncate(this.truncate)
+			.thinkOption(this.thinkOption)
+			.useNUMA(this.useNUMA)
+			.numCtx(this.numCtx)
+			.numBatch(this.numBatch)
+			.numGPU(this.numGPU)
+			.mainGPU(this.mainGPU)
+			.lowVRAM(this.lowVRAM)
+			.f16KV(this.f16KV)
+			.logitsAll(this.logitsAll)
+			.vocabOnly(this.vocabOnly)
+			.useMMap(this.useMMap)
+			.useMLock(this.useMLock)
+			.numThread(this.numThread)
+			.numKeep(this.numKeep)
+			.seed(this.seed)
+			.minP(this.minP)
+			.tfsZ(this.tfsZ)
+			.typicalP(this.typicalP)
+			.repeatLastN(this.repeatLastN)
+			.repeatPenalty(this.repeatPenalty)
+			.mirostat(this.mirostat)
+			.mirostatTau(this.mirostatTau)
+			.mirostatEta(this.mirostatEta)
+			.penalizeNewline(this.penalizeNewline);
 	}
 	// @formatter:on
 
@@ -869,183 +976,302 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.internalToolExecutionEnabled, this.toolContext);
 	}
 
-	public static final class Builder {
+	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
+			implements StructuredOutputChatOptions.Builder<B> {
 
-		private final OllamaChatOptions options = new OllamaChatOptions();
+		protected @Nullable Boolean useNUMA;
 
-		public Builder model(@Nullable String model) {
-			this.options.model = model;
-			return this;
+		protected @Nullable Integer numCtx;
+
+		protected @Nullable Integer numBatch;
+
+		protected @Nullable Integer numGPU;
+
+		protected @Nullable Integer mainGPU;
+
+		protected @Nullable Boolean lowVRAM;
+
+		protected @Nullable Boolean f16KV;
+
+		protected @Nullable Boolean logitsAll;
+
+		protected @Nullable Boolean vocabOnly;
+
+		protected @Nullable Boolean useMMap;
+
+		protected @Nullable Boolean useMLock;
+
+		protected @Nullable Integer numThread;
+
+		protected @Nullable Integer numKeep;
+
+		protected @Nullable Integer seed;
+
+		protected @Nullable Double minP;
+
+		protected @Nullable Float tfsZ;
+
+		protected @Nullable Float typicalP;
+
+		protected @Nullable Integer repeatLastN;
+
+		protected @Nullable Double repeatPenalty;
+
+		protected @Nullable Integer mirostat;
+
+		protected @Nullable Float mirostatTau;
+
+		protected @Nullable Float mirostatEta;
+
+		protected @Nullable Boolean penalizeNewline;
+
+		protected @Nullable Object format;
+
+		protected @Nullable String keepAlive;
+
+		protected @Nullable Boolean truncate;
+
+		protected @Nullable ThinkOption thinkOption;
+
+		@Override
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof Builder<?> options) {
+				if (options.format != null) {
+					this.format = options.format;
+				}
+				if (options.keepAlive != null) {
+					this.keepAlive = options.keepAlive;
+				}
+				if (options.truncate != null) {
+					this.truncate = options.truncate;
+				}
+				if (options.thinkOption != null) {
+					this.thinkOption = options.thinkOption;
+				}
+				if (options.useNUMA != null) {
+					this.useNUMA = options.useNUMA;
+				}
+				if (options.numCtx != null) {
+					this.numCtx = options.numCtx;
+				}
+				if (options.numBatch != null) {
+					this.numBatch = options.numBatch;
+				}
+				if (options.numGPU != null) {
+					this.numGPU = options.numGPU;
+				}
+				if (options.mainGPU != null) {
+					this.mainGPU = options.mainGPU;
+				}
+				if (options.lowVRAM != null) {
+					this.lowVRAM = options.lowVRAM;
+				}
+				if (options.f16KV != null) {
+					this.f16KV = options.f16KV;
+				}
+				if (options.logitsAll != null) {
+					this.logitsAll = options.logitsAll;
+				}
+				if (options.vocabOnly != null) {
+					this.vocabOnly = options.vocabOnly;
+				}
+				if (options.useMMap != null) {
+					this.useMMap = options.useMMap;
+				}
+				if (options.useMLock != null) {
+					this.useMLock = options.useMLock;
+				}
+				if (options.numThread != null) {
+					this.numThread = options.numThread;
+				}
+				if (options.numKeep != null) {
+					this.numKeep = options.numKeep;
+				}
+				if (options.seed != null) {
+					this.seed = options.seed;
+				}
+				if (options.minP != null) {
+					this.minP = options.minP;
+				}
+				if (options.tfsZ != null) {
+					this.tfsZ = options.tfsZ;
+				}
+				if (options.typicalP != null) {
+					this.typicalP = options.typicalP;
+				}
+				if (options.repeatLastN != null) {
+					this.repeatLastN = options.repeatLastN;
+				}
+				if (options.repeatPenalty != null) {
+					this.repeatPenalty = options.repeatPenalty;
+				}
+				if (options.mirostat != null) {
+					this.mirostat = options.mirostat;
+				}
+				if (options.mirostatTau != null) {
+					this.mirostatTau = options.mirostatTau;
+				}
+				if (options.mirostatEta != null) {
+					this.mirostatEta = options.mirostatEta;
+				}
+				if (options.penalizeNewline != null) {
+					this.penalizeNewline = options.penalizeNewline;
+				}
+			}
+			return self();
 		}
 
-		public Builder model(OllamaModel model) {
-			this.options.model = model.getName();
-			return this;
+		public B model(@Nullable OllamaModel model) {
+			if (model == null) {
+				this.model((String) null);
+			}
+			else {
+				this.model(model.id());
+			}
+			return self();
 		}
 
-		public Builder format(@Nullable Object format) {
-			this.options.format = format;
-			return this;
+		// Ollama specific name for maxTokens.
+		public B numPredict(@Nullable Integer numPredict) {
+			this.maxTokens(numPredict);
+			return self();
 		}
 
-		public Builder keepAlive(@Nullable String keepAlive) {
-			this.options.keepAlive = keepAlive;
-			return this;
+		// Ollama specific name for stopSequences
+		public B stop(@Nullable List<String> stop) {
+			this.stopSequences(stop);
+			return self();
 		}
 
-		public Builder truncate(@Nullable Boolean truncate) {
-			this.options.truncate = truncate;
-			return this;
+		public B format(@Nullable Object format) {
+			this.format = format;
+			return self();
 		}
 
-		public Builder useNUMA(@Nullable Boolean useNUMA) {
-			this.options.useNUMA = useNUMA;
-			return this;
+		public B keepAlive(@Nullable String keepAlive) {
+			this.keepAlive = keepAlive;
+			return self();
 		}
 
-		public Builder numCtx(@Nullable Integer numCtx) {
-			this.options.numCtx = numCtx;
-			return this;
+		public B truncate(@Nullable Boolean truncate) {
+			this.truncate = truncate;
+			return self();
 		}
 
-		public Builder numBatch(@Nullable Integer numBatch) {
-			this.options.numBatch = numBatch;
-			return this;
+		public B useNUMA(@Nullable Boolean useNUMA) {
+			this.useNUMA = useNUMA;
+			return self();
 		}
 
-		public Builder numGPU(@Nullable Integer numGPU) {
-			this.options.numGPU = numGPU;
-			return this;
+		public B numCtx(@Nullable Integer numCtx) {
+			this.numCtx = numCtx;
+			return self();
 		}
 
-		public Builder mainGPU(@Nullable Integer mainGPU) {
-			this.options.mainGPU = mainGPU;
-			return this;
+		public B numBatch(@Nullable Integer numBatch) {
+			this.numBatch = numBatch;
+			return self();
 		}
 
-		public Builder lowVRAM(@Nullable Boolean lowVRAM) {
-			this.options.lowVRAM = lowVRAM;
-			return this;
+		public B numGPU(@Nullable Integer numGPU) {
+			this.numGPU = numGPU;
+			return self();
 		}
 
-		public Builder f16KV(@Nullable Boolean f16KV) {
-			this.options.f16KV = f16KV;
-			return this;
+		public B mainGPU(@Nullable Integer mainGPU) {
+			this.mainGPU = mainGPU;
+			return self();
 		}
 
-		public Builder logitsAll(@Nullable Boolean logitsAll) {
-			this.options.logitsAll = logitsAll;
-			return this;
+		public B lowVRAM(@Nullable Boolean lowVRAM) {
+			this.lowVRAM = lowVRAM;
+			return self();
 		}
 
-		public Builder vocabOnly(@Nullable Boolean vocabOnly) {
-			this.options.vocabOnly = vocabOnly;
-			return this;
+		public B f16KV(@Nullable Boolean f16KV) {
+			this.f16KV = f16KV;
+			return self();
 		}
 
-		public Builder useMMap(@Nullable Boolean useMMap) {
-			this.options.useMMap = useMMap;
-			return this;
+		public B logitsAll(@Nullable Boolean logitsAll) {
+			this.logitsAll = logitsAll;
+			return self();
 		}
 
-		public Builder useMLock(@Nullable Boolean useMLock) {
-			this.options.useMLock = useMLock;
-			return this;
+		public B vocabOnly(@Nullable Boolean vocabOnly) {
+			this.vocabOnly = vocabOnly;
+			return self();
 		}
 
-		public Builder numThread(@Nullable Integer numThread) {
-			this.options.numThread = numThread;
-			return this;
+		public B useMMap(@Nullable Boolean useMMap) {
+			this.useMMap = useMMap;
+			return self();
 		}
 
-		public Builder numKeep(@Nullable Integer numKeep) {
-			this.options.numKeep = numKeep;
-			return this;
+		public B useMLock(@Nullable Boolean useMLock) {
+			this.useMLock = useMLock;
+			return self();
 		}
 
-		public Builder seed(@Nullable Integer seed) {
-			this.options.seed = seed;
-			return this;
+		public B numThread(@Nullable Integer numThread) {
+			this.numThread = numThread;
+			return self();
 		}
 
-		public Builder numPredict(@Nullable Integer numPredict) {
-			this.options.numPredict = numPredict;
-			return this;
+		public B numKeep(@Nullable Integer numKeep) {
+			this.numKeep = numKeep;
+			return self();
 		}
 
-		public Builder topK(@Nullable Integer topK) {
-			this.options.topK = topK;
-			return this;
+		public B seed(@Nullable Integer seed) {
+			this.seed = seed;
+			return self();
 		}
 
-		public Builder topP(@Nullable Double topP) {
-			this.options.topP = topP;
-			return this;
+		public B minP(@Nullable Double minP) {
+			this.minP = minP;
+			return self();
 		}
 
-		public Builder minP(@Nullable Double minP) {
-			this.options.minP = minP;
-			return this;
+		public B tfsZ(@Nullable Float tfsZ) {
+			this.tfsZ = tfsZ;
+			return self();
 		}
 
-		public Builder tfsZ(@Nullable Float tfsZ) {
-			this.options.tfsZ = tfsZ;
-			return this;
+		public B typicalP(@Nullable Float typicalP) {
+			this.typicalP = typicalP;
+			return self();
 		}
 
-		public Builder typicalP(@Nullable Float typicalP) {
-			this.options.typicalP = typicalP;
-			return this;
+		public B repeatLastN(@Nullable Integer repeatLastN) {
+			this.repeatLastN = repeatLastN;
+			return self();
 		}
 
-		public Builder repeatLastN(@Nullable Integer repeatLastN) {
-			this.options.repeatLastN = repeatLastN;
-			return this;
+		public B repeatPenalty(@Nullable Double repeatPenalty) {
+			this.repeatPenalty = repeatPenalty;
+			return self();
 		}
 
-		public Builder temperature(@Nullable Double temperature) {
-			this.options.temperature = temperature;
-			return this;
+		public B mirostat(@Nullable Integer mirostat) {
+			this.mirostat = mirostat;
+			return self();
 		}
 
-		public Builder repeatPenalty(@Nullable Double repeatPenalty) {
-			this.options.repeatPenalty = repeatPenalty;
-			return this;
+		public B mirostatTau(@Nullable Float mirostatTau) {
+			this.mirostatTau = mirostatTau;
+			return self();
 		}
 
-		public Builder presencePenalty(@Nullable Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
+		public B mirostatEta(@Nullable Float mirostatEta) {
+			this.mirostatEta = mirostatEta;
+			return self();
 		}
 
-		public Builder frequencyPenalty(@Nullable Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
-
-		public Builder mirostat(@Nullable Integer mirostat) {
-			this.options.mirostat = mirostat;
-			return this;
-		}
-
-		public Builder mirostatTau(@Nullable Float mirostatTau) {
-			this.options.mirostatTau = mirostatTau;
-			return this;
-		}
-
-		public Builder mirostatEta(@Nullable Float mirostatEta) {
-			this.options.mirostatEta = mirostatEta;
-			return this;
-		}
-
-		public Builder penalizeNewline(@Nullable Boolean penalizeNewline) {
-			this.options.penalizeNewline = penalizeNewline;
-			return this;
-		}
-
-		public Builder stop(@Nullable List<String> stop) {
-			this.options.stop = stop;
-			return this;
+		public B penalizeNewline(@Nullable Boolean penalizeNewline) {
+			this.penalizeNewline = penalizeNewline;
+			return self();
 		}
 
 		/**
@@ -1057,9 +1283,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		 * @see #disableThinking()
 		 * @see #thinkLow()
 		 */
-		public Builder enableThinking() {
-			this.options.thinkOption = ThinkOption.ThinkBoolean.ENABLED;
-			return this;
+		public B enableThinking() {
+			this.thinkOption = ThinkOption.ThinkBoolean.ENABLED;
+			return self();
 		}
 
 		/**
@@ -1067,9 +1293,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		 * @return this builder
 		 * @see #enableThinking()
 		 */
-		public Builder disableThinking() {
-			this.options.thinkOption = ThinkOption.ThinkBoolean.DISABLED;
-			return this;
+		public B disableThinking() {
+			this.thinkOption = ThinkOption.ThinkBoolean.DISABLED;
+			return self();
 		}
 
 		/**
@@ -1081,9 +1307,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		 * @see #thinkMedium()
 		 * @see #thinkHigh()
 		 */
-		public Builder thinkLow() {
-			this.options.thinkOption = ThinkOption.ThinkLevel.LOW;
-			return this;
+		public B thinkLow() {
+			this.thinkOption = ThinkOption.ThinkLevel.LOW;
+			return self();
 		}
 
 		/**
@@ -1092,9 +1318,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		 * @see #thinkLow()
 		 * @see #thinkHigh()
 		 */
-		public Builder thinkMedium() {
-			this.options.thinkOption = ThinkOption.ThinkLevel.MEDIUM;
-			return this;
+		public B thinkMedium() {
+			this.thinkOption = ThinkOption.ThinkLevel.MEDIUM;
+			return self();
 		}
 
 		/**
@@ -1103,9 +1329,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		 * @see #thinkLow()
 		 * @see #thinkMedium()
 		 */
-		public Builder thinkHigh() {
-			this.options.thinkOption = ThinkOption.ThinkLevel.HIGH;
-			return this;
+		public B thinkHigh() {
+			this.thinkOption = ThinkOption.ThinkLevel.HIGH;
+			return self();
 		}
 
 		/**
@@ -1115,55 +1341,29 @@ public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutp
 		 * @param thinkOption the think option
 		 * @return this builder
 		 */
-		public Builder thinkOption(@Nullable ThinkOption thinkOption) {
-			this.options.setThinkOption(thinkOption);
-			return this;
+		public B thinkOption(@Nullable ThinkOption thinkOption) {
+			this.thinkOption = thinkOption;
+			return self();
 		}
 
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		public B outputSchema(@Nullable String outputSchema) {
+			if (outputSchema == null) {
+				this.format = null;
 			}
 			else {
-				this.options.toolContext.putAll(toolContext);
+				this.format = ModelOptionsUtils.jsonToMap(outputSchema);
 			}
-			return this;
-		}
-
-		public Builder outputSchema(String outputSchema) {
-			this.options.setOutputSchema(outputSchema);
-			return this;
+			return self();
 		}
 
 		public OllamaChatOptions build() {
-			return this.options;
+			return new OllamaChatOptions(this.useNUMA, this.numCtx, this.numBatch, this.numGPU, this.mainGPU,
+					this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly, this.useMMap, this.useMLock,
+					this.numThread, this.numKeep, this.seed, this.maxTokens, this.topK, this.topP, this.minP, this.tfsZ,
+					this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
+					this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
+					this.stopSequences, this.model, this.format, this.keepAlive, this.truncate, this.thinkOption,
+					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext);
 		}
 
 	}

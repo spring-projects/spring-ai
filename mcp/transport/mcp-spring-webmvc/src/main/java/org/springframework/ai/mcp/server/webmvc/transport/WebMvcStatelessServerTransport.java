@@ -146,7 +146,9 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 		var handler = this.mcpHandler;
 		if (handler == null) {
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new McpError("MCP handler not configured"));
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("MCP handler not configured")
+					.build());
 		}
 
 		try {
@@ -164,7 +166,9 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 				catch (Exception e) {
 					logger.error("Failed to handle request: {}", e.getMessage());
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(new McpError("Failed to handle request: " + e.getMessage()));
+						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+							.message("Failed to handle request: " + e.getMessage())
+							.build());
 				}
 			}
 			else if (message instanceof McpSchema.JSONRPCNotification jsonrpcNotification) {
@@ -177,22 +181,29 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 				catch (Exception e) {
 					logger.error("Failed to handle notification: {}", e.getMessage());
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(new McpError("Failed to handle notification: " + e.getMessage()));
+						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+							.message("Failed to handle notification: " + e.getMessage())
+							.build());
 				}
 			}
 			else {
 				return ServerResponse.badRequest()
-					.body(new McpError("The server accepts either requests or notifications"));
+					.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+						.message("The server accepts either requests or notifications")
+						.build());
 			}
 		}
 		catch (IllegalArgumentException | IOException e) {
 			logger.error("Failed to deserialize message: {}", e.getMessage());
-			return ServerResponse.badRequest().body(new McpError("Invalid message format"));
+			return ServerResponse.badRequest()
+				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
 			logger.error("Unexpected error handling message: {}", e.getMessage());
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new McpError("Unexpected error: " + e.getMessage()));
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Unexpected error: " + e.getMessage())
+					.build());
 		}
 	}
 

@@ -195,7 +195,7 @@ public class SyncServerMcpTransportContextIT {
 
 		var mcpServer = McpServer.sync(this.streamableServerTransport)
 			.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, null, this.statefulHandler))
+			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, this.statefulHandler))
 			.build();
 
 		McpSchema.InitializeResult initResult = this.streamableClient.initialize();
@@ -221,7 +221,7 @@ public class SyncServerMcpTransportContextIT {
 
 		var mcpServer = McpServer.sync(this.sseServerTransport)
 			.capabilities(McpSchema.ServerCapabilities.builder().tools(true).build())
-			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, null, this.statefulHandler))
+			.tools(new McpServerFeatures.SyncToolSpecification(this.tool, this.statefulHandler))
 			.build();
 
 		McpSchema.InitializeResult initResult = this.sseClient.initialize();
