@@ -230,7 +230,6 @@ If you're using the OpenSearch vector store through Spring AI's `VectorStore` in
 **Testcontainers class renamed**: `OpensearchContainer` → `OpenSearchContainer` (proper camelCase)
 
 Spring AI's internal implementation has been updated to handle these changes automatically.
->>>>>>> c00023e0c (Upgrade to Spring Boot 4.1.0-M1)
 
 [[upgrading-to-2-0-0-M2]]
 == Upgrading to 2.0.0-M2
