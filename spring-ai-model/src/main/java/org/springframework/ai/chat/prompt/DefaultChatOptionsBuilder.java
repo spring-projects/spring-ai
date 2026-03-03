@@ -45,6 +45,18 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 	public DefaultChatOptionsBuilder() {
 	}
 
+	@Override
+	public B clone() {
+		try {
+			B copy = (B) super.clone();
+			copy.stopSequences = this.stopSequences == null ? null : new ArrayList<>(this.stopSequences);
+			return copy;
+		}
+		catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	protected B self() {
 		return (B) this;

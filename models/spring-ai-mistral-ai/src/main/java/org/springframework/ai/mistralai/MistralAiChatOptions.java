@@ -487,6 +487,13 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
+		@Override
+		public B clone() {
+			AbstractBuilder<B> copy = super.clone();
+			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
+			return (B) copy;
+		}
+
 		private @Nullable Boolean safePrompt;
 
 		private @Nullable Integer randomSeed;

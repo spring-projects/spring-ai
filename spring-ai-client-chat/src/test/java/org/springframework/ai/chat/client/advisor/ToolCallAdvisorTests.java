@@ -804,12 +804,29 @@ public class ToolCallAdvisorTests {
 
 		when(toolOptions.copy()).thenReturn(copiedOptions);
 		when(toolOptions.getInternalToolExecutionEnabled()).thenReturn(true);
+
+		ToolCallingChatOptions.Builder<?> mutateBuilder = mock(ToolCallingChatOptions.Builder.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+		Mockito.doReturn(mutateBuilder).when(toolOptions).mutate();
+		Mockito.doReturn(mutateBuilder)
+			.when(mutateBuilder)
+			.internalToolExecutionEnabled(org.mockito.ArgumentMatchers.any());
+		Mockito.doReturn(copiedOptions).when(mutateBuilder).build();
+
 		when(copiedOptions.getInternalToolExecutionEnabled()).thenAnswer(invocation -> internalToolExecutionEnabled[0]);
 		Mockito.doAnswer(invocation -> {
 			internalToolExecutionEnabled[0] = invocation.getArgument(0);
 			return null;
 		}).when(copiedOptions).setInternalToolExecutionEnabled(org.mockito.ArgumentMatchers.anyBoolean());
 		when(copiedOptions.copy()).thenReturn(copiedOptions);
+
+		ToolCallingChatOptions.Builder<?> copiedMutateBuilder = mock(ToolCallingChatOptions.Builder.class,
+				Mockito.withSettings().strictness(Strictness.LENIENT));
+		Mockito.doReturn(copiedMutateBuilder).when(copiedOptions).mutate();
+		Mockito.doReturn(copiedMutateBuilder)
+			.when(copiedMutateBuilder)
+			.internalToolExecutionEnabled(org.mockito.ArgumentMatchers.any());
+		Mockito.doReturn(copiedOptions).when(copiedMutateBuilder).build();
 
 		Prompt prompt = new Prompt(instructions, toolOptions);
 
@@ -826,6 +843,7 @@ public class ToolCallAdvisorTests {
 		return mockRequest;
 	}
 
+	@SuppressWarnings("unchecked")
 	private ChatClientRequest createMockRequest(boolean withToolCallingOptions) {
 		List<Message> instructions = List.of(new UserMessage("test message"));
 
@@ -835,29 +853,42 @@ public class ToolCallAdvisorTests {
 		if (withToolCallingOptions) {
 			ToolCallingChatOptions toolOptions = mock(ToolCallingChatOptions.class,
 					Mockito.withSettings().strictness(Strictness.LENIENT));
-			// Create a separate mock for the copy that tracks the internal state
 			copiedOptions = mock(ToolCallingChatOptions.class, Mockito.withSettings().strictness(Strictness.LENIENT));
 
-			// Use a holder to track the state
 			boolean[] internalToolExecutionEnabled = { true };
 
 			when(toolOptions.copy()).thenReturn(copiedOptions);
 			when(toolOptions.getInternalToolExecutionEnabled()).thenReturn(true);
 
-			// When getInternalToolExecutionEnabled is called on the copy, return the
-			// current state
+			@SuppressWarnings("rawtypes")
+			ToolCallingChatOptions.Builder mutateBuilder = mock(ToolCallingChatOptions.Builder.class,
+					Mockito.withSettings().strictness(Strictness.LENIENT));
+			Mockito.doReturn(mutateBuilder).when(toolOptions).mutate();
+			Mockito.doAnswer(invocation -> {
+				internalToolExecutionEnabled[0] = invocation.getArgument(0);
+				return mutateBuilder;
+			}).when(mutateBuilder).internalToolExecutionEnabled(org.mockito.ArgumentMatchers.any());
+			Mockito.doReturn(copiedOptions).when(mutateBuilder).build();
+
 			when(copiedOptions.getInternalToolExecutionEnabled())
 				.thenAnswer(invocation -> internalToolExecutionEnabled[0]);
 
-			// When setInternalToolExecutionEnabled is called on the copy, update the
-			// state
 			Mockito.doAnswer(invocation -> {
 				internalToolExecutionEnabled[0] = invocation.getArgument(0);
 				return null;
 			}).when(copiedOptions).setInternalToolExecutionEnabled(org.mockito.ArgumentMatchers.anyBoolean());
 
-			// copiedOptions.copy() should also return itself for subsequent copies
 			when(copiedOptions.copy()).thenReturn(copiedOptions);
+
+			@SuppressWarnings("rawtypes")
+			ToolCallingChatOptions.Builder copiedMutateBuilder = mock(ToolCallingChatOptions.Builder.class,
+					Mockito.withSettings().strictness(Strictness.LENIENT));
+			Mockito.doReturn(copiedMutateBuilder).when(copiedOptions).mutate();
+			Mockito.doAnswer(invocation -> {
+				internalToolExecutionEnabled[0] = invocation.getArgument(0);
+				return copiedMutateBuilder;
+			}).when(copiedMutateBuilder).internalToolExecutionEnabled(org.mockito.ArgumentMatchers.any());
+			Mockito.doReturn(copiedOptions).when(copiedMutateBuilder).build();
 
 			options = toolOptions;
 		}
@@ -865,14 +896,11 @@ public class ToolCallAdvisorTests {
 		Prompt prompt = new Prompt(instructions, options);
 		ChatClientRequest originalRequest = ChatClientRequest.builder().prompt(prompt).build();
 
-		// Create a mock request that returns a proper copy with the mocked options chain
 		ChatClientRequest mockRequest = mock(ChatClientRequest.class,
 				Mockito.withSettings().strictness(Strictness.LENIENT));
 		when(mockRequest.prompt()).thenReturn(prompt);
 		when(mockRequest.context()).thenReturn(Map.of());
 
-		// When copy() is called, return a new request with the copied options properly
-		// set up
 		final ToolCallingChatOptions finalCopiedOptions = copiedOptions;
 		when(mockRequest.copy()).thenAnswer(invocation -> {
 			Prompt copiedPrompt = new Prompt(instructions, finalCopiedOptions);

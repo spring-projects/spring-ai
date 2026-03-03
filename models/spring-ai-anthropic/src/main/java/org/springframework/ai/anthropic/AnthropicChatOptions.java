@@ -636,6 +636,21 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
+		@Override
+		public B clone() {
+			AbstractBuilder<B> copy = super.clone();
+			if (!this.customHeaders.isEmpty()) {
+				copy.customHeaders = new HashMap<>(this.customHeaders);
+			}
+			if (!this.citationDocuments.isEmpty()) {
+				copy.citationDocuments = new ArrayList<>(this.citationDocuments);
+			}
+			if (!this.httpHeaders.isEmpty()) {
+				copy.httpHeaders = new HashMap<>(this.httpHeaders);
+			}
+			return (B) copy;
+		}
+
 		// AbstractAnthropicOptions fields
 		private @Nullable String baseUrl;
 

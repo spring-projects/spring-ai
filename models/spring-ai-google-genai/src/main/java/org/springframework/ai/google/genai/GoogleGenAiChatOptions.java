@@ -641,6 +641,18 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			if (!this.safetySettings.isEmpty()) {
+				copy.safetySettings = new ArrayList<>(this.safetySettings);
+			}
+			if (!this.labels.isEmpty()) {
+				copy.labels = new HashMap<>(this.labels);
+			}
+			return copy;
+		}
+
 		protected @Nullable Integer candidateCount;
 
 		protected @Nullable String responseMimeType;

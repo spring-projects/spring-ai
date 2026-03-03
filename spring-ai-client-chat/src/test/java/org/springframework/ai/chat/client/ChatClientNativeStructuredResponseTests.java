@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import net.javacrumbs.jsonunit.core.Option;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,8 +46,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -85,6 +88,17 @@ public class ChatClientNativeStructuredResponseTests {
 	@Captor
 	ArgumentCaptor<Prompt> promptCaptor;
 
+	@BeforeEach
+	void setupModelDefaultOptionsMocks() {
+		StructuredOutputChatOptions defaults = mock(StructuredOutputChatOptions.class);
+		when(this.chatModel.getDefaultOptions()).thenReturn(defaults);
+
+		StructuredOutputChatOptions.Builder builder = mock(StructuredOutputChatOptions.Builder.class);
+		when(defaults.mutate()).thenReturn(builder);
+
+		when(builder.build()).thenReturn(this.structuredOutputChatOptions);
+	}
+
 	@Test
 	public void fallBackResponseEntityTest() {
 
@@ -100,7 +114,6 @@ public class ChatClientNativeStructuredResponseTests {
 		ResponseEntity<ChatResponse, UserEntity> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
 			.call()
@@ -139,7 +152,6 @@ public class ChatClientNativeStructuredResponseTests {
 		UserEntity entity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
 			.call()
@@ -176,7 +188,6 @@ public class ChatClientNativeStructuredResponseTests {
 		ResponseEntity<ChatResponse, UserEntity> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
@@ -220,7 +231,6 @@ public class ChatClientNativeStructuredResponseTests {
 		UserEntity entity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.user("Tell me about John")
@@ -261,7 +271,6 @@ public class ChatClientNativeStructuredResponseTests {
 		ResponseEntity<ChatResponse, UserEntity> responseEntity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.advisors(a -> a.param(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), false))
@@ -303,7 +312,6 @@ public class ChatClientNativeStructuredResponseTests {
 		UserEntity entity = ChatClient.builder(this.chatModel)
 			.build()
 			.prompt()
-			.options(this.structuredOutputChatOptions)
 			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 			.advisors(textCallAdvisor)
 			.advisors(a -> a.param(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), false))

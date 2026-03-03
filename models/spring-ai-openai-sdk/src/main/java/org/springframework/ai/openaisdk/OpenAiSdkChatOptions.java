@@ -889,6 +889,18 @@ public class OpenAiSdkChatOptions extends AbstractOpenAiSdkOptions
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			if (!this.customHeaders.isEmpty()) {
+				copy.customHeaders = new HashMap<>(this.customHeaders);
+			}
+			copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
+			copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
+			copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
+			return copy;
+		}
+
 		// AbstractOpenAiSdkOptions fields
 		protected @Nullable String baseUrl;
 

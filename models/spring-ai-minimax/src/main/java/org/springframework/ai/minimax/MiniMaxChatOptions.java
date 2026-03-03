@@ -443,6 +443,13 @@ public class MiniMaxChatOptions implements ToolCallingChatOptions {
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> {
 
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
+			return copy;
+		}
+
 		protected @Nullable Integer n;
 
 		protected MiniMaxApi.ChatCompletionRequest.@Nullable ResponseFormat responseFormat;

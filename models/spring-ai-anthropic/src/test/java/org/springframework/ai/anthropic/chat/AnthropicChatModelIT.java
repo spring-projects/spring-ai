@@ -206,7 +206,7 @@ class AnthropicChatModelIT {
 		String model = Model.CLAUDE_SONNET_4_20250514.asString();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(model).build())
+				.options(AnthropicChatOptions.builder().model(model))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -397,7 +397,7 @@ class AnthropicChatModelIT {
 		String model = Model.CLAUDE_SONNET_4_20250514.asString();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(model).build())
+				.options(AnthropicChatOptions.builder().model(model))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.stream()
 				.chatResponse()

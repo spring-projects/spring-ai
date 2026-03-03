@@ -208,7 +208,7 @@ public interface ChatClient {
 
 		ChatClientRequestSpec messages(List<Message> messages);
 
-		<T extends ChatOptions> ChatClientRequestSpec options(T options);
+		<B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer);
 
 		ChatClientRequestSpec toolNames(String... toolNames);
 
@@ -257,7 +257,7 @@ public interface ChatClient {
 
 		Builder defaultAdvisors(List<Advisor> advisors);
 
-		Builder defaultOptions(ChatOptions chatOptions);
+		Builder defaultOptions(ChatOptions.Builder chatOptions);
 
 		Builder defaultUser(String text);
 

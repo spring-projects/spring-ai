@@ -94,8 +94,8 @@ public class DefaultChatClientBuilder implements Builder {
 		return this;
 	}
 
-	public Builder defaultOptions(ChatOptions chatOptions) {
-		this.defaultRequest.options(chatOptions);
+	public Builder defaultOptions(ChatOptions.Builder customizer) {
+		this.defaultRequest.options(customizer);
 		return this;
 	}
 

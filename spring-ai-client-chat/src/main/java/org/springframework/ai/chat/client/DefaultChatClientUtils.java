@@ -19,20 +19,15 @@ package org.springframework.ai.chat.client;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.DefaultChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.Prompt.Builder;
 import org.springframework.ai.chat.prompt.PromptTemplate;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.util.Assert;
@@ -105,57 +100,38 @@ final class DefaultChatClientUtils {
 		 * ==========* OPTIONS * ==========
 		 */
 
-		ChatOptions processedChatOptions = inputRequest.getChatOptions();
-
-		// If we have tool-related configuration but no tool or non-tool options,
-		// create ToolCallingChatOptions
-		if (!inputRequest.getToolNames().isEmpty() || !inputRequest.getToolCallbacks().isEmpty()
-				|| !inputRequest.getToolCallbackProviders().isEmpty()
-				|| !CollectionUtils.isEmpty(inputRequest.getToolContext())) {
-
-			if (processedChatOptions == null) {
-				processedChatOptions = new DefaultToolCallingChatOptions();
-			}
-			else if (processedChatOptions instanceof DefaultChatOptions defaultChatOptions) {
-				processedChatOptions = ModelOptionsUtils.copyToTarget(defaultChatOptions, ChatOptions.class,
-						DefaultToolCallingChatOptions.class);
-			}
+		ChatOptions.Builder<?> builder = inputRequest.getChatModel().getDefaultOptions().mutate();
+		if (inputRequest.getOptionsCustomizer() != null) {
+			builder = builder.combineWith(inputRequest.getOptionsCustomizer());
 		}
 
-		if (processedChatOptions instanceof ToolCallingChatOptions toolCallingChatOptions) {
+		if (builder instanceof ToolCallingChatOptions.Builder<?> tbuilder) {
 			if (!inputRequest.getToolNames().isEmpty()) {
-				Set<String> toolNames = ToolCallingChatOptions
-					.mergeToolNames(new HashSet<>(inputRequest.getToolNames()), toolCallingChatOptions.getToolNames());
-				toolCallingChatOptions.setToolNames(toolNames);
+				tbuilder.toolNames(new HashSet<>(inputRequest.getToolNames()));
 			}
-
-			// Lazily resolve ToolCallbackProvider instances to ToolCallback instances
-			List<ToolCallback> allToolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
+			List<ToolCallback> toolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
 			for (var provider : inputRequest.getToolCallbackProviders()) {
-				allToolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));
+				toolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));
 			}
 
-			if (!allToolCallbacks.isEmpty()) {
-				List<ToolCallback> toolCallbacks = ToolCallingChatOptions.mergeToolCallbacks(allToolCallbacks,
-						toolCallingChatOptions.getToolCallbacks());
+			if (!toolCallbacks.isEmpty()) {
 				ToolCallingChatOptions.validateToolCallbacks(toolCallbacks);
-				toolCallingChatOptions.setToolCallbacks(toolCallbacks);
+				tbuilder.toolCallbacks(toolCallbacks);
 			}
-			if (!CollectionUtils.isEmpty(inputRequest.getToolContext())) {
-				Map<String, Object> toolContext = ToolCallingChatOptions.mergeToolContext(inputRequest.getToolContext(),
-						toolCallingChatOptions.getToolContext());
-				toolCallingChatOptions.setToolContext(toolContext);
+
+			if (!inputRequest.getToolContext().isEmpty()) {
+				tbuilder.toolContext(inputRequest.getToolContext());
 			}
+
 		}
+
+		ChatOptions processedChatOptions = builder.build();
 
 		/*
 		 * ==========* REQUEST * ==========
 		 */
 
-		Builder promptBuilder = Prompt.builder().messages(processedMessages);
-		if (processedChatOptions != null) {
-			promptBuilder.chatOptions(processedChatOptions);
-		}
+		Builder promptBuilder = Prompt.builder().messages(processedMessages).chatOptions(processedChatOptions);
 		return ChatClientRequest.builder()
 			.prompt(promptBuilder.build())
 			.context(new ConcurrentHashMap<>(inputRequest.getAdvisorParams()))

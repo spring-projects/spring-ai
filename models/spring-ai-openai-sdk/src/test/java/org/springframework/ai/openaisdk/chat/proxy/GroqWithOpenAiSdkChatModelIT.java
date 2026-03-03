@@ -244,7 +244,7 @@ class GroqWithOpenAiSdkChatModelIT {
 	void validateCallResponseMetadata() {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt()
-			.options(OpenAiSdkChatOptions.builder().model("meta-llama/llama-4-scout-17b-16e-instruct").build())
+			.options(OpenAiSdkChatOptions.builder().model("meta-llama/llama-4-scout-17b-16e-instruct"))
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();

@@ -153,7 +153,7 @@ class OpenAiSdkChatClientIT {
 	void mapOutputConverter() {
 		// @formatter:off
 		Map<String, Object> result = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiSdkChatOptions.builder().model(com.openai.models.ChatModel.GPT_5_MINI.asString()).build())
+				.options(OpenAiSdkChatOptions.builder().model(com.openai.models.ChatModel.GPT_5_MINI.asString()))
 				.user(u -> u.text("Provide me a List of {subject}")
 						.param("subject", "an array of numbers from 1 to 9 under they key name 'numbers'"))
 				.call()
@@ -232,7 +232,7 @@ class OpenAiSdkChatClientIT {
 		// @formatter:off
 		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
-				.options(OpenAiSdkChatOptions.builder().streamOptions(StreamOptions.builder().includeUsage(true).build()).build())
+				.options(OpenAiSdkChatOptions.builder().streamOptions(StreamOptions.builder().includeUsage(true).build()))
 				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
@@ -333,7 +333,7 @@ class OpenAiSdkChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiSdkChatOptions.builder().model(modelName).build())
+				.options(OpenAiSdkChatOptions.builder().model(modelName))
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -353,7 +353,7 @@ class OpenAiSdkChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 				// TODO consider adding model(...) method to ChatClient as a shortcut to
-				.options(OpenAiSdkChatOptions.builder().model(modelName).build())
+				.options(OpenAiSdkChatOptions.builder().model(modelName))
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -370,8 +370,7 @@ class OpenAiSdkChatClientIT {
 
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiSdkChatOptions.builder().model(com.openai.models.ChatModel.GPT_5_MINI.asString())
-						.build())
+				.options(OpenAiSdkChatOptions.builder().model(com.openai.models.ChatModel.GPT_5_MINI.asString()))
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, url))
 				.stream()
@@ -392,8 +391,7 @@ class OpenAiSdkChatClientIT {
 			.options(OpenAiSdkChatOptions.builder()
 				.model(com.openai.models.ChatModel.GPT_4O_AUDIO_PREVIEW.asString())
 				.outputAudio(new AudioParameters(AudioParameters.Voice.ALLOY, AudioParameters.AudioResponseFormat.WAV))
-				.outputModalities(List.of(Modality.TEXT.asString(), Modality.AUDIO.asString()))
-				.build())
+				.outputModalities(List.of(Modality.TEXT.asString(), Modality.AUDIO.asString())))
 			.call()
 			.chatResponse();
 
@@ -456,7 +454,7 @@ class OpenAiSdkChatClientIT {
 		// @formatter:off
 		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
-				.options(OpenAiSdkChatOptions.builder().streamUsage(true).build())
+				.options(OpenAiSdkChatOptions.builder().streamUsage(true))
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()
 								+ "<format>")
@@ -491,7 +489,7 @@ class OpenAiSdkChatClientIT {
 		// @formatter:off
 		Flux<ChatResponse> chatResponse = ChatClient.create(this.chatModel)
 				.prompt()
-				.options(OpenAiSdkChatOptions.builder().streamUsage(true).build())
+				.options(OpenAiSdkChatOptions.builder().streamUsage(true))
 				.advisors(new SimpleLoggerAdvisor())
 				.user(u -> u
 						.text("Generate the filmography of 5 movies for Tom Hanks. " + System.lineSeparator()

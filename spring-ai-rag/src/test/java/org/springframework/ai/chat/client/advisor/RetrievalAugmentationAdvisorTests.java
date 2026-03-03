@@ -27,6 +27,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link RetrievalAugmentationAdvisor}.
@@ -66,6 +68,7 @@ class RetrievalAugmentationAdvisorTests {
 	void theOneWithTheDocumentRetriever() {
 		// Chat Model
 		var chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		var promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture())).willReturn(ChatResponse.builder()
 			.generations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))
