@@ -376,7 +376,7 @@ class BedrockProxyChatModelIT {
 		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(BedrockChatOptions.builder().model(model).build())
+				.options(BedrockChatOptions.builder().model(model))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();
@@ -391,7 +391,7 @@ class BedrockProxyChatModelIT {
 		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(BedrockChatOptions.builder().model(model).build())
+				.options(BedrockChatOptions.builder().model(model))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.stream()
 				.chatResponse()

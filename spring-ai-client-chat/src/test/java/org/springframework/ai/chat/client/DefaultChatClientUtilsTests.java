@@ -26,7 +26,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.DefaultChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
@@ -39,6 +39,7 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link DefaultChatClientUtils}.
@@ -59,6 +60,7 @@ class DefaultChatClientUtilsTests {
 	void whenSystemTextIsProvidedThenSystemMessageIsAddedToPrompt() {
 		String systemText = "System instructions";
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -77,6 +79,7 @@ class DefaultChatClientUtilsTests {
 		String systemText = "System instructions for {name}";
 		Map<String, Object> systemParams = Map.of("name", "Spring AI");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -94,6 +97,7 @@ class DefaultChatClientUtilsTests {
 	void whenMessagesAreProvidedThenTheyAreAddedToPrompt() {
 		List<Message> messages = List.of(new SystemMessage("System message"), new UserMessage("User message"));
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -111,6 +115,7 @@ class DefaultChatClientUtilsTests {
 	void whenUserTextIsProvidedThenUserMessageIsAddedToPrompt() {
 		String userText = "User question";
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -129,6 +134,7 @@ class DefaultChatClientUtilsTests {
 		String userText = "Question about {topic}";
 		Map<String, Object> userParams = Map.of("topic", "Spring AI");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -147,6 +153,7 @@ class DefaultChatClientUtilsTests {
 		String userText = "What's in this image?";
 		Media media = mock(Media.class);
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -167,6 +174,7 @@ class DefaultChatClientUtilsTests {
 		String systemText = "System instructions";
 		List<Message> messages = List.of(new SystemMessage("System message"));
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -186,6 +194,7 @@ class DefaultChatClientUtilsTests {
 		String userText = "User question";
 		List<Message> messages = List.of(new UserMessage("User message"));
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -202,9 +211,10 @@ class DefaultChatClientUtilsTests {
 
 	@Test
 	void whenToolCallingChatOptionsIsProvidedThenToolNamesAreSet() {
-		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().build();
+		var chatOptions = ToolCallingChatOptions.builder();
 		List<String> toolNames = List.of("tool1", "tool2");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -222,9 +232,10 @@ class DefaultChatClientUtilsTests {
 
 	@Test
 	void whenToolCallingChatOptionsIsProvidedThenToolCallbacksAreSet() {
-		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().build();
+		var chatOptions = ToolCallingChatOptions.builder();
 		ToolCallback toolCallback = new TestToolCallback("tool1");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -242,9 +253,10 @@ class DefaultChatClientUtilsTests {
 
 	@Test
 	void whenToolCallingChatOptionsIsProvidedThenToolContextIsSet() {
-		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().build();
+		var chatOptions = ToolCallingChatOptions.builder();
 		Map<String, Object> toolContext = Map.of("key", "value");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -263,9 +275,10 @@ class DefaultChatClientUtilsTests {
 	@Test
 	void whenToolNamesAndChatOptionsAreProvidedThenTheToolNamesOverride() {
 		Set<String> toolNames1 = Set.of("toolA", "toolB");
-		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().toolNames(toolNames1).build();
+		var chatOptions = ToolCallingChatOptions.builder().toolNames(toolNames1);
 		List<String> toolNames2 = List.of("tool1", "tool2");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -284,9 +297,10 @@ class DefaultChatClientUtilsTests {
 	@Test
 	void whenToolCallbacksAndChatOptionsAreProvidedThenTheToolCallbacksOverride() {
 		ToolCallback toolCallback1 = new TestToolCallback("tool1");
-		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().toolCallbacks(toolCallback1).build();
+		var chatOptions = ToolCallingChatOptions.builder().toolCallbacks(toolCallback1);
 		ToolCallback toolCallback2 = new TestToolCallback("tool2");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -305,13 +319,13 @@ class DefaultChatClientUtilsTests {
 	@Test
 	void whenToolContextAndChatOptionsAreProvidedThenTheValuesAreMerged() {
 		Map<String, Object> toolContext1 = Map.of("key1", "value1");
-		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().toolContext(toolContext1).build();
 		Map<String, Object> toolContext2 = Map.of("key2", "value2");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
-			.options(chatOptions)
+			.options(ToolCallingChatOptions.builder().toolContext(toolContext1))
 			.toolContext(toolContext2);
 
 		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
@@ -327,8 +341,9 @@ class DefaultChatClientUtilsTests {
 	@Test
 	void whenToolNamesAndChatOptionsAreDefaultChatOptions() {
 		Set<String> toolNames1 = Set.of("toolA", "toolB");
-		DefaultChatOptions chatOptions = new DefaultChatOptions();
+		var chatOptions = ChatOptions.builder();
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -347,8 +362,9 @@ class DefaultChatClientUtilsTests {
 	@Test
 	void whenToolCallbacksAndChatOptionsAreDefaultChatOptions() {
 		ToolCallback toolCallback1 = new TestToolCallback("tool1");
-		DefaultChatOptions chatOptions = new DefaultChatOptions();
+		var chatOptions = ChatOptions.builder();
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -367,8 +383,9 @@ class DefaultChatClientUtilsTests {
 	@Test
 	void whenToolContextAndChatOptionsAreDefaultChatOptions() {
 		Map<String, Object> toolContext1 = Map.of("key1", "value1");
-		DefaultChatOptions chatOptions = new DefaultChatOptions();
+		var chatOptions = ChatOptions.builder();
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -386,6 +403,7 @@ class DefaultChatClientUtilsTests {
 	void whenAdvisorParamsAreProvidedThenTheyAreAddedToContext() {
 		Map<String, Object> advisorParams = Map.of("key1", "value1", "key2", "value2");
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -406,6 +424,7 @@ class DefaultChatClientUtilsTests {
 			.endDelimiterToken('>')
 			.build();
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()
@@ -431,7 +450,7 @@ class DefaultChatClientUtilsTests {
 
 		List<Message> messages = List.of(new UserMessage("Intermediate message"));
 
-		ToolCallingChatOptions chatOptions = ToolCallingChatOptions.builder().build();
+		var chatOptions = ToolCallingChatOptions.builder();
 		List<String> toolNames = List.of("tool1", "tool2");
 		ToolCallback toolCallback = new TestToolCallback("tool3");
 		Map<String, Object> toolContext = Map.of("toolKey", "toolValue");
@@ -439,6 +458,7 @@ class DefaultChatClientUtilsTests {
 		Map<String, Object> advisorParams = Map.of("advisorKey", "advisorValue");
 
 		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getDefaultOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
 			.create(chatModel)
 			.prompt()

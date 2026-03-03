@@ -116,10 +116,10 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		chatClientRequest = this.doInitializeLoop(chatClientRequest, callAdvisorChain);
 
 		// Overwrite the ToolCallingChatOptions to disable internal tool execution.
-		var optionsCopy = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions().copy();
-
 		// Disable internal tool execution to allow ToolCallAdvisor to handle tool calls
-		optionsCopy.setInternalToolExecutionEnabled(false);
+		var optionsCopy = ((ToolCallingChatOptions.Builder<?>) chatClientRequest.prompt().getOptions().mutate())
+			.internalToolExecutionEnabled(false)
+			.build();
 
 		var instructions = chatClientRequest.prompt().getInstructions();
 

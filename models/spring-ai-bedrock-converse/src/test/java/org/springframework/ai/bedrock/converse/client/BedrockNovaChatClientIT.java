@@ -196,7 +196,7 @@ public class BedrockNovaChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.options(ToolCallingChatOptions.builder().model(modelName))
 			.tools(new DummyWeatherForecastTools())
 			.user("Get current weather in Amsterdam")
 			.stream()

@@ -38,6 +38,7 @@ import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -47,6 +48,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Christian Tzolov
@@ -71,6 +73,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithDynamicFilterExpressions() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		// @formatter:off
 		given(this.chatModel.call(this.promptCaptor.capture()))
@@ -179,6 +182,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorTakesUserTextParametersIntoAccountForSimilaritySearch() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
 						ChatResponseMetadata.builder().build()));
@@ -209,6 +213,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorTakesUserParameterizedUserMessagesIntoAccountForSimilaritySearch() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your answer is ZXY"))),
 						ChatResponseMetadata.builder().build()));
@@ -243,6 +248,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithMultipleFilterParameters() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Filtered response"))),
 						ChatResponseMetadata.builder().build()));
@@ -273,6 +279,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithDifferentSimilarityThresholds() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("High threshold response"))),
 						ChatResponseMetadata.builder().build()));
@@ -299,6 +306,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithComplexParameterizedTemplate() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Complex template response"))),
 						ChatResponseMetadata.builder().build()));
@@ -337,6 +345,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithDocumentsContainingMetadata() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Metadata response"))),
 						ChatResponseMetadata.builder().build()));
@@ -378,6 +387,7 @@ public class QuestionAnswerAdvisorTests {
 
 	@Test
 	public void qaAdvisorWithZeroTopK() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 				.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Zero docs response"))),
 						ChatResponseMetadata.builder().build()));

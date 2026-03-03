@@ -628,6 +628,13 @@ public class AzureOpenAiChatOptions implements ToolCallingChatOptions {
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> {
 
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
+			return copy;
+		}
+
 		protected @Nullable Map<String, Integer> logitBias;
 
 		protected @Nullable String user;

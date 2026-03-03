@@ -32,7 +32,7 @@ public interface StructuredOutputChatOptions extends ChatOptions {
 
 	void setOutputSchema(String outputSchema);
 
-	interface Builder<B extends Builder<B>> {
+	interface Builder<B extends Builder<B>> extends ChatOptions.Builder<B> {
 
 		B outputSchema(@Nullable String outputSchema);
 

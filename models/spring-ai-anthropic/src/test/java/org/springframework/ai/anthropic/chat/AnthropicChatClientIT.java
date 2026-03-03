@@ -125,8 +125,7 @@ class AnthropicChatClientIT {
 		List<ActorsFilms> actorsFilms = ChatClient.create(this.chatModel).prompt()
 				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 				.options(AnthropicChatOptions.builder()
-					.model(Model.CLAUDE_SONNET_4_6.asString())
-					.build())
+					.model(Model.CLAUDE_SONNET_4_6.asString()))
 				.user("Generate the filmography of 5 movies for Tom Hanks and Bill Murray.")
 				.call()
 				.entity(new ParameterizedTypeReference<>() {
@@ -297,7 +296,7 @@ class AnthropicChatClientIT {
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(modelName).build())
+				.options(AnthropicChatOptions.builder().model(modelName))
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -315,7 +314,7 @@ class AnthropicChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AnthropicChatOptions.builder().model(modelName).build())
+				.options(AnthropicChatOptions.builder().model(modelName))
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -330,8 +329,7 @@ class AnthropicChatClientIT {
 		// @formatter:off
 		Flux<String> response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder()
-						.model(Model.CLAUDE_HAIKU_4_5.asString())
-						.build())
+						.model(Model.CLAUDE_HAIKU_4_5.asString()))
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.stream()
@@ -349,7 +347,7 @@ class AnthropicChatClientIT {
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();
 
 		Flux<ChatResponse> responses = chatClient.prompt()
-			.options(ToolCallingChatOptions.builder().model(modelName).build())
+			.options(ToolCallingChatOptions.builder().model(modelName))
 			.tools(new MyTools())
 			.user("Get current weather in Amsterdam and Paris")
 			.stream()

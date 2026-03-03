@@ -92,7 +92,6 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -226,9 +225,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	@Override
 	public ChatResponse call(Prompt prompt) {
-		if (this.anthropicClient == null) {
-			throw new IllegalStateException("Anthropic sync client is not configured.");
-		}
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		return this.internalCall(requestPrompt, null);
 	}
@@ -601,70 +597,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return response;
 	}
 
-	/**
-	 * Builds the request prompt by merging runtime options with default options.
-	 * @param prompt the original prompt
-	 * @return the prompt with merged options
-	 */
 	Prompt buildRequestPrompt(Prompt prompt) {
-		// Process runtime options
-		AnthropicChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						AnthropicChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						AnthropicChatOptions.class);
-			}
-		}
-
-		// Define request options by merging runtime options and default options
-		AnthropicChatOptions.Builder mergedBuilder = this.options.mutate();
-		if (runtimeOptions != null) {
-			mergedBuilder.combineWith(runtimeOptions.mutate());
-		}
-		AnthropicChatOptions requestOptions = mergedBuilder.build();
-
-		// Merge @JsonIgnore fields explicitly (lost during copyToTarget)
-		if (runtimeOptions != null) {
-			requestOptions.setInternalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
-					? runtimeOptions.getInternalToolExecutionEnabled()
-					: this.options.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(
-					ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(), this.options.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.options.getToolCallbacks()));
-			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
-					this.options.getToolContext()));
-			if (prompt.getOptions() instanceof AnthropicChatOptions originalAnthropicOptions) {
-				if (!originalAnthropicOptions.getCitationDocuments().isEmpty()) {
-					requestOptions
-						.setCitationDocuments(new ArrayList<>(originalAnthropicOptions.getCitationDocuments()));
-				}
-				if (originalAnthropicOptions.getCacheOptions() != null
-						&& originalAnthropicOptions.getCacheOptions().getStrategy() != AnthropicCacheStrategy.NONE) {
-					requestOptions.setCacheOptions(originalAnthropicOptions.getCacheOptions());
-				}
-				if (originalAnthropicOptions.getOutputConfig() != null) {
-					requestOptions.setOutputConfig(originalAnthropicOptions.getOutputConfig());
-				}
-				if (!originalAnthropicOptions.getHttpHeaders().isEmpty()) {
-					requestOptions.setHttpHeaders(new HashMap<>(originalAnthropicOptions.getHttpHeaders()));
-				}
-				if (originalAnthropicOptions.getSkillContainer() != null) {
-					requestOptions.setSkillContainer(originalAnthropicOptions.getSkillContainer());
-				}
-				if (originalAnthropicOptions.getWebSearchTool() != null) {
-					requestOptions.setWebSearchTool(originalAnthropicOptions.getWebSearchTool());
-				}
-			}
-		}
+		var requestOptions = (AnthropicChatOptions) prompt.getOptions();
+		requestOptions = requestOptions == null ? this.options : requestOptions;
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
-		return new Prompt(prompt.getInstructions(), requestOptions);
+		return prompt.mutate().chatOptions(requestOptions).build();
 	}
 
 	/**

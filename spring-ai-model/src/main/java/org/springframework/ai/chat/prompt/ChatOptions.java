@@ -113,7 +113,9 @@ public interface ChatOptions extends ModelOptions {
 	/**
 	 * Builder for creating {@link ChatOptions} instance.
 	 */
-	interface Builder<B extends Builder<B>> {
+	interface Builder<B extends Builder<B>> extends Cloneable {
+
+		B clone();
 
 		/**
 		 * Builds with the model to use for the chat.

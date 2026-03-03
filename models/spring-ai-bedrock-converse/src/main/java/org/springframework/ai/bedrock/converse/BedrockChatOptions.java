@@ -341,6 +341,13 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
 			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
 
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			copy.requestParameters = this.requestParameters == null ? null : new HashMap<>(this.requestParameters);
+			return copy;
+		}
+
 		protected Map<String, String> requestParameters = new HashMap<>();
 
 		protected @Nullable BedrockCacheOptions cacheOptions;

@@ -287,64 +287,11 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	Prompt buildRequestPrompt(Prompt prompt) {
-		BedrockChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof BedrockChatOptions bedrockChatOptions) {
-				runtimeOptions = bedrockChatOptions.copy();
-			}
-			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						BedrockChatOptions.class);
-			}
-			else {
-				runtimeOptions = from(prompt.getOptions());
-			}
-		}
+		BedrockChatOptions runtimeOptions = (BedrockChatOptions) prompt.getOptions();
+		runtimeOptions = runtimeOptions == null ? this.defaultOptions : runtimeOptions;
+		ToolCallingChatOptions.validateToolCallbacks(runtimeOptions.getToolCallbacks());
 
-		// Merge runtime options with the default options
-		BedrockChatOptions updatedRuntimeOptions = null;
-		if (runtimeOptions == null) {
-			updatedRuntimeOptions = this.defaultOptions.copy();
-		}
-		else {
-			if (runtimeOptions.getFrequencyPenalty() != null) {
-				logger.warn("The frequencyPenalty option is not supported by BedrockProxyChatModel. Ignoring.");
-			}
-			if (runtimeOptions.getPresencePenalty() != null) {
-				logger.warn("The presencePenalty option is not supported by BedrockProxyChatModel. Ignoring.");
-			}
-			if (runtimeOptions.getTopK() != null) {
-				logger.warn("The topK option is not supported by BedrockProxyChatModel. Ignoring.");
-			}
-			updatedRuntimeOptions = BedrockChatOptions.builder()
-				.model(runtimeOptions.getModel() != null ? runtimeOptions.getModel() : this.defaultOptions.getModel())
-				.maxTokens(runtimeOptions.getMaxTokens() != null ? runtimeOptions.getMaxTokens()
-						: this.defaultOptions.getMaxTokens())
-				.stopSequences(runtimeOptions.getStopSequences() != null ? runtimeOptions.getStopSequences()
-						: this.defaultOptions.getStopSequences())
-				.temperature(runtimeOptions.getTemperature() != null ? runtimeOptions.getTemperature()
-						: this.defaultOptions.getTemperature())
-				.topP(runtimeOptions.getTopP() != null ? runtimeOptions.getTopP() : this.defaultOptions.getTopP())
-
-				.toolCallbacks(runtimeOptions.getToolCallbacks() != null ? runtimeOptions.getToolCallbacks()
-						: this.defaultOptions.getToolCallbacks())
-				.toolNames(runtimeOptions.getToolNames() != null ? runtimeOptions.getToolNames()
-						: this.defaultOptions.getToolNames())
-				.toolContext(runtimeOptions.getToolContext() != null ? runtimeOptions.getToolContext()
-						: this.defaultOptions.getToolContext())
-				.internalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
-						? runtimeOptions.getInternalToolExecutionEnabled()
-						: this.defaultOptions.getInternalToolExecutionEnabled())
-				.cacheOptions(runtimeOptions.getCacheOptions() != null ? runtimeOptions.getCacheOptions()
-						: this.defaultOptions.getCacheOptions())
-				.outputSchema(runtimeOptions.getOutputSchema() != null ? runtimeOptions.getOutputSchema()
-						: this.defaultOptions.getOutputSchema())
-				.build();
-		}
-
-		ToolCallingChatOptions.validateToolCallbacks(updatedRuntimeOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), updatedRuntimeOptions);
+		return prompt.mutate().chatOptions(runtimeOptions).build();
 	}
 
 	ConverseRequest createRequest(Prompt prompt) {

@@ -229,7 +229,7 @@ class OllamaWithOpenAiSdkChatModelIT {
 	void validateCallResponseMetadata() {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt()
-			.options(OpenAiSdkChatOptions.builder().model(DEFAULT_OLLAMA_MODEL).build())
+			.options(OpenAiSdkChatOptions.builder().model(DEFAULT_OLLAMA_MODEL))
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();

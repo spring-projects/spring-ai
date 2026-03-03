@@ -39,6 +39,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
@@ -50,6 +51,7 @@ import org.springframework.util.MimeTypeUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 import static org.springframework.ai.chat.messages.MessageType.USER;
 
 /**
@@ -74,6 +76,7 @@ public class ChatClientTests {
 	// ChatClient Builder Tests
 	@Test
 	void defaultSystemText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
@@ -127,6 +130,7 @@ public class ChatClientTests {
 
 	@Test
 	void defaultSystemTextLambda() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
@@ -525,6 +529,7 @@ public class ChatClientTests {
 
 	@Test
 	void defaultUserText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
@@ -552,6 +557,7 @@ public class ChatClientTests {
 
 	@Test
 	void simpleUserPromptAsString() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -566,6 +572,7 @@ public class ChatClientTests {
 
 	@Test
 	void simpleUserPrompt() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -580,6 +587,7 @@ public class ChatClientTests {
 
 	@Test
 	void simpleUserPromptObject() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -606,6 +614,7 @@ public class ChatClientTests {
 
 	@Test
 	void simpleSystemPrompt() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -631,8 +640,8 @@ public class ChatClientTests {
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
-		var options = ToolCallingChatOptions.builder().build();
-		given(this.chatModel.getDefaultOptions()).willReturn(options);
+		var modelOptions = ToolCallingChatOptions.builder().build();
+		given(this.chatModel.getDefaultOptions()).willReturn(modelOptions);
 
 		var url = new URL("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png");
 
@@ -666,10 +675,11 @@ public class ChatClientTests {
 			.containsEntry("messageType", USER)
 			.containsEntry("umetadata1", "udata1");
 
-		ToolCallingChatOptions runtieOptions = (ToolCallingChatOptions) this.promptCaptor.getValue().getOptions();
+		ToolCallingChatOptions promptOptions = (ToolCallingChatOptions) this.promptCaptor.getValue().getOptions();
 
-		assertThat(runtieOptions.getToolNames()).containsExactly("function1");
-		assertThat(options.getToolNames()).isEmpty();
+		assertThat(modelOptions.getToolNames()).isEmpty();
+
+		assertThat(promptOptions.getToolNames()).containsExactly("function1");
 	}
 
 	// Constructors
@@ -704,6 +714,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithStringContent() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -720,6 +731,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithMessages() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -738,6 +750,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithStringContentAndUserText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -755,6 +768,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithHistoryAndUserText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -773,6 +787,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithUserMessageAndUserText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -791,6 +806,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenMessagesWithHistoryAndUserText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -809,6 +825,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenMessagesWithUserMessageAndUserText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -829,6 +846,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithMessagesAndSystemText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -847,6 +865,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithSystemMessageAndNoSystemText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -865,6 +884,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenPromptWithSystemMessageAndSystemText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -883,6 +903,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenMessagesAndSystemText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -906,6 +927,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenMessagesWithSystemMessageAndNoSystemText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
@@ -924,6 +946,7 @@ public class ChatClientTests {
 
 	@Test
 	void whenMessagesWithSystemMessageAndSystemText() {
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 		given(this.chatModel.call(this.promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 

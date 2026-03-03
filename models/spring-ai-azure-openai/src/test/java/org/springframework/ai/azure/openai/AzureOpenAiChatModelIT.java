@@ -257,7 +257,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
+				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o"))
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 				.call()
 				.content();
@@ -274,7 +274,7 @@ class AzureOpenAiChatModelIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o").build())
+				.options(AzureOpenAiChatOptions.builder().deploymentName("gpt-4o"))
 				.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, resource))
 				.call()
 				.content();
@@ -296,8 +296,7 @@ class AzureOpenAiChatModelIT {
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AzureOpenAiChatOptions.builder()
 						.deploymentName("gpt-4o")
-						.maxCompletionTokens(50)
-						.build())
+						.maxCompletionTokens(50))
 				.user(prompt)
 				.call()
 				.chatResponse();
@@ -339,8 +338,7 @@ class AzureOpenAiChatModelIT {
 		String content = ChatClient.create(this.chatModel).prompt()
 				.options(AzureOpenAiChatOptions.builder()
 						.deploymentName("gpt-4o")
-						.maxCompletionTokens(30)
-						.build())
+						.maxCompletionTokens(30))
 				.user(prompt)
 				.stream()
 				.content()
@@ -383,8 +381,7 @@ class AzureOpenAiChatModelIT {
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AzureOpenAiChatOptions.builder()
 						.deploymentName("gpt-4o")
-						.maxTokens(100)  // Total tokens limit for non-reasoning models
-						.build())
+						.maxTokens(100))  // Total tokens limit for non-reasoning models
 				.user(prompt)
 				.call()
 				.chatResponse();
@@ -417,8 +414,7 @@ class AzureOpenAiChatModelIT {
 		// @formatter:off
 		Flux<ChatResponse> responseFlux = ChatClient.create(this.chatModel).prompt()
 				.options(AzureOpenAiChatOptions.builder()
-						.deploymentName("gpt-4o")
-						.build())
+						.deploymentName("gpt-4o"))
 				.user(prompt)
 				.stream()
 				.chatResponse();

@@ -224,6 +224,15 @@ public class DefaultToolCallingChatOptions implements ToolCallingChatOptions {
 		protected @Nullable Boolean internalToolExecutionEnabled;
 
 		@Override
+		public B clone() {
+			B copy = super.clone();
+			copy.toolCallbacks = this.toolCallbacks == null ? null : new ArrayList<>(this.toolCallbacks);
+			copy.toolNames = this.toolNames == null ? null : new HashSet<>(this.toolNames);
+			copy.toolContext = this.toolContext == null ? null : new HashMap<>(this.toolContext);
+			return copy;
+		}
+
+		@Override
 		public B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks) {
 			if (toolCallbacks != null) {
 				this.toolCallbacks = new ArrayList<>(toolCallbacks);

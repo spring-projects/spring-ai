@@ -38,10 +38,12 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for the ChatClient with a focus on verifying the handling of conversation memory
@@ -76,6 +78,7 @@ public class ChatClientAdvisorTests {
 					new ChatResponse(List.of(new Generation(new AssistantMessage("Hello John"))), chatResponseMetadata))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("Your name is John"))),
 					chatResponseMetadata));
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		// Initialize a message window chat memory to store conversation history
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()
@@ -155,6 +158,7 @@ public class ChatClientAdvisorTests {
 						sink.complete();
 						return state;
 					}));
+		when(this.chatModel.getDefaultOptions()).thenReturn(ChatOptions.builder().build());
 
 		// Initialize a message window chat memory to store conversation history
 		ChatMemory chatMemory = MessageWindowChatMemory.builder()

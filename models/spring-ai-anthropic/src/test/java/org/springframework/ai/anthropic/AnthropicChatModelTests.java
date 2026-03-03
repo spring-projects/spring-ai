@@ -207,25 +207,6 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void buildRequestPromptMergesOptions() {
-		AnthropicChatModel model = AnthropicChatModel.builder()
-			.anthropicClient(this.anthropicClient)
-			.anthropicClientAsync(this.anthropicClientAsync)
-			.options(AnthropicChatOptions.builder().model("default-model").maxTokens(1000).temperature(0.5).build())
-			.build();
-
-		AnthropicChatOptions runtimeOptions = AnthropicChatOptions.builder().temperature(0.9).build();
-
-		Prompt originalPrompt = new Prompt("Test", runtimeOptions);
-		Prompt requestPrompt = model.buildRequestPrompt(originalPrompt);
-
-		AnthropicChatOptions mergedOptions = (AnthropicChatOptions) requestPrompt.getOptions();
-		assertThat(mergedOptions.getModel()).isEqualTo("default-model");
-		assertThat(mergedOptions.getMaxTokens()).isEqualTo(1000);
-		assertThat(mergedOptions.getTemperature()).isEqualTo(0.9);
-	}
-
-	@Test
 	void cacheOptionsIsMergedFromRuntimePrompt() {
 		AnthropicChatModel model = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)

@@ -218,7 +218,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		ActorsFilms actorsFilms = ChatClient.create(this.chatModel).prompt()
-				.options(ToolCallingChatOptions.builder().model("us.anthropic.claude-haiku-4-5-20251001-v1:0").build())
+				.options(ToolCallingChatOptions.builder().model("us.anthropic.claude-haiku-4-5-20251001-v1:0"))
 				.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
 				.user("Generate the filmography for a random actor.")
 				.call()
@@ -390,7 +390,7 @@ class BedrockConverseChatClientIT {
 
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
-				.options(BedrockChatOptions.builder().model(modelName).build())
+				.options(BedrockChatOptions.builder().model(modelName))
 				.user(u -> u.text("Explain what do you see on this picture?")
 						.media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png")))
 				.call()
@@ -411,7 +411,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(BedrockChatOptions.builder().model(modelName).build())
+		.options(BedrockChatOptions.builder().model(modelName))
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();
@@ -431,7 +431,7 @@ class BedrockConverseChatClientIT {
 		// @formatter:off
 		String response = ChatClient.create(this.chatModel).prompt()
 		// TODO consider adding model(...) method to ChatClient as a shortcut to
-		.options(BedrockChatOptions.builder().model(modelName).build())
+		.options(BedrockChatOptions.builder().model(modelName))
 		.user(u -> u.text("Explain what do you see on this picture?").media(MimeTypeUtils.IMAGE_PNG, url))
 		.call()
 		.content();

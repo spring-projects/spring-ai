@@ -174,7 +174,7 @@ class DeepSeekWithOpenAiSdkChatModelIT {
 	void validateCallResponseMetadata() {
 		ChatResponse response = ChatClient.create(this.chatModel)
 			.prompt()
-			.options(OpenAiSdkChatOptions.builder().model(DEEPSEEK_DEFAULT_MODEL).build())
+			.options(OpenAiSdkChatOptions.builder().model(DEEPSEEK_DEFAULT_MODEL))
 			.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 			.call()
 			.chatResponse();

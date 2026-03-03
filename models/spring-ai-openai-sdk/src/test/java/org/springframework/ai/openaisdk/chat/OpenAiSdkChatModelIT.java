@@ -593,7 +593,7 @@ public class OpenAiSdkChatModelIT {
 		String model = OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL;
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
-				.options(OpenAiSdkChatOptions.builder().model(model).build())
+				.options(OpenAiSdkChatOptions.builder().model(model))
 				.user("Tell me about 3 famous pirates from the Golden Age of Piracy and what they did")
 				.call()
 				.chatResponse();

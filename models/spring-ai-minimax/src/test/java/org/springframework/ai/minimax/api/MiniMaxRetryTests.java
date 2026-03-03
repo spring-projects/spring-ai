@@ -26,7 +26,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingOptions;
@@ -99,7 +98,7 @@ public class MiniMaxRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(ResponseEntity.of(Optional.of(expectedChatCompletion)));
 
-		var result = this.chatModel.call(new Prompt("text", ChatOptions.builder().build()));
+		var result = this.chatModel.call(new Prompt("text", MiniMaxChatOptions.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
@@ -127,7 +126,7 @@ public class MiniMaxRetryTests {
 			.willThrow(new TransientAiException("Transient Error 2"))
 			.willReturn(Flux.just(expectedChatCompletion));
 
-		var result = this.chatModel.stream(new Prompt("text", ChatOptions.builder().build()));
+		var result = this.chatModel.stream(new Prompt("text", MiniMaxChatOptions.builder().build()));
 
 		assertThat(result).isNotNull();
 		assertThat(result.collectList().block().get(0).getResult().getOutput().getText()).isSameAs("Response");
