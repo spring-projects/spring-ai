@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
 
@@ -51,7 +50,6 @@ class GoogleGenAiRuntimeHintsTests {
 			assertThat(registeredTypes.contains(jsonAnnotatedClass)).isTrue();
 		}
 
-		assertThat(registeredTypes.contains(TypeReference.of(GoogleGenAiChatOptions.class))).isTrue();
 	}
 
 	@Test

@@ -21,7 +21,6 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.mistralai.MistralAiChatOptions;
 import org.springframework.ai.mistralai.MistralAiEmbeddingOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.aot.hint.RuntimeHints;
@@ -53,7 +52,6 @@ class MistralAiRuntimeHintsTests {
 		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.ChatCompletionChunk.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.LogProbs.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(MistralAiApi.ChatCompletionFinishReason.class))).isTrue();
-		assertThat(registeredTypes.contains(TypeReference.of(MistralAiChatOptions.class))).isTrue();
 		assertThat(registeredTypes.contains(TypeReference.of(MistralAiEmbeddingOptions.class))).isTrue();
 	}
 

@@ -24,9 +24,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -52,21 +49,20 @@ import org.springframework.util.Assert;
  * @author Sebastien Deleuze
  * @since 0.8.1
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	/**
 	 * ID of the model to use
 	 */
 	@SuppressWarnings("NullAway.Init")
-	private @JsonProperty("model") String model;
+	private String model;
 
 	/**
 	 * What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will
 	 * make the output more random, while lower values like 0.2 will make it more focused
 	 * and deterministic. We generally recommend altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") @Nullable Double temperature;
+	private @Nullable Double temperature;
 
 	/**
 	 * Nucleus sampling, where the model considers the results of the tokens with top_p
@@ -74,37 +70,37 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	 * mass are considered. We generally recommend altering this or temperature but not
 	 * both.
 	 */
-	private @JsonProperty("top_p") Double topP = 1.0;
+	private Double topP = 1.0;
 
 	/**
 	 * The maximum number of tokens to generate in the completion. The token count of your
 	 * prompt plus max_tokens cannot exceed the model's context length.
 	 */
-	private @JsonProperty("max_tokens") @Nullable Integer maxTokens;
+	private @Nullable Integer maxTokens;
 
 	/**
 	 * Whether to inject a safety prompt before all conversations.
 	 */
-	private @JsonProperty("safe_prompt") Boolean safePrompt = false;
+	private Boolean safePrompt = false;
 
 	/**
 	 * The seed to use for random sampling. If set, different calls will generate
 	 * deterministic results.
 	 */
-	private @JsonProperty("random_seed") @Nullable Integer randomSeed;
+	private @Nullable Integer randomSeed;
 
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates
 	 * is valid JSON.
 	 */
-	private @JsonProperty("response_format") @Nullable ResponseFormat responseFormat;
+	private @Nullable ResponseFormat responseFormat;
 
 	/**
 	 * Stop generation if this token is detected. Or if one of these tokens is detected
 	 * when providing an array.
 	 */
-	private @JsonProperty("stop") @Nullable List<String> stop;
+	private @Nullable List<String> stop;
 
 	/**
 	 * Number between -2.0 and 2.0. frequency_penalty penalizes the repetition of words
@@ -112,7 +108,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	 * discourages the model from repeating words that have already appeared frequently in
 	 * the output, promoting diversity and reducing repetition.
 	 */
-	private @JsonProperty("frequency_penalty") Double frequencyPenalty = 0.0;
+	private Double frequencyPenalty = 0.0;
 
 	/**
 	 * Number between -2.0 and 2.0. presence_penalty determines how much the model
@@ -120,49 +116,45 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	 * the model to use a wider variety of words and phrases, making the output more
 	 * diverse and creative.
 	 */
-	private @JsonProperty("presence_penalty") Double presencePenalty = 0.0;
+	private Double presencePenalty = 0.0;
 
 	/**
 	 * Number of completions to return for each request, input tokens are only billed
 	 * once.
 	 */
-	private @JsonProperty("n") @Nullable Integer n;
+	private @Nullable Integer n;
 
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a
 	 * tool. Use this to provide a list of functions the model may generate JSON inputs
 	 * for.
 	 */
-	private @JsonProperty("tools") @Nullable List<FunctionTool> tools;
+	private @Nullable List<FunctionTool> tools;
 
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will
 	 * not call a function and instead generates a message. auto means the model can pick
 	 * between generating a message or calling a function.
 	 */
-	private @JsonProperty("tool_choice") @Nullable ToolChoice toolChoice;
+	private @Nullable ToolChoice toolChoice;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
-	@JsonIgnore
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * Collection of tool names to be resolved at runtime and used for tool calling in the
 	 * chat completion requests.
 	 */
-	@JsonIgnore
 	private Set<String> toolNames = new HashSet<>();
 
 	/**
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
-	@JsonIgnore
 	private @Nullable Boolean internalToolExecutionEnabled;
 
-	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	// Temporary constructor to maintain compat with ModelOptionUtils
@@ -261,12 +253,10 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
-	@JsonIgnore
 	public void setStopSequences(List<String> stopSequences) {
 		setStop(stopSequences);
 	}
@@ -340,13 +330,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	@JsonIgnore
 	public List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
 		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
@@ -354,13 +342,11 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	@JsonIgnore
 	public Set<String> getToolNames() {
 		return this.toolNames;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolNames(Set<String> toolNames) {
 		Assert.notNull(toolNames, "toolNames cannot be null");
 		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
@@ -369,38 +355,31 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	@Nullable
-	@JsonIgnore
-	public Boolean getInternalToolExecutionEnabled() {
+	@Nullable public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
 		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Integer getTopK() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
 	public Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
-	@JsonIgnore
 	public void setToolContext(Map<String, Object> toolContext) {
 		this.toolContext = toolContext;
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable String getOutputSchema() {
 		if (this.responseFormat == null || this.responseFormat.getJsonSchema() == null) {
 			return null;
@@ -409,7 +388,6 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	@JsonIgnore
 	public void setOutputSchema(String outputSchema) {
 		this.setResponseFormat(
 				ResponseFormat.builder().type(ResponseFormat.Type.JSON_SCHEMA).jsonSchema(outputSchema).build());

@@ -37,9 +37,6 @@ import com.anthropic.models.messages.ThinkingConfigDisabled;
 import com.anthropic.models.messages.ThinkingConfigEnabled;
 import com.anthropic.models.messages.ThinkingConfigParam;
 import com.anthropic.models.messages.ToolChoice;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
@@ -70,7 +67,6 @@ import org.springframework.util.Assert;
  * @see AnthropicChatModel
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
  */
-@JsonInclude(Include.NON_NULL)
 public class AnthropicChatOptions extends AbstractAnthropicOptions
 		implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
@@ -133,44 +129,37 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	/**
 	 * Collection of tool callbacks for tool calling.
 	 */
-	@JsonIgnore
 	private List<ToolCallback> toolCallbacks = new ArrayList<>();
 
 	/**
 	 * Collection of tool names to be resolved at runtime.
 	 */
-	@JsonIgnore
 	private Set<String> toolNames = new java.util.HashSet<>();
 
 	/**
 	 * Whether to enable internal tool execution in the chat model.
 	 */
-	@JsonIgnore
 	private @Nullable Boolean internalToolExecutionEnabled;
 
 	/**
 	 * Context to be passed to tools during execution.
 	 */
-	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
 
 	/**
 	 * Citation documents to include in the request for citation-enabled responses.
 	 */
-	@JsonIgnore
 	private List<AnthropicCitationDocument> citationDocuments = new ArrayList<>();
 
 	/**
 	 * Cache options for configuring prompt caching behavior.
 	 */
-	@JsonIgnore
 	private AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.disabled();
 
 	/**
 	 * Output configuration for controlling response format and effort level. Includes
 	 * structured output (JSON schema) and effort control (LOW, MEDIUM, HIGH, MAX).
 	 */
-	@JsonIgnore
 	private @Nullable OutputConfig outputConfig;
 
 	/**
@@ -178,13 +167,11 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 * defaults (runtime headers take precedence). Used for beta feature headers, custom
 	 * tracking, etc.
 	 */
-	@JsonIgnore
 	private Map<String, String> httpHeaders = new HashMap<>();
 
 	/**
 	 * Skills container for configuring Claude Skills in the request.
 	 */
-	@JsonIgnore
 	private @Nullable AnthropicSkillContainer skillContainer;
 
 	/**
@@ -197,7 +184,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	 * Configuration for Anthropic's built-in web search tool. When set, Claude can search
 	 * the web during the conversation.
 	 */
-	@JsonIgnore
 	private @Nullable AnthropicWebSearchTool webSearchTool;
 
 	/**
@@ -377,7 +363,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		this.cacheOptions = cacheOptions;
 	}
 
-	@JsonIgnore
 	public @Nullable OutputConfig getOutputConfig() {
 		return this.outputConfig;
 	}
@@ -386,7 +371,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		this.outputConfig = outputConfig;
 	}
 
-	@JsonIgnore
 	public Map<String, String> getHttpHeaders() {
 		return this.httpHeaders;
 	}
@@ -395,7 +379,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 		this.httpHeaders = httpHeaders;
 	}
 
-	@JsonIgnore
 	public @Nullable AnthropicSkillContainer getSkillContainer() {
 		return this.skillContainer;
 	}
@@ -429,7 +412,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable String getOutputSchema() {
 		if (this.outputConfig == null) {
 			return null;
@@ -445,7 +427,6 @@ public class AnthropicChatOptions extends AbstractAnthropicOptions
 	}
 
 	@Override
-	@JsonIgnore
 	public void setOutputSchema(@Nullable String outputSchema) {
 		if (outputSchema == null) {
 			this.outputConfig = null;
