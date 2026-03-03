@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -304,6 +305,94 @@ class AsyncMcpToolCallbackTest {
 		// Assert
 		assertThat(callback.getOriginalToolName()).isEqualTo("testTool");
 		assertThat(callback.getToolDefinition().description()).isEqualTo("Test description");
+	}
+
+	@Test
+	void callShouldPreferStructuredContentWhenPresent() {
+		when(this.tool.name()).thenReturn("testTool");
+		var callToolResult = McpSchema.CallToolResult.builder()
+			.addTextContent("{\"result\":42}")
+			.structuredContent(Map.of("result", 42, "status", "ok"))
+			.isError(false)
+			.build();
+		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
+
+		var callback = AsyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		String result = callback.call("{\"param\":\"value\"}");
+
+		// Should return structuredContent, not content
+		assertThat(result).contains("\"result\"");
+		assertThat(result).contains("42");
+		assertThat(result).contains("\"status\"");
+		assertThat(result).contains("\"ok\"");
+	}
+
+	@Test
+	void callShouldFallBackToContentWhenStructuredContentIsNull() {
+		when(this.tool.name()).thenReturn("testTool");
+		var callToolResult = McpSchema.CallToolResult.builder()
+			.addTextContent("fallback content")
+			.isError(false)
+			.build();
+		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
+
+		var callback = AsyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		String result = callback.call("{\"param\":\"value\"}");
+
+		assertThat(result).contains("fallback content");
+	}
+
+	@Test
+	void getToolMetadataShouldReturnMcpToolMetadata() {
+		when(this.tool.name()).thenReturn("testTool");
+		var annotations = McpSchema.ToolAnnotations.builder()
+			.readOnlyHint(true)
+			.destructiveHint(false)
+			.returnDirect(true)
+			.build();
+		when(this.tool.annotations()).thenReturn(annotations);
+
+		var callback = AsyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		var metadata = callback.getToolMetadata();
+
+		assertThat(metadata).isInstanceOf(McpToolMetadata.class);
+		assertThat(metadata.returnDirect()).isTrue();
+
+		McpToolMetadata mcpMetadata = (McpToolMetadata) metadata;
+		assertThat(mcpMetadata.readOnlyHint()).isTrue();
+		assertThat(mcpMetadata.destructiveHint()).isFalse();
+	}
+
+	@Test
+	void getToolMetadataShouldHandleNullAnnotations() {
+		when(this.tool.name()).thenReturn("testTool");
+		when(this.tool.annotations()).thenReturn(null);
+
+		var callback = AsyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		var metadata = callback.getToolMetadata();
+
+		assertThat(metadata).isInstanceOf(McpToolMetadata.class);
+		assertThat(metadata.returnDirect()).isFalse();
 	}
 
 	@Test
