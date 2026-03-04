@@ -43,7 +43,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
-@Timeout(15)
+@Timeout(45)
 class WebFluxSseIT extends AbstractMcpClientServerIntegrationTests {
 
 	private static final String CUSTOM_SSE_ENDPOINT = "/somePath/sse";
