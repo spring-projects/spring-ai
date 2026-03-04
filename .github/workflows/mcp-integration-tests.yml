@@ -1,0 +1,55 @@
+name: MCP Integration Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  mcp-common:
+    name: MCP common and annotations integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build with Maven and run mcp/common and mcp/mcp-annotations-spring integration tests
+        run: |
+          ./mvnw -P integration-tests -pl mcp/common,mcp/mcp-annotations-spring -am verify
+
+  mcp-transport:
+    name: MCP transport integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build with Maven and run MCP transport integration tests
+        run: |
+          ./mvnw -P integration-tests -pl mcp/transport/mcp-spring-webflux,mcp/transport/mcp-spring-webmvc -am verify
+
