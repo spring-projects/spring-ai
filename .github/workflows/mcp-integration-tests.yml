@@ -29,7 +29,7 @@ jobs:
 
       - name: Build with Maven and run mcp/common and mcp/mcp-annotations-spring integration tests
         run: |
-          ./mvnw clean verify -am -Pintegration-tests -pl mcp/common,mcp/mcp-annotations-spring
+          ./mvnw clean verify -Pintegration-tests -pl "mcp/common,mcp/mcp-annotations-spring"
 
   mcp-transport:
     name: MCP transport integration tests
@@ -52,5 +52,5 @@ jobs:
 
       - name: Build with Maven and run MCP transport integration tests
         run: |
-          ./mvnw clean verify -am -Pintegration-tests -pl mcp/transport/mcp-spring-webmvc,mcp/transport/mcp-spring-webflux
-
+          ./mvnw clean verify -Pintegration-tests -pl "mcp/transport/mcp-spring-webmvc,mcp/transport/mcp-spring-webflux"
+          
