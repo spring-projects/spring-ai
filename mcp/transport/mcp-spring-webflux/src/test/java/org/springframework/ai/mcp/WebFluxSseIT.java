@@ -16,8 +16,11 @@
 
 package org.springframework.ai.mcp;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.AbstractMcpClientServerIntegrationTests;
@@ -28,10 +31,13 @@ import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.AsyncSpecification;
 import io.modelcontextprotocol.server.McpServer.SingleSessionSyncSpecification;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.provider.Arguments;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
@@ -45,6 +51,8 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 
 @Timeout(45)
 class WebFluxSseIT extends AbstractMcpClientServerIntegrationTests {
+
+	private static final Logger log = LoggerFactory.getLogger(WebFluxSseIT.class);
 
 	private static final String CUSTOM_SSE_ENDPOINT = "/somePath/sse";
 
@@ -102,7 +110,33 @@ class WebFluxSseIT extends AbstractMcpClientServerIntegrationTests {
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
 		this.httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 
-		prepareClients(this.httpServer.port(), null);
+		int port = this.httpServer.port();
+		log.info("Reactor Netty server bound to host='{}' port={}", this.httpServer.host(), port);
+
+		String probeUrl = "http://127.0.0.1:" + port + CUSTOM_SSE_ENDPOINT;
+		Awaitility.await()
+			.alias("MCP server reachable at " + probeUrl)
+			.atMost(10, TimeUnit.SECONDS)
+			.pollInterval(200, TimeUnit.MILLISECONDS)
+			.untilAsserted(() -> {
+				HttpURLConnection conn = (HttpURLConnection) new URL(probeUrl).openConnection();
+				conn.setConnectTimeout(1000);
+				conn.setReadTimeout(1000);
+				conn.setRequestMethod("GET");
+				try {
+					int status = conn.getResponseCode();
+					log.info("Sanity probe {} -> HTTP {}", probeUrl, status);
+					// SSE endpoint returns 200 (it streams); message endpoint returns 4xx
+					// for a bare GET. Either way, any HTTP response means the server is
+					// up.
+					org.assertj.core.api.Assertions.assertThat(status).isGreaterThan(0);
+				}
+				finally {
+					conn.disconnect();
+				}
+			});
+
+		prepareClients(port, null);
 	}
 
 	@AfterEach
