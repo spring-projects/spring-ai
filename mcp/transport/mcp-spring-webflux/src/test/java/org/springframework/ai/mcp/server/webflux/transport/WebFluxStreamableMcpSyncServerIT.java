@@ -49,7 +49,7 @@ class WebFluxStreamableMcpSyncServerIT extends AbstractMcpSyncServerTests {
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(transportProvider.getRouterFunction());
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 		return transportProvider;
 	}
 

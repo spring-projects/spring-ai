@@ -245,7 +245,7 @@ public class SyncServerMcpTransportContextIT {
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(routerFunction);
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 		int port = this.httpServer.port();
 		this.streamableClient = McpClient.sync(WebClientStreamableHttpTransport.builder(WebClient.builder()
 			.baseUrl("http://127.0.0.1:" + port)

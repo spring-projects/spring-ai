@@ -167,7 +167,7 @@ public class WebFluxServerTransportSecurityIT {
 	private static void startServer(RouterFunction<?> routerFunction) {
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(routerFunction);
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 		baseUrl = "http://localhost:" + httpServer.port();
 	}
 

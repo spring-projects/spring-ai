@@ -97,7 +97,7 @@ class WebFluxStreamableIT extends AbstractMcpClientServerIntegrationTests {
 		HttpHandler httpHandler = RouterFunctions
 			.toHttpHandler(this.mcpStreamableServerTransportProvider.getRouterFunction());
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 
 		prepareClients(this.httpServer.port(), null);
 	}

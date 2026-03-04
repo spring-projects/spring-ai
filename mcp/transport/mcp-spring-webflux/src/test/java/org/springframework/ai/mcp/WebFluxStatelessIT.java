@@ -86,7 +86,7 @@ class WebFluxStatelessIT extends AbstractStatelessIntegrationTests {
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(this.mcpStreamableServerTransport.getRouterFunction());
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 
 		prepareClients(this.httpServer.port(), null);
 	}

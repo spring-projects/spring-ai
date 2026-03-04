@@ -90,7 +90,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
 
-		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 		this.port = this.httpServer.port();
 	}
 

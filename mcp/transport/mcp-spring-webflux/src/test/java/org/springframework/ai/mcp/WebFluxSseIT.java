@@ -44,7 +44,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
-@Disabled("Flaky test - needs investigation")
 @Timeout(45)
 class WebFluxSseIT extends AbstractMcpClientServerIntegrationTests {
 
@@ -102,7 +101,7 @@ class WebFluxSseIT extends AbstractMcpClientServerIntegrationTests {
 
 		HttpHandler httpHandler = RouterFunctions.toHttpHandler(this.mcpServerTransportProvider.getRouterFunction());
 		ReactorHttpHandlerAdapter adapter = new ReactorHttpHandlerAdapter(httpHandler);
-		this.httpServer = HttpServer.create().port(0).handle(adapter).bindNow();
+		this.httpServer = HttpServer.create().port(0).host("0.0.0.0").handle(adapter).bindNow();
 
 		prepareClients(this.httpServer.port(), null);
 	}
