@@ -149,7 +149,7 @@ public class TokenTextSplitterTest {
 
 		var doc = new Document(longText);
 
-		var tokenTextSplitter = TokenTextSplitter.builder()
+		var splitterWithOverlap = TokenTextSplitter.builder()
 			.withChunkSize(15)
 			.withChunkOverlap(5)
 			.withMinChunkSizeChars(10)
@@ -157,21 +157,37 @@ public class TokenTextSplitterTest {
 			.withKeepSeparator(false)
 			.build();
 
-		var chunks = tokenTextSplitter.apply(List.of(doc));
+		var splitterNoOverlap = TokenTextSplitter.builder()
+			.withChunkSize(15)
+			.withChunkOverlap(0)
+			.withMinChunkSizeChars(10)
+			.withMinChunkLengthToEmbed(5)
+			.withKeepSeparator(false)
+			.build();
 
-		assertThat(chunks.size()).isGreaterThan(1);
+		var chunksWithOverlap = splitterWithOverlap.apply(List.of(doc));
+		var chunksNoOverlap = splitterNoOverlap.apply(List.of(doc));
 
-		if (chunks.size() >= 2) {
-			String firstChunk = chunks.get(0).getText();
-			String secondChunk = chunks.get(1).getText();
+		assertThat(chunksWithOverlap.size()).isGreaterThan(1);
 
-			assertThat(firstChunk).isNotEmpty();
-			assertThat(secondChunk).isNotEmpty();
+		// overlap produces more chunks than no overlap since position advances less per step
+		assertThat(chunksWithOverlap.size()).isGreaterThanOrEqualTo(chunksNoOverlap.size());
+
+		// second chunk should contain content that also appeared at the end of the first chunk
+		if (chunksWithOverlap.size() >= 2) {
+			String firstChunk = chunksWithOverlap.get(0).getText();
+			String secondChunk = chunksWithOverlap.get(1).getText();
+
+			String[] firstWords = firstChunk.split("\\s+");
+			String lastWordOfFirst = firstWords[firstWords.length - 1];
+
+			assertThat(secondChunk).contains(lastWordOfFirst);
 		}
 	}
 
 	@Test
 	public void testChunkOverlapValidation() {
+		// chunkOverlap must be strictly less than chunkSize
 		assertThatThrownBy(() -> TokenTextSplitter.builder().withChunkSize(10).withChunkOverlap(15).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("chunk overlap must be less than chunk size");
@@ -201,10 +217,12 @@ public class TokenTextSplitterTest {
 
 		assertThat(chunks).isNotEmpty();
 
+		// boundary optimization should produce chunks ending at sentence boundaries
 		for (Document chunk : chunks) {
-			String chunkText = chunk.getText();
-			if (chunkText != null && chunkText.trim().length() > 20) {
-				assertThat(chunkText.trim()).isNotEmpty();
+			String chunkText = chunk.getText().trim();
+			if (chunkText.length() > 20) {
+				char lastChar = chunkText.charAt(chunkText.length() - 1);
+				assertThat(List.of('.', '!', '?', '\n')).contains(lastChar);
 			}
 		}
 	}
@@ -347,8 +365,7 @@ public class TokenTextSplitterTest {
 
 	@Test
 	public void testLargeTextStillSplitsAtPunctuation() {
-		// Verify that punctuation-based splitting still works when text exceeds chunk
-		// size
+		// Verify that punctuation-based splitting still works when text exceeds chunk size
 		TokenTextSplitter splitter = TokenTextSplitter.builder()
 			.withKeepSeparator(true)
 			.withChunkSize(15)
@@ -404,7 +421,6 @@ public class TokenTextSplitterTest {
 		assertThat(chunks.get(4).getText()).isEqualTo("The subclasses can override this method to achieve their own");
 		assertThat(chunks.get(5).getText()).isEqualTo("business logic。");
 		assertThat(chunks.get(6).getText()).isEqualTo("We just want to test it works or not？");
-
 	}
 
 	@Test
