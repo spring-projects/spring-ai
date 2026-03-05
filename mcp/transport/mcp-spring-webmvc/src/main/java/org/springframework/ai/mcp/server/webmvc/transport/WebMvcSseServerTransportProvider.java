@@ -228,6 +228,18 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 			.then();
 	}
 
+	@Override
+	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+		return Mono.defer(() -> {
+			McpServerSession session = this.sessions.get(sessionId);
+			if (session == null) {
+				logger.debug("Session {} not found", sessionId);
+				return Mono.empty();
+			}
+			return session.sendNotification(method, params);
+		});
+	}
+
 	/**
 	 * Initiates a graceful shutdown of the transport. This method:
 	 * <ul>

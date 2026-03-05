@@ -254,6 +254,18 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 	// actually
 	// doing that.
 
+	@Override
+	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+		return Mono.defer(() -> {
+			McpServerSession session = this.sessions.get(sessionId);
+			if (session == null) {
+				logger.debug("Session {} not found", sessionId);
+				return Mono.empty();
+			}
+			return session.sendNotification(method, params);
+		});
+	}
+
 	/**
 	 * Initiates a graceful shutdown of all the sessions. This method ensures all active
 	 * sessions are properly closed and cleaned up.
