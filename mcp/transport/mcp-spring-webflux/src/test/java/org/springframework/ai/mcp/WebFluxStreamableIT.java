@@ -30,7 +30,6 @@ import io.modelcontextprotocol.server.McpServer.SyncSpecification;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.provider.Arguments;
 import reactor.netty.DisposableServer;
@@ -44,7 +43,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
-@Disabled("Flaky test, needs investigation")
 @Timeout(15)
 class WebFluxStreamableIT extends AbstractMcpClientServerIntegrationTests {
 

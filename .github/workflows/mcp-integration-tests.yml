@@ -52,6 +52,6 @@ jobs:
 
       - name: Build with Maven and run MCP transport integration tests
         run: |
-          ./mvnw clean verify -Pintegration-tests -pl "mcp/transport/mcp-spring-webflux"
+          ./mvnw clean verify -Pintegration-tests -pl "mcp/transport/mcp-spring-webflux,mcp/transport/mcp-spring-webmvc"
 
           
