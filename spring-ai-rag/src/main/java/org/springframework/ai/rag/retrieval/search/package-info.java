@@ -17,9 +17,7 @@
 /**
  * RAG Sub-Module: Document Search.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.rag.retrieval.search;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

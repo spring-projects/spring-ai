@@ -52,7 +52,7 @@ public enum VectorStoreProvider {
 	 */
 	COSMOSDB("cosmosdb"),
 	/**
-	 * Vector store provided by CosmosDB.
+	 * Vector store provided by Couchbase.
 	 */
 	COUCHBASE("couchbase"),
 	/**
@@ -69,6 +69,11 @@ public enum VectorStoreProvider {
 	 * Vector store provided by HANA.
 	 */
 	HANA("hana"),
+
+	/**
+	 * Vector store provided by Infinispan.
+	 */
+	INFINISPAN("infinispan"),
 
 	/**
 	 * Vector store provided by MariaDB.
@@ -119,6 +124,11 @@ public enum VectorStoreProvider {
 	 * Vector store provided by Redis.
 	 */
 	REDIS("redis"),
+
+	/**
+	 * Vector store provided by simple.
+	 */
+	S3_VECTOR("s3_vector"),
 
 	/**
 	 * Vector store provided by simple.

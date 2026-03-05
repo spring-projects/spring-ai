@@ -30,7 +30,7 @@ You can specify the LLM model name like this:
 [source,java]
 ----
 .options(ChatOptions.builder()
-        .model("claude-3-7-sonnet-latest")  // Use Anthropic's Claude model
+        .model("claude-sonnet-4-6")  // Use Anthropic's Claude model
         .build())
 ----
 
@@ -135,7 +135,7 @@ String result = chatClient.prompt("...")
 
 // Using Anthropic-specific options
 AnthropicChatOptions anthropicOptions = AnthropicChatOptions.builder()
-        .model("claude-3-7-sonnet-latest")
+        .model("claude-sonnet-4-6")
         .temperature(0.2)
         .topK(40)                   // Anthropic-specific parameter
         .thinking(AnthropicApi.ThinkingType.ENABLED, 1000)  // Anthropic-specific thinking configuration
@@ -178,7 +178,7 @@ public void pt_zero_shot(ChatClient chatClient) {
             Sentiment:
             """)
             .options(ChatOptions.builder()
-                    .model("claude-3-7-sonnet-latest")
+                    .model("claude-sonnet-4-6")
                     .temperature(0.1)
                     .maxTokens(5)
                     .build())
@@ -232,7 +232,7 @@ public void pt_one_shot_few_shots(ChatClient chatClient) {
             And the other tomato sauce, ham and pineapple.
             """)
             .options(ChatOptions.builder()
-                    .model("claude-3-7-sonnet-latest")
+                    .model("claude-sonnet-4-6")
                     .temperature(0.1)
                     .maxTokens(250)
                     .build())
@@ -268,7 +268,7 @@ public void pt_system_prompting_1(ChatClient chatClient) {
                     Sentiment:
                     """)
             .options(ChatOptions.builder()
-                    .model("claude-3-7-sonnet-latest")
+                    .model("claude-sonnet-4-6")
                     .temperature(1.0)
                     .topK(40)
                     .topP(0.8)
@@ -408,7 +408,7 @@ public void pt_step_back_prompting(ChatClient.Builder chatClientBuilder) {
     // Set common options for the chat client
     var chatClient = chatClientBuilder
             .defaultOptions(ChatOptions.builder()
-                    .model("claude-3-7-sonnet-latest")
+                    .model("claude-sonnet-4-6")
                     .temperature(1.0)
                     .topK(40)
                     .topP(0.8)

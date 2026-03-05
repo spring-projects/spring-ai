@@ -28,6 +28,7 @@ import com.openai.client.OpenAIClientAsync;
 import com.openai.client.okhttp.OpenAIOkHttpClient;
 import com.openai.client.okhttp.OpenAIOkHttpClientAsync;
 import com.openai.credential.Credential;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,16 +44,12 @@ public final class OpenAiSdkSetup {
 
 	static final String OPENAI_URL = "https://api.openai.com/v1";
 	static final String OPENAI_API_KEY = "OPENAI_API_KEY";
-	static final String AZURE_OPENAI_KEY = "AZURE_OPENAI_KEY";
+	static final String MICROSOFT_FOUNDRY_API_KEY = "MICROSOFT_FOUNDRY_API_KEY";
 	static final String GITHUB_MODELS_URL = "https://models.github.ai/inference";
 	static final String GITHUB_TOKEN = "GITHUB_TOKEN";
 	static final String DEFAULT_USER_AGENT = "spring-ai-openai-sdk";
 
 	private static final Logger logger = LoggerFactory.getLogger(OpenAiSdkSetup.class);
-
-	private static final Duration DEFAULT_DURATION = Duration.ofSeconds(60);
-
-	private static final int DEFAULT_MAX_RETRIES = 3;
 
 	private OpenAiSdkSetup() {
 	}
@@ -63,20 +60,15 @@ public final class OpenAiSdkSetup {
 
 	}
 
-	public static OpenAIClient setupSyncClient(String baseUrl, String apiKey, Credential credential,
-			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAiServiceVersion, String organizationId,
-			boolean isAzure, boolean isGitHubModels, String modelName, Duration timeout, Integer maxRetries,
-			Proxy proxy, Map<String, String> customHeaders) {
+	public static OpenAIClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String azureDeploymentName,
+			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
+			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
+			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
-		if (timeout == null) {
-			timeout = DEFAULT_DURATION;
-		}
-		if (maxRetries == null) {
-			maxRetries = DEFAULT_MAX_RETRIES;
-		}
 		OpenAIOkHttpClient.Builder builder = OpenAIOkHttpClient.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
@@ -121,20 +113,15 @@ public final class OpenAiSdkSetup {
 	 * The asynchronous client setup is the same as the synchronous one in the OpenAI Java
 	 * SDK, but uses a different client implementation.
 	 */
-	public static OpenAIClientAsync setupAsyncClient(String baseUrl, String apiKey, Credential credential,
-			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAiServiceVersion, String organizationId,
-			boolean isAzure, boolean isGitHubModels, String modelName, Duration timeout, Integer maxRetries,
-			Proxy proxy, Map<String, String> customHeaders) {
+	public static OpenAIClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
+			@Nullable Credential credential, @Nullable String azureDeploymentName,
+			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
+			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
+			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
-		if (timeout == null) {
-			timeout = DEFAULT_DURATION;
-		}
-		if (maxRetries == null) {
-			maxRetries = DEFAULT_MAX_RETRIES;
-		}
 		OpenAIOkHttpClientAsync.Builder builder = OpenAIOkHttpClientAsync.builder();
 		builder.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName));
 
@@ -175,7 +162,7 @@ public final class OpenAiSdkSetup {
 		return builder.build();
 	}
 
-	static String detectBaseUrlFromEnv(String baseUrl) {
+	static @Nullable String detectBaseUrlFromEnv(@Nullable String baseUrl) {
 		if (baseUrl == null) {
 			var openAiBaseUrl = System.getenv("OPENAI_BASE_URL");
 			if (openAiBaseUrl != null) {
@@ -191,10 +178,11 @@ public final class OpenAiSdkSetup {
 		return baseUrl;
 	}
 
-	public static ModelProvider detectModelProvider(boolean isAzure, boolean isGitHubModels, String baseUrl,
-			String azureDeploymentName, AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
+	public static ModelProvider detectModelProvider(boolean isMicrosoftFoundry, boolean isGitHubModels,
+			@Nullable String baseUrl, @Nullable String azureDeploymentName,
+			@Nullable AzureOpenAIServiceVersion azureOpenAIServiceVersion) {
 
-		if (isAzure) {
+		if (isMicrosoftFoundry) {
 			return ModelProvider.MICROSOFT_FOUNDRY; // Forced by the user
 		}
 		if (isGitHubModels) {
@@ -216,8 +204,8 @@ public final class OpenAiSdkSetup {
 		return ModelProvider.OPEN_AI;
 	}
 
-	static String calculateBaseUrl(String baseUrl, ModelProvider modelProvider, String modelName,
-			String azureDeploymentName) {
+	static String calculateBaseUrl(@Nullable String baseUrl, ModelProvider modelProvider, @Nullable String modelName,
+			@Nullable String azureDeploymentName) {
 
 		if (modelProvider == ModelProvider.OPEN_AI) {
 			if (baseUrl == null || baseUrl.isBlank()) {
@@ -266,12 +254,12 @@ public final class OpenAiSdkSetup {
 		}
 	}
 
-	static String detectApiKey(ModelProvider modelProvider) {
+	static @Nullable String detectApiKey(ModelProvider modelProvider) {
 		if (modelProvider == ModelProvider.OPEN_AI && System.getenv(OPENAI_API_KEY) != null) {
 			return System.getenv(OPENAI_API_KEY);
 		}
-		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(AZURE_OPENAI_KEY) != null) {
-			return System.getenv(AZURE_OPENAI_KEY);
+		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(MICROSOFT_FOUNDRY_API_KEY) != null) {
+			return System.getenv(MICROSOFT_FOUNDRY_API_KEY);
 		}
 		else if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY && System.getenv(OPENAI_API_KEY) != null) {
 			return System.getenv(OPENAI_API_KEY);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package org.springframework.ai.mistralai;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +52,7 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Jason Smith
  * @author Nicolas Krier
+ * @author Soby Chacko
  * @since 1.0.0
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -161,9 +164,16 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private MistralAiApi.EmbeddingRequest<List<String>> createRequest(EmbeddingRequest request) {
-		MistralAiEmbeddingOptions requestOptions = (MistralAiEmbeddingOptions) request.getOptions();
+		MistralAiEmbeddingOptions requestOptions = (MistralAiEmbeddingOptions) Objects
+			.requireNonNull(request.getOptions());
 		return new MistralAiApi.EmbeddingRequest<>(request.getInstructions(), requestOptions.getModel(),
 				requestOptions.getEncodingFormat());
+	}
+
+	@Override
+	public String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getFormattedContent(this.metadataMode);
 	}
 
 	@Override
@@ -192,7 +202,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	public static final class Builder {
 
-		private MistralAiApi mistralAiApi;
+		private @Nullable MistralAiApi mistralAiApi;
 
 		private MetadataMode metadataMode = MetadataMode.EMBED;
 
@@ -230,6 +240,7 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		public MistralAiEmbeddingModel build() {
+			Assert.state(this.mistralAiApi != null, "MistralAiApi must not be null");
 			return new MistralAiEmbeddingModel(this.mistralAiApi, this.metadataMode, this.options, this.retryTemplate,
 					this.observationRegistry);
 		}

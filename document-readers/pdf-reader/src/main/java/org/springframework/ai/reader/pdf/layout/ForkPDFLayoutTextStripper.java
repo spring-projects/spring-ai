@@ -26,6 +26,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.apache.pdfbox.text.TextPositionComparator;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 
 	private double currentPageWidth;
 
-	private TextPosition previousTextPosition;
+	private @Nullable TextPosition previousTextPosition;
 
 	private List<TextLine> textLineList;
 
@@ -186,7 +187,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 		return textLine;
 	}
 
-	private TextPosition getPreviousTextPosition() {
+	private @Nullable TextPosition getPreviousTextPosition() {
 		return this.previousTextPosition;
 	}
 

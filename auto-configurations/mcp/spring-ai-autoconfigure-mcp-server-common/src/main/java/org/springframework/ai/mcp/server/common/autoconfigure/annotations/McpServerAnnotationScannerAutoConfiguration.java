@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
 import org.springaicommunity.mcp.annotation.McpComplete;
 import org.springaicommunity.mcp.annotation.McpPrompt;
 import org.springaicommunity.mcp.annotation.McpResource;
@@ -97,7 +98,7 @@ public class McpServerAnnotationScannerAutoConfiguration {
 	static class AnnotationHints implements RuntimeHintsRegistrar {
 
 		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+		public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 			SERVER_MCP_ANNOTATIONS.forEach(an -> hints.reflection().registerType(an, MemberCategory.values()));
 		}
 

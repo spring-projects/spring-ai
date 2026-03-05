@@ -20,14 +20,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.lang.NonNull;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+
 import org.springframework.messaging.Message;
-import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.converter.JacksonJsonMessageConverter;
 import org.springframework.messaging.support.MessageBuilder;
 
 /**
  * {@link StructuredOutputConverter} implementation that uses a pre-configured
- * {@link MappingJackson2MessageConverter} to convert the LLM output into a
+ * {@link JacksonJsonMessageConverter} to convert the LLM output into a
  * java.util.Map&lt;String, Object&gt; instance.
  *
  * @author Mark Pollack
@@ -36,17 +38,19 @@ import org.springframework.messaging.support.MessageBuilder;
 public class MapOutputConverter extends AbstractMessageOutputConverter<Map<String, Object>> {
 
 	public MapOutputConverter() {
-		super(new MappingJackson2MessageConverter());
+		super(new JacksonJsonMessageConverter(
+				JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)));
 	}
 
 	@Override
-	public Map<String, Object> convert(@NonNull String text) {
+	public Map<String, Object> convert(String text) {
 		if (text.startsWith("```json") && text.endsWith("```")) {
 			text = text.substring(7, text.length() - 3);
 		}
 
 		Message<?> message = MessageBuilder.withPayload(text.getBytes(StandardCharsets.UTF_8)).build();
-		return (Map) this.getMessageConverter().fromMessage(message, HashMap.class);
+		Map result = (Map) this.getMessageConverter().fromMessage(message, HashMap.class);
+		return result == null ? new HashMap<>() : result;
 	}
 
 	@Override

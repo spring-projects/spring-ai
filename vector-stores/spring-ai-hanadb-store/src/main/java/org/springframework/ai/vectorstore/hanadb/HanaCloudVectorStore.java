@@ -20,11 +20,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -36,7 +35,6 @@ import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -84,7 +82,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 	private final int topK;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
@@ -95,11 +93,11 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		super(builder);
 
 		Assert.notNull(builder.repository, "Repository must not be null");
-
+		Assert.notNull(builder.tableName, "Table name must not be null");
 		this.repository = builder.repository;
 		this.tableName = builder.tableName;
 		this.topK = builder.topK;
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 	}
 
 	/**
@@ -117,11 +115,18 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		for (Document document : documents) {
 			logger.info("[{}/{}] Calling EmbeddingModel for document id = {}", count++, documents.size(),
 					document.getId());
-			String content = document.getText().replaceAll("\\s+", " ");
+			String content = squishWhitespace(document.getText());
 			String embedding = getEmbedding(document);
 			this.repository.save(this.tableName, document.getId(), embedding, content);
 		}
 		logger.info("Embeddings saved in HanaCloudVectorStore for {} documents", count - 1);
+	}
+
+	private static String squishWhitespace(@Nullable String text) {
+		if (text == null) {
+			return "";
+		}
+		return text.replaceAll("\\s+", " ");
 	}
 
 	@Override
@@ -154,14 +159,9 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 		logger.info("Hana cosine-similarity for query={}, with topK={} returned {} results", request.getQuery(),
 				request.getTopK(), searchResult.size());
 
-		return searchResult.stream().map(c -> {
-			try {
-				return new Document(c.get_id(), this.objectMapper.writeValueAsString(c), Collections.emptyMap());
-			}
-			catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
-			}
-		}).collect(Collectors.toList());
+		return searchResult.stream()
+			.map(c -> new Document(c.get_id(), this.jsonMapper.writeValueAsString(c), Collections.emptyMap()))
+			.collect(Collectors.toList());
 	}
 
 	private String getEmbedding(SearchRequest searchRequest) {
@@ -198,8 +198,7 @@ public class HanaCloudVectorStore extends AbstractObservationVectorStore {
 
 		private final HanaVectorRepository<? extends HanaVectorEntity> repository;
 
-		@Nullable
-		private String tableName;
+		private @Nullable String tableName;
 
 		private int topK;
 

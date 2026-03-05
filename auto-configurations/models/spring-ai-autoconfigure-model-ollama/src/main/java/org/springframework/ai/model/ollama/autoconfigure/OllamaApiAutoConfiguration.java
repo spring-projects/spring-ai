@@ -17,6 +17,7 @@
 package org.springframework.ai.model.ollama.autoconfigure;
 
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -55,12 +56,13 @@ public class OllamaApiAutoConfiguration {
 	@ConditionalOnMissingBean
 	public OllamaApi ollamaApi(OllamaConnectionDetails connectionDetails,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 		return OllamaApi.builder()
 			.baseUrl(connectionDetails.getBaseUrl())
 			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
 			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 

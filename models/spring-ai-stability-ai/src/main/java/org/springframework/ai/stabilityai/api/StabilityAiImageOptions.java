@@ -21,6 +21,7 @@ import java.util.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.stabilityai.StyleEnum;
@@ -51,7 +52,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 *
 	 */
 	@JsonProperty("samples")
-	private Integer n;
+	private @Nullable Integer n;
 
 	/**
 	 * The engine/model to use in Stability AI The model is passed in the URL as a path
@@ -87,7 +88,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 *
 	 */
 	@JsonProperty("width")
-	private Integer width;
+	private @Nullable Integer width;
 
 	/**
 	 * Retrieves the height of the image to be generated, in pixels.
@@ -115,14 +116,14 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 *
 	 */
 	@JsonProperty("height")
-	private Integer height;
+	private @Nullable Integer height;
 
 	/**
 	 * The format in which the generated images are returned. It is sent as part of the
 	 * accept header. Must be "application/json" or "image/png"
 	 */
 	@JsonProperty("response_format")
-	private String responseFormat;
+	private @Nullable String responseFormat;
 
 	/**
 	 * The strictness level of the diffusion process adherence to the prompt text.
@@ -139,7 +140,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 *
 	 */
 	@JsonProperty("cfg_scale")
-	private Float cfgScale;
+	private @Nullable Float cfgScale;
 
 	/**
 	 * The preset for clip guidance.
@@ -171,7 +172,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 *
 	 */
 	@JsonProperty("clip_guidance_preset")
-	private String clipGuidancePreset;
+	private @Nullable String clipGuidancePreset;
 
 	/**
 	 * The name of the sampler used for the diffusion process.
@@ -211,7 +212,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 *
 	 */
 	@JsonProperty("sampler")
-	private String sampler;
+	private @Nullable String sampler;
 
 	/**
 	 * The seed used for generating random noise.
@@ -228,7 +229,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 * Default is 0, which indicates that a random seed will be used.
 	 */
 	@JsonProperty("seed")
-	private Long seed;
+	private @Nullable Long seed;
 
 	/**
 	 * The number of diffusion steps to run.
@@ -245,7 +246,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 * Defaults to 30 if not explicitly set.
 	 */
 	@JsonProperty("steps")
-	private Integer steps;
+	private @Nullable Integer steps;
 
 	/**
 	 * The style preset intended to guide the image model towards a specific artistic
@@ -285,18 +286,18 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 *
 	 */
 	@JsonProperty("style_preset")
-	private String stylePreset;
+	private @Nullable String stylePreset;
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	@Override
-	public Integer getN() {
+	public @Nullable Integer getN() {
 		return this.n;
 	}
 
-	public void setN(Integer n) {
+	public void setN(@Nullable Integer n) {
 		this.n = n;
 	}
 
@@ -310,88 +311,88 @@ public class StabilityAiImageOptions implements ImageOptions {
 	}
 
 	@Override
-	public Integer getWidth() {
+	public @Nullable Integer getWidth() {
 		return this.width;
 	}
 
-	public void setWidth(Integer width) {
+	public void setWidth(@Nullable Integer width) {
 		this.width = width;
 	}
 
 	@Override
-	public Integer getHeight() {
+	public @Nullable Integer getHeight() {
 		return this.height;
 	}
 
-	public void setHeight(Integer height) {
+	public void setHeight(@Nullable Integer height) {
 		this.height = height;
 	}
 
 	@Override
-	public String getResponseFormat() {
+	public @Nullable String getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
+	public void setResponseFormat(@Nullable String responseFormat) {
 		this.responseFormat = responseFormat;
 	}
 
-	public Float getCfgScale() {
+	public @Nullable Float getCfgScale() {
 		return this.cfgScale;
 	}
 
-	public void setCfgScale(Float cfgScale) {
+	public void setCfgScale(@Nullable Float cfgScale) {
 		this.cfgScale = cfgScale;
 	}
 
-	public String getClipGuidancePreset() {
+	public @Nullable String getClipGuidancePreset() {
 		return this.clipGuidancePreset;
 	}
 
-	public void setClipGuidancePreset(String clipGuidancePreset) {
+	public void setClipGuidancePreset(@Nullable String clipGuidancePreset) {
 		this.clipGuidancePreset = clipGuidancePreset;
 	}
 
-	public String getSampler() {
+	public @Nullable String getSampler() {
 		return this.sampler;
 	}
 
-	public void setSampler(String sampler) {
+	public void setSampler(@Nullable String sampler) {
 		this.sampler = sampler;
 	}
 
-	public Long getSeed() {
+	public @Nullable Long getSeed() {
 		return this.seed;
 	}
 
-	public void setSeed(Long seed) {
+	public void setSeed(@Nullable Long seed) {
 		this.seed = seed;
 	}
 
-	public Integer getSteps() {
+	public @Nullable Integer getSteps() {
 		return this.steps;
 	}
 
-	public void setSteps(Integer steps) {
+	public void setSteps(@Nullable Integer steps) {
 		this.steps = steps;
 	}
 
 	@Override
 	@JsonIgnore
-	public String getStyle() {
+	public @Nullable String getStyle() {
 		return getStylePreset();
 	}
 
 	@JsonIgnore
-	public void setStyle(String style) {
+	public void setStyle(@Nullable String style) {
 		setStylePreset(style);
 	}
 
-	public String getStylePreset() {
+	public @Nullable String getStylePreset() {
 		return this.stylePreset;
 	}
 
-	public void setStylePreset(String stylePreset) {
+	public void setStylePreset(@Nullable String stylePreset) {
 		this.stylePreset = stylePreset;
 	}
 
@@ -435,7 +436,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 			this.options = new StabilityAiImageOptions();
 		}
 
-		public Builder N(Integer n) {
+		public Builder N(@Nullable Integer n) {
 			this.options.setN(n);
 			return this;
 		}
@@ -445,53 +446,53 @@ public class StabilityAiImageOptions implements ImageOptions {
 			return this;
 		}
 
-		public Builder width(Integer width) {
+		public Builder width(@Nullable Integer width) {
 			this.options.setWidth(width);
 			return this;
 		}
 
-		public Builder height(Integer height) {
+		public Builder height(@Nullable Integer height) {
 			this.options.setHeight(height);
 			return this;
 		}
 
-		public Builder responseFormat(String responseFormat) {
+		public Builder responseFormat(@Nullable String responseFormat) {
 			this.options.setResponseFormat(responseFormat);
 			return this;
 		}
 
-		public Builder cfgScale(Float cfgScale) {
+		public Builder cfgScale(@Nullable Float cfgScale) {
 			this.options.setCfgScale(cfgScale);
 			return this;
 		}
 
-		public Builder clipGuidancePreset(String clipGuidancePreset) {
+		public Builder clipGuidancePreset(@Nullable String clipGuidancePreset) {
 			this.options.setClipGuidancePreset(clipGuidancePreset);
 			return this;
 		}
 
-		public Builder sampler(String sampler) {
+		public Builder sampler(@Nullable String sampler) {
 			this.options.setSampler(sampler);
 			return this;
 		}
 
-		public Builder seed(Long seed) {
+		public Builder seed(@Nullable Long seed) {
 			this.options.setSeed(seed);
 			return this;
 		}
 
-		public Builder steps(Integer steps) {
+		public Builder steps(@Nullable Integer steps) {
 			this.options.setSteps(steps);
 			return this;
 		}
 
-		public Builder stylePreset(String stylePreset) {
+		public Builder stylePreset(@Nullable String stylePreset) {
 			this.options.setStylePreset(stylePreset);
 			return this;
 		}
 
-		public Builder stylePreset(StyleEnum styleEnum) {
-			this.options.setStylePreset(styleEnum.toString());
+		public Builder stylePreset(@Nullable StyleEnum styleEnum) {
+			this.options.setStylePreset(styleEnum != null ? styleEnum.toString() : null);
 			return this;
 		}
 

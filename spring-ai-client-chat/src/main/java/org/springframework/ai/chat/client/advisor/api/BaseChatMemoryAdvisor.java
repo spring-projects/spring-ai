@@ -18,6 +18,8 @@ package org.springframework.ai.chat.client.advisor.api;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.util.Assert;
 
@@ -34,7 +36,7 @@ public interface BaseChatMemoryAdvisor extends BaseAdvisor {
 	 * Retrieve the conversation ID from the given context or return the default
 	 * conversation ID when not found.
 	 */
-	default String getConversationId(Map<String, Object> context, String defaultConversationId) {
+	default String getConversationId(Map<String, @Nullable Object> context, String defaultConversationId) {
 		Assert.notNull(context, "context cannot be null");
 		Assert.noNullElements(context.keySet().toArray(), "context cannot contain null keys");
 		Assert.hasText(defaultConversationId, "defaultConversationId cannot be null or empty");

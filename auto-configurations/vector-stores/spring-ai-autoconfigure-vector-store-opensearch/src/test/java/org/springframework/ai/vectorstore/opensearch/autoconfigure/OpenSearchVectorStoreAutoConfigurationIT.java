@@ -26,7 +26,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.Transport;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -36,7 +36,6 @@ import software.amazon.awssdk.regions.Region;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -60,14 +59,13 @@ import static org.hamcrest.Matchers.hasSize;
 class OpenSearchVectorStoreAutoConfigurationIT {
 
 	@Container
-	private static final OpensearchContainer<?> opensearchContainer = new OpensearchContainer<>(
+	private static final OpenSearchContainer<?> opensearchContainer = new OpenSearchContainer<>(
 			DockerImageName.parse("opensearchproject/opensearch:2.13.0"));
 
 	private static final String DOCUMENT_INDEX = "auto-spring-ai-document-index";
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class,
-				SpringAiRetryAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenSearchVectorStoreAutoConfiguration.class))
 		.withClassLoader(new FilteredClassLoader(Region.class, ApacheHttpClient.class))
 		.withUserConfiguration(Config.class)
 		.withPropertyValues("spring.ai.vectorstore.opensearch.aws.enabled=false",

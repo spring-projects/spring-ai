@@ -94,7 +94,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 				.toList())
 			.consistencyLevel(WeaviateVectorStore.ConsistentLevel.valueOf(properties.getConsistencyLevel().name()))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.build();
 	}

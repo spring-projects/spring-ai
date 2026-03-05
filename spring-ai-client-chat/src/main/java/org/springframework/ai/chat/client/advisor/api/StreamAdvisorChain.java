@@ -46,4 +46,14 @@ public interface StreamAdvisorChain extends AdvisorChain {
 	 */
 	List<StreamAdvisor> getStreamAdvisors();
 
+	/**
+	 * Creates a new StreamAdvisorChain copy that contains all advisors after the
+	 * specified advisor.
+	 * @param after the StreamAdvisor after which to copy the chain
+	 * @return a new StreamAdvisorChain containing all advisors after the specified
+	 * advisor
+	 * @throws IllegalArgumentException if the specified advisor is not part of the chain
+	 */
+	StreamAdvisorChain copy(StreamAdvisor after);
+
 }

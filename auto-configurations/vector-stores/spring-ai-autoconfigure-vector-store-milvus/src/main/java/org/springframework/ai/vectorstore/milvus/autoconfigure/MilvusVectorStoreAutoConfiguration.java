@@ -89,7 +89,7 @@ public class MilvusVectorStoreAutoConfiguration {
 			.embeddingFieldName(properties.getEmbeddingFieldName())
 			.batchingStrategy(batchingStrategy)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.build();
 	}
 

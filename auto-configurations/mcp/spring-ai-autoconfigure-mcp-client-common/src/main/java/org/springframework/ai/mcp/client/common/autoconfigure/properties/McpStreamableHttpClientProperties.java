@@ -19,6 +19,8 @@ package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -68,7 +70,7 @@ public class McpStreamableHttpClientProperties {
 	 * @param url the URL endpoint for Streamable Http communication with the MCP server
 	 * @param endpoint the endpoint for the MCP server
 	 */
-	public record ConnectionParameters(String url, String endpoint) {
+	public record ConnectionParameters(@Nullable String url, @Nullable String endpoint) {
 	}
 
 }

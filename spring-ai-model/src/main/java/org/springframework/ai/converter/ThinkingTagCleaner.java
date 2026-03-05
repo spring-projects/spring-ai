@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -90,7 +92,7 @@ public class ThinkingTagCleaner implements ResponseTextCleaner {
 	}
 
 	@Override
-	public String clean(String text) {
+	public @Nullable String clean(@Nullable String text) {
 		if (text == null || text.isEmpty()) {
 			return text;
 		}

@@ -49,7 +49,7 @@ class VectorStoreDocumentRetrieverTests {
 	@Test
 	void whenVectorStoreIsNullThenThrow() {
 		assertThatThrownBy(() -> VectorStoreDocumentRetriever.builder().vectorStore(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("vectorStore cannot be null");
 	}
 

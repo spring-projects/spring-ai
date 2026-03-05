@@ -363,7 +363,7 @@ class BedrockConverseChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "us.anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@ValueSource(strings = { "us.anthropic.claude-haiku-4-5-20251001-v1:0" })
 	void multiModalityEmbeddedImage(String modelName) throws IOException {
 
 		// @formatter:off
@@ -380,7 +380,7 @@ class BedrockConverseChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "us.anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@ValueSource(strings = { "us.anthropic.claude-haiku-4-5-20251001-v1:0" })
 	void multiModalityImageUrl2(String modelName) throws IOException {
 
 		// TODO: add url method that wraps the checked exception.
@@ -400,7 +400,7 @@ class BedrockConverseChatClientIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "us.anthropic.claude-3-5-sonnet-20240620-v1:0" })
+	@ValueSource(strings = { "us.anthropic.claude-haiku-4-5-20251001-v1:0" })
 	void multiModalityImageUrl(String modelName) throws IOException {
 
 		// TODO: add url method that wraps the checked exception.

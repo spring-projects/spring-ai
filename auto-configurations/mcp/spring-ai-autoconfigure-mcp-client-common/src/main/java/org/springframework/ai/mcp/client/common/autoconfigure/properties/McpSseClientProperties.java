@@ -19,6 +19,8 @@ package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -83,7 +85,7 @@ public class McpSseClientProperties {
 	 * @param url the URL endpoint for SSE communication with the MCP server
 	 * @param sseEndpoint the SSE endpoint for the MCP server
 	 */
-	public record SseParameters(String url, String sseEndpoint) {
+	public record SseParameters(@Nullable String url, @Nullable String sseEndpoint) {
 	}
 
 }

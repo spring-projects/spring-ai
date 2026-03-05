@@ -63,8 +63,9 @@
         </dependency>
 
         <dependency>
-            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <groupId>org.springframework.ai</groupId>
             <artifactId>mcp-spring-webflux</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
         
     </dependencies>

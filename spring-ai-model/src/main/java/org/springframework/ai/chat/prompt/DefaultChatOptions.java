@@ -19,30 +19,51 @@ package org.springframework.ai.chat.prompt;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Default implementation for the {@link ChatOptions}.
  */
 public class DefaultChatOptions implements ChatOptions {
 
-	private String model;
+	private @Nullable String model;
 
-	private Double frequencyPenalty;
+	private @Nullable Double frequencyPenalty;
 
-	private Integer maxTokens;
+	private @Nullable Integer maxTokens;
 
-	private Double presencePenalty;
+	private @Nullable Double presencePenalty;
 
-	private List<String> stopSequences;
+	private @Nullable List<String> stopSequences;
 
-	private Double temperature;
+	private @Nullable Double temperature;
 
-	private Integer topK;
+	private @Nullable Integer topK;
 
-	private Double topP;
+	private @Nullable Double topP;
+
+	public DefaultChatOptions() {
+		// TODO remove
+	}
+
+	/* private */ /* TODO move builder as an inner class */ DefaultChatOptions(@Nullable String model,
+			@Nullable Double frequencyPenalty, @Nullable Integer maxTokens, @Nullable Double presencePenalty,
+			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
+			@Nullable Double topP) {
+		this.model = model;
+		this.frequencyPenalty = frequencyPenalty;
+		this.maxTokens = maxTokens;
+		this.presencePenalty = presencePenalty;
+		this.stopSequences = stopSequences;
+		this.temperature = temperature;
+		this.topK = topK;
+		this.topP = topP;
+	}
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
@@ -51,7 +72,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
@@ -60,7 +81,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
@@ -69,7 +90,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
@@ -78,7 +99,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences != null ? Collections.unmodifiableList(this.stopSequences) : null;
 	}
 
@@ -87,7 +108,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
@@ -96,7 +117,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
@@ -105,7 +126,7 @@ public class DefaultChatOptions implements ChatOptions {
 	}
 
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
@@ -116,16 +137,40 @@ public class DefaultChatOptions implements ChatOptions {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T extends ChatOptions> T copy() {
-		DefaultChatOptions copy = new DefaultChatOptions();
-		copy.setModel(this.getModel());
-		copy.setFrequencyPenalty(this.getFrequencyPenalty());
-		copy.setMaxTokens(this.getMaxTokens());
-		copy.setPresencePenalty(this.getPresencePenalty());
-		copy.setStopSequences(this.getStopSequences() != null ? new ArrayList<>(this.getStopSequences()) : null);
-		copy.setTemperature(this.getTemperature());
-		copy.setTopK(this.getTopK());
-		copy.setTopP(this.getTopP());
-		return (T) copy;
+		return (T) mutate().build();
+	}
+
+	@Override
+	public ChatOptions.Builder<?> mutate() {
+		return ChatOptions.builder()
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.presencePenalty)
+			.stopSequences(this.stopSequences != null ? new ArrayList<>(this.stopSequences) : null)
+			.temperature(this.temperature)
+			.topK(this.topK)
+			.topP(this.topP);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		DefaultChatOptions that = (DefaultChatOptions) o;
+		return Objects.equals(this.model, that.model) && Objects.equals(this.frequencyPenalty, that.frequencyPenalty)
+				&& Objects.equals(this.maxTokens, that.maxTokens)
+				&& Objects.equals(this.presencePenalty, that.presencePenalty)
+				&& Objects.equals(this.stopSequences, that.stopSequences)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
+				&& Objects.equals(this.topP, that.topP);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty, this.stopSequences,
+				this.temperature, this.topK, this.topP);
 	}
 
 }

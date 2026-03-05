@@ -63,5 +63,34 @@
 	<suppress files="QdrantVectorStore.java" checks="FinalClass"/>
 	<suppress files="RedisVectorStore.java" checks="FinalClass"/>
 
+	<suppress files="AugmentedToolCallbackTest.java" checks="[a-zA-Z0-9]*"/>
+	<suppress files="ToolInputSchemaAugmenterTest.java" checks="[a-zA-Z0-9]*"/>
 
+	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
+	<!-- This list will gradually shrink as we migrate to JSpecify -->
+	<suppress files="auto-configurations[\\/]models[\\/]spring-ai-autoconfigure-model-" id="bannedNullabilityImports" />
+
+	<suppress files="models[\\/]spring-ai-azure-openai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-bedrock" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-bedrock-converse" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-elevenlabs" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-google-genai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-google-genai-embedding" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-huggingface" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-minimax" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-mistral-ai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-oci-genai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-openai" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-openai-sdk" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-transformers" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-vertex-ai-embedding" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-vertex-ai-gemini" id="bannedNullabilityImports" />
+	<suppress files="models[\\/]spring-ai-zhipuai" id="bannedNullabilityImports" />
+	
+	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-spring-boot-docker-compose" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-spring-boot-starters" id="bannedNullabilityImports" />
+	<suppress files="spring-ai-spring-boot-testcontainers" id="bannedNullabilityImports" />
+
+	<suppress files="models|auto-configurations[\\/]models[\\/]spring-ai-autoconfigure-model-|spring-ai-integration-tests|spring-ai-spring-boot-docker-compose|spring-ai-spring-boot-starters|spring-ai-spring-boot-testcontainers" checks="JavadocPackage" />
 </suppressions>

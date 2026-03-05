@@ -35,7 +35,6 @@ import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.support.RegisteredBean;
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.core.annotation.AliasFor;
-import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -79,7 +78,7 @@ class ToolBeanRegistrationAotProcessorTests {
 		}
 	}
 
-	private static @Nullable BeanRegistrationAotContribution createContribution(Class<?> beanClass) {
+	private static BeanRegistrationAotContribution createContribution(Class<?> beanClass) {
 		DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
 		beanFactory.registerBeanDefinition(beanClass.getName(), new RootBeanDefinition(beanClass));
 		return new ToolBeanRegistrationAotProcessor()

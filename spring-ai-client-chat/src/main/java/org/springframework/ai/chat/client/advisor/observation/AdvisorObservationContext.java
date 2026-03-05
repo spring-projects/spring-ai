@@ -17,10 +17,10 @@
 package org.springframework.ai.chat.client.advisor.observation;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -38,8 +38,7 @@ public class AdvisorObservationContext extends Observation.Context {
 
 	private final int order;
 
-	@Nullable
-	private ChatClientResponse chatClientResponse;
+	private @Nullable ChatClientResponse chatClientResponse;
 
 	AdvisorObservationContext(String advisorName, ChatClientRequest chatClientRequest, int order) {
 		Assert.hasText(advisorName, "advisorName cannot be null or empty");
@@ -70,8 +69,7 @@ public class AdvisorObservationContext extends Observation.Context {
 		return this.order;
 	}
 
-	@Nullable
-	public ChatClientResponse getChatClientResponse() {
+	public @Nullable ChatClientResponse getChatClientResponse() {
 		return this.chatClientResponse;
 	}
 
@@ -84,9 +82,9 @@ public class AdvisorObservationContext extends Observation.Context {
 	 */
 	public static final class Builder {
 
-		private String advisorName;
+		private @Nullable String advisorName;
 
-		private ChatClientRequest chatClientRequest;
+		private @Nullable ChatClientRequest chatClientRequest;
 
 		private int order = 0;
 
@@ -109,6 +107,8 @@ public class AdvisorObservationContext extends Observation.Context {
 		}
 
 		public AdvisorObservationContext build() {
+			Assert.hasText(this.advisorName, "advisorName cannot be null or empty");
+			Assert.notNull(this.chatClientRequest, "chatClientRequest cannot be null");
 			return new AdvisorObservationContext(this.advisorName, this.chatClientRequest, this.order);
 		}
 

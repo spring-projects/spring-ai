@@ -78,7 +78,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 			.embeddingDimension(properties.getEmbeddingDimension())
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.build();
 	}

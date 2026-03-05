@@ -22,6 +22,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.messages.MessageType;
 
 /**
@@ -47,7 +49,7 @@ public class AnthropicCacheOptions {
 	 * Caching Limitations</a>. Further, the function can be customized to use a more
 	 * accurate token count if desired.
 	 */
-	private Function<String, Integer> contentLengthFunction = s -> s != null ? s.length() : 0;
+	private Function<@Nullable String, Integer> contentLengthFunction = s -> s != null ? s.length() : 0;
 
 	/**
 	 * Configure on a per {@link MessageType} basis the TTL (time-to-live) for cached
@@ -81,11 +83,11 @@ public class AnthropicCacheOptions {
 		this.strategy = strategy;
 	}
 
-	public Function<String, Integer> getContentLengthFunction() {
+	public Function<@Nullable String, Integer> getContentLengthFunction() {
 		return this.contentLengthFunction;
 	}
 
-	public void setContentLengthFunction(Function<String, Integer> contentLengthFunction) {
+	public void setContentLengthFunction(Function<@Nullable String, Integer> contentLengthFunction) {
 		this.contentLengthFunction = contentLengthFunction;
 	}
 
@@ -121,7 +123,7 @@ public class AnthropicCacheOptions {
 			return this;
 		}
 
-		public Builder contentLengthFunction(Function<String, Integer> contentLengthFunction) {
+		public Builder contentLengthFunction(Function<@Nullable String, Integer> contentLengthFunction) {
 			this.options.setContentLengthFunction(contentLengthFunction);
 			return this;
 		}

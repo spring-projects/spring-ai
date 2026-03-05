@@ -29,7 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -123,7 +123,7 @@ public class VertexAiGeminiChatOptions implements ToolCallingChatOptions, Struct
 	private @JsonProperty("responseMimeType") String responseMimeType;
 
 	/**
-	 * Optional. Geminie response schema.
+	 * Optional. Gemini response schema.
 	 */
 	private @JsonProperty("responseSchema") String responseSchema;
 

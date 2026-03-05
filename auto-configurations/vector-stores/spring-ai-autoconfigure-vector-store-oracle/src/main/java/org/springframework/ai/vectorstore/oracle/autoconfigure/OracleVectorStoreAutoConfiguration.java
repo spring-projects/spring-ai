@@ -74,7 +74,7 @@ public class OracleVectorStoreAutoConfiguration {
 			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
 			.forcedNormalization(properties.isForcedNormalization())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
+			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.build();
 	}

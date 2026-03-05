@@ -19,10 +19,10 @@ package org.springframework.ai.vectorstore.observation;
 import java.util.List;
 
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -41,28 +41,21 @@ public class VectorStoreObservationContext extends Observation.Context {
 
 	private final String operationName;
 
-	@Nullable
-	private String collectionName;
+	private @Nullable String collectionName;
 
-	@Nullable
-	private Integer dimensions;
+	private @Nullable Integer dimensions;
 
-	@Nullable
-	private String fieldName;
+	private @Nullable String fieldName;
 
-	@Nullable
-	private String namespace;
+	private @Nullable String namespace;
 
-	@Nullable
-	private String similarityMetric;
+	private @Nullable String similarityMetric;
 
-	@Nullable
-	private SearchRequest queryRequest;
+	private @Nullable SearchRequest queryRequest;
 
 	// SEARCH
 
-	@Nullable
-	private List<Document> queryResponse;
+	private @Nullable List<Document> queryResponse;
 
 	public VectorStoreObservationContext(String databaseSystem, String operationName) {
 		Assert.hasText(databaseSystem, "databaseSystem cannot be null or empty");
@@ -87,8 +80,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 		return this.operationName;
 	}
 
-	@Nullable
-	public String getCollectionName() {
+	public @Nullable String getCollectionName() {
 		return this.collectionName;
 	}
 
@@ -96,8 +88,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.collectionName = collectionName;
 	}
 
-	@Nullable
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
@@ -105,8 +96,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.dimensions = dimensions;
 	}
 
-	@Nullable
-	public String getFieldName() {
+	public @Nullable String getFieldName() {
 		return this.fieldName;
 	}
 
@@ -114,8 +104,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.fieldName = fieldName;
 	}
 
-	@Nullable
-	public String getNamespace() {
+	public @Nullable String getNamespace() {
 		return this.namespace;
 	}
 
@@ -123,8 +112,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.namespace = namespace;
 	}
 
-	@Nullable
-	public String getSimilarityMetric() {
+	public @Nullable String getSimilarityMetric() {
 		return this.similarityMetric;
 	}
 
@@ -132,8 +120,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.similarityMetric = similarityMetric;
 	}
 
-	@Nullable
-	public SearchRequest getQueryRequest() {
+	public @Nullable SearchRequest getQueryRequest() {
 		return this.queryRequest;
 	}
 
@@ -141,8 +128,7 @@ public class VectorStoreObservationContext extends Observation.Context {
 		this.queryRequest = queryRequest;
 	}
 
-	@Nullable
-	public List<Document> getQueryResponse() {
+	public @Nullable List<Document> getQueryResponse() {
 		return this.queryResponse;
 	}
 

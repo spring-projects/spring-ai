@@ -17,9 +17,7 @@
 /**
  * Management support for Ollama.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.ollama.management;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

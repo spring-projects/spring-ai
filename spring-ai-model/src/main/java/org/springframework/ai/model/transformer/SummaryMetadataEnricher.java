@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -97,7 +99,9 @@ public class SummaryMetadataEnricher implements DocumentTransformer {
 
 			Prompt prompt = new PromptTemplate(this.summaryTemplate)
 				.create(Map.of(CONTEXT_STR_PLACEHOLDER, documentContext));
-			documentSummaries.add(this.chatModel.call(prompt).getResult().getOutput().getText());
+			Generation generation = this.chatModel.call(prompt).getResult();
+			documentSummaries
+				.add(generation != null ? Objects.requireNonNullElse(generation.getOutput().getText(), "") : "");
 		}
 
 		for (int i = 0; i < documentSummaries.size(); i++) {

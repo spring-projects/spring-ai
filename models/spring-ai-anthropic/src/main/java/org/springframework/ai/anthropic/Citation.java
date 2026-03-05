@@ -16,7 +16,10 @@
 
 package org.springframework.ai.anthropic;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.anthropic.api.CitationDocument;
+import org.springframework.util.Assert;
 
 /**
  * Represents a citation reference in a Claude response. Citations indicate which parts of
@@ -83,23 +86,23 @@ public final class Citation {
 
 	private final int documentIndex;
 
-	private final String documentTitle;
+	private final @Nullable String documentTitle;
 
 	// Location-specific fields
-	private Integer startCharIndex;
+	private @Nullable Integer startCharIndex;
 
-	private Integer endCharIndex;
+	private @Nullable Integer endCharIndex;
 
-	private Integer startPageNumber;
+	private @Nullable Integer startPageNumber;
 
-	private Integer endPageNumber;
+	private @Nullable Integer endPageNumber;
 
-	private Integer startBlockIndex;
+	private @Nullable Integer startBlockIndex;
 
-	private Integer endBlockIndex;
+	private @Nullable Integer endBlockIndex;
 
 	// Private constructor
-	private Citation(LocationType type, String citedText, int documentIndex, String documentTitle) {
+	private Citation(LocationType type, String citedText, int documentIndex, @Nullable String documentTitle) {
 		this.type = type;
 		this.citedText = citedText;
 		this.documentIndex = documentIndex;
@@ -115,8 +118,8 @@ public final class Citation {
 	 * @param endCharIndex the ending character index (exclusive)
 	 * @return a new Citation with CHAR_LOCATION type
 	 */
-	public static Citation ofCharLocation(String citedText, int documentIndex, String documentTitle, int startCharIndex,
-			int endCharIndex) {
+	public static Citation ofCharLocation(String citedText, int documentIndex, @Nullable String documentTitle,
+			int startCharIndex, int endCharIndex) {
 		Citation citation = new Citation(LocationType.CHAR_LOCATION, citedText, documentIndex, documentTitle);
 		citation.startCharIndex = startCharIndex;
 		citation.endCharIndex = endCharIndex;
@@ -132,7 +135,7 @@ public final class Citation {
 	 * @param endPageNumber the ending page number (exclusive)
 	 * @return a new Citation with PAGE_LOCATION type
 	 */
-	public static Citation ofPageLocation(String citedText, int documentIndex, String documentTitle,
+	public static Citation ofPageLocation(String citedText, int documentIndex, @Nullable String documentTitle,
 			int startPageNumber, int endPageNumber) {
 		Citation citation = new Citation(LocationType.PAGE_LOCATION, citedText, documentIndex, documentTitle);
 		citation.startPageNumber = startPageNumber;
@@ -149,7 +152,7 @@ public final class Citation {
 	 * @param endBlockIndex the ending content block index (exclusive)
 	 * @return a new Citation with CONTENT_BLOCK_LOCATION type
 	 */
-	public static Citation ofContentBlockLocation(String citedText, int documentIndex, String documentTitle,
+	public static Citation ofContentBlockLocation(String citedText, int documentIndex, @Nullable String documentTitle,
 			int startBlockIndex, int endBlockIndex) {
 		Citation citation = new Citation(LocationType.CONTENT_BLOCK_LOCATION, citedText, documentIndex, documentTitle);
 		citation.startBlockIndex = startBlockIndex;
@@ -169,31 +172,31 @@ public final class Citation {
 		return this.documentIndex;
 	}
 
-	public String getDocumentTitle() {
+	public @Nullable String getDocumentTitle() {
 		return this.documentTitle;
 	}
 
-	public Integer getStartCharIndex() {
+	public @Nullable Integer getStartCharIndex() {
 		return this.startCharIndex;
 	}
 
-	public Integer getEndCharIndex() {
+	public @Nullable Integer getEndCharIndex() {
 		return this.endCharIndex;
 	}
 
-	public Integer getStartPageNumber() {
+	public @Nullable Integer getStartPageNumber() {
 		return this.startPageNumber;
 	}
 
-	public Integer getEndPageNumber() {
+	public @Nullable Integer getEndPageNumber() {
 		return this.endPageNumber;
 	}
 
-	public Integer getStartBlockIndex() {
+	public @Nullable Integer getStartBlockIndex() {
 		return this.startBlockIndex;
 	}
 
-	public Integer getEndBlockIndex() {
+	public @Nullable Integer getEndBlockIndex() {
 		return this.endBlockIndex;
 	}
 
@@ -203,12 +206,20 @@ public final class Citation {
 	public String getLocationDescription() {
 		return switch (this.type) {
 			case CHAR_LOCATION -> String.format("Characters %d-%d", this.startCharIndex, this.endCharIndex);
-			case PAGE_LOCATION ->
-				this.startPageNumber.equals(this.endPageNumber - 1) ? String.format("Page %d", this.startPageNumber)
+			case PAGE_LOCATION -> {
+				Assert.state(this.startPageNumber != null, "startPageNumber must be defined with page-based location");
+				Assert.state(this.endPageNumber != null, "endPageNumber must be defined with page-based location");
+				yield this.startPageNumber.equals(this.endPageNumber - 1)
+						? String.format("Page %d", this.startPageNumber)
 						: String.format("Pages %d-%d", this.startPageNumber, this.endPageNumber - 1);
-			case CONTENT_BLOCK_LOCATION ->
-				this.startBlockIndex.equals(this.endBlockIndex - 1) ? String.format("Block %d", this.startBlockIndex)
+			}
+			case CONTENT_BLOCK_LOCATION -> {
+				Assert.state(this.startBlockIndex != null, "startBlockIndex must be defined with block-based location");
+				Assert.state(this.endBlockIndex != null, "endBlockIndex must be defined with block-based location");
+				yield this.startBlockIndex.equals(this.endBlockIndex - 1)
+						? String.format("Block %d", this.startBlockIndex)
 						: String.format("Blocks %d-%d", this.startBlockIndex, this.endBlockIndex - 1);
+			}
 		};
 	}
 
@@ -216,8 +227,7 @@ public final class Citation {
 	public String toString() {
 		return String.format("Citation{type=%s, documentIndex=%d, documentTitle='%s', location='%s', citedText='%s'}",
 				this.type, this.documentIndex, this.documentTitle, getLocationDescription(),
-				this.citedText != null && this.citedText.length() > 50 ? this.citedText.substring(0, 50) + "..."
-						: this.citedText);
+				this.citedText.length() > 50 ? this.citedText.substring(0, 50) + "..." : this.citedText);
 	}
 
 }

@@ -41,6 +41,17 @@
 		<maven.compiler.source>17</maven.compiler.source>
 	</properties>
 
+	<!-- Override transitive protobuf-java to fix CVE-2024-7254 (SNYK-JAVA-COMGOOGLEPROTOBUF-8055227) -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>com.google.protobuf</groupId>
+				<artifactId>protobuf-java</artifactId>
+				<version>${protobuf-java.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

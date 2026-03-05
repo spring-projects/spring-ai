@@ -17,9 +17,7 @@
 /**
  * Provides classes for advising chat clients.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.chat.client.advisor;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

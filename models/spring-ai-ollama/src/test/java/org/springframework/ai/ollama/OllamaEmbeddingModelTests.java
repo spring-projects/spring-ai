@@ -238,7 +238,7 @@ class OllamaEmbeddingModelTests {
 	@Test
 	void builderValidation() {
 		// Test that builder requires ollamaApi
-		assertThatThrownBy(() -> OllamaEmbeddingModel.builder().build()).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> OllamaEmbeddingModel.builder().build()).isInstanceOf(IllegalStateException.class);
 
 		// Test successful builder with minimal required parameters
 		var model = OllamaEmbeddingModel.builder().ollamaApi(this.ollamaApi).build();

@@ -16,14 +16,9 @@
 
 package org.springframework.ai.model.chat.memory.repository.jdbc.autoconfigure;
 
-import java.util.List;
-
 import javax.sql.DataSource;
 
-import org.springframework.boot.jdbc.init.DataSourceScriptDatabaseInitializer;
-import org.springframework.boot.jdbc.init.PlatformPlaceholderDatabaseDriverResolver;
-import org.springframework.boot.sql.init.DatabaseInitializationSettings;
-import org.springframework.util.StringUtils;
+import org.springframework.boot.jdbc.init.PropertiesBasedDataSourceScriptDatabaseInitializer;
 
 /**
  * Performs database initialization for the JDBC Chat Memory Repository.
@@ -32,28 +27,11 @@ import org.springframework.util.StringUtils;
  * @author Yanming Zhou
  * @since 1.0.0
  */
-class JdbcChatMemoryRepositorySchemaInitializer extends DataSourceScriptDatabaseInitializer {
+class JdbcChatMemoryRepositorySchemaInitializer
+		extends PropertiesBasedDataSourceScriptDatabaseInitializer<JdbcChatMemoryRepositoryProperties> {
 
 	JdbcChatMemoryRepositorySchemaInitializer(DataSource dataSource, JdbcChatMemoryRepositoryProperties properties) {
-		super(dataSource, getSettings(dataSource, properties));
-	}
-
-	static DatabaseInitializationSettings getSettings(DataSource dataSource,
-			JdbcChatMemoryRepositoryProperties properties) {
-		var settings = new DatabaseInitializationSettings();
-		settings.setSchemaLocations(resolveSchemaLocations(dataSource, properties));
-		settings.setMode(properties.getInitializeSchema());
-		settings.setContinueOnError(true);
-		return settings;
-	}
-
-	private static List<String> resolveSchemaLocations(DataSource dataSource,
-			JdbcChatMemoryRepositoryProperties properties) {
-		PlatformPlaceholderDatabaseDriverResolver platformResolver = new PlatformPlaceholderDatabaseDriverResolver();
-		if (StringUtils.hasText(properties.getPlatform())) {
-			return platformResolver.resolveAll(properties.getPlatform(), properties.getSchema());
-		}
-		return platformResolver.resolveAll(dataSource, properties.getSchema());
+		super(dataSource, properties);
 	}
 
 }

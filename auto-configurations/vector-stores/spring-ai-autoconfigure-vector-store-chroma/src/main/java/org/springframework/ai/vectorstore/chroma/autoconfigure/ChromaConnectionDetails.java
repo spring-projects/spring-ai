@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.chroma.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
@@ -29,6 +31,6 @@ public interface ChromaConnectionDetails extends ConnectionDetails {
 
 	int getPort();
 
-	String getKeyToken();
+	@Nullable String getKeyToken();
 
 }

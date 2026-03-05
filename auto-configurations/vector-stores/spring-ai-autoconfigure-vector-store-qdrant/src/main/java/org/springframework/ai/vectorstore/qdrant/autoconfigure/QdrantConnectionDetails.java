@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.qdrant.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
@@ -29,6 +31,6 @@ public interface QdrantConnectionDetails extends ConnectionDetails {
 
 	int getPort();
 
-	String getApiKey();
+	@Nullable String getApiKey();
 
 }

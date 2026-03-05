@@ -25,11 +25,13 @@ import com.tangosol.util.extractor.ChainedExtractor;
 import com.tangosol.util.extractor.UniversalExtractor;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Operand;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.FilterHelper;
+import org.springframework.util.Assert;
 
 /**
  * Converts Spring AI {@link Expression} into Coherence {@link Filter}.
@@ -51,6 +53,10 @@ public class CoherenceFilterExpressionConverter {
 	}
 
 	private Filter<?> convert(Expression expression) {
+		if (expression.type() == ExpressionType.NOT) {
+			return convert(FilterHelper.negate(expression));
+		}
+		Assert.state(expression.right() != null, "expression is expected to have a right operand");
 		return switch (expression.type()) {
 			case EQ -> Filters.equal(extractor(expression.left()), value(expression.right()));
 			case NE -> Filters.notEqual(extractor(expression.left()), value(expression.right()));
@@ -61,23 +67,10 @@ public class CoherenceFilterExpressionConverter {
 			case IN -> Filters.in(extractor(expression.left()), ((List) value(expression.right())).toArray());
 			case NIN ->
 				Filters.not(Filters.in(extractor(expression.left()), ((List) value(expression.right())).toArray()));
-			case NOT -> convert(FilterHelper.negate(expression));
-			case AND -> and(expression);
-			case OR -> or(expression);
+			case AND -> Filters.all(convert(expression.left()), convert(expression.right()));
+			case OR -> Filters.any(convert(expression.left()), convert(expression.right()));
 			default -> throw new IllegalStateException("Unexpected value: " + expression.type());
 		};
-	}
-
-	private Filter<?> and(Expression expression) {
-		Filter<?> left = convert(expression.left());
-		Filter<?> right = convert(expression.right());
-		return left.and(right);
-	}
-
-	private Filter<?> or(Expression expression) {
-		Filter<?> left = convert(expression.left());
-		Filter<?> right = convert(expression.right());
-		return left.or(right);
 	}
 
 	private ValueExtractor extractor(Operand op) {

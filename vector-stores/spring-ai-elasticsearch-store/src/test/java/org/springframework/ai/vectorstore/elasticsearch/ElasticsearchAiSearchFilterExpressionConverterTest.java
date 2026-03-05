@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 	public void testEQ() {
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country:BG");
+		assertThat(vectorExpr).isEqualTo("metadata.country:\"BG\"");
 	}
 
 	@Test
@@ -74,14 +74,14 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 		String vectorExpr = this.converter.convertExpression(new Filter.Expression(AND,
 				new Filter.Expression(EQ, new Filter.Key("genre"), new Filter.Value("drama")),
 				new Filter.Expression(GTE, new Filter.Key("year"), new Filter.Value(2020))));
-		assertThat(vectorExpr).isEqualTo("metadata.genre:drama AND metadata.year:>=2020");
+		assertThat(vectorExpr).isEqualTo("metadata.genre:\"drama\" AND metadata.year:>=2020");
 	}
 
 	@Test
 	public void tesIn() {
 		String vectorExpr = this.converter.convertExpression(new Filter.Expression(IN, new Filter.Key("genre"),
 				new Filter.Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(vectorExpr).isEqualTo("(metadata.genre:comedy OR documentary OR drama)");
+		assertThat(vectorExpr).isEqualTo("metadata.genre:(\"comedy\" OR \"documentary\" OR \"drama\")");
 	}
 
 	@Test
@@ -91,7 +91,8 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(AND,
 								new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")),
 								new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia")))));
-		assertThat(vectorExpr).isEqualTo("metadata.year:>=2020 OR metadata.country:BG AND metadata.city: NOT Sofia");
+		assertThat(vectorExpr)
+			.isEqualTo("metadata.year:>=2020 OR metadata.country:\"BG\" AND metadata.city: NOT \"Sofia\"");
 	}
 
 	@Test
@@ -101,8 +102,8 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(GTE, new Filter.Key("year"), new Filter.Value(2020)),
 						new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")))),
 				new Filter.Expression(NIN, new Filter.Key("city"), new Filter.Value(List.of("Sofia", "Plovdiv")))));
-		assertThat(vectorExpr)
-			.isEqualTo("(metadata.year:>=2020 OR metadata.country:BG) AND NOT (metadata.city:Sofia OR Plovdiv)");
+		assertThat(vectorExpr).isEqualTo(
+				"(metadata.year:>=2020 OR metadata.country:\"BG\") AND NOT metadata.city:(\"Sofia\" OR \"Plovdiv\")");
 	}
 
 	@Test
@@ -112,8 +113,8 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(GTE, new Filter.Key("year"), new Filter.Value(2020))),
 				new Filter.Expression(IN, new Filter.Key("country"), new Filter.Value(List.of("BG", "NL", "US")))));
 
-		assertThat(vectorExpr)
-			.isEqualTo("metadata.isOpen:true AND metadata.year:>=2020 AND (metadata.country:BG OR NL OR US)");
+		assertThat(vectorExpr).isEqualTo(
+				"metadata.isOpen:true AND metadata.year:>=2020 AND metadata.country:(\"BG\" OR \"NL\" OR \"US\")");
 	}
 
 	@Test
@@ -129,11 +130,10 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
-
+		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:\"BG\"");
 		vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("'country 1 2 3'"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
+		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:\"BG\"");
 	}
 
 }

@@ -35,7 +35,7 @@ class MultiQueryExpanderTests {
 	@Test
 	void whenChatClientBuilderIsNullThenThrow() {
 		assertThatThrownBy(() -> MultiQueryExpander.builder().chatClientBuilder(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 
@@ -72,7 +72,7 @@ class MultiQueryExpanderTests {
 
 	@Test
 	void whenBuilderIsNullThenThrow() {
-		assertThatThrownBy(() -> MultiQueryExpander.builder().build()).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> MultiQueryExpander.builder().build()).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 

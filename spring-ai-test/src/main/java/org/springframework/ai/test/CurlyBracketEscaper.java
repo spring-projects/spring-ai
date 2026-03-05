@@ -16,6 +16,8 @@
 
 package org.springframework.ai.test;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Utility class for escaping curly brackets in strings
  *
@@ -33,7 +35,7 @@ public final class CurlyBracketEscaper {
 	 * @param input The string containing curly brackets to escape
 	 * @return The string with escaped curly brackets
 	 */
-	public static String escapeCurlyBrackets(String input) {
+	public static @Nullable String escapeCurlyBrackets(@Nullable String input) {
 		if (input == null) {
 			return null;
 		}
@@ -45,7 +47,7 @@ public final class CurlyBracketEscaper {
 	 * @param input The string containing escaped curly brackets
 	 * @return The string with unescaped curly brackets
 	 */
-	public static String unescapeCurlyBrackets(String input) {
+	public static @Nullable String unescapeCurlyBrackets(@Nullable String input) {
 		if (input == null) {
 			return null;
 		}

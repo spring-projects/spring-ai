@@ -17,11 +17,13 @@
 package org.springframework.ai.stabilityai.api;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -68,7 +70,10 @@ public class StabilityAiApi {
 	 * @param restClientBuilder RestClient builder.
 	 */
 	public StabilityAiApi(String apiKey, String model, String baseUrl, RestClient.Builder restClientBuilder) {
-
+		Assert.notNull(apiKey, "'apiKey' must not be null");
+		Assert.notNull(model, "'model' must not be null");
+		Assert.notNull(baseUrl, "'baseUrl' must not be null");
+		Assert.notNull(restClientBuilder, "'restClientBuilder' must not be null");
 		this.model = model;
 		this.apiKey = apiKey;
 
@@ -88,107 +93,114 @@ public class StabilityAiApi {
 
 	public GenerateImageResponse generateImage(GenerateImageRequest request) {
 		Assert.notNull(request, "The request body can not be null.");
-		return this.restClient.post()
+		return Objects.requireNonNull(this.restClient.post()
 			.uri("/generation/{model}/text-to-image", this.model)
 			.body(request)
 			.retrieve()
-			.body(GenerateImageResponse.class);
+			.body(GenerateImageResponse.class), "received a response without a body");
 	}
 
+	// See
+	// https://platform.stability.ai/docs/api-reference#tag/SDXL-1.0/operation/textToImage
+
 	@JsonInclude(JsonInclude.Include.NON_NULL)
-	public record GenerateImageRequest(@JsonProperty("text_prompts") List<TextPrompts> textPrompts,
-			@JsonProperty("height") Integer height, @JsonProperty("width") Integer width,
-			@JsonProperty("cfg_scale") Float cfgScale, @JsonProperty("clip_guidance_preset") String clipGuidancePreset,
-			@JsonProperty("sampler") String sampler, @JsonProperty("samples") Integer samples,
-			@JsonProperty("seed") Long seed, @JsonProperty("steps") Integer steps,
-			@JsonProperty("style_preset") String stylePreset) {
+	public record GenerateImageRequest(
+			@JsonProperty(value = "text_prompts", required = true) List<TextPrompts> textPrompts,
+			@JsonProperty("height") @Nullable Integer height, @JsonProperty("width") @Nullable Integer width,
+			@JsonProperty("cfg_scale") @Nullable Float cfgScale,
+			@JsonProperty("clip_guidance_preset") @Nullable String clipGuidancePreset,
+			@JsonProperty("sampler") @Nullable String sampler, @JsonProperty("samples") @Nullable Integer samples,
+			@JsonProperty("seed") @Nullable Long seed, @JsonProperty("steps") @Nullable Integer steps,
+			@JsonProperty("style_preset") @Nullable String stylePreset) {
 
 		public static Builder builder() {
 			return new Builder();
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
-		public record TextPrompts(@JsonProperty("text") String text, @JsonProperty("weight") Float weight) {
+		public record TextPrompts(@JsonProperty(value = "text", required = true) String text,
+				@JsonProperty("weight") @Nullable Float weight) {
 
 		}
 
 		public static final class Builder {
 
-			List<TextPrompts> textPrompts;
+			private @Nullable List<TextPrompts> textPrompts;
 
-			Integer height;
+			private @Nullable Integer height;
 
-			Integer width;
+			private @Nullable Integer width;
 
-			Float cfgScale;
+			private @Nullable Float cfgScale;
 
-			String clipGuidancePreset;
+			private @Nullable String clipGuidancePreset;
 
-			String sampler;
+			private @Nullable String sampler;
 
-			Integer samples;
+			private @Nullable Integer samples;
 
-			Long seed;
+			private @Nullable Long seed;
 
-			Integer steps;
+			private @Nullable Integer steps;
 
-			String stylePreset;
+			private @Nullable String stylePreset;
 
 			public Builder() {
 
 			}
 
-			public Builder textPrompts(List<TextPrompts> textPrompts) {
+			public Builder textPrompts(@Nullable List<TextPrompts> textPrompts) {
 				this.textPrompts = textPrompts;
 				return this;
 			}
 
-			public Builder height(Integer height) {
+			public Builder height(@Nullable Integer height) {
 				this.height = height;
 				return this;
 			}
 
-			public Builder width(Integer width) {
+			public Builder width(@Nullable Integer width) {
 				this.width = width;
 				return this;
 			}
 
-			public Builder cfgScale(Float cfgScale) {
+			public Builder cfgScale(@Nullable Float cfgScale) {
 				this.cfgScale = cfgScale;
 				return this;
 			}
 
-			public Builder clipGuidancePreset(String clipGuidancePreset) {
+			public Builder clipGuidancePreset(@Nullable String clipGuidancePreset) {
 				this.clipGuidancePreset = clipGuidancePreset;
 				return this;
 			}
 
-			public Builder sampler(String sampler) {
+			public Builder sampler(@Nullable String sampler) {
 				this.sampler = sampler;
 				return this;
 			}
 
-			public Builder samples(Integer samples) {
+			public Builder samples(@Nullable Integer samples) {
 				this.samples = samples;
 				return this;
 			}
 
-			public Builder seed(Long seed) {
+			public Builder seed(@Nullable Long seed) {
 				this.seed = seed;
 				return this;
 			}
 
-			public Builder steps(Integer steps) {
+			public Builder steps(@Nullable Integer steps) {
 				this.steps = steps;
 				return this;
 			}
 
-			public Builder stylePreset(String stylePreset) {
+			public Builder stylePreset(@Nullable String stylePreset) {
 				this.stylePreset = stylePreset;
 				return this;
 			}
 
 			public GenerateImageRequest build() {
+				Assert.state(this.textPrompts != null, "textPrompts must not be null.");
 				return new GenerateImageRequest(this.textPrompts, this.height, this.width, this.cfgScale,
 						this.clipGuidancePreset, this.sampler, this.samples, this.seed, this.steps, this.stylePreset);
 			}
@@ -200,12 +212,13 @@ public class StabilityAiApi {
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record GenerateImageResponse(@JsonProperty("result") String result,
-			@JsonProperty("artifacts") List<Artifacts> artifacts) {
+			@JsonProperty(value = "artifacts", required = true) List<Artifacts> artifacts) {
 
 		@JsonInclude(JsonInclude.Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record Artifacts(@JsonProperty("seed") long seed, @JsonProperty("base64") String base64,
-				@JsonProperty("finishReason") String finishReason) {
+		public record Artifacts(@JsonProperty(value = "seed", required = true) long seed,
+				@JsonProperty(value = "base64", required = true) String base64,
+				@JsonProperty(value = "finishReason", required = true) String finishReason) {
 
 		}
 

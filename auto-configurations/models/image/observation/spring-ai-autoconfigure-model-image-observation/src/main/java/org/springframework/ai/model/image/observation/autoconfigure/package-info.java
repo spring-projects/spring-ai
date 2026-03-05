@@ -17,9 +17,7 @@
 /**
  * Auto-configuration for image observation.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.model.image.observation.autoconfigure;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

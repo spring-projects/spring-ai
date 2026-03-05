@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR;
@@ -78,6 +79,7 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 	}
 
 	private void doCompoundExpressionType(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "unexpected null right expression");
 		context.append(" (");
 		this.convertOperand(expression.left(), context);
 		context.append(getOperationSymbol(expression));
@@ -96,6 +98,7 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 	}
 
 	private void doSingleExpressionType(Filter.Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "unexpected null right expression");
 		this.convertOperand(expression.left(), context);
 		context.append(getOperationSymbol(expression));
 		context.append(" (");

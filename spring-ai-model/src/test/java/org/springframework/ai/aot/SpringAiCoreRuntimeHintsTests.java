@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOP_FallbackServiceProvider;
 import org.slf4j.helpers.SubstituteServiceProvider;
+
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;

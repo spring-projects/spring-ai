@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,7 @@ import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
 import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.api.AnthropicCacheType;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.util.Assert;
 
 /**
  * Resolves cache eligibility for messages based on the provided
@@ -60,13 +62,13 @@ public class CacheEligibilityResolver {
 
 	private final Map<MessageType, Integer> messageTypeMinContentLengths;
 
-	private final Function<String, Integer> contentLengthFunction;
+	private final Function<@Nullable String, Integer> contentLengthFunction;
 
 	private final Set<MessageType> cacheEligibleMessageTypes;
 
 	public CacheEligibilityResolver(AnthropicCacheStrategy cacheStrategy,
 			Map<MessageType, AnthropicCacheTtl> messageTypeTtl, Map<MessageType, Integer> messageTypeMinContentLengths,
-			Function<String, Integer> contentLengthFunction, Set<MessageType> cacheEligibleMessageTypes) {
+			Function<@Nullable String, Integer> contentLengthFunction, Set<MessageType> cacheEligibleMessageTypes) {
 		this.cacheStrategy = cacheStrategy;
 		this.messageTypeTtl = messageTypeTtl;
 		this.messageTypeMinContentLengths = messageTypeMinContentLengths;
@@ -90,26 +92,28 @@ public class CacheEligibilityResolver {
 		};
 	}
 
-	public AnthropicApi.ChatCompletionRequest.CacheControl resolve(MessageType messageType, String content) {
+	public AnthropicApi.ChatCompletionRequest.@Nullable CacheControl resolve(MessageType messageType,
+			@Nullable String content) {
 		Integer length = this.contentLengthFunction.apply(content);
+		Integer minLength = this.messageTypeMinContentLengths.get(messageType);
+		Assert.state(minLength != null, "The minimum content length of the message type must be defined");
 		if (this.cacheStrategy == AnthropicCacheStrategy.NONE || !this.cacheEligibleMessageTypes.contains(messageType)
-				|| length == null || length < this.messageTypeMinContentLengths.get(messageType)
-				|| this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
+				|| length < minLength || this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
 			logger.debug(
 					"Caching not enabled for messageType={}, contentLength={}, minContentLength={}, cacheStrategy={}, usedBreakpoints={}",
-					messageType, length, this.messageTypeMinContentLengths.get(messageType), this.cacheStrategy,
-					this.cacheBreakpointTracker.getCount());
+					messageType, length, minLength, this.cacheStrategy, this.cacheBreakpointTracker.getCount());
 			return null;
 		}
 
 		AnthropicCacheTtl anthropicCacheTtl = this.messageTypeTtl.get(messageType);
+		Assert.state(anthropicCacheTtl != null, "The message type ttl of the message type must be defined");
 
 		logger.debug("Caching enabled for messageType={}, ttl={}", messageType, anthropicCacheTtl);
 
 		return this.anthropicCacheType.cacheControl(anthropicCacheTtl.getValue());
 	}
 
-	public AnthropicApi.ChatCompletionRequest.CacheControl resolveToolCacheControl() {
+	public AnthropicApi.ChatCompletionRequest.@Nullable CacheControl resolveToolCacheControl() {
 		// Tool definitions are cache-eligible for TOOLS_ONLY, SYSTEM_AND_TOOLS, and
 		// CONVERSATION_HISTORY strategies. SYSTEM_ONLY caches only system messages,
 		// relying on Anthropic's cache hierarchy to implicitly cache tools.
@@ -127,6 +131,7 @@ public class CacheEligibilityResolver {
 		}
 
 		AnthropicCacheTtl anthropicCacheTtl = this.messageTypeTtl.get(TOOL_DEFINITION_MESSAGE_TYPE);
+		Assert.state(anthropicCacheTtl != null, "messageTypeTtl must contain a 'system' entry");
 
 		logger.debug("Caching enabled for tool definition, ttl={}", anthropicCacheTtl);
 

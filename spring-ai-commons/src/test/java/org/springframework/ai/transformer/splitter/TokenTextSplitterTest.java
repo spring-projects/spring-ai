@@ -19,17 +19,20 @@ package org.springframework.ai.transformer.splitter;
 import java.util.List;
 import java.util.Map;
 
+import com.knuddels.jtokkit.api.EncodingType;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Ricken Bazolo
  * @author Seunghwan Jung
+ * @author Jemin Huh
  */
 public class TokenTextSplitterTest {
 
@@ -50,7 +53,7 @@ public class TokenTextSplitterTest {
 		var doc2 = new Document(doc2Text, Map.of("key2", "value22", "key3", "value3"));
 		doc2.setContentFormatter(contentFormatter2);
 
-		var tokenTextSplitter = new TokenTextSplitter();
+		var tokenTextSplitter = TokenTextSplitter.builder().build();
 
 		var chunks = tokenTextSplitter.apply(List.of(doc1, doc2));
 
@@ -362,6 +365,142 @@ public class TokenTextSplitterTest {
 
 		// Verify first chunk ends with punctuation
 		assertThat(splitted.get(0).getText()).endsWith(".");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithCustomPunctuationMarks() {
+		var contentFormatter1 = DefaultContentFormatter.defaultConfig();
+		var contentFormatter2 = DefaultContentFormatter.defaultConfig();
+
+		assertThat(contentFormatter1).isNotSameAs(contentFormatter2);
+
+		var doc1 = new Document("Here, we set custom punctuation marks。？！. We just want to test it works or not？");
+		doc1.setContentFormatter(contentFormatter1);
+
+		var doc2 = new Document("And more, we add protected method getLastPunctuationIndex in TokenTextSplitter class！"
+				+ "The subclasses can override this method to achieve their own business logic。We just want to test it works or not？");
+		doc2.setContentFormatter(contentFormatter2);
+
+		var tokenTextSplitter = TokenTextSplitter.builder()
+			.withChunkSize(10)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(3)
+			.withMaxNumChunks(50)
+			.withKeepSeparator(true)
+			.withPunctuationMarks(List.of('。', '？', '！'))
+			.build();
+
+		var chunks = tokenTextSplitter.apply(List.of(doc1, doc2));
+
+		assertThat(chunks.size()).isEqualTo(7);
+
+		// Doc 1
+		assertThat(chunks.get(0).getText()).isEqualTo("Here, we set custom punctuation marks。？！");
+		assertThat(chunks.get(1).getText()).isEqualTo(". We just want to test it works or not");
+
+		// Doc 2
+		assertThat(chunks.get(2).getText()).isEqualTo("And more, we add protected method getLastPunctuation");
+		assertThat(chunks.get(3).getText()).isEqualTo("Index in TokenTextSplitter class！");
+		assertThat(chunks.get(4).getText()).isEqualTo("The subclasses can override this method to achieve their own");
+		assertThat(chunks.get(5).getText()).isEqualTo("business logic。");
+		assertThat(chunks.get(6).getText()).isEqualTo("We just want to test it works or not？");
+
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNullEncodingTypeThrows() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withEncodingType(null).build())
+			.withMessage("encodingType must not be null");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithDifferentEncodingTypes() {
+		var contentFormatter1 = DefaultContentFormatter.defaultConfig();
+		var contentFormatter2 = DefaultContentFormatter.defaultConfig();
+
+		assertThat(contentFormatter1).isNotSameAs(contentFormatter2);
+
+		var doc1 = new Document("In the end, writing arises when man realizes that memory is not enough.",
+				Map.of("key1", "value1", "key2", "value2"));
+		doc1.setContentFormatter(contentFormatter1);
+
+		var doc2 = new Document("The most oppressive thing about the labyrinth is that you are constantly "
+				+ "being forced to choose. It isn't the lack of an exit, but the abundance of exits that is so disorienting.",
+				Map.of("key2", "value22", "key3", "value3"));
+		doc2.setContentFormatter(contentFormatter2);
+
+		var cl100kSplitter = TokenTextSplitter.builder()
+			.withEncodingType(EncodingType.CL100K_BASE)
+			.withChunkSize(10)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(3)
+			.withMaxNumChunks(50)
+			.withKeepSeparator(true)
+			.build();
+
+		var cl100kChunks = cl100kSplitter.apply(List.of(doc1, doc2));
+
+		assertThat(cl100kChunks.size()).isEqualTo(6);
+
+		// Doc 1
+		assertThat(cl100kChunks.get(0).getText()).isEqualTo("In the end, writing arises when man realizes that");
+		assertThat(cl100kChunks.get(1).getText()).isEqualTo("memory is not enough.");
+
+		// Doc 2
+		assertThat(cl100kChunks.get(2).getText())
+			.isEqualTo("The most oppressive thing about the labyrinth is that you");
+		assertThat(cl100kChunks.get(3).getText()).isEqualTo("are constantly being forced to choose.");
+		assertThat(cl100kChunks.get(4).getText()).isEqualTo("It isn't the lack of an exit, but");
+		assertThat(cl100kChunks.get(5).getText()).isEqualTo("the abundance of exits that is so disorienting");
+
+		// P50K_BASE behaves the same as CL100K_BASE for this English input
+		var p50kSplitter = TokenTextSplitter.builder()
+			.withEncodingType(EncodingType.P50K_BASE)
+			.withChunkSize(10)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(3)
+			.withMaxNumChunks(50)
+			.withKeepSeparator(true)
+			.build();
+
+		var p50kChunks = p50kSplitter.apply(List.of(doc1, doc2));
+
+		assertThat(p50kChunks.size()).isEqualTo(6);
+
+		// Doc 1
+		assertThat(p50kChunks.get(0).getText()).isEqualTo("In the end, writing arises when man realizes that");
+		assertThat(p50kChunks.get(1).getText()).isEqualTo("memory is not enough.");
+
+		// Doc 2
+		assertThat(p50kChunks.get(2).getText()).isEqualTo("The most oppressive thing about the labyrinth is that you");
+		assertThat(p50kChunks.get(3).getText()).isEqualTo("are constantly being forced to choose.");
+		assertThat(p50kChunks.get(4).getText()).isEqualTo("It isn't the lack of an exit, but");
+		assertThat(p50kChunks.get(5).getText()).isEqualTo("the abundance of exits that is so disorienting");
+
+		var o200kSplitter = TokenTextSplitter.builder()
+			.withEncodingType(EncodingType.O200K_BASE)
+			.withChunkSize(10)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(3)
+			.withMaxNumChunks(50)
+			.withKeepSeparator(true)
+			.build();
+
+		// O200K_BASE has slightly different token boundaries
+		var o200kChunks = o200kSplitter.apply(List.of(doc1, doc2));
+
+		assertThat(o200kChunks.size()).isEqualTo(6);
+
+		// Doc 1
+		assertThat(o200kChunks.get(0).getText()).isEqualTo("In the end, writing arises when man realizes that");
+		assertThat(o200kChunks.get(1).getText()).isEqualTo("memory is not enough.");
+
+		// Doc 2
+		assertThat(o200kChunks.get(2).getText()).isEqualTo("The most oppressive thing about the labyrinth is that you");
+		assertThat(o200kChunks.get(3).getText()).isEqualTo("are constantly being forced to choose.");
+		assertThat(o200kChunks.get(4).getText()).isEqualTo("It isn't the lack of an exit, but the");
+		assertThat(o200kChunks.get(5).getText()).isEqualTo("abundance of exits that is so disorienting.");
 	}
 
 }

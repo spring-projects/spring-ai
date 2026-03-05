@@ -56,13 +56,11 @@ import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.CollectionUtils;
@@ -76,6 +74,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Thomas Vitale
  * @author Jihoon Kim
  * @author YeongMin Song
+ * @author Eddú Meléndez
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -513,10 +512,12 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 		}
 
 		@Bean
-		@Primary
-		@ConfigurationProperties("app.datasource")
 		public DataSourceProperties dataSourceProperties() {
-			return new DataSourceProperties();
+			DataSourceProperties properties = new DataSourceProperties();
+			properties.setUrl(postgresContainer.getJdbcUrl());
+			properties.setUsername(postgresContainer.getUsername());
+			properties.setPassword(postgresContainer.getPassword());
+			return properties;
 		}
 
 		@Bean

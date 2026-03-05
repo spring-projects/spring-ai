@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -122,7 +124,7 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 	@Override
 	public ChatClientRequest before(ChatClientRequest request, AdvisorChain advisorChain) {
 		String conversationId = getConversationId(request.context(), this.defaultConversationId);
-		String query = request.prompt().getUserMessage() != null ? request.prompt().getUserMessage().getText() : "";
+		String query = Objects.requireNonNullElse(request.prompt().getUserMessage().getText(), "");
 		int topK = getChatMemoryTopK(request.context());
 		String filter = DOCUMENT_METADATA_CONVERSATION_ID + "=='" + conversationId + "'";
 		SearchRequest searchRequest = SearchRequest.builder().query(query).topK(topK).filterExpression(filter).build();
@@ -147,8 +149,14 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 		return processedChatClientRequest;
 	}
 
-	private int getChatMemoryTopK(Map<String, Object> context) {
-		return context.containsKey(TOP_K) ? Integer.parseInt(context.get(TOP_K).toString()) : this.defaultTopK;
+	private int getChatMemoryTopK(Map<String, @Nullable Object> context) {
+		Object fromCtx = context.get(TOP_K);
+		if (fromCtx != null) {
+			return Integer.parseInt(fromCtx.toString());
+		}
+		else {
+			return this.defaultTopK;
+		}
 	}
 
 	@Override
@@ -221,13 +229,13 @@ public final class VectorStoreChatMemoryAdvisor implements BaseChatMemoryAdvisor
 
 		private int order = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER;
 
-		private VectorStore vectorStore;
+		private final VectorStore vectorStore;
 
 		/**
 		 * Creates a new builder instance.
 		 * @param vectorStore the vector store to use
 		 */
-		protected Builder(VectorStore vectorStore) {
+		Builder(VectorStore vectorStore) {
 			this.vectorStore = vectorStore;
 		}
 

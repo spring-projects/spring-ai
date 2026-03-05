@@ -16,6 +16,8 @@
 
 package org.springframework.ai.audio.transcription;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.Model;
 import org.springframework.core.io.Resource;
 
@@ -41,8 +43,7 @@ public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, Audi
 	 * @return The transcribed text.
 	 */
 	default String transcribe(Resource resource) {
-		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource);
-		return this.call(prompt).getResult().getOutput();
+		return this.transcribe(resource, null);
 	}
 
 	/**
@@ -51,9 +52,10 @@ public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, Audi
 	 * @param options The transcription options.
 	 * @return The transcribed text.
 	 */
-	default String transcribe(Resource resource, AudioTranscriptionOptions options) {
+	default String transcribe(Resource resource, @Nullable AudioTranscriptionOptions options) {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
-		return this.call(prompt).getResult().getOutput();
+		AudioTranscription result = this.call(prompt).getResult();
+		return result != null ? result.getOutput() : "";
 	}
 
 }

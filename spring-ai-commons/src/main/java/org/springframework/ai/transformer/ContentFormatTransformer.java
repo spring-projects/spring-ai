@@ -23,6 +23,7 @@ import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.DefaultContentFormatter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentTransformer;
+import org.springframework.util.Assert;
 
 /**
  * ContentFormatTransformer processes a list of documents by applying a content formatter
@@ -58,6 +59,7 @@ public class ContentFormatTransformer implements DocumentTransformer {
 	 * content-formatter template rewrite
 	 */
 	public ContentFormatTransformer(ContentFormatter contentFormatter, boolean disableTemplateRewrite) {
+		Assert.notNull(contentFormatter, "ContentFormatter is required");
 		this.contentFormatter = contentFormatter;
 		this.disableTemplateRewrite = disableTemplateRewrite;
 	}
@@ -68,10 +70,7 @@ public class ContentFormatTransformer implements DocumentTransformer {
 	 * @return processed documents
 	 */
 	public List<Document> apply(List<Document> documents) {
-		if (this.contentFormatter != null) {
-			documents.forEach(this::processDocument);
-		}
-
+		documents.forEach(this::processDocument);
 		return documents;
 	}
 

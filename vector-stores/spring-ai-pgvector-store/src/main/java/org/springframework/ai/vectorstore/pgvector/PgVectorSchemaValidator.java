@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +105,7 @@ class PgVectorSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT column_name, data_type FROM information_schema.columns "
 					+ "WHERE table_schema = ? AND table_name = ?";
-			List<Map<String, Object>> columns = this.jdbcTemplate.queryForList(query,
+			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query,
 					new Object[] { schemaName, tableName });
 
 			if (columns.isEmpty()) {

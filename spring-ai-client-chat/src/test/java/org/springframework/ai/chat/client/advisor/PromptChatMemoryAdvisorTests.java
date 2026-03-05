@@ -29,6 +29,7 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -263,6 +264,114 @@ public class PromptChatMemoryAdvisorTests {
 		// Verify no messages were stored in memory
 		List<Message> messages = chatMemory.get("test-conversation");
 		assertThat(messages).isEmpty();
+	}
+
+	@Test
+	void beforeMethodHandlesToolResponseMessage() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
+			.conversationId("test-conversation")
+			.build();
+
+		// Create a prompt with a ToolResponseMessage as the last message
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("weatherTool", "getWeather", "Sunny, 72°F")))
+			.build();
+
+		org.springframework.ai.chat.prompt.Prompt prompt = org.springframework.ai.chat.prompt.Prompt.builder()
+			.messages(new org.springframework.ai.chat.messages.UserMessage("What's the weather?"),
+					new org.springframework.ai.chat.messages.AssistantMessage("Let me check..."), toolResponse)
+			.build();
+
+		org.springframework.ai.chat.client.ChatClientRequest request = org.springframework.ai.chat.client.ChatClientRequest
+			.builder()
+			.prompt(prompt)
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		advisor.before(request, chain);
+
+		// Verify that the ToolResponseMessage was added to memory
+		List<Message> messages = chatMemory.get("test-conversation");
+		assertThat(messages).hasSize(1);
+		assertThat(messages.get(0)).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void beforeMethodHandlesUserMessageWhenNoToolResponse() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
+			.conversationId("test-conversation")
+			.build();
+
+		org.springframework.ai.chat.prompt.Prompt prompt = org.springframework.ai.chat.prompt.Prompt.builder()
+			.messages(new org.springframework.ai.chat.messages.UserMessage("Hello"))
+			.build();
+
+		org.springframework.ai.chat.client.ChatClientRequest request = org.springframework.ai.chat.client.ChatClientRequest
+			.builder()
+			.prompt(prompt)
+			.build();
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		advisor.before(request, chain);
+
+		// Verify that the UserMessage was added to memory
+		List<Message> messages = chatMemory.get("test-conversation");
+		assertThat(messages).hasSize(1);
+		assertThat(messages.get(0)).isInstanceOf(org.springframework.ai.chat.messages.UserMessage.class);
+		assertThat(messages.get(0).getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void beforeMethodHandlesToolResponseAfterUserMessage() {
+		ChatMemory chatMemory = MessageWindowChatMemory.builder()
+			.chatMemoryRepository(new InMemoryChatMemoryRepository())
+			.build();
+
+		PromptChatMemoryAdvisor advisor = PromptChatMemoryAdvisor.builder(chatMemory)
+			.conversationId("test-conversation")
+			.build();
+
+		AdvisorChain chain = mock(AdvisorChain.class);
+
+		// First request with user message
+		org.springframework.ai.chat.prompt.Prompt prompt1 = org.springframework.ai.chat.prompt.Prompt.builder()
+			.messages(new org.springframework.ai.chat.messages.UserMessage("What's the weather?"))
+			.build();
+		org.springframework.ai.chat.client.ChatClientRequest request1 = org.springframework.ai.chat.client.ChatClientRequest
+			.builder()
+			.prompt(prompt1)
+			.build();
+
+		advisor.before(request1, chain);
+
+		// Second request with tool response as the last message
+		ToolResponseMessage toolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("weatherTool", "getWeather", "Sunny, 72°F")))
+			.build();
+		org.springframework.ai.chat.prompt.Prompt prompt2 = org.springframework.ai.chat.prompt.Prompt.builder()
+			.messages(new org.springframework.ai.chat.messages.UserMessage("What's the weather?"),
+					new org.springframework.ai.chat.messages.AssistantMessage("Let me check..."), toolResponse)
+			.build();
+		org.springframework.ai.chat.client.ChatClientRequest request2 = org.springframework.ai.chat.client.ChatClientRequest
+			.builder()
+			.prompt(prompt2)
+			.build();
+
+		advisor.before(request2, chain);
+
+		// Verify that both messages were added to memory
+		List<Message> messages = chatMemory.get("test-conversation");
+		assertThat(messages).hasSize(2);
+		assertThat(messages.get(0)).isInstanceOf(org.springframework.ai.chat.messages.UserMessage.class);
+		assertThat(messages.get(1)).isInstanceOf(ToolResponseMessage.class);
 	}
 
 }

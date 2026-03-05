@@ -33,19 +33,20 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.converter.SimpleVectorStoreFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -73,12 +74,13 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
  * @author Jemin Huh
+ * @author David Yu
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private final ExpressionParser expressionParser;
 
@@ -88,7 +90,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	protected SimpleVectorStore(SimpleVectorStoreBuilder builder) {
 		super(builder);
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 		this.expressionParser = new SpelExpressionParser();
 		this.filterExpressionConverter = new SimpleVectorStoreFilterExpressionConverter();
 	}
@@ -111,8 +113,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		for (Document document : documents) {
 			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
 			float[] embedding = this.embeddingModel.embed(document);
-			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(), document.getText(),
-					document.getMetadata(), embedding);
+			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding);
 			this.store.put(document.getId(), storeContent);
 		}
 	}
@@ -125,28 +127,41 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	@Override
+	public void doDelete(Filter.Expression filterExpression) {
+		List<String> idList = this.store.values()
+			.stream()
+			.filter(document -> doFilterPredicate(filterExpression).test(document))
+			.map(SimpleVectorStoreContent::getId)
+			.toList();
+		this.doDelete(idList);
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
-		Predicate<SimpleVectorStoreContent> documentFilterPredicate = doFilterPredicate(request);
 		float[] userQueryEmbedding = getUserQueryEmbedding(request.getQuery());
 		return this.store.values()
 			.stream()
-			.filter(documentFilterPredicate)
+			.filter(document -> doFilterPredicate(request.getFilterExpression()).test(document))
 			.map(content -> content
 				.toDocument(EmbeddingMath.cosineSimilarity(userQueryEmbedding, content.getEmbedding())))
-			.filter(document -> document.getScore() >= request.getSimilarityThreshold())
+			.filter(document -> document.getScore() != null && document.getScore() >= request.getSimilarityThreshold())
 			.sorted(Comparator.comparing(Document::getScore).reversed())
 			.limit(request.getTopK())
 			.toList();
 	}
 
-	private Predicate<SimpleVectorStoreContent> doFilterPredicate(SearchRequest request) {
-		return request.hasFilterExpression() ? document -> {
+	private Predicate<SimpleVectorStoreContent> doFilterPredicate(Filter.@Nullable Expression filterExpression) {
+		if (filterExpression == null) {
+			return document -> true;
+		}
+
+		return document -> {
 			StandardEvaluationContext context = new StandardEvaluationContext();
 			context.setVariable("metadata", document.getMetadata());
-			return this.expressionParser
-				.parseExpression(this.filterExpressionConverter.convertExpression(request.getFilterExpression()))
-				.getValue(context, Boolean.class);
-		} : document -> true;
+			return Boolean.TRUE.equals(this.expressionParser
+				.parseExpression(this.filterExpressionConverter.convertExpression(filterExpression))
+				.getValue(context, Boolean.class));
+		};
 	}
 
 	/**
@@ -199,12 +214,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		TypeReference<HashMap<String, SimpleVectorStoreContent>> typeRef = new TypeReference<>() {
 
 		};
-		try {
-			this.store = this.objectMapper.readValue(file, typeRef);
-		}
-		catch (IOException ex) {
-			throw new RuntimeException(ex);
-		}
+		this.store = this.jsonMapper.readValue(file, typeRef);
 	}
 
 	/**
@@ -216,7 +226,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 		};
 		try {
-			this.store = this.objectMapper.readValue(resource.getInputStream(), typeRef);
+			this.store = this.jsonMapper.readValue(resource.getInputStream(), typeRef);
 		}
 		catch (IOException ex) {
 			throw new RuntimeException(ex);
@@ -224,12 +234,12 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 	}
 
 	private String getVectorDbAsJson() {
-		ObjectWriter objectWriter = this.objectMapper.writerWithDefaultPrettyPrinter();
+		ObjectWriter objectWriter = this.jsonMapper.writerWithDefaultPrettyPrinter();
 		try {
 			return objectWriter.writeValueAsString(this.store);
 		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException("Error serializing documentMap to JSON.", e);
+		catch (JacksonException ex) {
+			throw new RuntimeException("Error serializing documentMap to JSON.", ex);
 		}
 	}
 

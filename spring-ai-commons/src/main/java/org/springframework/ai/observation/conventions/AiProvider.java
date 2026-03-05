@@ -51,7 +51,7 @@ public enum AiProvider {
 	DEEPSEEK("deepseek"),
 
 	/**
-	 * AI system provided by Vertex AI.
+	 * AI system provided by Google Gen AI.
 	 */
 	GOOGLE_GENAI_AI("google_genai"),
 

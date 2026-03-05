@@ -30,7 +30,7 @@ class ChatModelStreamAdvisorTests {
 	@Test
 	void whenChatModelIsNullThenThrow() {
 		assertThatThrownBy(() -> ChatModelStreamAdvisor.builder().chatModel(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessage("chatModel cannot be null");
 	}
 

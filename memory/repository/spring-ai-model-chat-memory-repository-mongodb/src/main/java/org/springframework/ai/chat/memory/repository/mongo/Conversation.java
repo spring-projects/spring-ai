@@ -19,6 +19,8 @@ package org.springframework.ai.chat.memory.repository.mongo;
 import java.time.Instant;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
@@ -29,6 +31,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
  */
 @Document("ai_chat_memory")
 public record Conversation(String conversationId, Message message, Instant timestamp) {
-	public record Message(String content, String type, Map<String, Object> metadata) {
+	public record Message(@Nullable String content, String type, Map<String, Object> metadata) {
 	}
 }

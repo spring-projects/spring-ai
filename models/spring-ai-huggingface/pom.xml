@@ -60,6 +60,11 @@
 			<version>1.3.2</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+
 
 		<!-- Spring Framework -->
 		<dependency>
@@ -97,10 +102,10 @@
 							<goal>generate</goal>
 						</goals>
 						<configuration>
-							<inputSpec>${project.basedir}/src/main/resources/openapi.json</inputSpec>
+							<inputSpec>${project.basedir}/src/main/swagger/openapi.json</inputSpec>
 							<language>java</language>
 							<library>resttemplate</library>
-							<templateDirectory>src/main/resources/handlebars/Java</templateDirectory>
+							<templateDirectory>src/main/swagger/handlebars/java</templateDirectory>
 							<apiPackage>org.springframework.ai.huggingface.api</apiPackage>
 							<modelPackage>org.springframework.ai.huggingface.model</modelPackage>
 							<invokerPackage>org.springframework.ai.huggingface.invoker</invokerPackage>

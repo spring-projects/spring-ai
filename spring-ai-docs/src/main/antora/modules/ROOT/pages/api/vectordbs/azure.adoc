@@ -112,8 +112,9 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.azure.index-name`|spring_ai_azure_vector_store
 |`spring.ai.vectorstore.azure.default-top-k`|4
 |`spring.ai.vectorstore.azure.default-similarity-threshold`|0.0
-|`spring.ai.vectorstore.azure.embedding-property`|embedding
-|`spring.ai.vectorstore.azure.index-name`|spring-ai-document-index
+|`spring.ai.vectorstore.azure.content-field-name`|content
+|`spring.ai.vectorstore.azure.embedding-field-name`|embedding
+|`spring.ai.vectorstore.azure.metadata-field-name`|metadata
 |===
 
 
@@ -232,6 +233,147 @@ is converted into the following Azure OData link:https://learn.microsoft.com/en-
 ----
 $filter search.in(meta_country, 'UK,NL', ',') and meta_year ge 2020
 ----
+
+== Custom Field Names
+
+By default, the Azure Vector Store uses the following field names in the Azure AI Search index:
+
+* `content` - for document text
+* `embedding` - for vector embeddings
+* `metadata` - for document metadata
+
+However, when working with existing Azure AI Search indexes that use different field names, you can configure custom field names to match your index schema. This allows you to integrate Spring AI with pre-existing indexes without needing to modify them.
+
+=== Use Cases
+
+Custom field names are particularly useful when:
+
+* **Integrating with existing indexes**: Your organization already has Azure AI Search indexes with established field naming conventions (e.g., `chunk_text`, `vector`, `meta_data`).
+* **Following naming standards**: Your team follows specific naming conventions that differ from the defaults.
+* **Migrating from other systems**: You're migrating from another vector database or search system and want to maintain consistent field names.
+
+=== Configuration via Properties
+
+You can configure custom field names using Spring Boot application properties:
+
+[source,properties]
+----
+spring.ai.vectorstore.azure.url=${AZURE_AI_SEARCH_ENDPOINT}
+spring.ai.vectorstore.azure.api-key=${AZURE_AI_SEARCH_API_KEY}
+spring.ai.vectorstore.azure.index-name=my-existing-index
+spring.ai.vectorstore.azure.initialize-schema=false
+
+# Custom field names to match existing index schema
+spring.ai.vectorstore.azure.content-field-name=chunk_text
+spring.ai.vectorstore.azure.embedding-field-name=vector
+spring.ai.vectorstore.azure.metadata-field-name=meta_data
+----
+
+IMPORTANT: When using an existing index with custom field names, set `initialize-schema=false` to prevent Spring AI from trying to create a new index with the default schema.
+
+=== Configuration via Builder API
+
+Alternatively, you can configure custom field names programmatically using the builder API:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel) {
+
+	return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+		.indexName("my-existing-index")
+		.initializeSchema(false) // Don't create schema - use existing index
+		// Configure custom field names to match existing index
+		.contentFieldName("chunk_text")
+		.embeddingFieldName("vector")
+		.metadataFieldName("meta_data")
+		.filterMetadataFields(List.of(
+			MetadataField.text("category"),
+			MetadataField.text("source")))
+		.build();
+}
+----
+
+=== Complete Example: Working with Existing Index
+
+Here's a complete example showing how to use Spring AI with an existing Azure AI Search index that has custom field names:
+
+[source,java]
+----
+@Configuration
+public class VectorStoreConfig {
+
+	@Bean
+	public SearchIndexClient searchIndexClient() {
+		return new SearchIndexClientBuilder()
+			.endpoint(System.getenv("AZURE_AI_SEARCH_ENDPOINT"))
+			.credential(new AzureKeyCredential(System.getenv("AZURE_AI_SEARCH_API_KEY")))
+			.buildClient();
+	}
+
+	@Bean
+	public VectorStore vectorStore(SearchIndexClient searchIndexClient,
+			EmbeddingModel embeddingModel) {
+
+		return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+			.indexName("production-documents-index")
+			.initializeSchema(false) // Use existing index
+			// Map to existing index field names
+			.contentFieldName("document_text")
+			.embeddingFieldName("text_vector")
+			.metadataFieldName("document_metadata")
+			// Define filterable metadata fields from existing schema
+			.filterMetadataFields(List.of(
+				MetadataField.text("department"),
+				MetadataField.int64("year"),
+				MetadataField.date("created_date")))
+			.defaultTopK(10)
+			.defaultSimilarityThreshold(0.75)
+			.build();
+	}
+}
+----
+
+You can then use the vector store as normal:
+
+[source,java]
+----
+// Search using the existing index with custom field names
+List<Document> results = vectorStore.similaritySearch(
+	SearchRequest.builder()
+		.query("artificial intelligence")
+		.topK(5)
+		.filterExpression("department == 'Engineering' && year >= 2023")
+		.build());
+
+// The results contain documents with text from the 'document_text' field
+results.forEach(doc -> System.out.println(doc.getText()));
+----
+
+=== Creating New Index with Custom Field Names
+
+You can also create a new index with custom field names by setting `initializeSchema=true`:
+
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(SearchIndexClient searchIndexClient,
+		EmbeddingModel embeddingModel) {
+
+	return AzureVectorStore.builder(searchIndexClient, embeddingModel)
+		.indexName("new-custom-index")
+		.initializeSchema(true) // Create new index with custom field names
+		.contentFieldName("text_content")
+		.embeddingFieldName("content_vector")
+		.metadataFieldName("doc_metadata")
+		.filterMetadataFields(List.of(
+			MetadataField.text("category"),
+			MetadataField.text("author")))
+		.build();
+}
+----
+
+This will create a new Azure AI Search index with your custom field names, allowing you to establish your own naming conventions from the start.
 
 == Accessing the Native Client
 

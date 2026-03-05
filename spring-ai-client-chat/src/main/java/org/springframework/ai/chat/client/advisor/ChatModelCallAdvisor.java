@@ -18,6 +18,8 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.client.ChatClientAttributes;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
@@ -108,7 +110,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 
 	public static final class Builder {
 
-		private ChatModel chatModel;
+		private @Nullable ChatModel chatModel;
 
 		private Builder() {
 		}
@@ -119,6 +121,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 		}
 
 		public ChatModelCallAdvisor build() {
+			Assert.state(this.chatModel != null, "chatModel cannot be null");
 			return new ChatModelCallAdvisor(this.chatModel);
 		}
 

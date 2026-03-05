@@ -16,9 +16,10 @@
 
 package org.springframework.ai.vectorstore.milvus;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.lang.Nullable;
 
 /**
  * A specialized {@link SearchRequest} for Milvus vector search, extending the base
@@ -39,11 +40,9 @@ import org.springframework.lang.Nullable;
  */
 public final class MilvusSearchRequest extends SearchRequest {
 
-	@Nullable
-	private final String nativeExpression;
+	private final @Nullable String nativeExpression;
 
-	@Nullable
-	private final String searchParamsJson;
+	private final @Nullable String searchParamsJson;
 
 	/**
 	 * Private constructor to initialize a MilvusSearchRequest using the base request and
@@ -63,8 +62,7 @@ public final class MilvusSearchRequest extends SearchRequest {
 	 * @return A string representing the native Milvus expression, or {@code null} if not
 	 * set.
 	 */
-	@Nullable
-	public String getNativeExpression() {
+	public @Nullable String getNativeExpression() {
 		return this.nativeExpression;
 	}
 
@@ -72,8 +70,7 @@ public final class MilvusSearchRequest extends SearchRequest {
 	 * Retrieves the JSON-encoded search parameters.
 	 * @return A JSON string containing search parameters, or {@code null} if not set.
 	 */
-	@Nullable
-	public String getSearchParamsJson() {
+	public @Nullable String getSearchParamsJson() {
 		return this.searchParamsJson;
 	}
 
@@ -92,11 +89,9 @@ public final class MilvusSearchRequest extends SearchRequest {
 
 		private final SearchRequest.Builder baseBuilder = SearchRequest.builder();
 
-		@Nullable
-		private String nativeExpression;
+		private @Nullable String nativeExpression;
 
-		@Nullable
-		private String searchParamsJson;
+		private @Nullable String searchParamsJson;
 
 		/**
 		 * {@link Builder#query(java.lang.String)}

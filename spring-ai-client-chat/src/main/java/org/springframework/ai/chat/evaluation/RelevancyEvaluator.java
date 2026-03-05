@@ -19,12 +19,13 @@ package org.springframework.ai.chat.evaluation;
 import java.util.Collections;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.Evaluator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -93,9 +94,9 @@ public class RelevancyEvaluator implements Evaluator {
 
 	public static final class Builder {
 
-		private ChatClient.Builder chatClientBuilder;
+		private ChatClient.@Nullable Builder chatClientBuilder;
 
-		private PromptTemplate promptTemplate;
+		private @Nullable PromptTemplate promptTemplate;
 
 		private Builder() {
 		}
@@ -111,6 +112,7 @@ public class RelevancyEvaluator implements Evaluator {
 		}
 
 		public RelevancyEvaluator build() {
+			Assert.state(this.chatClientBuilder != null, "chatClientBuilder cannot be null");
 			return new RelevancyEvaluator(this.chatClientBuilder, this.promptTemplate);
 		}
 

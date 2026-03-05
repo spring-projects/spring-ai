@@ -59,7 +59,8 @@ import org.springframework.context.annotation.Scope;
  * @since 1.0.0
  */
 @AutoConfiguration(
-		afterName = "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration")
+		afterName = { "org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration",
+				"org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration" })
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -95,8 +96,7 @@ public class ChatClientAutoConfiguration {
 			ObjectProvider<AdvisorObservationConvention> advisorObservationConvention) {
 		ChatClient.Builder builder = ChatClient.builder(chatModel,
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				chatClientObservationConvention.getIfUnique(() -> null),
-				advisorObservationConvention.getIfUnique(() -> null));
+				chatClientObservationConvention.getIfUnique(), advisorObservationConvention.getIfUnique());
 		return chatClientBuilderConfigurer.configure(builder);
 	}
 

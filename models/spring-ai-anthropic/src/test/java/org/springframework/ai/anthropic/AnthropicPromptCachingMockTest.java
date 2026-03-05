@@ -20,14 +20,14 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
@@ -60,8 +60,6 @@ class AnthropicPromptCachingMockTest {
 
 	private AnthropicChatModel chatModel;
 
-	private final ObjectMapper objectMapper = new ObjectMapper();
-
 	@BeforeEach
 	void setUp() throws IOException {
 		this.mockWebServer = new MockWebServer();
@@ -91,7 +89,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Hello! I understand you want to test caching."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"stop_sequence": null,
 					"usage": {
@@ -127,7 +125,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify system message has cache control
 		assertThat(requestBody.has("system")).isTrue();
@@ -163,7 +161,7 @@ class AnthropicPromptCachingMockTest {
 					"type": "message",
 					"role": "assistant",
 					"content": [ { "type": "text", "text": "ok" } ],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": { "input_tokens": 10, "output_tokens": 2 }
 				}
@@ -182,7 +180,7 @@ class AnthropicPromptCachingMockTest {
 
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
 		assertThat(recordedRequest).isNotNull();
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Ensure no cache_control present since system content was below min length
 		String req = requestBody.toString();
@@ -197,7 +195,7 @@ class AnthropicPromptCachingMockTest {
 					"type": "message",
 					"role": "assistant",
 					"content": [ { "type": "text", "text": "ok" } ],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": { "input_tokens": 10, "output_tokens": 2 }
 				}
@@ -217,7 +215,7 @@ class AnthropicPromptCachingMockTest {
 
 		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
 		assertThat(recordedRequest).isNotNull();
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 		JsonNode systemNode = requestBody.get("system");
 		if (systemNode != null && systemNode.isArray()) {
 			JsonNode lastSystemBlock = systemNode.get(systemNode.size() - 1);
@@ -239,7 +237,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "I'll help you with the weather information."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 150,
@@ -276,7 +274,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify tools array exists and last tool has cache control
 		assertThat(requestBody.has("tools")).isTrue();
@@ -315,7 +313,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Based on our previous conversation, I can help with that."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 200,
@@ -343,7 +341,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify messages array exists
 		assertThat(requestBody.has("messages")).isTrue();
@@ -382,7 +380,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Simple response without caching."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 20,
@@ -407,7 +405,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify NO cache_control fields exist anywhere
 		String requestBodyString = requestBody.toString();
@@ -432,7 +430,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response with 1-hour cache TTL."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 30,
@@ -479,7 +477,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response with maximum cache breakpoints."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 500,
@@ -534,7 +532,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Count cache_control occurrences in the entire request
 		int cacheControlCount = countCacheControlOccurrences(requestBody);
@@ -559,7 +557,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response for wire format test."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 200,
@@ -586,7 +584,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify that cache_control is included in the wire format for SYSTEM_ONLY
 		// strategy
@@ -629,7 +627,7 @@ class AnthropicPromptCachingMockTest {
 							"text": "Response for complex multi-breakpoint scenario."
 						}
 					],
-					"model": "claude-3-7-sonnet",
+					"model": "claude-haiku-4-5",
 					"stop_reason": "end_turn",
 					"usage": {
 						"input_tokens": 800,
@@ -672,7 +670,7 @@ class AnthropicPromptCachingMockTest {
 		assertThat(recordedRequest).isNotNull();
 
 		// Parse and validate request body
-		JsonNode requestBody = this.objectMapper.readTree(recordedRequest.getBody().readUtf8());
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
 
 		// Verify system message has cache control (SYSTEM_AND_TOOLS strategy)
 		assertThat(requestBody.has("system")).isTrue();
@@ -710,10 +708,8 @@ class AnthropicPromptCachingMockTest {
 			if (node.has("cache_control")) {
 				count++;
 			}
-			var fields = node.fields();
-			while (fields.hasNext()) {
-				var entry = fields.next();
-				count += countCacheControlOccurrences(entry.getValue());
+			for (JsonNode child : node.values()) {
+				count += countCacheControlOccurrences(child);
 			}
 		}
 		else if (node.isArray()) {

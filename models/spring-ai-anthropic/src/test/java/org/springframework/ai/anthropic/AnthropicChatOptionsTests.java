@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2025-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import net.javacrumbs.jsonunit.assertj.JsonAssertions;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
@@ -36,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alexandros Pappas
  * @author Soby Chacko
  * @author Austin Dase
+ * @author Filip Hrisafov
  */
 class AnthropicChatOptionsTests {
 
@@ -106,6 +109,8 @@ class AnthropicChatOptionsTests {
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getMetadata()).isNull();
+		assertThat(options.getOutputSchema()).isNull();
+		assertThat(options.getOutputFormat()).isNull();
 	}
 
 	@Test
@@ -600,6 +605,35 @@ class AnthropicChatOptionsTests {
 		assertThat(copy.getCacheOptions().getStrategy()).isEqualTo(AnthropicCacheStrategy.NONE);
 		assertThat(copy.getCacheOptions().getMessageTypeTtl().get(MessageType.SYSTEM))
 			.isEqualTo(AnthropicCacheTtl.FIVE_MINUTES);
+	}
+
+	@Test
+	void testStructuredOutputSchema() {
+		String outputSchema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						},
+						"required": [
+							"name"
+						]
+					}
+				}
+				""";
+		var options = AnthropicChatOptions.builder().outputSchema(outputSchema).build();
+
+		assertThat(options.getOutputFormat()).isNotNull();
+		assertThat(options.getOutputFormat().type()).isEqualTo("json_schema");
+		assertThat(options.getOutputFormat().type()).isEqualTo("json_schema");
+		assertThat(options.getOutputFormat().schema()).containsOnly(
+				Assertions.entry("$schema", "https://json-schema.org/draft/2020-12/schema"),
+				Assertions.entry("type", "object"),
+				Assertions.entry("properties", Map.of("name", Map.of("type", "string"), "required", List.of("name"))));
+
+		JsonAssertions.assertThatJson(options.getOutputSchema()).isEqualTo(outputSchema);
 	}
 
 }

@@ -19,11 +19,11 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -52,8 +52,8 @@ public class SseWebFluxTransportAutoConfigurationTests {
 	@Test
 	void webFluxClientTransportsNotPresentIfMissingWebFluxSseClientTransportNotPresent() {
 		this.applicationContext
-			.withClassLoader(
-					new FilteredClassLoader("io.modelcontextprotocol.client.transport.WebFluxSseClientTransport"))
+			.withClassLoader(new FilteredClassLoader(
+					"org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport"))
 			.run(context -> assertThat(context.containsBean("sseWebFluxClientTransports")).isFalse());
 	}
 
@@ -129,11 +129,11 @@ public class SseWebFluxTransportAutoConfigurationTests {
 	}
 
 	@Test
-	void customObjectMapperIsUsed() {
-		this.applicationContext.withUserConfiguration(CustomObjectMapperConfiguration.class)
+	void customJsonMapperIsUsed() {
+		this.applicationContext.withUserConfiguration(JsonMapperConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080")
 			.run(context -> {
-				assertThat(context.getBean(ObjectMapper.class)).isNotNull();
+				assertThat(context.getBean(JsonMapper.class)).isNotNull();
 				List<NamedClientMcpTransport> transports = context.getBean("sseWebFluxClientTransports", List.class);
 				assertThat(transports).hasSize(1);
 			});
@@ -194,11 +194,11 @@ public class SseWebFluxTransportAutoConfigurationTests {
 	}
 
 	@Configuration
-	static class CustomObjectMapperConfiguration {
+	static class JsonMapperConfiguration {
 
 		@Bean
-		ObjectMapper objectMapper() {
-			return new ObjectMapper();
+		JsonMapper jsonMapper() {
+			return new JsonMapper();
 		}
 
 	}

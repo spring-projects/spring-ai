@@ -17,9 +17,7 @@
 /**
  * Provides classes for observing and storing vector data.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.vectorstore.observation;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

@@ -19,6 +19,7 @@ package org.springframework.ai.chat.prompt;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.Message;
@@ -319,7 +320,7 @@ class SystemPromptTemplateTests {
 	private static class CustomTestRenderer implements TemplateRenderer {
 
 		@Override
-		public String apply(String template, Map<String, Object> model) {
+		public String apply(String template, Map<String, ? extends @Nullable Object> model) {
 			// Simple renderer that just appends a marker
 			// Note: This simple renderer ignores the model map for test purposes.
 			return template + " (Rendered by Custom)";

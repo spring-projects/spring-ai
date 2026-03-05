@@ -48,10 +48,19 @@ class StreamHelperTests {
 
 	@Test
 	void testErrorEventTypeWithEmptyContentBlock() {
-		AnthropicApi.ErrorEvent errorEvent = new AnthropicApi.ErrorEvent(AnthropicApi.EventType.ERROR,
-				new AnthropicApi.ErrorEvent.Error("error", "error message"));
 		AtomicReference<ChatCompletionResponseBuilder> contentBlockReference = new AtomicReference<>();
 		StreamHelper streamHelper = new StreamHelper();
+
+		// Initialize content block reference with a message start event. This ensures
+		// that message id, model and content are set in the contentBlockReference
+		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
+				"claude-haiku-4-5", null, null, null, null);
+		streamHelper.eventToChatCompletionResponse(new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message),
+				contentBlockReference);
+
+		AnthropicApi.ErrorEvent errorEvent = new AnthropicApi.ErrorEvent(AnthropicApi.EventType.ERROR,
+				new AnthropicApi.ErrorEvent.Error("error", "error message"));
+
 		AnthropicApi.ChatCompletionResponse response = streamHelper.eventToChatCompletionResponse(errorEvent,
 				contentBlockReference);
 		assertThat(response).isNotNull();
@@ -61,6 +70,13 @@ class StreamHelperTests {
 	void testMultipleErrorEventsHandling() {
 		StreamHelper streamHelper = new StreamHelper();
 		AtomicReference<ChatCompletionResponseBuilder> contentBlockReference = new AtomicReference<>();
+
+		// Initialize content block reference with a message start event. This ensures
+		// that message id, model and content are set in the contentBlockReference
+		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
+				"claude-haiku-4-5", null, null, null, null);
+		streamHelper.eventToChatCompletionResponse(new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message),
+				contentBlockReference);
 
 		AnthropicApi.ErrorEvent firstError = new AnthropicApi.ErrorEvent(AnthropicApi.EventType.ERROR,
 				new AnthropicApi.ErrorEvent.Error("validation_error", "Invalid input"));
@@ -83,7 +99,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(10, 20, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 
 		ChatCompletionResponse response = streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
@@ -92,7 +108,7 @@ class StreamHelperTests {
 		assertThat(response.id()).isEqualTo("msg-1");
 		assertThat(response.type()).isEqualTo("MESSAGE_START");
 		assertThat(response.role()).isEqualTo(Role.ASSISTANT);
-		assertThat(response.model()).isEqualTo("claude-3-5-sonnet");
+		assertThat(response.model()).isEqualTo("claude-haiku-4-5");
 		assertThat(response.usage().inputTokens()).isEqualTo(10);
 		assertThat(response.usage().outputTokens()).isEqualTo(20);
 	}
@@ -104,7 +120,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -130,7 +146,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -155,7 +171,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -177,7 +193,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse initialMessage = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT,
-				List.of(), "claude-3-5-sonnet", null, null, usage, null);
+				List.of(), "claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, initialMessage);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -200,7 +216,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -220,7 +236,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -271,7 +287,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -298,7 +314,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -323,7 +339,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -348,7 +364,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -367,7 +383,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -388,7 +404,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -409,7 +425,7 @@ class StreamHelperTests {
 
 		Usage usage = new Usage(0, 0, null, null);
 		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
-				"claude-3-5-sonnet", null, null, usage, null);
+				"claude-haiku-4-5", null, null, usage, null);
 		MessageStartEvent startEvent = new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message);
 		streamHelper.eventToChatCompletionResponse(startEvent, contentBlockReference);
 
@@ -487,6 +503,13 @@ class StreamHelperTests {
 	void testPingEventHandling() {
 		StreamHelper streamHelper = new StreamHelper();
 		AtomicReference<ChatCompletionResponseBuilder> contentBlockReference = new AtomicReference<>();
+
+		// Initialize content block reference with a message start event. This ensures
+		// that message id, model and content are set in the contentBlockReference
+		ChatCompletionResponse message = new ChatCompletionResponse("msg-1", "message", Role.ASSISTANT, List.of(),
+				"claude-haiku-4-5", null, null, null, null);
+		streamHelper.eventToChatCompletionResponse(new MessageStartEvent(AnthropicApi.EventType.MESSAGE_START, message),
+				contentBlockReference);
 
 		AnthropicApi.PingEvent pingEvent = new AnthropicApi.PingEvent(AnthropicApi.EventType.PING);
 

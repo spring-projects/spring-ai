@@ -16,6 +16,8 @@
 
 package org.springframework.ai.converter;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Strategy interface for cleaning LLM response text before parsing. Different
  * implementations can handle various response formats and patterns from different AI
@@ -32,6 +34,6 @@ public interface ResponseTextCleaner {
 	 * @param text the raw text from LLM response
 	 * @return the cleaned text ready for parsing
 	 */
-	String clean(String text);
+	@Nullable String clean(@Nullable String text);
 
 }

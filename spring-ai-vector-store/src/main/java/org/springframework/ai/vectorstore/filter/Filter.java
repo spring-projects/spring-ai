@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.filter;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Portable runtime generative for metadata filter expressions. This generic generative is
  * used to define store agnostic filter expressions than later can be converted into
@@ -122,7 +124,7 @@ public class Filter {
 	 * type {@link Value} or array of values. For the AND|OR type the right operand must
 	 * be another {@link Expression}.
 	 */
-	public record Expression(ExpressionType type, Operand left, Operand right) implements Operand {
+	public record Expression(ExpressionType type, Operand left, @Nullable Operand right) implements Operand {
 
 		public Expression(ExpressionType type, Operand operand) {
 			this(type, operand, null);

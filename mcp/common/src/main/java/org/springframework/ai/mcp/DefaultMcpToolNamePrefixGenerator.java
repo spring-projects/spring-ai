@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +52,11 @@ public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGener
 
 	// Idempotency tracking. For a given combination of (client, server, tool) we will
 	// generate a unique tool name only once.
-	private Set<ConnectionId> existingConnections = ConcurrentHashMap.newKeySet();
+	private final Set<ConnectionId> existingConnections = ConcurrentHashMap.newKeySet();
 
-	private Set<String> allUsedToolNames = ConcurrentHashMap.newKeySet();
+	private final Set<String> allUsedToolNames = ConcurrentHashMap.newKeySet();
 
-	private AtomicInteger counter = new AtomicInteger(1);
+	private final AtomicInteger counter = new AtomicInteger(1);
 
 	@Override
 	public String prefixedToolName(McpConnectionInfo mcpConnectionInfo, McpSchema.Tool tool) {
@@ -75,7 +76,7 @@ public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGener
 		return uniqueToolName;
 	}
 
-	private record ConnectionId(Implementation clientInfo, Implementation serverInfo, Tool tool) {
+	private record ConnectionId(@Nullable Implementation clientInfo, @Nullable Implementation serverInfo, Tool tool) {
 	}
 
 }

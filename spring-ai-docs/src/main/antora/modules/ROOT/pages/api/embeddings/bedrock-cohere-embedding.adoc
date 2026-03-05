@@ -216,7 +216,7 @@ Next, create an https://github.com/spring-projects/spring-ai/blob/main/models/sp
 ----
 var cohereEmbeddingApi =new CohereEmbeddingBedrockApi(
 		CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
-		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new ObjectMapper());
+		EnvironmentVariableCredentialsProvider.create(), Region.US_EAST_1.id(), new JsonMapper());
 
 
 var embeddingModel = new BedrockCohereEmbeddingModel(this.cohereEmbeddingApi);
@@ -242,7 +242,7 @@ Here is a simple snippet how to use the api programmatically:
 CohereEmbeddingBedrockApi api = new CohereEmbeddingBedrockApi(
 		CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V1.id(),
 		EnvironmentVariableCredentialsProvider.create(),
-		Region.US_EAST_1.id(), new ObjectMapper());
+		Region.US_EAST_1.id(), new JsonMapper());
 
 CohereEmbeddingRequest request = new CohereEmbeddingRequest(
 		List.of("I like to eat apples", "I like to eat oranges"),

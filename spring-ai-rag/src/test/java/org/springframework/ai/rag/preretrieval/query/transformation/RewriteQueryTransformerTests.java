@@ -34,7 +34,7 @@ class RewriteQueryTransformerTests {
 	@Test
 	void whenChatClientBuilderIsNullThenThrow() {
 		assertThatThrownBy(() -> RewriteQueryTransformer.builder().chatClientBuilder(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("chatClientBuilder cannot be null");
 	}
 

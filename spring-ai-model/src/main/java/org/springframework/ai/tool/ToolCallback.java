@@ -16,13 +16,13 @@
 
 package org.springframework.ai.tool;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
-import org.springframework.lang.Nullable;
 
 /**
  * Represents a tool whose execution can be triggered by an AI model.

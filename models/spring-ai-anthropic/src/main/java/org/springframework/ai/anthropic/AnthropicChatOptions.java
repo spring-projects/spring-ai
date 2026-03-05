@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.anthropic.api.AnthropicApi;
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest;
@@ -39,7 +40,6 @@ import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -57,15 +57,17 @@ import org.springframework.util.Assert;
 public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
 	// @formatter:off
+	@SuppressWarnings("NullAway.Init")
 	private @JsonProperty("model") String model;
+	@SuppressWarnings("NullAway.Init")
 	private @JsonProperty("max_tokens") Integer maxTokens;
-	private @JsonProperty("metadata") ChatCompletionRequest.Metadata metadata;
-	private @JsonProperty("stop_sequences") List<String> stopSequences;
-	private @JsonProperty("temperature") Double temperature;
-	private @JsonProperty("top_p") Double topP;
-	private @JsonProperty("top_k") Integer topK;
-	private @JsonProperty("tool_choice") AnthropicApi.ToolChoice toolChoice;
-	private @JsonProperty("thinking") ChatCompletionRequest.ThinkingConfig thinking;
+	private @JsonProperty("metadata") ChatCompletionRequest.@Nullable Metadata metadata;
+	private @JsonProperty("stop_sequences") @Nullable List<String> stopSequences;
+	private @JsonProperty("temperature") @Nullable Double temperature;
+	private @JsonProperty("top_p") @Nullable Double topP;
+	private @JsonProperty("top_k") @Nullable Integer topK;
+	private @JsonProperty("tool_choice") AnthropicApi.@Nullable ToolChoice toolChoice;
+	private @JsonProperty("thinking") ChatCompletionRequest.@Nullable ThinkingConfig thinking;
 
 	/**
 	 * Documents to be used for citation-based responses. These documents will be
@@ -96,13 +98,13 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	 * Maximum of 8 skills per request.
 	 */
 	@JsonIgnore
-	private AnthropicApi.SkillContainer skillContainer;
+	private AnthropicApi.@Nullable SkillContainer skillContainer;
 
-	public AnthropicApi.SkillContainer getSkillContainer() {
+	public AnthropicApi.@Nullable SkillContainer getSkillContainer() {
 		return this.skillContainer;
 	}
 
-	public void setSkillContainer(AnthropicApi.SkillContainer skillContainer) {
+	public void setSkillContainer(AnthropicApi.@Nullable SkillContainer skillContainer) {
 		this.skillContainer = skillContainer;
 	}
 
@@ -124,7 +126,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	 * Whether to enable the tool execution lifecycle internally in ChatModel.
 	 */
 	@JsonIgnore
-	private Boolean internalToolExecutionEnabled;
+	private @Nullable Boolean internalToolExecutionEnabled;
 
 	@JsonIgnore
 	private Map<String, Object> toolContext = new HashMap<>();
@@ -139,7 +141,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * The desired response format for structured output.
 	 */
-	private @JsonProperty("output_format") OutputFormat outputFormat;
+	private @JsonProperty("output_format") @Nullable OutputFormat outputFormat;
 
 	// @formatter:on
 
@@ -158,15 +160,13 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			.topK(fromOptions.getTopK())
 			.toolChoice(fromOptions.getToolChoice())
 			.thinking(fromOptions.getThinking())
-			.toolCallbacks(
-					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
-			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
+			.toolCallbacks(new ArrayList<>(fromOptions.getToolCallbacks()))
+			.toolNames(new HashSet<>(fromOptions.getToolNames()))
 			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
-			.httpHeaders(fromOptions.getHttpHeaders() != null ? new HashMap<>(fromOptions.getHttpHeaders()) : null)
+			.toolContext(new HashMap<>(fromOptions.getToolContext()))
+			.httpHeaders(new HashMap<>(fromOptions.getHttpHeaders()))
 			.cacheOptions(fromOptions.getCacheOptions())
-			.citationDocuments(fromOptions.getCitationDocuments() != null
-					? new ArrayList<>(fromOptions.getCitationDocuments()) : null)
+			.citationDocuments(new ArrayList<>(fromOptions.getCitationDocuments()))
 			.outputFormat(fromOptions.getOutputFormat())
 			.skillContainer(fromOptions.getSkillContainer())
 			.build();
@@ -190,63 +190,63 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		this.maxTokens = maxTokens;
 	}
 
-	public ChatCompletionRequest.Metadata getMetadata() {
+	public ChatCompletionRequest.@Nullable Metadata getMetadata() {
 		return this.metadata;
 	}
 
-	public void setMetadata(ChatCompletionRequest.Metadata metadata) {
+	public void setMetadata(ChatCompletionRequest.@Nullable Metadata metadata) {
 		this.metadata = metadata;
 	}
 
 	@Override
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
 	}
 
-	public void setStopSequences(List<String> stopSequences) {
+	public void setStopSequences(@Nullable List<String> stopSequences) {
 		this.stopSequences = stopSequences;
 	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
+	public void setTemperature(@Nullable Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Double topP) {
+	public void setTopP(@Nullable Double topP) {
 		this.topP = topP;
 	}
 
 	@Override
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	public void setTopK(Integer topK) {
+	public void setTopK(@Nullable Integer topK) {
 		this.topK = topK;
 	}
 
-	public AnthropicApi.ToolChoice getToolChoice() {
+	public AnthropicApi.@Nullable ToolChoice getToolChoice() {
 		return this.toolChoice;
 	}
 
-	public void setToolChoice(AnthropicApi.ToolChoice toolChoice) {
+	public void setToolChoice(AnthropicApi.@Nullable ToolChoice toolChoice) {
 		this.toolChoice = toolChoice;
 	}
 
-	public ChatCompletionRequest.ThinkingConfig getThinking() {
+	public ChatCompletionRequest.@Nullable ThinkingConfig getThinking() {
 		return this.thinking;
 	}
 
-	public void setThinking(ChatCompletionRequest.ThinkingConfig thinking) {
+	public void setThinking(ChatCompletionRequest.@Nullable ThinkingConfig thinking) {
 		this.thinking = thinking;
 	}
 
@@ -280,9 +280,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	}
 
 	@Override
-	@Nullable
 	@JsonIgnore
-	public Boolean getInternalToolExecutionEnabled() {
+	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
@@ -294,13 +293,13 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 	@Override
 	@JsonIgnore
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return null;
 	}
 
 	@Override
 	@JsonIgnore
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return null;
 	}
 
@@ -353,7 +352,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		}
 	}
 
-	public OutputFormat getOutputFormat() {
+	public @Nullable OutputFormat getOutputFormat() {
 		return this.outputFormat;
 	}
 
@@ -364,7 +363,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 	@Override
 	@JsonIgnore
-	public String getOutputSchema() {
+	public @Nullable String getOutputSchema() {
 		return this.getOutputFormat() != null ? ModelOptionsUtils.toJsonString(this.getOutputFormat().schema()) : null;
 	}
 
@@ -432,37 +431,37 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			return this;
 		}
 
-		public Builder metadata(ChatCompletionRequest.Metadata metadata) {
+		public Builder metadata(ChatCompletionRequest.@Nullable Metadata metadata) {
 			this.options.metadata = metadata;
 			return this;
 		}
 
-		public Builder stopSequences(List<String> stopSequences) {
+		public Builder stopSequences(@Nullable List<String> stopSequences) {
 			this.options.stopSequences = stopSequences;
 			return this;
 		}
 
-		public Builder temperature(Double temperature) {
+		public Builder temperature(@Nullable Double temperature) {
 			this.options.temperature = temperature;
 			return this;
 		}
 
-		public Builder topP(Double topP) {
+		public Builder topP(@Nullable Double topP) {
 			this.options.topP = topP;
 			return this;
 		}
 
-		public Builder topK(Integer topK) {
+		public Builder topK(@Nullable Integer topK) {
 			this.options.topK = topK;
 			return this;
 		}
 
-		public Builder toolChoice(AnthropicApi.ToolChoice toolChoice) {
+		public Builder toolChoice(AnthropicApi.@Nullable ToolChoice toolChoice) {
 			this.options.toolChoice = toolChoice;
 			return this;
 		}
 
-		public Builder thinking(ChatCompletionRequest.ThinkingConfig thinking) {
+		public Builder thinking(ChatCompletionRequest.@Nullable ThinkingConfig thinking) {
 			this.options.thinking = thinking;
 			return this;
 		}
@@ -552,7 +551,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			return this;
 		}
 
-		public Builder outputFormat(OutputFormat outputFormat) {
+		public Builder outputFormat(@Nullable OutputFormat outputFormat) {
 			this.options.outputFormat = outputFormat;
 			return this;
 		}
@@ -567,14 +566,84 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 * @param skillContainer Container with skills to make available
 		 * @return Builder for method chaining
 		 */
-		public Builder skillContainer(AnthropicApi.SkillContainer skillContainer) {
+		public Builder skillContainer(AnthropicApi.@Nullable SkillContainer skillContainer) {
 			this.options.setSkillContainer(skillContainer);
 			return this;
 		}
 
 		/**
-		 * Add a single skill to the request. Creates a SkillContainer if one doesn't
-		 * exist.
+		 * Add a skill by its ID or name. Automatically detects whether it's a pre-built
+		 * Anthropic skill (xlsx, pptx, docx, pdf) or a custom skill ID.
+		 *
+		 * <p>
+		 * Example: <pre>{@code
+		 * AnthropicChatOptions options = AnthropicChatOptions.builder()
+		 *     .model("claude-sonnet-4-5")
+		 *     .skill("xlsx")                          // Pre-built skill
+		 *     .skill("skill_01abc123...")             // Custom skill
+		 *     .build();
+		 * }</pre>
+		 * @param skillIdOrName The skill ID or name
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(String skillIdOrName) {
+			Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
+			AnthropicApi.AnthropicSkill prebuilt = AnthropicApi.AnthropicSkill.fromId(skillIdOrName);
+			if (prebuilt != null) {
+				return this.skill(prebuilt.toSkill());
+			}
+			return this.skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName));
+		}
+
+		/**
+		 * Add a skill by its ID or name with a specific version.
+		 * @param skillIdOrName The skill ID or name
+		 * @param version The version (e.g., "latest", "20251013")
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(String skillIdOrName, String version) {
+			Assert.hasText(skillIdOrName, "Skill ID or name cannot be empty");
+			Assert.hasText(version, "Version cannot be empty");
+			AnthropicApi.AnthropicSkill prebuilt = AnthropicApi.AnthropicSkill.fromId(skillIdOrName);
+			if (prebuilt != null) {
+				return this.skill(prebuilt.toSkill(version));
+			}
+			return this.skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillIdOrName, version));
+		}
+
+		/**
+		 * Add a pre-built Anthropic skill using the enum.
+		 *
+		 * <p>
+		 * Example: <pre>{@code
+		 * AnthropicChatOptions options = AnthropicChatOptions.builder()
+		 *     .model("claude-sonnet-4-5")
+		 *     .skill(AnthropicSkill.XLSX)
+		 *     .skill(AnthropicSkill.PPTX)
+		 *     .build();
+		 * }</pre>
+		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(AnthropicApi.AnthropicSkill anthropicSkill) {
+			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
+			return this.skill(anthropicSkill.toSkill());
+		}
+
+		/**
+		 * Add a pre-built Anthropic skill with specific version.
+		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * @param version Version of the skill (e.g., "latest", "20251013")
+		 * @return Builder for method chaining
+		 */
+		public Builder skill(AnthropicApi.AnthropicSkill anthropicSkill, String version) {
+			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
+			Assert.hasText(version, "Version cannot be empty");
+			return this.skill(anthropicSkill.toSkill(version));
+		}
+
+		/**
+		 * Add a Skill record directly.
 		 * @param skill Skill to add
 		 * @return Builder for method chaining
 		 */
@@ -593,22 +662,38 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		}
 
 		/**
-		 * Add an Anthropic pre-built skill (xlsx, pptx, docx, pdf).
-		 *
-		 * <p>
-		 * Example: <pre>{@code
-		 * AnthropicChatOptions options = AnthropicChatOptions.builder()
-		 *     .model("claude-sonnet-4-5")
-		 *     .anthropicSkill(AnthropicSkill.XLSX)
-		 *     .anthropicSkill(AnthropicSkill.PPTX)
-		 *     .build();
-		 * }</pre>
-		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * Add multiple skills by their IDs or names.
+		 * @param skillIds The skill IDs or names
 		 * @return Builder for method chaining
 		 */
+		public Builder skills(String... skillIds) {
+			Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
+			for (String skillId : skillIds) {
+				this.skill(skillId);
+			}
+			return this;
+		}
+
+		/**
+		 * Add multiple skills from a list of IDs or names.
+		 * @param skillIds The list of skill IDs or names
+		 * @return Builder for method chaining
+		 */
+		public Builder skills(List<String> skillIds) {
+			Assert.notEmpty(skillIds, "Skill IDs cannot be empty");
+			skillIds.forEach(this::skill);
+			return this;
+		}
+
+		/**
+		 * Add an Anthropic pre-built skill (xlsx, pptx, docx, pdf).
+		 * @param anthropicSkill Pre-built Anthropic skill to add
+		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(AnthropicApi.AnthropicSkill)} instead
+		 */
+		@Deprecated
 		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill) {
-			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
-			return skill(anthropicSkill.toSkill());
+			return this.skill(anthropicSkill);
 		}
 
 		/**
@@ -616,21 +701,22 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 * @param anthropicSkill Pre-built Anthropic skill to add
 		 * @param version Version of the skill (e.g., "latest", "20251013")
 		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(AnthropicApi.AnthropicSkill, String)} instead
 		 */
+		@Deprecated
 		public Builder anthropicSkill(AnthropicApi.AnthropicSkill anthropicSkill, String version) {
-			Assert.notNull(anthropicSkill, "AnthropicSkill cannot be null");
-			Assert.hasText(version, "Version cannot be empty");
-			return skill(anthropicSkill.toSkill(version));
+			return this.skill(anthropicSkill, version);
 		}
 
 		/**
 		 * Add a custom skill by ID.
 		 * @param skillId Custom skill ID
 		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(String)} instead
 		 */
+		@Deprecated
 		public Builder customSkill(String skillId) {
-			Assert.hasText(skillId, "Skill ID cannot be empty");
-			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillId));
+			return this.skill(skillId);
 		}
 
 		/**
@@ -638,11 +724,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		 * @param skillId Custom skill ID
 		 * @param version Version of the skill
 		 * @return Builder for method chaining
+		 * @deprecated Use {@link #skill(String, String)} instead
 		 */
+		@Deprecated
 		public Builder customSkill(String skillId, String version) {
-			Assert.hasText(skillId, "Skill ID cannot be empty");
-			Assert.hasText(version, "Version cannot be empty");
-			return skill(new AnthropicApi.Skill(AnthropicApi.SkillType.CUSTOM, skillId, version));
+			return this.skill(skillId, version);
 		}
 
 		public AnthropicChatOptions build() {

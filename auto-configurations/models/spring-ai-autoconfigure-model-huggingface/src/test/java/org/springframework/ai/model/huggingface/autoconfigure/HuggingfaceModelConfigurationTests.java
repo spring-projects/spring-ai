@@ -33,7 +33,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class HuggingfaceModelConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(HuggingfaceChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(HuggingfaceChatAutoConfiguration.class))
+		.withPropertyValues("spring.ai.huggingface.chat.apiKey=foo", "spring.ai.huggingface.chat.url=http://localhost");
 
 	@Test
 	void chatModelActivation() {

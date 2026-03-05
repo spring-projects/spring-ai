@@ -68,7 +68,7 @@ class AnthropicCitationIT {
 				"Based solely on the provided document, where is the Eiffel Tower located and when was it completed?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getName())
 			.maxTokens(2048)
 			.temperature(0.0) // Use temperature 0 for more deterministic responses
 			.citationDocuments(document)
@@ -128,7 +128,7 @@ class AnthropicCitationIT {
 				"Based solely on the provided documents, what is the capital of France and who designed the Eiffel Tower?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getName())
 			.maxTokens(1024)
 			.temperature(0.0) // Use temperature 0 for more deterministic responses
 			.citationDocuments(parisDoc, eiffelDoc)
@@ -190,7 +190,7 @@ class AnthropicCitationIT {
 				"Based solely on the provided document, how long is the Great Wall of China and when was it started?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getName())
 			.maxTokens(1024)
 			.temperature(0.0)
 			.citationDocuments(document)
@@ -239,7 +239,7 @@ class AnthropicCitationIT {
 		UserMessage userMessage = new UserMessage("Based solely on the provided document, what is Spring AI?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getName())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getName())
 			.maxTokens(1024)
 			.temperature(0.0)
 			.citationDocuments(document)

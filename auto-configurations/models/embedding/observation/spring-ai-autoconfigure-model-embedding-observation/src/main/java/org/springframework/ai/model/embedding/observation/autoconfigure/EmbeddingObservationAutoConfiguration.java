@@ -34,7 +34,8 @@ import org.springframework.context.annotation.Bean;
  * @since 1.0.0
  */
 @AutoConfiguration(
-		afterName = "org.springframework.boot.actuate.autoconfigure.observation.ObservationAutoConfiguration")
+		afterName = { "org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration",
+				"org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration" })
 @ConditionalOnClass(EmbeddingModel.class)
 public class EmbeddingObservationAutoConfiguration {
 

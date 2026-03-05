@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.sql.DataSource;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,6 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.lang.Nullable;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
@@ -66,16 +66,20 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	private static final Logger logger = LoggerFactory.getLogger(JdbcChatMemoryRepository.class);
 
 	private JdbcChatMemoryRepository(JdbcTemplate jdbcTemplate, JdbcChatMemoryRepositoryDialect dialect,
-			PlatformTransactionManager txManager) {
+			@Nullable PlatformTransactionManager txManager) {
 		Assert.notNull(jdbcTemplate, "jdbcTemplate cannot be null");
 		Assert.notNull(dialect, "dialect cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
-		this.transactionTemplate = new TransactionTemplate(
-				txManager != null ? txManager : new DataSourceTransactionManager(jdbcTemplate.getDataSource()));
+		if (txManager == null) {
+			Assert.state(jdbcTemplate.getDataSource() != null, "jdbcTemplate dataSource cannot be null");
+			txManager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
+		}
+		this.transactionTemplate = new TransactionTemplate(txManager);
 	}
 
 	@Override
+	@SuppressWarnings("NullAway") // Assume query can't return null rows
 	public List<String> findConversationIds() {
 		return this.jdbcTemplate.queryForList(this.dialect.getSelectConversationIdsSql(), String.class);
 	}
@@ -141,7 +145,6 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 	private static class MessageRowMapper implements RowMapper<Message> {
 
 		@Override
-		@Nullable
 		public Message mapRow(ResultSet rs, int i) throws SQLException {
 			var content = rs.getString(1);
 			var type = MessageType.valueOf(rs.getString(2));
@@ -161,13 +164,13 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	public static final class Builder {
 
-		private JdbcTemplate jdbcTemplate;
+		private @Nullable JdbcTemplate jdbcTemplate;
 
-		private JdbcChatMemoryRepositoryDialect dialect;
+		private @Nullable JdbcChatMemoryRepositoryDialect dialect;
 
-		private DataSource dataSource;
+		private @Nullable DataSource dataSource;
 
-		private PlatformTransactionManager platformTransactionManager;
+		private @Nullable PlatformTransactionManager platformTransactionManager;
 
 		private static final Logger logger = LoggerFactory.getLogger(Builder.class);
 

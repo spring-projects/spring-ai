@@ -20,6 +20,7 @@ import java.util.List;
 
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import com.openai.models.embeddings.EmbeddingModel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
 
@@ -37,32 +38,32 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 	 * An identifier for the caller or end user of the operation. This may be used for
 	 * tracking or rate-limiting purposes.
 	 */
-	private String user;
+	private @Nullable String user;
 
 	/*
 	 * The number of dimensions the resulting output embeddings should have. Only
 	 * supported in `text-embedding-3` and later models.
 	 */
-	private Integer dimensions;
+	private @Nullable Integer dimensions;
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public String getUser() {
+	public @Nullable String getUser() {
 		return this.user;
 	}
 
-	public void setUser(String user) {
+	public void setUser(@Nullable String user) {
 		this.user = user;
 	}
 
 	@Override
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
+	public void setDimensions(@Nullable Integer dimensions) {
 		this.dimensions = dimensions;
 	}
 
@@ -85,7 +86,7 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 			builder.model(this.getModel());
 		}
 
-		if (instructions != null && !instructions.isEmpty()) {
+		if (!instructions.isEmpty()) {
 			builder.input(EmbeddingCreateParams.Input.ofArrayOfStrings(instructions));
 		}
 		if (this.getUser() != null) {
@@ -122,7 +123,10 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 			return this;
 		}
 
-		public Builder merge(EmbeddingOptions from) {
+		public Builder merge(@Nullable EmbeddingOptions from) {
+			if (from == null) {
+				return this;
+			}
 			if (from instanceof OpenAiSdkEmbeddingOptions castFrom) {
 				// Parent class fields
 				if (castFrom.getBaseUrl() != null) {
@@ -148,18 +152,12 @@ public class OpenAiSdkEmbeddingOptions extends AbstractOpenAiSdkOptions implemen
 				}
 				this.options.setMicrosoftFoundry(castFrom.isMicrosoftFoundry());
 				this.options.setGitHubModels(castFrom.isGitHubModels());
-				if (castFrom.getTimeout() != null) {
-					this.options.setTimeout(castFrom.getTimeout());
-				}
-				if (castFrom.getMaxRetries() != null) {
-					this.options.setMaxRetries(castFrom.getMaxRetries());
-				}
+				this.options.setTimeout(castFrom.getTimeout());
+				this.options.setMaxRetries(castFrom.getMaxRetries());
 				if (castFrom.getProxy() != null) {
 					this.options.setProxy(castFrom.getProxy());
 				}
-				if (castFrom.getCustomHeaders() != null) {
-					this.options.setCustomHeaders(castFrom.getCustomHeaders());
-				}
+				this.options.setCustomHeaders(castFrom.getCustomHeaders());
 				// Child class fields
 				if (castFrom.getUser() != null) {
 					this.options.setUser(castFrom.getUser());

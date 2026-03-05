@@ -169,8 +169,8 @@ class OllamaChatModelTests {
 	@Test
 	void buildOllamaChatModelWithNullOllamaApi() {
 		assertThatThrownBy(() -> OllamaChatModel.builder().ollamaApi(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("ollamaApi must not be null");
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("OllamaApi must not be null");
 	}
 
 	@Test

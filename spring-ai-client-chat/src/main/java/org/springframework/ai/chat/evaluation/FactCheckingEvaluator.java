@@ -18,11 +18,12 @@ package org.springframework.ai.chat.evaluation;
 
 import java.util.Collections;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.Evaluator;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -148,9 +149,9 @@ public class FactCheckingEvaluator implements Evaluator {
 
 	public static final class Builder {
 
-		private ChatClient.Builder chatClientBuilder;
+		private ChatClient.@Nullable Builder chatClientBuilder;
 
-		private String evaluationPrompt;
+		private @Nullable String evaluationPrompt = DEFAULT_EVALUATION_PROMPT_TEXT;
 
 		private Builder() {
 		}
@@ -166,6 +167,8 @@ public class FactCheckingEvaluator implements Evaluator {
 		}
 
 		public FactCheckingEvaluator build() {
+			Assert.state(this.chatClientBuilder != null, "ChatClientBuilder cannot be null");
+			Assert.state(this.evaluationPrompt != null, "EvaluationPrompt cannot be null");
 			return new FactCheckingEvaluator(this.chatClientBuilder, this.evaluationPrompt);
 		}
 

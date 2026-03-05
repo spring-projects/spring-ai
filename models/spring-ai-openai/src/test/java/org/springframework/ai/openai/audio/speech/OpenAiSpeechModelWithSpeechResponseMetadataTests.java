@@ -55,7 +55,9 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
 	private static final Double SPEED = 1.0;
 
-	private static String TEST_API_KEY = "sk-1234567890";
+	private static final String TEST_API_KEY = "sk-1234567890";
+
+	private static final String TEST_SPEECH_PATH = "/v1/audio/speech";
 
 	@Autowired
 	private OpenAiAudioSpeechModel openAiSpeechClient;
@@ -133,7 +135,11 @@ public class OpenAiSpeechModelWithSpeechResponseMetadataTests {
 
 		@Bean
 		public OpenAiAudioApi openAiAudioApi(RestClient.Builder builder) {
-			return OpenAiAudioApi.builder().apiKey(new SimpleApiKey(TEST_API_KEY)).restClientBuilder(builder).build();
+			return OpenAiAudioApi.builder()
+				.apiKey(new SimpleApiKey(TEST_API_KEY))
+				.speechPath(TEST_SPEECH_PATH)
+				.restClientBuilder(builder)
+				.build();
 		}
 
 	}

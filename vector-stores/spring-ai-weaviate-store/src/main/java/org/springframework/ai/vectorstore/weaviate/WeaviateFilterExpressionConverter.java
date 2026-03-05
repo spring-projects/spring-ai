@@ -83,7 +83,7 @@ public class WeaviateFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
-
+		Assert.state(exp.right() != null, "expected an expression with a right operand");
 		if (exp.type() == ExpressionType.IN) {
 			FilterHelper.expandIn(exp, context, this);
 		}

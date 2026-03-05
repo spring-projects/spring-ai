@@ -88,6 +88,7 @@ spring:
         port: <qdrant grpc port>
         api-key: <qdrant api key>
         collection-name: <collection name>
+        content-field-name: <content field name>
         use-tls: false
         initialize-schema: true
 ----
@@ -102,6 +103,7 @@ Properties starting with `spring.ai.vectorstore.qdrant.*` are used to configure 
 |`spring.ai.vectorstore.qdrant.port`| The gRPC port of the Qdrant server | `6334`
 |`spring.ai.vectorstore.qdrant.api-key`| The API key to use for authentication | -
 |`spring.ai.vectorstore.qdrant.collection-name`| The name of the collection to use | `vector_store`
+|`spring.ai.vectorstore.qdrant.content-field-name`| The name of the field storing document content in Qdrant payloads. Useful when integrating with existing collections that use different field names (e.g., "page_content", "text", "content"). | `doc_content`
 |`spring.ai.vectorstore.qdrant.use-tls`| Whether to use TLS(HTTPS) | `false`
 |`spring.ai.vectorstore.qdrant.initialize-schema`| Whether to initialize the schema | `false`
 |===
@@ -154,6 +156,7 @@ Then create the `QdrantVectorStore` bean using the builder pattern:
 public VectorStore vectorStore(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
     return QdrantVectorStore.builder(qdrantClient, embeddingModel)
         .collectionName("custom-collection")     // Optional: defaults to "vector_store"
+        .contentFieldName("page_content")        // Optional: defaults to "doc_content"
         .initializeSchema(true)                  // Optional: defaults to false
         .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
         .build();
@@ -163,6 +166,40 @@ public VectorStore vectorStore(QdrantClient qdrantClient, EmbeddingModel embeddi
 @Bean
 public EmbeddingModel embeddingModel() {
     return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+}
+----
+
+== Working with Existing Collections
+
+When integrating Spring AI with pre-existing Qdrant collections, you may need to configure the content field name to match the schema already in use.
+
+By default, `QdrantVectorStore` stores document content in a field named `doc_content`. However, existing collections might use different naming conventions such as `page_content`, `text`, `content`, or other custom names.
+
+=== Using Custom Content Field Names
+
+You can configure the content field name to match your existing collection schema:
+
+**Via Properties:**
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      qdrant:
+        collection-name: my_existing_collection
+        content-field-name: page_content  # Match existing schema
+----
+
+**Programmatically:**
+[source,java]
+----
+@Bean
+public VectorStore vectorStore(QdrantClient qdrantClient, EmbeddingModel embeddingModel) {
+    return QdrantVectorStore.builder(qdrantClient, embeddingModel)
+        .collectionName("my_existing_collection")
+        .contentFieldName("text")  // Use existing field name
+        .initializeSchema(false)   // Don't recreate existing schema
+        .build();
 }
 ----
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.springframework.ai.embedding;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.MetadataMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +39,7 @@ import static org.mockito.Mockito.verify;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 @ExtendWith(MockitoExtension.class)
 public class AbstractEmbeddingModelTests {
@@ -91,6 +95,77 @@ public class AbstractEmbeddingModelTests {
 		given(this.embeddingModel.embed(eq("Hello world!"))).willReturn(new float[] { 0.1f, 0.1f, 0.1f });
 		assertThat(AbstractEmbeddingModel.dimensions(this.embeddingModel, "unknown_model", "Hello world!"))
 			.isEqualTo(3);
+	}
+
+	@Test
+	public void testGetEmbeddingContentDefaultReturnsText() {
+		EmbeddingModel model = createDummyEmbeddingModel(null);
+		Document document = new Document("raw text", Map.of("key", "value"));
+
+		assertThat(model.getEmbeddingContent(document)).isEqualTo("raw text");
+	}
+
+	@Test
+	public void testBatchedEmbedUsesGetEmbeddingContent() {
+		// Create a model that overrides getEmbeddingContent to use MetadataMode,
+		// simulating what OpenAI and other MetadataMode-aware models do.
+		List<String> capturedTexts = new ArrayList<>();
+		EmbeddingModel model = createDummyEmbeddingModel(MetadataMode.EMBED);
+
+		Document doc = new Document("Some content", Map.of("title", "Getting Started"));
+
+		model.embed(List.of(doc), EmbeddingOptions.builder().build(), new TokenCountBatchingStrategy());
+
+		// Verify that the text sent for embedding includes metadata,
+		// not just the raw text from Document.getText()
+		String embeddingContent = model.getEmbeddingContent(doc);
+		assertThat(embeddingContent).contains("Getting Started");
+		assertThat(embeddingContent).contains("Some content");
+	}
+
+	@Test
+	public void testBatchedEmbedWithoutMetadataModeUsesRawText() {
+		EmbeddingModel model = createDummyEmbeddingModel(null);
+
+		Document doc = new Document("Some content", Map.of("title", "Getting Started"));
+
+		model.embed(List.of(doc), EmbeddingOptions.builder().build(), new TokenCountBatchingStrategy());
+
+		// Without MetadataMode override, getEmbeddingContent returns raw text
+		String embeddingContent = model.getEmbeddingContent(doc);
+		assertThat(embeddingContent).isEqualTo("Some content");
+	}
+
+	private EmbeddingModel createDummyEmbeddingModel(MetadataMode metadataMode) {
+		return new EmbeddingModel() {
+
+			@Override
+			public String getEmbeddingContent(Document document) {
+				if (metadataMode != null) {
+					return document.getFormattedContent(metadataMode);
+				}
+				return document.getText();
+			}
+
+			@Override
+			public float[] embed(Document document) {
+				return this.embed(getEmbeddingContent(document));
+			}
+
+			@Override
+			public float[] embed(String text) {
+				return new float[] { 0.1f, 0.2f, 0.3f };
+			}
+
+			@Override
+			public EmbeddingResponse call(EmbeddingRequest request) {
+				List<Embedding> embeddings = new ArrayList<>();
+				for (int i = 0; i < request.getInstructions().size(); i++) {
+					embeddings.add(new Embedding(new float[] { 0.1f, 0.2f, 0.3f }, i));
+				}
+				return new EmbeddingResponse(embeddings);
+			}
+		};
 	}
 
 }

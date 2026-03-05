@@ -56,7 +56,11 @@ public class OpenAiAudioModelNoOpApiKeysIT {
 
 		@Bean
 		public OpenAiAudioApi openAiAudioApi() {
-			return OpenAiAudioApi.builder().apiKey(new NoopApiKey()).build();
+			return OpenAiAudioApi.builder()
+				.apiKey(new NoopApiKey())
+				.speechPath("/v1/audio/speech")
+				.transcriptionPath("/v1/audio/transcriptions")
+				.build();
 		}
 
 	}

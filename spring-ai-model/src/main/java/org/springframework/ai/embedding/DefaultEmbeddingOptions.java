@@ -16,6 +16,8 @@
 
 package org.springframework.ai.embedding;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Default implementation of {@link EmbeddingOptions}.
  *
@@ -23,12 +25,12 @@ package org.springframework.ai.embedding;
  */
 public class DefaultEmbeddingOptions implements EmbeddingOptions {
 
-	private String model;
+	private @Nullable String model;
 
-	private Integer dimensions;
+	private @Nullable Integer dimensions;
 
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
@@ -37,7 +39,7 @@ public class DefaultEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	@Override
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 

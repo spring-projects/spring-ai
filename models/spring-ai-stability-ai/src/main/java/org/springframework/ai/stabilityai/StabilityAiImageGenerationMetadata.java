@@ -26,9 +26,9 @@ import org.springframework.ai.image.ImageGenerationMetadata;
  */
 public class StabilityAiImageGenerationMetadata implements ImageGenerationMetadata {
 
-	private String finishReason;
+	private final String finishReason;
 
-	private Long seed;
+	private final Long seed;
 
 	public StabilityAiImageGenerationMetadata(String finishReason, Long seed) {
 		this.finishReason = finishReason;

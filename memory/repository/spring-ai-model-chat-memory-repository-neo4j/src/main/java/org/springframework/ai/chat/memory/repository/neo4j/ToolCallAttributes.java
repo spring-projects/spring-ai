@@ -19,7 +19,7 @@ package org.springframework.ai.chat.memory.repository.neo4j;
 /*
  * @author Enrico Rampazzo
  */
-public enum ToolCallAttributes {
+public enum ToolCallAttributes implements AttributeGetter {
 
 	ID("id"), NAME("name"), ARGUMENTS("arguments"), TYPE("type"), IDX("idx");
 

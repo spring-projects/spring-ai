@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -158,23 +159,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions
 				&& !CollectionUtils.isEmpty(toolCallingChatOptions.getToolContext())) {
 			toolContextMap = new HashMap<>(toolCallingChatOptions.getToolContext());
-
-			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY,
-					buildConversationHistoryBeforeToolExecution(prompt, assistantMessage));
 		}
 
 		return new ToolContext(toolContextMap);
-	}
-
-	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
-			AssistantMessage assistantMessage) {
-		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-		messageHistory.add(AssistantMessage.builder()
-			.content(assistantMessage.getText())
-			.properties(assistantMessage.getMetadata())
-			.toolCalls(assistantMessage.getToolCalls())
-			.build());
-		return messageHistory;
 	}
 
 	/**
@@ -252,7 +239,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		}
 
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
-				returnDirect);
+				Objects.requireNonNullElse(returnDirect, false));
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,

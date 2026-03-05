@@ -1,6 +1,270 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-0-M3]]
+== Upgrading to 2.0.0-M3
+
+=== Conversation History Removed from ToolContext
+
+Conversation history is no longer automatically added to `ToolContext`. The `TOOL_CALL_HISTORY` constant and `getToolCallHistory()` method have been removed from the `ToolContext` class.
+
+==== Impact
+
+* `ToolContext.TOOL_CALL_HISTORY` constant no longer exists
+* `ToolContext.getToolCallHistory()` method no longer exists
+* Conversation history is no longer automatically populated in `ToolContext`
+
+==== Why This Change?
+
+1. **Memory Efficiency**: Prevents unbounded memory growth in long conversations
+2. **Separation of Concerns**: Tools should operate on their parameters, not manage conversation state
+3. **Architecture Alignment**: Conversation context belongs at the advisor level, not in tool execution
+
+==== Migration
+
+If your application needs conversation history management, use `ToolCallAdvisor`:
+
+.Managing Conversation History with ToolCallAdvisor
+[source,java]
+----
+ChatClient chatClient = ChatClient.builder()
+    .defaultAdvisors(
+        new ToolCallAdvisor()
+            .conversationHistoryEnabled(true)  // Full history (default)
+    )
+    .build();
+----
+
+**How ToolCallAdvisor Works:**
+
+The `ToolCallAdvisor` manages conversation history at the advisor level:
+
+* **conversationHistoryEnabled=true** (default): Full conversation history is maintained and sent to the LLM between tool call iterations, allowing the LLM to synthesize results with full context
+* **conversationHistoryEnabled=false**: Only the most recent tool response is sent to the LLM (useful when ChatMemory advisor manages history separately)
+
+**Key Point:** The conversation history is used by the *LLM* to understand context and formulate responses, not by the *tools* themselves. Tools receive only their input parameters and any custom context you explicitly provide.
+
+**Custom Context in Tools:**
+
+`ToolContext` remains available for passing custom, application-specific data to tools:
+
+.Passing Custom Context to Tools
+[source,java]
+----
+ChatResponse response = chatClient.prompt()
+    .user("What's the weather in SF?")
+    .options(ChatOptionsBuilder.builder()
+        .toolContext("userId", "user123")
+        .toolContext("apiKey", "secret")
+        .build())
+    .call()
+    .chatResponse();
+----
+
+**Example Flow:**
+
+1. User asks: "What's the weather in SF and LA?"
+2. LLM requests tool calls: `getWeather(SF)` and `getWeather(LA)`
+3. Tools execute with only their parameters (no conversation history)
+4. ToolCallAdvisor collects tool results and conversation history
+5. LLM receives conversation context from advisor and synthesizes: "The weather in SF is 72°F and in LA is 85°F"
+
+The LLM sees the full conversation through the advisor chain, not through ToolContext.
+
+==== The access level of model internal methods changed to private
+
+* All `internalCall` and `internalStream` methods in model classes have been changed to `private`.
+
+===== Impact
+
+* Direct calls `xxxModel.internalCall` or `xxxModel.internalStream` method, will fail to compile.
+
+===== Migration
+
+* Replace all calls to `xxxModel.internalCall` with `xxxModel.call`.
+* Replace all calls to `xxxModel.internalStream` with `xxxModel.stream`.
++
+[source,java]
+----
+// Before
+ChatResponse response = model.internalCall(prompt, previousChatResponse);
+Flux<ChatResponse> responseFlux = model.internalStream(prompt, previousChatResponse);
+
+// After
+ChatResponse response = model.call(prompt);
+Flux<ChatResponse> responseFlux = model.stream(prompt);
+----
+
+=== MCP Spring Transport Modules Moved to Spring AI
+
+The `mcp-spring-webflux` and `mcp-spring-webmvc` transport modules are no longer shipped by the MCP Java SDK. Starting with Spring AI 2.0, they are part of the Spring AI project itself.
+
+==== Impact
+
+* The Maven group ID for both artifacts has changed.
+* Java package names for all Spring-specific transport classes have changed.
+* The MCP Java SDK version requirement has been bumped from `0.18.x` to `1.0.x`.
+
+==== Maven Dependency Group ID Change
+
+.Before
+[source,xml]
+----
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>io.modelcontextprotocol.sdk</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+.After
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webflux</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>mcp-spring-webmvc</artifactId>
+</dependency>
+----
+
+NOTE: When using the `spring-ai-bom` or a Spring AI MCP starter (`spring-ai-starter-mcp-server-webflux`, `spring-ai-starter-mcp-server-webmvc`, `spring-ai-starter-mcp-client-webflux`), **no explicit version is needed** — the BOM manages it automatically.
+
+==== Java Package Relocation
+
+All Spring-specific transport classes have moved to `org.springframework.ai` packages.
+
+.Server transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebFluxStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webflux.transport`
+
+|`WebMvcSseServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStreamableServerTransportProvider`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+
+|`WebMvcStatelessServerTransport`
+|`io.modelcontextprotocol.server.transport`
+|`org.springframework.ai.mcp.server.webmvc.transport`
+|===
+
+.Client transports
+|===
+|Class |Old package |New package
+
+|`WebFluxSseClientTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+
+|`WebClientStreamableHttpTransport`
+|`io.modelcontextprotocol.client.transport`
+|`org.springframework.ai.mcp.client.webflux.transport`
+|===
+
+==== Migration
+
+Update your Java imports:
+
+[source,java]
+----
+// Before
+import io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider;
+import io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider;
+import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
+import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
+
+// After
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
+import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
+import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+----
+
+NOTE: If you rely exclusively on Spring Boot auto-configuration via the Spring AI starters, **no Java code changes are required**. Only update your `pom.xml`/`build.gradle` dependency coordinates as described above.
+
+For the full MCP transport migration reference, see xref:api/mcp/mcp-overview.adoc#_upgrading_to_spring_ai_2_0[Upgrading to Spring AI 2.0].
+
+=== Breaking Changes
+
+==== OpenSearch Dependencies Upgraded
+
+The OpenSearch vector store dependencies have been upgraded to newer versions:
+
+* **OpenSearch Java Client**: `2.23.0` → `3.6.0`
+* **OpenSearch Testcontainers**: `2.0.1` → `4.1.0`
+
+===== Background
+
+This upgrade was necessary for compatibility with Spring Boot 4.1.x, which uses HttpClient5 (`org.apache.httpcomponents.client5:httpclient5`) version 5.6. This version of HttpClient has a gzip content formatter breaking change that required the OpenSearch Java Client upgrade. See https://github.com/opensearch-project/opensearch-java/pull/1851[OpenSearch Java PR #1851] for details.
+
+===== Impact
+
+The OpenSearch Java Client 3.x introduces breaking API changes that affect custom code interacting directly with the native OpenSearch client.
+
+===== Migration
+
+If you're using the OpenSearch vector store through Spring AI's `VectorStore` interface, no action is required. The upgrade is transparent.
+
+**Testcontainers class renamed**: `OpensearchContainer` → `OpenSearchContainer` (proper camelCase)
+
+Spring AI's internal implementation has been updated to handle these changes automatically.
+
+[[upgrading-to-2-0-0-M2]]
+== Upgrading to 2.0.0-M2
+
+=== Breaking Changes
+
+==== MongoDB Chat Memory Message Ordering Fixed
+
+The `MongoChatMemoryRepository` has been fixed to return messages in the order they were sent (oldest-to-newest), matching all other chat memory repository implementations. Previously, it incorrectly returned messages in reverse order (newest-to-oldest), which broke conversation flow for LLMs.
+
+===== Impact
+
+If your application was using `MongoChatMemoryRepository` and working around the incorrect ordering (e.g., by reversing messages after retrieval), you will need to remove that workaround.
+
+===== Migration
+
+Remove any code that reverses the message order after retrieving from MongoDB chat memory:
+
+[source,java]
+----
+// BEFORE (with workaround for bug):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+Collections.reverse(messages); // Remove this workaround
+
+// AFTER (correct ordering):
+List<Message> messages = chatMemoryRepository.findByConversationId(conversationId);
+// Messages are now correctly ordered chronologically
+----
+
+All chat memory repositories now consistently return messages in the order they were sent (oldest-to-newest), which is the expected format for LLM conversation history.
+
+=== Development-time Services
+
+* Docker Compose and Testcontainers support for MongoDB Atlas is now provided natively by the Spring Boot MongoDB module. The migration should be transparent and not require any code change. Regarding dependencies, you don't need to import `org.springframework.ai:spring-ai-spring-boot-testcontainers` anymore. A dependency on `org.springframework.boot:spring-boot-testcontainers` is sufficient.
+
 [[upgrading-to-2-0-0-M1]]
 == Upgrading to 2.0.0-M1
 

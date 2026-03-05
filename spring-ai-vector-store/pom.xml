@@ -76,7 +76,7 @@
 						<artifactId>antlr4-maven-plugin</artifactId>
 						<version>${antlr.version}</version>
 						<configuration>
-							<sourceDirectory>${basedir}/src/main/resources/antlr4</sourceDirectory>
+							<sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory>
 							<outputDirectory>${basedir}/src/main/java</outputDirectory>
 							<visitor>true</visitor>
 						</configuration>

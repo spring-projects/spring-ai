@@ -249,7 +249,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	public ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, ChatResponse previousChatResponse) {
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -296,7 +296,7 @@ public class AzureOpenAiChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionsOptions options = toAzureChatCompletionsOptions(prompt);

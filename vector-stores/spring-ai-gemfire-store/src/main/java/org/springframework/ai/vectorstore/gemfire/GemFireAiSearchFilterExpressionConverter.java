@@ -27,6 +27,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * GemFireAiSearchFilterExpressionConverter is a class that converts Filter.Expression
@@ -48,6 +49,7 @@ public class GemFireAiSearchFilterExpressionConverter extends AbstractFilterExpr
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression.right() must not be null");
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
 			context.append(getOperationSymbol(expression));
 			this.convertOperand(expression.left(), context);

@@ -82,7 +82,7 @@ class ChatClientObservationContextTests {
 	@Test
 	void whenNullRequestThenThrowException() {
 		assertThatThrownBy(() -> ChatClientObservationContext.builder().request(null).build())
-			.isInstanceOf(IllegalArgumentException.class);
+			.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test

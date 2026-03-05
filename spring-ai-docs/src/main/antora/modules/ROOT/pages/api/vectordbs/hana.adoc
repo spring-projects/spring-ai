@@ -270,7 +270,7 @@ public class CricketWorldCupHanaController {
     public ResponseEntity<String> handleFileUpload(@RequestParam("pdf") MultipartFile file) throws IOException {
         Resource pdf = file.getResource();
         Supplier<List<Document>> reader = new PagePdfDocumentReader(pdf);
-        Function<List<Document>, List<Document>> splitter = new TokenTextSplitter();
+        Function<List<Document>, List<Document>> splitter = TokenTextSplitter.builder().build();
         List<Document> documents = splitter.apply(reader.get());
         log.info("{} documents created from pdf file: {}", documents.size(), pdf.getFilename());
 		this.hanaCloudVectorStore.accept(documents);
@@ -287,7 +287,7 @@ public class CricketWorldCupHanaController {
 
         var userMessage = new UserMessage(message);
         Prompt prompt = new Prompt(List.of(similarDocsMessage, userMessage));
-        String generation = this.chatModel.call(prompt).getResult().getOutput().getContent();
+        String generation = this.chatModel.call(prompt).getResult().getOutput().getText();
         log.info("Generation: {}", generation);
         return Map.of("generation", generation);
     }

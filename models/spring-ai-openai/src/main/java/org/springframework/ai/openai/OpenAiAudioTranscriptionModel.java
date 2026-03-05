@@ -125,7 +125,7 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 			if (transcription == null) {
 				logger.warn("No transcription returned for request: {}", audioResource);
-				return new AudioTranscriptionResponse(null);
+				return new AudioTranscriptionResponse(new AudioTranscription(""));
 			}
 
 			AudioTranscription transcript = new AudioTranscription(transcription.text());
@@ -152,7 +152,7 @@ public class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 			if (transcription == null) {
 				logger.warn("No transcription returned for request: {}", audioResource);
-				return new AudioTranscriptionResponse(null);
+				return new AudioTranscriptionResponse(new AudioTranscription(""));
 			}
 
 			AudioTranscription transcript = new AudioTranscription(transcription);

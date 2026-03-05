@@ -18,6 +18,7 @@ package org.springframework.ai.model.mistralai.autoconfigure;
 
 import org.springframework.ai.mistralai.ocr.MistralOcrApi;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -47,7 +48,8 @@ public class MistralAiOcrAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public MistralOcrApi mistralOcrApi(MistralAiCommonProperties commonProperties, MistralAiOcrProperties ocrProperties,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ResponseErrorHandler responseErrorHandler) {
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var apiKey = ocrProperties.getApiKey();
 		var baseUrl = ocrProperties.getBaseUrl();
@@ -59,7 +61,8 @@ public class MistralAiOcrAutoConfiguration {
 		Assert.hasText(resolvedBaseUrl, "Mistral base URL must be set");
 
 		return new MistralOcrApi(resolvedBaseUrl, resolvedApiKey,
-				restClientBuilderProvider.getIfAvailable(RestClient::builder), responseErrorHandler);
+				restClientBuilderProvider.getIfAvailable(RestClient::builder),
+				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 	}
 
 }

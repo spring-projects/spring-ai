@@ -35,6 +35,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
@@ -113,6 +115,21 @@ class SimpleVectorStoreTests {
 
 		this.vectorStore.delete(List.of("1"));
 		assertThat(this.vectorStore.similaritySearch("test")).isEmpty();
+	}
+
+	@Test
+	void shouldDeleteDocumentsByFilter() {
+		Document doc = Document.builder().id("1").text("test content").metadata("testKey", 1).build();
+
+		this.vectorStore.add(List.of(doc));
+		assertThat(this.vectorStore.similaritySearch("test")).hasSize(1);
+
+		FilterExpressionBuilder builder = new FilterExpressionBuilder();
+
+		Filter.Expression condition = builder.eq("testKey", 1).build();
+
+		this.vectorStore.delete(condition);
+		assertThat(this.vectorStore.store.isEmpty());
 	}
 
 	@Test

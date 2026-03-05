@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mcp.client.common.autoconfigure.aot;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -30,7 +32,7 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
 public class McpClientAutoConfigurationRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		hints.resources().registerPattern("**.json");
 
 		var mcs = MemberCategory.values();

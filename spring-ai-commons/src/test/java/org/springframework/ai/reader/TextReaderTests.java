@@ -49,7 +49,7 @@ public class TextReaderTests {
 
 		List<Document> documents0 = textReader.get();
 
-		List<Document> documents = new TokenTextSplitter().apply(documents0);
+		List<Document> documents = TokenTextSplitter.builder().build().apply(documents0);
 
 		assertThat(documents.size()).isEqualTo(54);
 

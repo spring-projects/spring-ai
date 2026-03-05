@@ -36,21 +36,15 @@ class FactCheckingEvaluatorTests {
 	@SuppressWarnings("deprecation")
 	@Test
 	void whenChatClientBuilderIsNullThenThrow() {
-		assertThatThrownBy(() -> new FactCheckingEvaluator(null, null)).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("chatClientBuilder cannot be null");
-
-		assertThatThrownBy(() -> FactCheckingEvaluator.builder(null).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("chatClientBuilder cannot be null");
+		assertThatThrownBy(() -> FactCheckingEvaluator.builder(null).build()).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("ChatClientBuilder cannot be null");
 	}
 
 	@SuppressWarnings("deprecation")
 	@Test
 	void whenEvaluationPromptIsNullThenUseDefaultEvaluationPromptText() {
-		FactCheckingEvaluator evaluator = new FactCheckingEvaluator(ChatClient.builder(mock(ChatModel.class)), null);
-		assertThat(evaluator).isNotNull();
-
-		evaluator = FactCheckingEvaluator.builder(ChatClient.builder(mock(ChatModel.class))).build();
+		FactCheckingEvaluator evaluator = FactCheckingEvaluator.builder(ChatClient.builder(mock(ChatModel.class)))
+			.build();
 		assertThat(evaluator).isNotNull();
 	}
 

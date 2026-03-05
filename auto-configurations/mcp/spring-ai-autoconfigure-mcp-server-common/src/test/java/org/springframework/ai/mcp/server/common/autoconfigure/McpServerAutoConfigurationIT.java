@@ -74,7 +74,7 @@ public class McpServerAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
-				McpServerObjectMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class));
+				McpServerJsonMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class));
 
 	@Test
 	void defaultConfiguration() {

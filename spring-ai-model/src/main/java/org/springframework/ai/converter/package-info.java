@@ -28,9 +28,7 @@
  * "https://docs.spring.io/spring-ai/reference/api/structured-output-converter.html">Structured
  * Output Converter Reference Guide</a>.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.converter;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

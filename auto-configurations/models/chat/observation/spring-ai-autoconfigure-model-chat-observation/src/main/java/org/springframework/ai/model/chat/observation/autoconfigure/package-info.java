@@ -17,9 +17,7 @@
 /**
  * Auto-configuration for chat observation.
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.model.chat.observation.autoconfigure;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;

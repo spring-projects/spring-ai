@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Josh Long
+ * @author Soby Chacko
  *
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -142,6 +143,12 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
+	public String getEmbeddingContent(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return document.getFormattedContent(this.metadataMode);
+	}
+
+	@Override
 	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return this.embed(document.getFormattedContent(this.metadataMode));
@@ -187,6 +194,15 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 				return embeddingResponse;
 			});
+	}
+
+	@Override
+	public int dimensions() {
+		if (this.embeddingDimensions.get() < 0 && this.defaultOptions.getModel() != null) {
+			this.embeddingDimensions.set(dimensions(this, this.defaultOptions.getModel(), "Hello World"));
+		}
+
+		return super.dimensions();
 	}
 
 	private DefaultUsage getDefaultUsage(OpenAiApi.Usage usage) {

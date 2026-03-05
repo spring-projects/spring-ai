@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Interface representing a request to an AI model. This interface encapsulates the
  * necessary information required to interact with an AI model, including instructions or
@@ -39,6 +41,6 @@ public interface ModelRequest<T> {
 	 * Retrieves the customizable options for AI model interactions.
 	 * @return the customizable options for AI model interactions
 	 */
-	ModelOptions getOptions();
+	@Nullable ModelOptions getOptions();
 
 }

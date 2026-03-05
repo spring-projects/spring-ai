@@ -27,6 +27,8 @@ import java.util.Map;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.text.TextPosition;
 
+import org.springframework.util.Assert;
+
 /**
  * Re-implement the PDFLayoutTextStripperByArea on top of the PDFLayoutTextStripper
  * instead the original PDFTextStripper.
@@ -100,6 +102,7 @@ public class PDFLayoutTextStripperByArea extends ForkPDFLayoutTextStripper {
 	 */
 	public String getTextForRegion(String regionName) {
 		StringWriter text = this.regionText.get(regionName);
+		Assert.state(text != null, "Text for region " + regionName + " not found");
 		return text.toString();
 	}
 

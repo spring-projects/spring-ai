@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -45,6 +46,7 @@ import org.springframework.web.client.RestClient;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Yanming Zhou
  * @since 0.8.1
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
@@ -58,8 +60,9 @@ public class MistralAiEmbeddingAutoConfiguration {
 	@ConditionalOnMissingBean
 	public MistralAiEmbeddingModel mistralAiEmbeddingModel(MistralAiCommonProperties commonProperties,
 			MistralAiEmbeddingProperties embeddingProperties,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider, RetryTemplate retryTemplate,
-			ResponseErrorHandler responseErrorHandler, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<RestClient.Builder> restClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
 
 		var mistralAiApi = mistralAiApi(embeddingProperties.getApiKey(), commonProperties.getApiKey(),
@@ -70,7 +73,7 @@ public class MistralAiEmbeddingAutoConfiguration {
 			.mistralAiApi(mistralAiApi)
 			.metadataMode(embeddingProperties.getMetadataMode())
 			.options(embeddingProperties.getOptions())
-			.retryTemplate(retryTemplate)
+			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
 
@@ -80,7 +83,7 @@ public class MistralAiEmbeddingAutoConfiguration {
 	}
 
 	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			RestClient.Builder restClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -92,7 +95,7 @@ public class MistralAiEmbeddingAutoConfiguration {
 			.baseUrl(resoledBaseUrl)
 			.apiKey(resolvedApiKey)
 			.restClientBuilder(restClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 

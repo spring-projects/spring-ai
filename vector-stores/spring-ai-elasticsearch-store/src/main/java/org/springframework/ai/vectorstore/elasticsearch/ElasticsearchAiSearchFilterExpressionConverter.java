@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * ElasticsearchAiSearchFilterExpressionConverter is a class that converts
@@ -50,9 +51,10 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
 			context.append(getOperationSymbol(expression));
-			context.append("(");
 			this.convertOperand(expression.left(), context);
+			context.append("(");
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
@@ -66,6 +68,7 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 			context.append("*");
 		}
 		else {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
 			this.convertOperand(expression.left(), context);
 			context.append(getOperationSymbol(expression));
 			this.convertOperand(expression.right(), context);
@@ -116,7 +119,7 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				context.append(v);
+				this.doSingleValue(v, context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
@@ -143,7 +146,7 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 				}
 			}
 			else {
-				context.append(text);
+				context.append("\"").append(text).append("\"");
 			}
 		}
 		else {

@@ -19,6 +19,8 @@ package org.springframework.ai.deepseek.api;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionChunk.ChunkChoice;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionFinishReason;
@@ -38,7 +40,7 @@ import org.springframework.util.StringUtils;
  */
 public class DeepSeekStreamFunctionCallingHelper {
 
-	public ChatCompletionChunk merge(ChatCompletionChunk previous, ChatCompletionChunk current) {
+	public ChatCompletionChunk merge(@Nullable ChatCompletionChunk previous, ChatCompletionChunk current) {
 
 		if (previous == null) {
 			return current;
@@ -56,19 +58,19 @@ public class DeepSeekStreamFunctionCallingHelper {
 		ChunkChoice previousChoice0 = (CollectionUtils.isEmpty(previous.choices()) ? null : previous.choices().get(0));
 		ChunkChoice currentChoice0 = (CollectionUtils.isEmpty(current.choices()) ? null : current.choices().get(0));
 
-		ChunkChoice choice = merge(previousChoice0, currentChoice0);
+		ChunkChoice choice = currentChoice0 != null ? merge(previousChoice0, currentChoice0) : null;
 		List<ChunkChoice> chunkChoices = choice == null ? List.of() : List.of(choice);
 		return new ChatCompletionChunk(id, chunkChoices, created, model, serviceTier, systemFingerprint, object, usage);
 	}
 
-	private ChunkChoice merge(ChunkChoice previous, ChunkChoice current) {
+	private ChunkChoice merge(@Nullable ChunkChoice previous, ChunkChoice current) {
 		if (previous == null) {
 			return current;
 		}
 
 		ChatCompletionFinishReason finishReason = (current.finishReason() != null ? current.finishReason()
 				: previous.finishReason());
-		Integer index = (current.index() != null ? current.index() : previous.index());
+		Integer index = current.index();
 
 		ChatCompletionMessage message = merge(previous.delta(), current.delta());
 
@@ -76,18 +78,16 @@ public class DeepSeekStreamFunctionCallingHelper {
 		return new ChunkChoice(finishReason, index, message, logprobs);
 	}
 
-	private ChatCompletionMessage merge(ChatCompletionMessage previous, ChatCompletionMessage current) {
-		String content = (current.content() != null
-				? (previous.content() != null ? previous.content() + current.content() : current.content())
-				: (previous.content() != null ? previous.content() : ""));
-		Role role = (current.role() != null ? current.role() : previous.role());
-		role = (role != null ? role : Role.ASSISTANT); // default to ASSISTANT (if null
-		String name = (current.name() != null ? current.name() : previous.name());
-		String toolCallId = (current.toolCallId() != null ? current.toolCallId() : previous.toolCallId());
+	private ChatCompletionMessage merge(@Nullable ChatCompletionMessage previous, ChatCompletionMessage current) {
+		String content = previous != null ? previous.content() + current.content() : current.content();
+		Role role = current.role();
+		String name = (current.name() != null ? current.name() : (previous != null ? previous.name() : null));
+		String toolCallId = (current.toolCallId() != null ? current.toolCallId()
+				: (previous != null ? previous.toolCallId() : null));
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
-		if (!CollectionUtils.isEmpty(previous.toolCalls())) {
+		if (previous != null && !CollectionUtils.isEmpty(previous.toolCalls())) {
 			lastPreviousTooCall = previous.toolCalls().get(previous.toolCalls().size() - 1);
 			if (previous.toolCalls().size() > 1) {
 				toolCalls.addAll(previous.toolCalls().subList(0, previous.toolCalls().size() - 1));
@@ -116,7 +116,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls);
 	}
 
-	private ToolCall merge(ToolCall previous, ToolCall current) {
+	private ToolCall merge(@Nullable ToolCall previous, ToolCall current) {
 		if (previous == null) {
 			return current;
 		}
@@ -126,7 +126,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 		return new ToolCall(id, type, function);
 	}
 
-	private ChatCompletionFunction merge(ChatCompletionFunction previous, ChatCompletionFunction current) {
+	private ChatCompletionFunction merge(@Nullable ChatCompletionFunction previous, ChatCompletionFunction current) {
 		if (previous == null) {
 			return current;
 		}
@@ -145,7 +145,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 	 * @param chatCompletion the ChatCompletionChunk to check
 	 * @return true if the ChatCompletionChunk is a streaming tool function call.
 	 */
-	public boolean isStreamingToolFunctionCall(ChatCompletionChunk chatCompletion) {
+	public boolean isStreamingToolFunctionCall(@Nullable ChatCompletionChunk chatCompletion) {
 
 		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.choices())) {
 			return false;
@@ -163,7 +163,7 @@ public class DeepSeekStreamFunctionCallingHelper {
 	 * @return true if the ChatCompletionChunk is a streaming tool function call and it is
 	 * the last one.
 	 */
-	public boolean isStreamingToolFunctionCallFinish(ChatCompletionChunk chatCompletion) {
+	public boolean isStreamingToolFunctionCallFinish(@Nullable ChatCompletionChunk chatCompletion) {
 
 		if (chatCompletion == null || CollectionUtils.isEmpty(chatCompletion.choices())) {
 			return false;

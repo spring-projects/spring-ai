@@ -28,7 +28,6 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.ai.observation.conventions.SpringAiKind;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -59,7 +58,6 @@ public class DefaultChatClientObservationConvention implements ChatClientObserva
 	}
 
 	@Override
-	@Nullable
 	public String getContextualName(ChatClientObservationContext context) {
 		return "%s %s".formatted(context.getOperationMetadata().provider(), SpringAiKind.CHAT_CLIENT.value());
 	}

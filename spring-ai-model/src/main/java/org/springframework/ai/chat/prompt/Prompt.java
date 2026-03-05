@@ -24,16 +24,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.ModelRequest;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * The Prompt class represents a prompt used in AI model requests. A prompt consists of
@@ -47,8 +46,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	private final List<Message> messages;
 
-	@Nullable
-	private ChatOptions chatOptions;
+	private @Nullable ChatOptions chatOptions;
 
 	public Prompt(String contents) {
 		this(new UserMessage(contents));
@@ -90,8 +88,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 	}
 
 	@Override
-	@Nullable
-	public ChatOptions getOptions() {
+	public @Nullable ChatOptions getOptions() {
 		return this.chatOptions;
 	}
 
@@ -126,6 +123,34 @@ public class Prompt implements ModelRequest<List<Message>> {
 			}
 		}
 		return new UserMessage("");
+	}
+
+	/**
+	 * Get the last user or tool response message in the prompt. If no user or tool
+	 * response message is found, an empty UserMessage is returned.
+	 */
+	public Message getLastUserOrToolResponseMessage() {
+		for (int i = this.messages.size() - 1; i >= 0; i--) {
+			Message message = this.messages.get(i);
+			if (message instanceof UserMessage || message instanceof ToolResponseMessage) {
+				return message;
+			}
+		}
+		return new UserMessage("");
+	}
+
+	/**
+	 * Get all system messages in the prompt.
+	 * @return a list of all system messages in the prompt
+	 */
+	public List<SystemMessage> getSystemMessages() {
+		List<SystemMessage> systemMessages = new ArrayList<>();
+		for (Message message : this.messages) {
+			if (message instanceof SystemMessage systemMessage) {
+				systemMessages.add(systemMessage);
+			}
+		}
+		return systemMessages;
 	}
 
 	/**
@@ -178,7 +203,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 			}
 			else if (message instanceof AssistantMessage assistantMessage) {
 				messagesCopy.add(AssistantMessage.builder()
-					.content(assistantMessage.getText())
+					.content(Objects.requireNonNullElse(assistantMessage.getText(), ""))
 					.properties(assistantMessage.getMetadata())
 					.toolCalls(assistantMessage.getToolCalls())
 					.build());
@@ -274,17 +299,12 @@ public class Prompt implements ModelRequest<List<Message>> {
 
 	public static final class Builder {
 
-		@Nullable
-		private String content;
+		private @Nullable List<Message> messages;
 
-		@Nullable
-		private List<Message> messages;
-
-		@Nullable
-		private ChatOptions chatOptions;
+		private @Nullable ChatOptions chatOptions;
 
 		public Builder content(@Nullable String content) {
-			this.content = content;
+			this.messages = List.of(new UserMessage(content));
 			return this;
 		}
 
@@ -306,12 +326,7 @@ public class Prompt implements ModelRequest<List<Message>> {
 		}
 
 		public Prompt build() {
-			if (StringUtils.hasText(this.content) && !CollectionUtils.isEmpty(this.messages)) {
-				throw new IllegalArgumentException("content and messages cannot be set at the same time");
-			}
-			else if (StringUtils.hasText(this.content)) {
-				this.messages = List.of(new UserMessage(this.content));
-			}
+			Assert.state(this.messages != null, "either messages or content needs to be set");
 			return new Prompt(this.messages, this.chatOptions);
 		}
 

@@ -16,9 +16,14 @@
 
 package org.springframework.ai.moderation;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.util.Assert;
 
 /**
  * The Moderation class represents the result of a moderation process. It contains the
@@ -38,6 +43,8 @@ public final class Moderation {
 	private final List<ModerationResult> results;
 
 	private Moderation(Builder builder) {
+		Assert.state(builder.id != null, "id is required");
+		Assert.state(builder.model != null, "model is required");
 		this.id = builder.id;
 		this.model = builder.model;
 		this.results = builder.moderationResultList;
@@ -84,11 +91,11 @@ public final class Moderation {
 
 	public static final class Builder {
 
-		private String id;
+		private @Nullable String id;
 
-		private String model;
+		private @Nullable String model;
 
-		private List<ModerationResult> moderationResultList;
+		private List<ModerationResult> moderationResultList = new ArrayList<>();
 
 		public Builder id(String id) {
 			this.id = id;

@@ -282,7 +282,7 @@ The `TextReader` processes text content as follows:
 [source,java]
 ----
 List<Document> documents = textReader.get();
-List<Document> splitDocuments = new TokenTextSplitter().apply(this.documents);
+List<Document> splitDocuments = TokenTextSplitter.builder().build().apply(this.documents);
 ----
 
 * The reader uses Spring's `Resource` abstraction, allowing it to read from various sources (classpath, file system, URL, etc.).
@@ -292,6 +292,31 @@ List<Document> splitDocuments = new TokenTextSplitter().apply(this.documents);
 === HTML (JSoup)
 
 The `JsoupDocumentReader` processes HTML documents, converting them into a list of `Document` objects using the JSoup library.
+
+==== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-jsoup-document-reader</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-jsoup-document-reader'
+}
+----
+======
 
 ==== Example
 
@@ -388,6 +413,31 @@ The reader preserves the text content of the selected elements, but removes any 
 
 The `MarkdownDocumentReader` processes Markdown documents, converting them into a list of `Document` objects.
 
+==== Dependencies
+Add the dependency to your project using Maven or Gradle.
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-markdown-document-reader</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-markdown-document-reader'
+}
+----
+======
+
 ==== Example
 
 [source,java]
@@ -465,10 +515,15 @@ The reader preserves formatting like inline code, lists, and text styling within
 
 
 === PDF Page
-The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents
+The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents.
 
+==== Dependencies
 Add the dependency to your project using Maven or Gradle.
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -477,14 +532,15 @@ Add the dependency to your project using Maven or Gradle.
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
 }
 ----
+======
 
 ==== Example
 
@@ -518,6 +574,10 @@ NOTE: Not all PDF documents contain the PDF catalog.
 ==== Dependencies
 Add the dependency to your project using Maven or Gradle.
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -526,15 +586,15 @@ Add the dependency to your project using Maven or Gradle.
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-pdf-document-reader'
 }
 ----
-
+======
 
 ==== Example
 
@@ -564,7 +624,12 @@ public class MyPagePdfDocumentReader {
 The `TikaDocumentReader` uses Apache Tika to extract text from a variety of document formats, such as PDF, DOC/DOCX, PPT/PPTX, and HTML. For a comprehensive list of supported formats, refer to the  https://tika.apache.org/3.1.0/formats.html[Tika documentation].
 
 ==== Dependencies
+Add the dependency to your project using Maven or Gradle.
 
+[tabs]
+======
+Maven::
++
 [source, xml]
 ----
 <dependency>
@@ -573,14 +638,15 @@ The `TikaDocumentReader` uses Apache Tika to extract text from a variety of docu
 </dependency>
 ----
 
-or to your Gradle `build.gradle` build file.
-
+Gradle::
++
 [source,groovy]
 ----
 dependencies {
     implementation 'org.springframework.ai:spring-ai-tika-document-reader'
 }
 ----
+======
 
 ==== Example
 
@@ -610,9 +676,11 @@ The `TextSplitter` an abstract base class that helps divides documents to fit th
 
 
 === TokenTextSplitter
-The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text into chunks based on token count, using the CL100K_BASE encoding.
+The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text into chunks based on token count. It supports configurable encoding types (e.g., `CL100K_BASE`, `P50K_BASE`, `O200K_BASE`) and defaults to `CL100K_BASE`.
 
 ==== Usage
+
+===== Basic Usage
 
 [source,java]
 ----
@@ -620,47 +688,97 @@ The `TokenTextSplitter` is an implementation of `TextSplitter` that splits text 
 class MyTokenTextSplitter {
 
     public List<Document> splitDocuments(List<Document> documents) {
-        TokenTextSplitter splitter = new TokenTextSplitter();
+        TokenTextSplitter splitter = TokenTextSplitter.builder().build();
         return splitter.apply(documents);
     }
 
     public List<Document> splitCustomized(List<Document> documents) {
-        TokenTextSplitter splitter = new TokenTextSplitter(1000, 400, 10, 5000, true);
+        TokenTextSplitter splitter = TokenTextSplitter.builder()
+            .withChunkSize(1000)
+            .withMinChunkSizeChars(400)
+            .withMinChunkLengthToEmbed(10)
+            .withMaxNumChunks(5000)
+            .withKeepSeparator(true)
+            .build();
         return splitter.apply(documents);
     }
 }
 ----
 
-==== Constructor Options
+===== Custom Encoding Type
 
-The `TokenTextSplitter` provides two constructor options:
+You can configure the encoding type used for tokenization. This is useful when working with models that use different tokenizers:
 
-1. `TokenTextSplitter()`: Creates a splitter with default settings.
-2. `TokenTextSplitter(int defaultChunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator)`
+[source,java]
+----
+TokenTextSplitter splitter = TokenTextSplitter.builder()
+    .withEncodingType(EncodingType.O200K_BASE)
+    .withChunkSize(1000)
+    .build();
+----
 
+===== Custom Punctuation Marks
+
+You can customize the punctuation marks used for splitting text into semantically meaningful chunks. This is particularly useful for internationalization:
+
+[source,java]
+----
+@Component
+class MyInternationalTextSplitter {
+
+    public List<Document> splitChineseText(List<Document> documents) {
+        // Use Chinese punctuation marks
+        TokenTextSplitter splitter = TokenTextSplitter.builder()
+            .withChunkSize(800)
+            .withMinChunkSizeChars(350)
+            .withPunctuationMarks(List.of('。', '？', '！', '；'))  // Chinese punctuation
+            .build();
+
+        return splitter.apply(documents);
+    }
+
+    public List<Document> splitWithCustomMarks(List<Document> documents) {
+        // Mix of English and other punctuation marks
+        TokenTextSplitter splitter = TokenTextSplitter.builder()
+            .withChunkSize(800)
+            .withPunctuationMarks(List.of('.', '?', '!', '\n', ';', ':', '。'))
+            .build();
+
+        return splitter.apply(documents);
+    }
+}
+----
+
+==== Configuration
+
+Use `TokenTextSplitter.builder()` to create instances. All constructors are deprecated in favor of the builder.
 
 ==== Parameters
 
-* `defaultChunkSize`: The target size of each text chunk in tokens (default: 800).
+* `encodingType`: The tokenizer encoding type to use (default: `CL100K_BASE`). Supported values include `CL100K_BASE`, `P50K_BASE`, and `O200K_BASE`.
+* `chunkSize`: The target size of each text chunk in tokens (default: 800).
 * `minChunkSizeChars`: The minimum size of each text chunk in characters (default: 350).
 * `minChunkLengthToEmbed`: The minimum length of a chunk to be included (default: 5).
 * `maxNumChunks`: The maximum number of chunks to generate from a text (default: 10000).
 * `keepSeparator`: Whether to keep separators (like newlines) in the chunks (default: true).
+* `punctuationMarks`: List of characters to use as sentence boundaries for splitting (default: `.`, `?`, `!`, `\n`).
 
 ==== Behavior
 
 The `TokenTextSplitter` processes text content as follows:
 
 1. It encodes the input text into tokens using the CL100K_BASE encoding.
-2. It splits the encoded text into chunks based on the `defaultChunkSize`.
+2. It splits the encoded text into chunks based on the `chunkSize`.
 3. For each chunk:
-a. It decodes the chunk back into text.
-b. It attempts to find a suitable break point (period, question mark, exclamation mark, or newline) after the `minChunkSizeChars`.
-c. If a break point is found, it truncates the chunk at that point.
-d. It trims the chunk and optionally removes newline characters based on the `keepSeparator` setting.
-e. If the resulting chunk is longer than `minChunkLengthToEmbed`, it's added to the output.
+   a. It decodes the chunk back into text.
+   b. *Only if the total token count exceeds the chunk size*, it attempts to find a suitable break point (using the configured `punctuationMarks`) after the `minChunkSizeChars`.
+   c. If a break point is found, it truncates the chunk at that point.
+   d. It trims the chunk and optionally removes newline characters based on the `keepSeparator` setting.
+   e. If the resulting chunk is longer than `minChunkLengthToEmbed`, it's added to the output.
 4. This process continues until all tokens are processed or `maxNumChunks` is reached.
 5. Any remaining text is added as a final chunk if it's longer than `minChunkLengthToEmbed`.
+
+IMPORTANT: Punctuation-based splitting only applies when the token count exceeds the chunk size. Text that exactly matches or is smaller than the chunk size is returned as a single chunk without punctuation-based truncation. This prevents unnecessary splitting of small texts.
 
 ==== Example
 
@@ -671,8 +789,8 @@ Document doc1 = new Document("This is a long piece of text that needs to be spli
 Document doc2 = new Document("Another document with content that will be split based on token count.",
         Map.of("source", "example2.txt"));
 
-TokenTextSplitter splitter = new TokenTextSplitter();
-List<Document> splitDocuments = this.splitter.apply(List.of(this.doc1, this.doc2));
+TokenTextSplitter splitter = TokenTextSplitter.builder().build();
+List<Document> splitDocuments = splitter.apply(List.of(doc1, doc2));
 
 for (Document doc : splitDocuments) {
     System.out.println("Chunk: " + doc.getContent());
@@ -688,6 +806,10 @@ for (Document doc : splitDocuments) {
 * Metadata from the original documents is preserved and copied to all chunks derived from that document.
 * The content formatter (if set) from the original document is also copied to the derived chunks if `copyContentFormatter` is set to `true` (default behavior).
 * This splitter is particularly useful for preparing text for large language models that have token limits, ensuring that each chunk is within the model's processing capacity.
+* *Custom Punctuation Marks*: The default punctuation marks (`.`, `?`, `!`, `\n`) work well for English text. For other languages or specialized content, customize the punctuation marks using the builder's `withPunctuationMarks()` method.
+* *Performance Consideration*: While the splitter can handle any number of punctuation marks, it's recommended to keep the list reasonably small (under 20 characters) for optimal performance, as each mark is checked for every chunk.
+* *Extensibility*: The `getLastPunctuationIndex(String)` method is `protected`, allowing subclasses to override the punctuation detection logic for specialized use cases.
+* *Small Text Handling*: As of version 2.0, small texts (with token count at or below the chunk size) are no longer split at punctuation marks, preventing unnecessary fragmentation of content that already fits within the size limits.
 
 === ContentFormatTransformer
 Ensures uniform content formats across all documents.

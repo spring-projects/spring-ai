@@ -397,7 +397,7 @@ ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
             .outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
             .build()));
 
-String text = response.getResult().getOutput().getContent(); // audio transcript
+String text = response.getResult().getOutput().getText(); // audio transcript
 
 byte[] waveAudio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray(); // audio data
 ----
@@ -492,7 +492,7 @@ Prompt prompt = new Prompt("how can I solve 8x + 7 = -23",
             .build());
 
 ChatResponse response = this.openAiChatModel.call(this.prompt);
-String content = this.response.getResult().getOutput().getContent();
+String content = this.response.getResult().getOutput().getText();
 
 MathReasoning mathReasoning = this.outputConverter.convert(this.content);
 ----
@@ -523,7 +523,7 @@ val prompt = Prompt("how can I solve 8x + 7 = -23",
 		.build())
 
 val response = openAiChatModel.call(prompt)
-val content = response.getResult().getOutput().getContent()
+val content = response.getResult().getOutput().getText()
 
 val mathReasoning = outputConverter.convert(content)
 ----
@@ -784,7 +784,7 @@ Each property under `spring.ai.openai.chat.options.extra-body` becomes a top-lev
 
 [source,properties]
 ----
-spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.base-url=http://localhost:8000
 spring.ai.openai.chat.options.model=meta-llama/Llama-3-8B-Instruct
 spring.ai.openai.chat.options.temperature=0.7
 spring.ai.openai.chat.options.extra-body.top_k=50
@@ -831,7 +831,7 @@ When running vLLM with a Llama model, you might want to use sampling parameters 
 
 [source,properties]
 ----
-spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.base-url=http://localhost:8000
 spring.ai.openai.chat.options.model=meta-llama/Llama-3-70B-Instruct
 spring.ai.openai.chat.options.extra-body.top_k=40
 spring.ai.openai.chat.options.extra-body.top_p=0.95
@@ -998,7 +998,7 @@ vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
 
 [source,properties]
 ----
-spring.ai.openai.base-url=http://localhost:8000/v1
+spring.ai.openai.base-url=http://localhost:8000
 spring.ai.openai.chat.options.model=deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
 ----
 

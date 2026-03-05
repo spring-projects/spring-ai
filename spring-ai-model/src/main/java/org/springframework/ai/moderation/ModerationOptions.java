@@ -16,6 +16,8 @@
 
 package org.springframework.ai.moderation;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.model.ModelOptions;
 
 /**
@@ -26,6 +28,6 @@ import org.springframework.ai.model.ModelOptions;
  */
 public interface ModerationOptions extends ModelOptions {
 
-	String getModel();
+	@Nullable String getModel();
 
 }

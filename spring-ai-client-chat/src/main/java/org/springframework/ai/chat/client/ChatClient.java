@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.advisor.api.Advisor;
@@ -40,7 +41,6 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
@@ -160,22 +160,17 @@ public interface ChatClient {
 
 	interface CallResponseSpec {
 
-		@Nullable
-		<T> T entity(ParameterizedTypeReference<T> type);
+		<T> @Nullable T entity(ParameterizedTypeReference<T> type);
 
-		@Nullable
-		<T> T entity(StructuredOutputConverter<T> structuredOutputConverter);
+		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
-		@Nullable
-		<T> T entity(Class<T> type);
+		<T> @Nullable T entity(Class<T> type);
 
 		ChatClientResponse chatClientResponse();
 
-		@Nullable
-		ChatResponse chatResponse();
+		@Nullable ChatResponse chatResponse();
 
-		@Nullable
-		String content();
+		@Nullable String content();
 
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
 

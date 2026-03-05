@@ -43,8 +43,8 @@ public final class OpenAiSdkAutoConfigurationUtil {
 		resolved.setCredential(modelProperties.getCredential() != null ? modelProperties.getCredential()
 				: commonProperties.getCredential());
 
-		resolved.setTimeout(
-				modelProperties.getTimeout() != null ? modelProperties.getTimeout() : commonProperties.getTimeout());
+		resolved.setTimeout(!modelProperties.getTimeout().equals(AbstractOpenAiSdkOptions.DEFAULT_TIMEOUT)
+				? modelProperties.getTimeout() : commonProperties.getTimeout());
 
 		resolved.setModel(StringUtils.hasText(modelProperties.getModel()) ? modelProperties.getModel()
 				: commonProperties.getModel());
@@ -62,13 +62,13 @@ public final class OpenAiSdkAutoConfigurationUtil {
 
 		resolved.setGitHubModels(modelProperties.isGitHubModels() || commonProperties.isGitHubModels());
 
-		resolved.setMaxRetries(modelProperties.getMaxRetries() != null ? modelProperties.getMaxRetries()
-				: commonProperties.getMaxRetries());
+		resolved.setMaxRetries(modelProperties.getMaxRetries() != AbstractOpenAiSdkOptions.DEFAULT_MAX_RETRIES
+				? modelProperties.getMaxRetries() : commonProperties.getMaxRetries());
 
 		resolved
 			.setProxy(modelProperties.getProxy() != null ? modelProperties.getProxy() : commonProperties.getProxy());
 
-		resolved.setCustomHeaders(modelProperties.getCustomHeaders() != null ? modelProperties.getCustomHeaders()
+		resolved.setCustomHeaders(!modelProperties.getCustomHeaders().isEmpty() ? modelProperties.getCustomHeaders()
 				: commonProperties.getCustomHeaders());
 
 		return resolved;

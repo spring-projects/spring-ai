@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -156,7 +157,7 @@ public class ToolCallingAutoConfiguration {
 		return new ToolCallingContentObservationFilter();
 	}
 
-	private static Class<? extends RuntimeException> getClassOrNull(String className) {
+	private static @Nullable Class<? extends RuntimeException> getClassOrNull(String className) {
 		try {
 			Class<?> clazz = ClassUtils.forName(className, null);
 			if (RuntimeException.class.isAssignableFrom(clazz)) {

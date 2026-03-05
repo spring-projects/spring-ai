@@ -16,9 +16,12 @@
 
 package org.springframework.ai.chat.memory.repository.neo4j;
 
+import org.jspecify.annotations.Nullable;
 import org.neo4j.driver.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import org.springframework.util.Assert;
 
 /**
  * Configuration for the Neo4j Chat Memory store.
@@ -86,6 +89,7 @@ public final class Neo4jChatMemoryRepositoryConfig {
 	}
 
 	private Neo4jChatMemoryRepositoryConfig(Builder builder) {
+		Assert.state(builder.driver != null, "driver must not be null");
 		this.driver = builder.driver;
 		this.sessionLabel = builder.sessionLabel;
 		this.mediaLabel = builder.mediaLabel;
@@ -101,10 +105,6 @@ public final class Neo4jChatMemoryRepositoryConfig {
 	 * Message nodes. This improves query performance for lookups and ordering.
 	 */
 	private void ensureIndexes() {
-		if (this.driver == null) {
-			logger.warn("Neo4j Driver is null, cannot ensure indexes.");
-			return;
-		}
 		try (var session = this.driver.session()) {
 			// Index for conversationId on Session nodes
 			String sessionIndexCypher = String.format(
@@ -128,7 +128,7 @@ public final class Neo4jChatMemoryRepositoryConfig {
 
 	public static final class Builder {
 
-		private Driver driver;
+		private @Nullable Driver driver;
 
 		private String sessionLabel = DEFAULT_SESSION_LABEL;
 
@@ -199,7 +199,7 @@ public final class Neo4jChatMemoryRepositoryConfig {
 			return this;
 		}
 
-		public Driver getDriver() {
+		public @Nullable Driver getDriver() {
 			return this.driver;
 		}
 

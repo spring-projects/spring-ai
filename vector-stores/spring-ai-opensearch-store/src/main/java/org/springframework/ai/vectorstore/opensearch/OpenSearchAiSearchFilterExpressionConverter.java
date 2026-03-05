@@ -28,6 +28,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * A FilterExpressionConverter implementation for OpenSearch AI search filter expressions.
@@ -47,10 +48,11 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression.right should not be null");
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
 			context.append(getOperationSymbol(expression));
-			context.append("(");
 			this.convertOperand(expression.left(), context);
+			context.append("(");
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
@@ -105,7 +107,7 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				context.append(v);
+				this.doSingleValue(v, context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}

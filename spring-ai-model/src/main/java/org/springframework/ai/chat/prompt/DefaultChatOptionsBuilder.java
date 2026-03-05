@@ -16,65 +16,128 @@
 
 package org.springframework.ai.chat.prompt;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implementation of {@link ChatOptions.Builder} to create {@link DefaultChatOptions}.
  */
-public class DefaultChatOptionsBuilder implements ChatOptions.Builder {
+public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> implements ChatOptions.Builder<B> {
 
-	protected DefaultChatOptions options;
+	protected @Nullable String model;
+
+	protected @Nullable Double frequencyPenalty;
+
+	protected @Nullable Integer maxTokens;
+
+	protected @Nullable Double presencePenalty;
+
+	protected @Nullable List<String> stopSequences;
+
+	protected @Nullable Double temperature;
+
+	protected @Nullable Integer topK;
+
+	protected @Nullable Double topP;
 
 	public DefaultChatOptionsBuilder() {
-		this.options = new DefaultChatOptions();
 	}
 
-	protected DefaultChatOptionsBuilder(DefaultChatOptions options) {
-		this.options = options;
+	@SuppressWarnings("unchecked")
+	protected B self() {
+		return (B) this;
 	}
 
-	public DefaultChatOptionsBuilder model(String model) {
-		this.options.setModel(model);
-		return this;
+	@Override
+	public B model(@Nullable String model) {
+		this.model = model;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder frequencyPenalty(Double frequencyPenalty) {
-		this.options.setFrequencyPenalty(frequencyPenalty);
-		return this;
+	@Override
+	public B frequencyPenalty(@Nullable Double frequencyPenalty) {
+		this.frequencyPenalty = frequencyPenalty;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder maxTokens(Integer maxTokens) {
-		this.options.setMaxTokens(maxTokens);
-		return this;
+	@Override
+	public B maxTokens(@Nullable Integer maxTokens) {
+		this.maxTokens = maxTokens;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder presencePenalty(Double presencePenalty) {
-		this.options.setPresencePenalty(presencePenalty);
-		return this;
+	@Override
+	public B presencePenalty(@Nullable Double presencePenalty) {
+		this.presencePenalty = presencePenalty;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder stopSequences(List<String> stop) {
-		this.options.setStopSequences(stop);
-		return this;
+	@Override
+	public B stopSequences(@Nullable List<String> stop) {
+		if (stop != null) {
+			this.stopSequences = new ArrayList<>(stop);
+		}
+		else {
+			this.stopSequences = null;
+		}
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder temperature(Double temperature) {
-		this.options.setTemperature(temperature);
-		return this;
+	@Override
+	public B temperature(@Nullable Double temperature) {
+		this.temperature = temperature;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder topK(Integer topK) {
-		this.options.setTopK(topK);
-		return this;
+	@Override
+	public B topK(@Nullable Integer topK) {
+		this.topK = topK;
+		return self();
 	}
 
-	public DefaultChatOptionsBuilder topP(Double topP) {
-		this.options.setTopP(topP);
-		return this;
+	@Override
+	public B topP(@Nullable Double topP) {
+		this.topP = topP;
+		return self();
+	}
+
+	@Override
+	public B combineWith(ChatOptions.Builder<?> other) {
+		if (other instanceof DefaultChatOptionsBuilder<?> that) {
+			if (that.model != null) {
+				this.model = that.model;
+			}
+			if (that.frequencyPenalty != null) {
+				this.frequencyPenalty = that.frequencyPenalty;
+			}
+			if (that.maxTokens != null) {
+				this.maxTokens = that.maxTokens;
+			}
+			if (that.presencePenalty != null) {
+				this.presencePenalty = that.presencePenalty;
+			}
+			if (that.stopSequences != null) {
+				this.stopSequences = that.stopSequences;
+			}
+			if (that.temperature != null) {
+				this.temperature = that.temperature;
+			}
+			if (that.topK != null) {
+				this.topK = that.topK;
+			}
+			if (that.topP != null) {
+				this.topP = that.topP;
+			}
+		}
+		return self();
 	}
 
 	public ChatOptions build() {
-		return this.options.copy();
+		// TODO: Assert.notNull() as required
+		return new DefaultChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
+				this.stopSequences, this.temperature, this.topK, this.topP);
 	}
 
 }

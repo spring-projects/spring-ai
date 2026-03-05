@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.http.HttpHeaders;
@@ -151,15 +152,6 @@ public class MistralOcrApi {
 			@JsonProperty("image_limit") Integer imageLimit, @JsonProperty("image_min_size") Integer imageMinSize) {
 
 		/**
-		 * Create an OCRRequest.
-		 * @param model The model to use for OCR.
-		 * @param document Document to run OCR on.
-		 */
-		public OCRRequest(String model, Document document) {
-			this(model, null, document, null, null, null, null);
-		}
-
-		/**
 		 * Represents the document to be processed, which can be either a document URL or
 		 * an image URL. Only one of the fields should be set.
 		 */
@@ -179,7 +171,7 @@ public class MistralOcrApi {
 		public record DocumentURLChunk(
 
 				@JsonProperty("type") String type, @JsonProperty("document_url") String documentUrl,
-				@JsonProperty("document_name") String documentName) implements Document {
+				@JsonProperty("document_name") @Nullable String documentName) implements Document {
 
 			/**
 			 * Create a DocumentURLChunk.
@@ -201,7 +193,7 @@ public class MistralOcrApi {
 		public record ImageURLChunk(
 
 				@JsonProperty("type") String type, @JsonProperty("image_url") String imageUrl,
-				@JsonProperty("image_name") String imageName) implements Document {
+				@JsonProperty("image_name") @Nullable String imageName) implements Document {
 
 			/**
 			 * Create an ImageURLChunk.

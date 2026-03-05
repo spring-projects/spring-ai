@@ -22,6 +22,7 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 
 import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.cosmosdb.CosmosDBChatMemoryRepositoryConfig;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,12 +36,13 @@ import org.springframework.context.annotation.Bean;
  * @author Theo van Kraay
  * @since 1.1.0
  */
-@AutoConfiguration
+// Ordering is to make sure ChatMemoryRepository bean is cosmos one
+@AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ CosmosDBChatMemoryRepository.class, CosmosAsyncClient.class })
 @EnableConfigurationProperties(CosmosDBChatMemoryRepositoryProperties.class)
 public class CosmosDBChatMemoryRepositoryAutoConfiguration {
 
-	private final String agentSuffix = "SpringAI-CDBNoSQL-ChatMemoryRepository";
+	private static final String agentSuffix = "SpringAI-CDBNoSQL-ChatMemoryRepository";
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -60,7 +62,7 @@ public class CosmosDBChatMemoryRepositoryAutoConfiguration {
 		}
 
 		CosmosClientBuilder builder = new CosmosClientBuilder().endpoint(properties.getEndpoint())
-			.userAgentSuffix(this.agentSuffix);
+			.userAgentSuffix(agentSuffix);
 
 		if (properties.getKey() == null || properties.getKey().isEmpty()) {
 			builder.credential(new DefaultAzureCredentialBuilder().build());

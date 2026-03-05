@@ -44,6 +44,7 @@ import org.springframework.context.annotation.Bean;
  *
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Alexandros Pappas
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, SearchIndexClient.class, AzureVectorStore.class })
@@ -100,6 +101,18 @@ public class AzureVectorStoreAutoConfiguration {
 
 		if (properties.getDefaultSimilarityThreshold() >= 0.0) {
 			builder.defaultSimilarityThreshold(properties.getDefaultSimilarityThreshold());
+		}
+
+		if (properties.getContentFieldName() != null) {
+			builder.contentFieldName(properties.getContentFieldName());
+		}
+
+		if (properties.getEmbeddingFieldName() != null) {
+			builder.embeddingFieldName(properties.getEmbeddingFieldName());
+		}
+
+		if (properties.getMetadataFieldName() != null) {
+			builder.metadataFieldName(properties.getMetadataFieldName());
 		}
 
 		return builder.build();

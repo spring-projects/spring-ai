@@ -45,7 +45,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 
 	private final DateTimeFormatter dateFormat;
 
-	private List<String> allowedIdentifierNames;
+	private final List<String> allowedIdentifierNames;
 
 	public AzureAiSearchFilterExpressionConverter(List<MetadataField> filterMetadataFields) {
 		Assert.notNull(filterMetadataFields, "The filterMetadataFields can not null.");
@@ -56,6 +56,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expected expression to have a right operand");
 		if (expression.type() == ExpressionType.IN || expression.type() == ExpressionType.NIN) {
 			context.append(getOperationSymbol(expression));
 			context.append("(");

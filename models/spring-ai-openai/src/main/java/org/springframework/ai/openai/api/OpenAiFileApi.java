@@ -49,6 +49,14 @@ public class OpenAiFileApi {
 
 	private final RestClient restClient;
 
+	/**
+	 * Create a new OpenAI file api.
+	 * @param baseUrl api base URL.
+	 * @param apiKey OpenAI apiKey.
+	 * @param headers the http headers to use.
+	 * @param restClientBuilder RestClient builder.
+	 * @param responseErrorHandler Response error handler.
+	 */
 	public OpenAiFileApi(String baseUrl, ApiKey apiKey, HttpHeaders headers, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 		Consumer<HttpHeaders> authHeaders = h -> h.addAll(headers);
@@ -65,6 +73,10 @@ public class OpenAiFileApi {
 			.build();
 	}
 
+	/**
+	 * Create a new OpenAI file api.
+	 * @param restClient RestClient instance.
+	 */
 	public OpenAiFileApi(RestClient restClient) {
 		this.restClient = restClient;
 	}

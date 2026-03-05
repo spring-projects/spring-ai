@@ -23,11 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.support.ToolUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -67,8 +68,7 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	 * Whether the {@link ChatModel} is responsible for executing the tools requested by
 	 * the model or if the tools should be executed directly by the caller.
 	 */
-	@Nullable
-	Boolean getInternalToolExecutionEnabled();
+	@Nullable Boolean getInternalToolExecutionEnabled();
 
 	/**
 	 * Set whether the {@link ChatModel} is responsible for executing the tools requested
@@ -91,8 +91,8 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	/**
 	 * A builder to create a new {@link ToolCallingChatOptions} instance.
 	 */
-	static Builder builder() {
-		return new DefaultToolCallingChatOptions.Builder();
+	static ToolCallingChatOptions.Builder<?> builder() {
+		return new DefaultToolCallingChatOptions.Builder<>();
 	}
 
 	static boolean isInternalToolExecutionEnabled(ChatOptions chatOptions) {
@@ -150,40 +150,40 @@ public interface ToolCallingChatOptions extends ChatOptions {
 	/**
 	 * A builder to create a {@link ToolCallingChatOptions} instance.
 	 */
-	interface Builder extends ChatOptions.Builder {
+	interface Builder<B extends Builder<B>> extends ChatOptions.Builder<B> {
 
 		/**
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
-		Builder toolCallbacks(List<ToolCallback> toolCallbacks);
+		B toolCallbacks(@Nullable List<ToolCallback> toolCallbacks);
 
 		/**
 		 * ToolCallbacks to be registered with the ChatModel.
 		 */
-		Builder toolCallbacks(ToolCallback... toolCallbacks);
+		B toolCallbacks(ToolCallback... toolCallbacks);
 
 		/**
 		 * Names of the tools to register with the ChatModel.
 		 */
-		Builder toolNames(Set<String> toolNames);
+		B toolNames(@Nullable Set<String> toolNames);
 
 		/**
 		 * Names of the tools to register with the ChatModel.
 		 */
-		Builder toolNames(String... toolNames);
+		B toolNames(String... toolNames);
 
 		/**
 		 * Whether the {@link ChatModel} is responsible for executing the tools requested
 		 * by the model or if the tools should be executed directly by the caller.
 		 */
-		Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
+		B internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled);
 
 		/**
 		 * Add a {@link Map} of context values into tool context.
 		 * @param context the map representing the tool context.
 		 * @return the {@link ToolCallingChatOptions} Builder.
 		 */
-		Builder toolContext(Map<String, Object> context);
+		B toolContext(@Nullable Map<String, Object> context);
 
 		/**
 		 * Add a specific key/value pair to the tool context.
@@ -191,33 +191,33 @@ public interface ToolCallingChatOptions extends ChatOptions {
 		 * @param value the corresponding value.
 		 * @return the {@link ToolCallingChatOptions} Builder.
 		 */
-		Builder toolContext(String key, Object value);
+		B toolContext(String key, Object value);
 
 		// ChatOptions.Builder methods
 
 		@Override
-		Builder model(@Nullable String model);
+		B model(@Nullable String model);
 
 		@Override
-		Builder frequencyPenalty(@Nullable Double frequencyPenalty);
+		B frequencyPenalty(@Nullable Double frequencyPenalty);
 
 		@Override
-		Builder maxTokens(@Nullable Integer maxTokens);
+		B maxTokens(@Nullable Integer maxTokens);
 
 		@Override
-		Builder presencePenalty(@Nullable Double presencePenalty);
+		B presencePenalty(@Nullable Double presencePenalty);
 
 		@Override
-		Builder stopSequences(@Nullable List<String> stopSequences);
+		B stopSequences(@Nullable List<String> stopSequences);
 
 		@Override
-		Builder temperature(@Nullable Double temperature);
+		B temperature(@Nullable Double temperature);
 
 		@Override
-		Builder topK(@Nullable Integer topK);
+		B topK(@Nullable Integer topK);
 
 		@Override
-		Builder topP(@Nullable Double topP);
+		B topP(@Nullable Double topP);
 
 		@Override
 		ToolCallingChatOptions build();

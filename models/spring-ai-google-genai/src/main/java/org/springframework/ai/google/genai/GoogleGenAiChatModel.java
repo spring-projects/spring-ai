@@ -49,6 +49,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -183,6 +185,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 */
 	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
 
+	private final JsonMapper jsonMapper = ModelOptionsUtils.JSON_MAPPER.rebuild()
+		.addMixIn(Schema.class, SchemaMixin.class)
+		.build();
+
 	/**
 	 * Conventions to use for generating observations.
 	 */
@@ -259,7 +265,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		};
 	}
 
-	static List<Part> messageToGeminiParts(Message message) {
+	List<Part> messageToGeminiParts(Message message) {
 
 		if (message instanceof SystemMessage systemMessage) {
 
@@ -372,10 +378,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	// Helper methods for JSON/Map conversion
-	private static Map<String, Object> parseJsonToMap(String json) {
+	private Map<String, Object> parseJsonToMap(String json) {
 		try {
 			// First, try to parse as an array
-			Object parsed = ModelOptionsUtils.OBJECT_MAPPER.readValue(json, Object.class);
+			Object parsed = this.jsonMapper.readValue(json, Object.class);
 			if (parsed instanceof List) {
 				// It's an array, wrap it in a map with "result" key
 				Map<String, Object> wrapper = new HashMap<>();
@@ -398,19 +404,18 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 	}
 
-	private static String mapToJson(Map<String, Object> map) {
+	private String mapToJson(Map<String, Object> map) {
 		try {
-			return ModelOptionsUtils.OBJECT_MAPPER.writeValueAsString(map);
+			return this.jsonMapper.writeValueAsString(map);
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to convert map to JSON", e);
 		}
 	}
 
-	private static Schema jsonToSchema(String json) {
+	private Schema jsonToSchema(String json) {
 		try {
-			// Parse JSON into Schema using OBJECT_MAPPER
-			return ModelOptionsUtils.OBJECT_MAPPER.readValue(json, Schema.class);
+			return this.jsonMapper.readValue(json, Schema.class);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -542,7 +547,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousChatResponse) {
 		return Flux.deferContextual(contextView -> {
 
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -764,6 +769,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		// Build thinking config if any thinking option is set
 		if (requestOptions.getThinkingBudget() != null || requestOptions.getIncludeThoughts() != null
 				|| requestOptions.getThinkingLevel() != null) {
+			// Validate thinkingLevel for model compatibility
+			if (requestOptions.getThinkingLevel() != null) {
+				validateThinkingLevelForModel(requestOptions.getThinkingLevel(), modelName);
+			}
 			ThinkingConfig.Builder thinkingBuilder = ThinkingConfig.builder();
 			if (requestOptions.getThinkingBudget() != null) {
 				thinkingBuilder.thinkingBudget(requestOptions.getThinkingBudget());
@@ -875,9 +884,57 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	private static ThinkingLevel mapToGenAiThinkingLevel(GoogleGenAiThinkingLevel level) {
 		return switch (level) {
 			case THINKING_LEVEL_UNSPECIFIED -> new ThinkingLevel(ThinkingLevel.Known.THINKING_LEVEL_UNSPECIFIED);
+			case MINIMAL -> new ThinkingLevel(ThinkingLevel.Known.MINIMAL);
 			case LOW -> new ThinkingLevel(ThinkingLevel.Known.LOW);
+			case MEDIUM -> new ThinkingLevel(ThinkingLevel.Known.MEDIUM);
 			case HIGH -> new ThinkingLevel(ThinkingLevel.Known.HIGH);
 		};
+	}
+
+	/**
+	 * Checks if the model name indicates a Gemini 3 Pro model.
+	 * @param modelName the model name to check
+	 * @return true if the model is a Gemini 3 Pro model
+	 */
+	private static boolean isGemini3ProModel(String modelName) {
+		if (modelName == null) {
+			return false;
+		}
+		String lower = modelName.toLowerCase();
+		return lower.contains("gemini-3") && lower.contains("pro") && !lower.contains("flash");
+	}
+
+	/**
+	 * Checks if the model name indicates a Gemini 3 Flash model.
+	 * @param modelName the model name to check
+	 * @return true if the model is a Gemini 3 Flash model
+	 */
+	private static boolean isGemini3FlashModel(String modelName) {
+		if (modelName == null) {
+			return false;
+		}
+		String lower = modelName.toLowerCase();
+		return lower.contains("gemini-3") && lower.contains("flash");
+	}
+
+	/**
+	 * Validates ThinkingLevel compatibility with the model. Gemini 3 Pro only supports
+	 * LOW and HIGH. Gemini 3 Flash supports all levels.
+	 * @param level the thinking level to validate
+	 * @param modelName the model name
+	 * @throws IllegalArgumentException if the level is not supported for the model
+	 */
+	private static void validateThinkingLevelForModel(GoogleGenAiThinkingLevel level, String modelName) {
+		if (level == null || level == GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED) {
+			return;
+		}
+		if (isGemini3ProModel(modelName)) {
+			if (level == GoogleGenAiThinkingLevel.MINIMAL || level == GoogleGenAiThinkingLevel.MEDIUM) {
+				throw new IllegalArgumentException(
+						String.format("ThinkingLevel.%s is not supported for Gemini 3 Pro models. "
+								+ "Supported levels: LOW, HIGH. Model: %s", level, modelName));
+			}
+		}
 	}
 
 	private List<Content> toGeminiContent(List<Message> instructions) {
@@ -1128,14 +1185,16 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		 * <p>
 		 * Knowledge cutoff: Jan 2025
 		 * <p>
-		 * Model ID: gemini-2.0-flash-lite
+		 * Model ID: gemini-2.5-flash-lite
 		 * <p>
 		 * See: <a href=
 		 * "https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-lite">gemini-2.5-flash-lite</a>
 		 */
 		GEMINI_2_5_FLASH_LIGHT("gemini-2.5-flash-lite"),
 
-		GEMINI_3_PRO_PREVIEW("gemini-3-pro-preview");
+		GEMINI_3_PRO_PREVIEW("gemini-3-pro-preview"),
+
+		GEMINI_3_FLASH_PREVIEW("gemini-3-flash-preview");
 
 		public final String value;
 
@@ -1156,6 +1215,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	@JsonInclude(Include.NON_NULL)
 	public record GeminiRequest(List<Content> contents, String modelName, GenerateContentConfig config) {
+
+	}
+
+	@JsonDeserialize(builder = Schema.Builder.class)
+	private static class SchemaMixin {
 
 	}
 

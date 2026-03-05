@@ -16,6 +16,7 @@
 
 package org.springframework.ai.rag.preretrieval.query.transformation;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,6 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.util.PromptAssert;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -98,13 +98,11 @@ public class RewriteQueryTransformer implements QueryTransformer {
 
 	public static final class Builder {
 
-		private ChatClient.Builder chatClientBuilder;
+		private ChatClient.@Nullable Builder chatClientBuilder;
 
-		@Nullable
-		private PromptTemplate promptTemplate;
+		private @Nullable PromptTemplate promptTemplate;
 
-		@Nullable
-		private String targetSearchSystem;
+		private @Nullable String targetSearchSystem;
 
 		private Builder() {
 		}
@@ -125,6 +123,7 @@ public class RewriteQueryTransformer implements QueryTransformer {
 		}
 
 		public RewriteQueryTransformer build() {
+			Assert.state(this.chatClientBuilder != null, "chatClientBuilder cannot be null");
 			return new RewriteQueryTransformer(this.chatClientBuilder, this.promptTemplate, this.targetSearchSystem);
 		}
 

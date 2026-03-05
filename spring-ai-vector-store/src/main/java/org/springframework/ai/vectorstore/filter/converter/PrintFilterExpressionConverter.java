@@ -30,7 +30,12 @@ public class PrintFilterExpressionConverter extends AbstractFilterExpressionConv
 	public void doExpression(Expression expression, StringBuilder context) {
 		this.convertOperand(expression.left(), context);
 		context.append(" ").append(expression.type()).append(" ");
-		this.convertOperand(expression.right(), context);
+		if (expression.right() != null) {
+			this.convertOperand(expression.right(), context);
+		}
+		else {
+			context.append("null");
+		}
 
 	}
 

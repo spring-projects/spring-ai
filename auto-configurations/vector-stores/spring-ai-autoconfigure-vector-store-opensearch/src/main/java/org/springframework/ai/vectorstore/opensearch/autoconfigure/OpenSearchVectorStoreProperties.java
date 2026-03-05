@@ -19,6 +19,8 @@ package org.springframework.ai.vectorstore.opensearch.autoconfigure;
 import java.time.Duration;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -32,41 +34,41 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 	 */
 	private List<String> uris = List.of();
 
-	private String indexName;
+	private @Nullable String indexName;
 
-	private String username;
+	private @Nullable String username;
 
-	private String password;
+	private @Nullable String password;
 
-	private Boolean useApproximateKnn;
+	private @Nullable Boolean useApproximateKnn;
 
-	private Integer dimensions;
+	private @Nullable Integer dimensions;
 
-	private String similarity;
+	private @Nullable String similarity;
 
-	private String mappingJson;
+	private @Nullable String mappingJson;
 
 	/**
 	 * SSL Bundle name ({@link org.springframework.boot.ssl.SslBundles}).
 	 */
-	private String sslBundle;
+	private @Nullable String sslBundle;
 
 	/**
 	 * Time to wait until connection established. 0 - infinity.
 	 */
-	private Duration connectionTimeout;
+	private @Nullable Duration connectionTimeout;
 
 	/**
 	 * Time to wait for response from the opposite endpoint. 0 - infinity.
 	 */
-	private Duration readTimeout;
+	private @Nullable Duration readTimeout;
 
 	/**
 	 * Path prefix for OpenSearch API endpoints. Used when OpenSearch is behind a reverse
 	 * proxy with a non-root path. For example, if your OpenSearch instance is accessible
 	 * at https://example.com/opensearch/, set this to "/opensearch".
 	 */
-	private String pathPrefix;
+	private @Nullable String pathPrefix;
 
 	private Aws aws = new Aws();
 
@@ -78,91 +80,91 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 		this.uris = uris;
 	}
 
-	public String getIndexName() {
+	public @Nullable String getIndexName() {
 		return this.indexName;
 	}
 
-	public void setIndexName(String indexName) {
+	public void setIndexName(@Nullable String indexName) {
 		this.indexName = indexName;
 	}
 
-	public String getUsername() {
+	public @Nullable String getUsername() {
 		return this.username;
 	}
 
-	public void setUsername(String username) {
+	public void setUsername(@Nullable String username) {
 		this.username = username;
 	}
 
-	public String getPassword() {
+	public @Nullable String getPassword() {
 		return this.password;
 	}
 
-	public void setPassword(String password) {
+	public void setPassword(@Nullable String password) {
 		this.password = password;
 	}
 
-	public String getMappingJson() {
+	public @Nullable String getMappingJson() {
 		return this.mappingJson;
 	}
 
-	public Boolean getUseApproximateKnn() {
+	public @Nullable Boolean getUseApproximateKnn() {
 		return this.useApproximateKnn;
 	}
 
-	public void setUseApproximateKnn(Boolean useApproximateKnn) {
+	public void setUseApproximateKnn(@Nullable Boolean useApproximateKnn) {
 		this.useApproximateKnn = useApproximateKnn;
 	}
 
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return this.dimensions;
 	}
 
-	public void setDimensions(Integer dimensions) {
+	public void setDimensions(@Nullable Integer dimensions) {
 		this.dimensions = dimensions;
 	}
 
-	public String getSimilarity() {
+	public @Nullable String getSimilarity() {
 		return this.similarity;
 	}
 
-	public void setSimilarity(String similarity) {
+	public void setSimilarity(@Nullable String similarity) {
 		this.similarity = similarity;
 	}
 
-	public void setMappingJson(String mappingJson) {
+	public void setMappingJson(@Nullable String mappingJson) {
 		this.mappingJson = mappingJson;
 	}
 
-	public String getSslBundle() {
+	public @Nullable String getSslBundle() {
 		return this.sslBundle;
 	}
 
-	public void setSslBundle(String sslBundle) {
+	public void setSslBundle(@Nullable String sslBundle) {
 		this.sslBundle = sslBundle;
 	}
 
-	public Duration getConnectionTimeout() {
+	public @Nullable Duration getConnectionTimeout() {
 		return this.connectionTimeout;
 	}
 
-	public void setConnectionTimeout(Duration connectionTimeout) {
+	public void setConnectionTimeout(@Nullable Duration connectionTimeout) {
 		this.connectionTimeout = connectionTimeout;
 	}
 
-	public Duration getReadTimeout() {
+	public @Nullable Duration getReadTimeout() {
 		return this.readTimeout;
 	}
 
-	public void setReadTimeout(Duration readTimeout) {
+	public void setReadTimeout(@Nullable Duration readTimeout) {
 		this.readTimeout = readTimeout;
 	}
 
-	public String getPathPrefix() {
+	public @Nullable String getPathPrefix() {
 		return this.pathPrefix;
 	}
 
-	public void setPathPrefix(String pathPrefix) {
+	public void setPathPrefix(@Nullable String pathPrefix) {
 		this.pathPrefix = pathPrefix;
 	}
 
@@ -176,63 +178,63 @@ public class OpenSearchVectorStoreProperties extends CommonVectorStoreProperties
 
 	static class Aws {
 
-		private String domainName;
+		private @Nullable String domainName;
 
-		private String host;
+		private @Nullable String host;
 
-		private String serviceName;
+		private @Nullable String serviceName;
 
-		private String accessKey;
+		private @Nullable String accessKey;
 
-		private String secretKey;
+		private @Nullable String secretKey;
 
-		private String region;
+		private @Nullable String region;
 
-		public String getDomainName() {
+		public @Nullable String getDomainName() {
 			return this.domainName;
 		}
 
-		public void setDomainName(String domainName) {
+		public void setDomainName(@Nullable String domainName) {
 			this.domainName = domainName;
 		}
 
-		public String getHost() {
+		public @Nullable String getHost() {
 			return this.host;
 		}
 
-		public void setHost(String host) {
+		public void setHost(@Nullable String host) {
 			this.host = host;
 		}
 
-		public String getServiceName() {
+		public @Nullable String getServiceName() {
 			return this.serviceName;
 		}
 
-		public void setServiceName(String serviceName) {
+		public void setServiceName(@Nullable String serviceName) {
 			this.serviceName = serviceName;
 		}
 
-		public String getAccessKey() {
+		public @Nullable String getAccessKey() {
 			return this.accessKey;
 		}
 
-		public void setAccessKey(String accessKey) {
+		public void setAccessKey(@Nullable String accessKey) {
 			this.accessKey = accessKey;
 		}
 
-		public String getSecretKey() {
+		public @Nullable String getSecretKey() {
 			return this.secretKey;
 		}
 
-		public void setSecretKey(String secretKey) {
+		public void setSecretKey(@Nullable String secretKey) {
 			this.secretKey = secretKey;
 		}
 
-		public String getRegion() {
+		public @Nullable String getRegion() {
 			return this.region;
 		}
 
-		public void setRegion(String region) {
+		public void setRegion(@Nullable String region) {
 			this.region = region;
 		}
 

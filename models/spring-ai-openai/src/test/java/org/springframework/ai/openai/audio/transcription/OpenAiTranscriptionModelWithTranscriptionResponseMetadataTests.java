@@ -55,7 +55,9 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 @RestClientTest(OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests.Config.class)
 public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 
-	private static String TEST_API_KEY = "sk-1234567890";
+	private static final String TEST_API_KEY = "sk-1234567890";
+
+	private static final String TEST_TRANSCRIPTION_PATH = "/v1/audio/transcriptions";
 
 	@Autowired
 	private OpenAiAudioTranscriptionModel openAiTranscriptionModel;
@@ -156,8 +158,12 @@ public class OpenAiTranscriptionModelWithTranscriptionResponseMetadataTests {
 	static class Config {
 
 		@Bean
-		public OpenAiAudioApi chatCompletionApi(RestClient.Builder builder) {
-			return OpenAiAudioApi.builder().apiKey(new SimpleApiKey(TEST_API_KEY)).restClientBuilder(builder).build();
+		public OpenAiAudioApi openAiAudioApi(RestClient.Builder builder) {
+			return OpenAiAudioApi.builder()
+				.apiKey(new SimpleApiKey(TEST_API_KEY))
+				.transcriptionPath(TEST_TRANSCRIPTION_PATH)
+				.restClientBuilder(builder)
+				.build();
 		}
 
 		@Bean

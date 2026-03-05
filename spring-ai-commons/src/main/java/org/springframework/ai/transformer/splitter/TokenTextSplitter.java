@@ -34,6 +34,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Ricken Bazolo
  * @author Seunghwan Jung
+ * @author Jemin Huh
  */
 public class TokenTextSplitter extends TextSplitter {
 
@@ -49,9 +50,13 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private static final boolean KEEP_SEPARATOR = true;
 
+	private static final List<Character> DEFAULT_PUNCTUATION_MARKS = List.of('.', '?', '!', '\n');
+
+	private static final EncodingType DEFAULT_ENCODING_TYPE = EncodingType.CL100K_BASE;
+
 	private final EncodingRegistry registry = Encodings.newLazyEncodingRegistry();
 
-	private final Encoding encoding = this.registry.getEncoding(EncodingType.CL100K_BASE);
+	private final Encoding encoding;
 
 	// The target size of each text chunk in tokens
 	private final int chunkSize;
@@ -70,25 +75,68 @@ public class TokenTextSplitter extends TextSplitter {
 
 	private final boolean keepSeparator;
 
-	public TokenTextSplitter() {
-		this(DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS,
-				KEEP_SEPARATOR);
+	private final List<Character> punctuationMarks;
+
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
+	@SuppressWarnings("deprecation")
+  public TokenTextSplitter() {
+		this(DEFAULT_ENCODING_TYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, MIN_CHUNK_SIZE_CHARS,
+				MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, KEEP_SEPARATOR, DEFAULT_PUNCTUATION_MARKS);
 	}
 
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
 	public TokenTextSplitter(boolean keepSeparator) {
-		this(DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, MIN_CHUNK_SIZE_CHARS, MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS,
-				keepSeparator);
+		this(DEFAULT_ENCODING_TYPE, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, MIN_CHUNK_SIZE_CHARS,
+				MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, keepSeparator, DEFAULT_PUNCTUATION_MARKS);
 	}
 
-	public TokenTextSplitter(int chunkSize, int chunkOverlap, int minChunkSizeChars, int minChunkLengthToEmbed,
-			int maxNumChunks, boolean keepSeparator) {
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
+	public TokenTextSplitter(EncodingType encodingType) {
+    this(encodingType, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, MIN_CHUNK_SIZE_CHARS,
+				MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, KEEP_SEPARATOR, DEFAULT_PUNCTUATION_MARKS);
+	}
+
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
+	public TokenTextSplitter(EncodingType encodingType, boolean keepSeparator) {
+    this(encodingType, DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP, MIN_CHUNK_SIZE_CHARS,
+				MIN_CHUNK_LENGTH_TO_EMBED, MAX_NUM_CHUNKS, keepSeparator, DEFAULT_PUNCTUATION_MARKS);
+	}
+
+	/**
+	 * @deprecated since 2.0.0-M3, use {@link #builder()} instead.
+	 */
+	@Deprecated(since = "2.0.0-M3", forRemoval = true)
+	public TokenTextSplitter(int chunkSize, int minChunkSizeChars, int minChunkLengthToEmbed, int maxNumChunks,
+			boolean keepSeparator, List<Character> punctuationMarks) {
+		this(DEFAULT_ENCODING_TYPE, chunkSize, DEFAULT_CHUNK_OVERLAP, minChunkSizeChars, minChunkLengthToEmbed,
+				maxNumChunks, keepSeparator, punctuationMarks);
+	}
+
+	private TokenTextSplitter(EncodingType encodingType, int chunkSize, int chunkOverlap, int minChunkSizeChars,
+			int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator, List<Character> punctuationMarks) {
+		Assert.notNull(encodingType, "encodingType must not be null");
 		Assert.isTrue(chunkOverlap < chunkSize, "chunk overlap must be less than chunk size");
+		Assert.notEmpty(punctuationMarks, "punctuationMarks must not be empty");
+		this.encoding = this.registry.getEncoding(encodingType);
 		this.chunkSize = chunkSize;
 		this.chunkOverlap = chunkOverlap;
 		this.minChunkSizeChars = minChunkSizeChars;
 		this.minChunkLengthToEmbed = minChunkLengthToEmbed;
 		this.maxNumChunks = maxNumChunks;
 		this.keepSeparator = keepSeparator;
+		this.punctuationMarks = punctuationMarks;
 	}
 
 	public static Builder builder() {
@@ -129,9 +177,9 @@ public class TokenTextSplitter extends TextSplitter {
       return new ArrayList<>();
     }
 		List<String> chunks = new ArrayList<>();
-
 		int position = 0;
 		int num_chunks = 0;
+    
 		while (position < tokens.size() && num_chunks < this.maxNumChunks) {
 			int chunkEnd = Math.min(position + chunkSize, tokens.size());
 
@@ -195,6 +243,16 @@ public class TokenTextSplitter extends TextSplitter {
 		return chunkText;
 	}
 
+	protected int getLastPunctuationIndex(String chunkText) {
+		// find the max index of any punctuation mark
+		int maxLastPunctuation = -1;
+		for (Character punctuationMark : this.punctuationMarks) {
+			int lastPunctuation = chunkText.lastIndexOf(punctuationMark);
+			maxLastPunctuation = Math.max(maxLastPunctuation, lastPunctuation);
+		}
+		return maxLastPunctuation;
+	}
+
 	private List<Integer> getEncodedTokens(String text) {
 		Assert.notNull(text, "Text must not be null");
 		return this.encoding.encode(text).boxed();
@@ -209,6 +267,8 @@ public class TokenTextSplitter extends TextSplitter {
 
 	public static final class Builder {
 
+		private EncodingType encodingType = DEFAULT_ENCODING_TYPE;
+
 		private int chunkSize = DEFAULT_CHUNK_SIZE;
 
 		private int chunkOverlap = DEFAULT_CHUNK_OVERLAP;
@@ -221,7 +281,14 @@ public class TokenTextSplitter extends TextSplitter {
 
 		private boolean keepSeparator = KEEP_SEPARATOR;
 
+		private List<Character> punctuationMarks = DEFAULT_PUNCTUATION_MARKS;
+
 		private Builder() {
+		}
+
+		public Builder withEncodingType(EncodingType encodingType) {
+			this.encodingType = encodingType;
+			return this;
 		}
 
 		public Builder withChunkSize(int chunkSize) {
@@ -254,9 +321,14 @@ public class TokenTextSplitter extends TextSplitter {
 			return this;
 		}
 
+		public Builder withPunctuationMarks(List<Character> punctuationMarks) {
+			this.punctuationMarks = punctuationMarks;
+			return this;
+		}
+
 		public TokenTextSplitter build() {
-			return new TokenTextSplitter(this.chunkSize, this.chunkOverlap, this.minChunkSizeChars,
-					this.minChunkLengthToEmbed, this.maxNumChunks, this.keepSeparator);
+			return new TokenTextSplitter(this.encodingType, this.chunkSize, this.chunkOverlap, this.minChunkSizeChars,
+					this.minChunkLengthToEmbed, this.maxNumChunks, this.keepSeparator, this.punctuationMarks);
 		}
 
 	}

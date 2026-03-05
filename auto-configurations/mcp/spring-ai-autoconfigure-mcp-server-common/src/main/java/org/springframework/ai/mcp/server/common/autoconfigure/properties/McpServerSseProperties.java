@@ -18,6 +18,8 @@ package org.springframework.ai.mcp.server.common.autoconfigure.properties;
 
 import java.time.Duration;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -47,7 +49,7 @@ public class McpServerSseProperties {
 	/**
 	 * The duration to keep the connection alive. Disabled by default.
 	 */
-	private Duration keepAliveInterval;
+	private @Nullable Duration keepAliveInterval;
 
 	public String getBaseUrl() {
 		return this.baseUrl;
@@ -76,11 +78,11 @@ public class McpServerSseProperties {
 		this.sseMessageEndpoint = sseMessageEndpoint;
 	}
 
-	public Duration getKeepAliveInterval() {
+	public @Nullable Duration getKeepAliveInterval() {
 		return this.keepAliveInterval;
 	}
 
-	public void setKeepAliveInterval(Duration keepAliveInterval) {
+	public void setKeepAliveInterval(@Nullable Duration keepAliveInterval) {
 		this.keepAliveInterval = keepAliveInterval;
 	}
 

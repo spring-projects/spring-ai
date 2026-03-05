@@ -18,8 +18,10 @@ package org.springframework.ai.anthropic.api;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +44,7 @@ import org.springframework.ai.anthropic.api.AnthropicApi.Role;
 import org.springframework.ai.anthropic.api.AnthropicApi.StreamEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.ToolUseAggregationEvent;
 import org.springframework.ai.anthropic.api.AnthropicApi.Usage;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -64,18 +67,18 @@ public class StreamHelper {
 
 	private static final Logger logger = LoggerFactory.getLogger(StreamHelper.class);
 
-	public boolean isToolUseStart(StreamEvent event) {
-		if (event == null || event.type() == null || event.type() != EventType.CONTENT_BLOCK_START) {
+	public boolean isToolUseStart(@Nullable StreamEvent event) {
+		if (event == null || event.type() != EventType.CONTENT_BLOCK_START) {
 			return false;
 		}
 		return ContentBlock.Type.TOOL_USE.getValue().equals(((ContentBlockStartEvent) event).contentBlock().type());
 	}
 
-	public boolean isToolUseFinish(StreamEvent event) {
+	public boolean isToolUseFinish(@Nullable StreamEvent event) {
 		// Tool use streaming sequence ends with a CONTENT_BLOCK_STOP event.
 		// The logic relies on the state machine (isInsideTool flag) managed in
 		// chatCompletionStream to know if this stop event corresponds to a tool use.
-		return event != null && event.type() != null && event.type() == EventType.CONTENT_BLOCK_STOP;
+		return event != null && event.type() == EventType.CONTENT_BLOCK_STOP;
 	}
 
 	/**
@@ -125,25 +128,27 @@ public class StreamHelper {
 	 * multiple events.
 	 * @return A ChatCompletionResponse representing the processed chunk.
 	 */
+	// TODO How to deal with the use cases where id is null since it is now mandatory in
+	// ChatCompletionResponse?
 	public ChatCompletionResponse eventToChatCompletionResponse(StreamEvent event,
 			AtomicReference<ChatCompletionResponseBuilder> contentBlockReference) {
 
 		// https://docs.anthropic.com/claude/reference/messages-streaming
 
-		if (event.type().equals(EventType.MESSAGE_START)) {
+		if (EventType.MESSAGE_START.equals(event.type())) {
 			contentBlockReference.set(new ChatCompletionResponseBuilder());
 
 			MessageStartEvent messageStartEvent = (MessageStartEvent) event;
 
 			contentBlockReference.get()
-				.withType(event.type().name())
+				.withType(Objects.requireNonNull(event.type()).name())
 				.withId(messageStartEvent.message().id())
 				.withRole(messageStartEvent.message().role())
 				.withModel(messageStartEvent.message().model())
 				.withUsage(messageStartEvent.message().usage())
 				.withContent(new ArrayList<>());
 		}
-		else if (event.type().equals(EventType.TOOL_USE_AGGREGATE)) {
+		else if (EventType.TOOL_USE_AGGREGATE.equals(event.type())) {
 			ToolUseAggregationEvent eventToolUseBuilder = (ToolUseAggregationEvent) event;
 
 			if (!CollectionUtils.isEmpty(eventToolUseBuilder.getToolContentBlocks())) {
@@ -155,7 +160,7 @@ public class StreamHelper {
 				contentBlockReference.get().withContent(content);
 			}
 		}
-		else if (event.type().equals(EventType.CONTENT_BLOCK_START)) {
+		else if (EventType.CONTENT_BLOCK_START.equals(event.type())) {
 			ContentBlockStartEvent contentBlockStartEvent = (ContentBlockStartEvent) event;
 
 			if (contentBlockStartEvent.contentBlock() instanceof ContentBlockText textBlock) {
@@ -173,7 +178,7 @@ public class StreamHelper {
 						"Unsupported content block type: " + contentBlockStartEvent.contentBlock().type());
 			}
 		}
-		else if (event.type().equals(EventType.CONTENT_BLOCK_DELTA)) {
+		else if (EventType.CONTENT_BLOCK_DELTA.equals(event.type())) {
 			ContentBlockDeltaEvent contentBlockDeltaEvent = (ContentBlockDeltaEvent) event;
 
 			if (contentBlockDeltaEvent.delta() instanceof ContentBlockDeltaText txt) {
@@ -196,7 +201,7 @@ public class StreamHelper {
 						"Unsupported content block delta type: " + contentBlockDeltaEvent.delta().type());
 			}
 		}
-		else if (event.type().equals(EventType.MESSAGE_DELTA)) {
+		else if (EventType.MESSAGE_DELTA.equals(event.type())) {
 
 			contentBlockReference.get().withType(event.type().name());
 
@@ -211,14 +216,13 @@ public class StreamHelper {
 			}
 
 			if (messageDeltaEvent.usage() != null) {
-				Usage totalUsage = new Usage(contentBlockReference.get().usage.inputTokens(),
-						messageDeltaEvent.usage().outputTokens(),
-						contentBlockReference.get().usage.cacheCreationInputTokens(),
-						contentBlockReference.get().usage.cacheReadInputTokens());
+				Usage usage = Objects.requireNonNull(contentBlockReference.get().usage);
+				Usage totalUsage = new Usage(usage.inputTokens(), messageDeltaEvent.usage().outputTokens(),
+						usage.cacheCreationInputTokens(), usage.cacheReadInputTokens());
 				contentBlockReference.get().withUsage(totalUsage);
 			}
 		}
-		else if (event.type().equals(EventType.MESSAGE_STOP)) {
+		else if (EventType.MESSAGE_STOP.equals(event.type())) {
 			// Don't return the latest Content block as it was before. Instead, return it
 			// with an updated event type and general information like: model, message
 			// type, id and usage
@@ -230,6 +234,7 @@ public class StreamHelper {
 		}
 		else {
 			// Any other event types that should propagate upwards without content
+			// noinspection ConstantValue
 			if (contentBlockReference.get() == null) {
 				contentBlockReference.set(new ChatCompletionResponseBuilder());
 			}
@@ -237,7 +242,7 @@ public class StreamHelper {
 			logger.warn("Unhandled event type: {}", event.type().name());
 		}
 
-		return contentBlockReference.get().build();
+		return Objects.requireNonNull(contentBlockReference.get()).build();
 	}
 
 	/**
@@ -246,66 +251,69 @@ public class StreamHelper {
 	 */
 	public static class ChatCompletionResponseBuilder {
 
-		private String type;
+		private @Nullable String type;
 
-		private String id;
+		private @Nullable String id;
 
-		private Role role;
+		private @Nullable Role role;
 
-		private List<ContentBlock> content;
+		private @Nullable List<ContentBlock> content;
 
-		private String model;
+		private @Nullable String model;
 
-		private String stopReason;
+		private @Nullable String stopReason;
 
-		private String stopSequence;
+		private @Nullable String stopSequence;
 
-		private Usage usage;
+		private @Nullable Usage usage;
 
 		public ChatCompletionResponseBuilder() {
 		}
 
-		public ChatCompletionResponseBuilder withType(String type) {
+		public ChatCompletionResponseBuilder withType(@Nullable String type) {
 			this.type = type;
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withId(String id) {
+		public ChatCompletionResponseBuilder withId(@Nullable String id) {
 			this.id = id;
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withRole(Role role) {
+		public ChatCompletionResponseBuilder withRole(@Nullable Role role) {
 			this.role = role;
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withContent(List<ContentBlock> content) {
+		public ChatCompletionResponseBuilder withContent(@Nullable List<ContentBlock> content) {
 			this.content = content;
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withModel(String model) {
+		public ChatCompletionResponseBuilder withModel(@Nullable String model) {
 			this.model = model;
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withStopReason(String stopReason) {
+		public ChatCompletionResponseBuilder withStopReason(@Nullable String stopReason) {
 			this.stopReason = stopReason;
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withStopSequence(String stopSequence) {
+		public ChatCompletionResponseBuilder withStopSequence(@Nullable String stopSequence) {
 			this.stopSequence = stopSequence;
 			return this;
 		}
 
-		public ChatCompletionResponseBuilder withUsage(Usage usage) {
+		public ChatCompletionResponseBuilder withUsage(@Nullable Usage usage) {
 			this.usage = usage;
 			return this;
 		}
 
 		public ChatCompletionResponse build() {
+			Assert.state(this.id != null, "The id must not be null");
+			Assert.state(this.content != null, "The content must not be null");
+			Assert.state(this.model != null, "The model must not be null");
 			return new ChatCompletionResponse(this.id, this.type, this.role, this.content, this.model, this.stopReason,
 					this.stopSequence, this.usage, null);
 		}

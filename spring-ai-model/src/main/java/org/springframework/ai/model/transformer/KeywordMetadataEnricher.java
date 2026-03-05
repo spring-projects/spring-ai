@@ -16,13 +16,16 @@
 
 package org.springframework.ai.model.transformer;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
@@ -86,9 +89,19 @@ public class KeywordMetadataEnricher implements DocumentTransformer {
 	@Override
 	public List<Document> apply(List<Document> documents) {
 		for (Document document : documents) {
-			Prompt prompt = this.keywordsTemplate.create(Map.of(CONTEXT_STR_PLACEHOLDER, document.getText()));
-			String keywords = this.chatModel.call(prompt).getResult().getOutput().getText();
-			document.getMetadata().put(EXCERPT_KEYWORDS_METADATA_KEY, keywords);
+			String text = document.getText();
+			Map<String, Object> vars = new HashMap<>();
+			if (text != null) {
+				vars.put(CONTEXT_STR_PLACEHOLDER, text);
+			}
+			Prompt prompt = this.keywordsTemplate.create(vars);
+			Generation generation = this.chatModel.call(prompt).getResult();
+			if (generation != null) {
+				String keywords = generation.getOutput().getText();
+				if (keywords != null) {
+					document.getMetadata().put(EXCERPT_KEYWORDS_METADATA_KEY, keywords);
+				}
+			}
 		}
 		return documents;
 	}
@@ -108,7 +121,7 @@ public class KeywordMetadataEnricher implements DocumentTransformer {
 
 		private int keywordCount;
 
-		private PromptTemplate keywordsTemplate;
+		private @Nullable PromptTemplate keywordsTemplate;
 
 		public Builder(ChatModel chatModel) {
 			Assert.notNull(chatModel, "The chatModel must not be null");

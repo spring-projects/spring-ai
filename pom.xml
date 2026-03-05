@@ -46,6 +46,7 @@
 		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
 		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
+		<module>memory/repository/spring-ai-model-chat-memory-repository-redis</module>
 
 
 
@@ -68,6 +69,7 @@
 		<module>vector-stores/spring-ai-elasticsearch-store</module>
 		<module>vector-stores/spring-ai-gemfire-store</module>
 		<module>vector-stores/spring-ai-hanadb-store</module>
+		<module>vector-stores/spring-ai-infinispan-store</module>
 		<module>vector-stores/spring-ai-mariadb-store</module>
 		<module>vector-stores/spring-ai-milvus-store</module>
 		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
@@ -78,9 +80,11 @@
 		<module>vector-stores/spring-ai-pinecone-store</module>
 		<module>vector-stores/spring-ai-qdrant-store</module>
 		<module>vector-stores/spring-ai-redis-store</module>
+		<module>vector-stores/spring-ai-redis-semantic-cache</module>
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
-
+		<module>vector-stores/spring-ai-bedrock-knowledgebase-store</module>
+		<module>vector-stores/spring-ai-s3-vector-store</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
 
@@ -94,6 +98,7 @@
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
 
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 
@@ -135,6 +140,7 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-infinispan</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
@@ -145,9 +151,12 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis-semantic-cache</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
@@ -169,6 +178,8 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-s3</module>
 
 		<module>models/spring-ai-anthropic</module>
 		<module>models/spring-ai-azure-openai</module>
@@ -220,17 +231,20 @@
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
+		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-redis</module>
 
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
-		
+
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
 		<module>mcp/mcp-annotations-spring</module>
+		<module>mcp/transport/mcp-spring-webflux</module>
+		<module>mcp/transport/mcp-spring-webmvc</module>
 	</modules>
 
 	<organization>
@@ -274,14 +288,13 @@
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
-		<kotlin.compiler.version>2.2.21</kotlin.compiler.version>
 
 		<!-- production dependencies -->
-		<spring-boot.version>4.0.0</spring-boot.version>
+		<spring-boot.version>4.1.0-M2</spring-boot.version>
 		<ST4.version>4.3.4</ST4.version>
 		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
-		<openai-sdk.version>4.8.0</openai-sdk.version>
-		<azure-identity.version>1.18.1</azure-identity.version>
+		<openai-sdk.version>4.17.0</openai-sdk.version>
+		<azure-identity.version>1.18.2</azure-identity.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<kotlin.version>2.2.21</kotlin.version>
 
@@ -293,9 +306,9 @@
 		<onnxruntime.version>1.19.2</onnxruntime.version>
 		<oci-sdk-version>3.63.1</oci-sdk-version>
 		<com.google.cloud.version>26.72.0</com.google.cloud.version>
-		<com.google.genai.version>1.28.0</com.google.genai.version>
+		<com.google.genai.version>1.37.0</com.google.genai.version>
 		<ibm.sdk.version>9.20.0</ibm.sdk.version>
-		<jsonschema.version>4.38.0</jsonschema.version>
+		<jsonschema.version>5.0.0</jsonschema.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
 		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
@@ -317,21 +330,21 @@
 		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
 
 		<fastjson2.version>2.0.46</fastjson2.version>
-		<azure-core.version>1.55.3</azure-core.version>
-		<azure-json.version>1.5.0</azure-json.version>
-		<azure-identity.version>1.15.4</azure-identity.version>
+		<azure-core.version>1.57.1</azure-core.version>
+		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<azure-cosmos.version>5.22.0</azure-cosmos.version>
 		<elasticsearch-java.version>8.18.1</elasticsearch-java.version>
 		<weaviate-client.version>5.2.0</weaviate-client.version>
 		<qdrant.version>1.13.0</qdrant.version>
 		<typesense.version>1.3.0</typesense.version>
-		<opensearch-client.version>2.23.0</opensearch-client.version>
-		<opensearch-testcontainers.version>2.1.4</opensearch-testcontainers.version>
+		<opensearch-client.version>3.6.0</opensearch-client.version>
+		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
 		<postgresql.version>42.7.7</postgresql.version>
 		<mariadb.version>3.5.3</mariadb.version>
 		<mysql.version>9.2.0</mysql.version>
 		<commonmark.version>0.22.0</commonmark.version>
+		<infinispan.version>16.0.5</infinispan.version>
 
 		<couchbase.version>3.9.1</couchbase.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
@@ -339,11 +352,13 @@
 		<!-- testing dependencies -->
 		<okhttp3.version>4.12.0</okhttp3.version>
 		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
-		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
-		
+		<json-unit-assertj.version>5.1.0</json-unit-assertj.version>
+
 		<!-- MCP-->
-		<mcp.sdk.version>0.17.0</mcp.sdk.version>
-		<mcp-annotations.version>0.8.0</mcp-annotations.version>
+		<!-- TODO Update to 1.0.0-RC1 when released -->
+		<mcp.sdk.version>1.0.0</mcp.sdk.version>
+		<!-- TODO Update to 1.0.0-alpha when released -->
+		<mcp-annotations.version>1.0.0-SNAPSHOT</mcp-annotations.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
@@ -351,10 +366,10 @@
 		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
 		<!-- The version (range) of the JDK we want to use to compile.
 			This is different from ${java.version} which we use as -release target. -->
-		<compiler.jdk.version>[25,)</compiler.jdk.version>
+		<compiler.jdk.version>[21.0.8,)</compiler.jdk.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
-		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
+		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
 		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
 		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
@@ -375,8 +390,8 @@
 		<spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
-		<error-prone.version>2.44.0</error-prone.version>
-		<nullaway.version>0.12.12</nullaway.version>
+		<error-prone.version>2.46.0</error-prone.version>
+		<nullaway.version>0.13.0</nullaway.version>
 
 		<disable.checks>false</disable.checks>
 
@@ -422,10 +437,12 @@
 			<plugin>
 				<groupId>org.jetbrains.kotlin</groupId>
 				<artifactId>kotlin-maven-plugin</artifactId>
-				<version>${kotlin.compiler.version}</version>
+				<version>${kotlin.version}</version>
 				<configuration>
 					<jvmTarget>${java.version}</jvmTarget>
 					<javaParameters>true</javaParameters>
+					<apiVersion>2.2</apiVersion>
+					<languageVersion>2.2</languageVersion>
 				</configuration>
 				<executions>
 					<execution>
@@ -462,9 +479,6 @@
 					<release>${java.version}</release>
 					<compilerArgs>
 						<arg>-parameters</arg>
-						<arg>-XDcompilePolicy=simple</arg>
-						<arg>--should-stop=ifError=FLOW</arg>
-						<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
 					</compilerArgs>
 					<annotationProcessorPaths>
 						<path>
@@ -476,6 +490,10 @@
 							<groupId>com.uber.nullaway</groupId>
 							<artifactId>nullaway</artifactId>
 							<version>${nullaway.version}</version>
+						</path>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-configuration-processor</artifactId>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
@@ -496,6 +514,15 @@
 						<goals>
 							<goal>compile</goal>
 						</goals>
+						<configuration>
+							<compilerArgs>
+								<arg>-XDcompilePolicy=simple</arg>
+								<!-- The following arg won't be necessary with JDK25+ -->
+								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
+								<arg>--should-stop=ifError=FLOW</arg>
+								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
+							</compilerArgs>
+						</configuration>
 					</execution>
 					<execution>
 						<id>java-test-compile</id>
@@ -591,10 +618,8 @@
 				<version>${maven-javadoc-plugin.version}</version>
 				<configuration>
 					<overview>
-						${project.basedir}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+						${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
 					<detectJavaApiLink>false</detectJavaApiLink>
-					<detectOfflineLinks>false</detectOfflineLinks>
-					<failOnError>false</failOnError>
 					<doclint>none</doclint>
 				</configuration>
 				<executions>
@@ -604,6 +629,9 @@
 						<goals>
 							<goal>jar</goal>
 						</goals>
+						<configuration>
+							<failOnError>false</failOnError>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -672,11 +700,11 @@
 
 		</profile>
 		<profile>
-			<!-- Moving this plugin in an always active profile that appears *after* the
-			conditional javaformat -->
 			<id>checkstyle-check</id>
 			<activation>
-				<activeByDefault>true</activeByDefault>
+				<property>
+					<name>!env.BOGUS</name>
+				</property>
 			</activation>
 			<build>
 				<plugins>
@@ -699,22 +727,16 @@
 						<executions>
 							<execution>
 								<id>checkstyle-validation</id>
-								<phase>verify</phase>
+								<phase>process-sources</phase>
 								<inherited>true</inherited>
 								<configuration>
 									<skip>${disable.checks}</skip>
-									<configLocation>src/checkstyle/checkstyle.xml
+									<configLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle.xml
 									</configLocation>
-									<headerLocation>src/checkstyle/checkstyle-header.txt
+									<headerLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle-header.txt
 									</headerLocation>
 									<includeTestSourceDirectory>true
 									</includeTestSourceDirectory>
-									<propertyExpansion>
-										checkstyle.build.directory=${project.build.directory}
-										checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-										checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-										checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
-									</propertyExpansion>
 									<consoleOutput>true</consoleOutput>
 									<failsOnError>${maven-checkstyle-plugin.failsOnError}
 									</failsOnError>
@@ -1139,40 +1161,4 @@
 			</roles>
 		</developer>
 	</developers>
-
-	<reporting>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-project-info-reports-plugin</artifactId>
-				<version>${maven-project-info-reports-plugin.version}</version>
-				<configuration>
-					<skip>true</skip>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-checkstyle-plugin</artifactId>
-				<version>${maven-checkstyle-plugin.version}</version>
-				<reportSets>
-					<reportSet>
-						<reports>
-							<report>checkstyle</report>
-						</reports>
-					</reportSet>
-				</reportSets>
-				<configuration>
-					<configLocation>src/checkstyle/checkstyle.xml</configLocation>
-					<headerLocation>src/checkstyle/checkstyle-header.txt</headerLocation>
-					<propertyExpansion>
-						checkstyle.build.directory=${project.build.directory}
-						checkstyle.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-						checkstyle.additional.suppressions.file=${project.basedir}/src/checkstyle/checkstyle-suppressions.xml
-						checkstyle.header.file=${project.basedir}/src/checkstyle/checkstyle-header.txt
-					</propertyExpansion>
-				</configuration>
-			</plugin>
-		</plugins>
-	</reporting>
-
 </project>

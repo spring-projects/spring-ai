@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
 import java.util.stream.Collectors;
 
+import com.google.genai.Client;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,46 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class GoogleGenAiChatAutoConfigurationIT {
 
 	private static final Log logger = LogFactory.getLog(GoogleGenAiChatAutoConfigurationIT.class);
+
+	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+		.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class));
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+	void shouldNotFailOnAmbiguousConfigurationButPrioritizeApiKey() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"),
+					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1")
+			.run(context -> assertThat(context).hasSingleBean(Client.class));
+	}
+
+	@Test
+	void shouldFailWhenVertexAiEnabledButConfigMissing() {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.vertex-ai=true")
+			// Explicitly enabled but no project/location
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalStateException.class)
+					.hasMessageContaining("Vertex AI mode requires both 'project-id' and 'location' to be configured.");
+			});
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".*")
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".*")
+	void shouldConfigureVertexAiSuccessfully() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
+					"spring.ai.google.genai.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"))
+			.run(context -> assertThat(context).hasSingleBean(Client.class));
+	}
+
+	@Test
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+	void shouldConfigureApiKeySuccessfully() {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"))
+			.run(context -> assertThat(context).hasSingleBean(Client.class));
+	}
 
 	@Test
 	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -353,6 +354,7 @@ public class OpenAiChatModelIT extends AbstractIT {
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
+			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);

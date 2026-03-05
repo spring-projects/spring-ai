@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.neo4j.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -31,9 +33,9 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.neo4j";
 
-	private String databaseName;
+	private @Nullable String databaseName;
 
-	private Integer embeddingDimension;
+	private @Nullable Integer embeddingDimension;
 
 	private Neo4jVectorStore.Neo4jDistanceType distanceType = Neo4jVectorStore.Neo4jDistanceType.COSINE;
 
@@ -49,19 +51,19 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private String textProperty = Neo4jVectorStore.DEFAULT_TEXT_PROPERTY;
 
-	public String getDatabaseName() {
+	public @Nullable String getDatabaseName() {
 		return this.databaseName;
 	}
 
-	public void setDatabaseName(String databaseName) {
+	public void setDatabaseName(@Nullable String databaseName) {
 		this.databaseName = databaseName;
 	}
 
-	public Integer getEmbeddingDimension() {
+	public @Nullable Integer getEmbeddingDimension() {
 		return this.embeddingDimension;
 	}
 
-	public void setEmbeddingDimension(int embeddingDimension) {
+	public void setEmbeddingDimension(@Nullable Integer embeddingDimension) {
 		this.embeddingDimension = embeddingDimension;
 	}
 

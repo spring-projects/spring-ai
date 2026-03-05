@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.gemfire.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.boot.autoconfigure.service.connection.ConnectionDetails;
 
 /**
@@ -29,15 +31,15 @@ public interface GemFireConnectionDetails extends ConnectionDetails {
 
 	int getPort();
 
-	default String getUsername() {
+	default @Nullable String getUsername() {
 		return null;
 	}
 
-	default String getPassword() {
+	default @Nullable String getPassword() {
 		return null;
 	}
 
-	default String getToken() {
+	default @Nullable String getToken() {
 		return null;
 	}
 

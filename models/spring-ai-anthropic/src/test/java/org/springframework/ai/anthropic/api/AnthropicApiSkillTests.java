@@ -93,7 +93,7 @@ class AnthropicApiSkillTests {
 
 	@Test
 	void shouldCreateContainerWithSingleSkill() {
-		SkillContainer container = SkillContainer.builder().skill(SkillType.ANTHROPIC, "xlsx").build();
+		SkillContainer container = SkillContainer.builder().skill("xlsx").build();
 
 		assertThat(container.skills()).hasSize(1);
 		assertThat(container.skills().get(0).skillId()).isEqualTo("xlsx");
@@ -102,9 +102,9 @@ class AnthropicApiSkillTests {
 	@Test
 	void shouldCreateContainerWithMultipleSkills() {
 		SkillContainer container = SkillContainer.builder()
-			.anthropicSkill(AnthropicSkill.XLSX)
-			.anthropicSkill(AnthropicSkill.PPTX)
-			.customSkill("company-guidelines")
+			.skill(AnthropicSkill.XLSX)
+			.skill(AnthropicSkill.PPTX)
+			.skill("company-guidelines")
 			.build();
 
 		assertThat(container.skills()).hasSize(3);
@@ -117,7 +117,7 @@ class AnthropicApiSkillTests {
 
 		// Add 9 skills
 		for (int i = 0; i < 9; i++) {
-			builder.customSkill("skill-" + i);
+			builder.skill("skill-" + i);
 		}
 
 		assertThatThrownBy(() -> builder.build()).isInstanceOf(IllegalArgumentException.class)
@@ -141,7 +141,7 @@ class AnthropicApiSkillTests {
 		SkillContainer.SkillContainerBuilder builder = SkillContainer.builder();
 
 		for (int i = 0; i < 8; i++) {
-			builder.customSkill("skill-" + i);
+			builder.skill("skill-" + i);
 		}
 
 		SkillContainer container = builder.build();
