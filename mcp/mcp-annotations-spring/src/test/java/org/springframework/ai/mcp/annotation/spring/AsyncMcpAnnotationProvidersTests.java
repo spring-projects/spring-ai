@@ -24,13 +24,14 @@ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
-import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification;
-import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
-import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
-import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
+
+import org.springframework.ai.mcp.annotation.method.changed.prompt.AsyncPromptListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.changed.resource.AsyncResourceListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.changed.tool.AsyncToolListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.elicitation.AsyncElicitationSpecification;
+import org.springframework.ai.mcp.annotation.method.logging.AsyncLoggingSpecification;
+import org.springframework.ai.mcp.annotation.method.progress.AsyncProgressSpecification;
+import org.springframework.ai.mcp.annotation.method.sampling.AsyncSamplingSpecification;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

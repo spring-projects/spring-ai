@@ -1,0 +1,359 @@
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.M3MigrateMcpAnnotations
+displayName: Migrate MCP annotations from springaicommunity to Spring AI
+description: >
+  Migrates all MCP annotation, method-callback, and provider classes from the
+  removed `org.springaicommunity:mcp-annotations` library to their new locations
+  inside `org.springframework.ai:spring-ai-mcp-annotations`.
+
+  Package changes:
+    org.springaicommunity.mcp.annotation.*  → org.springframework.ai.mcp.annotation.*
+    org.springaicommunity.mcp.method.*      → org.springframework.ai.mcp.annotation.method.*
+    org.springaicommunity.mcp.provider.*    → org.springframework.ai.mcp.annotation.provider.*
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+
+  # -------------------------------------------------------------------------
+  # Maven: remove the old external dependency (classes are now in spring-ai)
+  # -------------------------------------------------------------------------
+  - org.openrewrite.maven.RemoveDependency:
+      groupId: org.springaicommunity
+      artifactId: mcp-annotations
+
+  # -------------------------------------------------------------------------
+  # Annotation classes (top-level: @McpTool, @McpPrompt, @McpResource, …)
+  # org.springaicommunity.mcp.annotation  →  org.springframework.ai.mcp.annotation
+  # -------------------------------------------------------------------------
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpArg
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpArg
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpComplete
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpComplete
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpElicitation
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpElicitation
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpLogging
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpLogging
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpMeta
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpMeta
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpProgress
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpProgress
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpProgressToken
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpProgressToken
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpPrompt
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpPrompt
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpPromptListChanged
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpPromptListChanged
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpResource
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpResource
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpResourceListChanged
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpResourceListChanged
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpSampling
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpSampling
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpTool
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpTool
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpToolListChanged
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpToolListChanged
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.annotation.McpToolParam
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.McpToolParam
+
+  # -------------------------------------------------------------------------
+  # Method-callback specification classes
+  # org.springaicommunity.mcp.method.*  →  org.springframework.ai.mcp.annotation.method.*
+  # -------------------------------------------------------------------------
+
+  # changed.prompt
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.prompt.AsyncPromptListChangedSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.prompt.SyncPromptListChangedSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.prompt.AsyncMcpPromptListChangedMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.prompt.AsyncMcpPromptListChangedMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.prompt.SyncMcpPromptListChangedMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.prompt.SyncMcpPromptListChangedMethodCallback
+
+  # changed.resource
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.resource.AsyncResourceListChangedSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.resource.SyncResourceListChangedSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.resource.SyncResourceListChangedSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.resource.AsyncMcpResourceListChangedMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.resource.AsyncMcpResourceListChangedMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.resource.SyncMcpResourceListChangedMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.resource.SyncMcpResourceListChangedMethodCallback
+
+  # changed.tool
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.tool.AsyncToolListChangedSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.tool.SyncToolListChangedSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.tool.SyncToolListChangedSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.tool.AsyncMcpToolListChangedMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.tool.AsyncMcpToolListChangedMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.changed.tool.SyncMcpToolListChangedMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.changed.tool.SyncMcpToolListChangedMethodCallback
+
+  # complete
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.complete.AsyncMcpCompleteMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.complete.AsyncMcpCompleteMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.complete.AsyncStatelessMcpCompleteMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.complete.AsyncStatelessMcpCompleteMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.complete.SyncMcpCompleteMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.complete.SyncMcpCompleteMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.complete.SyncStatelessMcpCompleteMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.complete.SyncStatelessMcpCompleteMethodCallback
+
+  # elicitation
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.elicitation.AsyncElicitationSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.elicitation.SyncElicitationSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.elicitation.AsyncMcpElicitationMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.elicitation.AsyncMcpElicitationMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.elicitation.SyncMcpElicitationMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.elicitation.SyncMcpElicitationMethodCallback
+
+  # logging
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.logging.AsyncLoggingSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.logging.SyncLoggingSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.logging.SyncLoggingSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.logging.AsyncMcpLoggingMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.logging.AsyncMcpLoggingMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.logging.SyncMcpLoggingMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.logging.SyncMcpLoggingMethodCallback
+
+  # progress
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.progress.AsyncProgressSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.progress.AsyncProgressSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.progress.SyncProgressSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.progress.SyncProgressSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.progress.AsyncMcpProgressMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.progress.AsyncMcpProgressMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.progress.SyncMcpProgressMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.progress.SyncMcpProgressMethodCallback
+
+  # prompt (method callbacks)
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.prompt.AsyncMcpPromptMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.prompt.AsyncMcpPromptMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.prompt.AsyncStatelessMcpPromptMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.prompt.AsyncStatelessMcpPromptMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.prompt.SyncMcpPromptMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.prompt.SyncMcpPromptMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.prompt.SyncStatelessMcpPromptMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.prompt.SyncStatelessMcpPromptMethodCallback
+
+  # resource (method callbacks)
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.resource.AsyncMcpResourceMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.resource.AsyncMcpResourceMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.resource.AsyncStatelessMcpResourceMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.resource.AsyncStatelessMcpResourceMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.resource.McpReadResourceResultConverter
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.resource.McpReadResourceResultConverter
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.resource.DefaultMcpReadResourceResultConverter
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.resource.DefaultMcpReadResourceResultConverter
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.resource.SyncMcpResourceMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.resource.SyncMcpResourceMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.resource.SyncStatelessMcpResourceMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.resource.SyncStatelessMcpResourceMethodCallback
+
+  # sampling (method callbacks)
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.sampling.AsyncSamplingSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.sampling.SyncSamplingSpecification
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.sampling.AsyncMcpSamplingMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.sampling.AsyncMcpSamplingMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.sampling.SyncMcpSamplingMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.sampling.SyncMcpSamplingMethodCallback
+
+  # tool (method callbacks)
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.tool.AsyncMcpToolMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.tool.AsyncMcpToolMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.tool.AsyncStatelessMcpToolMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.tool.AsyncStatelessMcpToolMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.tool.SyncMcpToolMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.tool.SyncMcpToolMethodCallback
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.method.tool.SyncStatelessMcpToolMethodCallback
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.method.tool.SyncStatelessMcpToolMethodCallback
+
+  # -------------------------------------------------------------------------
+  # Provider classes
+  # org.springaicommunity.mcp.provider.*  →  org.springframework.ai.mcp.annotation.provider.*
+  # -------------------------------------------------------------------------
+
+  # provider.changed.prompt
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.changed.prompt.AsyncMcpPromptListChangedProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.changed.prompt.AsyncMcpPromptListChangedProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.changed.prompt.SyncMcpPromptListChangedProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.changed.prompt.SyncMcpPromptListChangedProvider
+
+  # provider.changed.resource
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.changed.resource.AsyncMcpResourceListChangedProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.changed.resource.AsyncMcpResourceListChangedProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.changed.resource.SyncMcpResourceListChangedProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.changed.resource.SyncMcpResourceListChangedProvider
+
+  # provider.changed.tool
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.changed.tool.AsyncMcpToolListChangedProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.changed.tool.AsyncMcpToolListChangedProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.changed.tool.SyncMcpToolListChangedProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.changed.tool.SyncMcpToolListChangedProvider
+
+  # provider.complete
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.complete.AsyncMcpCompleteProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.complete.AsyncMcpCompleteProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.complete.AsyncStatelessMcpCompleteProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.complete.AsyncStatelessMcpCompleteProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.complete.SyncMcpCompleteProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.complete.SyncMcpCompleteProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.complete.SyncStatelessMcpCompleteProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.complete.SyncStatelessMcpCompleteProvider
+
+  # provider.elicitation
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.elicitation.AsyncMcpElicitationProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.elicitation.AsyncMcpElicitationProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.elicitation.SyncMcpElicitationProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.elicitation.SyncMcpElicitationProvider
+
+  # provider.logging
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.logging.AsyncMcpLoggingProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.logging.AsyncMcpLoggingProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.logging.SyncMcpLoggingProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.logging.SyncMcpLoggingProvider
+
+  # provider.progress
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.progress.AsyncMcpProgressProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.progress.AsyncMcpProgressProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.progress.SyncMcpProgressProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.progress.SyncMcpProgressProvider
+
+  # provider.prompt
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.prompt.AsyncMcpPromptProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.prompt.AsyncMcpPromptProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.prompt.AsyncStatelessMcpPromptProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.prompt.AsyncStatelessMcpPromptProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.prompt.SyncMcpPromptProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.prompt.SyncMcpPromptProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.prompt.SyncStatelessMcpPromptProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.prompt.SyncStatelessMcpPromptProvider
+
+  # provider.resource
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.resource.AsyncMcpResourceProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.resource.AsyncMcpResourceProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.resource.AsyncStatelessMcpResourceProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.resource.AsyncStatelessMcpResourceProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.resource.SyncMcpResourceProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.resource.SyncMcpResourceProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.resource.SyncStatelessMcpResourceProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.resource.SyncStatelessMcpResourceProvider
+
+  # provider.sampling
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.sampling.AsyncMcpSamplingProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.sampling.AsyncMcpSamplingProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.sampling.SyncMcpSamplingProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.sampling.SyncMcpSamplingProvider
+
+  # provider.tool
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.tool.AsyncMcpToolProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.tool.AsyncMcpToolProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.tool.AsyncStatelessMcpToolProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.tool.AsyncStatelessMcpToolProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.tool.SyncMcpToolProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: org.springaicommunity.mcp.provider.tool.SyncStatelessMcpToolProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider

@@ -23,12 +23,6 @@
 	</scm>
 
 	<dependencies>
-
-		<dependency>
-			<groupId>org.springaicommunity</groupId>
-			<artifactId>mcp-annotations</artifactId>
-			<version>${mcp-annotations.version}</version>
-		</dependency>
 		
 		<dependency>
 			<groupId>io.modelcontextprotocol.sdk</groupId>
@@ -57,6 +51,19 @@
 		<dependency>
 			<groupId>org.assertj</groupId>
 			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>net.javacrumbs.json-unit</groupId>
+			<artifactId>json-unit-assertj</artifactId>
+			<version>${json-unit-assertj.version}</version>
 			<scope>test</scope>
 		</dependency>
 

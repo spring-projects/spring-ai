@@ -25,28 +25,29 @@ import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceSpecificati
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
-import org.springaicommunity.mcp.method.changed.prompt.AsyncPromptListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.resource.AsyncResourceListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.tool.AsyncToolListChangedSpecification;
-import org.springaicommunity.mcp.method.elicitation.AsyncElicitationSpecification;
-import org.springaicommunity.mcp.method.logging.AsyncLoggingSpecification;
-import org.springaicommunity.mcp.method.progress.AsyncProgressSpecification;
-import org.springaicommunity.mcp.method.sampling.AsyncSamplingSpecification;
-import org.springaicommunity.mcp.provider.changed.prompt.AsyncMcpPromptListChangedProvider;
-import org.springaicommunity.mcp.provider.changed.resource.AsyncMcpResourceListChangedProvider;
-import org.springaicommunity.mcp.provider.changed.tool.AsyncMcpToolListChangedProvider;
-import org.springaicommunity.mcp.provider.complete.AsyncMcpCompleteProvider;
-import org.springaicommunity.mcp.provider.complete.AsyncStatelessMcpCompleteProvider;
-import org.springaicommunity.mcp.provider.elicitation.AsyncMcpElicitationProvider;
-import org.springaicommunity.mcp.provider.logging.AsyncMcpLoggingProvider;
-import org.springaicommunity.mcp.provider.progress.AsyncMcpProgressProvider;
-import org.springaicommunity.mcp.provider.prompt.AsyncMcpPromptProvider;
-import org.springaicommunity.mcp.provider.prompt.AsyncStatelessMcpPromptProvider;
-import org.springaicommunity.mcp.provider.resource.AsyncMcpResourceProvider;
-import org.springaicommunity.mcp.provider.resource.AsyncStatelessMcpResourceProvider;
-import org.springaicommunity.mcp.provider.sampling.AsyncMcpSamplingProvider;
-import org.springaicommunity.mcp.provider.tool.AsyncMcpToolProvider;
-import org.springaicommunity.mcp.provider.tool.AsyncStatelessMcpToolProvider;
+
+import org.springframework.ai.mcp.annotation.method.changed.prompt.AsyncPromptListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.changed.resource.AsyncResourceListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.changed.tool.AsyncToolListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.elicitation.AsyncElicitationSpecification;
+import org.springframework.ai.mcp.annotation.method.logging.AsyncLoggingSpecification;
+import org.springframework.ai.mcp.annotation.method.progress.AsyncProgressSpecification;
+import org.springframework.ai.mcp.annotation.method.sampling.AsyncSamplingSpecification;
+import org.springframework.ai.mcp.annotation.provider.changed.prompt.AsyncMcpPromptListChangedProvider;
+import org.springframework.ai.mcp.annotation.provider.changed.resource.AsyncMcpResourceListChangedProvider;
+import org.springframework.ai.mcp.annotation.provider.changed.tool.AsyncMcpToolListChangedProvider;
+import org.springframework.ai.mcp.annotation.provider.complete.AsyncMcpCompleteProvider;
+import org.springframework.ai.mcp.annotation.provider.complete.AsyncStatelessMcpCompleteProvider;
+import org.springframework.ai.mcp.annotation.provider.elicitation.AsyncMcpElicitationProvider;
+import org.springframework.ai.mcp.annotation.provider.logging.AsyncMcpLoggingProvider;
+import org.springframework.ai.mcp.annotation.provider.progress.AsyncMcpProgressProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.AsyncMcpPromptProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.AsyncStatelessMcpPromptProvider;
+import org.springframework.ai.mcp.annotation.provider.resource.AsyncMcpResourceProvider;
+import org.springframework.ai.mcp.annotation.provider.resource.AsyncStatelessMcpResourceProvider;
+import org.springframework.ai.mcp.annotation.provider.sampling.AsyncMcpSamplingProvider;
+import org.springframework.ai.mcp.annotation.provider.tool.AsyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.tool.AsyncStatelessMcpToolProvider;
 
 /**
  * @author Christian Tzolov

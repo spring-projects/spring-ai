@@ -27,14 +27,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.modelcontextprotocol.spec.McpSchema;
-import org.springaicommunity.mcp.annotation.McpElicitation;
-import org.springaicommunity.mcp.annotation.McpLogging;
-import org.springaicommunity.mcp.annotation.McpProgress;
-import org.springaicommunity.mcp.annotation.McpPromptListChanged;
-import org.springaicommunity.mcp.annotation.McpResourceListChanged;
-import org.springaicommunity.mcp.annotation.McpSampling;
-import org.springaicommunity.mcp.annotation.McpToolListChanged;
 
+import org.springframework.ai.mcp.annotation.McpElicitation;
+import org.springframework.ai.mcp.annotation.McpLogging;
+import org.springframework.ai.mcp.annotation.McpProgress;
+import org.springframework.ai.mcp.annotation.McpPromptListChanged;
+import org.springframework.ai.mcp.annotation.McpResourceListChanged;
+import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.aop.framework.autoproxy.AutoProxyUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;

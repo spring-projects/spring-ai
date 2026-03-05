@@ -25,28 +25,29 @@ import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecificatio
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
-import org.springaicommunity.mcp.method.changed.prompt.SyncPromptListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.resource.SyncResourceListChangedSpecification;
-import org.springaicommunity.mcp.method.changed.tool.SyncToolListChangedSpecification;
-import org.springaicommunity.mcp.method.elicitation.SyncElicitationSpecification;
-import org.springaicommunity.mcp.method.logging.SyncLoggingSpecification;
-import org.springaicommunity.mcp.method.progress.SyncProgressSpecification;
-import org.springaicommunity.mcp.method.sampling.SyncSamplingSpecification;
-import org.springaicommunity.mcp.provider.changed.prompt.SyncMcpPromptListChangedProvider;
-import org.springaicommunity.mcp.provider.changed.resource.SyncMcpResourceListChangedProvider;
-import org.springaicommunity.mcp.provider.changed.tool.SyncMcpToolListChangedProvider;
-import org.springaicommunity.mcp.provider.complete.SyncMcpCompleteProvider;
-import org.springaicommunity.mcp.provider.complete.SyncStatelessMcpCompleteProvider;
-import org.springaicommunity.mcp.provider.elicitation.SyncMcpElicitationProvider;
-import org.springaicommunity.mcp.provider.logging.SyncMcpLoggingProvider;
-import org.springaicommunity.mcp.provider.progress.SyncMcpProgressProvider;
-import org.springaicommunity.mcp.provider.prompt.SyncMcpPromptProvider;
-import org.springaicommunity.mcp.provider.prompt.SyncStatelessMcpPromptProvider;
-import org.springaicommunity.mcp.provider.resource.SyncMcpResourceProvider;
-import org.springaicommunity.mcp.provider.resource.SyncStatelessMcpResourceProvider;
-import org.springaicommunity.mcp.provider.sampling.SyncMcpSamplingProvider;
-import org.springaicommunity.mcp.provider.tool.SyncMcpToolProvider;
-import org.springaicommunity.mcp.provider.tool.SyncStatelessMcpToolProvider;
+
+import org.springframework.ai.mcp.annotation.method.changed.prompt.SyncPromptListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.changed.resource.SyncResourceListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.changed.tool.SyncToolListChangedSpecification;
+import org.springframework.ai.mcp.annotation.method.elicitation.SyncElicitationSpecification;
+import org.springframework.ai.mcp.annotation.method.logging.SyncLoggingSpecification;
+import org.springframework.ai.mcp.annotation.method.progress.SyncProgressSpecification;
+import org.springframework.ai.mcp.annotation.method.sampling.SyncSamplingSpecification;
+import org.springframework.ai.mcp.annotation.provider.changed.prompt.SyncMcpPromptListChangedProvider;
+import org.springframework.ai.mcp.annotation.provider.changed.resource.SyncMcpResourceListChangedProvider;
+import org.springframework.ai.mcp.annotation.provider.changed.tool.SyncMcpToolListChangedProvider;
+import org.springframework.ai.mcp.annotation.provider.complete.SyncMcpCompleteProvider;
+import org.springframework.ai.mcp.annotation.provider.complete.SyncStatelessMcpCompleteProvider;
+import org.springframework.ai.mcp.annotation.provider.elicitation.SyncMcpElicitationProvider;
+import org.springframework.ai.mcp.annotation.provider.logging.SyncMcpLoggingProvider;
+import org.springframework.ai.mcp.annotation.provider.progress.SyncMcpProgressProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.SyncMcpPromptProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.SyncStatelessMcpPromptProvider;
+import org.springframework.ai.mcp.annotation.provider.resource.SyncMcpResourceProvider;
+import org.springframework.ai.mcp.annotation.provider.resource.SyncStatelessMcpResourceProvider;
+import org.springframework.ai.mcp.annotation.provider.sampling.SyncMcpSamplingProvider;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider;
 
 /**
  * @author Christian Tzolov

@@ -18,11 +18,13 @@ package org.springframework.ai.util.json;
 
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JavaType;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -34,6 +36,9 @@ import org.springframework.util.ClassUtils;
  * Utilities to perform parsing operations between JSON and Java.
  */
 public final class JsonParser {
+
+	private static TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<Map<String, Object>>() {
+	};
 
 	private static final JsonMapper jsonMapper;
 
@@ -187,6 +192,21 @@ public final class JsonParser {
 		}
 
 		return result;
+	}
+
+	public static Map<String, Object> toMap(Object object) {
+		Assert.notNull(object, "object cannot be null");
+		return jsonMapper.convertValue(object, MAP_TYPE_REF);
+	}
+
+	public static <T> T fromMap(Map<String, Object> map, Class<T> targetType) {
+		JavaType javaType = jsonMapper.getTypeFactory().constructType(targetType);
+		return jsonMapper.convertValue(map, javaType);
+	}
+
+	public static <T> T fromMap(Map<String, Object> map, TypeReference<T> targetType) {
+		JavaType javaType = jsonMapper.getTypeFactory().constructType(targetType);
+		return jsonMapper.convertValue(map, javaType);
 	}
 
 }

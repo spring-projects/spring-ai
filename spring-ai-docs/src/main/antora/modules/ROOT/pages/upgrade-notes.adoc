@@ -95,6 +95,88 @@ ChatResponse response = model.call(prompt);
 Flux<ChatResponse> responseFlux = model.stream(prompt);
 ----
 
+=== MCP Annotations Migrated into Spring AI
+
+The `org.springaicommunity:mcp-annotations` external library has been removed as a dependency of the `mcp-annotations-spring` module.
+Its classes are now part of Spring AI itself under a new package structure.
+
+==== Impact
+
+* All MCP annotation and provider classes have new fully-qualified names.
+* The `org.springaicommunity:mcp-annotations` artifact is no longer provided transitively by Spring AI.
+* Any code importing from `org.springaicommunity.mcp.*` will fail to compile.
+
+==== Package Rename
+
+[cols="1,1", options="header"]
+|===
+| Old Package | New Package
+| `org.springaicommunity.mcp.annotation.*` | `org.springframework.ai.mcp.annotation.*`
+| `org.springaicommunity.mcp.method.*` | `org.springframework.ai.mcp.annotation.method.*`
+| `org.springaicommunity.mcp.provider.*` | `org.springframework.ai.mcp.annotation.provider.*`
+|===
+
+==== Migration
+
+Update all imports in your application code:
+
+[source,java]
+----
+// Before
+import org.springaicommunity.mcp.annotation.McpTool;
+import org.springaicommunity.mcp.annotation.McpPrompt;
+import org.springaicommunity.mcp.annotation.McpResource;
+import org.springaicommunity.mcp.annotation.McpSampling;
+import org.springaicommunity.mcp.provider.tool.SyncMcpToolProvider;
+import org.springaicommunity.mcp.provider.prompt.AsyncMcpPromptProvider;
+
+// After
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.AsyncMcpPromptProvider;
+----
+
+If you declared `org.springaicommunity:mcp-annotations` as a direct Maven or Gradle dependency, remove it — the classes are now provided by Spring AI's `spring-ai-mcp-annotations` module.
+
+==== Automated Migration with OpenRewrite
+
+You can automate all import and dependency changes using the provided OpenRewrite recipe.
+
+.Maven
+[source,xml]
+----
+<plugin>
+    <groupId>org.openrewrite.maven</groupId>
+    <artifactId>rewrite-maven-plugin</artifactId>
+    <version>5.46.0</version>
+    <configuration>
+        <exportDatatables>true</exportDatatables>
+        <recipes>
+            <recipe>org.springframework.ai.migration.M3MigrateMcpAnnotations</recipe>
+        </recipes>
+        <recipeArtifactCoordinates>
+            <recipeArtifactCoordinate>org.openrewrite:rewrite-java:LATEST</recipeArtifactCoordinate>
+            <recipeArtifactCoordinate>org.openrewrite.recipe:rewrite-maven:LATEST</recipeArtifactCoordinate>
+        </recipeArtifactCoordinates>
+    </configuration>
+</plugin>
+----
+
+Place the recipe file https://github.com/spring-projects/spring-ai/blob/main/src/rewrite/migrate-to-2-0-0-M3.yaml[`src/rewrite/migrate-to-2-0-0-M3.yaml`] in your project root (or on the classpath), then run:
+
+[source,shell]
+----
+./mvnw rewrite:run
+----
+
+The recipe performs two changes automatically:
+
+1. **Removes** the `org.springaicommunity:mcp-annotations` Maven dependency.
+2. **Rewrites** all `import` statements across `.java` files to point to the new `org.springframework.ai.mcp.annotation.*` packages.
+
 === MCP Spring Transport Modules Moved to Spring AI
 
 The `mcp-spring-webflux` and `mcp-spring-webmvc` transport modules are no longer shipped by the MCP Java SDK. Starting with Spring AI 2.0, they are part of the Spring AI project itself.
