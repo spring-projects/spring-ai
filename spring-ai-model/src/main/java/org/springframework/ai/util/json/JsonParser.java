@@ -145,24 +145,24 @@ public final class JsonParser {
 			return value.toString();
 		}
 		else if (javaType == Byte.class) {
-			return Byte.parseByte(value.toString());
+			return Byte.parseByte(requireNonEmptyNumericValue(value, javaType));
 		}
 		else if (javaType == Integer.class) {
-			BigDecimal bigDecimal = new BigDecimal(value.toString());
+			BigDecimal bigDecimal = new BigDecimal(requireNonEmptyNumericValue(value, javaType));
 			return bigDecimal.intValueExact();
 		}
 		else if (javaType == Short.class) {
-			return Short.parseShort(value.toString());
+			return Short.parseShort(requireNonEmptyNumericValue(value, javaType));
 		}
 		else if (javaType == Long.class) {
-			BigDecimal bigDecimal = new BigDecimal(value.toString());
+			BigDecimal bigDecimal = new BigDecimal(requireNonEmptyNumericValue(value, javaType));
 			return bigDecimal.longValueExact();
 		}
 		else if (javaType == Double.class) {
-			return Double.parseDouble(value.toString());
+			return Double.parseDouble(requireNonEmptyNumericValue(value, javaType));
 		}
 		else if (javaType == Float.class) {
-			return Float.parseFloat(value.toString());
+			return Float.parseFloat(requireNonEmptyNumericValue(value, javaType));
 		}
 		else if (javaType == Boolean.class) {
 			return Boolean.parseBoolean(value.toString());
@@ -187,6 +187,15 @@ public final class JsonParser {
 		}
 
 		return result;
+	}
+
+	private static String requireNonEmptyNumericValue(Object value, Class<?> type) {
+		String valueAsString = value.toString();
+		if (valueAsString.isBlank()) {
+			throw new IllegalArgumentException(
+					"Cannot convert value '%s' to numeric type '%s'".formatted(valueAsString, type.getName()));
+		}
+		return valueAsString;
 	}
 
 }

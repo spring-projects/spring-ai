@@ -272,6 +272,19 @@ class JsonParserTests {
 	}
 
 	@Test
+	void fromEmptyStringToLongThrowsMeaningfulException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("", Long.class)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Cannot convert value '' to numeric type 'java.lang.Long'");
+	}
+
+	@Test
+	void fromBlankStringToIntegerThrowsMeaningfulException() {
+		assertThatThrownBy(() -> JsonParser.toTypedObject("   ", Integer.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Cannot convert value '   ' to numeric type 'java.lang.Integer'");
+	}
+
+	@Test
 	void doesNotDoubleSerializeValidJsonString() {
 		String input = "[1,2,3]";
 		String result = JsonParser.toJson(input);

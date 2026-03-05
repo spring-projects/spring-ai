@@ -16,10 +16,12 @@
 
 package org.springframework.ai.tool.method;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
@@ -36,7 +38,11 @@ public class MethodToolCallbackExceptionHandlingTest {
 		// Create a test object with a method that takes a List<String>
 		TestTools testObject = new TestTools();
 
-		var callback = MethodToolCallbackProvider.builder().toolObjects(testObject).build().getToolCallbacks()[0];
+		ToolCallback callback = Arrays
+			.stream(MethodToolCallbackProvider.builder().toolObjects(testObject).build().getToolCallbacks())
+			.filter(toolCallback -> "stringList".equals(toolCallback.getToolDefinition().name()))
+			.findFirst()
+			.orElseThrow();
 
 		// Create a JSON input with a list of strings
 		String toolInput = """
@@ -73,11 +79,36 @@ public class MethodToolCallbackExceptionHandlingTest {
 			.hasMessageContaining("Unrecognized token");
 	}
 
+	@Test
+	void testNumericEmptyStringInputProvidesClearMessage() {
+		TestTools testObject = new TestTools();
+
+		ToolCallback callback = Arrays
+			.stream(MethodToolCallbackProvider.builder().toolObjects(testObject).build().getToolCallbacks())
+			.filter(toolCallback -> "longInput".equals(toolCallback.getToolDefinition().name()))
+			.findFirst()
+			.orElseThrow();
+
+		String invalidToolInput = """
+				{
+					"id": ""
+				}
+				""";
+
+		assertThatThrownBy(() -> callback.call(invalidToolInput)).isInstanceOf(ToolExecutionException.class)
+			.hasMessageContaining("Cannot convert value '' to numeric type 'java.lang.Long'");
+	}
+
 	public static class TestTools {
 
 		@Tool(description = "Process a list of strings")
 		public String stringList(List<String> strings) {
 			return strings.size() + " strings processed: " + strings;
+		}
+
+		@Tool(description = "Accepts a long id")
+		public String longInput(Long id) {
+			return "ID: " + id;
 		}
 
 	}
