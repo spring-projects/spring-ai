@@ -133,6 +133,17 @@ class ChatClientResponseTests {
 	}
 
 	@Test
+	void whenBuilderContextWithNullValueThenCreateSuccessfully() {
+		ChatClientResponse response = ChatClientResponse.builder()
+			.context("key1", "value1")
+			.context("key2", null)
+			.build();
+
+		assertThat(response.context()).containsEntry("key1", "value1");
+		assertThat(response.context()).containsEntry("key2", null);
+	}
+
+	@Test
 	void whenCopyWithNullChatResponseThenPreserveNull() {
 		Map<String, Object> context = Map.of("key", "value");
 		ChatClientResponse response = new ChatClientResponse(null, context);

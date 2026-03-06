@@ -71,7 +71,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 			return this;
 		}
 
-		public Builder context(String key, Object value) {
+		public Builder context(String key, @Nullable Object value) {
 			Assert.notNull(key, "key cannot be null");
 			this.context.put(key, value);
 			return this;
