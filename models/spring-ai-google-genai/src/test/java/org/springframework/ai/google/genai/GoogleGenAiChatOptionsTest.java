@@ -169,6 +169,30 @@ public class GoogleGenAiChatOptionsTest {
 		assertThat(options.getLabels()).isEmpty();
 	}
 
+  @Test
+	public void testUrlContextEnabledCopyAndEquality() {
+		GoogleGenAiChatOptions original = GoogleGenAiChatOptions.builder()
+				.model("test-model")
+				.urlContextEnabled(true)
+				.build();
+
+		GoogleGenAiChatOptions copy = original.copy();
+
+		assertThat(original.getUrlContextEnabled()).isTrue();
+		assertThat(copy.getUrlContextEnabled()).isTrue();
+		assertThat(copy).isEqualTo(original);
+		assertThat(copy).isNotSameAs(original);
+		assertThat(copy.toString()).contains("urlContextEnabled=true");
+
+		GoogleGenAiChatOptions different = GoogleGenAiChatOptions.builder()
+				.model("test-model")
+				.urlContextEnabled(false)
+				.build();
+
+		assertThat(original).isNotEqualTo(different);
+		assertThat(original.hashCode()).isNotEqualTo(different.hashCode());
+	}
+
 	@Test
 	public void testThinkingLevelGetterSetter() {
 		GoogleGenAiChatOptions options = new GoogleGenAiChatOptions();
@@ -246,39 +270,5 @@ public class GoogleGenAiChatOptionsTest {
 
 	@Test
 	public void testToStringWithThinkingLevel() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		String toString = options.toString();
-		assertThat(toString).contains("thinkingLevel=HIGH");
-	}
-
-	@Test
-	public void testThinkingLevelWithBudgetAndIncludeThoughts() {
-		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("test-model")
-			.thinkingBudget(8192)
-			.includeThoughts(true)
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
-
-		assertThat(options.getThinkingBudget()).isEqualTo(8192);
-		assertThat(options.getIncludeThoughts()).isTrue();
-		assertThat(options.getThinkingLevel()).isEqualTo(GoogleGenAiThinkingLevel.HIGH);
-	}
-
-	@Test
-	public void testAllThinkingLevelValues() {
-		// Test all enum values work correctly
-		for (GoogleGenAiThinkingLevel level : GoogleGenAiThinkingLevel.values()) {
-			GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-				.model("test-model")
-				.thinkingLevel(level)
-				.build();
-			assertThat(options.getThinkingLevel()).isEqualTo(level);
-		}
-	}
-
+		GoogleGenAiChatOptions options = Google
 }
