@@ -21,6 +21,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -28,7 +30,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Sun Yuhan
  */
-class BedrockChatOptionsTests {
+class BedrockChatOptionsTests<B extends BedrockChatOptions.Builder<B>>
+		extends AbstractChatOptionsTests<BedrockChatOptions, B> {
+
+	@Override
+	protected Class<BedrockChatOptions> getConcreteOptionsClass() {
+		return BedrockChatOptions.class;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected B readyToBuildBuilder() {
+		return (B) BedrockChatOptions.builder();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {

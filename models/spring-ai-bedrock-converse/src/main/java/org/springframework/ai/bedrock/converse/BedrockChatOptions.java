@@ -17,7 +17,6 @@
 package org.springframework.ai.bedrock.converse;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -28,11 +27,13 @@ import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -85,28 +86,36 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	@JsonIgnore
 	private BedrockCacheOptions cacheOptions;
 
-	public static Builder builder() {
-		return new Builder();
+	// TODO: left here for ModelOptionUtils.merge*()
+	public BedrockChatOptions() {
+	}
+
+	protected BedrockChatOptions(String model, Double frequencyPenalty, Integer maxTokens, Double presencePenalty,
+			Map<String, String> requestParameters, List<String> stopSequences, Double temperature, Integer topK,
+			Double topP, Boolean internalToolExecutionEnabled, List<ToolCallback> toolCallbacks, Set<String> toolNames,
+			Map<String, Object> toolContext, BedrockCacheOptions cacheOptions) {
+		this.model = model;
+		this.frequencyPenalty = frequencyPenalty;
+		this.maxTokens = maxTokens;
+		this.presencePenalty = presencePenalty;
+		this.requestParameters = requestParameters;
+		this.stopSequences = stopSequences;
+		this.temperature = temperature;
+		this.topK = topK;
+		this.topP = topP;
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+		this.toolCallbacks = toolCallbacks;
+		this.toolNames = toolNames;
+		this.toolContext = toolContext;
+		this.cacheOptions = cacheOptions;
+	}
+
+	public static Builder<?> builder() {
+		return new Builder<>();
 	}
 
 	public static BedrockChatOptions fromOptions(BedrockChatOptions fromOptions) {
-		fromOptions.getToolNames();
-		return builder().model(fromOptions.getModel())
-			.frequencyPenalty(fromOptions.getFrequencyPenalty())
-			.maxTokens(fromOptions.getMaxTokens())
-			.presencePenalty(fromOptions.getPresencePenalty())
-			.requestParameters(new HashMap<>(fromOptions.getRequestParameters()))
-			.stopSequences(
-					fromOptions.getStopSequences() != null ? new ArrayList<>(fromOptions.getStopSequences()) : null)
-			.temperature(fromOptions.getTemperature())
-			.topK(fromOptions.getTopK())
-			.topP(fromOptions.getTopP())
-			.toolCallbacks(new ArrayList<>(fromOptions.getToolCallbacks()))
-			.toolNames(new HashSet<>(fromOptions.getToolNames()))
-			.toolContext(new HashMap<>(fromOptions.getToolContext()))
-			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.cacheOptions(fromOptions.getCacheOptions())
-			.build();
+		return fromOptions.mutate().build();
 	}
 
 	@Override
@@ -231,8 +240,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
-	public Boolean getInternalToolExecutionEnabled() {
+	@Nullable public Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
@@ -253,9 +261,30 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public BedrockChatOptions copy() {
-		return fromOptions(this);
+		return mutate().build();
+	}
+
+	@Override
+	public BedrockChatOptions.Builder<?> mutate() {
+		return BedrockChatOptions.builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.presencePenalty)
+			.stopSequences(this.stopSequences)
+			.temperature(this.temperature)
+			.topK(this.topK)
+			.topP(this.topP)
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolNames(this.getToolNames())
+			.toolContext(this.getToolContext())
+			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
+			// Bedrock Specific
+			.requestParameters(this.requestParameters)
+			.cacheOptions(this.cacheOptions);
 	}
 
 	@Override
@@ -285,100 +314,41 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
 	}
 
-	public static final class Builder {
+	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
 
-		private final BedrockChatOptions options = new BedrockChatOptions();
+		protected Map<String, String> requestParameters = new HashMap<>();
 
-		public Builder model(String model) {
-			this.options.model = model;
-			return this;
+		protected @Nullable BedrockCacheOptions cacheOptions;
+
+		public B requestParameters(Map<String, String> requestParameters) {
+			this.requestParameters = requestParameters;
+			return self();
 		}
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
+		public B cacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
+			this.cacheOptions = cacheOptions;
+			return self();
 		}
 
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
-		}
-
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
-
-		public Builder requestParameters(Map<String, String> requestParameters) {
-			this.options.requestParameters = requestParameters;
-			return this;
-		}
-
-		public Builder stopSequences(List<String> stopSequences) {
-			this.options.stopSequences = stopSequences;
-			return this;
-		}
-
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder topK(Integer topK) {
-			this.options.topK = topK;
-			return this;
-		}
-
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof BedrockChatOptions.Builder<?> that) {
+				if (that.requestParameters != null) {
+					this.requestParameters = that.requestParameters;
+				}
+				if (that.cacheOptions != null) {
+					this.cacheOptions = that.cacheOptions;
+				}
 			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
-			return this;
+			return self();
 		}
 
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		public Builder cacheOptions(BedrockCacheOptions cacheOptions) {
-			this.options.setCacheOptions(cacheOptions);
-			return this;
-		}
-
+		@Override
 		public BedrockChatOptions build() {
-			return this.options;
+			return new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
+					this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
+					this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames, this.toolContext,
+					this.cacheOptions);
 		}
 
 	}
