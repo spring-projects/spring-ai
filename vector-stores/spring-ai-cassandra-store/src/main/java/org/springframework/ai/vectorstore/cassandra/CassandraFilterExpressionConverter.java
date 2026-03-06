@@ -152,4 +152,21 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 		return column;
 	}
 
+	/**
+	 * Cassandra uses a custom value formatting approach via
+	 * {@link #doValue(ColumnMetadata, Object, StringBuilder)} that leverages the driver's
+	 * CodecRegistry. This method is not used in the normal flow and will throw an
+	 * exception if called.
+	 * @param value the value to convert
+	 * @param context the context to append the string representation to
+	 * @throws UnsupportedOperationException always, as this method should not be called
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		throw new UnsupportedOperationException(
+				"Cassandra uses a custom doValue(ColumnMetadata, Object, StringBuilder) implementation "
+						+ "that leverages CodecRegistry.DEFAULT.codecFor(dataType).format(v). "
+						+ "This method should not be called.");
+	}
+
 }

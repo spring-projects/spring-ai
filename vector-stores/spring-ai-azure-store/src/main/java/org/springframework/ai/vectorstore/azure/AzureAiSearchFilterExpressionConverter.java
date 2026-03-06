@@ -16,13 +16,10 @@
 
 package org.springframework.ai.vectorstore.azure;
 
-import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.azure.AzureVectorStore.MetadataField;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -40,8 +37,6 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
-
-	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
 
 	private final DateTimeFormatter dateFormat;
 
@@ -107,6 +102,14 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 		context.append(prefixedIdentifier);
 	}
 
+	/**
+	 * Adds the metadata field prefix to the given identifier name. Azure AI Search
+	 * requires metadata fields to be prefixed with "meta_" to distinguish them from
+	 * system fields.
+	 * @param identifier the field identifier without prefix
+	 * @return the prefixed field identifier (e.g., "meta_fieldName")
+	 * @throws IllegalArgumentException if the identifier is not in the allowed list
+	 */
 	public String withMetaPrefix(String identifier) {
 
 		if (this.allowedIdentifierNames.contains(identifier)) {
@@ -119,11 +122,11 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 	@Override
 	protected void doValue(Filter.Value filterValue, StringBuilder context) {
 		if (filterValue.value() instanceof List list) {
+			// search.in(field, 'val1,val2,val3', ',') requires one string literal
 			doStartValueRange(filterValue, context);
 			int c = 0;
 			for (Object v : list) {
-				// this.doSingleValue(v, context);
-				context.append(v);
+				appendListElementContent(normalizeDateString(v), context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
@@ -131,7 +134,23 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 			this.doEndValueRange(filterValue, context);
 		}
 		else {
-			this.doSingleValue(filterValue.value(), context);
+			this.doSingleValue(normalizeDateString(filterValue.value()), context);
+		}
+	}
+
+	/**
+	 * Appends the content of one list element for search.in (no surrounding quotes). Used
+	 * so the list renders as 'val1,val2,val3' not 'val1','val2','val3'.
+	 */
+	private void appendListElementContent(Object value, StringBuilder context) {
+		if (value instanceof Date date) {
+			context.append(this.dateFormat.format(date.toInstant()));
+		}
+		else if (value instanceof String text) {
+			appendODataStringContent(text, context);
+		}
+		else {
+			context.append(value);
 		}
 	}
 
@@ -141,18 +160,7 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 			context.append(this.dateFormat.format(date.toInstant()));
 		}
 		else if (value instanceof String text) {
-			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
-				try {
-					Instant date = Instant.from(this.dateFormat.parse(text));
-					context.append(this.dateFormat.format(date));
-				}
-				catch (DateTimeParseException e) {
-					throw new IllegalArgumentException("Invalid date type:" + text, e);
-				}
-			}
-			else {
-				context.append(String.format("'%s'", text));
-			}
+			emitODataString(text, context);
 		}
 		else {
 			context.append(value);
@@ -167,6 +175,41 @@ public class AzureAiSearchFilterExpressionConverter extends AbstractFilterExpres
 	@Override
 	public void doEndGroup(Group group, StringBuilder context) {
 		context.append(")");
+	}
+
+	/**
+	 * Emit an OData-formatted string value with single quote wrapping and escaping by
+	 * appending to the provided context. Used by Azure AI Search and other
+	 * OData-compliant search services.
+	 * <p>
+	 * In OData, single quotes within string literals are escaped by doubling them:
+	 * {@code '} → {@code ''}
+	 * @param value the string value to format
+	 * @param context the context to append the OData string literal to
+	 * @since 2.0.0
+	 * @see <a href=
+	 * "https://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part2-url-conventions.html#sec_PrimitiveLiterals">OData
+	 * Primitive Literals</a>
+	 */
+	protected static void emitODataString(String value, StringBuilder context) {
+		context.append("'");
+		appendODataStringContent(value, context);
+		context.append("'");
+	}
+
+	/**
+	 * Appends string content with OData single-quote escaping (no surrounding quotes).
+	 */
+	private static void appendODataStringContent(String value, StringBuilder context) {
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+			if (c == '\'') {
+				context.append("''");
+			}
+			else {
+				context.append(c);
+			}
+		}
 	}
 
 }

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.pgvector;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -67,7 +68,7 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 		for (int i = 0; i < values.size(); i++) {
 			this.convertOperand(expression.left(), context);
 			context.append(" == ");
-			this.doSingleValue(values.get(i), context);
+			this.doSingleValue(normalizeDateString(values.get(i)), context);
 			if (i < values.size() - 1) {
 				context.append(" || ");
 			}
@@ -107,6 +108,23 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 	@Override
 	protected void doEndGroup(Group group, StringBuilder context) {
 		context.append(")");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for PostgreSQL JSONPath expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		if (value instanceof Date date) {
+			emitJsonValue(ISO_DATE_FORMATTER.format(date.toInstant()), context);
+		}
+		else {
+			emitJsonValue(value, context);
+		}
 	}
 
 }

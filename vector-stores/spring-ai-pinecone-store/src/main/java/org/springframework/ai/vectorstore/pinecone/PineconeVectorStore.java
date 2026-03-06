@@ -218,9 +218,12 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			queryRequestBuilder.setFilter(metadataFiltersToStruct(nativeExpressionFilters));
 		}
 
+		Struct filterStruct = StringUtils.hasText(nativeExpressionFilters)
+				? metadataFiltersToStruct(nativeExpressionFilters) : null;
+
 		QueryResponseWithUnsignedIndices queryResponse = this.pinecone.getIndexConnection(this.pineconeIndexName)
-			.queryByVector(request.getTopK(), EmbeddingUtils.toList(queryEmbedding), namespace,
-					metadataFiltersToStruct(nativeExpressionFilters), false, true);
+			.queryByVector(request.getTopK(), EmbeddingUtils.toList(queryEmbedding), namespace, filterStruct, false,
+					true);
 
 		return queryResponse.getMatchesList()
 			.stream()

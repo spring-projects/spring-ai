@@ -53,4 +53,9 @@ public class PrintFilterExpressionConverter extends AbstractFilterExpressionConv
 		context.append(")");
 	}
 
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
+	}
+
 }

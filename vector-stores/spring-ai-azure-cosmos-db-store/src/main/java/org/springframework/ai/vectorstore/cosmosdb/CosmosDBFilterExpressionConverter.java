@@ -130,4 +130,9 @@ class CosmosDBFilterExpressionConverter extends AbstractFilterExpressionConverte
 		};
 	}
 
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
+	}
+
 }

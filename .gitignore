@@ -25,7 +25,6 @@ build
 .gradle
 out
 *~
-
 /.gradletasknamecache
 **/*.flattened-pom.xml
 

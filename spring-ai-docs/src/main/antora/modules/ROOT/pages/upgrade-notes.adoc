@@ -441,6 +441,25 @@ If you're using the OpenSearch vector store through Spring AI's `VectorStore` in
 
 Spring AI's internal implementation has been updated to handle these changes automatically.
 
+=== AbstractFilterExpressionConverter: doSingleValue is now abstract
+
+In `AbstractFilterExpressionConverter` (used by vector store filter expression converters), the method `doSingleValue(Object value, StringBuilder context)` has been changed from a concrete method to an abstract method. Custom vector store implementations that extend `AbstractFilterExpressionConverter` must now implement this method explicitly.
+
+==== Impact
+
+* Any custom `FilterExpressionConverter` that extends `AbstractFilterExpressionConverter` and did not override `doSingleValue()` will fail to compile.
+* Implementations must convert a single filter value (String, Number, Boolean, Date, etc.) into the target format and append it to the provided `StringBuilder` context.
+
+==== Migration
+
+Implement `doSingleValue(Object value, StringBuilder context)` in your custom converter. You can use the provided static helper methods:
+
+* **JSON-based filters** (e.g. PostgreSQL JSONPath, Neo4j Cypher, Weaviate): use `emitJsonValue(Object value, StringBuilder context)` to serialize values with proper quoting and escaping.
+* **Lucene-based filters** (e.g. Elasticsearch, OpenSearch, GemFire): use `emitLuceneString(String value, StringBuilder context)` for string values, and handle other types (numbers, booleans, dates) according to your store's query syntax.
+* **Other formats**: implement your own logic and append the result to `context`.
+
+NOTE: The framework normalizes values (e.g. ISO date strings converted to `Date`) before invoking `doSingleValue`, so your implementation receives already-normalized values. The static helper `normalizeDateString(Object)` is available if you need the same normalization when building expressions outside of the standard flow.
+
 
 [[run-all-m3-migrations]]
 === Running All M3 Migrations at Once
