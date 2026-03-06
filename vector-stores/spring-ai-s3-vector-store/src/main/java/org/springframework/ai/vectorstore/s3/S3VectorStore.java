@@ -59,6 +59,8 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final S3VectorFilterExpressionConverter filterExpressionConverter;
 
+	private final String contentMetadataKeyName;
+
 	/**
 	 * Creates a new S3VectorStore instance with the specified builder settings.
 	 * Initializes observation-related components and the embedding model.
@@ -70,11 +72,13 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		Assert.notNull(builder.vectorBucketName, "vectorBucketName must not be null");
 		Assert.notNull(builder.indexName, "indexName must not be null");
 		Assert.notNull(builder.s3VectorsClient, "S3VectorsClient must not be null");
+		Assert.notNull(builder.contentMetadataKeyName, "contentMetadataKeyName must not be null");
 
 		this.s3VectorsClient = builder.s3VectorsClient;
 		this.indexName = builder.indexName;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.vectorBucketName = builder.vectorBucketName;
+		this.contentMetadataKeyName = builder.contentMetadataKeyName;
 	}
 
 	@Override
@@ -89,13 +93,16 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		for (Document document : documents) {
 			float[] embs = embedding.get(documents.indexOf(document));
 			VectorData vectorData = constructVectorData(embs);
+			Map<String, Object> metadataWithText = new HashMap<>(document.getMetadata());
+			metadataWithText.put(this.contentMetadataKeyName, document.getText());
 			vectors.add(PutInputVector.builder()
 				.data(vectorData)
 				.key(document.getId())
-				.metadata(constructMetadata(document.getMetadata()))
+				.metadata(constructMetadata(metadataWithText))
 				.build());
 		}
 		requestBuilder.vectors(vectors);
+
 		this.s3VectorsClient.putVectors(requestBuilder.build());
 	}
 
@@ -163,10 +170,14 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		if (metadata == null) {
 			metadata = new HashMap<>();
 		}
+		String text = (String) metadata.remove(this.contentMetadataKeyName);
+		if (text == null) {
+			text = "";
+		}
 		if (vector.distance() != null) {
 			metadata.put("SPRING_AI_S3_DISTANCE", vector.distance());
 		}
-		return Document.builder().metadata(metadata).text(vector.key()).build();
+		return Document.builder().id(vector.key()).metadata(metadata).text(text).build();
 	}
 
 	private static software.amazon.awssdk.core.document.Document constructMetadata(
@@ -207,6 +218,8 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
+		private String contentMetadataKeyName = "SPRING_AI_VECTOR_CONTENT_KEY";
+
 		private final S3VectorsClient s3VectorsClient;
 
 		private @Nullable String vectorBucketName;
@@ -225,6 +238,13 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 			Assert.notNull(vectorBucketName, "vectorBucketName must not be null");
 			this.vectorBucketName = vectorBucketName;
 			return this;
+		}
+
+		public Builder contentMetadataKeyName(String contentMetadataKeyName) {
+			Assert.notNull(contentMetadataKeyName, "contentMetadataKeyName must not be null");
+			this.contentMetadataKeyName = contentMetadataKeyName;
+			return this;
+
 		}
 
 		public Builder indexName(String indexName) {
