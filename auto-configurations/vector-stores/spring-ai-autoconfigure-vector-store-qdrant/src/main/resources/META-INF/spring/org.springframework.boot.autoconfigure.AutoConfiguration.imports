@@ -14,3 +14,4 @@
 # limitations under the License.
 #
 org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreAutoConfiguration
+org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantVectorStoreHealthAutoConfiguration
