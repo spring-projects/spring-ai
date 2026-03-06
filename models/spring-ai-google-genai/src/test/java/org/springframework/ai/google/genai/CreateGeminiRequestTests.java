@@ -226,7 +226,7 @@ public class CreateGeminiRequestTests {
 		// Explicitly enable the function
 
 		requestPrompt = client.buildRequestPrompt(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().toolName(TOOL_FUNCTION_NAME).build()));
+				GoogleGenAiChatOptions.builder().toolNames(TOOL_FUNCTION_NAME).build()));
 
 		request = client.createGeminiRequest(requestPrompt);
 
