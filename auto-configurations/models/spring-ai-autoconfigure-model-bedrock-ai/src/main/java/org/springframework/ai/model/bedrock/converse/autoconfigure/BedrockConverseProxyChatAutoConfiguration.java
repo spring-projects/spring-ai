@@ -66,23 +66,38 @@ public class BedrockConverseProxyChatAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient(BedrockAwsConnectionProperties properties,
-			AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
-		BedrockRuntimeAsyncClientBuilder builder = BedrockAwsClientConfigurer
-			.configure(BedrockRuntimeAsyncClient.builder(), properties, awsRegionProvider, awsCredentialsProvider);
-		BedrockAwsClientConfigurer.configureAsyncHttpClient(builder, properties);
+	public BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient(BedrockRuntimeAsyncClientBuilder builder) {
 		return builder.build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public BedrockRuntimeClient bedrockRuntimeClient(BedrockAwsConnectionProperties properties,
-			AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
+	public BedrockRuntimeAsyncClientBuilder bedrockRuntimeAsyncClientBuilder (BedrockAwsConnectionProperties properties,
+											 AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
+		BedrockRuntimeAsyncClientBuilder builder = BedrockAwsClientConfigurer
+				.configure(BedrockRuntimeAsyncClient.builder(), properties, awsRegionProvider, awsCredentialsProvider);
+		BedrockAwsClientConfigurer.configureAsyncHttpClient(builder, properties);
+		return builder;
+	}
+
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
+	public BedrockRuntimeClient bedrockRuntimeClient(BedrockRuntimeClientBuilder builder) {
+		return builder.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
+	public BedrockRuntimeClientBuilder bedrockRuntimeClientBuilder(BedrockAwsConnectionProperties properties,
+													 AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
 		BedrockRuntimeClientBuilder builder = BedrockAwsClientConfigurer.configure(BedrockRuntimeClient.builder(),
 				properties, awsRegionProvider, awsCredentialsProvider);
 		BedrockAwsClientConfigurer.configureSyncHttpClient(builder, properties);
-		return builder.build();
+		return builder;
 	}
 
 	@Bean

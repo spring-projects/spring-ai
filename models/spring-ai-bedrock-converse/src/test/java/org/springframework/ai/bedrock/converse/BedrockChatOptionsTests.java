@@ -16,10 +16,13 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -106,6 +109,24 @@ class BedrockChatOptionsTests {
 		assertThat(options.getTopK()).isNull();
 		assertThat(options.getTopP()).isNull();
 		assertThat(options.getStopSequences()).isNull();
+	}
+
+	@Test
+	@RequiresAwsCredentials
+	@SuppressWarnings("deprecation")
+	void testDeprecatedBuilderMethods() {
+		BedrockProxyChatModel chatModel = BedrockProxyChatModel.builder()
+			.credentialsProvider(DefaultCredentialsProvider.builder().build())
+			.region(Region.US_EAST_1)
+			.timeout(Duration.ofMinutes(2))
+			.connectionTimeout(Duration.ofSeconds(10))
+			.asyncReadTimeout(Duration.ofSeconds(60))
+			.connectionAcquisitionTimeout(Duration.ofSeconds(60))
+			.socketTimeout(Duration.ofSeconds(60))
+			.defaultOptions(BedrockChatOptions.builder().model("us.anthropic.claude-haiku-4-5-20251001-v1:0").build())
+			.build();
+
+		assertThat(chatModel).isNotNull();
 	}
 
 }
