@@ -27,6 +27,7 @@ import tools.jackson.databind.json.JsonMapper;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,7 +37,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Alexandros Pappas
  */
-class MistralAiChatOptionsTests {
+class MistralAiChatOptionsTests<B extends MistralAiChatOptions.Builder<B>>
+		extends AbstractChatOptionsTests<MistralAiChatOptions, B> {
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -118,7 +120,7 @@ class MistralAiChatOptionsTests {
 
 	@Test
 	void testDefaultValues() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
+		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
 		assertThat(options.getModel()).isNull();
 		assertThat(options.getTemperature()).isNull();
 		assertThat(options.getTopP()).isEqualTo(1.0);
@@ -545,6 +547,17 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
+	}
+
+	@Override
+	protected Class<MistralAiChatOptions> getConcreteOptionsClass() {
+		return MistralAiChatOptions.class;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected B readyToBuildBuilder() {
+		return (B) MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL).maxTokens(500);
 	}
 
 	// Test record for schema generation tests
