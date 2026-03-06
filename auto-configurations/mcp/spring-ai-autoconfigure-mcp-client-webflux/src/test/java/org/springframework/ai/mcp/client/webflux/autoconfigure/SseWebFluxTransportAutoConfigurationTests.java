@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpSseConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -177,6 +179,44 @@ public class SseWebFluxTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void urlInterceptorModifiesConnectionUrl() {
+		this.applicationContext.withUserConfiguration(SingleSseUrlInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://service-name:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseWebFluxClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(transports.get(0).name()).isEqualTo("server1");
+				assertThat(transports.get(0).transport()).isInstanceOf(WebFluxSseClientTransport.class);
+			});
+	}
+
+	@Test
+	void urlInterceptorModifiesSseEndpoint() {
+		this.applicationContext.withUserConfiguration(SseEndpointInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.sse.connections.server1.sse-endpoint=/original-sse")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseWebFluxClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(getSseEndpoint((WebFluxSseClientTransport) transports.get(0).transport()))
+					.isEqualTo("/intercepted-sse");
+			});
+	}
+
+	@Test
+	void multipleUrlInterceptorsAppliedInOrder() {
+		this.applicationContext.withUserConfiguration(MultipleSseUrlInterceptorsConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://original:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseWebFluxClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				// Interceptors applied in order: first changes URL, second changes it again
+				assertThat(getSseEndpoint((WebFluxSseClientTransport) transports.get(0).transport()))
+					.isEqualTo("/second-sse");
+			});
+	}
+
 	private String getSseEndpoint(WebFluxSseClientTransport transport) {
 		Field privateField = ReflectionUtils.findField(WebFluxSseClientTransport.class, "sseEndpoint");
 		ReflectionUtils.makeAccessible(privateField);
@@ -199,6 +239,41 @@ public class SseWebFluxTransportAutoConfigurationTests {
 		@Bean
 		ObjectMapper objectMapper() {
 			return new ObjectMapper();
+		}
+
+	}
+
+	@Configuration
+	static class SingleSseUrlInterceptorConfiguration {
+
+		@Bean
+		List<McpSseConnectionInterceptor> sseUrlInterceptors() {
+			return List.of((connectionName, params) -> new SseParameters("http://resolved-host:9090",
+					params.sseEndpoint()));
+		}
+
+	}
+
+	@Configuration
+	static class SseEndpointInterceptorConfiguration {
+
+		@Bean
+		List<McpSseConnectionInterceptor> sseUrlInterceptors() {
+			return List.of((connectionName, params) -> new SseParameters(params.url(), "/intercepted-sse"));
+		}
+
+	}
+
+	@Configuration
+	static class MultipleSseUrlInterceptorsConfiguration {
+
+		@Bean
+		List<McpSseConnectionInterceptor> sseUrlInterceptors() {
+			McpSseConnectionInterceptor first = (connectionName, params) -> new SseParameters(params.url(),
+					"/first-sse");
+			McpSseConnectionInterceptor second = (connectionName, params) -> new SseParameters(params.url(),
+					"/second-sse");
+			return List.of(first, second);
 		}
 
 	}

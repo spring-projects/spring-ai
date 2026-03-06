@@ -16,11 +16,6 @@
 
 package org.springframework.ai.mcp.client.httpclient.autoconfigure;
 
-import java.net.http.HttpClient;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
@@ -28,8 +23,8 @@ import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientReq
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
-
 import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
+import org.springframework.ai.mcp.client.common.autoconfigure.McpSseConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.PropertiesMcpSseClientConnectionDetails;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -42,6 +37,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.log.LogAccessor;
+
+import java.net.http.HttpClient;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Auto-configuration for Server-Sent Events (SSE) HTTP client transport in the Model
@@ -102,15 +102,22 @@ public class SseHttpClientTransportAutoConfiguration {
 	public List<NamedClientMcpTransport> sseHttpClientTransports(McpSseClientConnectionDetails connectionDetails,
 			ObjectProvider<ObjectMapper> objectMapperProvider,
 			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
-			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer,
+			ObjectProvider<List<McpSseConnectionInterceptor>> connectionInterceptorsProvider) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		List<McpSseConnectionInterceptor> connectionInterceptors = connectionInterceptorsProvider.getIfAvailable(List::of);
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 			String connectionName = serverParameters.getKey();
 			SseParameters params = serverParameters.getValue();
+
+			// Apply connection interceptors in order
+			for (McpSseConnectionInterceptor interceptor : connectionInterceptors) {
+				params = interceptor.intercept(connectionName, params);
+			}
 
 			String baseUrl = params.url();
 			String sseEndpoint = params.sseEndpoint() != null ? params.sseEndpoint() : "/sse";

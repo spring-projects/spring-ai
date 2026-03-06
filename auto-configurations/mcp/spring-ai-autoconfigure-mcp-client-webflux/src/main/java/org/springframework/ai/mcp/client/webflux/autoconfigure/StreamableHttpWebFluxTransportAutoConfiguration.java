@@ -16,14 +16,10 @@
 
 package org.springframework.ai.mcp.client.webflux.autoconfigure;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
-
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
@@ -35,6 +31,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Auto-configuration for WebFlux-based Streamable HTTP client transport in the Model
@@ -86,25 +86,36 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 	public List<NamedClientMcpTransport> streamableHttpWebFluxClientTransports(
 			McpStreamableHttpClientProperties streamableProperties,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+			ObjectProvider<ObjectMapper> objectMapperProvider,
+			ObjectProvider<List<McpStreamableHttpConnectionInterceptor>> connectionInterceptorsProvider) {
 
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
 		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		List<McpStreamableHttpConnectionInterceptor> connectionInterceptors = connectionInterceptorsProvider.getIfAvailable(List::of);
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
-			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
-			String streamableHttpEndpoint = serverParameters.getValue().endpoint() != null
-					? serverParameters.getValue().endpoint() : "/mcp";
+
+			String connectionName = serverParameters.getKey();
+
+			ConnectionParameters params = serverParameters.getValue();
+
+			// Apply connection interceptors in order
+			for (McpStreamableHttpConnectionInterceptor interceptor : connectionInterceptors) {
+				params = interceptor.intercept(connectionName, params);
+			}
+
+			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(params.url());
+			String streamableHttpEndpoint = params.endpoint() != null ? params.endpoint() : "/mcp";
 
 			var transport = WebClientStreamableHttpTransport.builder(webClientBuilder)
 				.endpoint(streamableHttpEndpoint)
 				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 				.build();
 
-			streamableHttpTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			streamableHttpTransports.add(new NamedClientMcpTransport(connectionName, transport));
 		}
 
 		return streamableHttpTransports;

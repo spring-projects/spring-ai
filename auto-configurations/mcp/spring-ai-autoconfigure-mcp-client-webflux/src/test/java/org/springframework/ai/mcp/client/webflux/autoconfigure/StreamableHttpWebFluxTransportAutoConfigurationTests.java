@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -189,6 +191,48 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void urlInterceptorModifiesConnectionUrl() {
+		this.applicationContext
+			.withUserConfiguration(SingleStreamableHttpUrlInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://service-name:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
+						List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(transports.get(0).name()).isEqualTo("server1");
+				assertThat(transports.get(0).transport()).isInstanceOf(WebClientStreamableHttpTransport.class);
+			});
+	}
+
+	@Test
+	void urlInterceptorModifiesEndpoint() {
+		this.applicationContext.withUserConfiguration(EndpointInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.server1.endpoint=/original-mcp")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
+						List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(getStreamableHttpEndpoint((WebClientStreamableHttpTransport) transports.get(0).transport()))
+					.isEqualTo("/intercepted-mcp");
+			});
+	}
+
+	@Test
+	void multipleUrlInterceptorsAppliedInOrder() {
+		this.applicationContext.withUserConfiguration(MultipleStreamableHttpUrlInterceptorsConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://original:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpWebFluxClientTransports",
+						List.class);
+				assertThat(transports).hasSize(1);
+				// Interceptors applied in order: first changes endpoint, second changes it again
+				assertThat(getStreamableHttpEndpoint((WebClientStreamableHttpTransport) transports.get(0).transport()))
+					.isEqualTo("/second-mcp");
+			});
+	}
+
 	private String getStreamableHttpEndpoint(WebClientStreamableHttpTransport transport) {
 		Field privateField = ReflectionUtils.findField(WebClientStreamableHttpTransport.class, "endpoint");
 		ReflectionUtils.makeAccessible(privateField);
@@ -211,6 +255,41 @@ public class StreamableHttpWebFluxTransportAutoConfigurationTests {
 		@Bean
 		ObjectMapper objectMapper() {
 			return new ObjectMapper();
+		}
+
+	}
+
+	@Configuration
+	static class SingleStreamableHttpUrlInterceptorConfiguration {
+
+		@Bean
+		List<McpStreamableHttpConnectionInterceptor> streamableHttpUrlInterceptors() {
+			return List.of((connectionName, params) -> new ConnectionParameters("http://resolved-host:9090",
+					params.endpoint()));
+		}
+
+	}
+
+	@Configuration
+	static class EndpointInterceptorConfiguration {
+
+		@Bean
+		List<McpStreamableHttpConnectionInterceptor> streamableHttpUrlInterceptors() {
+			return List.of((connectionName, params) -> new ConnectionParameters(params.url(), "/intercepted-mcp"));
+		}
+
+	}
+
+	@Configuration
+	static class MultipleStreamableHttpUrlInterceptorsConfiguration {
+
+		@Bean
+		List<McpStreamableHttpConnectionInterceptor> streamableHttpUrlInterceptors() {
+			McpStreamableHttpConnectionInterceptor first = (connectionName, params) -> new ConnectionParameters(
+					params.url(), "/first-mcp");
+			McpStreamableHttpConnectionInterceptor second = (connectionName, params) -> new ConnectionParameters(
+					params.url(), "/second-mcp");
+			return List.of(first, second);
 		}
 
 	}

@@ -16,11 +16,6 @@
 
 package org.springframework.ai.mcp.client.httpclient.autoconfigure;
 
-import java.net.http.HttpClient;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
@@ -28,7 +23,7 @@ import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientReq
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
-
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
@@ -40,6 +35,11 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.log.LogAccessor;
+
+import java.net.http.HttpClient;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Auto-configuration for Streamable HTTP client transport in the Model Context Protocol
@@ -97,18 +97,28 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	public List<NamedClientMcpTransport> streamableHttpHttpClientTransports(
 			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<ObjectMapper> objectMapperProvider,
 			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncHttpRequestCustomizer,
-			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer) {
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncHttpRequestCustomizer,
+			ObjectProvider<List<McpStreamableHttpConnectionInterceptor>> connectionInterceptorsProvider) {
 
 		ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		List<McpStreamableHttpConnectionInterceptor> connectionInterceptors = connectionInterceptorsProvider.getIfAvailable(List::of);
 
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
 
-			String baseUrl = serverParameters.getValue().url();
-			String streamableHttpEndpoint = serverParameters.getValue().endpoint() != null
-					? serverParameters.getValue().endpoint() : "/mcp";
+			String connectionName = serverParameters.getKey();
+
+			ConnectionParameters params = serverParameters.getValue();
+
+			// Apply connection interceptors in order
+			for (McpStreamableHttpConnectionInterceptor interceptor : connectionInterceptors) {
+				params = interceptor.intercept(connectionName, params);
+			}
+
+			String baseUrl = params.url();
+			String streamableHttpEndpoint = params.endpoint() != null ? params.endpoint() : "/mcp";
 
 			HttpClientStreamableHttpTransport.Builder transportBuilder = HttpClientStreamableHttpTransport
 				.builder(baseUrl)
@@ -127,7 +137,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 
 			HttpClientStreamableHttpTransport transport = transportBuilder.build();
 
-			streamableHttpTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			streamableHttpTransports.add(new NamedClientMcpTransport(connectionName, transport));
 		}
 
 		return streamableHttpTransports;

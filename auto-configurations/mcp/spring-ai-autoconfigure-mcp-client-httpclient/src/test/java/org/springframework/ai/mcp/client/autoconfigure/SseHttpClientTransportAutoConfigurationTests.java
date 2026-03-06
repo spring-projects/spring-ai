@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpSseConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -153,10 +155,60 @@ public class SseHttpClientTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void urlInterceptorModifiesConnectionUrl() {
+		this.applicationContext.withUserConfiguration(SingleSseUrlInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://service-name:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseHttpClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(transports.get(0).name()).isEqualTo("server1");
+				assertThat(transports.get(0).transport()).isInstanceOf(HttpClientSseClientTransport.class);
+				// The interceptor should have replaced the URL
+				assertThat(getBaseUrl((HttpClientSseClientTransport) transports.get(0).transport()))
+					.isEqualTo("http://resolved-host:9090");
+			});
+	}
+
+	@Test
+	void urlInterceptorModifiesSseEndpoint() {
+		this.applicationContext.withUserConfiguration(SseEndpointInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080",
+					"spring.ai.mcp.client.sse.connections.server1.sse-endpoint=/original-sse")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseHttpClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(getSseEndpoint((HttpClientSseClientTransport) transports.get(0).transport()))
+					.isEqualTo("/intercepted-sse");
+			});
+	}
+
+	@Test
+	void multipleUrlInterceptorsAppliedInOrder() {
+		this.applicationContext.withUserConfiguration(MultipleSseUrlInterceptorsConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://original:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseHttpClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				// First interceptor (Order 1) changes URL to
+				// http://first-interceptor:8080
+				// Second interceptor (Order 2) changes URL to
+				// http://second-interceptor:9090
+				assertThat(getBaseUrl((HttpClientSseClientTransport) transports.get(0).transport()))
+					.isEqualTo("http://second-interceptor:9090");
+			});
+	}
+
 	private String getSseEndpoint(HttpClientSseClientTransport transport) {
 		Field privateField = ReflectionUtils.findField(HttpClientSseClientTransport.class, "sseEndpoint");
 		ReflectionUtils.makeAccessible(privateField);
 		return (String) ReflectionUtils.getField(privateField, transport);
+	}
+
+	private String getBaseUrl(HttpClientSseClientTransport transport) {
+		Field privateField = ReflectionUtils.findField(HttpClientSseClientTransport.class, "baseUri");
+		ReflectionUtils.makeAccessible(privateField);
+		return ReflectionUtils.getField(privateField, transport).toString();
 	}
 
 	@Configuration
@@ -165,6 +217,41 @@ public class SseHttpClientTransportAutoConfigurationTests {
 		@Bean
 		ObjectMapper objectMapper() {
 			return new ObjectMapper();
+		}
+
+	}
+
+	@Configuration
+	static class SingleSseUrlInterceptorConfiguration {
+
+		@Bean
+		List<McpSseConnectionInterceptor> sseUrlInterceptors() {
+			return List
+				.of((connectionName, params) -> new SseParameters("http://resolved-host:9090", params.sseEndpoint()));
+		}
+
+	}
+
+	@Configuration
+	static class SseEndpointInterceptorConfiguration {
+
+		@Bean
+		List<McpSseConnectionInterceptor> sseUrlInterceptors() {
+			return List.of((connectionName, params) -> new SseParameters(params.url(), "/intercepted-sse"));
+		}
+
+	}
+
+	@Configuration
+	static class MultipleSseUrlInterceptorsConfiguration {
+
+		@Bean
+		List<McpSseConnectionInterceptor> sseUrlInterceptors() {
+			McpSseConnectionInterceptor first = (connectionName,
+					params) -> new SseParameters("http://first-interceptor:8080", params.sseEndpoint());
+			McpSseConnectionInterceptor second = (connectionName,
+					params) -> new SseParameters("http://second-interceptor:9090", params.sseEndpoint());
+			return List.of(first, second);
 		}
 
 	}

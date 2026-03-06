@@ -16,15 +16,11 @@
 
 package org.springframework.ai.mcp.client.webflux.autoconfigure;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.transport.WebFluxSseClientTransport;
 import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
-
 import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
+import org.springframework.ai.mcp.client.common.autoconfigure.McpSseConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.PropertiesMcpSseClientConnectionDetails;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -37,6 +33,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Auto-configuration for WebFlux-based Server-Sent Events (SSE) client transport in the
@@ -90,22 +90,31 @@ public class SseWebFluxTransportAutoConfiguration {
 	@Bean
 	public List<NamedClientMcpTransport> sseWebFluxClientTransports(McpSseClientConnectionDetails connectionDetails,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ObjectMapper> objectMapperProvider) {
+			ObjectProvider<ObjectMapper> objectMapperProvider,
+			ObjectProvider<List<McpSseConnectionInterceptor>> connectionInterceptorsProvider) {
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
 		var objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+		List<McpSseConnectionInterceptor> connectionInterceptors = connectionInterceptorsProvider.getIfAvailable(List::of);
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
-			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(serverParameters.getValue().url());
-			String sseEndpoint = serverParameters.getValue().sseEndpoint() != null
-					? serverParameters.getValue().sseEndpoint() : "/sse";
+			String connectionName = serverParameters.getKey();
+			SseParameters params = serverParameters.getValue();
+
+			// Apply connection interceptors in order
+			for (McpSseConnectionInterceptor interceptor : connectionInterceptors) {
+				params = interceptor.intercept(connectionName, params);
+			}
+
+			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(params.url());
+			String sseEndpoint = params.sseEndpoint() != null ? params.sseEndpoint() : "/sse";
 			var transport = WebFluxSseClientTransport.builder(webClientBuilder)
 				.sseEndpoint(sseEndpoint)
 				.jsonMapper(new JacksonMcpJsonMapper(objectMapper))
 				.build();
-			sseTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			sseTransports.add(new NamedClientMcpTransport(connectionName, transport));
 		}
 
 		return sseTransports;
