@@ -25,10 +25,12 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionRequest.Metadata;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatModel;
 import org.springframework.ai.anthropic.api.AnthropicCacheOptions;
 import org.springframework.ai.anthropic.api.AnthropicCacheStrategy;
 import org.springframework.ai.anthropic.api.AnthropicCacheTtl;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,7 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Austin Dase
  * @author Filip Hrisafov
  */
-class AnthropicChatOptionsTests {
+class AnthropicChatOptionsTests<B extends AnthropicChatOptions.Builder<B>>
+		extends AbstractChatOptionsTests<AnthropicChatOptions, B> {
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -634,6 +637,17 @@ class AnthropicChatOptionsTests {
 				Assertions.entry("properties", Map.of("name", Map.of("type", "string"), "required", List.of("name"))));
 
 		JsonAssertions.assertThatJson(options.getOutputSchema()).isEqualTo(outputSchema);
+	}
+
+	@Override
+	protected Class<AnthropicChatOptions> getConcreteOptionsClass() {
+		return AnthropicChatOptions.class;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected B readyToBuildBuilder() {
+		return (B) AnthropicChatOptions.builder().model(ChatModel.CLAUDE_HAIKU_4_5).maxTokens(500);
 	}
 
 }
