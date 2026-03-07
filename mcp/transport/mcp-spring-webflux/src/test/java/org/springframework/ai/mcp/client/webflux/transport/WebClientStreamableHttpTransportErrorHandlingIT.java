@@ -48,7 +48,8 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Tests for error handling in WebClientStreamableHttpTransport. Addresses concurrency
- * issues with proper Reactor patterns.
+ * issues with proper Reactor patterns. Fixed race condition in
+ * testSessionRecoveryAfter404.
  *
  * @author Christian Tzolov
  */
@@ -304,21 +305,26 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 			this.serverResponseStatus.set(404);
 			return this.transport.sendMessage(testMessage)
 				.onErrorResume(McpTransportSessionNotFoundException.class, e -> Mono.empty());
-		})).then(Mono.defer(() -> {
-			// Now server is back with new session
-			this.serverResponseStatus.set(200);
-			this.currentServerSessionId.set("session-2");
-			this.lastReceivedSessionId.set(null); // Reset to verify new session
+		}))
+			// Add delay to ensure session is cleared before proceeding
+			.then(Mono.delay(Duration.ofMillis(200)))
+			.then(Mono.defer(() -> {
+				// Now server is back with new session
+				this.serverResponseStatus.set(200);
+				this.currentServerSessionId.set("session-2");
+				this.lastReceivedSessionId.set(null); // Reset to verify new session
 
-			// Should be able to establish new session
-			return this.transport.sendMessage(testMessage);
-		})).then(Mono.defer(() -> {
-			// Verify no session ID was sent (since old session was invalidated)
-			assertThat(this.lastReceivedSessionId.get()).isNull();
+				// Should be able to establish new session
+				return this.transport.sendMessage(testMessage);
+			}))
+			.then(Mono.defer(() -> {
+				// Verify no session ID was sent (since old session was invalidated)
+				assertThat(this.lastReceivedSessionId.get()).isNull();
 
-			// Next request should use the new session ID
-			return this.transport.sendMessage(testMessage);
-		})).doOnSuccess(v -> assertThat(this.lastReceivedSessionId.get()).isEqualTo("session-2"));
+				// Next request should use the new session ID
+				return this.transport.sendMessage(testMessage);
+			}))
+			.doOnSuccess(v -> assertThat(this.lastReceivedSessionId.get()).isEqualTo("session-2"));
 
 		StepVerifier.create(establishSession).verifyComplete();
 	}
