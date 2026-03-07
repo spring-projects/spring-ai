@@ -190,7 +190,7 @@ public class ZhiPuAiRetryTests {
 	@Test
 	public void zhiPuAiImageTransientError() {
 
-		var expectedResponse = new ZhiPuAiImageResponse(678L, List.of(new Data("url678")));
+		var expectedResponse = new ZhiPuAiImageResponse(678L, List.of(new Data("url678", List.of())));
 
 		given(this.zhiPuAiImageApi.createImage(isA(ZhiPuAiImageRequest.class)))
 			.willThrow(new TransientAiException("Transient Error 1"))
