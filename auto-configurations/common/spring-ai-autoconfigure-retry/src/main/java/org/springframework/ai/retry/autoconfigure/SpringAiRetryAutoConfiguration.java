@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.retry.RetryListener;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
@@ -58,31 +59,6 @@ import org.springframework.web.client.ResponseErrorHandler;
 public class SpringAiRetryAutoConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(SpringAiRetryAutoConfiguration.class);
-
-	@Bean
-	@ConditionalOnMissingBean
-	public RetryTemplate retryTemplate(SpringAiRetryProperties properties) {
-		RetryPolicy retryPolicy = RetryPolicy.builder()
-			.maxRetries(properties.getMaxAttempts())
-			.includes(TransientAiException.class)
-			.includes(ResourceAccessException.class)
-			.delay(properties.getBackoff().getInitialInterval())
-			.multiplier(properties.getBackoff().getMultiplier())
-			.maxDelay(properties.getBackoff().getMaxInterval())
-			.build();
-
-		RetryTemplate retryTemplate = new RetryTemplate(retryPolicy);
-		retryTemplate.setRetryListener(new RetryListener() {
-			private final AtomicInteger retryCount = new AtomicInteger(0);
-
-			@Override
-			public void onRetryFailure(RetryPolicy policy, Retryable<?> retryable, Throwable throwable) {
-				int currentRetries = this.retryCount.incrementAndGet();
-				logger.warn("Retry error. Retry count:{}", currentRetries, throwable);
-			}
-		});
-		return retryTemplate;
-	}
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -133,6 +109,37 @@ public class SpringAiRetryAutoConfiguration {
 				throw new TransientAiException(message);
 			}
 		};
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnClass(RetryTemplate.class)
+	static class RetryTemplateConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean
+		RetryTemplate retryTemplate(SpringAiRetryProperties properties) {
+			RetryPolicy retryPolicy = RetryPolicy.builder()
+				.maxRetries(properties.getMaxAttempts())
+				.includes(TransientAiException.class)
+				.includes(ResourceAccessException.class)
+				.delay(properties.getBackoff().getInitialInterval())
+				.multiplier(properties.getBackoff().getMultiplier())
+				.maxDelay(properties.getBackoff().getMaxInterval())
+				.build();
+
+			RetryTemplate retryTemplate = new RetryTemplate(retryPolicy);
+			retryTemplate.setRetryListener(new RetryListener() {
+				private final AtomicInteger retryCount = new AtomicInteger(0);
+
+				@Override
+				public void onRetryFailure(RetryPolicy policy, Retryable<?> retryable, Throwable throwable) {
+					int currentRetries = this.retryCount.incrementAndGet();
+					logger.warn("Retry error. Retry count:{}", currentRetries, throwable);
+				}
+			});
+			return retryTemplate;
+		}
+
 	}
 
 }
