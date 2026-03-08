@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-2026 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@ package org.springframework.ai.retry.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.web.client.ResponseErrorHandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,6 +76,15 @@ public class SpringAiRetryPropertiesTests {
 				assertThat(retryProperties.getBackoff().getMultiplier()).isEqualTo(2);
 				assertThat(retryProperties.getBackoff().getMaxInterval().toMillis()).isEqualTo(60000);
 			});
+	}
+
+	@Test
+	public void retryTemplateBeanBacksOffWhenRetryTemplateClassIsMissing() {
+
+		new ApplicationContextRunner().withClassLoader(new FilteredClassLoader(RetryTemplate.class))
+			.withConfiguration(AutoConfigurations.of(SpringAiRetryAutoConfiguration.class))
+			.run(context -> assertThat(context).hasSingleBean(ResponseErrorHandler.class)
+				.doesNotHaveBean("retryTemplate"));
 	}
 
 }
