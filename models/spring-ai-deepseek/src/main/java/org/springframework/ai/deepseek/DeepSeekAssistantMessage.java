@@ -49,7 +49,7 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	public static DeepSeekAssistantMessage prefixAssistantMessage(@Nullable String content,
 			@Nullable String reasoningContent) {
-		return new DeepSeekAssistantMessage.Builder().content(content).reasoningContent(reasoningContent).build();
+		return new Builder().content(content).prefix(true).reasoningContent(reasoningContent).build();
 	}
 
 	public @Nullable Boolean getPrefix() {
