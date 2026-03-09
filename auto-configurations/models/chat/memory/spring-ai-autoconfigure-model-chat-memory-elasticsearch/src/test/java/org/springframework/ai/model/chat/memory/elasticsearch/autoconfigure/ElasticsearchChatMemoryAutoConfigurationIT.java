@@ -66,8 +66,7 @@ class ElasticsearchChatMemoryAutoConfigurationIT {
 					"spring.ai.chat.memory.elasticsearch.initialize-schema=false",
 					"spring.ai.chat.memory.elasticsearch.max-results=500")
 			.run(context -> {
-				ElasticsearchChatMemoryProperties properties = context
-					.getBean(ElasticsearchChatMemoryProperties.class);
+				ElasticsearchChatMemoryProperties properties = context.getBean(ElasticsearchChatMemoryProperties.class);
 				assertThat(properties.getIndexName()).isEqualTo("custom-index");
 				assertThat(properties.isInitializeSchema()).isFalse();
 				assertThat(properties.getMaxResults()).isEqualTo(500);
