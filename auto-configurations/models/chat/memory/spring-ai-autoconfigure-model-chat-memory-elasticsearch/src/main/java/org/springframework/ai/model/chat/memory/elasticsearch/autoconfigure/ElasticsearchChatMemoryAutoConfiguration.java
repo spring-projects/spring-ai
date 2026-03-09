@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,19 +41,18 @@ import org.springframework.context.annotation.Bean;
  * @since 2.0.0
  */
 @AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
-@ConditionalOnClass({ElasticsearchChatMemoryRepository.class, Rest5Client.class})
+@ConditionalOnClass({ ElasticsearchChatMemoryRepository.class, Rest5Client.class })
 @EnableConfigurationProperties(ElasticsearchChatMemoryProperties.class)
 public class ElasticsearchChatMemoryAutoConfiguration {
 
 	@Bean
-	@ConditionalOnMissingBean({ElasticsearchChatMemoryRepository.class, ChatMemory.class,
-			ChatMemoryRepository.class})
+	@ConditionalOnMissingBean({ ElasticsearchChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
 	public ElasticsearchChatMemoryRepository elasticsearchChatMemoryRepository(Rest5Client restClient,
-																			   ElasticsearchChatMemoryProperties properties) {
+			ElasticsearchChatMemoryProperties properties) {
 		ElasticsearchChatMemoryRepository.Builder builder = ElasticsearchChatMemoryRepository.builder(restClient)
-				.indexName(properties.getIndexName())
-				.initializeSchema(properties.isInitializeSchema())
-				.maxResults(properties.getMaxResults());
+			.indexName(properties.getIndexName())
+			.initializeSchema(properties.isInitializeSchema())
+			.maxResults(properties.getMaxResults());
 
 		return builder.build();
 	}
