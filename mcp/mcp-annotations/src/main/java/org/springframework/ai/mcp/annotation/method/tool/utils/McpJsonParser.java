@@ -26,16 +26,17 @@ import org.springframework.util.Assert;
 
 /**
  * Additional utilities for JSON parsing operations specific to MCP annotations and tools.
- * Reuses the underlying JsonMapper from {@link JsonParser} but provides convenience methods
- * for converting between Maps and Java objects, which is a common pattern in MCP tool interactions.
+ * Reuses the underlying JsonMapper from {@link JsonParser} but provides convenience
+ * methods for converting between Maps and Java objects, which is a common pattern in MCP
+ * tool interactions.
  */
 public final class McpJsonParser {
 
-	private McpJsonParser() {
-	}
-
 	private static TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<Map<String, Object>>() {
 	};
+
+	private McpJsonParser() {
+	}
 
 	public static Map<String, Object> toMap(Object object) {
 		Assert.notNull(object, "object cannot be null");
