@@ -171,7 +171,7 @@ if necessary
 [source, java]
 ----
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,23 +187,6 @@ if necessary
  */
 
 package ...;
-----
-
-== Update license header to modified files as necessary
-
-Always check the date range in the Apache license header. For example, if you've modified a file in 2016 whose header
-still reads
-
-[source java]
-----
- * Copyright 2002-2011 the original author or authors.
-----
-
-then be sure to update it to 2016 appropriately
-
-[source java]
-----
- * Copyright 2002-2016 the original author or authors.
 ----
 
 == Use @since tags
