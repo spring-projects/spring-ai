@@ -381,6 +381,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		return fromOptions(this);
 	}
 
+	@Override
 	public AnthropicChatOptions.Builder<?> mutate() {
 		return builder()
 			// ChatOptions
