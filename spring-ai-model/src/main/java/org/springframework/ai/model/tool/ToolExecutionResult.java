@@ -54,6 +54,14 @@ public interface ToolExecutionResult {
 	}
 
 	/**
+	 * Whether, in streaming mode and when internal tool execution is enabled, the model
+	 * should continue its response after the tool execution result is sent back.
+	 */
+	default boolean continuousStream() {
+		return false;
+	}
+
+	/**
 	 * Create a default {@link ToolExecutionResult} builder.
 	 */
 	static DefaultToolExecutionResult.Builder builder() {

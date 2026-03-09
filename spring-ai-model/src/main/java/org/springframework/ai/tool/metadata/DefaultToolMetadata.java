@@ -22,7 +22,11 @@ package org.springframework.ai.tool.metadata;
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+public record DefaultToolMetadata(boolean returnDirect, boolean continuousStream) implements ToolMetadata {
+
+	public DefaultToolMetadata(boolean returnDirect) {
+		this(returnDirect, false);
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -32,6 +36,8 @@ public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata 
 
 		private boolean returnDirect = false;
 
+		private boolean continuousStream = false;
+
 		private Builder() {
 		}
 
@@ -40,8 +46,13 @@ public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata 
 			return this;
 		}
 
+		public Builder continuousStream(boolean continuousStream) {
+			this.continuousStream = continuousStream;
+			return this;
+		}
+
 		public ToolMetadata build() {
-			return new DefaultToolMetadata(this.returnDirect);
+			return new DefaultToolMetadata(this.returnDirect, this.continuousStream);
 		}
 
 	}
