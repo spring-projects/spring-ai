@@ -29,9 +29,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class ThinkOptionTests {
 
-	private record ThinkWrapper(Object think) {
-	}
-
 	@Test
 	void testThinkBooleanEnabledSerialization() {
 		ThinkOption option = ThinkOption.ThinkBoolean.ENABLED;
@@ -162,6 +159,9 @@ class ThinkOptionTests {
 		assertThat(ThinkOption.ThinkLevel.LOW.toJsonValue()).isEqualTo("low");
 		assertThat(ThinkOption.ThinkLevel.MEDIUM.toJsonValue()).isEqualTo("medium");
 		assertThat(ThinkOption.ThinkLevel.HIGH.toJsonValue()).isEqualTo("high");
+	}
+
+	private record ThinkWrapper(Object think) {
 	}
 
 }
