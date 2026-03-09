@@ -34,6 +34,8 @@ public final class SpringAIModels {
 
 	public static final String HUGGINGFACE = "huggingface";
 
+	public static final String JLAMA = "jlama";
+
 	public static final String MINIMAX = "minimax";
 
 	public static final String MISTRAL = "mistral";
