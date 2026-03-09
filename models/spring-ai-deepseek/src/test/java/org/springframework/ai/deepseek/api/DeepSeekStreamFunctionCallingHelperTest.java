@@ -187,6 +187,27 @@ class DeepSeekStreamFunctionCallingHelperTest {
 	}
 
 	@Test
+	void mergeShouldHandleNullCurrentContent() {
+		// Given
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage("Hello", Role.ASSISTANT, null, null, null);
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null);
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().content()).isEqualTo("Hello");
+	}
+
+	@Test
 	void mergeWhenCurrentToolCallsIsEmptyListShouldNotThrowException() {
 		// Given
 		ToolCall toolCall = new ToolCall("call_1", "function", new ChatCompletionFunction("func1", "{}"));

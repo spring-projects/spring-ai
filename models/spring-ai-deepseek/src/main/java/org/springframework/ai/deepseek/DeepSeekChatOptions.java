@@ -493,8 +493,10 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		}
 
 		@Override
+		@SuppressWarnings("NullAway")
 		public DeepSeekChatOptions build() {
-			Assert.state(this.model != null, "model must not be null");
+			// TODO Un-comment assertion when tool definitions merging will use the builder/customizer
+			// Assert.state(this.model != null, "model must not be null");
 			return new DeepSeekChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 					this.responseFormat, this.stopSequences, this.temperature, this.topP, this.logprobs,
 					this.topLogprobs, this.tools, this.toolChoice, this.internalToolExecutionEnabled,

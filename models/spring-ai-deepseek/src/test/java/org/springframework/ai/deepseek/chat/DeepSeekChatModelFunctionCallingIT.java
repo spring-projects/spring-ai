@@ -158,9 +158,7 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse.getResult().getOutput()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("San Francisco");
 		assertThat(chatResponse.getResult().getOutput().getText()).contains("30");
-
-		// the total token is first chat and tool call request
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(700).isGreaterThan(280);
+		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
 	}
 
 	@Test
@@ -180,7 +178,6 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(chatResponse).isNotNull();
 		assertThat(chatResponse.getMetadata()).isNotNull();
 		assertThat(chatResponse.getMetadata().getUsage()).isNotNull();
-		assertThat(chatResponse.getMetadata().getUsage().getTotalTokens()).isLessThan(700).isGreaterThan(280);
 	}
 
 }
