@@ -97,7 +97,7 @@ Flux<ChatResponse> responseFlux = model.stream(prompt);
 
 === MCP Annotations Migrated into Spring AI
 
-The `org.springaicommunity:mcp-annotations` external library has been removed as a dependency of the `mcp-annotations-spring` module.
+The `org.springaicommunity:mcp-annotations` external library has been removed as a dependency of the `mcp-annotations` module.
 Its classes are now part of Spring AI itself under a new package structure.
 
 ==== Impact

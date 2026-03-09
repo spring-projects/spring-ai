@@ -242,7 +242,7 @@
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
-		<module>mcp/mcp-annotations-spring</module>
+		<module>mcp/mcp-annotations</module>
 		<module>mcp/transport/mcp-spring-webflux</module>
 		<module>mcp/transport/mcp-spring-webmvc</module>
 	</modules>
