@@ -623,6 +623,146 @@ You can disable this behavior by setting `spring.ai.chat.memory.redis.initialize
 * Redis Stack 7.0 or higher (includes Redis Query Engine and RedisJSON modules)
 * Jedis client library (included as a dependency)
 
+=== ElasticsearchChatMemoryRepository
+
+`ElasticsearchChatMemoryRepository` is a built-in implementation that uses Elasticsearch to store chat messages.
+It is suitable for applications that require fast, document-oriented chat memory persistence with advanced querying capabilities.
+
+Messages are stored as JSON documents in a single index, with extended query capabilities through the `AdvancedElasticsearchChatMemoryRepository` interface for searching messages by content, type, time range, and metadata.
+
+Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history.
+
+First, add the following dependency to your project:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-elasticsearch</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-elasticsearch'
+}
+----
+======
+
+Spring AI provides auto-configuration for the `ElasticsearchChatMemoryRepository`, which you can use directly in your application.
+
+[source,java]
+----
+@Autowired
+ElasticsearchChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `ElasticsearchChatMemoryRepository` manually, you can do so by providing a `Rest5Client` instance:
+
+[source,java]
+----
+Rest5Client restClient = Rest5Client.builder(HttpHost.create("http://localhost:9200")).build();
+
+ChatMemoryRepository chatMemoryRepository = ElasticsearchChatMemoryRepository.builder(restClient)
+    .indexName("my-chat-index")
+    .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+==== Configuration Properties
+
+The Spring Boot properties starting with `spring.elasticsearch.*` are used to configure the Elasticsearch client:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+| `spring.elasticsearch.connection-timeout` | Connection timeout used when communicating with Elasticsearch. | `1s`
+| `spring.elasticsearch.password` | Password for authentication with Elasticsearch. | -
+| `spring.elasticsearch.username` | Username for authentication with Elasticsearch.| -
+| `spring.elasticsearch.apikey` | Api key for authentication with Elasticsearch.| -
+| `spring.elasticsearch.uris` | Comma-separated list of the Elasticsearch instances to use. | `+http://localhost:9200+`
+| `spring.elasticsearch.path-prefix` | Prefix added to the path of every request sent to Elasticsearch. | -
+| `spring.elasticsearch.restclient.sniffer.delay-after-failure` | Delay of a sniff execution scheduled after a failure.| `1m`
+| `spring.elasticsearch.restclient.sniffer.interval` | Interval between consecutive ordinary sniff executions. | `5m`
+| `spring.elasticsearch.restclient.ssl.bundle` | SSL bundle name. | -
+| `spring.elasticsearch.socket-keep-alive` | Whether to enable socket keep alive between client and Elasticsearch. | `false`
+| `spring.elasticsearch.socket-timeout` | Socket timeout used when communicating with Elasticsearch. | `30s`
+|===
+
+Properties starting with `spring.ai.chat.memory.elasticsearch.*` are used to configure the `ElasticsearchChatMemoryRepository`:
+
+[cols="2,5,1",stripes=even]
+|===
+|Property | Description | Default Value
+
+|`spring.ai.chat.memory.elasticsearch.initialize-schema`| Whether to initialize the required schema | `true`
+|`spring.ai.vectorstore.elasticsearch.index-name` | The name of the index to store the messages | `spring-ai-chat-memory`
+|`spring.ai.vectorstore.elasticsearch.max-results` | Maximum number of results to return | `1000`
+|===
+
+==== Advanced Querying
+
+The `ElasticsearchChatMemoryRepository` also implements `AdvancedElasticsearchChatMemoryRepository`, which provides extended query capabilities:
+
+[source,java]
+----
+// Cast to access advanced features
+AdvancedElasticsearchChatMemoryRepository advancedRepo = (AdvancedElasticsearchChatMemoryRepository) chatMemoryRepository;
+
+// Find messages by type across all conversations
+List<MessageWithConversation> userMessages = advancedRepo.findByType(MessageType.USER, 100);
+
+// Find messages containing specific content
+List<MessageWithConversation> results = advancedRepo.findByContent("Spring AI", 50);
+
+// Find messages within a time range
+List<MessageWithConversation> recentMessages = advancedRepo.findByTimeRange(
+    conversationId,
+    Instant.now().minus(Duration.ofHours(1)),
+    Instant.now(),
+    100
+);
+
+// Find messages by metadata
+List<MessageWithConversation> priorityMessages = advancedRepo.findByMetadata("priority", "high", 50);
+
+// Execute custom Elasticsearch queries with JSON syntax
+String queryString = """
+				{"match": {"content": "findme"}}
+				""";
+List<MessageWithConversation> customResults = advancedRepo.executeQuery(queryString, 100);
+
+// Execute custom Elasticsearch queries with java client Query object
+Query queryObject = Query.of(q -> q.match(m -> m.field("content").query("findme")));
+List<MessageWithConversation> customResults = advancedRepo.executeQuery(queryObject, 100);
+----
+
+==== Schema Initialization
+
+The auto-configuration will automatically create the Elasticsearch index on startup if it does not already exist.
+You can disable this behavior by setting `spring.ai.chat.memory.elasticsearch.initialize-schema=false`.
+
+==== Requirements
+
+* Elasticsearch 9.0 or later
+
 == Memory in Chat Client
 
 When using the ChatClient API, you can provide a `ChatMemory` implementation to maintain conversation context across multiple interactions.
