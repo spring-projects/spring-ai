@@ -24,11 +24,11 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springaicommunity.mcp.annotation.McpPromptListChanged;
-import org.springaicommunity.mcp.annotation.McpResourceListChanged;
-import org.springaicommunity.mcp.annotation.McpToolListChanged;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.McpPromptListChanged;
+import org.springframework.ai.mcp.annotation.McpResourceListChanged;
+import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigurations;

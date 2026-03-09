@@ -23,11 +23,11 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springaicommunity.mcp.annotation.McpSampling;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.annotation.McpSampling;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;

@@ -24,13 +24,13 @@ import java.util.stream.Stream;
 import io.modelcontextprotocol.server.McpSyncServer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springaicommunity.mcp.annotation.McpTool;
-import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
 import org.springframework.ai.mcp.McpToolUtils;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;

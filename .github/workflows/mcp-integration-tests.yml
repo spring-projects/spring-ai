@@ -27,9 +27,9 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Build with Maven and run mcp/common and mcp/mcp-annotations-spring integration tests
+      - name: Build with Maven and run mcp/common and mcp/mcp-annotations integration tests
         run: |
-          ./mvnw clean verify -Pintegration-tests -pl "mcp/common,mcp/mcp-annotations-spring"
+          ./mvnw clean verify -Pintegration-tests -pl "mcp/common,mcp/mcp-annotations"
 
   mcp-transport:
     name: MCP transport integration tests
