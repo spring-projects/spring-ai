@@ -35,13 +35,17 @@ import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.FunctionResponse;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.GoogleMaps;
 import com.google.genai.types.GoogleSearch;
+import com.google.genai.types.LatLng;
 import com.google.genai.types.Part;
+import com.google.genai.types.RetrievalConfig;
 import com.google.genai.types.SafetySetting;
 import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.ThinkingLevel;
 import com.google.genai.types.Tool;
+import com.google.genai.types.ToolConfig;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -520,6 +524,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 			requestOptions.setGoogleSearchRetrieval(ModelOptionsUtils.mergeOption(
 					runtimeOptions.getGoogleSearchRetrieval(), this.defaultOptions.getGoogleSearchRetrieval()));
+			requestOptions.setGoogleMaps(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getGoogleMaps(), this.defaultOptions.getGoogleMaps()));
+			requestOptions.setGoogleMapsWidget(ModelOptionsUtils.mergeOption(runtimeOptions.getGoogleMapsWidget(),
+					this.defaultOptions.getGoogleMapsWidget()));
+			requestOptions.setLatitude(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getLatitude(), this.defaultOptions.getLatitude()));
+			requestOptions.setLongitude(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getLongitude(), this.defaultOptions.getLongitude()));
 			requestOptions.setSafetySettings(ModelOptionsUtils.mergeOption(runtimeOptions.getSafetySettings(),
 					this.defaultOptions.getSafetySettings()));
 			requestOptions
@@ -532,6 +544,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			requestOptions.setToolContext(this.defaultOptions.getToolContext());
 
 			requestOptions.setGoogleSearchRetrieval(this.defaultOptions.getGoogleSearchRetrieval());
+			requestOptions.setGoogleMaps(this.defaultOptions.getGoogleMaps());
+			requestOptions.setGoogleMapsWidget(this.defaultOptions.getGoogleMapsWidget());
+			requestOptions.setLatitude(this.defaultOptions.getLatitude());
+			requestOptions.setLongitude(this.defaultOptions.getLongitude());
 			requestOptions.setSafetySettings(this.defaultOptions.getSafetySettings());
 			requestOptions.setLabels(this.defaultOptions.getLabels());
 		}
@@ -653,9 +669,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			}
 		}
 
-		ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
-			.finishReason(candidateFinishReason.toString())
-			.build();
+		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(candidateFinishReason.toString());
+		candidate.groundingMetadata()
+			.ifPresent(grounding -> generationMetadataBuilder.metadata("groundingMetadata", grounding));
+		ChatGenerationMetadata chatGenerationMetadata = generationMetadataBuilder.build();
 
 		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
 				&& candidate.content().get().parts().get().stream().allMatch(part -> part.functionCall().isPresent());
@@ -730,6 +747,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		// Build GenerateContentConfig
 		GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder();
+		RetrievalConfig.Builder retrievalConfigBuilder = RetrievalConfig.builder();
 
 		String modelName = requestOptions.getModel() != null ? requestOptions.getModel()
 				: this.defaultOptions.getModel();
@@ -814,6 +832,23 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			final var googleSearchRetrievalTool = Tool.builder().googleSearch(googleSearch).build();
 			tools.add(googleSearchRetrievalTool);
 		}
+
+		if (requestOptions.getGoogleMaps()) {
+			var googleMapsBuilder = GoogleMaps.builder();
+			if (requestOptions.getGoogleMapsWidget()) {
+				googleMapsBuilder.enableWidget(true);
+			}
+			tools.add(Tool.builder().googleMaps(googleMapsBuilder.build()).build());
+		}
+
+		if (requestOptions.getLatitude() != null && requestOptions.getLongitude() != null) {
+			retrievalConfigBuilder.latLng(LatLng.builder()
+				.latitude(requestOptions.getLatitude())
+				.longitude(requestOptions.getLongitude())
+				.build());
+		}
+
+		configBuilder.toolConfig(ToolConfig.builder().retrievalConfig(retrievalConfigBuilder).build());
 
 		if (!CollectionUtils.isEmpty(tools)) {
 			configBuilder.tools(tools);
