@@ -25,7 +25,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonParser;
 
 /**
  * Class for creating Function callbacks around elicitation methods that return Mono.
@@ -76,7 +76,7 @@ public final class AsyncMcpElicitationMethodCallback extends AbstractMcpElicitat
 						StructuredElicitResult<?> structuredElicitResult = (StructuredElicitResult<?>) value;
 
 						var content = structuredElicitResult.structuredContent() != null
-								? JsonParser.toMap(structuredElicitResult.structuredContent()) : null;
+								? McpJsonParser.toMap(structuredElicitResult.structuredContent()) : null;
 
 						return Mono.just(ElicitResult.builder()
 							.message(structuredElicitResult.action())

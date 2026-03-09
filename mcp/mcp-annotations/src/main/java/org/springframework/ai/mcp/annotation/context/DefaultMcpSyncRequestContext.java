@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.core.type.TypeReference;
 
+import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonParser;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.ConcurrentReferenceHashMap;
@@ -106,7 +107,7 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 			return new StructuredElicitResult<>(elicitResult.action(), null, elicitResult.meta());
 		}
 
-		return new StructuredElicitResult<>(elicitResult.action(), JsonParser.fromMap(elicitResult.content(), type),
+		return new StructuredElicitResult<>(elicitResult.action(), McpJsonParser.fromMap(elicitResult.content(), type),
 				elicitResult.meta());
 	}
 
@@ -129,7 +130,7 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 
 		return new StructuredElicitResult<>(elicitResult.action(),
 
-				JsonParser.fromMap(elicitResult.content(), type), elicitResult.meta());
+				McpJsonParser.fromMap(elicitResult.content(), type), elicitResult.meta());
 	}
 
 	@Override
@@ -154,7 +155,7 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 		}
 
 		return new StructuredElicitResult<>(elicitResult.action(),
-				JsonParser.fromMap(elicitResult.content(), returnType), elicitResult.meta());
+				McpJsonParser.fromMap(elicitResult.content(), returnType), elicitResult.meta());
 	}
 
 	@Override
@@ -179,7 +180,7 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 		}
 
 		return new StructuredElicitResult<>(elicitResult.action(),
-				JsonParser.fromMap(elicitResult.content(), returnType), elicitResult.meta());
+				McpJsonParser.fromMap(elicitResult.content(), returnType), elicitResult.meta());
 	}
 
 	@Override

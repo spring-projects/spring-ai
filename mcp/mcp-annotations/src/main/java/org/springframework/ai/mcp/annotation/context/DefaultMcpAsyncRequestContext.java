@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 import tools.jackson.core.type.TypeReference;
 
+import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonParser;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
 import org.springframework.ai.util.json.JsonParser;
 import org.springframework.util.ConcurrentReferenceHashMap;
@@ -104,7 +105,8 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 		DefaultElicitationSpec elicitationSpec = new DefaultElicitationSpec();
 		spec.accept(elicitationSpec);
 		return this.elicitationInternal(elicitationSpec.message, type.getType(), elicitationSpec.meta)
-			.map(er -> new StructuredElicitResult<T>(er.action(), JsonParser.fromMap(er.content(), type), er.meta()));
+			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+					er.meta()));
 	}
 
 	@Override
@@ -114,21 +116,24 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 		DefaultElicitationSpec elicitationSpec = new DefaultElicitationSpec();
 		spec.accept(elicitationSpec);
 		return this.elicitationInternal(elicitationSpec.message, type, elicitationSpec.meta)
-			.map(er -> new StructuredElicitResult<T>(er.action(), JsonParser.fromMap(er.content(), type), er.meta()));
+			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+					er.meta()));
 	}
 
 	@Override
 	public <T> Mono<StructuredElicitResult<T>> elicit(TypeReference<T> type) {
 		Assert.notNull(type, "Elicitation response type must not be null");
 		return this.elicitationInternal("Please provide the required information.", type.getType(), null)
-			.map(er -> new StructuredElicitResult<T>(er.action(), JsonParser.fromMap(er.content(), type), er.meta()));
+			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+					er.meta()));
 	}
 
 	@Override
 	public <T> Mono<StructuredElicitResult<T>> elicit(Class<T> type) {
 		Assert.notNull(type, "Elicitation response type must not be null");
 		return this.elicitationInternal("Please provide the required information.", type, null)
-			.map(er -> new StructuredElicitResult<T>(er.action(), JsonParser.fromMap(er.content(), type), er.meta()));
+			.map(er -> new StructuredElicitResult<T>(er.action(), McpJsonParser.fromMap(er.content(), type),
+					er.meta()));
 	}
 
 	@Override
