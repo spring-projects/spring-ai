@@ -609,6 +609,8 @@ public class AnthropicChatModel implements ChatModel {
 			}
 			requestOptions.setHttpHeaders(
 					mergeHttpHeaders(runtimeOptions.getHttpHeaders(), this.defaultOptions.getHttpHeaders()));
+			requestOptions
+				.setExtraBody(mergeExtraBody(runtimeOptions.getExtraBody(), this.defaultOptions.getExtraBody()));
 			requestOptions.setInternalToolExecutionEnabled(
 					ModelOptionsUtils.mergeOption(runtimeOptions.getInternalToolExecutionEnabled(),
 							this.defaultOptions.getInternalToolExecutionEnabled()));
@@ -640,6 +642,7 @@ public class AnthropicChatModel implements ChatModel {
 		}
 		else {
 			requestOptions.setHttpHeaders(this.defaultOptions.getHttpHeaders());
+			requestOptions.setExtraBody(this.defaultOptions.getExtraBody());
 			requestOptions.setInternalToolExecutionEnabled(this.defaultOptions.getInternalToolExecutionEnabled());
 			requestOptions.setToolNames(this.defaultOptions.getToolNames());
 			requestOptions.setToolCallbacks(this.defaultOptions.getToolCallbacks());
@@ -658,6 +661,21 @@ public class AnthropicChatModel implements ChatModel {
 		var mergedHttpHeaders = new HashMap<>(defaultHttpHeaders);
 		mergedHttpHeaders.putAll(runtimeHttpHeaders);
 		return mergedHttpHeaders;
+	}
+
+	private @Nullable Map<String, Object> mergeExtraBody(@Nullable Map<String, Object> runtimeExtraBody,
+			@Nullable Map<String, Object> defaultExtraBody) {
+		if (defaultExtraBody == null && runtimeExtraBody == null) {
+			return null;
+		}
+		var merged = new HashMap<String, Object>();
+		if (defaultExtraBody != null) {
+			merged.putAll(defaultExtraBody);
+		}
+		if (runtimeExtraBody != null) {
+			merged.putAll(runtimeExtraBody);
+		}
+		return merged.isEmpty() ? null : merged;
 	}
 
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
@@ -780,6 +798,18 @@ public class AnthropicChatModel implements ChatModel {
 				}
 				else if (existingBeta == null) {
 					headers.put("anthropic-beta", AnthropicApi.BETA_EXTENDED_CACHE_TTL);
+				}
+				needsUpdate = true;
+			}
+
+			// Add fast mode beta header if speed is "fast"
+			if ("fast".equals(requestOptions.getSpeed())) {
+				String existingBeta = headers.get("anthropic-beta");
+				if (existingBeta != null && !existingBeta.contains(AnthropicApi.BETA_FAST_MODE)) {
+					headers.put("anthropic-beta", existingBeta + "," + AnthropicApi.BETA_FAST_MODE);
+				}
+				else if (existingBeta == null) {
+					headers.put("anthropic-beta", AnthropicApi.BETA_FAST_MODE);
 				}
 				needsUpdate = true;
 			}

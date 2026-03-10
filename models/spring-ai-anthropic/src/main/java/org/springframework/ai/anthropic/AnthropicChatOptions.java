@@ -145,6 +145,17 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	 */
 	private @JsonProperty("output_format") @Nullable OutputFormat outputFormat;
 
+	/**
+	 * Speed mode for inference. Set to "fast" for faster output (up to 2.5x).
+	 */
+	private @JsonProperty("speed") @Nullable String speed;
+
+	/**
+	 * Additional parameters to pass to the Anthropic API. Accepts any key-value pairs
+	 * that will be included at the top level of the JSON request.
+	 */
+	private @JsonProperty("extra_body") @Nullable Map<String, Object> extraBody;
+
 	// @formatter:on
 
 	public static AnthropicChatOptions.Builder<?> builder() {
@@ -171,6 +182,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			.citationDocuments(new ArrayList<>(fromOptions.getCitationDocuments()))
 			.outputFormat(fromOptions.getOutputFormat())
 			.skillContainer(fromOptions.getSkillContainer())
+			.speed(fromOptions.getSpeed())
+			.extraBody(fromOptions.getExtraBody())
 			.build();
 	}
 
@@ -363,6 +376,22 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		this.outputFormat = outputFormat;
 	}
 
+	public @Nullable String getSpeed() {
+		return this.speed;
+	}
+
+	public void setSpeed(@Nullable String speed) {
+		this.speed = speed;
+	}
+
+	public @Nullable Map<String, Object> getExtraBody() {
+		return this.extraBody;
+	}
+
+	public void setExtraBody(@Nullable Map<String, Object> extraBody) {
+		this.extraBody = extraBody;
+	}
+
 	@Override
 	@JsonIgnore
 	public @Nullable String getOutputSchema() {
@@ -407,7 +436,9 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			.citationDocuments(this.getCitationDocuments())
 			.cacheOptions(this.getCacheOptions())
 			.skillContainer(this.getSkillContainer())
-			.httpHeaders(this.getHttpHeaders());
+			.httpHeaders(this.getHttpHeaders())
+			.speed(this.speed)
+			.extraBody(this.extraBody);
 	}
 
 	@Override
@@ -432,7 +463,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				&& Objects.equals(this.cacheOptions, that.cacheOptions)
 				&& Objects.equals(this.outputFormat, that.outputFormat)
 				&& Objects.equals(this.citationDocuments, that.citationDocuments)
-				&& Objects.equals(this.skillContainer, that.skillContainer);
+				&& Objects.equals(this.skillContainer, that.skillContainer) && Objects.equals(this.speed, that.speed)
+				&& Objects.equals(this.extraBody, that.extraBody);
 	}
 
 	@Override
@@ -440,7 +472,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		return Objects.hash(this.model, this.maxTokens, this.metadata, this.stopSequences, this.temperature, this.topP,
 				this.topK, this.toolChoice, this.thinking, this.toolCallbacks, this.toolNames,
 				this.internalToolExecutionEnabled, this.toolContext, this.httpHeaders, this.cacheOptions,
-				this.outputFormat, this.citationDocuments, this.skillContainer);
+				this.outputFormat, this.citationDocuments, this.skillContainer, this.speed, this.extraBody);
 	}
 
 	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B>
@@ -461,6 +493,10 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		private Map<String, String> httpHeaders = new HashMap<>();
 
 		private @Nullable OutputFormat outputFormat;
+
+		private @Nullable String speed;
+
+		private @Nullable Map<String, Object> extraBody;
 
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
@@ -548,6 +584,16 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 		public B outputFormat(@Nullable OutputFormat outputFormat) {
 			this.outputFormat = outputFormat;
+			return self();
+		}
+
+		public B speed(@Nullable String speed) {
+			this.speed = speed;
+			return self();
+		}
+
+		public B extraBody(@Nullable Map<String, Object> extraBody) {
+			this.extraBody = extraBody;
 			return self();
 		}
 
@@ -748,6 +794,12 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				if (options.outputFormat != null) {
 					this.outputFormat = options.outputFormat;
 				}
+				if (options.speed != null) {
+					this.speed = options.speed;
+				}
+				if (options.extraBody != null) {
+					this.extraBody = options.extraBody;
+				}
 			}
 			return self();
 		}
@@ -776,6 +828,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			options.toolContext = this.toolContext;
 			options.httpHeaders = this.httpHeaders;
 			options.outputFormat = this.outputFormat;
+			options.speed = this.speed;
+			options.extraBody = this.extraBody;
 			options.validateCitationConsistency();
 			return options;
 		}
