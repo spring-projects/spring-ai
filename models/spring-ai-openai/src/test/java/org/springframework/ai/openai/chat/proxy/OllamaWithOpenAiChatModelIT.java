@@ -69,7 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Disabled("For manual smoke testing only.")
 @Testcontainers
-@SpringBootTest(classes = OllamaWithOpenAiChatModelIT.Config.class)
+@SpringBootTest
 class OllamaWithOpenAiChatModelIT {
 
 	private static final Logger logger = LoggerFactory.getLogger(OllamaWithOpenAiChatModelIT.class);
