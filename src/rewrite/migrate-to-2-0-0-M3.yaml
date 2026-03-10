@@ -126,41 +126,69 @@ recipeList:
 
   # -------------------------------------------------------------------------
   # Java: server transport classes (WebFlux)
+  # FindAndReplace is used instead of ChangeType because the old artifacts are
+  # no longer on the classpath, making AST-based type resolution impossible.
   # -------------------------------------------------------------------------
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider"
+      filePattern: "**/*.java"
 
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider"
+      filePattern: "**/*.java"
 
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webflux.transport.WebFluxStatelessServerTransport
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport"
+      replace: "org.springframework.ai.mcp.server.webflux.transport.WebFluxStatelessServerTransport"
+      filePattern: "**/*.java"
 
   # -------------------------------------------------------------------------
   # Java: server transport classes (WebMvc)
   # -------------------------------------------------------------------------
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider"
+      filePattern: "**/*.java"
 
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider"
+      replace: "org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider"
+      filePattern: "**/*.java"
 
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport"
+      replace: "org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport"
+      filePattern: "**/*.java"
 
   # -------------------------------------------------------------------------
   # Java: client transport classes (WebFlux)
   # -------------------------------------------------------------------------
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.client.transport.WebFluxSseClientTransport
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.client.transport.WebFluxSseClientTransport"
+      replace: "org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport"
+      filePattern: "**/*.java"
 
-  - org.openrewrite.java.ChangeType:
-      oldFullyQualifiedTypeName: io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport
-      newFullyQualifiedTypeName: org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport
+  - org.openrewrite.text.FindAndReplace:
+      find: "io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport"
+      replace: "org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport"
+      filePattern: "**/*.java"
+
+  # -------------------------------------------------------------------------
+  # Java: McpJsonMapper.createDefault() → McpJsonDefaults.getMapper()
+  # The factory method moved from McpJsonMapper to McpJsonDefaults.
+  # Replace the call first, then the import so the import line is also updated.
+  # -------------------------------------------------------------------------
+  - org.openrewrite.text.FindAndReplace:
+      find: "McpJsonMapper.createDefault()"
+      replace: "McpJsonDefaults.getMapper()"
+      filePattern: "**/*.java"
+
+  # Always add the McpJsonDefaults import alongside McpJsonMapper.
+  # If McpJsonMapper is no longer used after the call-site replacement above,
+  # it will surface as an unused-import warning for manual cleanup.
+  - org.openrewrite.text.FindAndReplace:
+      find: "import io.modelcontextprotocol.json.McpJsonMapper;"
+      replace: "import io.modelcontextprotocol.json.McpJsonDefaults;\nimport io.modelcontextprotocol.json.McpJsonMapper;"
+      filePattern: "**/*.java"
