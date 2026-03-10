@@ -36,7 +36,7 @@
 
 	<!-- Root Checks -->
 	<module name="com.puppycrawl.tools.checkstyle.checks.header.RegexpHeaderCheck">
-		<property name="headerFile" value="${checkstyle.header.file}" />
+		<property name="headerFile" value="src/checkstyle/checkstyle-header.txt" />
 		<property name="fileExtensions" value="java" />
 	</module>
 	<module name="com.puppycrawl.tools.checkstyle.checks.NewlineAtEndOfFileCheck" />
