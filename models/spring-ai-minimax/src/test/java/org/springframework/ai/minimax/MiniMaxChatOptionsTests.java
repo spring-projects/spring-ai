@@ -23,6 +23,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.minimax.api.MiniMaxApi;
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,7 +33,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Alexandros Pappas
  */
-class MiniMaxChatOptionsTests {
+class MiniMaxChatOptionsTests<B extends MiniMaxChatOptions.Builder<B>>
+		extends AbstractChatOptionsTests<MiniMaxChatOptions, B> {
+
+	@Override
+	protected Class<MiniMaxChatOptions> getConcreteOptionsClass() {
+		return MiniMaxChatOptions.class;
+	}
+
+	@Override
+	@SuppressWarnings("unchecked")
+	protected B readyToBuildBuilder() {
+		return (B) MiniMaxChatOptions.builder();
+	}
 
 	@Test
 	void testBuilderWithAllFields() {
