@@ -1,5 +1,26 @@
 ---
 type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.MigrateToSpringAI200M3
+displayName: Migrate to Spring AI 2.0.0-M3
+description: >
+  Umbrella recipe that applies all breaking-change migrations required for
+  Spring AI 2.0.0-M3. Run this recipe to perform all changes in one step.
+
+  Included migrations:
+    - M3MigrateMcpAnnotations:    org.springaicommunity:mcp-annotations → spring-ai-mcp-annotations
+    - M3MigrateMcpSpringTransports: io.modelcontextprotocol.sdk mcp-spring-webflux/webmvc → org.springframework.ai
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+  - org.springframework.ai.migration.M3MigrateMcpAnnotations
+  - org.springframework.ai.migration.M3MigrateMcpSpringTransports
+
+---
+type: specs.openrewrite.org/v1beta/recipe
 name: org.springframework.ai.migration.M3MigrateMcpAnnotations
 displayName: Migrate MCP annotations from springaicommunity to Spring AI
 description: >
@@ -52,3 +73,94 @@ recipeList:
       find: "org.springaicommunity.mcp.annotation."
       replace: "org.springframework.ai.mcp.annotation."
       filePattern: "**/*.java"
+
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.springframework.ai.migration.M3MigrateMcpSpringTransports
+displayName: Migrate MCP Spring transport modules from MCP Java SDK to Spring AI
+description: >
+  Migrates the `mcp-spring-webflux` and `mcp-spring-webmvc` transport modules
+  from the MCP Java SDK (`io.modelcontextprotocol.sdk`) to Spring AI
+  (`org.springframework.ai`).
+
+  Maven dependency group ID changes:
+    io.modelcontextprotocol.sdk:mcp-spring-webflux  → org.springframework.ai:mcp-spring-webflux
+    io.modelcontextprotocol.sdk:mcp-spring-webmvc   → org.springframework.ai:mcp-spring-webmvc
+
+  Java package changes (server transports):
+    io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider        → org.springframework.ai.mcp.server.webflux.transport
+    io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider → org.springframework.ai.mcp.server.webflux.transport
+    io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport           → org.springframework.ai.mcp.server.webflux.transport
+    io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider         → org.springframework.ai.mcp.server.webmvc.transport
+    io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider  → org.springframework.ai.mcp.server.webmvc.transport
+    io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport            → org.springframework.ai.mcp.server.webmvc.transport
+
+  Java package changes (client transports):
+    io.modelcontextprotocol.client.transport.WebFluxSseClientTransport          → org.springframework.ai.mcp.client.webflux.transport
+    io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport   → org.springframework.ai.mcp.client.webflux.transport
+
+tags:
+  - spring-ai
+  - mcp
+  - migration
+
+recipeList:
+
+  # -------------------------------------------------------------------------
+  # Maven: change group ID for the WebFlux transport
+  # -------------------------------------------------------------------------
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: io.modelcontextprotocol.sdk
+      oldArtifactId: mcp-spring-webflux
+      newGroupId: org.springframework.ai
+      newArtifactId: mcp-spring-webflux
+
+  # -------------------------------------------------------------------------
+  # Maven: change group ID for the WebMvc transport
+  # -------------------------------------------------------------------------
+  - org.openrewrite.maven.ChangeDependencyGroupIdAndArtifactId:
+      oldGroupId: io.modelcontextprotocol.sdk
+      oldArtifactId: mcp-spring-webmvc
+      newGroupId: org.springframework.ai
+      newArtifactId: mcp-spring-webmvc
+
+  # -------------------------------------------------------------------------
+  # Java: server transport classes (WebFlux)
+  # -------------------------------------------------------------------------
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebFluxSseServerTransportProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider
+
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider
+
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webflux.transport.WebFluxStatelessServerTransport
+
+  # -------------------------------------------------------------------------
+  # Java: server transport classes (WebMvc)
+  # -------------------------------------------------------------------------
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebMvcSseServerTransportProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider
+
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebMvcStreamableServerTransportProvider
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider
+
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.server.transport.WebMvcStatelessServerTransport
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport
+
+  # -------------------------------------------------------------------------
+  # Java: client transport classes (WebFlux)
+  # -------------------------------------------------------------------------
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.client.transport.WebFluxSseClientTransport
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport
+
+  - org.openrewrite.java.ChangeType:
+      oldFullyQualifiedTypeName: io.modelcontextprotocol.client.transport.WebClientStreamableHttpTransport
+      newFullyQualifiedTypeName: org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport
