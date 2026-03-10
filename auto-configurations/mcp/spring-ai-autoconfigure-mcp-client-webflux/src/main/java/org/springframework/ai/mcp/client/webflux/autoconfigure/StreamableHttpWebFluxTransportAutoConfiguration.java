@@ -16,14 +16,8 @@
 
 package org.springframework.ai.mcp.client.webflux.autoconfigure;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
-import tools.jackson.databind.json.JsonMapper;
-
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
@@ -36,6 +30,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Auto-configuration for WebFlux-based Streamable HTTP client transport in the Model
@@ -86,26 +86,36 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 	@Bean
 	public List<NamedClientMcpTransport> streamableHttpWebFluxClientTransports(
 			McpStreamableHttpClientProperties streamableProperties,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<JsonMapper> jsonMapperProvider) {
+			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<JsonMapper> jsonMapperProvider,
+			ObjectProvider<List<McpStreamableHttpConnectionInterceptor>> connectionInterceptorsProvider) {
 
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
 		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+		List<McpStreamableHttpConnectionInterceptor> connectionInterceptors = connectionInterceptorsProvider.getIfAvailable(List::of);
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
-			String url = Objects.requireNonNull(serverParameters.getValue().url(),
-					"Missing url for server named " + serverParameters.getKey());
+
+			String connectionName = serverParameters.getKey();
+			ConnectionParameters params = serverParameters.getValue();
+
+			// Apply connection interceptors in order
+			for (McpStreamableHttpConnectionInterceptor interceptor : connectionInterceptors) {
+				params = interceptor.intercept(connectionName, params);
+			}
+
+			String url = Objects.requireNonNull(params.url(), "Missing url for server named " + connectionName);
 			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
-			String streamableHttpEndpoint = Objects.requireNonNullElse(serverParameters.getValue().endpoint(), "/mcp");
+			String streamableHttpEndpoint = Objects.requireNonNullElse(params.endpoint(), "/mcp");
 
 			var transport = WebClientStreamableHttpTransport.builder(webClientBuilder)
 				.endpoint(streamableHttpEndpoint)
 				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 				.build();
 
-			streamableHttpTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+			streamableHttpTransports.add(new NamedClientMcpTransport(connectionName, transport));
 		}
 
 		return streamableHttpTransports;

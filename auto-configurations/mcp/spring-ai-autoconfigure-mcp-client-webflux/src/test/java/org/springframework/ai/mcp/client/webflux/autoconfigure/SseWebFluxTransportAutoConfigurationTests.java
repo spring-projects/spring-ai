@@ -22,7 +22,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpSseConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
 import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
@@ -183,6 +185,20 @@ public class SseWebFluxTransportAutoConfigurationTests {
 		return (String) ReflectionUtils.getField(privateField, transport);
 	}
 
+	@Test
+	void interceptorCanModifyConnectionParameters() {
+		this.applicationContext.withUserConfiguration(SseInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.myservice.url=http://myservice")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("sseWebFluxClientTransports", List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(transports.get(0).name()).isEqualTo("myservice");
+				assertThat(transports.get(0).transport()).isInstanceOf(WebFluxSseClientTransport.class);
+				assertThat(getSseEndpoint((WebFluxSseClientTransport) transports.get(0).transport()))
+					.isEqualTo("/custom-intercepted-sse");
+			});
+	}
+
 	@Configuration
 	static class CustomWebClientConfiguration {
 
@@ -199,6 +215,16 @@ public class SseWebFluxTransportAutoConfigurationTests {
 		@Bean
 		JsonMapper jsonMapper() {
 			return new JsonMapper();
+		}
+
+	}
+
+	@Configuration
+	static class SseInterceptorConfiguration {
+
+		@Bean
+		List<McpSseConnectionInterceptor> sseInterceptors() {
+			return List.of((name, params) -> new SseParameters(params.url(), "/custom-intercepted-sse"));
 		}
 
 	}

@@ -23,7 +23,9 @@ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTranspor
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpConnectionInterceptor;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -168,12 +170,38 @@ public class StreamableHttpHttpClientTransportAutoConfigurationTests {
 		return (String) ReflectionUtils.getField(privateField, transport);
 	}
 
+	@Test
+	void interceptorCanModifyConnectionParameters() {
+		this.applicationContext.withUserConfiguration(StreamableHttpInterceptorConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.myservice.url=http://myservice")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+				assertThat(transports).hasSize(1);
+				assertThat(transports.get(0).name()).isEqualTo("myservice");
+				assertThat(transports.get(0).transport()).isInstanceOf(HttpClientStreamableHttpTransport.class);
+				assertThat(
+						getStreamableHttpEndpoint((HttpClientStreamableHttpTransport) transports.get(0).transport()))
+					.isEqualTo("/custom-intercepted-mcp");
+			});
+	}
+
 	@Configuration
 	static class CustomJsonMapperConfiguration {
 
 		@Bean
 		JsonMapper jsonMapper() {
 			return new JsonMapper();
+		}
+
+	}
+
+	@Configuration
+	static class StreamableHttpInterceptorConfiguration {
+
+		@Bean
+		List<McpStreamableHttpConnectionInterceptor> streamableHttpInterceptors() {
+			return List.of((name, params) -> new ConnectionParameters(params.url(), "/custom-intercepted-mcp"));
 		}
 
 	}

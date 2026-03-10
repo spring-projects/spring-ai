@@ -1,0 +1,50 @@
+/*
+ * Copyright 2023-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.mcp.client.common.autoconfigure;
+
+import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
+
+/**
+ * Interceptor for modifying SSE connection parameters before transport creation.
+ *
+ * <p>
+ * This functional interface allows users to intercept and modify SSE connection
+ * parameters (such as URL and SSE endpoint) before the transport is created. This is
+ * particularly useful for service discovery scenarios where service names need to be
+ * resolved to actual host:port addresses at runtime.
+ *
+ * <p>
+ * Multiple interceptors can be registered as Spring beans and will be applied in order
+ * determined by {@link org.springframework.core.annotation.Order @Order} annotation.
+ *
+ * @author Haotian Zhang
+ * @see SseParameters
+ * @since 1.0.0
+ */
+@FunctionalInterface
+public interface McpSseConnectionInterceptor {
+
+	/**
+	 * Intercept and optionally modify the SSE connection parameters.
+	 *
+	 * @param connectionName the name of the connection being created
+	 * @param originalParams the original SSE parameters from configuration
+	 * @return the (potentially modified) SSE parameters to use for transport creation
+	 */
+	SseParameters intercept(String connectionName, SseParameters originalParams);
+
+}
