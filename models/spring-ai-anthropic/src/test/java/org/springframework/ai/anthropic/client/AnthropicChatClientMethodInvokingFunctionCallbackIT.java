@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -273,7 +273,7 @@ class AnthropicChatClientMethodInvokingFunctionCallbackIT {
 
 	// https://github.com/spring-projects/spring-ai/issues/1878
 	@ParameterizedTest
-	@ValueSource(strings = { "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-7-sonnet-latest" })
+	@ValueSource(strings = { "claude-opus-4-5", "claude-sonnet-4-5", "claude-haiku-4-5" })
 	void streamingParameterLessTool(String modelName) {
 
 		ChatClient chatClient = ChatClient.builder(this.chatModel).build();

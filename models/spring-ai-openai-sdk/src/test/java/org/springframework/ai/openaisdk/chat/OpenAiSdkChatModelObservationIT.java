@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for observation instrumentation in {@link OpenAiSdkChatModel}.
  *
  * @author Julien Dubois
+ * @author Soby Chacko
  */
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -144,9 +145,10 @@ public class OpenAiSdkChatModelObservationIT {
 
 		@Bean
 		public OpenAiSdkChatModel openAiChatModel(TestObservationRegistry observationRegistry) {
-			return new OpenAiSdkChatModel(
-					OpenAiSdkChatOptions.builder().model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL).build(),
-					observationRegistry);
+			return OpenAiSdkChatModel.builder()
+				.options(OpenAiSdkChatOptions.builder().model(OpenAiSdkChatOptions.DEFAULT_CHAT_MODEL).build())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

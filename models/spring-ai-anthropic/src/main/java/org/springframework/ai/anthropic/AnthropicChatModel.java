@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ import org.springframework.util.StringUtils;
  */
 public class AnthropicChatModel implements ChatModel {
 
-	public static final String DEFAULT_MODEL_NAME = AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue();
+	public static final String DEFAULT_MODEL_NAME = AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue();
 
 	public static final Integer DEFAULT_MAX_TOKENS = 500;
 

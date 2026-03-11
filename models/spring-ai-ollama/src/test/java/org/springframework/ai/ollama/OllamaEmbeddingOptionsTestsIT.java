@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,8 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Yokior
  */
-@SpringBootTest(classes = OllamaEmbeddingOptionsTests.TestConfiguration.class)
-public class OllamaEmbeddingOptionsTests extends BaseOllamaIT {
+@SpringBootTest(classes = OllamaEmbeddingOptionsTestsIT.TestConfiguration.class)
+public class OllamaEmbeddingOptionsTestsIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.QWEN3_EMBED_8B.getName();
 

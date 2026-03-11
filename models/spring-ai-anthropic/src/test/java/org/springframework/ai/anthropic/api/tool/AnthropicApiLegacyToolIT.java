@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public class AnthropicApiLegacyToolIT {
 				Role.USER);
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
-				AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue(), List.of(chatCompletionMessage), systemPrompt, 500,
+				AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue(), List.of(chatCompletionMessage), systemPrompt, 500,
 				0.8, false);
 
 		ResponseEntity<ChatCompletionResponse> chatCompletion = doCall(chatCompletionRequest);
@@ -143,7 +143,7 @@ public class AnthropicApiLegacyToolIT {
 
 		AnthropicMessage chatCompletionMessage2 = new AnthropicMessage(List.of(new ContentBlock(content)), Role.USER);
 
-		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue(),
+		return doCall(new ChatCompletionRequest(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue(),
 				List.of(chatCompletionMessage2), null, 500, 0.8, false));
 	}
 

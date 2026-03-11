@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolConfiguration;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolInputSchema;
@@ -613,13 +614,27 @@ public class BedrockProxyChatModel implements ChatModel {
 		else if (BedrockMediaFormat.isSupportedDocumentFormat(mimeType)) { // Document
 
 			return ContentBlock.fromDocument(DocumentBlock.builder()
-				.name(media.getName())
+				.name(sanitizeDocumentName(media.getName()))
 				.format(BedrockMediaFormat.getDocumentFormat(mimeType))
 				.source(DocumentSource.builder().bytes(SdkBytes.fromByteArray(media.getDataAsByteArray())).build())
 				.build());
 		}
 
 		throw new IllegalArgumentException("Unsupported media format: " + mimeType);
+	}
+
+	/**
+	 * Sanitizes a document name to conform to Amazon Bedrock's naming restrictions. The
+	 * name can only contain alphanumeric characters, whitespace characters (no more than
+	 * one in a row), hyphens, parentheses, and square brackets.
+	 * @param name the document name to sanitize
+	 * @return the sanitized document name
+	 * @see <a href=
+	 * "https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_DocumentBlock.html">DocumentBlock
+	 * API Reference</a>
+	 */
+	static String sanitizeDocumentName(String name) {
+		return name.replaceAll("[^a-zA-Z0-9\\s\\-()\\[\\]]", "-");
 	}
 
 	private static byte[] getContentMediaData(Object mediaData) {
@@ -716,6 +731,8 @@ public class BedrockProxyChatModel implements ChatModel {
 		Integer promptTokens = response.usage().inputTokens();
 		Integer generationTokens = response.usage().outputTokens();
 		int totalTokens = response.usage().totalTokens();
+		Integer cacheReadInputTokens = response.usage().cacheReadInputTokens();
+		Integer cacheWriteInputTokens = response.usage().cacheWriteInputTokens();
 
 		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
 				&& perviousChatResponse.getMetadata().getUsage() != null) {
@@ -723,9 +740,37 @@ public class BedrockProxyChatModel implements ChatModel {
 			promptTokens += perviousChatResponse.getMetadata().getUsage().getPromptTokens();
 			generationTokens += perviousChatResponse.getMetadata().getUsage().getCompletionTokens();
 			totalTokens += perviousChatResponse.getMetadata().getUsage().getTotalTokens();
+
+			// Merge cache metrics from previous response if available
+			if (perviousChatResponse.getMetadata().getUsage().getNativeUsage() instanceof TokenUsage) {
+				TokenUsage previousTokenUsage = (TokenUsage) perviousChatResponse.getMetadata()
+					.getUsage()
+					.getNativeUsage();
+				if (cacheReadInputTokens == null) {
+					cacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
+				}
+				else if (previousTokenUsage.cacheReadInputTokens() != null) {
+					cacheReadInputTokens += previousTokenUsage.cacheReadInputTokens();
+				}
+				if (cacheWriteInputTokens == null) {
+					cacheWriteInputTokens = previousTokenUsage.cacheWriteInputTokens();
+				}
+				else if (previousTokenUsage.cacheWriteInputTokens() != null) {
+					cacheWriteInputTokens += previousTokenUsage.cacheWriteInputTokens();
+				}
+			}
 		}
 
-		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens);
+		// Create native TokenUsage with cache metrics
+		TokenUsage nativeTokenUsage = TokenUsage.builder()
+			.inputTokens(promptTokens)
+			.outputTokens(generationTokens)
+			.totalTokens(totalTokens)
+			.cacheReadInputTokens(cacheReadInputTokens)
+			.cacheWriteInputTokens(cacheWriteInputTokens)
+			.build();
+
+		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage);
 
 		Document modelResponseFields = response.additionalModelResponseFields();
 
@@ -735,7 +780,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			.id(response.responseMetadata() != null ? response.responseMetadata().requestId() : "Unknown")
 			.usage(usage);
 
-		// Add cache metrics if available
+		// Add cache metrics to metadata if available (for backward compatibility)
 		Map<String, Object> additionalMetadata = new HashMap<>();
 		if (response.usage().cacheReadInputTokens() != null) {
 			additionalMetadata.put("cacheReadInputTokens", response.usage().cacheReadInputTokens());

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,11 +81,11 @@ public class AnthropicApiIT {
 				+ "In the same way, Silmarillion can be taken to mean \"Of/About the Silmarils\"";
 
 		AnthropicMessage chatCompletionMessage = new AnthropicMessage(
-				List.of(new ContentBlock(userMessageText.repeat(20), AnthropicCacheType.EPHEMERAL.cacheControl())),
+				List.of(new ContentBlock(userMessageText.repeat(30), AnthropicCacheType.EPHEMERAL.cacheControl())),
 				Role.USER);
 
 		ChatCompletionRequest chatCompletionRequest = new ChatCompletionRequest(
-				AnthropicApi.ChatModel.CLAUDE_3_HAIKU.getValue(), List.of(chatCompletionMessage), null, 100, 0.8,
+				AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getValue(), List.of(chatCompletionMessage), null, 2048, 0.8,
 				false);
 
 		// First request - creates cache
@@ -112,7 +112,7 @@ public class AnthropicApiIT {
 				Role.USER);
 		ResponseEntity<ChatCompletionResponse> response = this.anthropicApi
 			.chatCompletionEntity(ChatCompletionRequest.builder()
-				.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+				.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 				.messages(List.of(chatCompletionMessage))
 				.maxTokens(100)
 				.temperature(0.8)
@@ -134,7 +134,7 @@ public class AnthropicApiIT {
 				Role.USER);
 
 		ChatCompletionRequest request = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(8192)
 			.temperature(1.0) // temperature should be set to 1 when thinking is enabled
@@ -179,7 +179,7 @@ public class AnthropicApiIT {
 				Role.USER);
 
 		Flux<ChatCompletionResponse> response = this.anthropicApi.chatCompletionStream(ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(100)
 			.temperature(0.8)
@@ -221,7 +221,7 @@ public class AnthropicApiIT {
 				Role.USER);
 
 		ChatCompletionRequest request = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_7_SONNET.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(2048)
 			.temperature(1.0)
@@ -310,7 +310,7 @@ public class AnthropicApiIT {
 		messageConversation.add(chatCompletionMessage);
 
 		ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU)
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5)
 			.messages(messageConversation)
 			.maxTokens(1500)
 			.stream(true)
@@ -347,7 +347,7 @@ public class AnthropicApiIT {
 		AnthropicApi api = AnthropicApi.builder().apiKey("FAKE_KEY_FOR_ERROR_RESPONSE").build();
 
 		Flux<ChatCompletionResponse> response = api.chatCompletionStream(ChatCompletionRequest.builder()
-			.model(AnthropicApi.ChatModel.CLAUDE_3_5_HAIKU.getValue())
+			.model(AnthropicApi.ChatModel.CLAUDE_HAIKU_4_5.getValue())
 			.messages(List.of(chatCompletionMessage))
 			.maxTokens(100)
 			.temperature(0.8)
