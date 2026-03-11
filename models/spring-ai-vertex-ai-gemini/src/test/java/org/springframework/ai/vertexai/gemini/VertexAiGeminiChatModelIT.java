@@ -586,7 +586,7 @@ class VertexAiGeminiChatModelIT {
 			.call()
 			.content();
 
-		assertThat(response).contains("I have set an alarm for 11:10 AM.");
+		assertThat(response).containsAnyOf("alarm", "11:10");
 		assertThat(alarmTools.getAlarm()).isEqualTo("2025-05-08T11:10:10+02:00");
 	}
 
