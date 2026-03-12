@@ -34,11 +34,12 @@ import org.springframework.util.StringUtils;
 @JsonInclude(Include.NON_NULL)
 public class GoogleGenAiTextEmbeddingOptions implements EmbeddingOptions {
 
-	public static final String DEFAULT_MODEL_NAME = GoogleGenAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName();
+	public static final String DEFAULT_MODEL_NAME = GoogleGenAiTextEmbeddingModelName.GEMINI_EMBEDDING_001.getName();
 
 	/**
-	 * The embedding model name to use. Supported models are: text-embedding-004,
-	 * text-multilingual-embedding-002 and multimodalembedding@001.
+	 * The embedding model name to use. Supported models are: gemini-embedding-001
+	 * (recommended for Gemini API), text-embedding-004, text-multilingual-embedding-002
+	 * and multimodalembedding@001.
 	 */
 	private @JsonProperty("model") String model;
 

@@ -32,14 +32,22 @@ import org.springframework.ai.model.EmbeddingModelDescription;
 public enum GoogleGenAiTextEmbeddingModelName implements EmbeddingModelDescription {
 
 	/**
-	 * English model. Expires on May 14, 2025.
+	 * English model. Deprecated January 14, 2026; use GEMINI_EMBEDDING_001 for Gemini
+	 * API.
 	 */
 	TEXT_EMBEDDING_004("text-embedding-004", "004", 768, "English text model"),
 
 	/**
 	 * Multilingual model. Expires on May 14, 2025.
 	 */
-	TEXT_MULTILINGUAL_EMBEDDING_002("text-multilingual-embedding-002", "002", 768, "Multilingual text model");
+	TEXT_MULTILINGUAL_EMBEDDING_002("text-multilingual-embedding-002", "002", 768, "Multilingual text model"),
+
+	/**
+	 * Recommended embedding model for Gemini API. Supports 100+ languages, 3072
+	 * dimensions (configurable via outputDimensionality). Use this as default for API key
+	 * mode.
+	 */
+	GEMINI_EMBEDDING_001("gemini-embedding-001", "001", 3072, "Multilingual embedding model");
 
 	private final String modelVersion;
 
