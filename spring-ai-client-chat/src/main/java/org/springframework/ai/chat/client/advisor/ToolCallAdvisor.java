@@ -489,6 +489,17 @@ public class ToolCallAdvisor implements CallAdvisor, StreamAdvisor {
 		 * Disables internal conversation history. You need a ChatMemory Advisor
 		 * registered next in the chain.
 		 * @return this Builder instance for method chaining
+		 * @deprecated this method has been renamed to {@link #disableInternalConversationHistory()}. To be removed in 2.0.0.M4
+		 */
+		@Deprecated(forRemoval = true)
+		public T disableMemory() {
+			return this.disableInternalConversationHistory();
+		}
+
+		/**
+		 * Disables internal conversation history. You need a ChatMemory Advisor
+		 * registered next in the chain.
+		 * @return this Builder instance for method chaining
 		 */
 		public T disableInternalConversationHistory() {
 			this.conversationHistoryEnabled = false;
