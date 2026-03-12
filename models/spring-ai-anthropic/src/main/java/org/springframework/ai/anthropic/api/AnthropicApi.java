@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -99,6 +101,8 @@ public final class AnthropicApi {
 	public static final String BETA_FILES_API = "files-api-2025-04-14";
 
 	public static final String BETA_CODE_EXECUTION = "code-execution-2025-08-25";
+
+	public static final String BETA_FAST_MODE = "fast-mode-2026-02-01";
 
 	public static final String CODE_EXECUTION_TOOL_TYPE = "code_execution_20250825";
 
@@ -1023,20 +1027,51 @@ public final class AnthropicApi {
 		@JsonProperty("tool_choice") @Nullable ToolChoice toolChoice,
 		@JsonProperty("thinking") @Nullable ThinkingConfig thinking,
 		@JsonProperty("output_format") @Nullable OutputFormat outputFormat,
-		@JsonProperty("container") @Nullable SkillContainer container) {
+		@JsonProperty("container") @Nullable SkillContainer container,
+		@JsonProperty("speed") @Nullable String speed,
+		@JsonProperty("extra_body") @Nullable Map<String, Object> extraBody) {
 		// @formatter:on
+
+		public ChatCompletionRequest {
+			if (extraBody == null) {
+				extraBody = new java.util.HashMap<>();
+			}
+		}
+
+		/**
+		 * Overrides the default accessor to add @JsonAnyGetter annotation. This causes
+		 * Jackson to flatten the extraBody map contents to the top level of the JSON.
+		 * @return The extraBody map, never null (initialized in compact constructor).
+		 */
+		@SuppressWarnings("NullAway")
+		@JsonAnyGetter
+		public Map<String, Object> extraBody() {
+			return this.extraBody;
+		}
+
+		/**
+		 * Handles deserialization of unknown properties into the extraBody map.
+		 * @param key The property name
+		 * @param value The property value
+		 */
+		@JsonAnySetter
+		private void setExtraBodyProperty(String key, Object value) {
+			if (this.extraBody != null) {
+				this.extraBody.put(key, value);
+			}
+		}
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, @Nullable Object system,
 				Integer maxTokens, @Nullable Double temperature, @Nullable Boolean stream) {
 			this(model, messages, system, maxTokens, null, null, stream, temperature, null, null, null, null, null,
-					null, null);
+					null, null, null, null);
 		}
 
 		public ChatCompletionRequest(String model, List<AnthropicMessage> messages, @Nullable Object system,
 				Integer maxTokens, @Nullable List<String> stopSequences, @Nullable Double temperature,
 				@Nullable Boolean stream) {
 			this(model, messages, system, maxTokens, null, stopSequences, stream, temperature, null, null, null, null,
-					null, null, null);
+					null, null, null, null, null);
 		}
 
 		public static ChatCompletionRequestBuilder builder() {
@@ -1127,6 +1162,10 @@ public final class AnthropicApi {
 
 		private @Nullable SkillContainer container;
 
+		private @Nullable String speed;
+
+		private @Nullable Map<String, Object> extraBody;
+
 		private ChatCompletionRequestBuilder() {
 		}
 
@@ -1146,6 +1185,8 @@ public final class AnthropicApi {
 			this.thinking = request.thinking;
 			this.outputFormat = request.outputFormat;
 			this.container = request.container;
+			this.speed = request.speed;
+			this.extraBody = request.extraBody;
 		}
 
 		public ChatCompletionRequestBuilder model(ChatModel model) {
@@ -1240,6 +1281,16 @@ public final class AnthropicApi {
 			return this;
 		}
 
+		public ChatCompletionRequestBuilder speed(String speed) {
+			this.speed = speed;
+			return this;
+		}
+
+		public ChatCompletionRequestBuilder extraBody(Map<String, Object> extraBody) {
+			this.extraBody = extraBody;
+			return this;
+		}
+
 		public ChatCompletionRequest build() {
 			Assert.state(this.model != null, "model can't be null");
 			Assert.state(this.messages != null, "messages can't be null");
@@ -1247,7 +1298,7 @@ public final class AnthropicApi {
 
 			return new ChatCompletionRequest(this.model, this.messages, this.system, this.maxTokens, this.metadata,
 					this.stopSequences, this.stream, this.temperature, this.topP, this.topK, this.tools,
-					this.toolChoice, this.thinking, this.outputFormat, this.container);
+					this.toolChoice, this.thinking, this.outputFormat, this.container, this.speed, this.extraBody);
 		}
 
 	}
