@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -93,6 +94,45 @@ public class GoogleGenAiChatModelToolCallingIT {
 		logger.info("Response: {}", response);
 
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	public void includeThoughtsInResponseWithToolCalls() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in Tokyo, Japan? Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.includeThoughts(true)
+			.internalToolExecutionEnabled(false)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		List<Generation> generations = this.chatModel.call(new Prompt(messages, promptOptions)).getResults();
+
+		String responseString = generations.stream()
+			.map(Generation::getOutput)
+			.map(AbstractMessage::getText)
+			.collect(Collectors.joining("\n\n"));
+
+		logger.info("Response: {}", responseString);
+
+		assertThat(generations).hasSize(1);
+
+		AssistantMessage response = generations.get(0).getOutput();
+		assertThat(response.isThought()).isTrue();
+		assertThat(response.getText()).isNotBlank();
+		assertThat(response.getToolCalls()).containsAnyOf(
+				// JSON serialization of Map doesn't guarantee key order,
+				// so check both possible orderings to avoid flaky tests
+				new AssistantMessage.ToolCall("", "function", "getCurrentWeather",
+						"{\"location\":\"Tokyo, Japan\",\"unit\":\"C\"}"),
+				new AssistantMessage.ToolCall("", "function", "getCurrentWeather",
+						"{\"unit\":\"C\",\"location\":\"Tokyo, Japan\"}"));
 	}
 
 	@Test

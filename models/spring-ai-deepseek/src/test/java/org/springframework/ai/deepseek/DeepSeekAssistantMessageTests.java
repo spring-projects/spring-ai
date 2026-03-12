@@ -154,15 +154,15 @@ class DeepSeekAssistantMessageTests {
 	@Test
 	public void testEqualsAndHashCode() {
 		DeepSeekAssistantMessage message1 = new DeepSeekAssistantMessage("content", "reasoning", true, Map.of(),
-				List.of(), List.of());
+				List.of(), List.of(), false);
 		DeepSeekAssistantMessage message2 = new DeepSeekAssistantMessage("content", "reasoning", true, Map.of(),
-				List.of(), List.of());
+				List.of(), List.of(), false);
 
 		assertThat(message1).isEqualTo(message2);
 		assertThat(message1.hashCode()).isEqualTo(message2.hashCode());
 
 		DeepSeekAssistantMessage message3 = new DeepSeekAssistantMessage("content", "different reasoning", true,
-				Map.of(), List.of(), List.of());
+				Map.of(), List.of(), List.of(), false);
 		assertThat(message1).isNotEqualTo(message3);
 	}
 
