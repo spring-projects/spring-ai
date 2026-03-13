@@ -14,20 +14,33 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.anthropic.autoconfigure;
-
-import org.springframework.ai.anthropic.AbstractAnthropicOptions;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+package org.springframework.ai.anthropic;
 
 /**
- * Anthropic connection properties.
+ * Enum representing the type of a Claude Skill.
  *
  * @author Soby Chacko
- * @since 2.0.0
  */
-@ConfigurationProperties(AnthropicConnectionProperties.CONFIG_PREFIX)
-public class AnthropicConnectionProperties extends AbstractAnthropicOptions {
+public enum AnthropicSkillType {
 
-	public static final String CONFIG_PREFIX = "spring.ai.anthropic";
+	/**
+	 * Pre-built skills provided by Anthropic (xlsx, pptx, docx, pdf).
+	 */
+	ANTHROPIC("anthropic"),
+
+	/**
+	 * Custom skills uploaded to the workspace.
+	 */
+	CUSTOM("custom");
+
+	private final String value;
+
+	AnthropicSkillType(String value) {
+		this.value = value;
+	}
+
+	public String getValue() {
+		return this.value;
+	}
 
 }

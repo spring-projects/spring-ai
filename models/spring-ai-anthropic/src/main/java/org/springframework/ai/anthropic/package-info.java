@@ -14,6 +14,40 @@
  * limitations under the License.
  */
 
+/**
+ * Spring AI integration with Anthropic's Claude models using the official
+ * <a href="https://github.com/anthropics/anthropic-sdk-java">Anthropic Java SDK</a>.
+ *
+ * <p>
+ * This package provides a {@link org.springframework.ai.chat.model.ChatModel}
+ * implementation that enables interaction with Claude models through Anthropic's Messages
+ * API. The integration supports both synchronous and streaming conversations,
+ * tool/function calling, and full observability through Micrometer.
+ *
+ * <p>
+ * <b>Key Classes:</b>
+ * <ul>
+ * <li>{@link org.springframework.ai.anthropic.AnthropicChatModel} - Main chat model
+ * implementation</li>
+ * <li>{@link org.springframework.ai.anthropic.AnthropicChatOptions} - Configuration
+ * options for chat requests</li>
+ * </ul>
+ *
+ * <p>
+ * <b>Quick Start:</b> <pre>{@code
+ * AnthropicChatModel chatModel = new AnthropicChatModel(
+ *     AnthropicChatOptions.builder()
+ *         .model("claude-sonnet-4-20250514")
+ *         .maxTokens(1024)
+ *         .build());
+ *
+ * ChatResponse response = chatModel.call(new Prompt("Hello, Claude!"));
+ * }</pre>
+ *
+ * @since 2.0.0
+ * @see org.springframework.ai.anthropic.AnthropicChatModel
+ * @see org.springframework.ai.anthropic.AnthropicChatOptions
+ */
 @NullMarked
 package org.springframework.ai.anthropic;
 

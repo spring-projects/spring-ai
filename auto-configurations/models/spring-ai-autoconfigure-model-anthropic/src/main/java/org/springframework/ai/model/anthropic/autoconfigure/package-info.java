@@ -14,20 +14,7 @@
  * limitations under the License.
  */
 
+@NullMarked
 package org.springframework.ai.model.anthropic.autoconfigure;
 
-import org.springframework.ai.anthropic.AbstractAnthropicOptions;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
-/**
- * Anthropic connection properties.
- *
- * @author Soby Chacko
- * @since 2.0.0
- */
-@ConfigurationProperties(AnthropicConnectionProperties.CONFIG_PREFIX)
-public class AnthropicConnectionProperties extends AbstractAnthropicOptions {
-
-	public static final String CONFIG_PREFIX = "spring.ai.anthropic";
-
-}
+import org.jspecify.annotations.NullMarked;
