@@ -34,7 +34,7 @@ import org.springframework.ai.image.ImageOptions;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AzureOpenAiImageOptions implements ImageOptions {
 
-	public static final String DEFAULT_IMAGE_MODEL = ImageModel.DALL_E_3.getValue();
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.getValue();
 
 	/**
 	 * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1
@@ -47,7 +47,7 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 	 * The model dall-e-3 or dall-e-2 By default dall-e-3
 	 */
 	@JsonProperty("model")
-	private String model = ImageModel.DALL_E_3.value;
+	private String model = ImageModel.GPT_IMAGE_1_MINI.value;
 
 	/**
 	 * The deployment name as defined in Azure Open AI Studio when creating a deployment
@@ -232,8 +232,11 @@ public class AzureOpenAiImageOptions implements ImageOptions {
 
 	public enum ImageModel {
 
+		GPT_IMAGE_1_MINI("gpt-image-1-mini"),
+
 		/**
-		 * The latest DALL·E model released in Nov 2023.
+		 * The latest DALL·E model released in Nov 2023. OpenAI announced that DALL·E
+		 * model snapshots are deprecated and will be retired on May 12, 2026.
 		 */
 		DALL_E_3("dall-e-3"),
 

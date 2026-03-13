@@ -1,7 +1,7 @@
 = Azure OpenAI Image Generation
 
 
-Spring AI supports DALL-E, the Image generation model from Azure OpenAI.
+Spring AI supports the gpt-image-1-mini image generation model from Azure OpenAI.
 
 == Prerequisites
 
@@ -57,12 +57,12 @@ In Azure, each client must specify a `Deployment Name` to connect to the Azure O
 
 It's essential to understand that the `Deployment Name` is different from the model you choose to deploy
 
-For instance, a deployment named 'MyImgAiDeployment' could be configured to use either the `Dalle3`  model or the `Dalle2` model.
+For instance, a deployment named 'MyImgAiDeployment' could be configured to use 'gpt-image-1-mini' model.
 
 For now, to keep things simple, you can create a deployment using the following settings:
 
 Deployment Name: `MyImgAiDeployment`
-Model Name: `Dalle3`
+Model Name: `gpt-image-1-mini`
 
 This Azure configuration will align with the default configurations of the Spring Boot Azure AI Starter and its Autoconfiguration feature.
 
@@ -126,54 +126,53 @@ To disable, spring.ai.model.image=none (or any value which doesn't match azure-o
 This change is done to allow configuration of multiple models.
 ====
 
-The prefix `spring.ai.openai.image` is the property prefix that lets you configure the `ImageModel` implementation for OpenAI.
+The prefix `spring.ai.azure.openai.image` is the property prefix that lets you configure the `ImageModel` implementation for Azure OpenAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
-| spring.ai.azure.openai.image.enabled (Removed and no longer valid) | Enable OpenAI image model.  | true
-| spring.ai.model.image | Enable OpenAI image model.  | azure-openai
-| spring.ai.azure.openai.image.options.n            | The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1 is supported.  | -
-| spring.ai.azure.openai.image.options.model        | The model to use for image generation.  | AzureOpenAiImageOptions.DEFAULT_IMAGE_MODEL
-| spring.ai.azure.openai.image.options.quality      | The quality of the image that will be generated. HD creates images with finer details and greater consistency across the image. This parameter is only supported for dall-e-3. | -
+| spring.ai.azure.openai.image.enabled (Removed and no longer valid) | Enable Azure OpenAI image model.  | true
+| spring.ai.model.image | Enable image model. Set to `azure-openai` for Azure OpenAI.  | azure-openai
+| spring.ai.azure.openai.image.options.n            | The number of images to generate (e.g. 1 for gpt-image-1-mini).  | -
+| spring.ai.azure.openai.image.options.model        | The model to use for image generation (e.g. `gpt-image-1-mini`).  | gpt-image-1-mini
+| spring.ai.azure.openai.image.options.deployment-name | The deployment name as defined in Azure AI Studio for your image model.  | -
 | spring.ai.azure.openai.image.options.response_format | The format in which the generated images are returned. Must be one of URL or b64_json. | -
-| `spring.ai.openai.image.options.size`       | The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models. | -
-| `spring.ai.openai.image.options.size_width` | The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.  | -
-| `spring.ai.openai.image.options.size_height`| The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2. | -
-| `spring.ai.openai.image.options.style`      | The style of the generated images. Must be one of vivid or natural. Vivid causes the model to lean towards generating hyper-real and dramatic images. Natural causes the model to produce more natural, less hyper-real looking images. This parameter is only supported for dall-e-3. | -
-| `spring.ai.openai.image.options.user`       | A unique identifier representing your end-user, which can help Azure OpenAI to monitor and detect abuse. | -
+| spring.ai.azure.openai.image.options.size         | The size of the generated images (e.g. 1024x1024). Check Azure documentation for supported sizes for your model. | -
+| spring.ai.azure.openai.image.options.size_width  | The width of the generated images.  | -
+| spring.ai.azure.openai.image.options.size_height | The height of the generated images.  | -
+| spring.ai.azure.openai.image.options.user        | A unique identifier representing your end-user, which can help Azure OpenAI to monitor and detect abuse. | -
 |====
 
 ==== Connection Properties
 
-The prefix `spring.ai.openai` is used as the property prefix that lets you connect to Azure OpenAI.
+The prefix `spring.ai.azure.openai` is used as the property prefix that lets you connect to Azure OpenAI.
 
 [cols="3,5,1"]
 |====
 | Property | Description | Default
-| spring.ai.azure.openai.endpoint   | The URL to connect to |  https://my-dalle3.openai.azure.com/
+| spring.ai.azure.openai.endpoint   | The URL to connect to (e.g. https://&lt;your-resource&gt;.openai.azure.com/) |  -
 | spring.ai.azure.openai.apiKey    | The API Key           |  -
 |====
 
 == Runtime Options [[image-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiImageOptions.java[OpenAiImageOptions.java] provides model configurations, such as the model to use, the quality, the size, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiImageOptions.java[AzureOpenAiImageOptions] provides model configurations, such as the deployment name, model, and image size.
 
-On start-up, the default options can be configured with the `AzureOpenAiImageModel(OpenAiImageApi openAiImageApi)` constructor and the `withDefaultOptions(OpenAiImageOptions defaultOptions)` method.  Alternatively, use the `spring.ai.azure.openai.image.options.*` properties described previously.
+On start-up, the default options can be configured with the `AzureOpenAiImageModel(OpenAIClient openAIClient, AzureOpenAiImageOptions options)` constructor. Alternatively, use the `spring.ai.azure.openai.image.options.*` properties described previously.
 
-At runtime you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
-For example to override the OpenAI specific options such as quality and the number of images to create, use the following code example:
+At runtime you can override the default options by adding request-specific options to the `ImagePrompt` call.
+For example, to use the gpt-image-1-mini model with a custom size:
 
 [source,java]
 ----
-ImageResponse response = azureOpenaiImageModel.call(
+ImageResponse response = azureOpenAiImageModel.call(
         new ImagePrompt("A light cream colored mini golden doodle",
-        OpenAiImageOptions.builder()
-                .quality("hd")
-                .N(4)
+        AzureOpenAiImageOptions.builder()
+                .model("gpt-image-1-mini")
+                .deploymentName("gpt-image-1-mini")
                 .height(1024)
-                .width(1024).build())
-
+                .width(1024)
+                .build())
 );
 ----
 
