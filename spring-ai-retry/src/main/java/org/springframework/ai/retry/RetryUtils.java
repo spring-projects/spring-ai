@@ -43,6 +43,7 @@ import org.springframework.web.client.ResponseErrorHandler;
  *
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Yanming Zhou
  * @since 0.8.1
  */
 public abstract class RetryUtils {
@@ -75,22 +76,19 @@ public abstract class RetryUtils {
 			handleError(response);
 		}
 
-		@SuppressWarnings("removal")
 		public void handleError(final ClientHttpResponse response) throws IOException {
-			if (response.getStatusCode().isError()) {
-				String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
-				String message = String.format("%s - %s", response.getStatusCode().value(), error);
-				/*
-				 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided,
-				 * 401 - You must be a member of an organization to use the API, 429 -
-				 * Rate limit reached for requests, 429 - You exceeded your current quota,
-				 * please check your plan and billing details.
-				 */
-				if (response.getStatusCode().is4xxClientError()) {
-					throw new NonTransientAiException(message);
-				}
-				throw new TransientAiException(message);
+			String error = StreamUtils.copyToString(response.getBody(), StandardCharsets.UTF_8);
+			String message = String.format("%s - %s", response.getStatusCode().value(), error);
+			/*
+			 * Thrown on 4xx client errors, such as 401 - Incorrect API key provided, 401
+			 * - You must be a member of an organization to use the API, 429 - Rate limit
+			 * reached for requests, 429 - You exceeded your current quota, please check
+			 * your plan and billing details.
+			 */
+			if (response.getStatusCode().is4xxClientError()) {
+				throw new NonTransientAiException(message);
 			}
+			throw new TransientAiException(message);
 		}
 
 	};
