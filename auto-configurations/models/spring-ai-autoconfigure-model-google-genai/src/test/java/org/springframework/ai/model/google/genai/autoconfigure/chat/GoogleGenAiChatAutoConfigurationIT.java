@@ -161,4 +161,20 @@ public class GoogleGenAiChatAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+	void generateWithTimeout() {
+		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"),
+					"spring.ai.google.genai.timeout=1s")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class));
+
+		contextRunner.run(context -> {
+			GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
+			String response = chatModel.call("Hello");
+			assertThat(response).isNotEmpty();
+			logger.info("Response: " + response);
+		});
+	}
+
 }

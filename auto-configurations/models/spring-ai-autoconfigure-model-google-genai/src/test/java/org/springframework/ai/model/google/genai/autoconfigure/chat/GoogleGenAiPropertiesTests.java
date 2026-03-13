@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiEmbeddingConnectionProperties;
@@ -37,13 +39,15 @@ public class GoogleGenAiPropertiesTests {
 	void connectionPropertiesBinding() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.google.genai.api-key=test-key",
-					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1")
+					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1",
+					"spring.ai.google.genai.timeout=1ms")
 			.run(context -> {
 				GoogleGenAiConnectionProperties connectionProperties = context
 					.getBean(GoogleGenAiConnectionProperties.class);
 				assertThat(connectionProperties.getApiKey()).isEqualTo("test-key");
 				assertThat(connectionProperties.getProjectId()).isEqualTo("test-project");
 				assertThat(connectionProperties.getLocation()).isEqualTo("us-central1");
+				assertThat(connectionProperties.getTimeout()).isEqualTo(Duration.ofMillis(1));
 			});
 	}
 
@@ -148,6 +152,16 @@ public class GoogleGenAiPropertiesTests {
 			// Should be null when not set
 			assertThat(chatProperties.getOptions().getIncludeThoughts()).isNull();
 		});
+	}
+
+	@Test
+	void extendedUsageCustomTimeoutPropertiesBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.options.include-extended-usage-metadata=true")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				assertThat(chatProperties.getOptions().getIncludeExtendedUsageMetadata()).isTrue();
+			});
 	}
 
 	@Configuration

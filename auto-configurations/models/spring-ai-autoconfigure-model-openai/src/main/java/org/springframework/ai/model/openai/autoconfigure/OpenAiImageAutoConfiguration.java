@@ -33,10 +33,15 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.HttpClientSettings;
+import org.springframework.boot.http.client.autoconfigure.HttpClientSettingsPropertyMapper;
 import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -67,17 +72,27 @@ public class OpenAiImageAutoConfiguration {
 			OpenAiImageProperties imageProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ImageModelObservationConvention> observationConvention) {
+			ObjectProvider<ImageModelObservationConvention> observationConvention,
+			ObjectProvider<SslBundles> sslBundles, ObjectProvider<HttpClientSettings> globalHttpClientSettings,
+			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> factoryBuilder) {
 
 		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
 				commonProperties, imageProperties, "image");
+
+		HttpClientSettingsPropertyMapper mapper = new HttpClientSettingsPropertyMapper(sslBundles.getIfAvailable(),
+				globalHttpClientSettings.getIfAvailable());
+		HttpClientSettings httpClientSettings = mapper.map(commonProperties.getHttp());
+
+		RestClient.Builder restClientBuilder = restClientBuilderProvider.getIfAvailable(RestClient::builder);
+		applyRestClientSettings(restClientBuilder, httpClientSettings,
+				factoryBuilder.getIfAvailable(ClientHttpRequestFactoryBuilder::detect));
 
 		var openAiImageApi = OpenAiImageApi.builder()
 			.baseUrl(resolved.baseUrl())
 			.apiKey(new SimpleApiKey(resolved.apiKey()))
 			.headers(resolved.headers())
 			.imagesPath(imageProperties.getImagesPath())
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
+			.restClientBuilder(restClientBuilder)
 			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 		var imageModel = new OpenAiImageModel(openAiImageApi, imageProperties.getOptions(),
@@ -87,6 +102,12 @@ public class OpenAiImageAutoConfiguration {
 		observationConvention.ifAvailable(imageModel::setObservationConvention);
 
 		return imageModel;
+	}
+
+	private void applyRestClientSettings(RestClient.Builder builder, HttpClientSettings httpClientSettings,
+			ClientHttpRequestFactoryBuilder<?> factoryBuilder) {
+		ClientHttpRequestFactory requestFactory = factoryBuilder.build(httpClientSettings);
+		builder.requestFactory(requestFactory);
 	}
 
 }

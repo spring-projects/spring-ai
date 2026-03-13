@@ -129,4 +129,15 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 		});
 	}
 
+	@Test
+	void chatCompletionWithCustomTimeout() {
+		this.contextRunner.withPropertyValues("spring.ai.ollama.read-timeout=1ms")
+			.withPropertyValues("spring.ai.ollama.connect-timeout=1ms")
+			.run(context -> {
+				OllamaChatModel chatModel = context.getBean(OllamaChatModel.class);
+				ChatResponse response = chatModel.call(new Prompt(this.userMessage));
+				assertThat(response.getResult().getOutput().getText()).contains("Copenhagen");
+			});
+	}
+
 }

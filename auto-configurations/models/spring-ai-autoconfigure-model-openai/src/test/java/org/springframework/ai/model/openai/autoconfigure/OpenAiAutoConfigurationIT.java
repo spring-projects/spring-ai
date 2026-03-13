@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -211,6 +212,26 @@ public class OpenAiAutoConfigurationIT {
 				assertThat(imageResponse.getResults()).hasSize(1);
 				assertThat(imageResponse.getResult().getOutput().getUrl()).isNotEmpty();
 				logger.info("Generated image: " + imageResponse.getResult().getOutput().getUrl());
+			});
+	}
+
+	@Test
+	void generateWithCustomTimeout() {
+		// The 256x256 size is supported by dall-e-2, but not by dall-e-3.
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai.connect-timeout=1ms", "spring.ai.openai.read-timeout=1ms")
+			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.run(context -> {
+				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
+
+				var connectionProperties = context.getBean(OpenAiConnectionProperties.class);
+				assertThat(connectionProperties.getConnectTimeout()).isEqualTo(Duration.ofMillis(1));
+				assertThat(connectionProperties.getReadTimeout()).isEqualTo(Duration.ofMillis(1));
+
+				String response = chatModel.call("Hello");
+
+				assertThat(response).isNotEmpty();
+				logger.info("Response: " + response);
 			});
 	}
 

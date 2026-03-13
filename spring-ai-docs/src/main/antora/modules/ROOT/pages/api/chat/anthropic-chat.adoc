@@ -128,6 +128,20 @@ The prefix `spring.ai.anthropic` is used as the property prefix that lets you co
 the output tokens limit is increased from `4096` to `8192` tokens (for claude-3-5-sonnet only). | `tools-2024-04-04`
 |====
 
+==== HTTP Client Properties
+
+The prefix `spring.ai.anthropic` is used as the property prefix that lets you configure the HTTP client for Anthropic API calls.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.anthropic.connect-timeout | HTTP connection timeout | -
+| spring.ai.anthropic.read-timeout | HTTP read timeout | -
+| spring.ai.anthropic.redirects | HTTP redirect strategy (FOLLOW, NORMAL, DONT_FOLLOW) | -
+| spring.ai.anthropic.http.ssl.bundle | SSL bundle name for secure connections | -
+|====
+
 ==== Configuration Properties
 
 [NOTE]
