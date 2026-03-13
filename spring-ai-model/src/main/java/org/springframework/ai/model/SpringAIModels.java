@@ -32,8 +32,6 @@ public final class SpringAIModels {
 
 	public static final String BEDROCK_TITAN = "bedrock-titan";
 
-	public static final String HUGGINGFACE = "huggingface";
-
 	public static final String MINIMAX = "minimax";
 
 	public static final String MISTRAL = "mistral";
