@@ -24,6 +24,7 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
@@ -47,7 +48,12 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private static final String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
 
-	private static final int DEFAULT_ORDER = 0;
+	/**
+	 * The default priority of {@code SafeGuardAdvisor} should always be higher than that
+	 * of {@code MessageChatMemoryAdvisor} to prevent sensitive words in chat memory from
+	 * repeatedly triggering {@code SafeGuardAdvisor}'s interception mechanism.
+	 */
+	private static final int DEFAULT_ORDER = Advisor.DEFAULT_CHAT_MEMORY_PRECEDENCE_ORDER - 1;
 
 	private final String failureResponse;
 
