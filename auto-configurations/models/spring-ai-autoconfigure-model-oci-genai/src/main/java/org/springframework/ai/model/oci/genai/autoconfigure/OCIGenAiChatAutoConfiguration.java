@@ -42,7 +42,7 @@ import org.springframework.context.annotation.Bean;
  * Community</a> with new package and dependency coordinates
  */
 @Deprecated(since = "2.0.0-M4", forRemoval = true)
-@AutoConfiguration(after = OCIGenAiInferenceClientAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(OCICohereChatModel.class)
 @EnableConfigurationProperties(OCICohereChatModelProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OCI_GENAI,

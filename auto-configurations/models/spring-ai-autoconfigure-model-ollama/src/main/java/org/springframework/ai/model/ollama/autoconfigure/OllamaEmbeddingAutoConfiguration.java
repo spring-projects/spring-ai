@@ -42,7 +42,7 @@ import org.springframework.context.annotation.Bean;
  * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
-@AutoConfiguration(after = OllamaApiAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(OllamaEmbeddingModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OLLAMA,
 		matchIfMissing = true)

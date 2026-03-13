@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Bean;
  * Community</a> with new package and dependency coordinates
  */
 @Deprecated(since = "2.0.0-M4", forRemoval = true)
-@AutoConfiguration(after = OCIGenAiInferenceClientAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(OCIEmbeddingModel.class)
 @EnableConfigurationProperties(OCIEmbeddingModelProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OCI_GENAI,

@@ -26,7 +26,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openaisdk.AbstractOpenAiSdkOptions;
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
 import org.springframework.ai.openaisdk.setup.OpenAiSdkSetup;
@@ -43,7 +42,7 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  * @author Soby Chacko
  */
-@AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
+@AutoConfiguration
 @EnableConfigurationProperties({ OpenAiSdkConnectionProperties.class, OpenAiSdkChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OPENAI_SDK,
 		matchIfMissing = true)

@@ -33,14 +33,18 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -56,7 +60,10 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void chatCall() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 				String response = chatModel.call("Hello");
@@ -73,7 +80,9 @@ public class OpenAiAutoConfigurationIT {
 					"spring.ai.openai.chat.options.output-modalities=text,audio",
 					"spring.ai.openai.chat.options.output-audio.voice=ALLOY",
 					"spring.ai.openai.chat.options.output-audio.format=WAV")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -88,7 +97,9 @@ public class OpenAiAutoConfigurationIT {
 	@Test
 	void transcribe() {
 		this.contextRunner
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiAudioTranscriptionAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiAudioTranscriptionModel transcriptionModel = context.getBean(OpenAiAudioTranscriptionModel.class);
 				Resource audioFile = new ClassPathResource("/speech/jfk.flac");
@@ -100,8 +111,9 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void speech() {
-		this.contextRunner
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(OpenAiAudioSpeechAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiAudioSpeechModel speechModel = context.getBean(OpenAiAudioSpeechModel.class);
 				byte[] response = speechModel.call("H");
@@ -128,7 +140,10 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
@@ -146,7 +161,9 @@ public class OpenAiAutoConfigurationIT {
 	@Test
 	void streamingWithTokenUsage() {
 		this.contextRunner.withPropertyValues("spring.ai.openai.chat.options.stream-usage=true")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiChatModel chatModel = context.getBean(OpenAiChatModel.class);
 
@@ -169,7 +186,9 @@ public class OpenAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(OpenAiEmbeddingAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiEmbeddingModel embeddingModel = context.getBean(OpenAiEmbeddingModel.class);
 
@@ -188,7 +207,9 @@ public class OpenAiAutoConfigurationIT {
 	@Test
 	void generateImage() {
 		this.contextRunner.withPropertyValues("spring.ai.openai.image.options.size=1024x1024")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiImageAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
@@ -204,7 +225,9 @@ public class OpenAiAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai.image.options.model=dall-e-2",
 					"spring.ai.openai.image.options.size=256x256")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiImageAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiImageAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				OpenAiImageModel imageModel = context.getBean(OpenAiImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));

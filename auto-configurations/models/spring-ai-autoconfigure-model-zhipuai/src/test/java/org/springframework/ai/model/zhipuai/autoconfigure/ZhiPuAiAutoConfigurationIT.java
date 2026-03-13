@@ -32,10 +32,13 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.zhipuai.ZhiPuAiChatModel;
 import org.springframework.ai.zhipuai.ZhiPuAiEmbeddingModel;
 import org.springframework.ai.zhipuai.ZhiPuAiImageModel;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,7 +57,9 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 				ChatResponse response = chatModel.call(new Prompt("Hello", ChatOptions.builder().build()));
@@ -65,7 +70,9 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(ZhiPuAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				ZhiPuAiChatModel chatModel = context.getBean(ZhiPuAiChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel
@@ -83,7 +90,9 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(ZhiPuAiEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				ZhiPuAiEmbeddingModel embeddingModel = context.getBean(ZhiPuAiEmbeddingModel.class);
 
@@ -101,7 +110,9 @@ public class ZhiPuAiAutoConfigurationIT {
 
 	@Test
 	void generateImage() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(ZhiPuAiImageAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.withPropertyValues("spring.ai.zhipuai.image.options.size=1024x1024")
 			.run(context -> {
 				ZhiPuAiImageModel ImageModel = context.getBean(ZhiPuAiImageModel.class);

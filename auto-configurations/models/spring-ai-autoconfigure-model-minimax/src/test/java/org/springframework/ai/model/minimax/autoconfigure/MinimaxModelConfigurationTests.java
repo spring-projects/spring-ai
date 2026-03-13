@@ -20,7 +20,10 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,11 +37,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MinimaxModelConfigurationTests {
 
 	private final ApplicationContextRunner chatContextRunner = new ApplicationContextRunner()
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 		.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL");
 
 	private final ApplicationContextRunner embeddingContextRunner = new ApplicationContextRunner()
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 		.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL");
 
 	@Test

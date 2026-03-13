@@ -24,7 +24,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.openaisdk.OpenAiSdkImageModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +40,7 @@ public class OpenAiSdkImageAutoConfigurationIT {
 	@Test
 	void generateImage() {
 		this.contextRunner.withPropertyValues("spring.ai.openai-sdk.image.options.size=1024x1024")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkImageModel imageModel = context.getBean(OpenAiSdkImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
@@ -56,7 +56,7 @@ public class OpenAiSdkImageAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.image.options.model=dall-e-2",
 					"spring.ai.openai-sdk.image.options.size=256x256")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkImageModel imageModel = context.getBean(OpenAiSdkImageModel.class);
 				ImageResponse imageResponse = imageModel.call(new ImagePrompt("forest"));
@@ -71,7 +71,7 @@ public class OpenAiSdkImageAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
 					"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL", "spring.ai.model.image=none")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkImageProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkImageModel.class)).isEmpty();
@@ -80,7 +80,7 @@ public class OpenAiSdkImageAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
 					"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkImageModel.class)).isNotEmpty();
@@ -89,7 +89,7 @@ public class OpenAiSdkImageAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
 					"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL", "spring.ai.model.image=openai-sdk")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkImageProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkImageModel.class)).isNotEmpty();
@@ -112,7 +112,7 @@ public class OpenAiSdkImageAutoConfigurationIT {
 			"spring.ai.openai-sdk.image.options.height=1024",
 			"spring.ai.openai-sdk.image.options.style=vivid",
 			"spring.ai.openai-sdk.image.options.user=userXYZ") // @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiSdkImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);

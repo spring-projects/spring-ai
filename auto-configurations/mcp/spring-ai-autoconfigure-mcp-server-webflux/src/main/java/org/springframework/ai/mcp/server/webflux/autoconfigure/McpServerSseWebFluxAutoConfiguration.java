@@ -60,6 +60,8 @@ import org.springframework.web.reactive.function.server.RouterFunction;
  * @see McpServerSseProperties
  * @see WebFluxSseServerTransportProvider
  */
+// before: McpServerAutoConfiguration defines a low priority
+// McpServerTransportProviderBase bean and this conf should have priority
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
 @EnableConfigurationProperties(McpServerSseProperties.class)
 @ConditionalOnClass(WebFluxSseServerTransportProvider.class)

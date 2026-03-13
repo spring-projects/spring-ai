@@ -20,14 +20,15 @@ import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link OpenAiConnectionProperties}, {@link OpenAiSdkChatProperties} and
- * {@link OpenAiSdkEmbeddingProperties}.
+ * Unit Tests for {@link OpenAiSdkConnectionProperties}, {@link OpenAiSdkChatProperties}
+ * and {@link OpenAiSdkEmbeddingProperties}.
  *
  * @author Christian Tzolov
  */
@@ -45,7 +46,8 @@ public class OpenAiSdkChatPropertiesTests {
 				"spring.ai.openai-sdk.chat.options.model=MODEL_XYZ",
 				"spring.ai.openai-sdk.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiSdkChatProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
@@ -73,7 +75,8 @@ public class OpenAiSdkChatPropertiesTests {
 				"spring.ai.openai-sdk.chat.options.model=MODEL_XYZ",
 				"spring.ai.openai-sdk.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiSdkChatProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
@@ -115,7 +118,8 @@ public class OpenAiSdkChatPropertiesTests {
 
 			)
 			// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(OpenAiSdkChatProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);

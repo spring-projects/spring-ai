@@ -21,8 +21,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,15 +41,20 @@ public class MistralModelConfigurationTests {
 
 	private final ApplicationContextRunner chatContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
+				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class));
 
 	private final ApplicationContextRunner embeddingContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class,
+				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class));
 
 	private final ApplicationContextRunner moderationContextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mistralai.apiKey=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(MistralAiModerationAutoConfiguration.class));
+		.withConfiguration(
+				AutoConfigurations.of(MistralAiModerationAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class));
 
 	@Test
 	void chatModelActivation() {

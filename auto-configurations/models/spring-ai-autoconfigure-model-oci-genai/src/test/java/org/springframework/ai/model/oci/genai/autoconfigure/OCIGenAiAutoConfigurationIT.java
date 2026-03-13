@@ -26,7 +26,7 @@ import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.oci.OCIEmbeddingModel;
 import org.springframework.ai.oci.cohere.OCICohereChatModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,7 +52,9 @@ public class OCIGenAiAutoConfigurationIT {
 				"spring.ai.oci.genai.embedding.servingMode=on-demand",
 				"spring.ai.oci.genai.embedding.model=cohere.embed-english-light-v2.0"
 				// @formatter:on
-	).withConfiguration(SpringAiTestAutoConfigurations.of(OCIGenAiEmbeddingAutoConfiguration.class));
+	)
+		.withConfiguration(AutoConfigurations.of(OCIGenAiEmbeddingAutoConfiguration.class,
+				OCIGenAiInferenceClientAutoConfiguration.class));
 
 	private final ApplicationContextRunner cohereChatContextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
@@ -62,7 +64,9 @@ public class OCIGenAiAutoConfigurationIT {
 			"spring.ai.oci.genai.cohere.chat.options.servingMode=on-demand",
 			"spring.ai.oci.genai.cohere.chat.options.model=" + this.CHAT_MODEL_ID
 			// @formatter:on
-	).withConfiguration(SpringAiTestAutoConfigurations.of(OCIGenAiChatAutoConfiguration.class));
+	)
+		.withConfiguration(AutoConfigurations.of(OCIGenAiChatAutoConfiguration.class,
+				OCIGenAiInferenceClientAutoConfiguration.class));
 
 	@Test
 	void embeddings() {

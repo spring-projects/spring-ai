@@ -19,7 +19,7 @@ package org.springframework.ai.model.anthropic.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -39,7 +39,8 @@ class AnthropicPropertiesTests {
 			.withPropertyValues("spring.ai.anthropic.base-url=TEST_BASE_URL", "spring.ai.anthropic.api-key=abc123",
 					"spring.ai.anthropic.chat.options.model=MODEL_XYZ",
 					"spring.ai.anthropic.chat.options.temperature=0.55")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -59,7 +60,8 @@ class AnthropicPropertiesTests {
 					"spring.ai.anthropic.chat.base-url=TEST_BASE_URL_2", "spring.ai.anthropic.chat.api-key=456",
 					"spring.ai.anthropic.chat.options.model=MODEL_XYZ",
 					"spring.ai.anthropic.chat.options.temperature=0.55")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -84,7 +86,8 @@ class AnthropicPropertiesTests {
 					"spring.ai.anthropic.chat.options.stop-sequences=boza,koza",
 					"spring.ai.anthropic.chat.options.temperature=0.55", "spring.ai.anthropic.chat.options.top-p=0.56",
 					"spring.ai.anthropic.chat.options.top-k=100")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(AnthropicChatProperties.class);
 				var connectionProperties = context.getBean(AnthropicConnectionProperties.class);
@@ -104,7 +107,8 @@ class AnthropicPropertiesTests {
 	void chatCompletionDisabled() {
 		// Enabled by default
 		new ApplicationContextRunner().withPropertyValues("spring.ai.anthropic.api-key=API_KEY")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();
@@ -113,7 +117,8 @@ class AnthropicPropertiesTests {
 		// Explicitly enable
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.anthropic.api-key=API_KEY", "spring.ai.model.chat=anthropic")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(AnthropicChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(AnthropicChatModel.class)).isNotEmpty();

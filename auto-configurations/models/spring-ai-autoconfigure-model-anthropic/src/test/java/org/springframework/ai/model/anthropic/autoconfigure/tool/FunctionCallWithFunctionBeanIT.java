@@ -34,7 +34,8 @@ import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoCon
 import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Request;
 import org.springframework.ai.model.anthropic.autoconfigure.tool.MockWeatherService.Response;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,7 +55,8 @@ class FunctionCallWithFunctionBeanIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.anthropic.api-key=" + System.getenv("ANTHROPIC_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(AnthropicChatAutoConfiguration.class))
+		.withConfiguration(
+				AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	@Test

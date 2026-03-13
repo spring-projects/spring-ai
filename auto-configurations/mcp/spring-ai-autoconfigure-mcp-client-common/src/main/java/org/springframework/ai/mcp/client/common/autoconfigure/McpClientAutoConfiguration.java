@@ -96,12 +96,7 @@ import org.springframework.util.CollectionUtils;
  * @see McpClientCustomizer
  * @see StdioTransportAutoConfiguration
  */
-@AutoConfiguration(afterName = {
-		"org.springframework.ai.mcp.client.common.autoconfigure.StdioTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.webflux.autoconfigure.SseWebFluxTransportAutoConfiguration",
-		"org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration" })
+@AutoConfiguration
 @EnableConfigurationProperties(McpClientCommonProperties.class)
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)

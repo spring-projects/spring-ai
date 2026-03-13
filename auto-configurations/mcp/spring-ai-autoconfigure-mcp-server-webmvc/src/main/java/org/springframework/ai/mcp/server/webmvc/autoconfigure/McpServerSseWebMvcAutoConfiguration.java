@@ -66,6 +66,8 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @see McpServerSseProperties
  * @see WebMvcSseServerTransportProvider
  */
+// before: McpServerAutoConfiguration defines a low priority
+// McpServerTransportProviderBase bean and this conf should have priority
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
 @EnableConfigurationProperties(McpServerSseProperties.class)
 @ConditionalOnClass(WebMvcSseServerTransportProvider.class)

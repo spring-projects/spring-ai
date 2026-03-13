@@ -33,7 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
-import org.springframework.boot.elasticsearch.autoconfigure.ElasticsearchRestClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -48,7 +47,7 @@ import org.springframework.context.annotation.Bean;
  * @author Jionghui Zheng
  * @since 1.0.0
  */
-@AutoConfiguration(after = ElasticsearchRestClientAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass({ ElasticsearchVectorStore.class, EmbeddingModel.class, Rest5Client.class })
 @EnableConfigurationProperties(ElasticsearchVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.ELASTICSEARCH,

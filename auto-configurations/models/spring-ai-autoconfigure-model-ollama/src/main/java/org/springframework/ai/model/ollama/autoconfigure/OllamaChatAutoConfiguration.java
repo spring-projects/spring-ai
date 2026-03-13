@@ -24,7 +24,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
@@ -50,7 +49,7 @@ import org.springframework.core.retry.RetryTemplate;
  * @author Yanming Zhou
  * @since 0.8.0
  */
-@AutoConfiguration(after = { OllamaApiAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration
 @ConditionalOnClass(OllamaChatModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OLLAMA,
 		matchIfMissing = true)

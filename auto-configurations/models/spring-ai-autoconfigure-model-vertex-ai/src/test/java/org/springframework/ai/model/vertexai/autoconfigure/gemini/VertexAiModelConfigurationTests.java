@@ -19,8 +19,10 @@ package org.springframework.ai.model.vertexai.autoconfigure.gemini;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +45,8 @@ public class VertexAiModelConfigurationTests {
 	void chatModelActivation() {
 
 		this.contextRunner
-			.withConfiguration(SpringAiTestAutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiGeminiChatProperties.class)).isEmpty();
@@ -51,7 +54,8 @@ public class VertexAiModelConfigurationTests {
 			});
 
 		this.contextRunner
-			.withConfiguration(SpringAiTestAutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(VertexAiGeminiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.model.chat=vertexai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(VertexAiGeminiChatProperties.class)).isNotEmpty();

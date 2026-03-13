@@ -26,7 +26,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -44,7 +43,7 @@ import org.springframework.context.annotation.Import;
  * @author Manuel Andreo Garcia
  * @author Ilayaperumal Gopinathan
  */
-@AutoConfiguration(after = ToolCallingAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass(AzureOpenAiChatModel.class)
 @EnableConfigurationProperties(AzureOpenAiChatProperties.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.AZURE_OPENAI,

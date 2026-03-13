@@ -23,7 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openaisdk.OpenAiSdkEmbeddingModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,8 +36,7 @@ public class OpenAiSdkEmbeddingAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+		this.contextRunner.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkEmbeddingModel embeddingModel = context.getBean(OpenAiSdkEmbeddingModel.class);
 
@@ -59,7 +58,7 @@ public class OpenAiSdkEmbeddingAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY", "spring.ai.openai-sdk.base-url=TEST_BASE_URL",
 					"spring.ai.model.embedding=none")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkEmbeddingModel.class)).isEmpty();
@@ -68,7 +67,7 @@ public class OpenAiSdkEmbeddingAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
 					"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkEmbeddingModel.class)).isNotEmpty();
@@ -77,7 +76,7 @@ public class OpenAiSdkEmbeddingAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
 					"spring.ai.openai-sdk.base-url=http://TEST.BASE.URL", "spring.ai.model.embedding=openai-sdk")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkEmbeddingModel.class)).isNotEmpty();
@@ -97,7 +96,7 @@ public class OpenAiSdkEmbeddingAutoConfigurationIT {
 				"spring.ai.openai-sdk.embedding.options.user=userXYZ"
 				)
 			// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
 				var embeddingProperties = context.getBean(OpenAiSdkEmbeddingProperties.class);

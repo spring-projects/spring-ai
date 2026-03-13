@@ -28,8 +28,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openaisdk.OpenAiSdkChatModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +45,9 @@ public class OpenAiSdkChatAutoConfigurationIT {
 
 	@Test
 	void chatCall() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkChatModel chatModel = context.getBean(OpenAiSdkChatModel.class);
 				String response = chatModel.call("Hello");
@@ -55,7 +58,9 @@ public class OpenAiSdkChatAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkChatModel chatModel = context.getBean(OpenAiSdkChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
@@ -74,7 +79,8 @@ public class OpenAiSdkChatAutoConfigurationIT {
 	@Test
 	void streamingWithTokenUsage() {
 		this.contextRunner.withPropertyValues("spring.ai.openai-sdk.chat.options.stream-usage=true")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				OpenAiSdkChatModel chatModel = context.getBean(OpenAiSdkChatModel.class);
 
@@ -100,7 +106,8 @@ public class OpenAiSdkChatAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY", "spring.ai.openai-sdk.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=none")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkChatModel.class)).isEmpty();
@@ -109,7 +116,8 @@ public class OpenAiSdkChatAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
 					"spring.ai.openai-sdk.base-url=http://test.base.url")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkChatModel.class)).isNotEmpty();
@@ -118,7 +126,8 @@ public class OpenAiSdkChatAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.openai-sdk.api-key=API_KEY",
 					"spring.ai.openai-sdk.base-url=http://test.base.url", "spring.ai.model.chat=openai-sdk")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiSdkChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(OpenAiSdkChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OpenAiSdkChatModel.class)).isNotEmpty();

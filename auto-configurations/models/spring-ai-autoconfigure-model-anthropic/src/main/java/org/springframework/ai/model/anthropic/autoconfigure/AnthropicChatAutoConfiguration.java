@@ -27,7 +27,6 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -42,7 +41,7 @@ import org.springframework.context.annotation.Bean;
  * @author Soby Chacko
  * @since 2.0.0
  */
-@AutoConfiguration(after = { ToolCallingAutoConfiguration.class })
+@AutoConfiguration
 @EnableConfigurationProperties({ AnthropicConnectionProperties.class, AnthropicChatProperties.class })
 @ConditionalOnClass(AnthropicClient.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.ANTHROPIC,

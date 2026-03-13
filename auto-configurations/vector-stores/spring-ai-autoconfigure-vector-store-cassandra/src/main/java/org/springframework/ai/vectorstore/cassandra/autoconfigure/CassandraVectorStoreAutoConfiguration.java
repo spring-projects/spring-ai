@@ -33,7 +33,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.cassandra.autoconfigure.CassandraAutoConfiguration;
 import org.springframework.boot.cassandra.autoconfigure.DriverConfigLoaderBuilderCustomizer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -46,7 +45,7 @@ import org.springframework.context.annotation.Bean;
  * @author Soby Chacko
  * @since 1.0.0
  */
-@AutoConfiguration(after = CassandraAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass({ CassandraVectorStore.class, CqlSession.class })
 @EnableConfigurationProperties(CassandraVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.CASSANDRA,

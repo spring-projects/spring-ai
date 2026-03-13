@@ -19,13 +19,13 @@ package org.springframework.ai.model.openaisdk.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.MetadataMode;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link OpenAiConnectionProperties} and
+ * Unit Tests for {@link OpenAiSdkConnectionProperties} and
  * {@link OpenAiSdkEmbeddingProperties}.
  *
  * @author Christian Tzolov
@@ -44,7 +44,7 @@ public class OpenAiSdkEmbeddingPropertiesTests {
 				"spring.ai.openai-sdk.embedding.options.model=MODEL_XYZ",
 				"spring.ai.openai-sdk.embedding.options.dimensions=512")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OpenAiSdkEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
@@ -72,7 +72,7 @@ public class OpenAiSdkEmbeddingPropertiesTests {
 				"spring.ai.openai-sdk.embedding.options.model=MODEL_XYZ",
 				"spring.ai.openai-sdk.embedding.options.dimensions=512")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OpenAiSdkEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
@@ -102,7 +102,7 @@ public class OpenAiSdkEmbeddingPropertiesTests {
 				"spring.ai.openai-sdk.embedding.metadata-mode=NONE"
 			)
 			// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkEmbeddingAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(OpenAiSdkEmbeddingProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);

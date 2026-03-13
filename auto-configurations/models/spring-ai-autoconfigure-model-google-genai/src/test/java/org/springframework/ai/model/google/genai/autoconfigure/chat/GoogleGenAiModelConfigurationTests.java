@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,14 +40,18 @@ class GoogleGenAiModelConfigurationTests {
 	@Test
 	void chatModelActivationWithApiKey() {
 
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.google.genai.api-key=test-key", "spring.ai.model.chat=none")
 			.run(context -> {
 				assertThat(context.getBeansOfType(GoogleGenAiChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(GoogleGenAiChatModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.google.genai.api-key=test-key", "spring.ai.model.chat=google-genai")
 			.run(context -> {
 				assertThat(context.getBeansOfType(GoogleGenAiChatProperties.class)).isNotEmpty();
@@ -58,7 +64,9 @@ class GoogleGenAiModelConfigurationTests {
 	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 	void chatModelActivationWithVertexAi() {
 
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.google.genai.project-id=test-project",
 					"spring.ai.google.genai.location=us-central1", "spring.ai.model.chat=none")
 			.run(context -> {
@@ -66,7 +74,9 @@ class GoogleGenAiModelConfigurationTests {
 				assertThat(context.getBeansOfType(GoogleGenAiChatModel.class)).isEmpty();
 			});
 
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.google.genai.project-id=test-project",
 					"spring.ai.google.genai.location=us-central1", "spring.ai.model.chat=google-genai")
 			.run(context -> {
@@ -79,7 +89,9 @@ class GoogleGenAiModelConfigurationTests {
 	void chatModelDefaultActivation() {
 		// Tests that the model is activated by default when spring.ai.model.chat is not
 		// set
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(GoogleGenAiChatAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.google.genai.api-key=test-key")
 			.run(context -> {
 				assertThat(context.getBeansOfType(GoogleGenAiChatProperties.class)).isNotEmpty();

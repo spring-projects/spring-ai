@@ -20,8 +20,11 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechModel;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,21 +51,25 @@ public class ElevenLabsPropertiesTests {
 				"spring.ai.elevenlabs.tts.options.voice-settings.use-speaker-boost=false",
 				"spring.ai.elevenlabs.tts.options.voice-settings.speed=1.5"
 				// @formatter:on
-		).withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class)).run(context -> {
-			var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
-			var connectionProperties = context.getBean(ElevenLabsConnectionProperties.class);
+		)
+			.withConfiguration(
+					AutoConfigurations.of(ElevenLabsAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
+			.run(context -> {
+				var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
+				var connectionProperties = context.getBean(ElevenLabsConnectionProperties.class);
 
-			assertThat(connectionProperties.getApiKey()).isEqualTo("YOUR_API_KEY");
-			assertThat(connectionProperties.getBaseUrl()).isEqualTo("https://custom.api.elevenlabs.io");
+				assertThat(connectionProperties.getApiKey()).isEqualTo("YOUR_API_KEY");
+				assertThat(connectionProperties.getBaseUrl()).isEqualTo("https://custom.api.elevenlabs.io");
 
-			assertThat(speechProperties.getOptions().getModelId()).isEqualTo("custom-model");
-			assertThat(speechProperties.getOptions().getVoice()).isEqualTo("custom-voice");
-			assertThat(speechProperties.getOptions().getVoiceSettings().stability()).isEqualTo(0.6);
-			assertThat(speechProperties.getOptions().getVoiceSettings().similarityBoost()).isEqualTo(0.8);
-			assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
-			assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
-			assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.5f);
-		});
+				assertThat(speechProperties.getOptions().getModelId()).isEqualTo("custom-model");
+				assertThat(speechProperties.getOptions().getVoice()).isEqualTo("custom-voice");
+				assertThat(speechProperties.getOptions().getVoiceSettings().stability()).isEqualTo(0.6);
+				assertThat(speechProperties.getOptions().getVoiceSettings().similarityBoost()).isEqualTo(0.8);
+				assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
+				assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
+				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.5f);
+			});
 	}
 
 	@Test
@@ -85,26 +92,30 @@ public class ElevenLabsPropertiesTests {
 				"spring.ai.elevenlabs.tts.options.apply-text-normalization=ON",
 				"spring.ai.elevenlabs.tts.options.apply-language-text-normalization=true"
 				// @formatter:on
-		).withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class)).run(context -> {
-			var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
+		)
+			.withConfiguration(
+					AutoConfigurations.of(ElevenLabsAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
+			.run(context -> {
+				var speechProperties = context.getBean(ElevenLabsSpeechProperties.class);
 
-			assertThat(speechProperties.getOptions().getModelId()).isEqualTo("custom-model");
-			assertThat(speechProperties.getOptions().getVoice()).isEqualTo("custom-voice");
-			assertThat(speechProperties.getOptions().getFormat()).isEqualTo("pcm_44100");
-			assertThat(speechProperties.getOptions().getVoiceSettings().stability()).isEqualTo(0.6);
-			assertThat(speechProperties.getOptions().getVoiceSettings().similarityBoost()).isEqualTo(0.8);
-			assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
-			assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
-			assertThat(speechProperties.getOptions().getVoiceSettings().speed()).isEqualTo(1.2);
-			assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.2);
-			assertThat(speechProperties.getOptions().getLanguageCode()).isEqualTo("en");
-			assertThat(speechProperties.getOptions().getSeed()).isEqualTo(12345);
-			assertThat(speechProperties.getOptions().getPreviousText()).isEqualTo("previous");
-			assertThat(speechProperties.getOptions().getNextText()).isEqualTo("next");
-			assertThat(speechProperties.getOptions().getApplyTextNormalization())
-				.isEqualTo(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON);
-			assertThat(speechProperties.getOptions().getApplyLanguageTextNormalization()).isTrue();
-		});
+				assertThat(speechProperties.getOptions().getModelId()).isEqualTo("custom-model");
+				assertThat(speechProperties.getOptions().getVoice()).isEqualTo("custom-voice");
+				assertThat(speechProperties.getOptions().getFormat()).isEqualTo("pcm_44100");
+				assertThat(speechProperties.getOptions().getVoiceSettings().stability()).isEqualTo(0.6);
+				assertThat(speechProperties.getOptions().getVoiceSettings().similarityBoost()).isEqualTo(0.8);
+				assertThat(speechProperties.getOptions().getVoiceSettings().style()).isEqualTo(0.2);
+				assertThat(speechProperties.getOptions().getVoiceSettings().useSpeakerBoost()).isFalse();
+				assertThat(speechProperties.getOptions().getVoiceSettings().speed()).isEqualTo(1.2);
+				assertThat(speechProperties.getOptions().getSpeed()).isEqualTo(1.2);
+				assertThat(speechProperties.getOptions().getLanguageCode()).isEqualTo("en");
+				assertThat(speechProperties.getOptions().getSeed()).isEqualTo(12345);
+				assertThat(speechProperties.getOptions().getPreviousText()).isEqualTo("previous");
+				assertThat(speechProperties.getOptions().getNextText()).isEqualTo("next");
+				assertThat(speechProperties.getOptions().getApplyTextNormalization())
+					.isEqualTo(ElevenLabsApi.SpeechRequest.TextNormalizationMode.ON);
+				assertThat(speechProperties.getOptions().getApplyLanguageTextNormalization()).isTrue();
+			});
 	}
 
 	@Test
@@ -112,7 +123,9 @@ public class ElevenLabsPropertiesTests {
 
 		// It is enabled by default
 		new ApplicationContextRunner().withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(ElevenLabsAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ElevenLabsTextToSpeechModel.class)).isNotEmpty();
@@ -121,7 +134,9 @@ public class ElevenLabsPropertiesTests {
 		// Explicitly enable the text-to-speech autoconfiguration.
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.model.audio.speech=elevenlabs")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(ElevenLabsAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(ElevenLabsTextToSpeechModel.class)).isNotEmpty();
@@ -130,7 +145,9 @@ public class ElevenLabsPropertiesTests {
 		// Explicitly disable the text-to-speech autoconfiguration.
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.elevenlabs.api-key=YOUR_API_KEY", "spring.ai.model.audio.speech=none")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(ElevenLabsAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(ElevenLabsAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(ElevenLabsSpeechProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(ElevenLabsTextToSpeechModel.class)).isEmpty();

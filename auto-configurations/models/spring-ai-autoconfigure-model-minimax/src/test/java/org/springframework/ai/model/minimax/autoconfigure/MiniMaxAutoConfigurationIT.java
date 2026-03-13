@@ -31,7 +31,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +53,9 @@ public class MiniMaxAutoConfigurationIT {
 
 	@Test
 	void generate() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 				String response = chatModel.call("Hello");
@@ -61,7 +66,9 @@ public class MiniMaxAutoConfigurationIT {
 
 	@Test
 	void generateStreaming() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+		this.contextRunner.withConfiguration(
+				AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxChatModel chatModel = context.getBean(MiniMaxChatModel.class);
 				Flux<ChatResponse> responseFlux = chatModel.stream(new Prompt(new UserMessage("Hello")));
@@ -78,7 +85,9 @@ public class MiniMaxAutoConfigurationIT {
 
 	@Test
 	void embedding() {
-		this.contextRunner.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+		this.contextRunner
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				MiniMaxEmbeddingModel embeddingModel = context.getBean(MiniMaxEmbeddingModel.class);
 

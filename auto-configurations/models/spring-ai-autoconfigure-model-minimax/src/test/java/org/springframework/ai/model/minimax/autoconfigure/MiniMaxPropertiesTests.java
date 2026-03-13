@@ -24,7 +24,10 @@ import org.springframework.ai.minimax.MiniMaxChatModel;
 import org.springframework.ai.minimax.MiniMaxEmbeddingModel;
 import org.springframework.ai.minimax.api.MiniMaxApi;
 import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +51,9 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.options.model=MODEL_XYZ",
 				"spring.ai.minimax.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(MiniMaxChatProperties.class);
 				var connectionProperties = context.getBean(MiniMaxConnectionProperties.class);
@@ -76,7 +81,9 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.chat.options.model=MODEL_XYZ",
 				"spring.ai.minimax.chat.options.temperature=0.55")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(MiniMaxChatProperties.class);
 				var connectionProperties = context.getBean(MiniMaxConnectionProperties.class);
@@ -101,7 +108,8 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.api-key=abc123",
 				"spring.ai.minimax.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(MiniMaxEmbeddingProperties.class);
 				var connectionProperties = context.getBean(MiniMaxConnectionProperties.class);
@@ -127,7 +135,8 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.embedding.api-key=456",
 				"spring.ai.minimax.embedding.options.model=MODEL_XYZ")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				var embeddingProperties = context.getBean(MiniMaxEmbeddingProperties.class);
 				var connectionProperties = context.getBean(MiniMaxConnectionProperties.class);
@@ -193,7 +202,9 @@ public class MiniMaxPropertiesTests {
 					"""
 				)
 			// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(MiniMaxChatProperties.class);
 				var connectionProperties = context.getBean(MiniMaxConnectionProperties.class);
@@ -238,7 +249,8 @@ public class MiniMaxPropertiesTests {
 				"spring.ai.minimax.embedding.options.encodingFormat=MyEncodingFormat"
 				)
 			// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				var connectionProperties = context.getBean(MiniMaxConnectionProperties.class);
 				var embeddingProperties = context.getBean(MiniMaxEmbeddingProperties.class);
@@ -256,7 +268,8 @@ public class MiniMaxPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
 					"spring.ai.model.embedding=none")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isEmpty();
@@ -264,7 +277,8 @@ public class MiniMaxPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
@@ -273,7 +287,8 @@ public class MiniMaxPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
 					"spring.ai.model.embedding=minimax")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(MiniMaxEmbeddingAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MiniMaxEmbeddingModel.class)).isNotEmpty();
@@ -285,7 +300,9 @@ public class MiniMaxPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=none")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isEmpty();
@@ -293,7 +310,9 @@ public class MiniMaxPropertiesTests {
 
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isNotEmpty();
@@ -302,7 +321,9 @@ public class MiniMaxPropertiesTests {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.minimax.api-key=API_KEY", "spring.ai.minimax.base-url=TEST_BASE_URL",
 					"spring.ai.model.chat=minimax")
-			.withConfiguration(SpringAiTestAutoConfigurations.of(MiniMaxChatAutoConfiguration.class))
+			.withConfiguration(
+					AutoConfigurations.of(MiniMaxChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+							SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				assertThat(context.getBeansOfType(MiniMaxChatProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MiniMaxChatModel.class)).isNotEmpty();

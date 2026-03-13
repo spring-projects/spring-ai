@@ -32,7 +32,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -44,7 +43,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @author Soby Chacko
  */
-@AutoConfiguration(after = JdbcTemplateAutoConfiguration.class)
+@AutoConfiguration
 @ConditionalOnClass({ OracleVectorStore.class, DataSource.class, JdbcTemplate.class })
 @EnableConfigurationProperties(OracleVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.ORACLE,

@@ -52,9 +52,10 @@ import org.springframework.context.annotation.Configuration;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
+// afterName: CompositeMeterRegistryAutoConfiguration declares a MeterRegistry bean that
+// some beans here are conditional on
 @AutoConfiguration(
-		afterName = { "org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration",
-				"org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration" })
+		afterName = "org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration")
 @ConditionalOnClass(ChatModel.class)
 @EnableConfigurationProperties(ChatObservationProperties.class)
 public class ChatObservationAutoConfiguration {

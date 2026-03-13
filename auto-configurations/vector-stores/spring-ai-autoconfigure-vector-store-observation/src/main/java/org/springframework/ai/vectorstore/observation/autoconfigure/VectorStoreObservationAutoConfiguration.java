@@ -42,9 +42,7 @@ import org.springframework.context.annotation.Configuration;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration(
-		afterName = { "org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration",
-				"org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration" })
+@AutoConfiguration
 @ConditionalOnClass(VectorStore.class)
 @EnableConfigurationProperties(VectorStoreObservationProperties.class)
 public class VectorStoreObservationAutoConfiguration {

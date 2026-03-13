@@ -18,13 +18,14 @@ package org.springframework.ai.model.openaisdk.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit Tests for {@link OpenAiConnectionProperties} and {@link OpenAiSdkImageProperties}.
+ * Unit Tests for {@link OpenAiSdkConnectionProperties} and
+ * {@link OpenAiSdkImageProperties}.
  *
  * @author Christian Tzolov
  */
@@ -42,7 +43,7 @@ public class OpenAiSdkImagePropertiesTests {
 				"spring.ai.openai-sdk.image.options.model=MODEL_XYZ",
 				"spring.ai.openai-sdk.image.options.n=2")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiSdkImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
@@ -70,7 +71,7 @@ public class OpenAiSdkImagePropertiesTests {
 				"spring.ai.openai-sdk.image.options.model=MODEL_XYZ",
 				"spring.ai.openai-sdk.image.options.n=2")
 				// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiSdkImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);
@@ -105,7 +106,7 @@ public class OpenAiSdkImagePropertiesTests {
 				"spring.ai.openai-sdk.image.options.user=userXYZ"
 			)
 			// @formatter:on
-			.withConfiguration(SpringAiTestAutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
+			.withConfiguration(AutoConfigurations.of(OpenAiSdkImageAutoConfiguration.class))
 			.run(context -> {
 				var imageProperties = context.getBean(OpenAiSdkImageProperties.class);
 				var connectionProperties = context.getBean(OpenAiSdkConnectionProperties.class);

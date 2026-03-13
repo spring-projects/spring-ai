@@ -58,9 +58,7 @@ import org.springframework.context.annotation.Scope;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration(
-		afterName = { "org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration",
-				"org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration" })
+@AutoConfiguration
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",

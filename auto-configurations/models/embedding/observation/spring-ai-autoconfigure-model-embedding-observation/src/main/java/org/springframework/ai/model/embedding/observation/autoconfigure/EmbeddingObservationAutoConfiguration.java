@@ -33,9 +33,10 @@ import org.springframework.context.annotation.Bean;
  * @author Thomas Vitale
  * @since 1.0.0
  */
+// afterName: CompositeMeterRegistryAutoConfiguration declares a MeterRegistry bean that
+// this class is conditional on
 @AutoConfiguration(
-		afterName = { "org.springframework.boot.micrometer.observation.autoconfigure.ObservationAutoConfiguration",
-				"org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration" })
+		afterName = "org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration")
 @ConditionalOnClass(EmbeddingModel.class)
 public class EmbeddingObservationAutoConfiguration {
 
