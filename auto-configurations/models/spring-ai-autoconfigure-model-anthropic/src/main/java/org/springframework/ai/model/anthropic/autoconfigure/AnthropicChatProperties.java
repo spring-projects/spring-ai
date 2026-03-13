@@ -16,7 +16,7 @@
 
 package org.springframework.ai.model.anthropic.autoconfigure;
 
-import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.anthropic.AbstractAnthropicOptions;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -24,24 +24,20 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 /**
  * Anthropic Chat autoconfiguration properties.
  *
- * @author Christian Tzolov
- * @author Alexandros Pappas
- * @since 1.0.0
+ * @author Soby Chacko
+ * @since 2.0.0
  */
 @ConfigurationProperties(AnthropicChatProperties.CONFIG_PREFIX)
-public class AnthropicChatProperties {
+public class AnthropicChatProperties extends AbstractAnthropicOptions {
 
 	public static final String CONFIG_PREFIX = "spring.ai.anthropic.chat";
 
-	/**
-	 * Client lever Ollama options. Use this property to configure generative temperature,
-	 * topK and topP and alike parameters. The null values are ignored defaulting to the
-	 * generative's defaults.
-	 */
+	public static final String DEFAULT_CHAT_MODEL = AnthropicChatOptions.DEFAULT_MODEL;
+
 	@NestedConfigurationProperty
 	private final AnthropicChatOptions options = AnthropicChatOptions.builder()
-		.model(AnthropicChatModel.DEFAULT_MODEL_NAME)
-		.maxTokens(AnthropicChatModel.DEFAULT_MAX_TOKENS)
+		.model(DEFAULT_CHAT_MODEL)
+		.maxTokens(AnthropicChatOptions.DEFAULT_MAX_TOKENS)
 		.build();
 
 	public AnthropicChatOptions getOptions() {

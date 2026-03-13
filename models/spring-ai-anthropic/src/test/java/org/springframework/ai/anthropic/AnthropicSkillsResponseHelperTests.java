@@ -17,218 +17,127 @@
 package org.springframework.ai.anthropic;
 
 import java.util.List;
+import java.util.Optional;
 
+import com.anthropic.models.messages.Container;
+import com.anthropic.models.messages.ContainerUploadBlock;
+import com.anthropic.models.messages.ContentBlock;
+import com.anthropic.models.messages.Message;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
-import org.springframework.ai.anthropic.api.AnthropicApi.ContentBlock;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 /**
  * Unit tests for {@link AnthropicSkillsResponseHelper}.
  *
  * @author Soby Chacko
- * @since 2.0.0
  */
+@ExtendWith(MockitoExtension.class)
 class AnthropicSkillsResponseHelperTests {
 
 	@Test
-	void shouldReturnEmptyListForNullResponse() {
-		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(null);
-		assertThat(fileIds).isEmpty();
+	void extractFileIdsReturnsEmptyForNullResponse() {
+		assertThat(AnthropicSkillsResponseHelper.extractFileIds(null)).isEmpty();
 	}
 
 	@Test
-	void shouldReturnEmptyListForResponseWithoutMetadata() {
-		ChatResponse response = new ChatResponse(List.of());
-		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
-		assertThat(fileIds).isEmpty();
+	void extractFileIdsReturnsEmptyForNullMetadata() {
+		ChatResponse response = mock(ChatResponse.class);
+		given(response.getMetadata()).willReturn(null);
+		assertThat(AnthropicSkillsResponseHelper.extractFileIds(response)).isEmpty();
 	}
 
 	@Test
-	void shouldReturnEmptyListWhenNoFileContentBlocks() {
-		// Create a response with text content but no files
-		ContentBlock textBlock = new ContentBlock("Sample text response");
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_123", "message", null, List.of(textBlock),
-				"claude-sonnet-4-5", null, null, null, null);
-
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
-
-		ChatResponse response = new ChatResponse(List.of(), metadata);
-
-		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
-		assertThat(fileIds).isEmpty();
+	void extractFileIdsReturnsEmptyForNonMessageMetadata() {
+		ChatResponseMetadata metadata = mock(ChatResponseMetadata.class);
+		given(metadata.get("anthropic-response")).willReturn("not a message");
+		ChatResponse response = mock(ChatResponse.class);
+		given(response.getMetadata()).willReturn(metadata);
+		assertThat(AnthropicSkillsResponseHelper.extractFileIds(response)).isEmpty();
 	}
 
 	@Test
-	void shouldExtractSingleFileId() {
-		// Create a file content block
-		ContentBlock fileBlock = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, null, "file_abc123", "report.xlsx");
+	void extractFileIdsFindsContainerUploadBlocks() {
+		ContainerUploadBlock uploadBlock1 = mock(ContainerUploadBlock.class);
+		given(uploadBlock1.fileId()).willReturn("file-abc-123");
+		ContainerUploadBlock uploadBlock2 = mock(ContainerUploadBlock.class);
+		given(uploadBlock2.fileId()).willReturn("file-def-456");
 
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_123", "message", null, List.of(fileBlock),
-				"claude-sonnet-4-5", null, null, null, null);
+		ContentBlock block1 = mock(ContentBlock.class);
+		given(block1.isContainerUpload()).willReturn(true);
+		given(block1.asContainerUpload()).willReturn(uploadBlock1);
 
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
+		ContentBlock block2 = mock(ContentBlock.class);
+		given(block2.isContainerUpload()).willReturn(true);
+		given(block2.asContainerUpload()).willReturn(uploadBlock2);
 
-		ChatResponse response = new ChatResponse(List.of(), metadata);
+		Message message = mock(Message.class);
+		given(message.content()).willReturn(List.of(block1, block2));
 
-		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
-
-		assertThat(fileIds).hasSize(1);
-		assertThat(fileIds).containsExactly("file_abc123");
-	}
-
-	@Test
-	void shouldExtractMultipleFileIds() {
-		// Create multiple file content blocks
-		ContentBlock file1 = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, "file_123", "report.xlsx");
-
-		ContentBlock file2 = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, "file_456", "presentation.pptx");
-
-		ContentBlock file3 = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, "file_789", "document.docx");
-
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_123", "message", null,
-				List.of(file1, file2, file3), "claude-sonnet-4-5", null, null, null, null);
-
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
-
-		ChatResponse response = new ChatResponse(List.of(), metadata);
+		ChatResponseMetadata metadata = mock(ChatResponseMetadata.class);
+		given(metadata.get("anthropic-response")).willReturn(message);
+		ChatResponse response = mock(ChatResponse.class);
+		given(response.getMetadata()).willReturn(metadata);
 
 		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
-
-		assertThat(fileIds).hasSize(3);
-		assertThat(fileIds).containsExactly("file_123", "file_456", "file_789");
+		assertThat(fileIds).containsExactly("file-abc-123", "file-def-456");
 	}
 
 	@Test
-	void shouldExtractFileIdsFromMixedContent() {
-		// Mix of text and file content blocks
-		ContentBlock textBlock = new ContentBlock("I've created the files you requested");
+	void extractFileIdsSkipsNonContainerUploadBlocks() {
+		ContentBlock textBlock = mock(ContentBlock.class);
+		given(textBlock.isContainerUpload()).willReturn(false);
 
-		ContentBlock file1 = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, "file_excel", "data.xlsx");
+		Message message = mock(Message.class);
+		given(message.content()).willReturn(List.of(textBlock));
 
-		ContentBlock file2 = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, "file_pdf", "summary.pdf");
+		ChatResponseMetadata metadata = mock(ChatResponseMetadata.class);
+		given(metadata.get("anthropic-response")).willReturn(message);
+		ChatResponse response = mock(ChatResponse.class);
+		given(response.getMetadata()).willReturn(metadata);
 
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_123", "message", null,
-				List.of(textBlock, file1, file2), "claude-sonnet-4-5", null, null, null, null);
-
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
-
-		ChatResponse response = new ChatResponse(List.of(), metadata);
-
-		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
-
-		assertThat(fileIds).hasSize(2);
-		assertThat(fileIds).containsExactly("file_excel", "file_pdf");
+		assertThat(AnthropicSkillsResponseHelper.extractFileIds(response)).isEmpty();
 	}
 
 	@Test
-	void shouldReturnNullContainerIdForNullResponse() {
-		String containerId = AnthropicSkillsResponseHelper.extractContainerId(null);
-		assertThat(containerId).isNull();
+	void extractContainerIdReturnsNullForNullResponse() {
+		assertThat(AnthropicSkillsResponseHelper.extractContainerId(null)).isNull();
 	}
 
 	@Test
-	void shouldReturnNullContainerIdForResponseWithoutMetadata() {
-		ChatResponse response = new ChatResponse(List.of());
-		String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
-		assertThat(containerId).isNull();
+	void extractContainerIdReturnsIdWhenPresent() {
+		Container container = mock(Container.class);
+		given(container.id()).willReturn("cntr-abc-123");
+
+		Message message = mock(Message.class);
+		given(message.container()).willReturn(Optional.of(container));
+
+		ChatResponseMetadata metadata = mock(ChatResponseMetadata.class);
+		given(metadata.get("anthropic-response")).willReturn(message);
+		ChatResponse response = mock(ChatResponse.class);
+		given(response.getMetadata()).willReturn(metadata);
+
+		assertThat(AnthropicSkillsResponseHelper.extractContainerId(response)).isEqualTo("cntr-abc-123");
 	}
 
 	@Test
-	void shouldReturnNullContainerIdWhenNotPresent() {
-		ContentBlock textBlock = new ContentBlock("Response without container");
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_123", "message", null, List.of(textBlock),
-				"claude-sonnet-4-5", null, null, null, null);
+	void extractContainerIdReturnsNullWhenNoContainer() {
+		Message message = mock(Message.class);
+		given(message.container()).willReturn(Optional.empty());
 
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
+		ChatResponseMetadata metadata = mock(ChatResponseMetadata.class);
+		given(metadata.get("anthropic-response")).willReturn(message);
+		ChatResponse response = mock(ChatResponse.class);
+		given(response.getMetadata()).willReturn(metadata);
 
-		ChatResponse response = new ChatResponse(List.of(), metadata);
-
-		String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
-		assertThat(containerId).isNull();
-	}
-
-	@Test
-	void shouldExtractContainerId() {
-		ContentBlock textBlock = new ContentBlock("Response with container");
-		ChatCompletionResponse.Container container = new ChatCompletionResponse.Container("container_xyz789");
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_123", "message", null, List.of(textBlock),
-				"claude-sonnet-4-5", null, null, null, container);
-
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
-
-		ChatResponse response = new ChatResponse(List.of(), metadata);
-
-		String containerId = AnthropicSkillsResponseHelper.extractContainerId(response);
-		assertThat(containerId).isEqualTo("container_xyz789");
-	}
-
-	@Test
-	void shouldHandleMultipleFileBlocks() {
-		// Response with multiple file blocks in content
-		ContentBlock file1 = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, "file_1", "file1.xlsx");
-		ContentBlock file2 = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, "file_2", "file2.pptx");
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_1", "message", null, List.of(file1, file2),
-				"claude-sonnet-4-5", null, null, null, null);
-
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
-
-		ChatResponse response = new ChatResponse(List.of(), metadata);
-
-		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
-		assertThat(fileIds).hasSize(2);
-		assertThat(fileIds).containsExactly("file_1", "file_2");
-	}
-
-	@Test
-	void shouldIgnoreFileBlocksWithoutFileId() {
-		// File block with null fileId should be ignored
-		ContentBlock invalidFileBlock = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, null, null, null, "file.xlsx");
-
-		ContentBlock validFileBlock = new ContentBlock(ContentBlock.Type.FILE, null, null, null, null, null, null, null,
-				null, null, null, null, null, null, null, null, "file_valid", "valid.xlsx");
-
-		ChatCompletionResponse apiResponse = new ChatCompletionResponse("msg_123", "message", null,
-				List.of(invalidFileBlock, validFileBlock), "claude-sonnet-4-5", null, null, null, null);
-
-		ChatResponseMetadata metadata = ChatResponseMetadata.builder()
-			.keyValue("anthropic-response", apiResponse)
-			.build();
-
-		ChatResponse response = new ChatResponse(List.of(), metadata);
-
-		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
-
-		// Should only extract the valid file ID
-		assertThat(fileIds).hasSize(1);
-		assertThat(fileIds).containsExactly("file_valid");
+		assertThat(AnthropicSkillsResponseHelper.extractContainerId(response)).isNull();
 	}
 
 }
