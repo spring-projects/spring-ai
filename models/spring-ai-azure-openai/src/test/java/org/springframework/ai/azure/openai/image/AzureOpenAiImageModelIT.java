@@ -20,6 +20,7 @@ import com.azure.ai.openai.OpenAIClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.AzureKeyCredential;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariables;
@@ -43,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * NOTE: use deployment ID dall-e-3
  */
+@Disabled("Disabling until the default image model is configured in the test environment.")
 @SpringBootTest(classes = AzureOpenAiImageModelIT.TestConfiguration.class)
 @EnabledIfEnvironmentVariables({ @EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_API_KEY", matches = ".+"),
 		@EnabledIfEnvironmentVariable(named = "AZURE_OPENAI_IMAGE_ENDPOINT", matches = ".+") })
@@ -101,7 +103,7 @@ public class AzureOpenAiImageModelIT {
 		@Bean
 		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiImageModel(openAIClient,
-					AzureOpenAiImageOptions.builder().deploymentName("dall-e-3").build());
+					AzureOpenAiImageOptions.builder().deploymentName("gpt-image-1-mini").build());
 
 		}
 
