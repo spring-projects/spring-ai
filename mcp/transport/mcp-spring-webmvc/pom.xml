@@ -26,7 +26,7 @@
 
         <dependency>
 			<groupId>io.modelcontextprotocol.sdk</groupId>
-			<artifactId>mcp-core</artifactId>
+			<artifactId>mcp</artifactId>
 			<version>${mcp.sdk.version}</version>
 		</dependency>
 
@@ -48,14 +48,6 @@
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>io.modelcontextprotocol.sdk</groupId>
-			<artifactId>mcp-json-jackson3</artifactId>
-			<version>${mcp.sdk.version}</version>
-			<scope>test</scope>
-		</dependency>
-
 
 		<!-- The Spring Context is required due to the reactor-netty connector being dependant on
 		the Spring Lifecycle, as discussed here:
