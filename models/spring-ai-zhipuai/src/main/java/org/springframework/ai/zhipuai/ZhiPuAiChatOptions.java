@@ -17,7 +17,6 @@
 package org.springframework.ai.zhipuai;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,14 +28,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi;
 import org.springframework.ai.zhipuai.api.ZhiPuAiApi.ChatCompletionRequest;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
@@ -140,29 +140,39 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	private Map<String, Object> toolContext = new HashMap<>();
 	// @formatter:on
 
-	public static Builder builder() {
-		return new Builder();
+	// TODO: left here for ModelOptionUtils.merge*()
+	public ZhiPuAiChatOptions() {
+	}
+
+	protected ZhiPuAiChatOptions(String model, Integer maxTokens, List<String> stop, Double temperature, Double topP,
+			List<ZhiPuAiApi.FunctionTool> tools, String toolChoice, String user, String requestId, Boolean doSample,
+			ChatCompletionRequest.ResponseFormat responseFormat, ChatCompletionRequest.Thinking thinking,
+			Boolean internalToolExecutionEnabled, List<ToolCallback> toolCallbacks, Set<String> toolNames,
+			Map<String, Object> toolContext) {
+		this.model = model;
+		this.maxTokens = maxTokens;
+		this.stop = stop;
+		this.temperature = temperature;
+		this.topP = topP;
+		this.tools = tools;
+		this.toolChoice = toolChoice;
+		this.user = user;
+		this.requestId = requestId;
+		this.doSample = doSample;
+		this.responseFormat = responseFormat;
+		this.thinking = thinking;
+		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
+		this.toolCallbacks = toolCallbacks;
+		this.toolNames = toolNames;
+		this.toolContext = toolContext;
+	}
+
+	public static Builder<?> builder() {
+		return new Builder<>();
 	}
 
 	public static ZhiPuAiChatOptions fromOptions(ZhiPuAiChatOptions fromOptions) {
-		return ZhiPuAiChatOptions.builder()
-			.model(fromOptions.getModel())
-			.maxTokens(fromOptions.getMaxTokens())
-			.stop(fromOptions.getStop())
-			.temperature(fromOptions.getTemperature())
-			.topP(fromOptions.getTopP())
-			.tools(fromOptions.getTools())
-			.toolChoice(fromOptions.getToolChoice())
-			.user(fromOptions.getUser())
-			.requestId(fromOptions.getRequestId())
-			.doSample(fromOptions.getDoSample())
-			.toolCallbacks(fromOptions.getToolCallbacks())
-			.toolNames(fromOptions.getToolNames())
-			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext())
-			.responseFormat(fromOptions.getResponseFormat())
-			.thinking(fromOptions.getThinking())
-			.build();
+		return fromOptions.mutate().build();
 	}
 
 	@Override
@@ -326,9 +336,8 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	@Nullable
 	@JsonIgnore
-	public Boolean getInternalToolExecutionEnabled() {
+	public @Nullable Boolean getInternalToolExecutionEnabled() {
 		return this.internalToolExecutionEnabled;
 	}
 
@@ -396,181 +405,126 @@ public class ZhiPuAiChatOptions implements ToolCallingChatOptions {
 
 	@Override
 	public ZhiPuAiChatOptions copy() {
-		return fromOptions(this);
+		return mutate().build();
 	}
 
-	public ToolCallingChatOptions merge(ChatOptions options) {
-		ZhiPuAiChatOptions.Builder builder = ZhiPuAiChatOptions.builder();
-
-		// Merge chat-specific options
-		builder.model(options.getModel() != null ? options.getModel() : this.getModel())
-			.maxTokens(options.getMaxTokens() != null ? options.getMaxTokens() : this.getMaxTokens())
-			.stop(options.getStopSequences() != null ? options.getStopSequences() : this.getStopSequences())
-			.temperature(options.getTemperature() != null ? options.getTemperature() : this.getTemperature())
-			.topP(options.getTopP() != null ? options.getTopP() : this.getTopP());
-
-		// Try to get tool-specific properties if options is a ToolCallingChatOptions
-		if (options instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			builder.internalToolExecutionEnabled(toolCallingChatOptions.getInternalToolExecutionEnabled() != null
-					? (toolCallingChatOptions).getInternalToolExecutionEnabled()
-					: this.getInternalToolExecutionEnabled());
-
-			Set<String> toolNames = new HashSet<>();
-			if (this.toolNames != null) {
-				toolNames.addAll(this.toolNames);
-			}
-			if (toolCallingChatOptions.getToolNames() != null) {
-				toolNames.addAll(toolCallingChatOptions.getToolNames());
-			}
-			builder.toolNames(toolNames);
-
-			List<ToolCallback> toolCallbacks = new ArrayList<>();
-			if (this.toolCallbacks != null) {
-				toolCallbacks.addAll(this.toolCallbacks);
-			}
-			if (toolCallingChatOptions.getToolCallbacks() != null) {
-				toolCallbacks.addAll(toolCallingChatOptions.getToolCallbacks());
-			}
-			builder.toolCallbacks(toolCallbacks);
-
-			Map<String, Object> context = new HashMap<>();
-			if (this.toolContext != null) {
-				context.putAll(this.toolContext);
-			}
-			if (toolCallingChatOptions.getToolContext() != null) {
-				context.putAll(toolCallingChatOptions.getToolContext());
-			}
-			builder.toolContext(context);
-		}
-		else {
-			builder.internalToolExecutionEnabled(this.internalToolExecutionEnabled);
-			builder.toolNames(this.toolNames != null ? new HashSet<>(this.toolNames) : null);
-			builder.toolCallbacks(this.toolCallbacks != null ? new ArrayList<>(this.toolCallbacks) : null);
-			builder.toolContext(this.toolContext != null ? new HashMap<>(this.toolContext) : null);
-		}
-
-		// Preserve ZhiPuAi-specific properties
-		builder.tools(this.tools)
+	@Override
+	public ZhiPuAiChatOptions.Builder<?> mutate() {
+		return ZhiPuAiChatOptions.builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.getFrequencyPenalty()) // unused in this model
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.getPresencePenalty()) // unused in this model
+			.stopSequences(this.getStopSequences())
+			.temperature(this.temperature)
+			.topK(this.getTopK()) // unused in this model
+			.topP(this.topP)
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolNames(this.getToolNames())
+			.toolContext(this.getToolContext())
+			.internalToolExecutionEnabled(this.getInternalToolExecutionEnabled())
+			// ZhiPuAi Specific
+			.tools(this.tools)
 			.toolChoice(this.toolChoice)
 			.user(this.user)
 			.requestId(this.requestId)
-			.doSample(this.doSample);
-
-		return builder.build();
+			.doSample(this.doSample)
+			.responseFormat(this.responseFormat)
+			.thinking(this.thinking);
 	}
 
-	public static final class Builder {
+	public static class Builder<B extends Builder<B>> extends DefaultToolCallingChatOptions.Builder<B> {
 
-		protected ZhiPuAiChatOptions options;
+		protected @Nullable List<ZhiPuAiApi.FunctionTool> tools;
 
-		public Builder() {
-			this.options = new ZhiPuAiChatOptions();
+		protected @Nullable String toolChoice;
+
+		protected @Nullable String user;
+
+		protected @Nullable String requestId;
+
+		protected @Nullable Boolean doSample;
+
+		protected ChatCompletionRequest.@Nullable ResponseFormat responseFormat;
+
+		protected ChatCompletionRequest.@Nullable Thinking thinking;
+
+		public B stop(@Nullable List<String> stop) {
+			return this.stopSequences(stop);
 		}
 
-		public Builder(ZhiPuAiChatOptions options) {
-			this.options = options;
+		public B tools(@Nullable List<ZhiPuAiApi.FunctionTool> tools) {
+			this.tools = tools;
+			return self();
 		}
 
-		public Builder model(String model) {
-			this.options.model = model;
-			return this;
+		public B toolChoice(@Nullable String toolChoice) {
+			this.toolChoice = toolChoice;
+			return self();
 		}
 
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
+		public B user(@Nullable String user) {
+			this.user = user;
+			return self();
 		}
 
-		public Builder stop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
+		public B requestId(@Nullable String requestId) {
+			this.requestId = requestId;
+			return self();
 		}
 
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
+		public B doSample(@Nullable Boolean doSample) {
+			this.doSample = doSample;
+			return self();
 		}
 
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
-			return this;
+		public B responseFormat(ChatCompletionRequest.@Nullable ResponseFormat responseFormat) {
+			this.responseFormat = responseFormat;
+			return self();
 		}
 
-		public Builder tools(List<ZhiPuAiApi.FunctionTool> tools) {
-			this.options.tools = tools;
-			return this;
+		public B thinking(ChatCompletionRequest.@Nullable Thinking thinking) {
+			this.thinking = thinking;
+			return self();
 		}
 
-		public Builder toolChoice(String toolChoice) {
-			this.options.toolChoice = toolChoice;
-			return this;
-		}
-
-		public Builder user(String user) {
-			this.options.user = user;
-			return this;
-		}
-
-		public Builder requestId(String requestId) {
-			this.options.requestId = requestId;
-			return this;
-		}
-
-		public Builder doSample(Boolean doSample) {
-			this.options.doSample = doSample;
-			return this;
-		}
-
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		@Override
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof ZhiPuAiChatOptions.Builder<?> that) {
+				if (that.tools != null) {
+					this.tools = that.tools;
+				}
+				if (that.toolChoice != null) {
+					this.toolChoice = that.toolChoice;
+				}
+				if (that.user != null) {
+					this.user = that.user;
+				}
+				if (that.requestId != null) {
+					this.requestId = that.requestId;
+				}
+				if (that.doSample != null) {
+					this.doSample = that.doSample;
+				}
+				if (that.responseFormat != null) {
+					this.responseFormat = that.responseFormat;
+				}
+				if (that.thinking != null) {
+					this.thinking = that.thinking;
+				}
 			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
-			return this;
+			return self();
 		}
 
-		public Builder responseFormat(ChatCompletionRequest.ResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		public Builder thinking(ChatCompletionRequest.Thinking thinking) {
-			this.options.thinking = thinking;
-			return this;
-		}
-
+		@Override
 		public ZhiPuAiChatOptions build() {
-			return this.options;
+			return new ZhiPuAiChatOptions(this.model, this.maxTokens, this.stopSequences, this.temperature, this.topP,
+					this.tools, this.toolChoice, this.user, this.requestId, this.doSample, this.responseFormat,
+					this.thinking, this.internalToolExecutionEnabled, this.toolCallbacks, this.toolNames,
+					this.toolContext);
 		}
 
 	}
