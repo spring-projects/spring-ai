@@ -755,48 +755,16 @@ public class OpenAiSdkChatModel implements ChatModel {
 	 * @return the prompt with merged options
 	 */
 	Prompt buildRequestPrompt(Prompt prompt) {
-		// Process runtime options
-		OpenAiSdkChatOptions runtimeOptions = null;
+		OpenAiSdkChatOptions.Builder<?> requestBuilder = this.options.mutate();
+
 		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						OpenAiSdkChatOptions.class);
-			}
-			else {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(prompt.getOptions(), ChatOptions.class,
-						OpenAiSdkChatOptions.class);
-			}
-		}
-
-		// Define request options by merging runtime options and default options
-		OpenAiSdkChatOptions requestOptions = OpenAiSdkChatOptions.builder()
-			.from(this.options)
-			.merge(runtimeOptions != null ? runtimeOptions : OpenAiSdkChatOptions.builder().build())
-			.build();
-
-		// Merge @JsonIgnore-annotated options explicitly since they are ignored by
-		// Jackson, used by ModelOptionsUtils.
-		if (runtimeOptions != null) {
-			if (runtimeOptions.getTopK() != null) {
+			if (prompt.getOptions().getTopK() != null) {
 				logger.warn("The topK option is not supported by OpenAI chat models. Ignoring.");
 			}
+			requestBuilder.combineWith(prompt.getOptions().mutate());
+		}
 
-			requestOptions.setInternalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
-					? runtimeOptions.getInternalToolExecutionEnabled()
-					: this.options.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(
-					ToolCallingChatOptions.mergeToolNames(runtimeOptions.getToolNames(), this.options.getToolNames()));
-			requestOptions.setToolCallbacks(ToolCallingChatOptions.mergeToolCallbacks(runtimeOptions.getToolCallbacks(),
-					this.options.getToolCallbacks()));
-			requestOptions.setToolContext(ToolCallingChatOptions.mergeToolContext(runtimeOptions.getToolContext(),
-					this.options.getToolContext()));
-		}
-		else {
-			requestOptions.setInternalToolExecutionEnabled(this.options.getInternalToolExecutionEnabled());
-			requestOptions.setToolNames(this.options.getToolNames());
-			requestOptions.setToolCallbacks(this.options.getToolCallbacks());
-			requestOptions.setToolContext(this.options.getToolContext());
-		}
+		OpenAiSdkChatOptions requestOptions = requestBuilder.build();
 
 		ToolCallingChatOptions.validateToolCallbacks(requestOptions.getToolCallbacks());
 
