@@ -152,6 +152,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author YeongMin Song
  * @author Jonghoon Park
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -406,7 +407,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
 
 		if (this.schemaValidation) {
-			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName());
+			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName(), this.dimensions);
 		}
 
 		if (!this.initializeSchema) {
