@@ -101,7 +101,7 @@ public class AzureOpenAiImageModelIT {
 		@Bean
 		public AzureOpenAiImageModel azureOpenAiImageModel(OpenAIClient openAIClient) {
 			return new AzureOpenAiImageModel(openAIClient,
-					AzureOpenAiImageOptions.builder().deploymentName("dall-e-3").build());
+					AzureOpenAiImageOptions.builder().deploymentName("gpt-image-1-mini").build());
 
 		}
 
