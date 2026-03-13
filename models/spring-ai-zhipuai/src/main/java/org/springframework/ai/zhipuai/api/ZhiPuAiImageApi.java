@@ -70,7 +70,7 @@ public class ZhiPuAiImageApi {
 	public ZhiPuAiImageApi(String baseUrl, String zhiPuAiToken, RestClient.Builder restClientBuilder,
 			ResponseErrorHandler responseErrorHandler) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl).defaultHeaders(h -> h.setBearerAuth(zhiPuAiToken)
+		this.restClient = restClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(h -> h.setBearerAuth(zhiPuAiToken)
 		// h.setContentType(MediaType.APPLICATION_JSON);
 		).defaultStatusHandler(responseErrorHandler).build();
 	}

@@ -72,12 +72,13 @@ public final class ElevenLabsApi {
 			h.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
 	}
 
 	/**

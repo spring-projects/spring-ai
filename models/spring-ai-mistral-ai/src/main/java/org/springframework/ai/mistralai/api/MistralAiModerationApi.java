@@ -51,7 +51,8 @@ public class MistralAiModerationApi {
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(jsonContentHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();

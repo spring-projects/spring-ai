@@ -72,7 +72,8 @@ public class ChromaApi {
 
 	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, JsonMapper jsonMapper) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(h -> h.setContentType(MediaType.APPLICATION_JSON))
 			.build();
 		this.jsonMapper = jsonMapper;
