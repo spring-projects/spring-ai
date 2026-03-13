@@ -397,6 +397,98 @@ public class AnthropicPromptCachingIT {
 	}
 
 	@Test
+	void shouldCacheStaticPrefixWithMultiBlockSystemCaching() {
+		// Large static system prompt that exceeds 1024 tokens for caching
+		String staticSystemPrompt = loadPrompt("system-only-cache-prompt.txt");
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+				.multiBlockSystemCaching(true)
+				.build())
+			.maxTokens(100)
+			.temperature(0.3)
+			.build();
+
+		// First call: static prefix + dynamic context A → creates the cache
+		String dynamicContextA = "Dynamic context A: The user is asking about Java microservices. Timestamp: "
+				+ System.currentTimeMillis();
+		ChatResponse response1 = this.chatModel.call(new Prompt(List.of(new SystemMessage(staticSystemPrompt),
+				new SystemMessage(dynamicContextA), new UserMessage("What is a microservice?")), options));
+
+		assertThat(response1).isNotNull();
+		assertThat(response1.getResult().getOutput().getText()).isNotEmpty();
+
+		AnthropicApi.Usage usage1 = getAnthropicUsage(response1);
+		assertThat(usage1).isNotNull();
+		logger.info("Multi-block turn 1 - Cache creation: {}, Cache read: {}", usage1.cacheCreationInputTokens(),
+				usage1.cacheReadInputTokens());
+
+		// Cache should be created on first call
+		assertThat(usage1.cacheCreationInputTokens()).as("First call should create cache for the static prefix")
+			.isGreaterThan(0);
+
+		// Second call: SAME static prefix + DIFFERENT dynamic context B → should get
+		// cache read
+		String dynamicContextB = "Dynamic context B: The user is now asking about Kubernetes. Timestamp: "
+				+ System.currentTimeMillis();
+		ChatResponse response2 = this.chatModel.call(new Prompt(List.of(new SystemMessage(staticSystemPrompt),
+				new SystemMessage(dynamicContextB), new UserMessage("What is container orchestration?")), options));
+
+		assertThat(response2).isNotNull();
+		assertThat(response2.getResult().getOutput().getText()).isNotEmpty();
+
+		AnthropicApi.Usage usage2 = getAnthropicUsage(response2);
+		assertThat(usage2).isNotNull();
+		logger.info("Multi-block turn 2 - Cache creation: {}, Cache read: {}", usage2.cacheCreationInputTokens(),
+				usage2.cacheReadInputTokens());
+
+		// The static prefix should be read from cache even though dynamic context changed
+		assertThat(usage2.cacheReadInputTokens())
+			.as("Second call should read cache for the static prefix despite different dynamic context")
+			.isGreaterThan(0);
+	}
+
+	@Test
+	void shouldCacheSingleMessageWithMultiBlockSystemCaching() {
+		// Verify that a single system message with multiBlockSystemCaching=true
+		// still gets cached normally (same as default behavior)
+		String systemPrompt = loadPrompt("system-only-cache-prompt.txt");
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(AnthropicApi.ChatModel.CLAUDE_SONNET_4_0.getValue())
+			.cacheOptions(AnthropicCacheOptions.builder()
+				.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+				.multiBlockSystemCaching(true)
+				.build())
+			.maxTokens(100)
+			.temperature(0.3)
+			.build();
+
+		ChatResponse response = this.chatModel.call(new Prompt(
+				List.of(new SystemMessage(systemPrompt), new UserMessage("What is microservices architecture?")),
+				options));
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+
+		AnthropicApi.Usage usage = getAnthropicUsage(response);
+		assertThat(usage).isNotNull();
+
+		// Should behave like normal SYSTEM_ONLY caching
+		boolean cacheCreated = usage.cacheCreationInputTokens() > 0;
+		boolean cacheRead = usage.cacheReadInputTokens() > 0;
+		assertThat(cacheCreated || cacheRead)
+			.withFailMessage("Expected either cache creation or cache read tokens, but got creation=%d, read=%d",
+					usage.cacheCreationInputTokens(), usage.cacheReadInputTokens())
+			.isTrue();
+
+		logger.info("Single message multi-block - Cache creation: {}, Cache read: {}", usage.cacheCreationInputTokens(),
+				usage.cacheReadInputTokens());
+	}
+
+	@Test
 	void shouldNotCacheWithNoneStrategy() {
 		String systemPrompt = "You are a helpful assistant.";
 

@@ -699,6 +699,146 @@ class AnthropicPromptCachingMockTest {
 		verifyCacheControlPlacement(requestBody);
 	}
 
+	@Test
+	void testMultiBlockSystemCaching() throws Exception {
+		String mockResponse = """
+				{
+					"id": "msg_test123",
+					"type": "message",
+					"role": "assistant",
+					"content": [ { "type": "text", "text": "ok" } ],
+					"model": "claude-haiku-4-5",
+					"stop_reason": "end_turn",
+					"usage": { "input_tokens": 10, "output_tokens": 2 }
+				}
+				""";
+		this.mockWebServer
+			.enqueue(new MockResponse().setBody(mockResponse).setHeader("Content-Type", "application/json"));
+
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.multiBlockSystemCaching(true)
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage("You are a helpful assistant with static instructions."),
+				new SystemMessage("Dynamic RAG context that changes every request."), new UserMessage("Test message")),
+				options);
+
+		this.chatModel.call(prompt);
+
+		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+		assertThat(recordedRequest).isNotNull();
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
+
+		// System should be an array with 2 separate content blocks
+		JsonNode systemNode = requestBody.get("system");
+		assertThat(systemNode.isArray()).isTrue();
+		assertThat(systemNode.size()).isEqualTo(2);
+
+		// First block (static prefix) should have cache_control
+		JsonNode firstBlock = systemNode.get(0);
+		assertThat(firstBlock.get("type").asText()).isEqualTo("text");
+		assertThat(firstBlock.get("text").asText()).isEqualTo("You are a helpful assistant with static instructions.");
+		assertThat(firstBlock.has("cache_control")).isTrue();
+		assertThat(firstBlock.get("cache_control").get("type").asText()).isEqualTo("ephemeral");
+
+		// Second block (dynamic content) should NOT have cache_control
+		JsonNode secondBlock = systemNode.get(1);
+		assertThat(secondBlock.get("type").asText()).isEqualTo("text");
+		assertThat(secondBlock.get("text").asText()).isEqualTo("Dynamic RAG context that changes every request.");
+		assertThat(secondBlock.has("cache_control")).isFalse();
+	}
+
+	@Test
+	void testMultiBlockSystemCachingSingleMessage() throws Exception {
+		String mockResponse = """
+				{
+					"id": "msg_test123",
+					"type": "message",
+					"role": "assistant",
+					"content": [ { "type": "text", "text": "ok" } ],
+					"model": "claude-haiku-4-5",
+					"stop_reason": "end_turn",
+					"usage": { "input_tokens": 10, "output_tokens": 2 }
+				}
+				""";
+		this.mockWebServer
+			.enqueue(new MockResponse().setBody(mockResponse).setHeader("Content-Type", "application/json"));
+
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.multiBlockSystemCaching(true)
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
+
+		// Single system message: should still get cache_control (same as current
+		// behavior)
+		Prompt prompt = new Prompt(
+				List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("Test message")), options);
+
+		this.chatModel.call(prompt);
+
+		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+		assertThat(recordedRequest).isNotNull();
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
+
+		// Single message falls back to default joined behavior with cache_control
+		JsonNode systemNode = requestBody.get("system");
+		assertThat(systemNode.isArray()).isTrue();
+		assertThat(systemNode.size()).isEqualTo(1);
+
+		JsonNode block = systemNode.get(0);
+		assertThat(block.has("cache_control")).isTrue();
+		assertThat(block.get("cache_control").get("type").asText()).isEqualTo("ephemeral");
+	}
+
+	@Test
+	void testMultiBlockSystemCachingDisabledByDefault() throws Exception {
+		String mockResponse = """
+				{
+					"id": "msg_test123",
+					"type": "message",
+					"role": "assistant",
+					"content": [ { "type": "text", "text": "ok" } ],
+					"model": "claude-haiku-4-5",
+					"stop_reason": "end_turn",
+					"usage": { "input_tokens": 10, "output_tokens": 2 }
+				}
+				""";
+		this.mockWebServer
+			.enqueue(new MockResponse().setBody(mockResponse).setHeader("Content-Type", "application/json"));
+
+		// multiBlockSystemCaching is NOT set (defaults to false)
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().cacheOptions(cacheOptions).build();
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage("Static instructions."),
+				new SystemMessage("Dynamic context."), new UserMessage("Test message")), options);
+
+		this.chatModel.call(prompt);
+
+		RecordedRequest recordedRequest = this.mockWebServer.takeRequest(1, TimeUnit.SECONDS);
+		assertThat(recordedRequest).isNotNull();
+		JsonNode requestBody = JsonMapper.shared().readTree(recordedRequest.getBody().readUtf8());
+
+		// Should be joined into a single block (backward compatible)
+		JsonNode systemNode = requestBody.get("system");
+		assertThat(systemNode.isArray()).isTrue();
+		assertThat(systemNode.size()).isEqualTo(1);
+
+		// The single block contains joined text
+		JsonNode block = systemNode.get(0);
+		assertThat(block.get("text").asText()).contains("Static instructions.");
+		assertThat(block.get("text").asText()).contains("Dynamic context.");
+		assertThat(block.has("cache_control")).isTrue();
+	}
+
 	/**
 	 * Helper method to count cache_control occurrences in the request JSON.
 	 */

@@ -71,6 +71,16 @@ public class AnthropicCacheOptions {
 	private Map<MessageType, Integer> messageTypeMinContentLengths = Stream.of(MessageType.values())
 		.collect(Collectors.toMap(mt -> mt, mt -> DEFAULT_MIN_CONTENT_LENGTH, (m1, m2) -> m1, HashMap::new));
 
+	/**
+	 * When enabled, each {@link org.springframework.ai.chat.messages.SystemMessage} is
+	 * emitted as a separate content block in the Anthropic API {@code system} array, with
+	 * {@code cache_control} applied to the second-to-last block. This allows a static
+	 * system prompt prefix to be cached while dynamic content (e.g., advisor-injected RAG
+	 * context) in the last block can change freely without invalidating the cache. When
+	 * disabled (default), all system messages are joined into a single content block.
+	 */
+	private boolean multiBlockSystemCaching = false;
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -107,11 +117,20 @@ public class AnthropicCacheOptions {
 		this.messageTypeMinContentLengths = messageTypeMinContentLengths;
 	}
 
+	public boolean isMultiBlockSystemCaching() {
+		return this.multiBlockSystemCaching;
+	}
+
+	public void setMultiBlockSystemCaching(boolean multiBlockSystemCaching) {
+		this.multiBlockSystemCaching = multiBlockSystemCaching;
+	}
+
 	@Override
 	public String toString() {
 		return "AnthropicCacheOptions{" + "strategy=" + this.strategy + ", contentLengthFunction="
 				+ this.contentLengthFunction + ", messageTypeTtl=" + this.messageTypeTtl
-				+ ", messageTypeMinContentLengths=" + this.messageTypeMinContentLengths + '}';
+				+ ", messageTypeMinContentLengths=" + this.messageTypeMinContentLengths + ", multiBlockSystemCaching="
+				+ this.multiBlockSystemCaching + '}';
 	}
 
 	public static final class Builder {
@@ -145,6 +164,11 @@ public class AnthropicCacheOptions {
 
 		public Builder messageTypeMinContentLength(MessageType messageType, Integer minContentLength) {
 			this.options.messageTypeMinContentLengths.put(messageType, minContentLength);
+			return this;
+		}
+
+		public Builder multiBlockSystemCaching(boolean multiBlockSystemCaching) {
+			this.options.setMultiBlockSystemCaching(multiBlockSystemCaching);
 			return this;
 		}
 

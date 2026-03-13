@@ -424,6 +424,54 @@ ChatResponse response = chatModel.call(
 
 NOTE: Tool Definitions are always considered for caching if `SYSTEM_AND_TOOLS` strategy is used, regardless of content length.
 
+=== Multi-Block System Message Caching
+
+When using advisors (e.g., RAG context injection), your system prompt may consist of multiple `SystemMessage` instances: a static prefix (your base instructions) and a dynamic suffix (advisor-injected context that changes each request).
+
+By default, all `SystemMessage` instances are joined into a single content block with one `cache_control` marker.
+If any part of that content changes between requests, the entire block is treated as a cache miss — resulting in a 1.25x write cost penalty instead of the 0.1x cache read discount.
+
+The `multiBlockSystemCaching` option solves this by emitting each `SystemMessage` as a separate content block in the Anthropic API `system` array.
+The `cache_control` marker is placed on the *second-to-last* block (end of the static prefix), so the static portion remains cached even as the last block (dynamic content) changes freely.
+
+==== Configuration
+
+[source,java]
+----
+AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+    .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+    .multiBlockSystemCaching(true)
+    .build();
+
+AnthropicChatOptions options = AnthropicChatOptions.builder()
+    .cacheOptions(cacheOptions)
+    .build();
+
+// Static system prompt (will be cached)
+SystemMessage staticPrompt = new SystemMessage("You are an expert assistant...");
+// Dynamic RAG context (injected by advisor, changes each request)
+SystemMessage dynamicContext = new SystemMessage("Relevant context: " + ragResults);
+
+Prompt prompt = new Prompt(List.of(staticPrompt, dynamicContext, new UserMessage("...")), options);
+----
+
+This produces the following wire format:
+
+[source,json]
+----
+{
+  "system": [
+    {"type": "text", "text": "You are an expert assistant...", "cache_control": {"type": "ephemeral"}},
+    {"type": "text", "text": "Relevant context: ..."}
+  ]
+}
+----
+
+NOTE: If only a single `SystemMessage` is present, it still gets `cache_control` applied (same as the default behavior).
+The `multiBlockSystemCaching` option only changes behavior when there are two or more system messages.
+
+IMPORTANT: Message ordering matters. The `cache_control` marker is always placed on the second-to-last system block, so static content must come before dynamic content in the message list. If you register your base instructions as the first `SystemMessage` and let advisors append dynamic context after, this ordering is naturally satisfied.
+
 === Usage Example
 
 Here's a complete example demonstrating prompt caching with cost tracking:
@@ -763,7 +811,7 @@ The prompt caching implementation in Spring AI follows these key design principl
 The current cache strategies are designed to handle **90% of common use cases** effectively. For applications requiring more granular control, future enhancements may include:
 
 - **Message-level cache control** for fine-grained breakpoint placement
-- **Multi-block content caching** within individual messages  
+- **Multi-block content caching** within individual messages (see <<Multi-Block System Message Caching>> for system messages)
 - **Advanced cache boundary selection** for complex tool scenarios
 - **Mixed TTL strategies** for optimized cache hierarchies
 
