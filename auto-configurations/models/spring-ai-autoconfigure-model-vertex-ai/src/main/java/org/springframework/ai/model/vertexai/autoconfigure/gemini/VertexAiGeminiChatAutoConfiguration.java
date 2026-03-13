@@ -30,7 +30,6 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vertexai.gemini.VertexAiGeminiChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -55,7 +54,7 @@ import org.springframework.util.StringUtils;
  * @author Yanming Zhou
  * @since 1.0.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration(after = ToolCallingAutoConfiguration.class)
 @ConditionalOnClass({ VertexAI.class, VertexAiGeminiChatModel.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.VERTEX_AI,
 		matchIfMissing = true)

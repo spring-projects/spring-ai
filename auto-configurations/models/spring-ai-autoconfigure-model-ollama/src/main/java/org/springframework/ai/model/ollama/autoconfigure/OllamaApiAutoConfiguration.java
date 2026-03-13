@@ -18,7 +18,6 @@ package org.springframework.ai.model.ollama.autoconfigure;
 
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -40,8 +39,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Ilayaperumal Gopinathan
  * @since 0.8.0
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class })
 @ConditionalOnClass(OllamaApi.class)
 @EnableConfigurationProperties(OllamaConnectionProperties.class)
 public class OllamaApiAutoConfiguration {

@@ -28,7 +28,6 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -56,7 +55,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @since 0.8.1
  */
 @AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+		ToolCallingAutoConfiguration.class })
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MISTRAL,
 		matchIfMissing = true)

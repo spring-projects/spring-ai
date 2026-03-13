@@ -22,7 +22,6 @@ import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -44,8 +43,7 @@ import org.springframework.web.client.RestClient;
  * @author Ricken Bazolo
  * @author Yanming Zhou
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-		WebClientAutoConfiguration.class })
+@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class })
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiModerationProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.MODERATION_MODEL, havingValue = SpringAIModels.MISTRAL,
 		matchIfMissing = true)
