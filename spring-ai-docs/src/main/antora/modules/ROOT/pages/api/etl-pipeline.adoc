@@ -84,14 +84,15 @@ public interface DocumentTransformer extends Function<List<Document>, List<Docum
 
 Manages the final stage of the ETL process, preparing documents for storage.
 
-```java
+[source,java]
+----
 public interface DocumentWriter extends Consumer<List<Document>> {
 
     default void write(List<Document> documents) {
 		accept(documents);
 	}
 }
-```
+----
 
 
 [[etl-class-diagram]]
