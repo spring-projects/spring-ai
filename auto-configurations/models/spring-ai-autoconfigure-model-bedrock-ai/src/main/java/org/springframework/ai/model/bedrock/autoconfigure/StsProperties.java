@@ -30,18 +30,16 @@ public class StsProperties {
 	/**
 	 * STS AssumeRole configuration for cross-account or role-based access.
 	 */
-	@Nullable
 	@NestedConfigurationProperty
-	private AssumeRole assumeRole;
+	private @Nullable AssumeRole assumeRole;
 
 	/**
 	 * STS WebIdentity configuration for OIDC-based authentication (e.g. EKS IRSA).
 	 */
-	@Nullable
 	@NestedConfigurationProperty
-	private WebIdentity webIdentity;
+	private @Nullable WebIdentity webIdentity;
 
-	@Nullable public AssumeRole getAssumeRole() {
+	public @Nullable AssumeRole getAssumeRole() {
 		return this.assumeRole;
 	}
 
@@ -49,7 +47,7 @@ public class StsProperties {
 		this.assumeRole = assumeRole;
 	}
 
-	@Nullable public WebIdentity getWebIdentity() {
+	public @Nullable WebIdentity getWebIdentity() {
 		return this.webIdentity;
 	}
 

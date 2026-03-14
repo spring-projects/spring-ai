@@ -46,18 +46,18 @@ public class BedrockAwsConnectionProperties {
 	/**
 	 * AWS access key.
 	 */
-	private String accessKey;
+	private @Nullable String accessKey;
 
 	/**
 	 * AWS secret key.
 	 */
-	private String secretKey;
+	private @Nullable String secretKey;
 
 	/**
 	 * AWS session token. (optional) When provided the AwsSessionCredentials are used.
 	 * Otherwise, the AwsBasicCredentials are used.
 	 */
-	private String sessionToken;
+	private @Nullable String sessionToken;
 
 	/**
 	 * Configures an instance profile credentials provider with no further configuration.
@@ -69,7 +69,7 @@ public class BedrockAwsConnectionProperties {
 	 * declared. Otherwise, the AwsBasicCredentials are used.
 	 */
 	@NestedConfigurationProperty
-	@Nullable private ProfileProperties profile;
+	private @Nullable ProfileProperties profile;
 
 	/**
 	 * Maximum duration of the entire API call operation.
@@ -93,27 +93,27 @@ public class BedrockAwsConnectionProperties {
 	 * authentication.
 	 */
 	@NestedConfigurationProperty
-	@Nullable private StsProperties stsProperties;
+	private @Nullable StsProperties stsProperties;
 
 	/**
 	 * AWS SDK defaults mode.
 	 */
-	@Nullable private DefaultsMode defaultsMode;
+	private @Nullable DefaultsMode defaultsMode;
 
 	/**
 	 * Whether to use FIPS endpoints.
 	 */
-	@Nullable private Boolean fipsEnabled;
+	private @Nullable Boolean fipsEnabled;
 
 	/**
 	 * Whether to use dualstack endpoints.
 	 */
-	@Nullable private Boolean dualstackEnabled;
+	private @Nullable Boolean dualstackEnabled;
 
 	/**
 	 * Custom endpoint URI to override the default AWS service endpoint.
 	 */
-	@Nullable private URI endpoint;
+	private @Nullable URI endpoint;
 
 	public String getRegion() {
 		return this.region;
@@ -123,19 +123,19 @@ public class BedrockAwsConnectionProperties {
 		this.region = awsRegion;
 	}
 
-	public String getAccessKey() {
+	public @Nullable String getAccessKey() {
 		return this.accessKey;
 	}
 
-	public void setAccessKey(String accessKey) {
+	public void setAccessKey(@Nullable String accessKey) {
 		this.accessKey = accessKey;
 	}
 
-	public String getSecretKey() {
+	public @Nullable String getSecretKey() {
 		return this.secretKey;
 	}
 
-	public void setSecretKey(String secretKey) {
+	public void setSecretKey(@Nullable String secretKey) {
 		this.secretKey = secretKey;
 	}
 
@@ -163,15 +163,15 @@ public class BedrockAwsConnectionProperties {
 		this.asyncClient = asyncClient;
 	}
 
-	public String getSessionToken() {
+	public @Nullable String getSessionToken() {
 		return this.sessionToken;
 	}
 
-	public void setSessionToken(String sessionToken) {
+	public void setSessionToken(@Nullable String sessionToken) {
 		this.sessionToken = sessionToken;
 	}
 
-	@Nullable public ProfileProperties getProfile() {
+	public @Nullable ProfileProperties getProfile() {
 		return this.profile;
 	}
 
@@ -187,15 +187,15 @@ public class BedrockAwsConnectionProperties {
 		this.instanceProfile = instanceProfile;
 	}
 
-	public StsProperties getStsProperties() {
+	public @Nullable StsProperties getStsProperties() {
 		return this.stsProperties;
 	}
 
-	public void setStsProperties(StsProperties stsProperties) {
+	public void setStsProperties(@Nullable StsProperties stsProperties) {
 		this.stsProperties = stsProperties;
 	}
 
-	@Nullable public DefaultsMode getDefaultsMode() {
+	public @Nullable DefaultsMode getDefaultsMode() {
 		return this.defaultsMode;
 	}
 
@@ -203,7 +203,7 @@ public class BedrockAwsConnectionProperties {
 		this.defaultsMode = defaultsMode;
 	}
 
-	@Nullable public Boolean getFipsEnabled() {
+	public @Nullable Boolean getFipsEnabled() {
 		return this.fipsEnabled;
 	}
 
@@ -211,7 +211,7 @@ public class BedrockAwsConnectionProperties {
 		this.fipsEnabled = fipsEnabled;
 	}
 
-	@Nullable public Boolean getDualstackEnabled() {
+	public @Nullable Boolean getDualstackEnabled() {
 		return this.dualstackEnabled;
 	}
 
@@ -219,7 +219,7 @@ public class BedrockAwsConnectionProperties {
 		this.dualstackEnabled = dualstackEnabled;
 	}
 
-	@Nullable public URI getEndpoint() {
+	public @Nullable URI getEndpoint() {
 		return this.endpoint;
 	}
 
