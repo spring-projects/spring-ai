@@ -73,14 +73,13 @@ public class BedrockConverseProxyChatAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
-	public BedrockRuntimeAsyncClientBuilder bedrockRuntimeAsyncClientBuilder (BedrockAwsConnectionProperties properties,
-											 AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
+	public BedrockRuntimeAsyncClientBuilder bedrockRuntimeAsyncClientBuilder(BedrockAwsConnectionProperties properties,
+			AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
 		BedrockRuntimeAsyncClientBuilder builder = BedrockAwsClientConfigurer
-				.configure(BedrockRuntimeAsyncClient.builder(), properties, awsRegionProvider, awsCredentialsProvider);
+			.configure(BedrockRuntimeAsyncClient.builder(), properties, awsRegionProvider, awsCredentialsProvider);
 		BedrockAwsClientConfigurer.configureAsyncHttpClient(builder, properties);
 		return builder;
 	}
-
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -93,7 +92,7 @@ public class BedrockConverseProxyChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnBean({ AwsCredentialsProvider.class, AwsRegionProvider.class })
 	public BedrockRuntimeClientBuilder bedrockRuntimeClientBuilder(BedrockAwsConnectionProperties properties,
-													 AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
+			AwsRegionProvider awsRegionProvider, AwsCredentialsProvider awsCredentialsProvider) {
 		BedrockRuntimeClientBuilder builder = BedrockAwsClientConfigurer.configure(BedrockRuntimeClient.builder(),
 				properties, awsRegionProvider, awsCredentialsProvider);
 		BedrockAwsClientConfigurer.configureSyncHttpClient(builder, properties);
